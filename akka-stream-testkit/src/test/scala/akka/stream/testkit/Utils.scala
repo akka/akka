@@ -6,11 +6,7 @@ package akka.stream.testkit
 
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import akka.stream.Materializer
-import akka.stream.impl._
-import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 object Utils {

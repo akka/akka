@@ -8,7 +8,6 @@ import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
 import akka.stream.{ ActorMaterializer, StreamDetachedException }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 

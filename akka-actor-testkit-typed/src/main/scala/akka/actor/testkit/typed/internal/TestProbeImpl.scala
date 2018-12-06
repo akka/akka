@@ -4,7 +4,6 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.time
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.function.Supplier
@@ -28,18 +27,26 @@ import scala.util.control.NonFatal
 private[akka] object TestProbeImpl {
   private val testActorId = new AtomicInteger(0)
 
-  private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (context, message) ⇒
-    message match {
-      case WatchActor(ref) ⇒ context.watch(ref)
-      case other           ⇒ queue.offerLast(other)
+  private final case class WatchActor[U](actor: ActorRef[U])
+  private case object Stop
+
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] =
+    Behaviors.receive[M] { (context, msg) ⇒
+      msg match {
+        case WatchActor(ref) ⇒
+          context.watch(ref)
+          Behaviors.same
+        case Stop ⇒
+          Behaviors.stopped
+        case other ⇒
+          queue.offerLast(other)
+          Behaviors.same
+      }
+    }.receiveSignal {
+      case (_, t: Terminated) ⇒
+        terminations.offerLast(t)
+        Behaviors.same
     }
-    Behaviors.same
-  }.receiveSignal {
-    case (_, t: Terminated) ⇒
-      terminations.offerLast(t)
-      Behaviors.same
-  }
 }
 
 @InternalApi
@@ -132,7 +139,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectMessage(max.asScala, hint, obj)
 
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     o match {
       case Some(m) if obj == m ⇒ m.asInstanceOf[T]
@@ -141,13 +148,21 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
+  override def receiveOne(): M = receiveOne(remainingOrDefault)
+
+  override def receiveOne(max: java.time.Duration): M = receiveOne(max.asScala)
+
+  def receiveOne(max: FiniteDuration): M =
+    receiveOne_internal(max.dilated).
+      getOrElse(assertFail(s"Timeout ($max) during receiveOne while waiting for message."))
+
   /**
    * Receive one message from the internal queue of the TestActor. If the given
    * duration is zero, the queue is polled (non-blocking).
    *
    * This method does NOT automatically scale its Duration parameter!
    */
-  private def receiveOne(max: Duration): Option[M] = {
+  private def receiveOne_internal(max: Duration): Option[M] = {
     val message = Option(
       if (max == Duration.Zero) {
         queue.pollFirst
@@ -172,20 +187,20 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated)
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     o match {
       case None    ⇒ lastWasNoMessage = true
-      case Some(m) ⇒ assertFail(s"received unexpected message $m")
+      case Some(m) ⇒ assertFail(s"Received unexpected message $m")
     }
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     val bt = BoxedType(c)
     o match {
       case Some(m) if bt isInstance m ⇒ m.asInstanceOf[C]
-      case Some(m)                    ⇒ assertFail(s"expected $c, found ${m.getClass} ($m)")
-      case None                       ⇒ assertFail(s"timeout ($max) during expectMessageClass waiting for $c")
+      case Some(m)                    ⇒ assertFail(s"Expected $c, found ${m.getClass} ($m)")
+      case None                       ⇒ assertFail(s"Timeout ($max) during expectMessageClass waiting for $c")
     }
   }
 
@@ -193,7 +208,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val stop = max + now
     for (x ← 1 to n) yield {
       val timeout = stop - now
-      val o = receiveOne(timeout)
+      val o = receiveOne_internal(timeout)
       o match {
         case Some(m) ⇒ m
         case None    ⇒ assertFail(s"timeout ($max) while expecting $n messages (got ${x - 1})")
@@ -204,7 +219,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
     @tailrec def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
-      val maybeMsg = receiveOne(timeout)
+      val maybeMsg = receiveOne_internal(timeout)
       maybeMsg match {
         case Some(message) ⇒
           val outcome = try fisher(message) catch {
@@ -257,16 +272,22 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
     @tailrec
     def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      var failed = false
       val result: A =
         try {
-          a
+          val aRes = a
+          failed = false
+          aRes
         } catch {
           case NonFatal(e) ⇒
+            failed = true
             if ((now + t) >= stop) throw e
             else null.asInstanceOf[A]
         }
 
-      if (result != null) result
+      if (!failed) result
       else {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
@@ -282,5 +303,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def now: FiniteDuration = System.nanoTime.nanos
 
   private def assertFail(msg: String): Nothing = throw new AssertionError(msg)
+
+  override def stop(): Unit = {
+    testActor.asInstanceOf[ActorRef[AnyRef]] ! Stop
+  }
 
 }

@@ -102,7 +102,7 @@ public class Messages {
     }
   }
 
-  public static enum Swap {
+  public enum Swap {
     Swap
   }
 

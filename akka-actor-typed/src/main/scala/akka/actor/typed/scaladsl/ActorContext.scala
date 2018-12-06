@@ -167,7 +167,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
+  def setReceiveTimeout(timeout: FiniteDuration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.

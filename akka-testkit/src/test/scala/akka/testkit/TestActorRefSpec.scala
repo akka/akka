@@ -219,7 +219,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "support receive timeout" in {
-      val a = TestActorRef(new ReceiveTimeoutActor(testActor))
+      TestActorRef(new ReceiveTimeoutActor(testActor))
       expectMsg("timeout")
     }
 

@@ -15,7 +15,7 @@ import java.util.concurrent.CompletionStage;
 
 //#persistent-entity-import
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.PersistentEntity;
+import akka.cluster.sharding.typed.javadsl.EventSourcedEntity;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -61,7 +61,7 @@ public class HelloWorldPersistentEntityExample {
 
   //#persistent-entity
 
-  public static class HelloWorld extends PersistentEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
+  public static class HelloWorld extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
     interface Command {

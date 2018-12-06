@@ -19,17 +19,16 @@ import akka.actor.Status;
 import akka.actor.SupervisorStrategy;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
-import akka.pattern.PatternsCS;
-import akka.util.Timeout;
+import akka.pattern.Patterns;
 
 public class SupervisedAsk {
 
   private static class AskParam {
     Props props;
     Object message;
-    Timeout timeout;
+    Duration timeout;
 
-    AskParam(Props props, Object message, Timeout timeout) {
+    AskParam(Props props, Object message, Duration timeout) {
       this.props = props;
       this.message = message;
       this.timeout = timeout;
@@ -77,7 +76,7 @@ public class SupervisedAsk {
           getContext().watch(targetActor);
           targetActor.forward(askParam.message, getContext());
           Scheduler scheduler = getContext().getSystem().scheduler();
-          timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
+          timeoutMessage = scheduler.scheduleOnce(askParam.timeout,
             getSelf(), new AskTimeout(), getContext().dispatcher(), null);
         })
         .match(Terminated.class, message -> {
@@ -97,9 +96,9 @@ public class SupervisedAsk {
   }
 
   public static CompletionStage<Object> askOf(ActorRef supervisorCreator, Props props,
-                                              Object message, Timeout timeout) {
+                                              Object message, Duration timeout) {
     AskParam param = new AskParam(props, message, timeout);
-    return PatternsCS.ask(supervisorCreator, param, timeout);
+    return Patterns.ask(supervisorCreator, param, timeout);
   }
 
   synchronized public static ActorRef createSupervisorCreator(

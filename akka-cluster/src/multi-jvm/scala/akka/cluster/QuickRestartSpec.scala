@@ -7,14 +7,12 @@ package akka.cluster
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.{ ActorSystem, Address }
-import akka.remote.RARP
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 // This test was a reproducer for issue #20639
 object QuickRestartMultiJvmSpec extends MultiNodeConfig {

@@ -11,7 +11,6 @@ import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.cluster.ClusterEvent.UnreachableMember
-import akka.remote.RARP
 import akka.remote.artery.ArterySettings
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig

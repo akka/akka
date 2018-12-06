@@ -69,7 +69,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
     expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#query-test-normal
 
@@ -101,10 +101,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     assertEquals(1L, response.requestId);
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
-    expectedTemperatures.put("device1", new DeviceGroup.TemperatureNotAvailable());
+    expectedTemperatures.put("device1", DeviceGroup.TemperatureNotAvailable.INSTANCE);
     expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#query-test-no-reading
 
@@ -137,9 +137,9 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
-    expectedTemperatures.put("device2", new DeviceGroup.DeviceNotAvailable());
+    expectedTemperatures.put("device2", DeviceGroup.DeviceNotAvailable.INSTANCE);
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#query-test-stopped
 
@@ -175,7 +175,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
     expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#query-test-stopped-later
 
@@ -209,22 +209,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
-    expectedTemperatures.put("device2", new DeviceGroup.DeviceTimedOut());
+    expectedTemperatures.put("device2", DeviceGroup.DeviceTimedOut.INSTANCE);
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#query-test-timeout
 
-  public static void assertEqualTemperatures(Map<String, DeviceGroup.TemperatureReading> expected, Map<String, DeviceGroup.TemperatureReading> actual) {
-    for (Map.Entry<String, DeviceGroup.TemperatureReading> entry : expected.entrySet()) {
-      DeviceGroup.TemperatureReading expectedReading = entry.getValue();
-      DeviceGroup.TemperatureReading actualReading = actual.get(entry.getKey());
-      assertNotNull(actualReading);
-      assertEquals(expectedReading.getClass(), actualReading.getClass());
-      if (expectedReading instanceof DeviceGroup.Temperature) {
-        assertEquals(((DeviceGroup.Temperature) expectedReading).value, ((DeviceGroup.Temperature) actualReading).value, 0.01);
-      }
-    }
-    assertEquals(expected.size(), actual.size());
-  }
 }

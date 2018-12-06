@@ -13,7 +13,6 @@ import akka.util.Timeout
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 /**
  * Collection of Flows aimed at integrating with typed Actors.

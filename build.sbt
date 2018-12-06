@@ -1,7 +1,11 @@
-import akka.{ParadoxSupport, AutomaticModuleName}
+import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin)
 disablePlugins(MimaPlugin)
+addCommandAlias(
+  name  ="fix",
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
 
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -41,7 +45,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
-  streamTyped
+  streamTyped,
+  discovery
 )
 
 lazy val root = Project(
@@ -49,7 +54,12 @@ lazy val root = Project(
   base = file(".")
 ).aggregate(aggregatedProjects: _*)
  .settings(rootSettings: _*)
- .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
+ .settings(unidocRootIgnoreProjects :=
+   (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2, n)) if n == 11 ⇒ aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
+     case _                       ⇒ Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs) 
+   })
+ )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
  )
@@ -191,7 +201,7 @@ lazy val distributedData = akkaModule("akka-distributed-data")
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
-    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream, actorTyped,
     camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
@@ -242,6 +252,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -474,6 +485,16 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
+lazy val discovery = akkaModule("akka-discovery")
+  .dependsOn(
+    actor,
+    testkit % "test->test",
+    actorTests % "test->test"
+  )
+  .settings(Dependencies.discovery)
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.discovery"))
+  .settings(OSGi.discovery)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
@@ -481,4 +502,3 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
-

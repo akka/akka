@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import language.existentials
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable

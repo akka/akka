@@ -18,7 +18,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Span
+import org.scalatest.time.{ Millis, Span }
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -60,7 +60,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with TypeCheckedTripleEquals with ScalaFutures {
 
-  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))
+  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 
   def this(config: Config) = this(ActorSystem(
     AkkaSpec.getCallerName(getClass),

@@ -4,7 +4,6 @@
 
 package akka.cluster.typed
 
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ Address, Scheduler }
@@ -15,7 +14,6 @@ import org.scalatest.{ Matchers, Suite }
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ ClusterEvent, MemberStatus }
 import akka.remote.testconductor.RoleName
-import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions

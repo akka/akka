@@ -7,13 +7,15 @@ package akka.io
 import java.net.Socket
 import java.nio.channels.{ SelectableChannel, SocketChannel }
 import java.nio.channels.SelectionKey.OP_ACCEPT
+
 import scala.concurrent.duration._
 import akka.actor._
-import akka.testkit.{ TestProbe, TestActorRef, AkkaSpec, EventFilter }
-import akka.io.TcpListener.{ RegisterIncoming, FailedRegisterIncoming }
+import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
+import akka.io.TcpListener.{ FailedRegisterIncoming, RegisterIncoming }
 import akka.io.SelectionHandler._
 import akka.testkit.SocketUtil
 import Tcp._
+import akka.io.TcpListenerSpec.RegisterChannel
 
 class TcpListenerSpec extends AkkaSpec("""
     akka.io.tcp.batch-accept-limit = 2
@@ -28,7 +30,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def disableInterest(op: Int) = ()
         def enableInterest(op: Int) = ()
-        def cancel() = ()
+        def cancelAndClose(andThen: () ⇒ Unit): Unit = ()
       }
       bindCommander.expectMsgType[Bound]
     }
@@ -143,13 +145,18 @@ class TcpListenerSpec extends AkkaSpec("""
 
     private val parentRef = TestActorRef(new ListenerParent(pullMode))
 
-    registerCallReceiver.expectMsg(if (pullMode) 0 else OP_ACCEPT)
+    val register = registerCallReceiver.expectMsgType[RegisterChannel]
+    register.initialOps should ===(if (pullMode) 0 else OP_ACCEPT)
 
     def bindListener(): Unit = {
       listener ! new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
-        def cancel(): Unit = ()
+        def cancelAndClose(andThen: () ⇒ Unit): Unit = {
+          register.channel.close()
+          require(!register.channel.isRegistered)
+          andThen()
+        }
       }
       bindCommander.expectMsgType[Bound]
     }
@@ -178,8 +185,11 @@ class TcpListenerSpec extends AkkaSpec("""
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
       def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit =
-        registerCallReceiver.ref.tell(initialOps, channelActor)
+        registerCallReceiver.ref.tell(RegisterChannel(channel, initialOps), channelActor)
     }
   }
 
+}
+object TcpListenerSpec {
+  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
 }

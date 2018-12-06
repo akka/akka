@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit {
 

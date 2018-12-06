@@ -5,18 +5,22 @@
 package akka.actor.testkit.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.Effect;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.event.Logging;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -111,6 +115,14 @@ public class BehaviorTestKitTest extends JUnitSuite {
     }
   }
 
+  public static class Log implements Command {
+    private final String what;
+
+    public Log(String what) {
+      this.what = what;
+    }
+  }
+
   public interface Action {
   }
 
@@ -171,6 +183,10 @@ public class BehaviorTestKitTest extends JUnitSuite {
       message.replyTo.tell(Done.getInstance());
       return Behaviors.same();
     })
+    .onMessage(Log.class, (context, message) -> {
+      context.getLog().info(message.what);
+      return Behaviors.same();
+    })
     .build();
 
 
@@ -192,6 +208,26 @@ public class BehaviorTestKitTest extends JUnitSuite {
   public void allowsExpectingNoEffectByType() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.expectEffectClass(Effect.NoEffects.class);
+  }
+
+  @Test
+  public void allowRetrieveAllLogs() {
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
+    String what = "Hello!";
+    test.run(new Log(what));
+    final List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
+    assertEquals(1, allLogEntries.size());
+    assertEquals(new CapturedLogEvent(Logging.InfoLevel(), what), allLogEntries.get(0));
+  }
+
+  @Test
+  public void allowClearLogs() {
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
+    String what = "Hello!";
+    test.run(new Log(what));
+    assertEquals(1, test.getAllLogEntries().size());
+    test.clearLog();
+    assertEquals(0, test.getAllLogEntries().size());
   }
 
   @Test

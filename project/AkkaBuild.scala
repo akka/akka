@@ -4,12 +4,12 @@
 
 package akka
 
-import java.io.{ FileInputStream, InputStreamReader }
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
+
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -83,7 +83,7 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint", "-Ywarn-unused")
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -108,7 +108,8 @@ object AkkaBuild {
             Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
-        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")) ++ Seq(
+        "-Ywarn-unused"),
       javacOptions in compile ++= DefaultJavacOptions ++ (
         if (System.getProperty("java.version").startsWith("1."))
           Seq()

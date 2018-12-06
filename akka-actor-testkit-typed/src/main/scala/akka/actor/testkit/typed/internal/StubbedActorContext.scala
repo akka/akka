@@ -7,16 +7,15 @@ package akka.actor.testkit.typed.internal
 import akka.actor.typed._
 import akka.actor.typed.internal._
 import akka.actor.typed.internal.adapter.AbstractLogger
+import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ untyped }
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
@@ -49,13 +48,6 @@ private[akka] final class FunctionRef[-T](
   override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
   // impl InternalRecipientRef
   def isTerminated: Boolean = false
-}
-
-final case class CapturedLogEvent(logLevel: LogLevel, message: String,
-                                  cause:  OptionVal[Throwable],
-                                  marker: OptionVal[LogMarker],
-                                  mdc:    Map[String, Any]) {
-  def getMdc: java.util.Map[String, Any] = mdc.asJava
 }
 
 /**

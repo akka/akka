@@ -5,10 +5,14 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 import org.scalatest.WordSpecLike
 
 class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+
+  import TestProbeSpec._
 
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()
@@ -31,7 +35,6 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "The test probe" must {
 
     "allow probing for actor stop when actor already stopped" in {
-      case object Stop
       val probe = TestProbe()
       val ref = spawn(Behaviors.stopped)
       probe.expectTerminated(ref, 100.millis)
@@ -142,6 +145,51 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
-  }
+    "allow receiving one message of type TestProbe[M]" in {
+      val probe = createTestProbe[EventT]()
+      eventsT(10).forall { e ⇒
+        probe.ref ! e
+        probe.receiveOne == e
+      } should ===(true)
 
+      probe.expectNoMessage()
+    }
+
+    "timeout if expected single message is not received by a provided timeout" in {
+      intercept[AssertionError](createTestProbe[EventT]().receiveOne(100.millis))
+    }
+
+    "support watch and stop of probe" in {
+      val probe1 = TestProbe[String]()
+      val probe2 = TestProbe[String]()
+      probe1.stop()
+      probe2.expectTerminated(probe1.ref, probe2.remainingOrDefault)
+    }
+  }
+}
+
+object TestProbeSpec {
+
+  val timeoutConfig = ConfigFactory.parseString("""
+      akka.actor.testkit.typed.default-timeout = 100ms
+      akka.test.default-timeout = 100ms""")
+
+  /** Helper events for tests. */
+  final case class EventT(id: Long)
+
+  /** Creates the `expected` number of events to test. */
+  def eventsT(expected: Int): Seq[EventT] =
+    for (n ← 1 to expected) yield EventT(n)
+}
+
+class TestProbeTimeoutSpec extends ScalaTestWithActorTestKit(TestProbeSpec.timeoutConfig) with WordSpecLike {
+
+  import TestProbeSpec._
+
+  "The test probe" must {
+
+    "timeout if expected single message is not received by the default timeout" in {
+      intercept[AssertionError](createTestProbe[EventT]().receiveOne())
+    }
+  }
 }

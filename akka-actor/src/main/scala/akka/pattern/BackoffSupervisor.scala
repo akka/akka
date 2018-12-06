@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
-import akka.actor.SupervisorStrategy.{ Directive, Escalate, Restart, Stop }
+import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -291,7 +291,8 @@ final class BackoffSupervisor(
   val reset:             BackoffReset,
   randomFactor:          Double,
   strategy:              SupervisorStrategy,
-  val replyWhileStopped: Option[Any])
+  val replyWhileStopped: Option[Any],
+  val finalStopMessage:  Option[Any ⇒ Boolean])
   extends Actor with HandleBackoff
   with ActorLogging {
 
@@ -311,6 +312,17 @@ final class BackoffSupervisor(
     case s ⇒ s
   }
 
+  // for binary compatibility with 2.5.18
+  def this(
+    childProps:        Props,
+    childName:         String,
+    minBackoff:        FiniteDuration,
+    maxBackoff:        FiniteDuration,
+    reset:             BackoffReset,
+    randomFactor:      Double,
+    strategy:          SupervisorStrategy,
+    replyWhileStopped: Option[Any]) = this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, strategy, replyWhileStopped, None)
+
   // for binary compatibility with 2.4.1
   def this(
     childProps:         Props,
@@ -319,7 +331,7 @@ final class BackoffSupervisor(
     maxBackoff:         FiniteDuration,
     randomFactor:       Double,
     supervisorStrategy: SupervisorStrategy) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None, None)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -333,21 +345,26 @@ final class BackoffSupervisor(
   def onTerminated: Receive = {
     case Terminated(ref) if child.contains(ref) ⇒
       child = None
-      val maxNrOfRetries = strategy match {
-        case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
-        case _                            ⇒ -1
-      }
-
-      val nextRestartCount = restartCount + 1
-
-      if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
-        val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-        context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
-        restartCount = nextRestartCount
-      } else {
-        log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+      if (finalStopMessageReceived) {
         context.stop(self)
+      } else {
+        val maxNrOfRetries = strategy match {
+          case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
+          case _                            ⇒ -1
+        }
+
+        val nextRestartCount = restartCount + 1
+
+        if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
+          val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+          context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
+          restartCount = nextRestartCount
+        } else {
+          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+          context.stop(self)
+        }
       }
+
   }
 
   def receive = onTerminated orElse handleBackoff
@@ -358,9 +375,11 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   def childName: String
   def reset: BackoffReset
   def replyWhileStopped: Option[Any]
+  def finalStopMessage: Option[Any ⇒ Boolean]
 
   var child: Option[ActorRef] = None
   var restartCount = 0
+  var finalStopMessageReceived = false
 
   import BackoffSupervisor._
   import context.dispatcher
@@ -404,11 +423,22 @@ private[akka] trait HandleBackoff { this: Actor ⇒
       context.parent ! msg
 
     case msg ⇒ child match {
-      case Some(c) ⇒ c.forward(msg)
-      case None ⇒ replyWhileStopped match {
-        case Some(r) ⇒ sender ! r
-        case None    ⇒ context.system.deadLetters.forward(msg)
-      }
+      case Some(c) ⇒
+        c.forward(msg)
+        if (!finalStopMessageReceived && finalStopMessage.isDefined) {
+          finalStopMessageReceived = finalStopMessage.get.apply(msg)
+        }
+      case None ⇒
+        replyWhileStopped match {
+          case None    ⇒ context.system.deadLetters.forward(msg)
+          case Some(r) ⇒ sender() ! r
+        }
+        finalStopMessage match {
+          case None ⇒
+          case Some(fsm) ⇒
+            fsm(msg)
+            context.stop(self)
+        }
     }
   }
 }

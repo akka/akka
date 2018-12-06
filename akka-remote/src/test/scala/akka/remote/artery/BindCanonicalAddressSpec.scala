@@ -4,7 +4,7 @@
 
 package akka.remote.artery
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.ConfigFactory
 import akka.actor.{ ActorSystem, Address }
 import akka.remote.transport.netty.NettyTransportSpec._
 

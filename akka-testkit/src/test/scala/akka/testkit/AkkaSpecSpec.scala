@@ -47,7 +47,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
 
     "stop correctly when sending PoisonPill to rootGuardian" in {
       val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
-      val spec = new AkkaSpec(system) {}
+      new AkkaSpec(system) {}
       val latch = new TestLatch(1)(system)
       system.registerOnTermination(latch.countDown())
 

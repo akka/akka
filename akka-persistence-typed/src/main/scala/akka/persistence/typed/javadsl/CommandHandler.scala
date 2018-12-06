@@ -15,7 +15,7 @@ import akka.util.OptionVal
 /**
  * FunctionalInterface for reacting on commands
  *
- * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
+ * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[EventSourcedBehavior]]
  */
 @FunctionalInterface
 trait CommandHandler[Command, Event, State] {

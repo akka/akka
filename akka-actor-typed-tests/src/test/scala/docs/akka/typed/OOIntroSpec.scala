@@ -11,8 +11,6 @@ import java.nio.charset.StandardCharsets
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, AbstractBehavior }
 
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 //#imports

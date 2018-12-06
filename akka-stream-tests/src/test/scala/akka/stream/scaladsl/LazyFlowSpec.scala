@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream._
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._

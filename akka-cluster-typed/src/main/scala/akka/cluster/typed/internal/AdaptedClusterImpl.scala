@@ -4,7 +4,6 @@
 
 package akka.cluster.typed.internal
 
-import akka.actor.ExtendedActorSystem
 import akka.actor.typed.Props
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberEvent

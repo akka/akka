@@ -42,7 +42,6 @@ import io.aeron.status.ChannelEndpointStatus
 import org.agrona.DirectBuffer
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
-import org.agrona.collections.IntObjConsumer
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.status.CountersReader.MetaData
 
