@@ -64,12 +64,7 @@ class ClusterSingletonPersistenceSpec extends ScalaTestWithActorTestKit(ClusterS
     untypedCluster.join(untypedCluster.selfAddress)
 
     "start persistent actor" in {
-      val ref = ClusterSingleton(system).spawn(
-        behavior = persistentActor,
-        singletonName = "singleton",
-        props = Props.empty,
-        settings = ClusterSingletonSettings(system),
-        terminationMessage = StopPlz)
+      val ref = ClusterSingleton(system).init(SingletonActor(persistentActor, "singleton").withStopMessage(StopPlz))
 
       val p = TestProbe[String]()
 
