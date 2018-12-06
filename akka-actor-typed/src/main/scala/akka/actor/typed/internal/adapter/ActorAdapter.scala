@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import akka.{actor => untyped}
+import akka.{ actor ⇒ untyped }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
