@@ -8,6 +8,7 @@ package internal
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.DeadLetterSuppression
+import akka.actor.typed.Behavior.FailedBehavior
 import akka.actor.typed.BehaviorInterceptor.{ PreStartTarget, ReceiveTarget, SignalTarget }
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
@@ -87,8 +88,8 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
   }
 
   protected def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
-    case NonFatal(_: Thr) ⇒
-      Behaviors.stopped
+    case NonFatal(t: Thr) ⇒
+      Behavior.failed(t)
   }
 
   // convenience if target not required to handle exception
@@ -104,7 +105,7 @@ private class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T]
   override def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
-      Behaviors.stopped
+      Behavior.failed(t)
   }
 }
 
@@ -202,7 +203,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
           } catch {
             case NonFatal(ex: Thr) if b.maxRestarts > 0 && restartCount >= b.maxRestarts ⇒
               log(ctx, ex)
-              Behaviors.stopped
+              Behavior.failed(ex)
             case NonFatal(ex: Thr) ⇒ scheduleRestart(ctx, ex)
           }
         case ResetRestartCount(current) ⇒

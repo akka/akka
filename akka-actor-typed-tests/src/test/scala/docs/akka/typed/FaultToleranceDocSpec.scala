@@ -12,7 +12,7 @@ import org.scalatest.WordSpecLike
 class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
   """
       # silenced to not put noise in test logs
-      akka.loglevel = OFF
+      akka.loglevel = off
     """) with WordSpecLike {
 
   "Bubbling of failures" must {
@@ -47,14 +47,14 @@ class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
 
       val bossBehavior = Behaviors.supervise(Behaviors.setup[Message] { context ⇒
         context.log.info("Boss starting up")
-        val middleManagment = context.spawn(middleManagementBehavior, "middle-management")
-        context.watch(middleManagment)
+        val middleManagement = context.spawn(middleManagementBehavior, "middle-management")
+        context.watch(middleManagement)
 
         // here we don't handle Terminated at all which means that
         // when middle management fails with a DeathWatchException
         // this actor will also fail
-        Behaviors.receive[Message] { (context, message) ⇒
-          middleManagment ! message
+        Behaviors.receiveMessage[Message] { message ⇒
+          middleManagement ! message
           Behaviors.same
         }
       }).onFailure[DeathPactException](SupervisorStrategy.restart)

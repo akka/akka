@@ -81,9 +81,9 @@ import akka.actor.ActorRefProvider
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
   override def terminate(): scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untyped.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+    untyped.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
   override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+    untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
   override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
     FutureConverters.toJava(whenTerminated)
 

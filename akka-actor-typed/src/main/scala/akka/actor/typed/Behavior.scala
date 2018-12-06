@@ -201,6 +201,12 @@ object Behavior {
   /**
    * INTERNAL API
    */
+  @InternalApi
+  private[akka] def failed[T](cause: Throwable): Behavior[T] = new FailedBehavior(cause).asInstanceOf[Behavior[T]]
+
+  /**
+   * INTERNAL API
+   */
   @InternalApi private[akka] val unhandledSignal: PartialFunction[(ActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) ⇒ UnhandledBehavior
   }
@@ -228,6 +234,10 @@ object Behavior {
    */
   private[akka] object SameBehavior extends Behavior[Nothing] {
     override def toString = "Same"
+  }
+
+  private[akka] class FailedBehavior(val cause: Throwable) extends Behavior[Nothing] {
+    override def toString: String = s"Failed($cause)"
   }
 
   /**
@@ -348,6 +358,7 @@ object Behavior {
    */
   def isAlive[T](behavior: Behavior[T]): Boolean = behavior match {
     case _: StoppedBehavior[_] ⇒ false
+    case _: FailedBehavior     ⇒ false
     case _                     ⇒ true
   }
 
@@ -390,6 +401,7 @@ object Behavior {
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case s: StoppedBehavior[T]  ⇒ s
+      case f: FailedBehavior      ⇒ f
       case EmptyBehavior          ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {

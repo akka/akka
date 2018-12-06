@@ -6,8 +6,9 @@ package akka.actor.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop, Terminated }
 import akka.actor.InvalidMessageException
+import akka.actor.testkit.typed.TE
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
@@ -65,6 +66,14 @@ object AdapterSpec {
         probe ! "terminated"
         Behaviors.same
     }
+
+  def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx ⇒
+    val child = ctx.spawnAnonymous(Behaviors.receiveMessage[String] { _ ⇒
+      throw TE(msg)
+    })
+    child ! "throw please"
+    Behaviors.empty
+  }
 
   sealed trait Typed2Msg
   final case class Ping(replyTo: ActorRef[String]) extends Typed2Msg
@@ -147,7 +156,7 @@ object AdapterSpec {
 
 class AdapterSpec extends AkkaSpec(
   """
-    akka.loggers = [akka.testkit.TestEventListener]
+   akka.loggers = [akka.testkit.TestEventListener]
   """) {
   import AdapterSpec._
 
@@ -309,6 +318,14 @@ class AdapterSpec extends AkkaSpec(
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "stop-child"
       probe.expectMsg("terminated")
+    }
+
+    "log exception if not by handled typed supervisor" in {
+      val throwMsg = "sad panda"
+      EventFilter.warning(pattern = ".*sad panda.*").intercept {
+        system.spawnAnonymous(unhappyTyped(throwMsg))
+        Thread.sleep(1000)
+      }
     }
   }
 }

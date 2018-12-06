@@ -6,6 +6,10 @@ package akka.actor.typed
 
 import java.util.Optional
 
+import akka.annotation.DoNotInherit
+
+import scala.compat.java8.OptionConverters._
+
 /**
  * Envelope that is published on the eventStream for every message that is
  * dropped due to overfull queues.
@@ -58,6 +62,11 @@ case object PostStop extends PostStop {
   def instance: PostStop = this
 }
 
+object Terminated {
+  def apply(ref: ActorRef[Nothing]): Terminated = new Terminated(ref)
+  def unapply(t: Terminated): Option[ActorRef[Nothing]] = Some(t.ref)
+}
+
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
@@ -71,20 +80,24 @@ case object PostStop extends PostStop {
  *
  * @param ref Scala API: the `ActorRef` for the terminated actor
  */
-final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
-  /**
-   * Scala API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be `None`.
-   */
-  def failure: Option[Throwable] = Option(failed)
-
+@DoNotInherit
+sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
   /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
+}
+
+object ChildFailed {
+  def apply(ref: ActorRef[Nothing], cause: Throwable): ChildFailed = new ChildFailed(ref, cause)
+  def unapply(t: ChildFailed): Option[(ActorRef[Nothing], Throwable)] = Some((t.ref, t.cause))
+}
+
+/**
+ * Child has failed due an uncaught exception
+ */
+final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Terminated(ref) {
 
   /**
-   * Java API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be an empty `Optional`.
+   * Java API
    */
-  def getFailure: Optional[Throwable] = Optional.ofNullable(failed)
-
+  def getCause(): Throwable = cause
 }
