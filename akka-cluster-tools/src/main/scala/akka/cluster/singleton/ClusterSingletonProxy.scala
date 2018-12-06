@@ -287,7 +287,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
           if (log.isDebugEnabled)
             log.debug(
               "Forwarding message of type [{}] to current singleton instance at [{}]: {}",
-              Logging.simpleName(msg.getClass), s.path)
+              Logging.simpleName(msg.getClass), s.path, msg)
           s forward msg
         case None ⇒
           buffer(msg)
