@@ -225,15 +225,15 @@ object BehaviorSpec {
       }
 
       "must react to Terminated" in {
-        mkCtx().check(Terminated(TestInbox("x").ref)(null))
+        mkCtx().check(Terminated(TestInbox("x").ref))
       }
 
       "must react to Terminated after a message" in {
-        mkCtx().check(GetSelf).check(Terminated(TestInbox("x").ref)(null))
+        mkCtx().check(GetSelf).check(Terminated(TestInbox("x").ref))
       }
 
       "must react to a message after Terminated" in {
-        mkCtx().check(Terminated(TestInbox("x").ref)(null)).check(GetSelf)
+        mkCtx().check(Terminated(TestInbox("x").ref)).check(GetSelf)
       }
     }
   }
@@ -311,15 +311,15 @@ object BehaviorSpec {
       }
 
       "react to Terminated after swap" in {
-        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref)(null))
+        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref))
       }
 
       "react to Terminated after a message after swap" in {
-        mkCtx().check(Swap).check(GetSelf).check(Terminated(TestInbox("x").ref)(null))
+        mkCtx().check(Swap).check(GetSelf).check(Terminated(TestInbox("x").ref))
       }
 
       "react to a message after Terminated after swap" in {
-        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref)(null)).check(GetSelf)
+        mkCtx().check(Swap).check(Terminated(TestInbox("x").ref)).check(GetSelf)
       }
     }
   }

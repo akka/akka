@@ -81,9 +81,10 @@ In some scenarios it may be useful to push the decision about what to do on a fa
  and let the parent actor handle what should happen on failures (in untyped Akka Actors this is how it works by default).
 
 For a parent to be notified when a child is terminated it has to `watch` the child. If the child was stopped because of
-a failure this will be included in the `Terminated` signal in the `failed` field.
+a failure the `ChildFailed` signal will be received which will contain the cause. `ChildFailed` extends `Terminated` so if
+your use case does not need to distinguish between stopping and failing you can handle both cases with the `Terminated` signal.
 
-If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`. Note that `DeathPactException` cannot be supervised.
+If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`.
 
 This means that a hierarchy of actors can have a child failure bubble up making each actor on the way stop but informing the
 top-most parent that there was a failure and how to deal with it, however, the original exception that caused the failure
