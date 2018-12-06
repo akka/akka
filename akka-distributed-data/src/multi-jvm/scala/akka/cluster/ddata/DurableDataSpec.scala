@@ -50,7 +50,7 @@ object DurableDataSpec {
         else
           sender() ! LoadAllCompleted
 
-      case Store(key, data, reply) ⇒
+      case Store(_, _, reply) ⇒
         if (failStore) reply match {
           case Some(StoreReply(_, failureMsg, replyTo)) ⇒ replyTo ! failureMsg
           case None                                     ⇒
@@ -79,8 +79,8 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
-
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val timeout = 14.seconds.dilated // initialization of lmdb can be very slow in CI environment
   val writeTwo = WriteTo(2, timeout)
   val readTwo = ReadFrom(2, timeout)
@@ -123,9 +123,9 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         r ! Get(KeyA, ReadLocal)
         expectMsg(NotFound(KeyA, None))
 
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-        r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+        r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
 
         expectMsg(UpdateSuccess(KeyA, None))
         expectMsg(UpdateSuccess(KeyA, None))
@@ -163,10 +163,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     }
     enterBarrier("both-initialized")
 
-    r ! Update(KeyA, GCounter(), writeTwo)(_ + 1)
+    r ! Update(KeyA, GCounter(), writeTwo)(_ :+ 1)
     expectMsg(UpdateSuccess(KeyA, None))
 
-    r ! Update(KeyC, ORSet.empty[String], writeTwo)(_ + myself.name)
+    r ! Update(KeyC, ORSet.empty[String], writeTwo)(_ :+ myself.name)
     expectMsg(UpdateSuccess(KeyC, None))
 
     enterBarrier("update-done-" + testStepCounter)
@@ -203,7 +203,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     val r = newReplicator()
 
     runOn(first) {
-      r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ + myself.name)
+      r ! Update(KeyC, ORSet.empty[String], WriteLocal)(_ :+ myself.name)
       expectMsg(UpdateSuccess(KeyC, None))
     }
 
@@ -213,7 +213,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
 
       // must do one more roundtrip to be sure that it keyB is stored, since Changed might have
       // been sent out before storage
-      r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
+      r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
       expectMsg(UpdateSuccess(KeyA, None))
 
       watch(r)
@@ -254,10 +254,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
           r ! Get(KeyA, ReadLocal)
           expectMsg(NotFound(KeyA, None))
 
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyA, GCounter(), WriteLocal)(_ + 1)
-          r ! Update(KeyB, GCounter(), WriteLocal)(_ + 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
+          r ! Update(KeyB, GCounter(), WriteLocal)(_ :+ 1)
 
           expectMsg(UpdateSuccess(KeyA, None))
           expectMsg(UpdateSuccess(KeyA, None))
@@ -286,7 +286,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
           val r2: ActorRef = newReplicator(sys2)
 
           // it should be possible to update while loading is in progress
-          r2 ! Update(KeyB, GCounter(), WriteLocal)(_ + 1)
+          r2 ! Update(KeyB, GCounter(), WriteLocal)(_ :+ 1)
           expectMsg(UpdateSuccess(KeyB, None))
 
           // wait until all loaded
@@ -325,7 +325,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         Replicator.props(
           ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failStore = true))),
         "replicator-" + testStepCounter)
-      r ! Update(KeyA, GCounter(), WriteLocal, request = Some("a"))(_ + 1)
+      r ! Update(KeyA, GCounter(), WriteLocal, request = Some("a"))(_ :+ 1)
       expectMsg(StoreFailure(KeyA, Some("a")))
     }
     enterBarrierAfterTestStep()

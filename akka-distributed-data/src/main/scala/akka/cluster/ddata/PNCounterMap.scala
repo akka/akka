@@ -72,17 +72,27 @@ final class PNCounterMap[A] private[akka] (
   def size: Int = underlying.size
 
   /**
+   * Increment the counter by 1.
+   */
+  def increment(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    increment(node, key, 1)
+
+  /**
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+  def increment(key: A, delta: Long)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
     increment(node, key, delta)
 
   /**
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(node: Cluster, key: A, delta: Long): PNCounterMap[A] =
+  def increment(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
+    increment(node.uniqueAddress, key, delta)
+
+  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
+  def increment(node: Cluster, key: A, delta: Long = 1): PNCounterMap[A] =
     increment(node.selfUniqueAddress, key, delta)
 
   /**
@@ -91,17 +101,27 @@ final class PNCounterMap[A] private[akka] (
   @InternalApi private[akka] def increment(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.increment(node, delta)))
 
+  /** Decrement the counter by 1. */
+  def decrement(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    decrement(node, key, 1)
+
   /**
    * Decrement the counter with the delta specified.
    * If the delta is negative then it will increment instead of decrement.
+   * TODO add implicit after deprecated is EOL.
    */
+  def decrement(node: SelfUniqueAddress, key: A, delta: Long): PNCounterMap[A] =
+    decrement(node.uniqueAddress, key, delta)
+
+  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
   def decrement(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
-    decrement(node, key, delta)
+    decrement(node.selfUniqueAddress, key, delta)
 
   /**
    * Decrement the counter with the delta specified.
    * If the delta is negative then it will increment instead of decrement.
    */
+  @deprecated("Use `decrement` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
   def decrement(node: Cluster, key: A, delta: Long): PNCounterMap[A] =
     decrement(node.selfUniqueAddress, key, delta)
 
@@ -117,15 +137,15 @@ final class PNCounterMap[A] private[akka] (
    * Note that if there is a conflicting update on another node the entry will
    * not be removed after merge.
    */
-  def -(key: A)(implicit node: Cluster): PNCounterMap[A] = remove(node, key)
+  def remove(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    remove(node.uniqueAddress, key)
 
-  /**
-   * Removes an entry from the map.
-   * Note that if there is a conflicting update on another node the entry will
-   * not be removed after merge.
-   */
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
   def remove(node: Cluster, key: A): PNCounterMap[A] =
     remove(node.selfUniqueAddress, key)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
+  def -(key: A)(implicit node: Cluster): PNCounterMap[A] = remove(node, key)
 
   /**
    * INTERNAL API

@@ -8,7 +8,6 @@ import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.Stash
-import akka.cluster.Cluster
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
@@ -25,12 +24,14 @@ object LocalConcurrencySpec {
   }
 
   class Updater extends Actor with Stash {
-    implicit val cluster = Cluster(context.system)
+
+    implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+
     val replicator = DistributedData(context.system).replicator
 
     def receive = {
       case s: String ⇒
-        val update = Replicator.Update(Updater.key, ORSet.empty[String], Replicator.WriteLocal)(_ + s)
+        val update = Replicator.Update(Updater.key, ORSet.empty[String], Replicator.WriteLocal)(_ :+ s)
         replicator ! update
     }
   }
