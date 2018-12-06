@@ -13,13 +13,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
 
 /**
- * "Pre Java 8" Java API for Akka patterns such as `ask`, `pipe` and others.
- *
- * These methods are possible to call from Java however work with the Scala [[scala.concurrent.Future]],
- * due to the lack of non-blocking reactive Future implementation before Java 8.
- *
- * For Java applications developed with Java 8 and later, you might want to use [[akka.pattern.PatternsCS]] instead,
- * which provide alternatives for these patterns which work with [[java.util.concurrent.CompletionStage]].
+ * Java API: for Akka patterns such as `ask`, `pipe` and others which work with [[java.util.concurrent.CompletionStage]].
  */
 object Patterns {
   import akka.actor.ActorRef
@@ -92,7 +86,7 @@ object Patterns {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, duration);
+   *   final CompletionStage<Object> f = Patterns.ask(worker, request, duration);
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
@@ -118,7 +112,7 @@ object Patterns {
    * sender reference in message.
    *
    * {{{
-   * final CompletionStage<Object> f = PatternsCS.askWithReplyTo(
+   * final CompletionStage<Object> f = Patterns.askWithReplyTo(
    *   worker,
    *   askSender -> new Request(askSender),
    *   timeout);
@@ -236,7 +230,7 @@ object Patterns {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = PatternsCS.ask(selection, request, duration);
+   *   final CompletionStage<Object> f = Patterns.ask(selection, request, duration);
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
@@ -334,11 +328,11 @@ object Patterns {
    * <b>Recommended usage example:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
+   *   final CompletionStage<Object> f = Patterns.ask(worker, request, timeout);
    *   // apply some transformation (i.e. enrich with request info)
    *   final CompletionStage<Object> transformed = f.thenApply(result -> { ... });
    *   // send it on to the next operator
-   *   PatternsCS.pipe(transformed, context).to(nextActor);
+   *   Patterns.pipe(transformed, context).to(nextActor);
    * }}}
    */
   def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] = pipeCompletionStage(future)(context)
