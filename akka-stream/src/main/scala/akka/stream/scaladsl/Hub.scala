@@ -431,8 +431,8 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             addConsumer(consumer, startFrom)
             // in case the consumer is already stopped we need to undo registration
             implicit val ec = materializer.executionContext
-            consumer.callback.invokeWithFeedback(Initialize(startFrom)).onComplete {
-              case scala.util.Failure(_: StreamDetachedException) ⇒
+            consumer.callback.invokeWithFeedback(Initialize(startFrom)).failed.foreach {
+              case _: StreamDetachedException ⇒
                 callbackPromise.future.foreach(callback ⇒
                   callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
                 )

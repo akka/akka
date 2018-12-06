@@ -98,10 +98,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
     if (loggingExecutionContext.isDefined) {
       implicit val context = loggingExecutionContext.get
-      Future(logger.log(record)).onComplete {
-        case scala.util.Failure(thrown: Throwable) ⇒ thrown.printStackTrace()
-        case _                                     ⇒ ()
-      }
+      Future(logger.log(record)).failed.foreach { _.printStackTrace() }
     } else
       logger.log(record)
   }

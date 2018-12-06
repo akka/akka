@@ -196,11 +196,7 @@ abstract class AeronStreamMaxThroughputSpec
             killSwitch.shutdown()
           }
           pool.release(envelope)
-        }.onComplete {
-          case Failure(e) ⇒
-            e.printStackTrace
-          case Success(_) ⇒
-        }
+        }.failed.foreach { _.printStackTrace }
 
       enterBarrier(receiverName + "-started")
       Await.ready(done, barrierTimeout)

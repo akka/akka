@@ -137,10 +137,7 @@ abstract class AeronStreamConsistencySpec
                 done.countDown()
             }
             pool.release(envelope)
-          }.onComplete {
-            case Failure(e) ⇒ e.printStackTrace
-            case Success(_) ⇒
-          }
+          }.failed.foreach { _.printStackTrace }
 
         within(10.seconds) {
           Source(1 to 100).map { _ ⇒

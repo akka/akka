@@ -396,9 +396,9 @@ import akka.util.ccompat._
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
         callback.invokeWithFeedback(Pull(p))
-          .onComplete {
-            case scala.util.Failure(NonFatal(e)) ⇒ p.tryFailure(e)
-            case _                               ⇒ ()
+          .failed.foreach {
+            case NonFatal(e) ⇒ p.tryFailure(e)
+            case _           ⇒ ()
           }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
