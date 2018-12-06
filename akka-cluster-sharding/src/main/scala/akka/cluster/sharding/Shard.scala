@@ -354,8 +354,8 @@ private[akka] class Shard(
   def getOrCreateEntity(id: EntityId, onCreate: ActorRef ⇒ Unit = ConstantFun.scalaAnyToUnit): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
-      case Some(child) => child
-      case None =>
+      case Some(child) ⇒ child
+      case None ⇒
         log.debug("Starting entity [{}] in shard [{}]", id, shardId)
         val a = context.watch(context.actorOf(entityProps(id), name))
         idByRef = idByRef.updated(a, id)
