@@ -91,7 +91,7 @@ public class PatternsTest extends JUnitSuite {
     @Test
     public void testCSAsk() throws Exception {
         ActorRef target = system.actorOf(Props.create(JavaAPITestActor.class));
-        CompletionStage<String> result = PatternsCS.ask(target, "hello", 3000).thenApply(o -> (String)o);
+        CompletionStage<String> result = Patterns.ask(target, "hello", Duration.ofSeconds(3)).thenApply(o -> (String)o);
 
         String actual = result.toCompletableFuture().get(3, SECONDS);
         assertEquals(JavaAPITestActor.ANSWER, actual);
@@ -102,7 +102,7 @@ public class PatternsTest extends JUnitSuite {
         ActorRef target = system.actorOf(Props.create(JavaAPITestActor.class), "test3");
 
         ActorSelection selection = system.actorSelection("/user/test3");
-        ActorIdentity id = PatternsCS.ask(selection, new Identify("hello"), 3000)
+        ActorIdentity id = Patterns.ask(selection, new Identify("hello"), Duration.ofSeconds(3))
                 .toCompletableFuture()
                 .thenApply(o -> (ActorIdentity)o)
                 .get(3, SECONDS);
@@ -115,7 +115,7 @@ public class PatternsTest extends JUnitSuite {
         final String expected = "hello";
 
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
-        final CompletionStage<String> response = PatternsCS
+        final CompletionStage<String> response = Patterns
                 .askWithReplyTo(
                         echo,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
@@ -132,11 +132,11 @@ public class PatternsTest extends JUnitSuite {
         final String expected = "hello";
 
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
-        final CompletionStage<String> response = PatternsCS
+        final CompletionStage<String> response = Patterns
                 .askWithReplyTo(
                         echo,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000
+                        Duration.ofSeconds(3)
                 )
                 .thenApply(o -> (String)o);
 
@@ -150,11 +150,11 @@ public class PatternsTest extends JUnitSuite {
 
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
         final ActorSelection selection = system.actorSelection(echo.path());
-        final CompletionStage<String> response = PatternsCS
+        final CompletionStage<String> response = Patterns
                 .askWithReplyTo(
                         selection,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000
+                        Duration.ofSeconds(3)
                 )
                 .thenApply(o -> (String)o);
 
@@ -268,7 +268,7 @@ public class PatternsTest extends JUnitSuite {
         Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture(expected);
 
         CompletionStage<String> retriedStage =
-                PatternsCS.retry(
+                Patterns.retry(
                         attempt,
                         3,
                         Duration.ofMillis(200),
@@ -369,7 +369,7 @@ public class PatternsTest extends JUnitSuite {
             return f;
         };
 
-        CompletionStage<String> delayedStage = PatternsCS
+        CompletionStage<String> delayedStage = Patterns
                 .after(
                         Duration.ofMillis(200),
                         system.scheduler(),
@@ -387,7 +387,7 @@ public class PatternsTest extends JUnitSuite {
             return f;
         };
 
-        CompletionStage<String> delayedStage = PatternsCS
+        CompletionStage<String> delayedStage = Patterns
                 .after(
                         Duration.ofMillis(200),
                         system.scheduler(),
@@ -406,7 +406,7 @@ public class PatternsTest extends JUnitSuite {
             return f;
         };
 
-        CompletionStage<String> delayedStage = PatternsCS
+        CompletionStage<String> delayedStage = Patterns
                 .after(
                         Duration.ofMillis(200),
                         system.scheduler(),
@@ -423,7 +423,7 @@ public class PatternsTest extends JUnitSuite {
 
         final CompletionStage<String> f = CompletableFuture.completedFuture(expected);
 
-        CompletionStage<String> delayedStage = PatternsCS
+        CompletionStage<String> delayedStage = Patterns
                 .after(
                         Duration.ofMillis(200),
                         system.scheduler(),
@@ -440,7 +440,7 @@ public class PatternsTest extends JUnitSuite {
 
         final CompletionStage<String> f = CompletableFuture.completedFuture("world!");
 
-        CompletionStage<String> delayedStage = PatternsCS
+        CompletionStage<String> delayedStage = Patterns
                 .after(
                         Duration.ofMillis(200),
                         system.scheduler(),
@@ -466,7 +466,7 @@ public class PatternsTest extends JUnitSuite {
     @Test
     public void testCSGracefulStop() throws Exception {
         ActorRef target = system.actorOf(Props.create(StopActor.class));
-        CompletionStage<Boolean> result = PatternsCS.gracefulStop(target, Duration.ofMillis(200));
+        CompletionStage<Boolean> result = Patterns.gracefulStop(target, Duration.ofMillis(200));
 
         Boolean actual = result.toCompletableFuture().get(3, SECONDS);
         assertEquals(true, actual);
