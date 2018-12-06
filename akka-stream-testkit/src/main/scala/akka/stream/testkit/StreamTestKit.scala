@@ -144,6 +144,14 @@ object TestPublisher {
     }
 
     /**
+      * Expect no messages.
+      */
+    def expectNoMessage(): Self = executeAfterSubscription {
+      probe.expectNoMessage()
+      self
+    }
+
+    /**
      * Expect no messages for a given duration.
      */
     def expectNoMessage(max: FiniteDuration): Self = executeAfterSubscription {
