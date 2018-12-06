@@ -833,6 +833,7 @@ object Logging {
 
   /** INTERNAL API, Marker interface for LogEvents containing Markers, which can be set for example on an slf4j logger */
   sealed trait LogEventWithMarker extends LogEvent {
+    /** Marker attribute is nullable due to backward binary compatibility in the class `Warning4` */
     def marker: LogMarker
     /** Appends the marker to the Debug/Info/Warning/Error toString representations */
     override def toString = {
