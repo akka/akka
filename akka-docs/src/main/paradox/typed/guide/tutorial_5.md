@@ -105,7 +105,7 @@ Java
 
 For `RespondTemperature` and `DeviceTerminated` we keep track of the replies by updating `repliesSoFar` and remove the actor from `stillWaiting`, and then delegate to a method `respondWhenAllCollected`, which we will discuss soon.
 
-In the case of timeout, we need to take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply.
+In the case of timeout, we need to take all the actors that have not yet replied (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply.
 
 
 We now have to figure out what to do in `respondWhenAllCollected`. First, we need to record the new result in the map `repliesSoFar` and remove the actor from `stillWaiting`. The next step is to check if there are any remaining actors we are waiting for. If there is none, we send the result of the query to the original requester and stop the query actor. Otherwise, we need to update the `repliesSoFar` and `stillWaiting` structures and wait for more messages.
