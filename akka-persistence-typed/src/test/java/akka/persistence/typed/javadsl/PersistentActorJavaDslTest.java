@@ -472,20 +472,20 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public void tapPersistentActor() {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
-    BehaviorInterceptor<Object, Object> tap = new BehaviorInterceptor<Object, Object>() {
+    BehaviorInterceptor<Command, Command> tap = new BehaviorInterceptor<Command, Command>() {
       @Override
-      public Behavior<Object> aroundReceive(ActorContext<Object> ctx, Object msg, ReceiveTarget<Object> target) {
+      public Behavior<Command> aroundReceive(ActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
         interceptProbe.ref().tell(msg);
         return target.apply(ctx, msg);
       }
 
       @Override
-      public Behavior<Object> aroundSignal(ActorContext<Object> ctx, Signal signal, SignalTarget<Object> target) {
+      public Behavior<Command> aroundSignal(ActorContext<Command> ctx, Signal signal, SignalTarget<Command> target) {
         signalProbe.ref().tell(signal);
         return target.apply(ctx, signal);
       }
     };
-    ActorRef<Command> c = testKit.spawn(Behaviors.intercept(tap, ((Behavior)counter(new PersistenceId("tap1")))));
+    ActorRef<Command> c = testKit.spawn(Behaviors.intercept(tap, counter(new PersistenceId("tap1"))));
     c.tell(Increment.instance);
     interceptProbe.expectMessage(Increment.instance);
     signalProbe.expectNoMessage();
