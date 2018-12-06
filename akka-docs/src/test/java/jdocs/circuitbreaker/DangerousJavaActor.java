@@ -12,7 +12,7 @@ import java.time.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.pipe;
 
 import java.util.concurrent.CompletableFuture;
 

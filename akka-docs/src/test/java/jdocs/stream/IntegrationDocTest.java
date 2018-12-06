@@ -20,7 +20,6 @@ import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -33,7 +32,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import static akka.pattern.PatternsCS.ask;
+import static akka.pattern.Patterns.ask;
 import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
@@ -602,7 +601,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
         final RunnableGraph<NotUsed> saveTweets =
           akkaTweets
-            .mapAsync(4, tweet -> ask(database, new Save(tweet), 300))
+            .mapAsync(4, tweet -> ask(database, new Save(tweet), Duration.ofMillis(300L)))
             .to(Sink.ignore());
         //#save-tweets
 

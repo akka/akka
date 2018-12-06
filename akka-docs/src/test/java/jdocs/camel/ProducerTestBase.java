@@ -4,16 +4,17 @@
 
 package jdocs.camel;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import akka.pattern.Patterns;
 import akka.testkit.javadsl.TestKit;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.camel.CamelMessage;
-import akka.pattern.PatternsCS;
 
 public class ProducerTestBase {
   public void tellJmsProducer() {
@@ -33,7 +34,8 @@ public class ProducerTestBase {
     ActorSystem system = ActorSystem.create("some-system");
     Props props = Props.create(FirstProducer.class);
     ActorRef producer = system.actorOf(props,"myproducer");
-    CompletionStage<Object> future = PatternsCS.ask(producer, "some request", 1000);
+    CompletionStage<Object> future = Patterns.ask(producer, "some request",
+                                                  Duration.ofMillis(1000L));
     //#AskProducer
     system.stop(producer);
     TestKit.shutdownActorSystem(system);

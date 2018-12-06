@@ -39,13 +39,13 @@ import akka.actor.ActorSelection;
 import akka.actor.Identify;
 //#import-identify
 //#import-ask
-import static akka.pattern.PatternsCS.ask;
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.ask;
+import static akka.pattern.Patterns.pipe;
 
 import java.util.concurrent.CompletableFuture;
 //#import-ask
 //#import-gracefulStop
-import static akka.pattern.PatternsCS.gracefulStop;
+import static akka.pattern.Patterns.gracefulStop;
 import akka.pattern.AskTimeoutException;
 import java.util.concurrent.CompletionStage;
 
@@ -80,7 +80,7 @@ public class ActorDocTest extends AbstractJavaTest {
   //#context-actorOf
   public class FirstActor extends AbstractActor {
     final ActorRef child = getContext().actorOf(Props.create(MyActor.class), "myChild");
-    
+
     //#plus-some-behavior
     @Override
     public Receive createReceive() {
@@ -102,15 +102,15 @@ public class ActorDocTest extends AbstractJavaTest {
     }
     //#createReceive
   }
-  
-  static 
+
+  static
   //#well-structured
   public class WellStructuredActor extends AbstractActor {
-    
+
     public static class Msg1 {}
     public static class Msg2 {}
     public static class Msg3 {}
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -119,29 +119,29 @@ public class ActorDocTest extends AbstractJavaTest {
         .match(Msg3.class, this::receiveMsg3)
         .build();
     }
-    
+
     private void receiveMsg1(Msg1 msg) {
       // actual work
     }
-    
+
     private void receiveMsg2(Msg2 msg) {
       // actual work
     }
-    
+
     private void receiveMsg3(Msg3 msg) {
       // actual work
     }
   }
   //#well-structured
-  
-  static 
+
+  static
   //#optimized
   public class OptimizedActor extends UntypedAbstractActor {
-    
+
     public static class Msg1 {}
     public static class Msg2 {}
     public static class Msg3 {}
-    
+
     @Override
     public void onReceive(Object msg) throws Exception {
       if (msg instanceof Msg1)
@@ -153,15 +153,15 @@ public class ActorDocTest extends AbstractJavaTest {
       else
         unhandled(msg);
     }
-    
+
     private void receiveMsg1(Msg1 msg) {
       // actual work
     }
-    
+
     private void receiveMsg2(Msg2 msg) {
       // actual work
     }
-    
+
     private void receiveMsg3(Msg3 msg) {
       // actual work
     }
@@ -174,7 +174,7 @@ public class ActorDocTest extends AbstractJavaTest {
     public ActorWithArgs(String args) {
       this.args = args;
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder().matchAny(x -> { }).build();
@@ -197,11 +197,11 @@ public class ActorDocTest extends AbstractJavaTest {
     }
 
     private final Integer magicNumber;
-    
+
     public DemoActor(Integer magicNumber) {
       this.magicNumber = magicNumber;
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -243,7 +243,7 @@ public class ActorDocTest extends AbstractJavaTest {
         return from;
       }
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -255,23 +255,23 @@ public class ActorDocTest extends AbstractJavaTest {
   }
   //#messages-in-companion
 
-  
+
   public static class LifecycleMethods extends AbstractActor {
 
     @Override
     public Receive createReceive() {
       return AbstractActor.emptyBehavior();
     }
-    
+
     /*
      * This section must be kept in sync with the actual Actor trait.
-     * 
+     *
      * BOYSCOUT RULE: whenever you read this, verify that!
      */
     //#lifecycle-callbacks
     public void preStart() {
     }
-  
+
     public void preRestart(Throwable reason, Optional<Object> message) {
       for (ActorRef each : getContext().getChildren()) {
         getContext().unwatch(each);
@@ -279,25 +279,25 @@ public class ActorDocTest extends AbstractJavaTest {
       }
       postStop();
     }
-  
+
     public void postRestart(Throwable reason) {
       preStart();
     }
-  
+
     public void postStop() {
     }
     //#lifecycle-callbacks
-    
+
   }
-  
+
   public static class Hook extends AbstractActor {
     ActorRef target = null;
-    
+
     @Override
     public Receive createReceive() {
       return AbstractActor.emptyBehavior();
     }
-    
+
     //#preStart
     @Override
     public void preStart() {
@@ -345,7 +345,7 @@ public class ActorDocTest extends AbstractJavaTest {
   }
 
   public static class ReplyException extends AbstractActor {
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -397,7 +397,7 @@ public class ActorDocTest extends AbstractJavaTest {
         .matchEquals("job", s ->
             getSender().tell("service unavailable, shutting down", getSelf())
         )
-        .match(Terminated.class, t -> t.actor().equals(worker), t -> 
+        .match(Terminated.class, t -> t.actor().equals(worker), t ->
           getContext().stop(getSelf())
         )
         .build();
@@ -536,7 +536,7 @@ public class ActorDocTest extends AbstractJavaTest {
       // To set an initial delay
       getContext().setReceiveTimeout(Duration.ofSeconds(10));
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -598,11 +598,11 @@ public class ActorDocTest extends AbstractJavaTest {
         })
         .build();
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("foo", s -> 
+        .matchEquals("foo", s ->
           getContext().become(angry)
         )
         .matchEquals("bar", s ->
@@ -669,7 +669,7 @@ public class ActorDocTest extends AbstractJavaTest {
     public WatchActor() {
       getContext().watch(child); // <-- this is the only call needed for registration
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -706,7 +706,7 @@ public class ActorDocTest extends AbstractJavaTest {
       ActorSelection selection = getContext().actorSelection("/user/another");
       selection.tell(new Identify(identifyId), getSelf());
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -720,7 +720,7 @@ public class ActorDocTest extends AbstractJavaTest {
         })
         .build();
     }
-    
+
     final AbstractActor.Receive active(final ActorRef another) {
       return receiveBuilder()
         .match(Terminated.class, t -> t.actor().equals(another), t ->
@@ -744,7 +744,7 @@ public class ActorDocTest extends AbstractJavaTest {
       }
     };
   }
-  
+
   @Test
   public void usePatternsAskPipe() {
     new TestKit(system) {
@@ -754,11 +754,11 @@ public class ActorDocTest extends AbstractJavaTest {
         ActorRef actorC = getRef();
 
         //#ask-pipe
-        Timeout t = Timeout.create(Duration.ofSeconds(5));
+        final Duration t = Duration.ofSeconds(5);
 
         // using 1000ms timeout
         CompletableFuture<Object> future1 =
-          ask(actorA, "request", 1000).toCompletableFuture();
+          ask(actorA, "request", Duration.ofMillis(1000)).toCompletableFuture();
 
         // using timeout from above
         CompletableFuture<Object> future2 =
@@ -774,12 +774,12 @@ public class ActorDocTest extends AbstractJavaTest {
 
         pipe(transformed, system.dispatcher()).to(actorC);
         //#ask-pipe
-        
+
         expectMsgEquals(new Result("request", "another request"));
       }
     };
   }
-  
+
   @Test
   public void useKill() {
     new TestKit(system) {
@@ -788,14 +788,14 @@ public class ActorDocTest extends AbstractJavaTest {
         watch(victim);
         //#kill
         victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
-        
+
         // expecting the actor to indeed terminate:
         expectTerminated(Duration.ofSeconds(3), victim);
         //#kill
       }
     };
   }
-  
+
   @Test
   public void usePoisonPill() {
     new TestKit(system) {
@@ -809,7 +809,7 @@ public class ActorDocTest extends AbstractJavaTest {
       }
     };
   }
-  
+
   @Test
   public void coordinatedShutdown() {
     final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
@@ -817,7 +817,7 @@ public class ActorDocTest extends AbstractJavaTest {
     CoordinatedShutdown.get(system).addTask(
       CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskName",
       () -> {
-        return akka.pattern.PatternsCS.ask(someActor, "stop", new Timeout(5, TimeUnit.SECONDS))
+        return akka.pattern.Patterns.ask(someActor, "stop", Duration.ofSeconds(5))
           .thenApply(reply -> Done.getInstance());
     });
     //#coordinated-shutdown-addTask

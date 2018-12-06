@@ -7,14 +7,13 @@ package jdocs.actor.io.dns;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.io.Dns;
-import akka.io.IO;
 import akka.io.dns.DnsProtocol;
 
-import static akka.pattern.PatternsCS.ask;
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.ask;
 
 import scala.Option;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 
@@ -23,7 +22,7 @@ public class DnsCompileOnlyDocTest {
         ActorSystem system = ActorSystem.create();
 
         ActorRef actorRef = null;
-        long timeout = 1000;
+        final Duration timeout = Duration.ofMillis(1000L);
 
         //#resolve
         Option<Dns.Resolved> initial = Dns.get(system).cache().resolve("google.com", system, actorRef);
