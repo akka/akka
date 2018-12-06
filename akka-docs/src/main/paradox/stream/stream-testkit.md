@@ -67,7 +67,7 @@ used for writing stream tests that use familiar `TestProbe` from the
 `akka-testkit` API.
 
 One of the more straightforward tests would be to materialize stream to a
-@scala[`Future`]@java[`CompletionStage`] and then use @scala[`pipe`]@java[`PatternsCS.pipe`] pattern to pipe the result of that future
+@scala[`Future`]@java[`CompletionStage`] and then use @scala[`pipe`]@java[`Patterns.pipe`] pattern to pipe the result of that future
 to the probe.
 
 Scala
