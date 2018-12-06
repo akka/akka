@@ -23,7 +23,8 @@ private class BackoffOnRestartSupervisor(
   val reset:             BackoffReset,
   randomFactor:          Double,
   strategy:              OneForOneStrategy,
-  val replyWhileStopped: Option[Any])
+  val replyWhileStopped: Option[Any],
+  val finalStopMessage:  Option[Any ⇒ Boolean])
   extends Actor with HandleBackoff
   with ActorLogging {
 
@@ -75,10 +76,11 @@ private class BackoffOnRestartSupervisor(
   }
 
   def onTerminated: Receive = {
-    case Terminated(child) ⇒
-      log.debug(s"Terminating, because child [$child] terminated itself")
+    case Terminated(c) ⇒
+      log.debug(s"Terminating, because child [$c] terminated itself")
       stop(self)
   }
 
   def receive = onTerminated orElse handleBackoff
+
 }
