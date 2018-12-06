@@ -9,7 +9,7 @@ import akka.annotation.InternalApi
 /**
  * A marker trait for internal messages.
  */
-@InternalApi sealed trait InternalMessage
+@InternalApi private[akka] sealed trait InternalMessage
 
 /**
  * INTERNAL API: Wrapping of messages that should be adapted by
