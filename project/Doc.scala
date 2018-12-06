@@ -5,13 +5,15 @@
 package akka
 
 import sbt._
-import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
+import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocProjectFilter}
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
+
+import sbt.ScopeFilter.ProjectFilter
 
 object Scaladoc extends AutoPlugin {
 
@@ -100,7 +102,7 @@ object UnidocRoot extends AutoPlugin {
   }
 
   object autoImport {
-    val unidocRootIgnoreProjects = settingKey[Seq[Project]]("Projects to ignore when generating unidoc")
+    val unidocRootIgnoreProjects = settingKey[Seq[ProjectReference]]("Projects to ignore when generating unidoc")
   }
   import autoImport._
 
@@ -113,7 +115,7 @@ object UnidocRoot extends AutoPlugin {
     Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"))).getOrElse(Nil)
 
   override lazy val projectSettings = {
-    def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
+    def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter = 
       ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
 
     inTask(unidoc)(Seq(

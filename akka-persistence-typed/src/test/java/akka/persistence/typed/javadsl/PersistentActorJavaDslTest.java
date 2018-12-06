@@ -37,7 +37,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
-import static akka.persistence.typed.scaladsl.PersistentBehaviorSpec.*;
+import static akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec.*;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -263,7 +263,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     EventAdapter<Incremented, A> transformer) {
 
     return Behaviors.setup(ctx -> {
-      return new PersistentBehavior<Command, Incremented, State>(persistentId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1)) {
+      return new EventSourcedBehavior<Command, Incremented, State>(persistentId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1)) {
         @Override
         public CommandHandler<Command, Incremented, State> commandHandler() {
           return commandHandlerBuilder(State.class)

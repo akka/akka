@@ -868,33 +868,47 @@ private[stream] object Collect {
  */
 @InternalApi private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends SimpleLinearGraphStage[T] {
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+    override protected def logSource: Class[_] = classOf[Buffer[_]]
 
     private var buffer: BufferImpl[T] = _
 
     val enqueueAction: T ⇒ Unit =
       overflowStrategy match {
-        case DropHead ⇒ elem ⇒
-          if (buffer.isFull) buffer.dropHead()
+        case s: DropHead ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+            buffer.dropHead()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case DropTail ⇒ elem ⇒
-          if (buffer.isFull) buffer.dropTail()
+        case s: DropTail ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+            buffer.dropTail()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case DropBuffer ⇒ elem ⇒
-          if (buffer.isFull) buffer.clear()
+        case s: DropBuffer ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+            buffer.clear()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case DropNew ⇒ elem ⇒
+        case s: DropNew ⇒ elem ⇒
           if (!buffer.isFull) buffer.enqueue(elem)
+          else log.log(s.logLevel, "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
           pull(in)
-        case Backpressure ⇒ elem ⇒
+        case s: Backpressure ⇒ elem ⇒
           buffer.enqueue(elem)
           if (!buffer.isFull) pull(in)
-        case Fail ⇒ elem ⇒
-          if (buffer.isFull) failStage(new BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
-          else {
+          else log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
+        case s: Fail ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+            failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
+          } else {
             buffer.enqueue(elem)
             pull(in)
           }
@@ -1648,31 +1662,31 @@ private[stream] object Collect {
           }
           grabAndPull()
         }
-      case DropHead ⇒
+      case _: DropHead ⇒
         () ⇒ {
           buffer.dropHead()
           grabAndPull()
         }
-      case DropTail ⇒
+      case _: DropTail ⇒
         () ⇒ {
           buffer.dropTail()
           grabAndPull()
         }
-      case DropNew ⇒
+      case _: DropNew ⇒
         () ⇒ {
           grab(in)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
         }
-      case DropBuffer ⇒
+      case _: DropBuffer ⇒
         () ⇒ {
           buffer.clear()
           grabAndPull()
         }
-      case Fail ⇒
+      case _: Fail ⇒
         () ⇒ {
-          failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+          failStage(BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
         }
-      case Backpressure ⇒
+      case _: Backpressure ⇒
         () ⇒ {
           throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
         }
@@ -1690,7 +1704,7 @@ private[stream] object Collect {
     }
 
     def pullCondition: Boolean =
-      strategy != Backpressure || buffer.used < size
+      !strategy.isBackpressure || buffer.used < size
 
     def grabAndPull(): Unit = {
       buffer.enqueue((System.nanoTime(), grab(in)))

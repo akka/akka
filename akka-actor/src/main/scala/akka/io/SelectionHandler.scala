@@ -6,21 +6,25 @@ package akka.io
 
 import java.util.{ Iterator ⇒ JIterator }
 import java.util.concurrent.atomic.AtomicBoolean
-import java.nio.channels.{ SelectableChannel, SelectionKey, CancelledKeyException }
+import java.nio.channels.{ CancelledKeyException, SelectableChannel, SelectionKey }
 import java.nio.channels.SelectionKey._
 import java.nio.channels.spi.SelectorProvider
+
 import com.typesafe.config.Config
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.Helpers.Requiring
 import akka.util.SerializedSuspendableExecutionContext
 import akka.actor._
 import akka.routing.RandomPool
 import akka.event.Logging
 import java.nio.channels.ClosedChannelException
+
+import scala.util.Try
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -60,11 +64,10 @@ private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded 
   def disableInterest(op: Int): Unit
 
   /**
-   * Explicitly cancel the registration
-   *
-   * This wakes up the selector to make sure the cancellation takes effect immediately.
+   * Explicitly cancel the registration and close the underlying channel. Then run the given `andThen` method.
+   * The `andThen` method is run from another thread so make sure it's safe to execute from there.
    */
-  def cancel(): Unit
+  def cancelAndClose(andThen: () ⇒ Unit): Unit
 }
 
 private[io] object SelectionHandler {
@@ -117,7 +120,7 @@ private[io] object SelectionHandler {
         } else super.logFailure(context, child, cause, decision)
     }
 
-  private class ChannelRegistryImpl(executionContext: ExecutionContext, log: LoggingAdapter) extends ChannelRegistry {
+  private class ChannelRegistryImpl(executionContext: ExecutionContext, settings: SelectionHandlerSettings, log: LoggingAdapter) extends ChannelRegistry {
     private[this] val selector = SelectorProvider.provider.openSelector
     private[this] val wakeUp = new AtomicBoolean(false)
 
@@ -164,21 +167,19 @@ private[io] object SelectionHandler {
 
     executionContext.execute(select) // start selection "loop"
 
-    def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit =
+    def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit = {
+      if (settings.TraceLogging) log.debug(s"Scheduling Registering channel $channel with initialOps $initialOps")
       execute {
         new Task {
           def tryRun(): Unit = try {
+            if (settings.TraceLogging) log.debug(s"Registering channel $channel with initialOps $initialOps")
             val key = channel.register(selector, initialOps, channelActor)
             channelActor ! new ChannelRegistration {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
+
               def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
-              def cancel(): Unit = {
-                // On Windows the selector does not effectively cancel the registration until after the
-                // selector has woken up. Because here the registration is explicitly cancelled, the selector
-                // will be woken up which makes sure the cancellation (e.g. sending a RST packet for a cancelled TCP connection)
-                // is performed immediately.
-                cancelKey(key)
-              }
+
+              def cancelAndClose(andThen: () ⇒ Unit): Unit = cancelKeyAndClose(key, andThen)
             }
           } catch {
             case _: ClosedChannelException ⇒
@@ -186,6 +187,7 @@ private[io] object SelectionHandler {
           }
         }
       }
+    }
 
     def shutdown(): Unit =
       execute {
@@ -208,6 +210,7 @@ private[io] object SelectionHandler {
       execute {
         new Task {
           def tryRun(): Unit = {
+            if (settings.TraceLogging) log.debug(s"Enabling $ops on $key")
             val currentOps = key.interestOps
             val newOps = currentOps | ops
             if (newOps != currentOps) key.interestOps(newOps)
@@ -215,10 +218,30 @@ private[io] object SelectionHandler {
         }
       }
 
-    private def cancelKey(key: SelectionKey): Unit =
+    private def cancelKeyAndClose(key: SelectionKey, andThen: () ⇒ Unit): Unit =
       execute {
         new Task {
-          def tryRun(): Unit = key.cancel()
+          def tryRun(): Unit = {
+            Try(key.cancel())
+            Try(key.channel().close())
+
+            // In JDK 11 (and for Windows also in previous JDKs), it is necessary to completely flush a cancelled / closed channel
+            // from the selector to close a channel completely on the OS level.
+            // We want select to be called before we call the thunk, so we schedule the thunk here which will run it
+            // after the next select call.
+            // (It's tempting to just call `selectNow` here, instead of registering the thunk, but that can mess up
+            // the wakeUp state of the selector leading to selection operations being stuck behind the next selection
+            // until that returns regularly the next time.)
+
+            runThunk(andThen)
+          }
+        }
+      }
+
+    private def runThunk(andThen: () ⇒ Unit): Unit =
+      execute {
+        new Task {
+          def tryRun(): Unit = andThen()
         }
       }
 
@@ -262,7 +285,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
   private[this] var childCount = 0
   private[this] val registry = {
     val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
-    new ChannelRegistryImpl(SerializedSuspendableExecutionContext(dispatcher.throughput)(dispatcher), log)
+    new ChannelRegistryImpl(SerializedSuspendableExecutionContext(dispatcher.throughput)(dispatcher), settings, log)
   }
 
   def receive: Receive = {

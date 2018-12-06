@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
-import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -62,7 +61,7 @@ object ClusterShardingSpec {
           "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$IdTestProtocol" = test
         }
       }
-    """.stripMargin)
+    """)
 
   sealed trait TestProtocol extends java.io.Serializable
   final case class ReplyPlz(toMe: ActorRef[String]) extends TestProtocol
@@ -131,23 +130,10 @@ object ClusterShardingSpec {
 
   final case class TheReply(s: String)
 
-}
+  val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
+  val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
 
-class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
-  import ClusterShardingSpec._
-
-  val sharding = ClusterSharding(system)
-
-  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = system.settings.config)
-  val sharding2 = ClusterSharding(system2)
-
-  override def afterAll(): Unit = {
-    ActorTestKit.shutdown(system2, 5.seconds)
-    super.afterAll()
-  }
-
-  private val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  private def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[String]] = None) =
+  def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[String]] = None) =
     Behaviors.receive[TestProtocol] {
       case (ctx, PassivatePlz()) ⇒
         shard ! ClusterSharding.Passivate(ctx.self)
@@ -171,8 +157,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
         Behaviors.same
     }
 
-  private val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
-  private def behaviorWithId(shard: ActorRef[ClusterSharding.ShardCommand]) = Behaviors.receive[IdTestProtocol] {
+  def behaviorWithId(shard: ActorRef[ClusterSharding.ShardCommand]) = Behaviors.receive[IdTestProtocol] {
     case (_, IdStopPlz()) ⇒
       Behaviors.stopped
 
@@ -184,6 +169,27 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     case (_, IdReplyPlz(_, toMe)) ⇒
       toMe ! "Hello!"
       Behaviors.same
+  }
+
+  val idTestProtocolMessageExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+    case IdReplyPlz(id, _)  ⇒ id
+    case IdWhoAreYou(id, _) ⇒ id
+    case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+  }
+}
+
+class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
+
+  import ClusterShardingSpec._
+
+  val sharding = ClusterSharding(system)
+
+  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = system.settings.config)
+  val sharding2 = ClusterSharding(system2)
+
+  override def afterAll(): Unit = {
+    ActorTestKit.shutdown(system2, 5.seconds)
+    super.afterAll()
   }
 
   private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.init(Entity(
@@ -210,12 +216,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
   private val shardingRef4 = sharding2.init(Entity(
     typeKey2,
     ctx ⇒ behaviorWithId(ctx.shard))
-    .withMessageExtractor(
-      ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
-        case IdReplyPlz(id, _)  ⇒ id
-        case IdWhoAreYou(id, _) ⇒ id
-        case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-      })
+    .withMessageExtractor(idTestProtocolMessageExtractor)
     .withStopMessage(IdStopPlz())
   )
 

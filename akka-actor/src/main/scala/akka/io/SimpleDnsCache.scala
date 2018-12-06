@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
 import akka.io.Dns.Resolved
+import akka.io.dns.CachePolicy._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -36,10 +37,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
   }
 
   @tailrec
-  private[io] final def put(r: Resolved, ttlMillis: Long): Unit = {
+  private[io] final def put(r: Resolved, ttl: CachePolicy): Unit = {
     val c = cache.get()
-    if (!cache.compareAndSet(c, c.put(r.name, r, ttlMillis)))
-      put(r, ttlMillis)
+    if (!cache.compareAndSet(c, c.put(r.name, r, ttl)))
+      put(r, ttl)
   }
 
   @tailrec
@@ -64,9 +65,12 @@ object SimpleDnsCache {
       } yield e.answer
     }
 
-    def put(name: K, answer: V, ttlMillis: Long): Cache[K, V] = {
-      val until0 = clock() + ttlMillis
-      val until = if (until0 < 0) Long.MaxValue else until0
+    def put(name: K, answer: V, ttl: CachePolicy): Cache[K, V] = {
+      val until = ttl match {
+        case Forever  ⇒ Long.MaxValue
+        case Never    ⇒ clock() - 1
+        case Ttl(ttl) ⇒ clock() + ttl.toMillis
+      }
 
       new Cache[K, V](
         queue + new ExpiryEntry[K](name, until),

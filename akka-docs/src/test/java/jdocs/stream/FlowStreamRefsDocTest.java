@@ -9,7 +9,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.pattern.PatternsCS;
+import akka.pattern.Patterns;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
@@ -59,7 +59,7 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       Source<String, NotUsed> logs = streamLogs(requestLogs.streamId);
       CompletionStage<SourceRef<String>> logsRef = logs.runWith(StreamRefs.sourceRef(), mat);
 
-      PatternsCS.pipe(logsRef.thenApply(ref -> new LogsOffer(ref)), context().dispatcher())
+      Patterns.pipe(logsRef.thenApply(ref -> new LogsOffer(ref)), context().dispatcher())
           .to(sender());
     }
 
@@ -111,7 +111,7 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
             Sink<String, NotUsed> sink = logsSinkFor(prepare.id);
             CompletionStage<SinkRef<String>> sinkRef = StreamRefs.<String>sinkRef().to(sink).run(mat);
 
-            PatternsCS.pipe(sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)), context().dispatcher())
+            Patterns.pipe(sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)), context().dispatcher())
                 .to(sender());
           })
           .build();

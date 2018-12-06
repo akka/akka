@@ -31,6 +31,34 @@ final case class CapturedLogEvent(
     this(logLevel, message, errorCause.asScala, marker.asScala, mdc.asScala.toMap)
   }
 
+  /**
+   * Constructor for Java API
+   */
+  def this(logLevel: LogLevel, message: String) {
+    this(logLevel, message, Option.empty, Option.empty, Map.empty[String, Any])
+  }
+
+  /**
+   * Constructor for Java API
+   */
+  def this(logLevel: LogLevel, message: String, errorCause: Throwable) {
+    this(logLevel, message, Some(errorCause), Option.empty[LogMarker], Map.empty[String, Any])
+  }
+
+  /**
+   * Constructor for Java API
+   */
+  def this(logLevel: LogLevel, message: String, marker: LogMarker) {
+    this(logLevel, message, Option.empty[Throwable], Some(marker), Map.empty[String, Any])
+  }
+
+  /**
+   * Constructor for Java API
+   */
+  def this(logLevel: LogLevel, message: String, errorCause: Throwable, marker: LogMarker) {
+    this(logLevel, message, Some(errorCause), Some(marker), Map.empty[String, Any])
+  }
+
   def getMdc: java.util.Map[String, Any] = mdc.asJava
 
   def getErrorCause: Optional[Throwable] = cause.asJava
@@ -50,11 +78,8 @@ object CapturedLogEvent {
 
   def apply(
     logLevel: LogLevel,
-    message:  String,
-    cause:    Option[Throwable] = None,
-    marker:   Option[LogMarker] = None,
-    mdc:      Map[String, Any]  = Map.empty): CapturedLogEvent = {
-    new CapturedLogEvent(logLevel, message, cause, marker, mdc)
+    message:  String): CapturedLogEvent = {
+    CapturedLogEvent(logLevel, message, None, None, Map.empty[String, Any])
   }
 
   /**

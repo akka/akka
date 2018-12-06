@@ -8,7 +8,10 @@ import java.net.InetAddress
 
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.{ Dns, IO }
+import CachePolicy.Ttl
 import akka.pattern.ask
+import akka.testkit.SocketUtil.Both
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
 
@@ -24,10 +27,11 @@ test starts and tear it down when it finishes.
 class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   s"""
     akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
 //    akka.io.dns.async-dns.nameservers = default
-  """) with DockerBindDnsService {
+  """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
   implicit val timeout = Timeout(duration)
 
@@ -37,6 +41,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
     if (!dockerAvailable()) {
       system.log.error("Test not run as docker is not available")
       pending
+    } else {
+      system.log.info("Docker available. Running DNS tests")
     }
 
     "resolve single A record" in {
@@ -119,13 +125,13 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
     }
 
     "resolve SRV record" in {
-      val name = "service.tcp.foo.test"
-      val answer = resolve("service.tcp.foo.test", Srv)
+      val name = "_service._tcp.foo.test"
+      val answer = resolve(name, Srv)
 
       answer.name shouldEqual name
       answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
-        SRVRecord("service.tcp.foo.test", 86400, 10, 65534, 5060, "a-single.foo.test"),
-        SRVRecord("service.tcp.foo.test", 86400, 65533, 40, 65535, "a-double.foo.test")
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
       )
     }
 
@@ -152,6 +158,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
   }
 }
+
 object AsyncDnsResolverIntegrationSpec {
-  lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
+  lazy val dockerDnsServerPort: Int = SocketUtil.temporaryLocalPort(Both)
 }

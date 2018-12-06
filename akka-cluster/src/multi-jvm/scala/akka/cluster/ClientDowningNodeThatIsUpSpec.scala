@@ -4,13 +4,9 @@
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
-import scala.collection.immutable
 
 final case class ClientDowningNodeThatIsUpMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")

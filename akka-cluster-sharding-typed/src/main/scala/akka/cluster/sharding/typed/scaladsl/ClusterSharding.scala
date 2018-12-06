@@ -6,10 +6,10 @@ package akka.cluster.sharding.typed
 package scaladsl
 
 import scala.concurrent.Future
-
-import akka.util.Timeout
+import scala.collection.{ immutable â‡’ im }
 import scala.reflect.ClassTag
 
+import akka.util.Timeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -24,7 +24,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ StartEntity â‡’ UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, StartEntity â‡’ UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
@@ -190,6 +190,11 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding â
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
 
   /**
+   * Actor for querying Cluster Sharding state
+   */
+  def shardState: ActorRef[ClusterShardingQuery]
+
+  /**
    * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
    * given `settings`. This could be changed in the future.
    */
@@ -199,6 +204,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding â
    * INTERNAL API
    */
   @InternalApi private[akka] def asJava: javadsl.ClusterSharding = javadslSelf
+
 }
 
 object Entity {
@@ -208,7 +214,7 @@ object Entity {
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
-   * is very common and therefore [[PersistentEntity]] is provided as a convenience for creating such
+   * is very common and therefore [[EventSourcedEntity]] is provided as a convenience for creating such
    * `PersistentBehavior`.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster

@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPrefixAndTailSpec extends StreamSpec {

@@ -25,6 +25,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
   def dockerAvailable() = Try(client.ping()).isSuccess
 
   override def atStartup(): Unit = {
+    log.info("Running on port port {}", hostPort)
     self.atStartup()
 
     // https://github.com/sameersbn/docker-bind/pull/61
@@ -40,6 +41,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
     val containerConfig = ContainerConfig.builder()
       .image(image)
       .env("NO_CHOWN=true")
+      .cmd("-4") // only listen on ipv4
       .hostConfig(
         HostConfig.builder()
           .portBindings(Map(

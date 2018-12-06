@@ -32,7 +32,7 @@ public class FSMDocTest extends AbstractJavaTest {
     system = null;
   }
 
-  public static enum StateType {
+  public enum StateType {
     SomeState,
     Processing,
     Idle,
@@ -40,12 +40,12 @@ public class FSMDocTest extends AbstractJavaTest {
     Error
   }
 
-  public static enum Messages {
+  public enum Messages {
     WillDo,
     Tick
   }
 
-  public static enum Data {
+  public enum Data {
     Foo,
     Bar
   };

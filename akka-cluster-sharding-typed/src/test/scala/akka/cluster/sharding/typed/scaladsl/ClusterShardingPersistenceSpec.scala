@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -71,7 +72,7 @@ object ClusterShardingPersistenceSpec {
         case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
-      PersistentEntity[Command, String, String](
+      EventSourcedEntity[Command, String, String](
         entityTypeKey = typeKey,
         entityId = entityId,
         emptyState = "",
@@ -81,7 +82,7 @@ object ClusterShardingPersistenceSpec {
 
           case cmd @ AddWithConfirmation(s) ⇒
             Effect.persist(s)
-              .thenReply(cmd)(newState ⇒ Done)
+              .thenReply(cmd)(_ ⇒ Done)
 
           case Get(replyTo) ⇒
             replyTo ! s"$entityId:$state"
@@ -90,7 +91,7 @@ object ClusterShardingPersistenceSpec {
           case cmd @ PassivateAndPersist(s) ⇒
             shard ! Passivate(ctx.self)
             Effect.persist(s)
-              .thenReply(cmd)(newState ⇒ Done)
+              .thenReply(cmd)(_ ⇒ Done)
 
           case Echo(msg, replyTo) ⇒
             Effect.none.thenRun(_ ⇒ replyTo ! msg)
@@ -183,7 +184,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       (1 to 10).foreach { n ⇒
         ref ! PassivateAndPersist(n.toString)(p1.ref)
         // recoveryCompleted each time, verifies that it was actually stopped
-        recoveryProbe.expectMessage("recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
+        recoveryProbe.expectMessage(max = 10.seconds, "recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
         p1.expectMessage(Done)
       }
 

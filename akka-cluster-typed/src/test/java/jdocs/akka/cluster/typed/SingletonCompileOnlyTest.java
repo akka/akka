@@ -8,11 +8,8 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
 
 //#import
-import akka.cluster.typed.ClusterSingleton;
-import akka.cluster.typed.SingletonActor;
-
+import akka.cluster.typed.*;
 import java.time.Duration;
-
 //#import
 
 public class SingletonCompileOnlyTest {

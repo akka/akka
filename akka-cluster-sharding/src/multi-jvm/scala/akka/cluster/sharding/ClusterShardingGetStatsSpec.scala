@@ -6,7 +6,6 @@ package akka.cluster.sharding
 
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ TestDuration, TestProbe }

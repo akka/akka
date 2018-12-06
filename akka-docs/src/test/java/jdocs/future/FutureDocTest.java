@@ -7,7 +7,6 @@ package jdocs.future;
 //#imports1
 import akka.dispatch.*;
 import jdocs.AbstractJavaTest;
-import scala.Function0;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
@@ -64,15 +63,15 @@ import java.util.Arrays;
 
 //#imports8
 
-import static akka.pattern.PatternsCS.retry;
+import static akka.pattern.Patterns.retry;
 
 //#imports8
 
 //#imports-ask
-import static akka.pattern.PatternsCS.ask;
+import static akka.pattern.Patterns.ask;
 //#imports-ask
 //#imports-pipe
-import static akka.pattern.PatternsCS.pipe;
+import static akka.pattern.Patterns.pipe;
 //#imports-pipe
 
 
@@ -124,11 +123,11 @@ public class FutureDocTest extends AbstractJavaTest {
   //#pipe-to-usage
   public class ActorUsingPipeTo extends AbstractActor {
     ActorRef target;
-    Timeout  timeout;
+    Duration  timeout;
 
     ActorUsingPipeTo(ActorRef target) {
       this.target = target;
-      this.timeout = Timeout.create(Duration.ofSeconds(5));
+      this.timeout = Duration.ofSeconds(5);
     }
 
     @Override
@@ -216,7 +215,7 @@ public class FutureDocTest extends AbstractJavaTest {
   public class UserProxyActor extends AbstractActor {
     ActorRef userActor;
     ActorRef userActivityActor;
-    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    Duration timeout = Duration.ofSeconds(5);
 
     UserProxyActor(ActorRef userActor, ActorRef userActivityActor) {
       this.userActor = userActor;

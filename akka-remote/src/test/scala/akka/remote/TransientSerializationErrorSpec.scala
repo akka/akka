@@ -6,7 +6,7 @@ package akka.remote
 
 import java.io.NotSerializableException
 
-import akka.actor.{ Actor, ActorSystem, ExtendedActorSystem, Props, RootActorPath }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, RootActorPath }
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.{ AkkaSpec, TestActors, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }

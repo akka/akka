@@ -4,7 +4,9 @@
 
 package jdocs.persistence;
 
-import static akka.pattern.PatternsCS.ask;
+import static akka.pattern.Patterns.ask;
+
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,9 +20,7 @@ import akka.persistence.query.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.util.Timeout;
 
-import com.typesafe.config.ConfigFactory;
 import docs.persistence.query.MyEventsByTagPublisher;
 import org.reactivestreams.Subscriber;
 import scala.concurrent.duration.FiniteDuration;
@@ -34,13 +34,13 @@ public class PersistenceQueryDocTest {
 
   final ActorSystem system = ActorSystem.create();
   final ActorMaterializer mat = ActorMaterializer.create(system);
-  
+
   static
   //#advanced-journal-query-types
   public class RichEvent {
     public final Set<String >tags;
     public final Object payload;
-    
+
     public RichEvent(Set<String> tags, Object payload) {
       this.tags = tags;
       this.payload = payload;
@@ -70,7 +70,7 @@ public class PersistenceQueryDocTest {
     public MyReadJournalProvider(ExtendedActorSystem system, Config config) {
       this.javadslReadJournal = new MyJavadslReadJournal(system, config);
     }
-    
+
     @Override
     public MyScaladslReadJournal scaladslReadJournal() {
       return new MyScaladslReadJournal(javadslReadJournal);
@@ -79,13 +79,13 @@ public class PersistenceQueryDocTest {
     @Override
     public MyJavadslReadJournal javadslReadJournal() {
       return this.javadslReadJournal;
-    }  
+    }
   }
   //#my-read-journal
-  
+
   static
   //#my-read-journal
-  public class MyJavadslReadJournal implements 
+  public class MyJavadslReadJournal implements
   akka.persistence.query.javadsl.ReadJournal,
   akka.persistence.query.javadsl.EventsByTagQuery,
   akka.persistence.query.javadsl.EventsByPersistenceIdQuery,
@@ -95,8 +95,8 @@ public class PersistenceQueryDocTest {
     private final FiniteDuration refreshInterval;
 
     public MyJavadslReadJournal(ExtendedActorSystem system, Config config) {
-      refreshInterval = 
-          FiniteDuration.create(config.getDuration("refresh-interval", 
+      refreshInterval =
+          FiniteDuration.create(config.getDuration("refresh-interval",
               TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
     }
 
@@ -136,13 +136,13 @@ public class PersistenceQueryDocTest {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
-    
+
     @Override
     public Source<String, NotUsed> currentPersistenceIds() {
       // implement in a similar way as eventsByTag
       throw new UnsupportedOperationException("Not implemented yet");
     }
-    
+
     // possibility to add more plugin specific queries
 
     //#advanced-journal-query-definition
@@ -154,16 +154,16 @@ public class PersistenceQueryDocTest {
 
   }
   //#my-read-journal
-  
+
   static
   //#my-read-journal
-  public class MyScaladslReadJournal implements 
+  public class MyScaladslReadJournal implements
   akka.persistence.query.scaladsl.ReadJournal,
   akka.persistence.query.scaladsl.EventsByTagQuery,
   akka.persistence.query.scaladsl.EventsByPersistenceIdQuery,
   akka.persistence.query.scaladsl.PersistenceIdsQuery,
   akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
-    
+
     private final MyJavadslReadJournal javadslReadJournal;
 
     public MyScaladslReadJournal(MyJavadslReadJournal javadslReadJournal) {
@@ -179,7 +179,7 @@ public class PersistenceQueryDocTest {
     @Override
     public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByPersistenceId(
         String persistenceId, long fromSequenceNr, long toSequenceNr) {
-      return javadslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, 
+      return javadslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr,
           toSequenceNr).asScala();
     }
 
@@ -187,12 +187,12 @@ public class PersistenceQueryDocTest {
     public akka.stream.scaladsl.Source<String, NotUsed> persistenceIds() {
       return javadslReadJournal.persistenceIds().asScala();
     }
-    
+
     @Override
     public akka.stream.scaladsl.Source<String, NotUsed> currentPersistenceIds() {
       return javadslReadJournal.currentPersistenceIds().asScala();
     }
-    
+
     // possibility to add more plugin specific queries
 
     public akka.stream.scaladsl.Source<RichEvent, QueryMetadata> byTagsWithMeta(
@@ -306,13 +306,13 @@ public class PersistenceQueryDocTest {
           "infinite: " + meta.infinite);
         return meta;
       });
-    
+
     events.map(event -> {
-      System.out.println("Event payload: " + event.payload); 
+      System.out.println("Event payload: " + event.payload);
       return event.payload;
     }).runWith(Sink.ignore(), mat);
-    
-    
+
+
     //#advanced-journal-query-usage
   }
 
@@ -408,7 +408,7 @@ public class PersistenceQueryDocTest {
 
 
     //#projection-into-different-store-actor-run
-    final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
+    final Duration timeout = Duration.ofSeconds(3);
 
     final MyResumableProjection bidProjection = new MyResumableProjection("bid");
 
@@ -451,17 +451,17 @@ public class PersistenceQueryDocTest {
     public TheOneWhoWritesToQueryJournal() {
       store = new ExampleStore();
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .matchAny(message -> {
           state = updateState(state, message);
-  
+
           // example saving logic that requires state to become ready:
           if (state.readyToSave())
             store.save(Record.of(state));
-          
+
         })
         .build();
     }

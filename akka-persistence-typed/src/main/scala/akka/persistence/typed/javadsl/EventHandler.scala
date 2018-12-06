@@ -13,7 +13,7 @@ import akka.util.OptionVal
 /**
  * FunctionalInterface for reacting on events having been persisted
  *
- * Used with [[EventHandlerBuilder]] to setup the behavior of a [[PersistentBehavior]]
+ * Used with [[EventHandlerBuilder]] to setup the behavior of a [[EventSourcedBehavior]]
  */
 @FunctionalInterface
 trait EventHandler[State, Event] {

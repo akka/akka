@@ -17,8 +17,6 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object IntroSpec {
   //format: OFF

@@ -65,6 +65,7 @@ import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
     InterceptorImpl(interceptor, behavior)
 
   class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {
+
     override def receive(ctx: AC[T], msg: T): Behavior[T] = {
       Behavior.interpretMessage(first, ctx, msg) match {
         case _: UnhandledBehavior.type ⇒ Behavior.interpretMessage(second, ctx, msg)

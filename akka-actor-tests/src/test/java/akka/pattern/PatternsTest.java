@@ -232,7 +232,7 @@ public class PatternsTest extends JUnitSuite {
         TestProbe probe = new TestProbe(system);
         CompletableFuture<String> f = new CompletableFuture<>();
         f.complete("ho!");
-        PatternsCS.pipe(f, ec).to(probe.ref());
+        Patterns.pipe(f, ec).to(probe.ref());
         probe.expectMsg("ho!");
     }
 
@@ -242,7 +242,7 @@ public class PatternsTest extends JUnitSuite {
         ActorSelection selection = system.actorSelection(probe.ref().path());
         CompletableFuture<String> f = new CompletableFuture<>();
         f.complete("hi!");
-        PatternsCS.pipe(f, ec).to(selection);
+        Patterns.pipe(f, ec).to(selection);
         probe.expectMsg("hi!");
     }
 

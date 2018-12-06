@@ -13,12 +13,11 @@ import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicator }
-import akka.cluster.{ Cluster, ClusterEvent, MemberStatus, UniqueAddress }
+import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
 
 import scala.concurrent.duration._
-import scala.language.existentials
 
 /** INTERNAL API */
 @InternalApi

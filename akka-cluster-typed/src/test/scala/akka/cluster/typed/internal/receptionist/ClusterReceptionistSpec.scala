@@ -10,7 +10,7 @@ import akka.actor.{ ExtendedActorSystem, RootActorPath }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, ActorRefResolver, scaladsl }
+import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest

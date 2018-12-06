@@ -8,7 +8,6 @@ import akka.actor.{ ActorRef, PoisonPill, Props }
 import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, ActorAttributes }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.testkit.TestEvent.Mute
