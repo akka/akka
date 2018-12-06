@@ -97,7 +97,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     final CompletionStage<List<List<Integer>>> future = sourceUnderTest
       .grouped(2)
       .runWith(Sink.head(), mat);
-    akka.pattern.PatternsCS.pipe(future, system.dispatcher()).to(probe.getRef());
+    akka.pattern.Patterns.pipe(future, system.dispatcher()).to(probe.getRef());
     probe.expectMsg(Duration.ofSeconds(3), Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4)));
     //#pipeto-testprobe
   }
@@ -200,7 +200,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
   public void testSourceAndTestSink() throws Exception {
     //#test-source-and-sink
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
-      .mapAsyncUnordered(2, sleep -> akka.pattern.PatternsCS.after(
+      .mapAsyncUnordered(2, sleep -> akka.pattern.Patterns.after(
         Duration.ofMillis(10),
         system.scheduler(),
         system.dispatcher(),

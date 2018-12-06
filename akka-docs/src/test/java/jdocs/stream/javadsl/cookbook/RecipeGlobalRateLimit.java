@@ -6,13 +6,12 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.*;
-import akka.pattern.PatternsCS;
+import akka.pattern.Patterns;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
-import akka.util.Timeout;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -83,7 +82,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         getContext().getSystem().dispatcher(),
         getSelf());
     }
-    
+
     @Override
     public Receive createReceive() {
       return open();
@@ -150,7 +149,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
         return f.mapAsync(parallelism, element -> {
           final CompletionStage<Object> limiterTriggerFuture =
-            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, maxAllowedWait);
+            Patterns.ask(limiter, Limiter.WANT_TO_PASS, maxAllowedWait);
           return limiterTriggerFuture.thenApplyAsync(response -> element, system.dispatcher());
         });
       }
