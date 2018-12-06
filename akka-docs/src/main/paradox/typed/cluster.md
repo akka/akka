@@ -55,7 +55,7 @@ Java
 
 The Cluster extensions gives you access to:
 
-* manager: An `ActorRef[ClusterCommand]` where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
+* manager: An @scala[`ActorRef[ClusterCommand]`]@java[`ActorRef<ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
 * subscriptions: An `ActorRef[ClusterStateSubscription]` where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
 * state: The current `CurrentClusterState`
 

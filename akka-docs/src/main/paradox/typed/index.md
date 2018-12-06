@@ -4,6 +4,7 @@
 
 @@@ index
 
+* [guide](guide/index.md)
 * [actors](actors.md)
 * [dispatchers](dispatchers.md)
 * [coexisting](coexisting.md)

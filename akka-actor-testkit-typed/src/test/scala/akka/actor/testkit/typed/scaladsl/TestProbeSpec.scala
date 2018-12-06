@@ -158,6 +158,13 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "timeout if expected single message is not received by a provided timeout" in {
       intercept[AssertionError](createTestProbe[EventT]().receiveOne(100.millis))
     }
+
+    "support watch and stop of probe" in {
+      val probe1 = TestProbe[String]()
+      val probe2 = TestProbe[String]()
+      probe1.stop()
+      probe2.expectTerminated(probe1.ref, probe2.remainingOrDefault)
+    }
   }
 }
 
