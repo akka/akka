@@ -13,10 +13,9 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.Actor
-import akka.util.MessageBufferMap
+import akka.util.{ ConstantFun, MessageBufferMap }
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
@@ -194,8 +193,7 @@ private[akka] class Shard(
     if (passivateIdleTask.isDefined) {
       lastMessageTimestamp = lastMessageTimestamp.updated(start.entityId, System.nanoTime())
     }
-    getOrCreateEntity(start.entityId)
-    requester ! ShardRegion.StartEntityAck(start.entityId, shardId)
+    getOrCreateEntity(start.entityId, _ ⇒ processChange(EntityStarted(start.entityId))(_ ⇒ requester ! ShardRegion.StartEntityAck(start.entityId, shardId)))
   }
 
   def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
@@ -353,21 +351,22 @@ private[akka] class Shard(
     getOrCreateEntity(id).tell(payload, snd)
   }
 
-  def getOrCreateEntity(id: EntityId, onCreate: ActorRef ⇒ Unit = _ ⇒ ()): ActorRef = {
+  def getOrCreateEntity(id: EntityId, onCreate: ActorRef ⇒ Unit = ConstantFun.scalaAnyToUnit): ActorRef = {
     val name = URLEncoder.encode(id, "utf-8")
-    val entity = context.child(name).getOrElse {
-      log.debug("Starting entity [{}] in shard [{}]", id, shardId)
-      val a = context.watch(context.actorOf(entityProps(id), name))
-      idByRef = idByRef.updated(a, id)
-      refById = refById.updated(id, a)
-      if (passivateIdleTask.isDefined) {
-        lastMessageTimestamp += (id -> System.nanoTime())
-      }
-      state = state.copy(state.entities + id)
-      onCreate(a)
-      a
+    context.child(name) match {
+      case Some(child) => child
+      case None =>
+        log.debug("Starting entity [{}] in shard [{}]", id, shardId)
+        val a = context.watch(context.actorOf(entityProps(id), name))
+        idByRef = idByRef.updated(a, id)
+        refById = refById.updated(id, a)
+        if (passivateIdleTask.isDefined) {
+          lastMessageTimestamp += (id -> System.nanoTime())
+        }
+        state = state.copy(state.entities + id)
+        onCreate(a)
+        a
     }
-    entity
   }
 
   override def postStop(): Unit = {
