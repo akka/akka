@@ -48,9 +48,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
 
-  static final Incremented timeoutEvent = new Incremented(100);
-  static final Incremented terminatedEvent = new Incremented(10);
-
   private LeveldbReadJournal queries = PersistenceQuery.get(Adapter.toUntyped(testKit.system()))
     .getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
 
@@ -254,7 +251,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     private Effect<Incremented, State> timeout(State state, Timeout command) {
-      return Effect().persist(timeoutEvent);
+      return Effect().persist(new Incremented(100));
     }
 
     private Effect<Incremented, State> emptyEventsListAndThenLog(State state, EmptyEventsListAndThenLog command) {
@@ -348,7 +345,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     c.tell(Increment.INSTANCE);
     c.tell(IncrementLater.INSTANCE);
     eventHandlerProbe.expectMessage(Pair.create(State.EMPTY, new Incremented(1)));
-    eventHandlerProbe.expectMessage(Pair.create(new State(1, Collections.singletonList(0)), terminatedEvent));
+    eventHandlerProbe.expectMessage(Pair.create(new State(1, Collections.singletonList(0)), new Incremented(10)));
   }
 
   @Test
@@ -365,7 +362,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     );
     ActorRef<Command> c = testKit.spawn(counter);
     c.tell(Increment100OnTimeout.INSTANCE);
-    eventHandlerProbe.expectMessage(Pair.create(State.EMPTY, timeoutEvent));
+    eventHandlerProbe.expectMessage(Pair.create(State.EMPTY, new Incremented(100)));
   }
 
   @Test
