@@ -58,34 +58,31 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   interface Command extends Serializable {
   }
 
-  public static class Increment implements Command {
-    private Increment() {
-    }
-
-    public static Increment instance = new Increment();
+  public enum Increment implements Command {
+    INSTANCE
   }
 
-  public static class Increment100OnTimeout implements Command {
-    private Increment100OnTimeout() {
-    }
-
-    public static Increment100OnTimeout instance = new Increment100OnTimeout();
+  public enum Increment100OnTimeout implements Command {
+    INSTANCE
   }
 
-  static class IncrementLater implements Command {
+  public enum IncrementLater implements Command {
+    INSTANCE
   }
 
-  static class DelayFinished implements Command {
+  public enum DelayFinished implements Command {
+    INSTANCE
   }
 
-  static class EmptyEventsListAndThenLog implements Command {
+  public enum EmptyEventsListAndThenLog implements Command {
+    INSTANCE
   }
 
-  static class IncrementTwiceAndLog implements Command {
+  public enum IncrementTwiceAndLog implements Command {
+    INSTANCE
   }
 
   public static class IncrementWithConfirmation implements Command, ExpectingReply<Done> {
-
     private final ActorRef<Done> replyTo;
 
     public IncrementWithConfirmation(ActorRef<Done> replyTo) {
@@ -98,17 +95,24 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
   }
 
-  static class StopThenLog implements Command {
+  public enum StopThenLog implements Command {
+    INSTANCE
   }
 
-  public static class Timeout implements Command {
+  public enum Timeout implements Command {
+    INSTANCE
   }
 
-  public static class GetValue implements Command {
+  public static class GetValue implements Command, ExpectingReply<State> {
     private final ActorRef<State> replyTo;
 
     public GetValue(ActorRef<State> replyTo) {
       this.replyTo = replyTo;
+    }
+
+    @Override
+    public ActorRef<State> replyTo() {
+      return replyTo;
     }
   }
 
@@ -182,11 +186,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
   }
 
-  public static class Tick {
-    private Tick() {
-    }
-
-    public static Tick instance = new Tick();
+  public enum Tick {
+    INSTANCE
   }
 
   private Behavior<Command> counter(PersistenceId persistenceId) {
@@ -209,21 +210,19 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           .matchCommand(IncrementWithConfirmation.class, (state, command) ->
               Effect().persist(new Incremented(1))
                   .thenReply(command, newState -> Done.getInstance()))
-          .matchCommand(GetValue.class, (state, command) -> {
-            command.replyTo.tell(state);
-            return Effect().none();
-          })
+          .matchCommand(GetValue.class, (state, command) ->
+              Effect().reply(command, state))
           .matchCommand(IncrementLater.class, (state, command) -> {
             ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
-              timers.startSingleTimer(Tick.instance, Tick.instance, Duration.ofMillis(10));
+              timers.startSingleTimer(Tick.INSTANCE, Tick.INSTANCE, Duration.ofMillis(10));
               return Behaviors.receive((context, o) -> Behaviors.stopped());
             }));
-            ctx.watchWith(delay, new DelayFinished());
+            ctx.watchWith(delay, DelayFinished.INSTANCE);
             return Effect().none();
           })
           .matchCommand(DelayFinished.class, (state, finished) -> Effect().persist(new Incremented(10)))
           .matchCommand(Increment100OnTimeout.class, (state, msg) -> {
-            ctx.setReceiveTimeout(Duration.ofMillis(10), new Timeout());
+            ctx.setReceiveTimeout(Duration.ofMillis(10), Timeout.INSTANCE);
             return Effect().none();
           })
           .matchCommand(Timeout.class,
@@ -268,7 +267,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public void persistEvents() {
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c1")));
     TestProbe<State> probe = testKit.createTestProbe();
-    c.tell(Increment.instance);
+    c.tell(Increment.INSTANCE);
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(1, singletonList(0)));
   }
@@ -277,16 +276,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public void replyStoredEvents() {
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c2")));
     TestProbe<State> probe = testKit.createTestProbe();
-    c.tell(Increment.instance);
-    c.tell(Increment.instance);
-    c.tell(Increment.instance);
+    c.tell(Increment.INSTANCE);
+    c.tell(Increment.INSTANCE);
+    c.tell(Increment.INSTANCE);
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
     ActorRef<Command> c2 = testKit.spawn(counter(new PersistenceId("c2")));
     c2.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
-    c2.tell(Increment.instance);
+    c2.tell(Increment.INSTANCE);
     c2.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(4, Arrays.asList(0, 1, 2, 3)));
   }
@@ -312,8 +311,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         }
     );
     ActorRef<Command> c = testKit.spawn(counter);
-    c.tell(Increment.instance);
-    c.tell(new IncrementLater());
+    c.tell(Increment.INSTANCE);
+    c.tell(IncrementLater.INSTANCE);
     eventHandlerProbe.expectMessage(Pair.create(State.EMPTY, new Incremented(1)));
     eventHandlerProbe.expectMessage(Pair.create(new State(1, Collections.singletonList(0)), terminatedEvent));
   }
@@ -331,7 +330,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         }
     );
     ActorRef<Command> c = testKit.spawn(counter);
-    c.tell(new Increment100OnTimeout());
+    c.tell(Increment100OnTimeout.INSTANCE);
     eventHandlerProbe.expectMessage(Pair.create(State.EMPTY, timeoutEvent));
   }
 
@@ -347,7 +346,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         }
     );
     ActorRef<Command> c = testKit.spawn(counter);
-    c.tell(new EmptyEventsListAndThenLog());
+    c.tell(EmptyEventsListAndThenLog.INSTANCE);
     loggingProbe.expectMessage("logged");
   }
 
@@ -360,7 +359,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     ActorRef<Command> c = testKit.spawn(behavior);
 
     TestProbe<State> probe = testKit.createTestProbe();
-    c.tell(Increment.instance);
+    c.tell(Increment.INSTANCE);
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(1, singletonList(0)));
   }
@@ -382,10 +381,10 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         }
     );
     ActorRef<Command> c = testKit.spawn(snapshoter);
-    c.tell(Increment.instance);
-    c.tell(Increment.instance);
+    c.tell(Increment.INSTANCE);
+    c.tell(Increment.INSTANCE);
     snapshotProbe.expectMessage(Optional.empty());
-    c.tell(Increment.instance);
+    c.tell(Increment.INSTANCE);
 
     TestProbe<State> stateProbe = testKit.createTestProbe();
     c.tell(new GetValue(stateProbe.ref()));
@@ -412,7 +411,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   public void stopThenLog() {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
-    c.tell(new StopThenLog());
+    c.tell(StopThenLog.INSTANCE);
     probe.expectTerminated(c, Duration.ofSeconds(1));
   }
 
@@ -434,8 +433,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       }
     };
     ActorRef<Command> c = testKit.spawn(Behaviors.intercept(tap, counter(new PersistenceId("tap1"))));
-    c.tell(Increment.instance);
-    interceptProbe.expectMessage(Increment.instance);
+    c.tell(Increment.INSTANCE);
+    interceptProbe.expectMessage(Increment.INSTANCE);
     signalProbe.expectNoMessage();
   }
 
@@ -451,7 +450,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     );
     ActorRef<Command> c = testKit.spawn(tagger);
 
-    c.tell(new Increment());
+    c.tell(Increment.INSTANCE);
 
     TestProbe<State> stateProbe = testKit.createTestProbe();
     c.tell(new GetValue(stateProbe.ref()));
@@ -476,7 +475,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     );
     ActorRef<Command> c = testKit.spawn(transformer);
 
-    c.tell(new Increment());
+    c.tell(Increment.INSTANCE);
 
     TestProbe<State> stateProbe = testKit.createTestProbe();
     c.tell(new GetValue(stateProbe.ref()));
