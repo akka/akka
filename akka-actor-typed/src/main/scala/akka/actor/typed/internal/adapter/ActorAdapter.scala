@@ -161,7 +161,7 @@ import akka.util.OptionVal
 
   private def recordChildFailure(ex: Throwable): Unit = {
     val ref = sender()
-    if (context.asInstanceOf[a.ActorCell].isWatching(ref)) {
+    if (context.asInstanceOf[untyped.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
   }
