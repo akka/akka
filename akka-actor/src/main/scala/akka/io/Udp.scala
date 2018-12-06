@@ -12,7 +12,6 @@ import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
-import scala.collection.immutable
 import akka.util.ccompat._
 
 /**

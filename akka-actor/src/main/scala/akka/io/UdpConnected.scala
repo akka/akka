@@ -11,7 +11,6 @@ import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
 import akka.actor._
-import scala.collection.immutable
 import akka.util.ccompat._
 
 /**

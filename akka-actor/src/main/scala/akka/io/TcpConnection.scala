@@ -22,7 +22,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.collection.immutable
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.

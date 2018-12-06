@@ -11,7 +11,6 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.SocketOption
 import akka.io.Udp._
 import akka.actor._
-import scala.collection.immutable
 
 /**
  * INTERNAL API
