@@ -12,9 +12,14 @@ import scala.collection.{ immutable ⇒ i }
 import scala.collection.{ mutable ⇒ m }
 import scala.{ collection ⇒ c }
 
+import akka.annotation.InternalApi
+
 /**
+ * INTERNAL API
+ *
  * Based on https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala
  */
+@InternalApi
 private[ccompat] trait PackageShared {
   import CompatImpl._
 
