@@ -81,8 +81,8 @@ final class PNCounterMap[A] private[akka] (
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(key: A, delta: Long)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
-    increment(node, key, delta)
+  def increment(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+    increment(node.selfUniqueAddress, key, delta)
 
   /**
    * Increment the counter with the delta specified.
@@ -92,7 +92,7 @@ final class PNCounterMap[A] private[akka] (
     increment(node.uniqueAddress, key, delta)
 
   @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
-  def increment(node: Cluster, key: A, delta: Long = 1): PNCounterMap[A] =
+  def increment(node: Cluster, key: A, delta: Long): PNCounterMap[A] =
     increment(node.selfUniqueAddress, key, delta)
 
   /**
