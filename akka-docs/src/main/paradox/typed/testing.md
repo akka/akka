@@ -199,6 +199,15 @@ Scala
 Java
 :  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-spawn-anonymous }
 
+#### Stopping actors
+To make sure an actor is stopped, use `TestProbe#expectTerminated` method.
+
+Scala
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-stop-actors }
+
+Java
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-stop-actors }
+
 Note that you can add `import testKit._` to get access to the `spawn` and `createTestProbe` methods at the top level
 without prefixing them with `testKit`.
 

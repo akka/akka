@@ -55,7 +55,7 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll {
     "be able to stop actors under test" in {
       val termTime = 5.seconds
       val probe = testKit.createTestProbe[Pong]()
-
+      //#test-stop-actors
       val pinger1 = testKit.spawn(echoActor, "pinger")
       pinger1 ! Ping("hello", probe.ref)
       probe.expectMessage(Pong("hello"))
@@ -68,6 +68,7 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll {
       probe.expectMessage(Pong("hello"))
       testKit.stop(pinger2)
       probe.expectTerminated(pinger2, termTime)
+      //#test-stop-actors
     }
   }
 

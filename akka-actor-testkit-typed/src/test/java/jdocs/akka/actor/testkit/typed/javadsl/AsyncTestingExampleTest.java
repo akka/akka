@@ -90,7 +90,7 @@ public class AsyncTestingExampleTest {
   public void testStoppingActors() {
     Duration termTime = Duration.ofSeconds(5);
     TestProbe<Pong> probe = testKit.createTestProbe();
-
+    //#test-stop-actors
     ActorRef<Ping> pinger1 = testKit.spawn(echoActor, "pinger");
     pinger1.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
@@ -103,6 +103,7 @@ public class AsyncTestingExampleTest {
     probe.expectMessage(new Pong("hello"));
     testKit.stop(pinger2);
     probe.expectTerminated(pinger2, termTime);
+    //#test-stop-actors
   }
 
   @Test
