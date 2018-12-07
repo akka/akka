@@ -8,8 +8,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.internal.receptionist.AbstractServiceKey
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.InternalApi
-import akka.cluster.{ Cluster, UniqueAddress }
-import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey }
+import akka.cluster.UniqueAddress
+import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, SelfUniqueAddress }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, EmptyORMultiMap, Entry }
 
 import scala.concurrent.duration.Deadline
@@ -109,13 +109,13 @@ import scala.concurrent.duration.Deadline
   def entriesFor(key: AbstractServiceKey): Set[Entry] =
     entries.getOrElse(key.asServiceKey, Set.empty[Entry])
 
-  def addBinding[T](key: ServiceKey[T], value: Entry)(implicit cluster: Cluster): ServiceRegistry =
-    copy(entries = entries.addBinding(key, value))
+  def addBinding[T](key: ServiceKey[T], value: Entry)(implicit node: SelfUniqueAddress): ServiceRegistry =
+    copy(entries = entries.addBinding(node, key, value))
 
-  def removeBinding[T](key: ServiceKey[T], value: Entry)(implicit cluster: Cluster): ServiceRegistry =
-    copy(entries = entries.removeBinding(key, value))
+  def removeBinding[T](key: ServiceKey[T], value: Entry)(implicit node: SelfUniqueAddress): ServiceRegistry =
+    copy(entries = entries.removeBinding(node, key, value))
 
-  def removeAll(entries: Map[AbstractServiceKey, Set[Entry]])(implicit cluster: Cluster): ServiceRegistry = {
+  def removeAll(entries: Map[AbstractServiceKey, Set[Entry]])(implicit node: SelfUniqueAddress): ServiceRegistry = {
     entries.foldLeft(this) {
       case (acc, (key, entries)) ⇒
         entries.foldLeft(acc) {
