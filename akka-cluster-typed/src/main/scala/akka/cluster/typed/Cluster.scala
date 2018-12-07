@@ -10,10 +10,10 @@ import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster._
 import akka.japi.Util
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
-import akka.cluster.typed.internal.AdapterClusterImpl
-import scala.collection.immutable
-
 import akka.actor.typed.ExtensionSetup
+import akka.cluster.typed.internal.AdapterClusterImpl
+
+import scala.collection.immutable
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -168,6 +168,8 @@ abstract class Cluster extends Extension {
 
   /** Details about this cluster node itself */
   def selfMember: Member
+
+  def selfUniqueAddress: UniqueAddress
 
   /** Returns true if this cluster instance has be shutdown. */
   def isTerminated: Boolean

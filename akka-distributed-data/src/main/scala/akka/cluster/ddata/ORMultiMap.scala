@@ -177,6 +177,12 @@ final class ORMultiMap[A, B] private[akka] (
   }
 
   /**
+   * Scala API
+   * Remove an entire set associated with the key.
+   */
+  def remove(key: A)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] = remove(node.uniqueAddress, key)
+
+  /**
    * Convenience for remove. Requires an implicit Cluster.
    * @see [[#remove]]
    */
@@ -184,6 +190,7 @@ final class ORMultiMap[A, B] private[akka] (
   def -(key: A)(implicit node: Cluster): ORMultiMap[A, B] = remove(node.selfUniqueAddress, key)
 
   /**
+   * Java API
    * Remove an entire set associated with the key.
    */
   def remove(node: SelfUniqueAddress, key: A): ORMultiMap[A, B] = remove(node.uniqueAddress, key)
@@ -266,7 +273,7 @@ final class ORMultiMap[A, B] private[akka] (
    * and another one is added within the same Update. The order of addition and removal is important in order
    * to retain history for replicated data.
    */
-  def replaceBinding(key: A, oldElement: B, newElement: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+  def replaceBinding(node: SelfUniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
     replaceBinding(node.uniqueAddress, key, oldElement, newElement)
 
   @deprecated("Use `replaceBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")

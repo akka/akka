@@ -169,6 +169,10 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
       c ! GetValue(probe.ref)
       probe.expectMessage(1)
     }
+
+    "have the prefixed replicator name" in {
+      ReplicatorSettings.name(system) should ===("typedDdataReplicator")
+    }
   }
 }
 

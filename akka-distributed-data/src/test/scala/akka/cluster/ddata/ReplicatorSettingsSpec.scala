@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
-object DistributedDataSpec {
+object ReplicatorSettingsSpec {
 
   val config = ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
@@ -17,21 +17,15 @@ object DistributedDataSpec {
     akka.remote.artery.canonical.hostname = 127.0.0.1""")
 }
 
-class DistributedDataSpec extends AkkaSpec(DistributedDataSpec.config)
+class ReplicatorSettingsSpec extends AkkaSpec(ReplicatorSettingsSpec.config)
   with WordSpecLike with BeforeAndAfterAll {
-
-  override protected def atStartup(): Unit =
-    DistributedData(system).isTerminated shouldBe false
-
-  override protected def afterTermination(): Unit =
-    DistributedData(system).isTerminated shouldBe true
 
   "DistributedData" must {
     "have the default replicator name" in {
-      DistributedData(system).replicatorName(None) should ===("ddataReplicator")
+      ReplicatorSettings.name(system, None) should ===("ddataReplicator")
     }
     "have the prefixed replicator name" in {
-      DistributedData(system).replicatorName(Some("other")) should ===("otherDdataReplicator")
+      ReplicatorSettings.name(system, Some("other")) should ===("otherDdataReplicator")
     }
   }
 }

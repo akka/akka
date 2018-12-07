@@ -337,9 +337,16 @@ final class ORSet[A] private[akka] (
   }
 
   /**
+   * Scala API
    * Removes an element from the set.
    */
   def remove(element: A)(implicit node: SelfUniqueAddress): ORSet[A] = remove(node.uniqueAddress, element)
+
+  /**
+   * Java API
+   * Removes an element from the set.
+   */
+  def remove(node: SelfUniqueAddress, element: A): ORSet[A] = remove(node.uniqueAddress, element)
 
   /**
    * Removes an element from the set.

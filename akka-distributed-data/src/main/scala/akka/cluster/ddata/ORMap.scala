@@ -313,11 +313,20 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   }
 
   /**
+   * Scala API
    * Removes an entry from the map.
    * Note that if there is a conflicting update on another node the entry will
    * not be removed after merge.
    */
   def remove(key: A)(implicit node: SelfUniqueAddress): ORMap[A, B] = remove(node.uniqueAddress, key)
+
+  /**
+   * Java API
+   * Removes an entry from the map.
+   * Note that if there is a conflicting update on another node the entry will
+   * not be removed after merge.
+   */
+  def remove(node: SelfUniqueAddress, key: A): ORMap[A, B] = remove(node.uniqueAddress, key)
 
   @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.19")
   def -(key: A)(implicit node: Cluster): ORMap[A, B] = remove(node.selfUniqueAddress, key)
