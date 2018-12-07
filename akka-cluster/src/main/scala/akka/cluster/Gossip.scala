@@ -209,7 +209,7 @@ private[cluster] final case class Gossip(
   }
 
   def update(updatedMembers: immutable.SortedSet[Member]): Gossip = {
-    copy(members = updatedMembers union members)
+    copy(members = updatedMembers union (members diff updatedMembers))
   }
 
   /**
