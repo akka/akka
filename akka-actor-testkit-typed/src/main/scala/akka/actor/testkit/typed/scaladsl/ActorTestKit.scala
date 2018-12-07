@@ -174,6 +174,12 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
   /**
+   * Stop the actor under test. To make sure it stopped, use [[TestProbe#expectTerminated]] method.
+   */
+  def stop[T](ref: ActorRef[T]): Unit =
+    Await.result(internalSystem ? { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, timeout.duration)
+
+  /**
    * Shortcut for creating a new test probe for the testkit actor system
    * @tparam M the type of messages the probe should accept
    */

@@ -151,6 +151,10 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * for the spawned actor, note that spawning actors with the same name in multiple test cases will cause failures.
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] = delegate.spawn(behavior, name, props)
+  /**
+   * Stop actor under test. To make sure it stopped, use [[TestProbe#expectTerminated]] method.
+   */
+  def stop[T](ref: ActorRef[T]): Unit = delegate.stop(ref)
 
   /**
    * Shortcut for creating a new test probe for the testkit actor system

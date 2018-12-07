@@ -5,10 +5,11 @@
 package docs.akka.actor.testkit.typed.scaladsl
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed._
+import akka.actor.typed.{ PostStop, _ }
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpec
+import scala.concurrent.duration._
 
 object AsyncTestingExampleSpec {
   //#under-test
@@ -49,6 +50,24 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll {
       val probe = testKit.createTestProbe[Pong]()
       pinger ! Ping("hello", probe.ref)
       probe.expectMessage(Pong("hello"))
+    }
+
+    "be able to stop actors under test" in {
+      val termTime = 5.seconds
+      val probe = testKit.createTestProbe[Pong]()
+
+      val pinger1 = testKit.spawn(echoActor, "pinger")
+      pinger1 ! Ping("hello", probe.ref)
+      probe.expectMessage(Pong("hello"))
+      testKit.stop(pinger1)
+      probe.expectTerminated(pinger1, termTime)
+
+      // Immediately creating an actor with the same name
+      val pinger2 = testKit.spawn(echoActor, "pinger")
+      pinger2 ! Ping("hello", probe.ref)
+      probe.expectMessage(Pong("hello"))
+      testKit.stop(pinger2)
+      probe.expectTerminated(pinger2, termTime)
     }
   }
 
