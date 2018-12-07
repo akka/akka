@@ -12,7 +12,7 @@ import scala.collection.mutable.Builder
  *
  * Based on https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/CompatImpl.scala
  */
-private object CompatImpl {
+private[ccompat] object CompatImpl {
   def simpleCBF[A, C](f: ⇒ Builder[A, C]): CanBuildFrom[Any, A, C] = new CanBuildFrom[Any, A, C] {
     def apply(from: Any): Builder[A, C] = apply()
     def apply(): Builder[A, C] = f
