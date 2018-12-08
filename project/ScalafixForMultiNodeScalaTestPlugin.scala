@@ -5,14 +5,14 @@
 package akka
 
 import com.typesafe.sbt.MultiJvmPlugin
-import sbt.{AutoPlugin, Def, PluginTrigger, Plugins, Setting, inConfig}
+import sbt.{AutoPlugin, Def, PluginTrigger, Plugins, ScalafixSupport, Setting, inConfig}
 import scalafix.sbt.ScalafixPlugin.autoImport.scalafixConfigSettings
 
-object ScalafixForMultiNodeScalaTestPlugin extends AutoPlugin with ScalafixIgnoreFileSupport {
+object ScalafixForMultiNodeScalaTestPlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
 
   override def requires: Plugins = MultiNodeScalaTest
-  
+
   import MultiJvmPlugin.autoImport._
 
   lazy val scalafixIgnoredSetting: Seq[Setting[_]] = Seq(
@@ -20,5 +20,9 @@ object ScalafixForMultiNodeScalaTestPlugin extends AutoPlugin with ScalafixIgnor
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    Seq(MultiJvm).flatMap(c => inConfig(c)(scalafixConfigSettings(c))) ++ scalafixIgnoredSetting
+    Seq(MultiJvm).flatMap(c => inConfig(c)(scalafixConfigSettings(c))) ++
+      scalafixIgnoredSetting ++ Seq(
+      updateProjectCommands(
+        alias = "fix",
+        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile"))
 }
