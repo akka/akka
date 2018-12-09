@@ -12,8 +12,9 @@ import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.testkit.typed.javadsl.TestInbox;
-import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -90,12 +91,11 @@ public class StashDocTest extends JUnitSuite {
 
     Behavior<Command> behavior() {
       return Behaviors.setup(context -> {
-        db.load(id)
-            .whenComplete((value, cause) -> {
+        context.pipeToSelf(db.load(id), (value, cause) -> {
             if (cause == null)
-              context.getSelf().tell(new InitialState(value));
+              return new InitialState(value);
             else
-              context.getSelf().tell(new DBError(asRuntimeException(cause)));
+              return new DBError(asRuntimeException(cause));
         });
 
         return init();
@@ -126,12 +126,11 @@ public class StashDocTest extends JUnitSuite {
             return Behaviors.same();
           })
           .onMessage(Save.class, (context, message) -> {
-            db.save(id, message.payload)
-              .whenComplete((value, cause) -> {
+            context.pipeToSelf(db.save(id, message.payload), (value, cause) -> {
                 if (cause == null)
-                  context.getSelf().tell(SaveSuccess.instance);
+                  return SaveSuccess.instance;
                 else
-                  context.getSelf().tell(new DBError(asRuntimeException(cause)));
+                  return new DBError(asRuntimeException(cause));
               });
             return saving(message.payload, message.replyTo);
           })
@@ -168,6 +167,10 @@ public class StashDocTest extends JUnitSuite {
 
   //#stashing
 
+  @ClassRule
+  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+
   @Test
   public void stashingExample() throws Exception {
     final DB db = new DB() {
@@ -178,23 +181,19 @@ public class StashDocTest extends JUnitSuite {
         return CompletableFuture.completedFuture("TheValue");
       }
     };
-    final DataAccess dataAccess = new DataAccess("17", db);
-    BehaviorTestKit<DataAccess.Command> testKit = BehaviorTestKit.create(dataAccess.behavior());
-    TestInbox<String> getInbox = TestInbox.create("getInbox");
-    testKit.run(new DataAccess.Get(getInbox.getRef()));
-    DataAccess.Command initialStateMsg = testKit.selfInbox().receiveMessage();
-    testKit.run(initialStateMsg);
+
+    final ActorRef<DataAccess.Command> dataAccess = testKit.spawn(new DataAccess("17", db).behavior());
+    TestProbe<String> getInbox = testKit.createTestProbe(String.class);
+    dataAccess.tell(new DataAccess.Get(getInbox.getRef()));
     getInbox.expectMessage("TheValue");
 
-    TestInbox<Done> saveInbox = TestInbox.create("saveInbox");
-    testKit.run(new DataAccess.Save("UpdatedValue", saveInbox.getRef()));
-    testKit.run(new DataAccess.Get(getInbox.getRef()));
-    DataAccess.Command saveSuccessMsg = testKit.selfInbox().receiveMessage();
-    testKit.run(saveSuccessMsg);
+    TestProbe<Done> saveInbox = testKit.createTestProbe(Done.class);
+    dataAccess.tell(new DataAccess.Save("UpdatedValue", saveInbox.getRef()));
+    dataAccess.tell(new DataAccess.Get(getInbox.getRef()));
     saveInbox.expectMessage(Done.getInstance());
     getInbox.expectMessage("UpdatedValue");
 
-    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    dataAccess.tell(new DataAccess.Get(getInbox.getRef()));
     getInbox.expectMessage("UpdatedValue");
   }
 
