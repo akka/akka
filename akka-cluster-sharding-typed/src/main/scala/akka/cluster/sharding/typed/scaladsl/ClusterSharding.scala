@@ -6,7 +6,6 @@ package akka.cluster.sharding.typed
 package scaladsl
 
 import scala.concurrent.Future
-import scala.collection.{ immutable ⇒ im }
 import scala.reflect.ClassTag
 
 import akka.util.Timeout
@@ -24,7 +23,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, StartEntity ⇒ UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {

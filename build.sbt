@@ -5,7 +5,7 @@ enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, Copyr
 disablePlugins(MimaPlugin)
 addCommandAlias(
   name  ="fixall",
-  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import spray.boilerplate.BoilerplatePlugin

@@ -4,7 +4,6 @@
 
 package akka.cluster.singleton
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
