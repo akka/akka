@@ -79,7 +79,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   private def deduplicate(interceptedResult: Behavior[I], ctx: ActorContext[O]): Behavior[O] = {
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[ActorContext[I]])
     if (started == UnhandledBehavior || started == SameBehavior || !Behavior.isAlive(started)) {
-      started.asInstanceOf[Behavior[O]]
+      started.unsafeCast[O]
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
@@ -87,7 +87,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
         case _ ⇒ false
       }
 
-      if (duplicateInterceptExists) started.asInstanceOf[Behavior[O]]
+      if (duplicateInterceptExists) started.unsafeCast[O]
       else new InterceptorImpl[O, I](interceptor, started)
     }
   }

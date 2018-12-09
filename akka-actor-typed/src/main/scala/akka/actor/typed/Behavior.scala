@@ -45,6 +45,18 @@ sealed abstract class Behavior[T] { behavior ⇒
   final def narrow[U <: T]: Behavior[U] = this.asInstanceOf[Behavior[U]]
 
   /**
+   * INTERNAL API
+   *
+   * Unsafe utility method for changing the type accepted by this Behavior;
+   * provided as an alternative to the universally available `asInstanceOf`, which
+   * casts the entire type rather than just the type parameter.
+   * Typically used to upcast a type, for instance from `Nothing` to some type `U`.
+   * Use it with caution, it may lead to a [[ClassCastException]] when you send a message
+   * to the resulting [[Behavior[U]]].
+   */
+  @InternalApi private[akka] final def unsafeCast[U]: Behavior[U] = this.asInstanceOf[Behavior[U]]
+
+  /**
    * Composes this `Behavior with a fallback `Behavior` which
    * is used when this `Behavior` doesn't handle the message or signal, i.e.
    * when `unhandled` is returned.
@@ -131,7 +143,7 @@ object Behavior {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def same[T]: Behavior[T] = SameBehavior.asInstanceOf[Behavior[T]]
+  def same[T]: Behavior[T] = SameBehavior.unsafeCast[T]
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -139,7 +151,7 @@ object Behavior {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def unhandled[T]: Behavior[T] = UnhandledBehavior.asInstanceOf[Behavior[T]]
+  def unhandled[T]: Behavior[T] = UnhandledBehavior.unsafeCast[T]
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -150,7 +162,7 @@ object Behavior {
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T]: Behavior[T] = StoppedBehavior.asInstanceOf[Behavior[T]]
+  def stopped[T]: Behavior[T] = StoppedBehavior.unsafeCast[T]
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -167,12 +179,12 @@ object Behavior {
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def empty[T]: Behavior[T] = EmptyBehavior.asInstanceOf[Behavior[T]]
+  def empty[T]: Behavior[T] = EmptyBehavior.unsafeCast[T]
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def ignore[T]: Behavior[T] = IgnoreBehavior.asInstanceOf[Behavior[T]]
+  def ignore[T]: Behavior[T] = IgnoreBehavior.unsafeCast[T]
 
   /**
    * INTERNAL API.
@@ -297,7 +309,7 @@ object Behavior {
     nextBehavior match {
       case SameBehavior | `currentBehavior` ⇒ same
       case UnhandledBehavior                ⇒ unhandled
-      case stopped: StoppedBehavior[T]      ⇒ stopped.asInstanceOf[Behavior[U]] // won't receive more messages so cast is safe
+      case stopped: StoppedBehavior[T]      ⇒ stopped.unsafeCast[U] // won't receive more messages so cast is safe
       case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, start(deferred, ctx), ctx)(f)
       case other                            ⇒ f(other)
     }
