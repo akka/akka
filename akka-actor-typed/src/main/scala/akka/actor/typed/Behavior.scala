@@ -399,10 +399,10 @@ object Behavior {
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case IgnoreBehavior         ⇒ Behavior.same[T]
       case s: StoppedBehavior[T]  ⇒ s
       case f: FailedBehavior      ⇒ f
-      case EmptyBehavior          ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case EmptyBehavior          ⇒ Behavior.unhandled[T]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
