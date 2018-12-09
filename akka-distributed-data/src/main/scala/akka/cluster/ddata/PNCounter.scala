@@ -77,11 +77,6 @@ final class PNCounter private[akka] (
   def +(n: BigInt)(implicit node: Cluster): PNCounter = increment(node.selfUniqueAddress, n)
 
   /**
-   * Increment the counter with the delta `1`.
-   */
-  //def increment(node: SelfUniqueAddress): PNCounter = increment(node.uniqueAddress, 1)
-
-  /**
    * Increment the counter with the delta `n` specified.
    * If the delta is negative then it will decrement instead of increment.
    */

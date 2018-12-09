@@ -4,11 +4,11 @@
 
 package akka.cluster.ddata
 
-import akka.cluster.Cluster
-import akka.cluster.UniqueAddress
 import java.math.BigInteger
 
 import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.UniqueAddress
 import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {

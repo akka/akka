@@ -39,8 +39,8 @@ actor provides the API for interacting with the data and is accessed through the
 
 The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]
 @java[`akka.cluster.ddata.typed.scaladsl.Replicator`] but the actual CRDTs are the 
-same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require an @scala[implicit] untyped `Cluster`
-for now, we hope to improve this in the future ([issue #25746](https://github.com/akka/akka/issues/25746)).
+same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require a @scala[implicit] `SelfUniqueAddress`,
+available from `implicit val node = DistributedData(system).selfUniqueAddress`.
 
 The replicator can contain multiple entries each containing a replicated data type, we therefore need to create a 
 key identifying the entry and helping us know what type it has, and then use that key for every interaction with
