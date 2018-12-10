@@ -168,11 +168,13 @@ import scala.util.Random
   def isInSameDc(node: UniqueAddress): Boolean =
     node == selfUniqueAddress || latestGossip.member(node).dataCenter == selfDc
 
+  /**
+   * Never gossip to self and not to node marked as unreachable by self (heartbeat
+   * messages are not getting through so no point in trying to gossip).
+   * Nodes marked as unreachable by others are still valid targets for gossip.
+   */
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress &&
-      ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
-        // if cross DC we need to check pairwise unreachable observation
-        overview.reachability.isReachable(selfUniqueAddress, node))
+    node != selfUniqueAddress && overview.reachability.isReachable(selfUniqueAddress, node)
 
   def youngestMember: Member = {
     val mbrs = dcMembers
