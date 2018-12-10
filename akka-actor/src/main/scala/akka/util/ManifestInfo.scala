@@ -59,7 +59,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
           numbers(numbersPos) = segments(segmentPos).toInt
           segmentPos += 1
         } catch {
-          case e: NumberFormatException ⇒
+          case _: NumberFormatException ⇒
             // This means that we have a trailing part on the version string and
             // less than 3 numbers, so we assume that this is a "newer" version
             numbers(numbersPos) = Integer.MAX_VALUE

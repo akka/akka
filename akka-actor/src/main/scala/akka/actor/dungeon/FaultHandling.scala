@@ -288,10 +288,10 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(c @ ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor)
-      case Some(c @ ChildrenContainer.Creation()) ⇒ finishCreate()
-      case Some(ChildrenContainer.Termination) ⇒ finishTerminate()
-      case _ ⇒
+      case Some(ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor)
+      case Some(ChildrenContainer.Creation())        ⇒ finishCreate()
+      case Some(ChildrenContainer.Termination)       ⇒ finishTerminate()
+      case _                                         ⇒
     }
   }
 

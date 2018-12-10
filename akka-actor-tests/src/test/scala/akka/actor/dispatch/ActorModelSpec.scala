@@ -15,7 +15,7 @@ import org.scalatest.Assertions._
 import com.typesafe.config.Config
 
 import akka.actor._
-import akka.dispatch.sysmsg._
+import akka.dispatch.sysmsg.SystemMessageList
 import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
@@ -242,7 +242,7 @@ object ActorModelSpec {
         done = condition
         if (!done) Thread.sleep(25)
       } catch {
-        case e: InterruptedException ⇒
+        case _: InterruptedException ⇒
       }
       if (!done) await(until)(condition)
     } else throw new AssertionError("await failed")
@@ -282,13 +282,11 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         msgsProcessed = 0,
         restarts = 0)
 
-      val futures = for (i ← 1 to 10) yield Future {
-        i
-      }
+      for (i ← 1 to 10) yield Future { i }
       assertDispatcher(dispatcher)(stops = 2)
 
       val a2 = newTestActor(dispatcher.id)
-      val futures2 = for (i ← 1 to 10) yield Future { i }
+      for (i ← 1 to 10) yield Future { i }
 
       assertDispatcher(dispatcher)(stops = 2)
 
@@ -321,9 +319,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val counter = new CountDownLatch(200)
       val a = newTestActor(dispatcher.id)
 
-      for (i ← 1 to 10) {
+      for (_ ← 1 to 10) {
         spawn {
-          for (i ← 1 to 20) {
+          for (_ ← 1 to 20) {
             a ! WaitAck(1, counter)
           }
         }
@@ -374,8 +372,8 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val waitTime = (20 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
-            case "run"             ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage
-            case Terminated(child) ⇒ stopLatch.countDown()
+            case "run"         ⇒ for (_ ← 1 to num) context.watch(context.actorOf(props)) ! cachedMessage
+            case Terminated(_) ⇒ stopLatch.countDown()
           }
         }).withDispatcher("boss"))
         try {
@@ -399,7 +397,10 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
                   System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
                   team.toArray sorted new Ordering[AnyRef] {
-                    def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
+                    def compare(l: AnyRef, r: AnyRef) = (l, r) match {
+                      case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path
+                      case (ll: AnyRef, rr: AnyRef)       ⇒ ll.hashCode compareTo rr.hashCode
+                    }
                   } foreach {
                     case cell: ActorCell ⇒
                       System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
@@ -504,7 +505,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "not double-deregister" in {
       implicit val dispatcher = interceptedDispatcher()
-      for (i ← 1 to 1000) system.actorOf(Props.empty)
+      for (_ ← 1 to 1000) system.actorOf(Props.empty)
       val a = newTestActor(dispatcher.id)
       a ! DoubleStop
       awaitCond(statsFor(a, dispatcher).registers.get == 1)

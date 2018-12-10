@@ -32,8 +32,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
       atSeq = nextSeq
       unstashAll()
 
-    case reg: Register ⇒
-      stash()
+    case _: Register ⇒ stash()
 
     case Unregister(actor, seq) if seq == nextSeq ⇒
       if (debug) context.system.eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"unregistered watch of $actor in $bus"))
@@ -41,8 +40,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
       atSeq = nextSeq
       unstashAll()
 
-    case unreg: Unregister ⇒
-      stash()
+    case _: Unregister ⇒ stash()
 
     case Terminated(actor) ⇒
       if (debug) context.system.eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"actor $actor has terminated, unsubscribing it from $bus"))

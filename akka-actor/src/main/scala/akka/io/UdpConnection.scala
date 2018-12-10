@@ -55,6 +55,7 @@ private[io] class UdpConnection(
   }
 
   def doConnect(address: InetSocketAddress): Unit = {
+    // FIXME: why is address not used? If not needed then function should not have the param
     reportConnectFailure {
       channel = DatagramChannel.open
       channel.configureBlocking(false)

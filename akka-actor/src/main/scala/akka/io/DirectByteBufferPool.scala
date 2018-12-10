@@ -90,9 +90,9 @@ private[akka] object DirectByteBufferPool {
             val cleaner = cleanerMethod.invoke(bb)
             cleanMethod.invoke(cleaner)
           }
-        catch { case NonFatal(e) ⇒ /* ok, best effort attempt to cleanup failed */ }
+        catch { case NonFatal(_) ⇒ /* ok, best effort attempt to cleanup failed */ }
       }
-    } catch { case NonFatal(e) ⇒ _ ⇒ () /* reflection failed, use no-op fallback */ }
+    } catch { case NonFatal(_) ⇒ _ ⇒ () /* reflection failed, use no-op fallback */ }
 
   /**
    * DirectByteBuffers are garbage collected by using a phantom reference and a

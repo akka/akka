@@ -20,7 +20,7 @@ abstract class Dns {
    * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
    * the akka.actor.io.dns.resolver that is configured.
    */
-  def cached(name: String): Option[Dns.Resolved] = None
+  def cached(name: String): Option[Dns.Resolved] = name match { case _ ⇒ None } // avoid compiler warning
 
   /**
    * If an entry is cached return it immediately. If it is not then

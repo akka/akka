@@ -205,7 +205,7 @@ case class DefaultResizer(
               case threshold  ⇒ cell.numberOfMessages >= threshold
             }
         }
-      case x ⇒
+      case _ ⇒
         false
     }
   }

@@ -153,7 +153,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
-    val level = _logLevel // volatile access before reading loggers
+    val _ = _logLevel // volatile access before reading loggers. unused.
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger"))
@@ -238,6 +238,8 @@ trait LoggingBus extends ActorEventBus {
  */
 @implicitNotFound("Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[-T] {
   def genString(t: T): String
+  // FIXME use system or remove the default, needed for binary compatibility
+  // currently and remove the default doc comment above
   def genString(t: T, system: ActorSystem): String = genString(t)
   def getClazz(t: T): Class[_] = t.getClass
 }
@@ -421,6 +423,7 @@ object Logging {
   private[akka] class LogExt(system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
+    def name(clazz: Class[_ <: Actor]): String = "log" + system + "-" + id + "-" + clazz
   }
 
   /**
@@ -464,7 +467,7 @@ object Logging {
     case "warning" ⇒ Some(WarningLevel)
     case "info"    ⇒ Some(InfoLevel)
     case "debug"   ⇒ Some(DebugLevel)
-    case unknown   ⇒ None
+    case _         ⇒ None
   }
 
   /**
@@ -487,6 +490,8 @@ object Logging {
     case WarningLevel ⇒ classOf[Warning]
     case InfoLevel    ⇒ classOf[Info]
     case DebugLevel   ⇒ classOf[Debug]
+    case unsupported  ⇒ throw new LoggerInitializationException(s"Unsupported Logger type $unsupported.")
+
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
@@ -723,6 +728,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message)
       case InfoLevel    ⇒ Info(logSource, logClass, message)
       case DebugLevel   ⇒ Debug(logSource, logClass, message)
+      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
@@ -730,6 +736,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
+      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
@@ -737,6 +744,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
+      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
     }
 
   }
@@ -876,15 +884,6 @@ object Logging {
   trait StdOutLogger {
 
     import StdOutLogger._
-
-    // format: OFF
-    // FIXME: remove those when we have the chance to break binary compatibility
-    private val errorFormat             = ErrorFormat
-    private val errorFormatWithoutCause = ErrorFormatWithoutCause
-    private val warningFormat           = WarningFormat
-    private val infoFormat              = InfoFormat
-    private val debugFormat             = DebugFormat
-    // format: ON
 
     def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
@@ -1289,6 +1288,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ isWarningEnabled
     case Logging.InfoLevel    ⇒ isInfoEnabled
     case Logging.DebugLevel   ⇒ isDebugEnabled
+    case _                    ⇒ false
   }
 
   final def notifyLog(level: Logging.LogLevel, message: String): Unit = level match {
@@ -1296,6 +1296,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
     case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
+    case _                    ⇒ // ignore
   }
 
   /**

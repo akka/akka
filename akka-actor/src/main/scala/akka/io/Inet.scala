@@ -20,23 +20,24 @@ object Inet {
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeDatagramBind(ds: DatagramSocket): Unit = ()
+    def beforeDatagramBind(ds: DatagramSocket): Unit = ds match { case _ ⇒ () } // avoid compiler warning
 
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeServerSocketBind(ss: ServerSocket): Unit = ()
+    def beforeServerSocketBind(ss: ServerSocket): Unit = ss match { case _ ⇒ () } // avoid compiler warning
 
     /**
      * Action to be taken for this option before calling connect()
      */
-    def beforeConnect(s: Socket): Unit = ()
+    def beforeConnect(s: Socket): Unit = s match { case _ ⇒ () } // avoid compiler warning
 
     /**
      * Action to be taken for this option after connect returned (i.e. on
      * the slave socket for servers).
      */
-    def afterConnect(s: Socket): Unit = ()
+    def afterConnect(s: Socket): Unit = s match { case _ ⇒ () } // avoid compiler warning
+
   }
 
   /**
@@ -50,19 +51,19 @@ object Inet {
      * Action to be taken for this option after connect returned (i.e. on
      * the slave socket for servers).
      */
-    def afterBind(s: DatagramSocket): Unit = ()
+    def afterBind(s: DatagramSocket): Unit = s match { case _ ⇒ () } // avoid compiler warning
 
     /**
      * Action to be taken for this option after connect returned (i.e. on
      * the slave socket for servers).
      */
-    def afterBind(s: ServerSocket): Unit = ()
+    def afterBind(s: ServerSocket): Unit = s match { case _ ⇒ () } // avoid compiler warning
 
     /**
      * Action to be taken for this option after connect returned (i.e. on
      * the slave socket for servers).
      */
-    def afterConnect(s: DatagramSocket): Unit = ()
+    def afterConnect(s: DatagramSocket): Unit = s match { case _ ⇒ () } // avoid compiler warning
 
   }
 

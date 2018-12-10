@@ -184,6 +184,7 @@ private[akka] trait Children { this: ActorCell ⇒
     childrenRefs.stats foreach {
       case ChildRestartStats(child: InternalActorRef, _, _) ⇒
         child.resume(if (perp == child) causedByFailure else null)
+      case _ ⇒ // if child not InternalActorRef ignore
     }
 
   def getChildByName(name: String): Option[ChildStats] = childrenRefs.getByName(name)

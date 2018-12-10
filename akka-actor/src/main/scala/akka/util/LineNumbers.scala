@@ -179,7 +179,7 @@ object LineNumbers {
     } finally {
       try dis.close() catch {
         case ex: InterruptedException ⇒ throw ex
-        case NonFatal(ex)             ⇒ // ignore
+        case NonFatal(_)              ⇒ // ignore
       }
     }
   }
