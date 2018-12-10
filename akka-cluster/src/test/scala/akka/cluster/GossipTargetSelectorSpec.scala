@@ -118,6 +118,26 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       gossipTo should ===(Vector[UniqueAddress](cDc1))
     }
 
+    "select among unreachable nodes if marked as unreachable by someone else" in {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
+        override protected def preferNodesWithDifferentView(s: MembershipState): Boolean = false
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1),
+          overview = GossipOverview(
+            reachability = Reachability.empty.unreachable(aDc1, bDc1).unreachable(bDc1, cDc1))),
+        aDc1,
+        aDc1.dataCenter,
+        crossDcConnections = 5)
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 marked b as unreachable so will not pick b
+      // b marked c as unreachable so that is ok as target
+      gossipTo should ===(Vector[UniqueAddress](cDc1))
+    }
+
     "continue with the next dc when doing cross dc and no node where suitable" in {
       val selector = new GossipTargetSelector(400, 0.2) {
         override protected def selectDcLocalNodes(s: MembershipState): Boolean = false
