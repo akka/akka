@@ -521,7 +521,7 @@ class TestEventListener extends Logging.DefaultLogger {
     case m ⇒ print(Debug(context.system.name, this.getClass, m))
   }
 
-  def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
+  def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case _: Exception ⇒ false })
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 
