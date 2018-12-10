@@ -56,7 +56,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
     }
 
     "use monotonically increasing defaultClock" in {
-      (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock)) {
+      (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) {
         case (r, n) ⇒
           r.value should be(n - 1)
           val r2 = r.withValue(node1, n, defaultClock[Int])
@@ -66,7 +66,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
     }
 
     "have unapply extractor" in {
-      val r1 = LWWRegister(node1, "a", defaultClock)
+      val r1 = LWWRegister(node1, "a", defaultClock[String])
       val LWWRegister(value1) = r1
       val value2: String = value1
       Changed(LWWRegisterKey[String]("key"))(r1) match {

@@ -359,7 +359,6 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     def println(o: Any): Unit = ()
     //#lwwregister
     implicit val node = DistributedData(system).selfUniqueAddress
-    implicit val clock = LWWRegister.defaultClock[String]
 
     val r1 = LWWRegister(node, "Hello")
     val r2 = r1.withValue(node, "Hi")
@@ -380,10 +379,10 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     }
 
     val record1 = Record(version = 1, "Alice", "Union Square")
-    val r1 = LWWRegister(node, record1)
+    val r1 = LWWRegister(node, record1, recordClock)
 
     val record2 = Record(version = 2, "Alice", "Madison Square")
-    val r2 = LWWRegister(node, record2)
+    val r2 = LWWRegister(node, record2, recordClock)
 
     val r3 = r1.merge(r2)
     println(r3.value)

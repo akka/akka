@@ -48,9 +48,11 @@ object LWWRegister {
   @InternalApi private[akka] def apply[A](node: UniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     new LWWRegister(node, initialValue, clock(0L, initialValue))
 
-  // FIXME when the deprecated functions using Cluster are EOL, add apply's with
-  // implicit: node and node, clock, with defaultClock which the compiler wil not accept until then.
-  def apply[A](node: SelfUniqueAddress, initialValue: A)(implicit clock: Clock[A]): LWWRegister[A] =
+  def apply[A](node: SelfUniqueAddress, initialValue: A): LWWRegister[A] =
+    apply(node.uniqueAddress, initialValue, defaultClock[A])
+
+  // FIXME when the deprecated functions using Cluster are EOL, add apply with implicit: node, clock
+  def apply[A](node: SelfUniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, clock)
 
   @deprecated("Use `apply` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
@@ -76,6 +78,12 @@ object LWWRegister {
    */
   def create[A](node: SelfUniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, clock)
+
+  /**
+   * Java API
+   */
+  def create[A](node: SelfUniqueAddress, initialValue: A): LWWRegister[A] =
+    apply(node.uniqueAddress, initialValue, defaultClock[A])
 
   /**
    * Extract the [[LWWRegister#value]].
