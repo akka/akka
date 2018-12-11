@@ -217,6 +217,9 @@ final class ORMultiMap[A, B] private[akka] (
   def addBinding(node: SelfUniqueAddress, key: A, element: B): ORMultiMap[A, B] =
     addBinding(node.uniqueAddress, key, element)
 
+  def addBindingBy(key: A, element: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    addBinding(node, key, element)
+
   @deprecated("Use `addBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def addBinding(key: A, element: B)(implicit node: Cluster): ORMultiMap[A, B] =
     addBinding(node.selfUniqueAddress, key, element)
@@ -240,6 +243,9 @@ final class ORMultiMap[A, B] private[akka] (
    */
   def removeBinding(node: SelfUniqueAddress, key: A, element: B): ORMultiMap[A, B] =
     removeBinding(node.uniqueAddress, key, element)
+
+  def removeBindingBy(key: A, element: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    removeBinding(node, key, element)
 
   @deprecated("Use `removeBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def removeBinding(key: A, element: B)(implicit node: Cluster): ORMultiMap[A, B] =
@@ -275,6 +281,9 @@ final class ORMultiMap[A, B] private[akka] (
    */
   def replaceBinding(node: SelfUniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
     replaceBinding(node.uniqueAddress, key, oldElement, newElement)
+
+  def replaceBindingBy(key: A, oldElement: B, newElement: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    replaceBinding(node, key, oldElement, newElement)
 
   @deprecated("Use `replaceBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def replaceBinding(key: A, oldElement: B, newElement: B)(implicit node: Cluster): ORMultiMap[A, B] =

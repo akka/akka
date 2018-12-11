@@ -90,7 +90,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ :+ "a" :+ "b" :+ "c")
       expectMsg(UpdateSuccess(KeyB, None))
 
-      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ increment "x" increment "y" }
+      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ incrementBy "x" incrementBy "y" }
       expectMsg(UpdateSuccess(KeyC, None))
 
       replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" → Set("A")) }

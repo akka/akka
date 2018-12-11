@@ -72,10 +72,11 @@ final class PNCounterMap[A] private[akka] (
   def size: Int = underlying.size
 
   /**
-   * Increment the counter by 1.
+   * Increment the counter with the delta specified.
+   * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
-    increment(node, key, 1)
+  def incrementBy(key: A, delta: Long = 1)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    increment(node, key, delta)
 
   /**
    * Increment the counter with the delta specified.
@@ -101,9 +102,13 @@ final class PNCounterMap[A] private[akka] (
   @InternalApi private[akka] def increment(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.increment(node, delta)))
 
-  /** Decrement the counter by 1. */
-  def decrement(key: A)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
-    decrement(node, key, 1)
+  /**
+   * Decrement the counter with the delta specified.
+   * If the delta is negative then it will increment instead of decrement.
+   * TODO add implicit after deprecated is EOL.
+   */
+  def decrementBy(key: A, delta: Long = 1)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    decrement(node, key, delta)
 
   /**
    * Decrement the counter with the delta specified.

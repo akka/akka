@@ -169,8 +169,6 @@ abstract class Cluster extends Extension {
   /** Details about this cluster node itself */
   def selfMember: Member
 
-  def selfUniqueAddress: UniqueAddress
-
   /** Returns true if this cluster instance has be shutdown. */
   def isTerminated: Boolean
 

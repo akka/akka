@@ -316,6 +316,7 @@ final class ORSet[A] private[akka] (
   /** Adds an element to the set. */
   def add(node: SelfUniqueAddress, element: A): ORSet[A] = add(node.uniqueAddress, element)
 
+  @Deprecated
   @deprecated("Use `add` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def add(node: Cluster, element: A): ORSet[A] = add(node.selfUniqueAddress, element)
 
@@ -378,6 +379,9 @@ final class ORSet[A] private[akka] (
    * This has the same result as using [[#remove]] for each
    * element, but it is more efficient.
    */
+  def clear(node: SelfUniqueAddress): ORSet[A] = clear(node.uniqueAddress)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def clear(node: Cluster): ORSet[A] = clear(node.selfUniqueAddress)
 
   /**

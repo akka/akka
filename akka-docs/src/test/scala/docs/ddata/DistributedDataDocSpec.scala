@@ -359,9 +359,8 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     def println(o: Any): Unit = ()
     //#lwwregister
     implicit val node = DistributedData(system).selfUniqueAddress
-
-    val r1 = LWWRegister(node, "Hello")
-    val r2 = r1.withValue(node, "Hi")
+    val r1 = LWWRegister.create("Hello")
+    val r2 = r1.withValueOf("Hi")
     println(s"${r1.value} by ${r1.updatedBy} at ${r1.timestamp}")
     //#lwwregister
     r2.value should be("Hi")

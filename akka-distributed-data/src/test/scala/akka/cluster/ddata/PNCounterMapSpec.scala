@@ -17,15 +17,9 @@ class PNCounterMapSpec extends WordSpec with Matchers {
 
   "A PNCounterMap" must {
 
-    "be able to increment entries by 1" in {
+    "be able to increment and decrement entries with implicit SelfUniqueAddress" in {
       implicit val node = SelfUniqueAddress(node1)
-      PNCounterMap().increment("a").increment("b").increment("b").entries should be(Map("a" → 1, "b" → 2))
-    }
-
-    "be able to increment and decrement entries with SelfUniqueAddress" in {
-      val n1 = SelfUniqueAddress(node1)
-      val n2 = SelfUniqueAddress(node2)
-      PNCounterMap().increment(n1, "a", 2).increment(n1, "b", 3).decrement(n2, "a", 1).entries should be(Map("a" → 1, "b" → 3))
+      PNCounterMap().incrementBy("a", 2).incrementBy("b", 1).incrementBy("b", 2).decrementBy("a", 1).entries should be(Map("a" → 1, "b" → 3))
     }
 
     "be able to increment and decrement entries" in {

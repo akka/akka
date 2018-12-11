@@ -138,7 +138,6 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
   private val untypedCluster = akka.cluster.Cluster(system.toUntyped)
 
-  override val selfUniqueAddress: UniqueAddress = untypedCluster.selfUniqueAddress
   override def selfMember: Member = untypedCluster.selfMember
   override def isTerminated: Boolean = untypedCluster.isTerminated
   override def state: ClusterEvent.CurrentClusterState = untypedCluster.state

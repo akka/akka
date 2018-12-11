@@ -56,10 +56,12 @@ class LWWRegisterSpec extends WordSpec with Matchers {
     }
 
     "use monotonically increasing defaultClock" in {
-      (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) {
+      implicit val node = SelfUniqueAddress(node1)
+
+      (1 to 100).foldLeft(LWWRegister.create(0)) {
         case (r, n) ⇒
           r.value should be(n - 1)
-          val r2 = r.withValue(node1, n, defaultClock[Int])
+          val r2 = r.withValueOf(n)
           r2.timestamp should be > r.timestamp
           r2
       }

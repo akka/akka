@@ -51,13 +51,19 @@ object LWWRegister {
   def apply[A](node: SelfUniqueAddress, initialValue: A): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, defaultClock[A])
 
-  // FIXME when the deprecated functions using Cluster are EOL, add apply with implicit: node, clock
   def apply[A](node: SelfUniqueAddress, initialValue: A, clock: Clock[A]): LWWRegister[A] =
     apply(node.uniqueAddress, initialValue, clock)
 
   @deprecated("Use `apply` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def apply[A](initialValue: A)(implicit node: Cluster, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
     apply(node.selfUniqueAddress, initialValue, clock)
+
+  /**
+   * Scala API
+   * Creates a `LWWRegister` with implicits, given deprecated `apply` functions using Cluster constrain overloading.
+   */
+  def create[A](initialValue: A)(implicit node: SelfUniqueAddress, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
+    apply(node.uniqueAddress, initialValue, clock)
 
   /**
    * Java API
@@ -71,7 +77,7 @@ object LWWRegister {
    */
   @deprecated("Use `create` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def create[A](node: Cluster, initialValue: A, clock: Clock[A]): LWWRegister[A] =
-    apply(initialValue)(node, clock)
+    apply(node.selfUniqueAddress, initialValue, clock)
 
   /**
    * Java API
@@ -144,18 +150,13 @@ final class LWWRegister[A] private[akka] (
    * increasing version number from a database record that is used for optimistic
    * concurrency control.
    */
-  @deprecated("Use `withValue` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def withValue(value: A)(implicit node: Cluster, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
-    withValue(node, value, clock)
+  def withValue(node: SelfUniqueAddress, value: A, clock: Clock[A]): LWWRegister[A] =
+    withValue(node.uniqueAddress, value, clock)
 
   /**
    * Change the value of the register.
    */
   def withValue(node: SelfUniqueAddress, value: A): LWWRegister[A] =
-    withValue(node, value, defaultClock[A])
-
-  @deprecated("Use `withValue` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def withValue(node: Cluster, value: A): LWWRegister[A] =
     withValue(node, value, defaultClock[A])
 
   /**
@@ -166,8 +167,16 @@ final class LWWRegister[A] private[akka] (
    * increasing version number from a database record that is used for optimistic
    * concurrency control.
    */
-  def withValue(node: SelfUniqueAddress, value: A, clock: Clock[A]): LWWRegister[A] =
-    withValue(node.uniqueAddress, value, clock)
+  def withValueOf(value: A)(implicit node: SelfUniqueAddress, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
+    withValue(node, value, clock)
+
+  @deprecated("Use `withValueOf` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def withValue(value: A)(implicit node: Cluster, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
+    withValue(node, value, clock)
+
+  @deprecated("Use `withValue` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def withValue(node: Cluster, value: A): LWWRegister[A] =
+    withValue(node, value, defaultClock[A])
 
   @deprecated("Use `withValue` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def withValue(node: Cluster, value: A, clock: Clock[A]): LWWRegister[A] =

@@ -35,7 +35,9 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
 
   private val settings: ReplicatorSettings = ReplicatorSettings(system)
 
-  implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(ClusterT(system).selfUniqueAddress)
+  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+
+  implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(untypedSystem).selfUniqueAddress
 
   /**
    * `ActorRef` of the [[Replicator]] .
@@ -45,7 +47,6 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
       system.log.warning("Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
       system.deadLetters
     } else {
-      val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
       val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
       val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
