@@ -220,6 +220,17 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     );
   }
 
+  private Behavior<Command> counterWithLoggingProbe(PersistenceId persistenceId, ActorRef<String> loggingProbe) {
+    return counter(persistenceId,
+            TestProbe.<Pair<State, Incremented>>create(testKit.system()).ref(),
+            loggingProbe,
+            (s, i, l) -> false,
+            (i) -> Collections.emptySet(),
+            TestProbe.<Optional<Throwable>>create(testKit.system()).ref(),
+            new NoOpEventAdapter<>()
+    );
+  }
+
   private Behavior<Command> counter(
     PersistenceId persistenceId,
     Function3<State, Incremented, Long, Boolean> snapshot,
@@ -455,10 +466,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void stopThenLog() {
-    TestProbe<State> probe = testKit.createTestProbe();
-    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
+    TestProbe<String> probe = testKit.createTestProbe();
+    ActorRef<Command> c = testKit.spawn(counterWithLoggingProbe(new PersistenceId("c12"), probe.ref()));
     c.tell(new StopThenLog());
-    probe.expectTerminated(c, Duration.ofSeconds(1));
+    probe.expectTerminated(c);
+    probe.expectMessage("one");
+
   }
 
   @Test
