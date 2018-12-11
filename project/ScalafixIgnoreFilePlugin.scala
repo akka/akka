@@ -18,5 +18,5 @@ object ScalafixIgnoreFilePlugin extends AutoPlugin with ScalafixSupport {
   override def projectSettings: Seq[Def.Setting[_]] = scalafixIgnoredSetting ++ Seq(
     addProjectCommandsIfAbsent(
       alias = "fix",
-      value = ";scalafixEnable;compile:scalafix;test:scalafix;test:compile"))
+      value = ";scalafixEnable;compile:scalafix;test:scalafix;test:compile;reload"))
 }
