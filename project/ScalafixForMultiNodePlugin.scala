@@ -24,5 +24,5 @@ object ScalafixForMultiNodePlugin extends AutoPlugin with ScalafixSupport {
       scalafixIgnoredSetting ++ Seq(
       updateProjectCommands(
         alias = "fix",
-        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile"))
+        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload"))
 }
