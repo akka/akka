@@ -332,7 +332,7 @@ resilience is important so that if a node crashes the persistent queries are qui
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) together with event tagging is an excellent fit to 
 shard events over a cluster.
 
-The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices
 around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
 @scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
 @java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
