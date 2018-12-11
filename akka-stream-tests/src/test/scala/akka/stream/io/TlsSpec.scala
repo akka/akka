@@ -247,6 +247,14 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       def output = ByteString("hello")
     }
 
+    object CompletedImmediately extends PayloadScenario {
+      override def inputs: immutable.Seq[SslTlsOutbound] = Nil
+      override def output = ByteString.empty
+
+      override def leftClosing: TLSClosing = EagerClose
+      override def rightClosing: TLSClosing = EagerClose
+    }
+
     // this demonstrates that cancellation is ignored so that the five results make it back
     object CancellingRHS extends PayloadScenario {
       override def flow =
@@ -345,6 +353,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         EmptyBytesFirst,
         EmptyBytesInTheMiddle,
         EmptyBytesLast,
+        CompletedImmediately,
         CancellingRHS,
         SessionRenegotiationBySender,
         SessionRenegotiationByReceiver,
@@ -357,7 +366,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
     } {
       s"work in mode ${commPattern.name} while sending ${scenario.name}" in assertAllStagesStopped {
         val onRHS = debug.via(scenario.flow)
-        val f =
+        val output =
           Source(scenario.inputs)
             .via(commPattern.decorateFlow(scenario.leftClosing, scenario.rightClosing, onRHS))
             .via(new SimpleLinearGraphStage[SslTlsInbound] {
@@ -377,11 +386,12 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             .via(debug)
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
+            .filter(_.nonEmpty)
             .via(new Timeout(6.seconds))
             .dropWhile(_.size < scenario.output.size)
-            .runWith(Sink.head)
+            .runWith(Sink.headOption)
 
-        Await.result(f, 8.seconds).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 8.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
       }

@@ -305,7 +305,7 @@ import scala.util.{ Failure, Success, Try }
     } else true
 
   private def doOutbound(isInboundClosed: Boolean): Unit =
-    if (inputBunch.isDepleted(UserIn) && userInChoppingBlock.isEmpty) {
+    if (inputBunch.isDepleted(UserIn) && userInChoppingBlock.isEmpty && mayCloseOutbound) {
       if (!isInboundClosed && closing.ignoreComplete) {
         if (tracing) log.debug("ignoring closeOutbound")
       } else {
@@ -326,6 +326,16 @@ import scala.util.{ Failure, Success, Try }
           fail(ex, closeTransport = false)
           completeOrFlush()
       }
+    }
+
+  /**
+   * In JDK 8 it is not allowed to call `closeOutbound` before the handshake is done or otherwise
+   * an IllegalStateException might be thrown when the next handshake packet arrives.
+   */
+  private def mayCloseOutbound: Boolean =
+    lastHandshakeStatus match {
+      case HandshakeStatus.NOT_HANDSHAKING | HandshakeStatus.FINISHED ⇒ true
+      case _ ⇒ false
     }
 
   def flushToTransport(): Unit = {
