@@ -42,8 +42,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
   /**
    * Create a [[ServiceDiscovery]] from configuration property.
    * The given `method` parameter is used to find configuration property
-   * "akka.discovery.[method].class" or "[method].class". `method` can also
-   * be a fully class name.
+   * "akka.discovery.[method].class".
    *
    * The `ServiceDiscovery` instance for a given `method` will be created
    * once and subsequent requests for the same `method` will return the same instance.
