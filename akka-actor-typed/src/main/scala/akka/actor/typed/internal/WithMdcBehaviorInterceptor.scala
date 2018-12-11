@@ -51,7 +51,7 @@ import scala.collection.immutable.HashMap
       next match {
         case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) ⇒
           // eliminate that interceptor
-          loop(i.nestedBehavior.asInstanceOf[Behavior[T]])
+          loop(i.nestedBehavior)
 
         case w: WrappingBehavior[T, T] ⇒
           val nested = w.nestedBehavior
@@ -63,7 +63,7 @@ import scala.collection.immutable.HashMap
       }
     }
 
-    loop(target.start(ctx)).asInstanceOf[Behavior[T]]
+    loop(target.start(ctx))
   }
 
   // in the normal case, a new withMDC replaces the previous one
