@@ -13,11 +13,6 @@ import akka.actor.typed.ActorSystem
 
 import scala.util.control.NoStackTrace
 
-/**
- * Exception without stack trace to use for verifying exceptions in tests
- */
-final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
-
 object TestKitSettings {
   /**
    * Reads configuration settings from `akka.actor.testkit.typed` section.

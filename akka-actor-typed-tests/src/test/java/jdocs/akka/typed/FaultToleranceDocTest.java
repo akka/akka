@@ -85,6 +85,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
                   .build();
             });
 
+    // #bubbling-example
     {
       // #bubbling-example
       final ActorSystem<Message> system = ActorSystem.create(bossBehavior, "boss");
@@ -97,8 +98,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
             ConfigFactory.parseString(
                 "akka.loggers = [ akka.testkit.TestEventListener ]\n" + "akka.loglevel=warning"));
 
-    // #bubbling-example
-    // actual exception and thent the deathpacts
+    // actual exception and then the deathpacts
     new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system))
         .occurrences(4)
         .intercept(
