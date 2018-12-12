@@ -396,16 +396,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                   val mq = dispatcher.messageQueue
 
                   System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
-                  team.toArray sorted new Ordering[AnyRef] {
-                    def compare(l: AnyRef, r: AnyRef) = (l, r) match {
-                      case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path
-                      case (ll: AnyRef, rr: AnyRef)       ⇒ ll.hashCode compareTo rr.hashCode
-                    }
-                  } foreach {
-                    case cell: ActorCell ⇒
+
+                  import scala.collection.JavaConverters._
+                  team.asScala.toList
+                    .sortBy(_.self.path)
+                    .foreach { cell: ActorCell ⇒
                       System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
                         + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
-                  }
+                    }
 
                   System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
                   Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println

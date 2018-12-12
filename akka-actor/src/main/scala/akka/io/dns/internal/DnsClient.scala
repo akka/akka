@@ -43,7 +43,7 @@ import scala.concurrent.duration._
   val udp = IO(Udp)
   val tcp = IO(Tcp)
 
-  var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
+  private[internal] var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
 
   lazy val tcpDnsClient: ActorRef = createTcpClient()
 

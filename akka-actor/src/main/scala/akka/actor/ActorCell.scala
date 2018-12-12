@@ -4,20 +4,20 @@
 
 package akka.actor
 
-import akka.actor.dungeon.ChildrenContainer
-import akka.dispatch.Envelope
-import akka.dispatch.sysmsg._
-import akka.event.Logging.{ Debug, Error, LogEvent }
-import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
-import java.util.concurrent.ThreadLocalRandom
-
 import scala.util.control.NonFatal
+
+import akka.actor.dungeon.ChildrenContainer
+import akka.dispatch.Envelope
+import akka.dispatch.sysmsg._
+import akka.event.Logging.{ Debug, Error, LogEvent }
+import akka.japi.Procedure
 import akka.dispatch.MessageDispatcher
 import akka.util.Reflect
 import akka.annotation.InternalApi
@@ -553,8 +553,8 @@ private[akka] class ActorCell(
       if (influenceReceiveTimeout)
         cancelReceiveTimeout()
       messageHandle.message match {
-        case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-        case msg                      ⇒ receiveMessage(msg)
+        case _: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+        case msg                    ⇒ receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e ⇒
@@ -675,7 +675,7 @@ private[akka] class ActorCell(
     if (!isTerminating) {
       // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
       initChild(child) match {
-        case Some(crs) ⇒
+        case Some(_) ⇒
           handleSupervise(child, async)
           if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
         case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))

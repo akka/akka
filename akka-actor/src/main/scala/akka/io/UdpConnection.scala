@@ -8,8 +8,10 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.util.ByteString
@@ -55,7 +57,6 @@ private[io] class UdpConnection(
   }
 
   def doConnect(address: InetSocketAddress): Unit = {
-    // FIXME: why is address not used? If not needed then function should not have the param
     reportConnectFailure {
       channel = DatagramChannel.open
       channel.configureBlocking(false)
