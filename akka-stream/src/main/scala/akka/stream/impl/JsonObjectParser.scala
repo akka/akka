@@ -191,15 +191,13 @@ import scala.reflect.ClassTag
 
     sealed abstract class TopLevelLeafContainerState extends InnerLeafContainerState with TopLevelContainerState
 
-    object UnknownState extends ParserState with NeitherTakingOrSkippingState with ParserStateMachinery {
-      override def toString: String = "Unknown"
+    private case object UnknownState extends ParserState with NeitherTakingOrSkippingState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState =
         throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — unknown state")
     }
 
-    object InitialState extends ParserState with SkippingState with ParserStateMachinery {
-      override def toString: String = "Initial"
+    private case object InitialState extends ParserState with SkippingState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState = {
         if (input == SquareBraceStart) {
@@ -224,8 +222,7 @@ import scala.reflect.ClassTag
     /**
      * We are in this state whenever we're inside a JSON Array-style stream, before any element
      */
-    private object MainArrayBeforeElement extends ParserState with SkippingState with ParserStateMachinery {
-      override def toString: String = "MainArrayBeforeElement"
+    private case object MainArrayBeforeElement extends ParserState with SkippingState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState = {
         if (isWhitespace(input)) {
@@ -253,8 +250,7 @@ import scala.reflect.ClassTag
 
     }
 
-    private object AfterMainArray extends ParserState with SkippingState with ParserStateMachinery {
-      override def toString: String = "AfterMainArray"
+    private case object AfterMainArray extends ParserState with SkippingState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState with SkippingState =
         if (isWhitespace(input)) {
@@ -265,8 +261,7 @@ import scala.reflect.ClassTag
         }
     }
 
-    private object MainArrayAfterElement extends NonContainerState with SkippingState with ParserStateMachinery {
-      override def toString: String = "MainArrayAfterElement"
+    private case object MainArrayAfterElement extends NonContainerState with SkippingState with ParserStateMachinery {
 
       /* note: we don't mark the object complete as it's been done, if necessary, as part of the
       exit action that happened just before we ended up here.
@@ -287,8 +282,7 @@ import scala.reflect.ClassTag
       }
     }
 
-    private object AfterBackslash extends ContainerState with ParserStateMachinery {
-      override def toString: String = "AfterBackslash"
+    private case object AfterBackslash extends ContainerState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState = {
         take()
@@ -324,13 +318,9 @@ import scala.reflect.ClassTag
       }
     }
 
-    private object InString extends InnerLeafContainerState with InStringBase with ParserStateMachinery {
-      override def toString: String = "InString"
-    }
+    private case object InString extends InnerLeafContainerState with InStringBase with ParserStateMachinery
 
-    private object InOuterString extends TopLevelLeafContainerState with InStringBase with ParserStateMachinery {
-      override def toString: String = "InOuterString"
-    }
+    private case object InOuterString extends TopLevelLeafContainerState with InStringBase with ParserStateMachinery
 
     private sealed trait InNakedBase {
       this: ContainerState ⇒
@@ -347,13 +337,9 @@ import scala.reflect.ClassTag
       }
     }
 
-    private object InNaked extends InnerLeafContainerState with InNakedBase with ParserStateMachinery {
-      override def toString: String = "InNaked"
-    }
+    private case object InNaked extends InnerLeafContainerState with InNakedBase with ParserStateMachinery
 
-    private object InOuterNaked extends TopLevelLeafContainerState with InNakedBase with ParserStateMachinery {
-      override def toString: String = "InOuterNaked"
-    }
+    private case object InOuterNaked extends TopLevelLeafContainerState with InNakedBase with ParserStateMachinery
 
     private sealed abstract class InContainerBase(containerEnd: Int) extends ContainerState {
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState = {
@@ -400,24 +386,15 @@ import scala.reflect.ClassTag
       }
     }
 
-    private object InArray extends BranchContainer(SquareBraceEnd) with ParserStateMachinery {
-      override def toString: String = "InArray"
-    }
+    private case object InArray extends BranchContainer(SquareBraceEnd) with ParserStateMachinery
 
-    private object InOuterArray extends RootContainer(SquareBraceEnd) with ParserStateMachinery {
-      override def toString: String = "InOuterArray"
-    }
+    private case object InOuterArray extends RootContainer(SquareBraceEnd) with ParserStateMachinery
 
-    private object InObject extends BranchContainer(CurlyBraceEnd) with ParserStateMachinery {
-      override def toString: String = "InObject"
-    }
+    private case object InObject extends BranchContainer(CurlyBraceEnd) with ParserStateMachinery
 
-    private object InOuterObject extends RootContainer(CurlyBraceEnd) with ParserStateMachinery {
-      override def toString: String = "InOuterObject"
-    }
+    private case object InOuterObject extends RootContainer(CurlyBraceEnd) with ParserStateMachinery
 
-    private object NotArrayAfterElement extends NonContainerState with ParserStateMachinery {
-      override def toString: String = "NotArrayAfter"
+    private case object NotArrayAfterElement extends NonContainerState with ParserStateMachinery {
 
       /* in this state we know we are not in a JSON array-formatted stream, but we don't yet know yet what kind of
       separator is being used. We'll never revisit this state or InitialState once we meet a separator
@@ -500,24 +477,17 @@ import scala.reflect.ClassTag
       }
     }
 
-    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) with ParserStateMachinery {
-      override def toString: String = "LinebreakSeparatedBeforeElement"
-    }
+    private case object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) with ParserStateMachinery
 
-    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) with ParserStateMachinery {
-      override def toString: String = "LinebreakSeparatedAfterElement"
-
+    private case object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) with ParserStateMachinery {
       override def separatorName: String = "linebreak"
 
       override def beforeNextItem: ParserState with SkippingState = LinebreakSeparatedBeforeElement
     }
 
-    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) with ParserStateMachinery {
-      override def toString: String = "CommaSeparatedBeforeElement"
-    }
+    private case object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) with ParserStateMachinery
 
-    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) with ParserStateMachinery {
-      override def toString: String = "CommaSeparatedAfterElement"
+    private case object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) with ParserStateMachinery {
 
       override def separatorName: String = "comma"
 
