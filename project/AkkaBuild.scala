@@ -124,6 +124,7 @@ object AkkaBuild {
       ),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
+      sources in (Compile, doc) := Seq.empty,
 
       crossVersion := CrossVersion.binary,
 
