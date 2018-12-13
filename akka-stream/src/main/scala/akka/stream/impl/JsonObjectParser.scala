@@ -191,13 +191,7 @@ import scala.reflect.ClassTag
 
     sealed abstract class TopLevelLeafContainerState extends InnerLeafContainerState with TopLevelContainerState
 
-    private case object UnknownState extends ParserState with NeitherTakingOrSkippingState with ParserStateMachinery {
-
-      final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState =
-        throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — unknown state")
-    }
-
-    private case object InitialState extends ParserState with SkippingState with ParserStateMachinery {
+    case object InitialState extends ParserState with SkippingState with ParserStateMachinery {
 
       final override def evaluateNextCharacter(input: Byte)(implicit pp: JsonObjectParser): ParserState = {
         if (input == SquareBraceStart) {
