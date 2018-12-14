@@ -1293,9 +1293,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
     case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
-    case unsupported ⇒ if (isEnabled(unsupported)) {
-      throw new ConfigurationException(s"Log level '$unsupported' in config is not supported.")
-    }
+    case unsupported          ⇒ throw new ConfigurationException(s"Log level '$unsupported' in config is not supported.")
   }
 
   /**
