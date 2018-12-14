@@ -198,13 +198,13 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       routeeSize(router) should ===(resizer.lowerBound)
 
       def loop(loops: Int, d: FiniteDuration) = {
-        for (m ← 0 until loops) {
+        for (_ ← 0 until loops) {
           router ! d
           // sending in too quickly will result in skipped resize due to many resizeInProgress conflicts
           Thread.sleep(20.millis.dilated.toMillis)
         }
         within((d * loops / resizer.lowerBound) + 2.seconds.dilated) {
-          for (m ← 0 until loops) expectMsg("done")
+          for (_ ← 0 until loops) expectMsg("done")
         }
       }
 
@@ -236,7 +236,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         })))
 
       // put some pressure on the router
-      for (m ← 0 until 15) {
+      for (_ ← 0 until 15) {
         router ! 150
         Thread.sleep((20 millis).dilated.toMillis)
       }

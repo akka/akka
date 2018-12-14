@@ -489,7 +489,7 @@ class TestKit(system: ActorSystem) {
    * given object. Wait time is bounded by the given duration, with an
    * AssertionFailure being thrown in case of timeout.
    */
-  def expectMsg[T](max: java.time.Duration, obj: T, hint: String): T = expectMsg(max.asScala, obj)
+  def expectMsg[T](max: java.time.Duration, obj: T, hint: String): T = expectMsg(max, obj, hint)
 
   /**
    * Receive one message from the test actor and assert that the given

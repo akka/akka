@@ -8,11 +8,12 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
-import akka.util.ByteString
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.util.{ ByteString, unused }
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
 
@@ -54,7 +55,7 @@ private[io] class UdpConnection(
       }
   }
 
-  def doConnect(address: InetSocketAddress): Unit = {
+  def doConnect(@unused address: InetSocketAddress): Unit = {
     reportConnectFailure {
       channel = DatagramChannel.open
       channel.configureBlocking(false)

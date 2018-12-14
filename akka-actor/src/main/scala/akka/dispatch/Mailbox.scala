@@ -233,7 +233,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   override final def getRawResult(): Unit = ()
   override final def setRawResult(unit: Unit): Unit = ()
   final override def exec(): Boolean = try { run(); false } catch {
-    case ie: InterruptedException ⇒
+    case _: InterruptedException ⇒
       Thread.currentThread.interrupt()
       false
     case anything: Throwable ⇒

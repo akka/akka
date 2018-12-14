@@ -161,11 +161,11 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     }
 
     "not get confused when trying to wildcard-configure children" in {
-      val router = system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
+      system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
       val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
       val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
       recv should ===(expc)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "support custom router" in {

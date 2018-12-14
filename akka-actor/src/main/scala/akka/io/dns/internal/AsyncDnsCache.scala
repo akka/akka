@@ -9,15 +9,13 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.annotation.InternalApi
 import akka.io.{ Dns, PeriodicCacheCleanup }
 import akka.io.dns.CachePolicy.CachePolicy
-
-import scala.collection.immutable
 import akka.io.SimpleDnsCache._
 import akka.io.dns.internal.AsyncDnsResolver.{ Ipv4Type, Ipv6Type, QueryType }
 import akka.io.dns.internal.DnsClient.Answer
 import akka.io.dns.{ AAAARecord, ARecord }
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
+import scala.collection.immutable
 
 /**
  * Internal API

@@ -219,7 +219,7 @@ final case class ConsistentHashingRoutingLogic(
       message match {
         case _ if hashMapping.isDefinedAt(message) ⇒ target(hashMapping(message))
         case hashable: ConsistentHashable          ⇒ target(hashable.consistentHashKey)
-        case other ⇒
+        case _ ⇒
           log.warning(
             "Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
             message.getClass.getName, classOf[ConsistentHashable].getName,
@@ -424,7 +424,7 @@ private[akka] final case class ConsistentRoutee(routee: Routee, selfAddress: Add
   private def toStringWithfullAddress(path: ActorPath): String = {
     path.address match {
       case Address(_, _, None, None) ⇒ path.toStringWithAddress(selfAddress)
-      case a                         ⇒ path.toString
+      case _                         ⇒ path.toString
     }
   }
 }

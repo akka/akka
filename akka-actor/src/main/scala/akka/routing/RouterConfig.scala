@@ -16,6 +16,7 @@ import akka.actor.Terminated
 import akka.dispatch.Dispatchers
 import akka.actor.ActorSystem
 import akka.japi.Util.immutableSeq
+import akka.util.unused
 
 /**
  * This trait represents a router factory: it produces the actual router actor
@@ -58,7 +59,7 @@ trait RouterConfig extends Serializable {
    * Management messages not handled by the "head" actor are
    * delegated to this controller actor.
    */
-  def routingLogicController(routingLogic: RoutingLogic): Option[Props] = None
+  def routingLogicController(@unused routingLogic: RoutingLogic): Option[Props] = None
 
   /**
    * Is the message handled by the router head actor or the
@@ -78,12 +79,12 @@ trait RouterConfig extends Serializable {
   /**
    * Overridable merge strategy, by default completely prefers `this` (i.e. no merge).
    */
-  def withFallback(other: RouterConfig): RouterConfig = this
+  def withFallback(@unused other: RouterConfig): RouterConfig = this
 
   /**
    * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
    */
-  def verifyConfig(path: ActorPath): Unit = ()
+  def verifyConfig(@unused path: ActorPath): Unit = ()
 
   /**
    * INTERNAL API
@@ -240,7 +241,7 @@ trait Pool extends RouterConfig {
   private[akka] override def createRouterActor(): RouterActor =
     resizer match {
       case None    ⇒ new RouterPoolActor(supervisorStrategy)
-      case Some(r) ⇒ new ResizablePoolActor(supervisorStrategy)
+      case Some(_) ⇒ new ResizablePoolActor(supervisorStrategy)
     }
 
 }

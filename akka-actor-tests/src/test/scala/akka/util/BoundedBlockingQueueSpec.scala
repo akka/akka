@@ -143,7 +143,7 @@ class BoundedBlockingQueueSpec
 
   "take" must {
     "call the backing queue if not empty" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.take()
 
@@ -151,7 +151,7 @@ class BoundedBlockingQueueSpec
     }
 
     "signal notFull when taking an element" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.take()
       events should contain(signalNotFull)
@@ -259,7 +259,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return false if the timeout is exceeded" in {
-      val TestContext(queue, events, _, notFull, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.offer("World", 100, TimeUnit.MILLISECONDS) should equal(false)
       events shouldNot contain(offer("World"))
@@ -315,7 +315,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return the first element inserted" in {
-      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.put("Hello")
       queue.put("World")
       queue.poll() should equal("Hello")
@@ -360,14 +360,14 @@ class BoundedBlockingQueueSpec
     }
 
     "immediately poll the backing queue" in {
-      val TestContext(queue, events, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
 
       queue.poll(100, TimeUnit.MILLISECONDS)
       events should contain(poll)
     }
 
     "return null if the timeout is exceeded" in {
-      val TestContext(queue, events, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, _, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
 
       queue.poll(100, TimeUnit.MILLISECONDS) should equal(null)
     }
@@ -402,7 +402,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return true if the element was removed" in {
-      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.put("Hello")
       queue.remove("Hello") should equal(true)
     }
@@ -428,7 +428,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return true if the backing queue contains the element" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, backingQueue) = newBoundedBlockingQueue(2)
       backingQueue.offer("Hello")
       queue.contains("Hello") should equal(true)
     }
@@ -757,7 +757,7 @@ trait QueueSetupHelper {
       }
     }
 
-    def manualTimeControl(on: Boolean): Unit =
+    def manualTimeControl(@unused on: Boolean): Unit =
       waiting = Some(Manual())
 
     override def signalAll(): Unit = condition.signalAll()
@@ -774,7 +774,7 @@ trait QueueSetupHelper {
         try {
           this.await()
         } catch {
-          case e: InterruptedException ⇒
+          case _: InterruptedException ⇒
         }
         waitTime
       }
