@@ -12,8 +12,7 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.util.ReentrantGuard
-import akka.util.Helpers
+import akka.util.{ Helpers, ReentrantGuard, unused }
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -153,7 +152,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
-    val _ = _logLevel // volatile access before reading loggers. unused.
+    val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger"))
@@ -238,9 +237,7 @@ trait LoggingBus extends ActorEventBus {
  */
 @implicitNotFound("Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[-T] {
   def genString(t: T): String
-  // FIXME use system or remove the default, needed for binary compatibility
-  // currently and remove the default doc comment above
-  def genString(t: T, system: ActorSystem): String = genString(t)
+  def genString(t: T, @unused system: ActorSystem): String = genString(t)
   def getClazz(t: T): Class[_] = t.getClass
 }
 
@@ -1296,7 +1293,9 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
     case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
-    case _                    ⇒ // ignore
+    case unsupported ⇒ if (isEnabled(unsupported)) {
+      throw new ConfigurationException(s"Log level '$unsupported' in config is not supported.")
+    }
   }
 
   /**

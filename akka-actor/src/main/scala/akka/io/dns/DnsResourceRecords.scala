@@ -10,7 +10,7 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
 import CachePolicy._
 import akka.io.dns.internal.{ DomainName, _ }
-import akka.util.{ ByteIterator, ByteString }
+import akka.util.{ ByteIterator, ByteString, unused }
 
 import scala.annotation.switch
 import scala.concurrent.duration._
@@ -30,7 +30,7 @@ final case class ARecord(override val name: String, override val ttl: Ttl,
  */
 @InternalApi
 private[dns] object ARecord {
-  def parseBody(name: String, ttl: Ttl, length: Short, it: ByteIterator): ARecord = {
+  def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): ARecord = {
     val addr = Array.ofDim[Byte](4)
     it.getBytes(addr)
     ARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
@@ -52,7 +52,7 @@ private[dns] object AAAARecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Ttl, length: Short, it: ByteIterator): AAAARecord = {
+  def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): AAAARecord = {
     val addr = Array.ofDim[Byte](16)
     it.getBytes(addr)
     AAAARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
@@ -70,7 +70,7 @@ private[dns] object CNameRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Ttl, length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
+  def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
     CNameRecord(name, ttl, DomainName.parse(it, msg))
   }
 }
@@ -89,7 +89,7 @@ private[dns] object SRVRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Ttl, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
+  def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
     val priority = it.getShort.toInt & 0xFFFF
     val weight = it.getShort.toInt & 0xFFFF
     val port = it.getShort.toInt & 0xFFFF
@@ -112,7 +112,7 @@ private[dns] object UnknownRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Ttl, recType: Short, recClass: Short, length: Short, it: ByteIterator): UnknownRecord =
+  def parseBody(name: String, ttl: Ttl, recType: Short, recClass: Short, @unused length: Short, it: ByteIterator): UnknownRecord =
     UnknownRecord(name, ttl, recType, recClass, it.toByteString)
 }
 

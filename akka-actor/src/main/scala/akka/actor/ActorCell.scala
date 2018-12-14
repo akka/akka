@@ -12,14 +12,13 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
 import akka.dispatch.MessageDispatcher
-import akka.util.Reflect
+import akka.util.{ Reflect, unused }
 import akka.annotation.InternalApi
 
 /**
@@ -230,7 +229,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * ActorContexts shouldn't be Serializable
    */
-  final protected def writeObject(o: ObjectOutputStream): Unit =
+  final protected def writeObject(@unused o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
 

@@ -6,13 +6,13 @@ package akka.actor
 
 import akka.AkkaException
 import akka.event.LoggingAdapter
-
 import java.util.Optional
+
 import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
-
 import akka.annotation.InternalApi
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -342,7 +342,7 @@ trait ActorLogging { this: Actor ⇒
 trait DiagnosticActorLogging extends Actor {
   import akka.event.Logging._
   val log = akka.event.Logging(this)
-  def mdc(currentMessage: Any): MDC = emptyMDC
+  def mdc(@unused currentMessage: Any): MDC = emptyMDC
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = try {
     log.mdc(mdc(msg))
@@ -592,7 +592,7 @@ trait Actor {
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
-  def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+  def preRestart(@unused reason: Throwable, @unused message: Option[Any]): Unit = {
     context.children foreach { child ⇒
       context.unwatch(child)
       context.stop(child)
@@ -610,7 +610,7 @@ trait Actor {
    */
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
-  def postRestart(reason: Throwable): Unit = {
+  def postRestart(@unused reason: Throwable): Unit = {
     preStart()
   }
   //#lifecycle-hooks

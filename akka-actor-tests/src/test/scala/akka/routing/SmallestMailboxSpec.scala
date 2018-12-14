@@ -26,7 +26,7 @@ class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off"
           case (msg: Int, receivedLatch: TestLatch) ⇒
             usedActors.put(msg, self.path.toString)
             receivedLatch.countDown()
-          case s: String ⇒
+          case _: String ⇒
         }
       })))
 

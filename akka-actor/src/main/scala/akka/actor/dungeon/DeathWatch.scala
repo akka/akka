@@ -4,10 +4,11 @@
 
 package akka.actor.dungeon
 
-import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification }
-import akka.event.Logging.{ Warning, Debug }
-import akka.actor.{ InternalActorRef, Address, Terminated, Actor, ActorRefScope, ActorCell, ActorRef, MinimalActorRef }
+import akka.dispatch.sysmsg.{ DeathWatchNotification, Unwatch, Watch }
+import akka.event.Logging.{ Debug, Warning }
+import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, MinimalActorRef, Terminated }
 import akka.event.AddressTerminatedTopic
+import akka.util.unused
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
@@ -159,7 +160,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       }
     }
 
-  protected def unwatchWatchedActors(actor: Actor): Unit =
+  protected def unwatchWatchedActors(@unused actor: Actor): Unit =
     if (!watching.isEmpty) {
       maintainAddressTerminatedSubscription() {
         try {

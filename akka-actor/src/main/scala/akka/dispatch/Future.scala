@@ -4,16 +4,20 @@
 
 package akka.dispatch
 
-import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
-import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption, Procedure }
-import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
+import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
+
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
-import java.util.concurrent.{ Executor, ExecutorService, Callable }
-import scala.util.{ Try, Success, Failure }
+import java.util.concurrent.{ Callable, Executor, ExecutorService }
+
+import scala.util.{ Failure, Success, Try }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+
 import akka.compat
+import akka.util.unused
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -187,20 +191,20 @@ object japi {
       internal(t)
       BoxedUnit.UNIT
     }
-    protected def internal(result: T): Unit = ()
+    protected def internal(@unused result: T): Unit = ()
   }
 
   @deprecated("Do not use this directly, use 'Recover'", "2.0")
   class RecoverBridge[+T] extends AbstractPartialFunction[Throwable, T] {
     override final def isDefinedAt(t: Throwable): Boolean = true
     override final def apply(t: Throwable): T = internal(t)
-    protected def internal(result: Throwable): T = null.asInstanceOf[T]
+    protected def internal(@unused result: Throwable): T = null.asInstanceOf[T]
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class BooleanFunctionBridge[-T] extends scala.Function1[T, Boolean] {
     override final def apply(t: T): Boolean = internal(t)
-    protected def internal(result: T): Boolean = false
+    protected def internal(@unused result: T): Boolean = false
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
@@ -210,7 +214,7 @@ object japi {
     final def apply$mcLF$sp(f: Float): BoxedUnit = { internal(f.asInstanceOf[T]); BoxedUnit.UNIT }
     final def apply$mcLD$sp(d: Double): BoxedUnit = { internal(d.asInstanceOf[T]); BoxedUnit.UNIT }
     override final def apply(t: T): BoxedUnit = { internal(t); BoxedUnit.UNIT }
-    protected def internal(result: T): Unit = ()
+    protected def internal(@unused result: T): Unit = ()
   }
 }
 
@@ -365,5 +369,5 @@ abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R] {
    * Throws UnsupportedOperation by default.
    */
   @throws(classOf[Throwable])
-  def checkedApply(parameter: T): R = throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")
+  def checkedApply(@unused parameter: T): R = throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")
 }

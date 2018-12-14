@@ -12,6 +12,9 @@ import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
 import java.util.function.{ Function ⇒ JFunction }
+
+import akka.util.unused
+
 import scala.collection.{ breakOut, immutable }
 
 abstract class Dns {
@@ -20,7 +23,7 @@ abstract class Dns {
    * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
    * the akka.actor.io.dns.resolver that is configured.
    */
-  def cached(name: String): Option[Dns.Resolved] = None
+  def cached(@unused name: String): Option[Dns.Resolved] = None
 
   /**
    * If an entry is cached return it immediately. If it is not then

@@ -972,7 +972,7 @@ private[akka] class ActorSystemImpl(
           } finally {
             inProcessOfRegistration.countDown //Always notify listeners of the inProcess signal
           }
-          case other ⇒ registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry
+          case _ ⇒ registerExtension(ext) //Someone else is in process of registering an extension for this Extension, retry
         }
       case existing ⇒ existing.asInstanceOf[T]
     }
@@ -994,7 +994,7 @@ private[akka] class ActorSystemImpl(
         dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
           case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
           case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
-          case Success(other) ⇒
+          case Success(_) ⇒
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
             else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
           case Failure(problem) ⇒
