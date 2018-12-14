@@ -5,7 +5,6 @@
 package akka.routing
 
 import scala.collection.immutable
-
 import akka.ConfigurationException
 import akka.actor.ActorContext
 import akka.actor.ActorPath
@@ -17,6 +16,7 @@ import akka.actor.Terminated
 import akka.dispatch.Dispatchers
 import akka.actor.ActorSystem
 import akka.japi.Util.immutableSeq
+import akka.util.unused
 
 /**
  * This trait represents a router factory: it produces the actual router actor
@@ -59,7 +59,7 @@ trait RouterConfig extends Serializable {
    * Management messages not handled by the "head" actor are
    * delegated to this controller actor.
    */
-  def routingLogicController(routingLogic: RoutingLogic): Option[Props] = routingLogic match { case _ ⇒ None } // avoiding compiler warning
+  def routingLogicController(@unused routingLogic: RoutingLogic): Option[Props] = None
 
   /**
    * Is the message handled by the router head actor or the
@@ -79,12 +79,12 @@ trait RouterConfig extends Serializable {
   /**
    * Overridable merge strategy, by default completely prefers `this` (i.e. no merge).
    */
-  def withFallback(other: RouterConfig): RouterConfig = other match { case _ ⇒ this } // avoiding compiler warning
+  def withFallback(@unused other: RouterConfig): RouterConfig = this
 
   /**
    * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
    */
-  def verifyConfig(path: ActorPath): Unit = path match { case _ ⇒ () } // avoiding compiler warning
+  def verifyConfig(@unused path: ActorPath): Unit = ()
 
   /**
    * INTERNAL API

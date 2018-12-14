@@ -417,10 +417,9 @@ object Logging {
   /**
    * INTERNAL API
    */
-  private[akka] class LogExt(system: ExtendedActorSystem) extends Extension {
+  private[akka] class LogExt(@unused system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
-    def name(clazz: Class[_ <: Actor]): String = "log" + system + "-" + id + "-" + clazz
   }
 
   /**
@@ -487,8 +486,7 @@ object Logging {
     case WarningLevel ⇒ classOf[Warning]
     case InfoLevel    ⇒ classOf[Info]
     case DebugLevel   ⇒ classOf[Debug]
-    case unsupported  ⇒ throw new LoggerInitializationException(s"Unsupported Logger type $unsupported.")
-
+    case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
@@ -725,7 +723,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message)
       case InfoLevel    ⇒ Info(logSource, logClass, message)
       case DebugLevel   ⇒ Debug(logSource, logClass, message)
-      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
@@ -733,7 +731,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
-      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
@@ -741,7 +739,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
-      case other        ⇒ throw new LoggerInitializationException(s"Unknown Logger $other.")
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
   }
@@ -1293,7 +1291,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
     case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
-    case unsupported          ⇒ throw new ConfigurationException(s"Log level '$unsupported' in config is not supported.")
+    case level                ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   /**
