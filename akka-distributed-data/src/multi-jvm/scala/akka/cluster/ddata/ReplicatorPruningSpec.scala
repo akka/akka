@@ -38,7 +38,8 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
   val replicator = system.actorOf(Replicator.props(
     ReplicatorSettings(system).withGossipInterval(1.second)
@@ -83,19 +84,19 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
         member.uniqueAddress
       }
 
-      replicator ! Update(KeyA, GCounter(), WriteAll(timeout))(_ + 3)
+      replicator ! Update(KeyA, GCounter(), WriteAll(timeout))(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
-      replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ + "a" + "b" + "c")
+      replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ :+ "a" :+ "b" :+ "c")
       expectMsg(UpdateSuccess(KeyB, None))
 
-      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ increment "x" increment "y" }
+      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _.incrementBy("x", 1).incrementBy("y", 1) }
       expectMsg(UpdateSuccess(KeyC, None))
 
-      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ + ("a" → Set("A")) }
+      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" → Set("A")) }
       expectMsg(UpdateSuccess(KeyD, None))
 
-      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ + ("a" → GSet.empty[String].add("A")) }
+      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ :+ ("a" → GSet.empty[String].add("A")) }
       expectMsg(UpdateSuccess(KeyE, None))
 
       enterBarrier("updates-done")
@@ -125,7 +126,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       enterBarrier("get-old")
 
       runOn(third) {
-        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _ - "a" }
+        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _ remove "a" }
         expectMsg(UpdateSuccess(KeyE, None))
       }
 
@@ -206,7 +207,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       def updateAfterPruning(expectedValue: Int): Unit = {
         replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing ⇒
           // inject data from removed node to simulate bad data
-          existing.merge(oldCounter) + 1
+          existing.merge(oldCounter) :+ 1
         }
         expectMsgPF() {
           case UpdateSuccess(KeyA, _) ⇒

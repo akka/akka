@@ -100,6 +100,15 @@ object ReplicatorSettings {
    */
   @InternalApi private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
+
+  /**
+   * INTERNAL API
+   * The name of the actor used in DistributedData extensions.
+   */
+  @InternalApi private[akka] def name(system: ActorSystem, modifier: Option[String]): String = {
+    val name = system.settings.config.getString("akka.cluster.distributed-data.name")
+    modifier.map(s ⇒ s + name.take(1).toUpperCase + name.drop(1)).getOrElse(name)
+  }
 }
 
 /**

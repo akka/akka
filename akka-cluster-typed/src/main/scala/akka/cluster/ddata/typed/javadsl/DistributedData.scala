@@ -11,6 +11,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ExtensionSetup
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -38,6 +39,8 @@ abstract class DistributedData extends Extension {
    * `ActorRef` of the [[Replicator]] .
    */
   def replicator: ActorRef[Replicator.Command]
+
+  def selfUniqueAddress: SelfUniqueAddress
 }
 
 /**
@@ -47,6 +50,9 @@ abstract class DistributedData extends Extension {
 
   override val replicator: ActorRef[Replicator.Command] =
     akka.cluster.ddata.typed.scaladsl.DistributedData(system).replicator.narrow[Replicator.Command]
+
+  override val selfUniqueAddress: SelfUniqueAddress =
+    akka.cluster.ddata.typed.scaladsl.DistributedData(system).selfUniqueAddress
 
 }
 

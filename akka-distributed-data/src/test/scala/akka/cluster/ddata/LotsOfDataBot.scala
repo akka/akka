@@ -4,20 +4,14 @@
 
 package akka.cluster.ddata
 
-import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.cluster.Cluster
-import akka.cluster.ddata.Replicator.Changed
-import akka.cluster.ddata.Replicator.GetKeyIds
-import akka.cluster.ddata.Replicator.GetKeyIdsResult
-import akka.cluster.ddata.Replicator.Subscribe
-import akka.cluster.ddata.Replicator.Update
-import akka.cluster.ddata.Replicator.UpdateResponse
-import akka.cluster.ddata.Replicator.WriteLocal
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -75,8 +69,8 @@ class LotsOfDataBot extends Actor with ActorLogging {
   import LotsOfDataBot._
   import Replicator._
 
+  implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
   val replicator = DistributedData(context.system).replicator
-  implicit val cluster = Cluster(context.system)
 
   import context.dispatcher
   val isPassive = context.system.settings.config.getBoolean("passive")
@@ -110,10 +104,10 @@ class LotsOfDataBot extends Actor with ActorLogging {
         val s = ThreadLocalRandom.current().nextInt(97, 123).toChar.toString
         if (count <= maxEntries || ThreadLocalRandom.current().nextBoolean()) {
           // add
-          replicator ! Update(key, ORSet(), WriteLocal)(_ + s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_ :+ s)
         } else {
           // remove
-          replicator ! Update(key, ORSet(), WriteLocal)(_ - s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_ remove s)
         }
       }
 

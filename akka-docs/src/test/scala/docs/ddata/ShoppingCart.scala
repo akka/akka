@@ -5,10 +5,10 @@
 package scala.docs.ddata
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.LWWMapKey
@@ -38,7 +38,7 @@ class ShoppingCart(userId: String) extends Actor {
   import akka.cluster.ddata.Replicator._
 
   val replicator = DistributedData(context.system).replicator
-  implicit val cluster = Cluster(context.system)
+  implicit val node = DistributedData(context.system).selfUniqueAddress
 
   val DataKey = LWWMapKey[String, LineItem]("cart-" + userId)
 
@@ -79,8 +79,8 @@ class ShoppingCart(userId: String) extends Actor {
   def updateCart(data: LWWMap[String, LineItem], item: LineItem): LWWMap[String, LineItem] =
     data.get(item.productId) match {
       case Some(LineItem(_, _, existingQuantity)) ⇒
-        data + (item.productId -> item.copy(quantity = existingQuantity + item.quantity))
-      case None ⇒ data + (item.productId -> item)
+        data :+ (item.productId -> item.copy(quantity = existingQuantity + item.quantity))
+      case None ⇒ data :+ (item.productId -> item)
     }
 
   //#remove-item
@@ -92,13 +92,13 @@ class ShoppingCart(userId: String) extends Actor {
 
     case GetSuccess(DataKey, Some(RemoveItem(productId))) ⇒
       replicator ! Update(DataKey, LWWMap(), writeMajority, None) {
-        _ - productId
+        _.remove(node, productId)
       }
 
     case GetFailure(DataKey, Some(RemoveItem(productId))) ⇒
       // ReadMajority failed, fall back to best effort local value
       replicator ! Update(DataKey, LWWMap(), writeMajority, None) {
-        _ - productId
+        _.remove(node, productId)
       }
 
     case NotFound(DataKey, Some(RemoveItem(productId))) ⇒
