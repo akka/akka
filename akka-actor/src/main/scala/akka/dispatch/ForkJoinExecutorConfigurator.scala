@@ -42,7 +42,7 @@ object ForkJoinExecutorConfigurator {
     override def getRawResult(): Unit = ()
     override def setRawResult(unit: Unit): Unit = ()
     final override def exec(): Boolean = try { runnable.run(); true } catch {
-      case ie: InterruptedException ⇒
+      case _: InterruptedException ⇒
         Thread.currentThread.interrupt()
         false
       case anything: Throwable ⇒
@@ -61,7 +61,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
 
   def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = t match {
     case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
-    case x ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
+    case _ ⇒ throw new IllegalStateException("The prerequisites for the ForkJoinExecutorConfigurator is a ForkJoinPool.ForkJoinWorkerThreadFactory!")
   }
 
   class ForkJoinExecutorServiceFactory(
@@ -83,7 +83,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     val asyncMode = config.getString("task-peeking-mode") match {
       case "FIFO" ⇒ true
       case "LIFO" ⇒ false
-      case unsupported ⇒ throw new IllegalArgumentException("Cannot instantiate ForkJoinExecutorServiceFactory. " +
+      case _ ⇒ throw new IllegalArgumentException("Cannot instantiate ForkJoinExecutorServiceFactory. " +
         """"task-peeking-mode" in "fork-join-executor" section could only set to "FIFO" or "LIFO".""")
     }
 

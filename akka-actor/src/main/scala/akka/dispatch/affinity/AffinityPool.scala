@@ -325,7 +325,7 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
   private val queueSelectorFactory: QueueSelectorFactory =
     prerequisites.dynamicAccess.createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] → config))
       .recover({
-        case exception ⇒ throw new IllegalArgumentException(
+        case _ ⇒ throw new IllegalArgumentException(
           s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
       }).get
 

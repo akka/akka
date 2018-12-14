@@ -12,8 +12,7 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.util.ReentrantGuard
-import akka.util.Helpers
+import akka.util.{ Helpers, ReentrantGuard, unused }
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -238,7 +237,7 @@ trait LoggingBus extends ActorEventBus {
  */
 @implicitNotFound("Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[-T] {
   def genString(t: T): String
-  def genString(t: T, system: ActorSystem): String = genString(t)
+  def genString(t: T, @unused system: ActorSystem): String = genString(t)
   def getClazz(t: T): Class[_] = t.getClass
 }
 
@@ -418,7 +417,7 @@ object Logging {
   /**
    * INTERNAL API
    */
-  private[akka] class LogExt(system: ExtendedActorSystem) extends Extension {
+  private[akka] class LogExt(@unused system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
   }
@@ -464,7 +463,7 @@ object Logging {
     case "warning" ⇒ Some(WarningLevel)
     case "info"    ⇒ Some(InfoLevel)
     case "debug"   ⇒ Some(DebugLevel)
-    case unknown   ⇒ None
+    case _         ⇒ None
   }
 
   /**
@@ -487,6 +486,7 @@ object Logging {
     case WarningLevel ⇒ classOf[Warning]
     case InfoLevel    ⇒ classOf[Info]
     case DebugLevel   ⇒ classOf[Debug]
+    case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
@@ -723,6 +723,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message)
       case InfoLevel    ⇒ Info(logSource, logClass, message)
       case DebugLevel   ⇒ Debug(logSource, logClass, message)
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
@@ -730,6 +731,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
@@ -737,6 +739,7 @@ object Logging {
       case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
       case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
       case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
+      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
   }
@@ -876,15 +879,6 @@ object Logging {
   trait StdOutLogger {
 
     import StdOutLogger._
-
-    // format: OFF
-    // FIXME: remove those when we have the chance to break binary compatibility
-    private val errorFormat             = ErrorFormat
-    private val errorFormatWithoutCause = ErrorFormatWithoutCause
-    private val warningFormat           = WarningFormat
-    private val infoFormat              = InfoFormat
-    private val debugFormat             = DebugFormat
-    // format: ON
 
     def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
@@ -1289,6 +1283,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ isWarningEnabled
     case Logging.InfoLevel    ⇒ isInfoEnabled
     case Logging.DebugLevel   ⇒ isDebugEnabled
+    case _                    ⇒ false
   }
 
   final def notifyLog(level: Logging.LogLevel, message: String): Unit = level match {
@@ -1296,6 +1291,7 @@ trait LoggingAdapter {
     case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
     case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
+    case level                ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   /**

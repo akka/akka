@@ -12,13 +12,14 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.dispatch.ProducesMessageQueue
 import akka.event.Logging.LogEvent
+import akka.util.unused
 
 trait LoggerMessageQueueSemantics
 
 /**
  * INTERNAL API
  */
-private[akka] class LoggerMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType
+private[akka] class LoggerMailboxType(@unused settings: ActorSystem.Settings, @unused config: Config) extends MailboxType
   with ProducesMessageQueue[LoggerMailbox] {
 
   override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = (owner, system) match {
@@ -30,7 +31,7 @@ private[akka] class LoggerMailboxType(settings: ActorSystem.Settings, config: Co
 /**
  * INTERNAL API
  */
-private[akka] class LoggerMailbox(owner: ActorRef, system: ActorSystem)
+private[akka] class LoggerMailbox(@unused owner: ActorRef, system: ActorSystem)
   extends UnboundedMailbox.MessageQueue with LoggerMessageQueueSemantics {
 
   override def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {

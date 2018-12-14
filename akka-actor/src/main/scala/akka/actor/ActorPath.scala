@@ -281,7 +281,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
-    case c: ChildActorPath ⇒ 1
+    case _: ChildActorPath ⇒ 1
   }
 
   /**
@@ -315,7 +315,7 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
   override def elements: immutable.Iterable[String] = {
     @tailrec
     def rec(p: ActorPath, acc: List[String]): immutable.Iterable[String] = p match {
-      case r: RootActorPath ⇒ acc
+      case _: RootActorPath ⇒ acc
       case _                ⇒ rec(p.parent, p.name :: acc)
     }
     rec(this, Nil)

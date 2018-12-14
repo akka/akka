@@ -4,6 +4,8 @@
 
 package akka.actor.dungeon
 
+import java.util.Optional
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
@@ -11,7 +13,6 @@ import scala.collection.immutable
 import akka.actor._
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
-import java.util.Optional
 
 private[akka] object Children {
   val GetNobody = () ⇒ Nobody
@@ -184,6 +185,8 @@ private[akka] trait Children { this: ActorCell ⇒
     childrenRefs.stats foreach {
       case ChildRestartStats(child: InternalActorRef, _, _) ⇒
         child.resume(if (perp == child) causedByFailure else null)
+      case stats ⇒
+        throw new IllegalStateException(s"Unexpected child ActorRef: ${stats.child}")
     }
 
   def getChildByName(name: String): Option[ChildStats] = childrenRefs.getByName(name)

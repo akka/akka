@@ -206,7 +206,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       filterException[TestActor.TestException] {
         probe.watch(supervisor)
         // Throw three times rapidly
-        for (i ← 1 to 3) {
+        for (_ ← 1 to 3) {
           supervisor ! "THROW"
           probe.expectMsg("STARTED")
         }
