@@ -125,18 +125,28 @@ final class ORMultiMap[A, B] private[akka] (
   def size: Int = underlying.keys.elements.size
 
   /**
-   * Convenience for put. Requires an implicit Cluster.
+   * Convenience for put. Requires an implicit SelfUniqueAddress.
    * @see [[#put]]
    */
+  def :+(entry: (A, Set[B]))(implicit node: SelfUniqueAddress): ORMultiMap[A, B] = {
+    val (key, value) = entry
+    put(node.uniqueAddress, key, value)
+  }
+
+  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def +(entry: (A, Set[B]))(implicit node: Cluster): ORMultiMap[A, B] = {
     val (key, value) = entry
-    put(node, key, value)
+    put(node.selfUniqueAddress, key, value)
   }
 
   /**
    * Scala API: Associate an entire set with the key while retaining the history of the previous
    * replicated data set.
    */
+  def put(node: SelfUniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] =
+    put(node.uniqueAddress, key, value)
+
+  @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: Set[B]): ORMultiMap[A, B] =
     put(node.selfUniqueAddress, key, value)
 
@@ -144,9 +154,16 @@ final class ORMultiMap[A, B] private[akka] (
    * Java API: Associate an entire set with the key while retaining the history of the previous
    * replicated data set.
    */
+  def put(node: SelfUniqueAddress, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
+    import scala.collection.JavaConverters._
+    put(node.uniqueAddress, key, value.asScala.toSet)
+  }
+
+  @Deprecated
+  @deprecated("Use `put` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def put(node: Cluster, key: A, value: java.util.Set[B]): ORMultiMap[A, B] = {
     import scala.collection.JavaConverters._
-    put(node, key, value.asScala.toSet)
+    put(node.selfUniqueAddress, key, value.asScala.toSet)
   }
 
   /**
@@ -160,17 +177,26 @@ final class ORMultiMap[A, B] private[akka] (
   }
 
   /**
+   * Scala API
+   * Remove an entire set associated with the key.
+   */
+  def remove(key: A)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] = remove(node.uniqueAddress, key)
+
+  /**
    * Convenience for remove. Requires an implicit Cluster.
    * @see [[#remove]]
    */
-  def -(key: A)(implicit node: Cluster): ORMultiMap[A, B] =
-    remove(node, key)
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def -(key: A)(implicit node: Cluster): ORMultiMap[A, B] = remove(node.selfUniqueAddress, key)
 
   /**
+   * Java API
    * Remove an entire set associated with the key.
    */
-  def remove(node: Cluster, key: A): ORMultiMap[A, B] =
-    remove(node.selfUniqueAddress, key)
+  def remove(node: SelfUniqueAddress, key: A): ORMultiMap[A, B] = remove(node.uniqueAddress, key)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def remove(node: Cluster, key: A): ORMultiMap[A, B] = remove(node.selfUniqueAddress, key)
 
   /**
    * INTERNAL API
@@ -185,16 +211,22 @@ final class ORMultiMap[A, B] private[akka] (
   }
 
   /**
-   * Scala API: Add an element to a set associated with a key. If there is no existing set then one will be initialised.
+   * Add an element to a set associated with a key. If there is no existing set then one will be initialised.
+   * TODO add implicit after deprecated is EOL.
    */
+  def addBinding(node: SelfUniqueAddress, key: A, element: B): ORMultiMap[A, B] =
+    addBinding(node.uniqueAddress, key, element)
+
+  def addBindingBy(key: A, element: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    addBinding(node, key, element)
+
+  @deprecated("Use `addBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def addBinding(key: A, element: B)(implicit node: Cluster): ORMultiMap[A, B] =
     addBinding(node.selfUniqueAddress, key, element)
 
-  /**
-   * Java API: Add an element to a set associated with a key. If there is no existing set then one will be initialised.
-   */
+  @deprecated("Use `addBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def addBinding(node: Cluster, key: A, element: B): ORMultiMap[A, B] =
-    addBinding(key, element)(node)
+    addBinding(node.selfUniqueAddress, key, element)
 
   /**
    * INTERNAL API
@@ -205,18 +237,24 @@ final class ORMultiMap[A, B] private[akka] (
   }
 
   /**
-   * Scala API: Remove an element of a set associated with a key. If there are no more elements in the set then the
+   * Remove an element of a set associated with a key. If there are no more elements in the set then the
    * entire set will be removed.
+   * TODO add implicit after deprecated is EOL.
    */
+  def removeBinding(node: SelfUniqueAddress, key: A, element: B): ORMultiMap[A, B] =
+    removeBinding(node.uniqueAddress, key, element)
+
+  def removeBindingBy(key: A, element: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    removeBinding(node, key, element)
+
+  @deprecated("Use `removeBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def removeBinding(key: A, element: B)(implicit node: Cluster): ORMultiMap[A, B] =
     removeBinding(node.selfUniqueAddress, key, element)
 
-  /**
-   * Java API: Remove an element of a set associated with a key. If there are no more elements in the set then the
-   * entire set will be removed.
-   */
+  @Deprecated
+  @deprecated("Use `removeBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def removeBinding(node: Cluster, key: A, element: B): ORMultiMap[A, B] =
-    removeBinding(key, element)(node)
+    removeBinding(node.selfUniqueAddress, key, element)
 
   /**
    * INTERNAL API
@@ -241,6 +279,13 @@ final class ORMultiMap[A, B] private[akka] (
    * and another one is added within the same Update. The order of addition and removal is important in order
    * to retain history for replicated data.
    */
+  def replaceBinding(node: SelfUniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
+    replaceBinding(node.uniqueAddress, key, oldElement, newElement)
+
+  def replaceBindingBy(key: A, oldElement: B, newElement: B)(implicit node: SelfUniqueAddress): ORMultiMap[A, B] =
+    replaceBinding(node, key, oldElement, newElement)
+
+  @deprecated("Use `replaceBinding` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def replaceBinding(key: A, oldElement: B, newElement: B)(implicit node: Cluster): ORMultiMap[A, B] =
     replaceBinding(node.selfUniqueAddress, key, oldElement, newElement)
 

@@ -4,13 +4,11 @@
 
 package akka.cluster.ddata;
 
-import akka.cluster.Cluster;
-
 public class ORMapTest {
 
   public void compileOnlyORMapTest() {
     // primarily to check API accessibility with overloads/types
-    Cluster node1 = null;
+    SelfUniqueAddress node1 = null;
 
     ORMap<String, PNCounterMap<String>> orMap = ORMap.create();
     // updated needs a cast

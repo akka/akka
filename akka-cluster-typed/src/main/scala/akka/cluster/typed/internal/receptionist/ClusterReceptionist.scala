@@ -12,7 +12,9 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicator }
+import akka.cluster.ddata.typed.scaladsl.DistributedData
+import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
@@ -52,13 +54,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   final class Setup(ctx: ActorContext[Command]) {
     val untypedSystem = ctx.system.toUntyped
     val settings = ClusterReceptionistSettings(ctx.system)
-    val replicator = DistributedData(untypedSystem).replicator
+    val replicator = dd.DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
     lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
       case f: FiniteDuration ⇒ f
       case _                 ⇒ throw new IllegalStateException("Cannot actually happen")
     }
-    implicit val cluster = Cluster(untypedSystem)
+    val cluster = Cluster(untypedSystem)
+    implicit val selfNodeAddress = DistributedData(ctx.system).selfUniqueAddress
     def newTombstoneDeadline() = Deadline(keepTombstonesFor)
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }

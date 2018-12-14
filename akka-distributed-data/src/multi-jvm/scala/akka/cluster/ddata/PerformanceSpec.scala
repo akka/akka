@@ -69,7 +69,8 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator = DistributedData(system).replicator
   val timeout = 3.seconds.dilated
   val factor = 1 // use 3 here for serious tuning
@@ -156,7 +157,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val n = 1000 * factor
       val expectedData = (0 until n).toSet
       repeat("ORSet Update WriteLocal", keys, n)({ (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), WriteLocal)(_ + i), replyTo)
+        replicator.tell(Update(key, ORSet(), WriteLocal)(_ :+ i), replyTo)
       }, key ⇒ awaitReplicated(key, expectedData))
 
       enterBarrier("after-1")
@@ -164,7 +165,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
 
     "be blazingly fast for ORSet Get ReadLocal" taggedAs PerformanceTest in {
       val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("A" + n))
-      repeat("Get ReadLocal", keys, 100000 * factor) { (key, i, replyTo) ⇒
+      repeat("Get ReadLocal", keys, 100000 * factor) { (key, _, replyTo) ⇒
         replicator.tell(Get(key, ReadLocal), replyTo)
       }
       enterBarrier("after-2")
@@ -175,7 +176,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val n = 200 * factor
       val expected = Some((0 until n).toSet)
       repeat("ORSet Update WriteLocal + gossip", keys, n, expected) { (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), WriteLocal)(_ + i), replyTo)
+        replicator.tell(Update(key, ORSet(), WriteLocal)(_ :+ i), replyTo)
       }
       enterBarrier("after-3")
     }
@@ -185,7 +186,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val n = 200 * factor
       val expected = Some((0 until n).toSet ++ (0 until n).map(-_).toSet)
       repeat("ORSet Update WriteLocal existing + gossip", keys, n, expected) { (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), WriteLocal)(_ + (-i)), replyTo)
+        replicator.tell(Update(key, ORSet(), WriteLocal)(_ :+ (-i)), replyTo)
       }
       enterBarrier("after-4")
     }
@@ -196,7 +197,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val expected = Some((0 until n).toSet)
       val writeTwo = WriteTo(2, timeout)
       repeat("ORSet Update WriteTwo + gossip", keys, n, expected) { (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), writeTwo)(_ + i), replyTo)
+        replicator.tell(Update(key, ORSet(), writeTwo)(_ :+ i), replyTo)
       }
       enterBarrier("after-5")
     }
@@ -209,7 +210,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
         val latch = TestLatch(n)
         val replyTo = system.actorOf(countDownProps(latch))
         for (_ ← 0 until n)
-          replicator.tell(Update(key, GCounter(), WriteLocal)(_ + 1), replyTo)
+          replicator.tell(Update(key, GCounter(), WriteLocal)(_ :+ 1), replyTo)
         Await.ready(latch, 5.seconds + (1.second * factor))
         enterBarrier("update-done-6")
         runOn(n1) {
@@ -247,7 +248,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val n = 300 * factor
       val writeMajority = WriteMajority(timeout)
       repeat("ORSet Update one-by-one deltas", keys, n, oneByOne = true) { (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), writeMajority)(_ + i), replyTo)
+        replicator.tell(Update(key, ORSet(), writeMajority)(_ :+ i), replyTo)
       }
       enterBarrier("after-7")
     }
@@ -257,7 +258,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       val n = 200 * factor
       val writeMajority = WriteMajority(timeout)
       repeat("ORSet Update deltas", keys, n, oneByOne = false) { (key, i, replyTo) ⇒
-        replicator.tell(Update(key, ORSet(), writeMajority)(_ + i), replyTo)
+        replicator.tell(Update(key, ORSet(), writeMajority)(_ :+ i), replyTo)
       }
       enterBarrier("after-8")
     }

@@ -13,12 +13,7 @@ import java.time.Duration;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.cluster.Cluster;
-import akka.cluster.ddata.DistributedData;
-import akka.cluster.ddata.Key;
-import akka.cluster.ddata.LWWMap;
-import akka.cluster.ddata.LWWMapKey;
-import akka.cluster.ddata.Replicator;
+import akka.cluster.ddata.*;
 import akka.cluster.ddata.Replicator.GetFailure;
 import akka.cluster.ddata.Replicator.GetResponse;
 import akka.cluster.ddata.Replicator.GetSuccess;
@@ -126,7 +121,7 @@ public class ShoppingCart extends AbstractActor {
   }
 
   private final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
-  private final Cluster node = Cluster.get(getContext().getSystem());
+  private final SelfUniqueAddress node = DistributedData.get(getContext().getSystem()).selfUniqueAddress();
 
   @SuppressWarnings("unused")
   private final String userId;

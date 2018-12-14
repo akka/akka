@@ -9,7 +9,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
-import akka.cluster.UniqueAddress
 import akka.annotation.InternalApi
 
 /**
@@ -107,7 +106,10 @@ sealed abstract class VersionVector
   /**
    * Increment the version for the node passed as argument. Returns a new VersionVector.
    */
-  def +(node: Cluster): VersionVector = increment(node)
+  def :+(node: SelfUniqueAddress): VersionVector = increment(node)
+
+  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def +(node: Cluster): VersionVector = increment(node.selfUniqueAddress)
 
   /**
    * INTERNAL API
@@ -118,6 +120,9 @@ sealed abstract class VersionVector
   /**
    * Increment the version for the node passed as argument. Returns a new VersionVector.
    */
+  def increment(node: SelfUniqueAddress): VersionVector = increment(node.uniqueAddress)
+
+  @deprecated("Use `increment` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def increment(node: Cluster): VersionVector = increment(node.selfUniqueAddress)
 
   def isEmpty: Boolean

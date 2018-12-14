@@ -7,13 +7,12 @@ package akka.cluster.typed.internal
 import akka.actor.typed.Props
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.{ ClusterEvent, MemberStatus }
+import akka.cluster.{ ClusterEvent, Member, MemberStatus, UniqueAddress }
 import akka.actor.typed.{ ActorRef, ActorSystem, Terminated }
 import akka.cluster.typed._
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.Member
 
 /**
  * INTERNAL API:

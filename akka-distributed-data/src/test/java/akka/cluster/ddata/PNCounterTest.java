@@ -4,8 +4,6 @@
 
 package akka.cluster.ddata;
 
-import akka.cluster.Cluster;
-
 import java.math.BigInteger;
 
 public class PNCounterTest {
@@ -13,8 +11,8 @@ public class PNCounterTest {
 
   public void compileOnlyPNCounterApiTest() {
     // primarily to check API accessibility with overloads/types
-    Cluster node1 = null;
-    Cluster node2 = null;
+    SelfUniqueAddress node1 = null;
+    SelfUniqueAddress node2 = null;
 
     PNCounter c1 = PNCounter.create();
 

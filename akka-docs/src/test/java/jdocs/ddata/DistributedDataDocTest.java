@@ -50,7 +50,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   static
   //#update
   class DemonstrateUpdate extends AbstractActor {
-    final Cluster node = Cluster.get(getContext().getSystem());
+    final SelfUniqueAddress node = DistributedData.get(getContext().getSystem()).selfUniqueAddress();
     final ActorRef replicator = 
       DistributedData.get(getContext().getSystem()).replicator();
 
@@ -305,7 +305,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
 
   public void demonstratePNCounter() {
     //#pncounter
-    final Cluster node = Cluster.get(system);
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final PNCounter c0 = PNCounter.create();
     final PNCounter c1 = c0.increment(node, 1);
     final PNCounter c2 = c1.increment(node, 7);
@@ -316,7 +316,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
 
   public void demonstratePNCounterMap() {
     //#pncountermap
-    final Cluster node = Cluster.get(system);
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final PNCounterMap<String> m0 = PNCounterMap.create();
     final PNCounterMap<String> m1 = m0.increment(node, "a", 7);
     final PNCounterMap<String> m2 = m1.decrement(node, "a", 2);
@@ -349,7 +349,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
 
   public void demonstrateORMultiMap() {
     //#ormultimap
-    final Cluster node = Cluster.get(system);
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final ORMultiMap<String, Integer> m0 = ORMultiMap.create();
     final ORMultiMap<String, Integer> m1 = m0.put(node, "a",
         new HashSet<>(Arrays.asList(1, 2, 3)));
@@ -371,7 +371,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateLWWRegister() {
     //#lwwregister
-    final Cluster node = Cluster.get(system);
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final LWWRegister<String> r1 = LWWRegister.create(node, "Hello");
     final LWWRegister<String> r2 = r1.withValue(node, "Hi");
     System.out.println(r1.value() + " by " + r1.updatedBy() + " at " + r1.timestamp());
@@ -398,7 +398,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   public void demonstrateLWWRegisterWithCustomClock() {
     //#lwwregister-custom-clock
 
-    final Cluster node = Cluster.get(system);
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final LWWRegister.Clock<Record> recordClock = new LWWRegister.Clock<Record>() {
       @Override
       public long apply(long currentTimestamp, Record value) {
