@@ -75,14 +75,14 @@ final class PNCounterMap[A] private[akka] (
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def incrementBy(key: A, delta: Long = 1)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
-    increment(node, key, delta)
+  def incrementBy(key: A, delta: Long)(implicit node: SelfUniqueAddress): PNCounterMap[A] =
+    increment(node.uniqueAddress, key, delta)
 
   /**
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(key: A, delta: Long = 1)(implicit node: Cluster): PNCounterMap[A] =
+  def increment(key: A, delta: Long)(implicit node: Cluster): PNCounterMap[A] =
     increment(node.selfUniqueAddress, key, delta)
 
   /**

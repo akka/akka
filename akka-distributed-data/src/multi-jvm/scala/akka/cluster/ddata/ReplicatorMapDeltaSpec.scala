@@ -242,8 +242,8 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
       runOn(first) {
         // by setting something for each key we don't have to worry about NotFound
         List(KeyA, KeyB, KeyC).foreach { key ⇒
-          fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ incrementBy key._2)
-          deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ incrementBy key._2)
+          fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, 1))
+          deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, 1))
         }
         List(KeyD, KeyE, KeyF).foreach { key ⇒
           fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ :+ (key._2 → Set("a")))
@@ -301,7 +301,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
       system.eventStream.subscribe(errorLogProbe.ref, classOf[Error])
       runOn(first) {
         for (_ ← 1 to N; key ← List(KeyA, KeyB)) {
-          ordinaryReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ incrementBy key._2)
+          ordinaryReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, 1))
         }
       }
       enterBarrier("updated-2")
