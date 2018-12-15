@@ -59,13 +59,11 @@ class TypedMultiMapSpec extends WordSpec with Matchers with TypeCheckedTripleEqu
     }
 
     "reject invalid insertions" in {
-      val m1 = TypedMultiMap.empty[AbstractKey, KV]
-      "m1.inserted(Key(1))(MyValue(42L))" shouldNot compile
+      "TypedMultiMap.empty[AbstractKey, KV].inserted(Key(1))(MyValue(42L))" shouldNot compile
     }
 
     "reject invalid removals" in {
-      val m1 = TypedMultiMap.empty[AbstractKey, KV]
-      "m1.removed(Key(1))(MyValue(42L))" shouldNot compile
+      "TypedMultiMap.empty[AbstractKey, KV].removed(Key(1))(MyValue(42L))" shouldNot compile
     }
 
   }

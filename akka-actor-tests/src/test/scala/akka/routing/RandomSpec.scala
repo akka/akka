@@ -36,7 +36,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       actor ! "hello"
 
       within(2 seconds) {
-        for (i ← 1 to 5) expectMsg("world")
+        for (_ ← 1 to 5) expectMsg("world")
       }
 
       system.stop(actor)
@@ -63,8 +63,8 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           }
         })), name = "random")
 
-      for (i ← 0 until iterationCount) {
-        for (k ← 0 until connectionCount) {
+      for (_ ← 0 until iterationCount) {
+        for (_ ← 0 until connectionCount) {
           val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
           replies = replies + (id → (replies(id) + 1))
         }

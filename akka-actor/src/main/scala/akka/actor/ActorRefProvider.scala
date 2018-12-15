@@ -791,7 +791,7 @@ private[akka] class LocalActorRefProvider private[akka] (
           // routers use context.actorOf() to create the routees, which does not allow us to pass
           // these through, but obtain them here for early verification
           val routeeDispatcher = system.dispatchers.lookup(p.dispatcher)
-          val routeeMailbox = system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
+          system.mailboxes.getMailboxType(routeeProps, routeeDispatcher.configurator.config)
 
           new RoutedActorRef(system, routerProps, routerDispatcher, routerMailbox, routeeProps, supervisor, path).initialize(async)
         } catch {

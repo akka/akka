@@ -96,7 +96,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
             if (positiveCachePolicy != Never) cache.put(answer, positiveCachePolicy)
             answer
           } catch {
-            case e: UnknownHostException ⇒
+            case _: UnknownHostException ⇒
               val answer = Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
               if (negativeCachePolicy != Never) cache.put(answer, negativeCachePolicy)
               answer

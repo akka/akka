@@ -286,7 +286,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
 
   private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
     case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
-    case other ⇒
+    case _ ⇒
       prerequisites.eventStream.publish(
         Warning(
           "PinnedDispatcherConfigurator",

@@ -194,7 +194,7 @@ case class DefaultOptimalSizeExploringResizer(
             cell.mailbox.numberOfMessages + (if (cell.currentMessage != null) 1 else 0)
           case cell ⇒ cell.numberOfMessages
         }
-      case x ⇒ 0
+      case _ ⇒ 0
     }
 
     val totalQueueLength = messagesInRoutees.sum

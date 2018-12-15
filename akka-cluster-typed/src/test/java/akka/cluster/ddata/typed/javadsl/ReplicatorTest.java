@@ -4,6 +4,7 @@
 
 package akka.cluster.ddata.typed.javadsl;
 
+import akka.cluster.ddata.*;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -13,11 +14,6 @@ import org.scalatest.junit.JUnitSuite;
 // #sample
 import java.util.Optional;
 import akka.actor.typed.ActorSystem;
-import akka.cluster.Cluster;
-import akka.cluster.ddata.GCounter;
-import akka.cluster.ddata.GCounterKey;
-import akka.cluster.ddata.Key;
-import akka.cluster.ddata.ReplicatedData;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.javadsl.TestKit;
 import akka.actor.typed.ActorRef;
@@ -86,14 +82,14 @@ public class ReplicatorTest extends JUnitSuite {
 
   static class Counter extends AbstractBehavior<ClientCommand> {
     private final ActorRef<Replicator.Command> replicator;
-    private final Cluster node;
+    private final SelfUniqueAddress node;
     final ActorRef<Replicator.UpdateResponse<GCounter>> updateResponseAdapter;
     final ActorRef<Replicator.GetResponse<GCounter>> getResponseAdapter;
     final ActorRef<Replicator.Changed<GCounter>> changedAdapter;
 
     private int cachedValue = 0;
 
-    Counter(ActorRef<Command> replicator, Cluster node, ActorContext<ClientCommand> ctx) {
+    Counter(ActorRef<Command> replicator, SelfUniqueAddress node, ActorContext<ClientCommand> ctx) {
       this.replicator = replicator;
       this.node = node;
 
@@ -116,9 +112,7 @@ public class ReplicatorTest extends JUnitSuite {
 
     public static Behavior<ClientCommand> create() {
       return Behaviors.setup((ctx) -> {
-        // The distributed data types still need the implicit untyped Cluster.
-        // We will look into another solution for that.
-        Cluster node = Cluster.get(Adapter.toUntyped(ctx.getSystem()));
+        SelfUniqueAddress node = DistributedData.get(ctx.getSystem()).selfUniqueAddress();
         ActorRef<Replicator.Command> replicator = DistributedData.get(ctx.getSystem()).replicator();
 
         return new Counter(replicator, node, ctx);
@@ -127,7 +121,7 @@ public class ReplicatorTest extends JUnitSuite {
 
     // #sample
     // omitted from sample, needed for tests, factory above is for the docs sample
-    public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
+    public static Behavior<ClientCommand> create(ActorRef<Command> replicator, SelfUniqueAddress node) {
       return Behaviors.setup(ctx -> new Counter(replicator, node, ctx));
     }
     // #sample
@@ -213,7 +207,7 @@ public class ReplicatorTest extends JUnitSuite {
     ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
-        Adapter.spawnAnonymous(system, Counter.create(replicator, Cluster.get(system)));
+        Adapter.spawnAnonymous(system, Counter.create(replicator, DistributedData.get(typedSystem()).selfUniqueAddress()));
 
     client.tell(Increment.INSTANCE);
     client.tell(new GetValue(Adapter.toTyped(probe.getRef())));
@@ -227,7 +221,7 @@ public class ReplicatorTest extends JUnitSuite {
     ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
-        Adapter.spawnAnonymous(system, Counter.create(replicator, Cluster.get(system)));
+        Adapter.spawnAnonymous(system, Counter.create(replicator, DistributedData.get(typedSystem()).selfUniqueAddress()));
 
     client.tell(Increment.INSTANCE);
     client.tell(Increment.INSTANCE);

@@ -307,14 +307,17 @@ final class ORSet[A] private[akka] (
 
   def size: Int = elementsMap.size
 
-  /**
-   * Adds an element to the set
-   */
-  def +(element: A)(implicit node: Cluster): ORSet[A] = add(node, element)
+  /** Adds an element to the set. */
+  def :+(element: A)(implicit node: SelfUniqueAddress): ORSet[A] = add(node, element)
 
-  /**
-   * Adds an element to the set
-   */
+  @deprecated("Use `:+` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def +(element: A)(implicit node: Cluster): ORSet[A] = add(node.selfUniqueAddress, element)
+
+  /** Adds an element to the set. */
+  def add(node: SelfUniqueAddress, element: A): ORSet[A] = add(node.uniqueAddress, element)
+
+  @Deprecated
+  @deprecated("Use `add` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def add(node: Cluster, element: A): ORSet[A] = add(node.selfUniqueAddress, element)
 
   /**
@@ -335,13 +338,27 @@ final class ORSet[A] private[akka] (
   }
 
   /**
+   * Scala API
    * Removes an element from the set.
    */
-  def -(element: A)(implicit node: Cluster): ORSet[A] = remove(node, element)
+  def remove(element: A)(implicit node: SelfUniqueAddress): ORSet[A] = remove(node.uniqueAddress, element)
+
+  /**
+   * Java API
+   * Removes an element from the set.
+   */
+  def remove(node: SelfUniqueAddress, element: A): ORSet[A] = remove(node.uniqueAddress, element)
 
   /**
    * Removes an element from the set.
    */
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
+  def -(element: A)(implicit node: Cluster): ORSet[A] = remove(node.selfUniqueAddress, element)
+
+  /**
+   * Removes an element from the set.
+   */
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def remove(node: Cluster, element: A): ORSet[A] = remove(node.selfUniqueAddress, element)
 
   /**
@@ -362,6 +379,9 @@ final class ORSet[A] private[akka] (
    * This has the same result as using [[#remove]] for each
    * element, but it is more efficient.
    */
+  def clear(node: SelfUniqueAddress): ORSet[A] = clear(node.uniqueAddress)
+
+  @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def clear(node: Cluster): ORSet[A] = clear(node.selfUniqueAddress)
 
   /**

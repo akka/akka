@@ -6,13 +6,13 @@ package akka.cluster.ddata.typed.scaladsl
 
 import org.scalatest.WordSpecLike
 import akka.actor.testkit.typed.TestKitSettings
+import akka.cluster.ddata.SelfUniqueAddress
 
 // #sample
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey }
@@ -47,11 +47,8 @@ object ReplicatorSpec {
 
   val Key = GCounterKey("counter")
 
-  def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
+  def client(replicator: ActorRef[Replicator.Command])(implicit node: SelfUniqueAddress): Behavior[ClientCommand] =
     Behaviors.setup[ClientCommand] { ctx ⇒
-
-      // The distributed data types still need the implicit untyped Cluster.
-      // We will look into another solution for that.
 
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.messageAdapter(InternalUpdateResponse.apply)
@@ -68,7 +65,7 @@ object ReplicatorSpec {
         Behaviors.receive[ClientCommand] { (ctx, msg) ⇒
           msg match {
             case Increment ⇒
-              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ + 1)
+              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ :+ 1)
               Behaviors.same
 
             case GetValue(replyTo) ⇒
@@ -131,7 +128,7 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
 
   implicit val testSettings = TestKitSettings(system)
   val settings = ReplicatorSettings(system)
-  implicit val cluster = Cluster(system.toUntyped)
+  implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 
@@ -171,6 +168,10 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMessage(1)
+    }
+
+    "have the prefixed replicator name" in {
+      ReplicatorSettings.name(system) should ===("typedDdataReplicator")
     }
   }
 }

@@ -42,7 +42,7 @@ object CircuitBreakerStressSpec {
       case JobDone ⇒
         doneCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case Failure(ex: CircuitBreakerOpenException) ⇒
+      case Failure(_: CircuitBreakerOpenException) ⇒
         circCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
       case Failure(_: TimeoutException) ⇒

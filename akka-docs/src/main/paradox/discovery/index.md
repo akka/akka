@@ -20,9 +20,9 @@ In addition [Akka Management](https://developer.lightbend.com/docs/akka-manageme
 * Consul
 * Marathon API
 
-Discovery used to be part of Akka Management but has become an Akka module as of `2.5.19` of Akka and version `0.21.0`
+Discovery used to be part of Akka Management but has become an Akka module as of `2.5.19` of Akka and version `0.50.0`
 of Akka Management. If you're also using Akka Management for other service discovery methods or bootstrap make
-sure you are using at least version `0.21.0`.
+sure you are using at least version `0.50.0` of Akka Management.
 
 ## Dependency
 
@@ -242,4 +242,17 @@ akka {
 The above configuration will result in `akka-dns` first being checked and if it fails or returns no
 targets for the given service name then `config` is queried which i configured with one service called
 `service1` which two hosts `host1` and `host2`.
+
+## Migrating from Akka Management Discovery 
+
+Akka Discovery is not compatible with older versions of Akka Management Discovery. At least version `0.50.0` of
+any Akka Management module should be used if also using Akka Discovery.
+
+Migration steps:
+
+* Any custom discovery method should now implement `akka.discovery.ServiceDiscovery`
+* `discovery-method` now has to be a configuration location under `akka.discovery` with at minimum a property `class` specifying the fully qualified name of the implementation of `akka.discovery.ServiceDiscovery`. 
+  Previous versions allowed this to be a class name or a fully qualified config location e.g. `akka.discovery.kubernetes-api` rather than just `kubernetes-api`
+
+
 

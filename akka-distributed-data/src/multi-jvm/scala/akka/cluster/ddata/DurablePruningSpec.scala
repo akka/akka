@@ -43,7 +43,8 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
 
   def startReplicator(sys: ActorSystem): ActorRef =
@@ -90,7 +91,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         }
       }
 
-      replicator ! Update(KeyA, GCounter(), WriteLocal)(_ + 3)
+      replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
       replicator2.tell(Update(KeyA, GCounter(), WriteLocal)(_.increment(cluster2, 2)), probe2.ref)

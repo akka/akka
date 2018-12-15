@@ -115,7 +115,7 @@ class Dispatcher(
           executorService execute mbox
           true
         } catch {
-          case e: RejectedExecutionException ⇒
+          case _: RejectedExecutionException ⇒
             try {
               executorService execute mbox
               true
