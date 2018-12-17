@@ -1,5 +1,14 @@
 # Overview of Akka libraries and modules
 
+@@@ warning
+
+This module is currently marked as @ref:[may change](../../common/may-change.md) in the sense
+  of being the subject of final development. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet.
+
+@@@
+
 Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/platform/subscription) such as training, consulting, support, and [Enterprise Suite](https://www.lightbend.com/platform/production) &#8212; a comprehensive set of tools for managing Akka systems.
 
 The following capabilities are included with Akka OSS and are introduced later on this page:

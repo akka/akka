@@ -12,6 +12,15 @@ To use Akka Cluster Distributed Data Typed, you must add the following dependenc
 
 ## Introduction
 
+@@@ warning
+
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
+  of being the subject of final development. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet.
+
+@@@
+
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 The keys are unique identifiers with type information of the data values. The values
