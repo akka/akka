@@ -15,10 +15,10 @@ To use Akka Streams, add the module to your project:
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
+  of being the subject of final development. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
-  
+  this module in production just yet.
+
 @@@
 
 Stream references, or "stream refs" for short, allow running Akka Streams across multiple nodes within 
