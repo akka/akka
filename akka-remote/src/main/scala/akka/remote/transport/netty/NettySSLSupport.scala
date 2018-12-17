@@ -4,8 +4,6 @@
 
 package akka.remote.transport.netty
 
-import java.security._
-
 import akka.japi.Util._
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler

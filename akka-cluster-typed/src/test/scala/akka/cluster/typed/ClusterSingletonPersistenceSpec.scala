@@ -5,7 +5,7 @@
 package akka.cluster.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.persistence.typed.PersistenceId

@@ -4,11 +4,7 @@
 
 package akka.actor.typed
 
-import java.util.Optional
-
 import akka.annotation.DoNotInherit
-
-import scala.compat.java8.OptionConverters._
 
 /**
  * Envelope that is published on the eventStream for every message that is

@@ -4,7 +4,6 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.Props
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
