@@ -1,0 +1,7 @@
+# Changed caching of async DNS lookups to store them directly against the DnsProtocol.RequestType #25987
+# Internal API
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$QueryType")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$SrvType$")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.AsyncDnsCache.put")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv6Type$")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv4Type$")
