@@ -227,7 +227,7 @@ case object Lookup {
     */
   def isValidSrv(srv: String): Boolean =
     srv match {
-      case SrvQuery(_, _, serviceName) if validDomainName(serviceName) => true
+      case SrvQuery(_, _, serviceName) =>  validDomainName(serviceName) 
       case _ => false
     }
 
