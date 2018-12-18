@@ -77,8 +77,8 @@ Scala
 Java
 :  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-import #persistent-entity }
 
-Note that `PersistentEntity` is used in this example. Any `Behavior` can be used as a sharded entity actor,
-but the combination of sharding and persistent actors is very common and therefore the `PersistentEntity`
+Note that `EventSourcedEntity` is used in this example. Any `Behavior` can be used as a sharded entity actor,
+but the combination of sharding and persistent actors is very common and therefore the `EventSourcedEntity`
 @scala[factory]@java[class] is provided as convenience. It selects the `persistenceId` automatically from
 the `EntityTypeKey` and `entityId` @java[constructor] parameters by using `EntityTypeKey.persistenceIdFrom`.
 
