@@ -3,7 +3,7 @@
  */
 package sbt
 
-import java.io.File
+import java.io.{ File => JFile }
 
 import com.typesafe.config.ConfigFactory
 import sbt.Keys.unmanagedSources
@@ -60,7 +60,7 @@ trait ScalafixSupport {
 
   private def getPackageName(fileName: String): Option[String] = {
     def getPackageName0(fileType: String): String = {
-      fileName.split(File.separatorChar)
+      fileName.split(JFile.separatorChar)
         .dropWhile(part ⇒ part != fileType)
         .drop(1)
         .dropRight(1)
