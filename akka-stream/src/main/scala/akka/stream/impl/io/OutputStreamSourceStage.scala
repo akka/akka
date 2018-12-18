@@ -4,26 +4,23 @@
 
 package akka.stream.impl.io
 
-import java.io.{ IOException, OutputStream }
+import java.io.{IOException, OutputStream}
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
+import java.util.concurrent.Semaphore
 
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
-import akka.stream.{ ActorMaterializerHelper, Attributes, Outlet, SourceShape }
+import akka.stream.{Attributes, Outlet, SourceShape}
 import akka.util.ByteString
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import scala.collection.immutable
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
-  case object Flush extends AdapterToStageMessage
+  case class Send(data: ByteString) extends AdapterToStageMessage
   case object Close extends AdapterToStageMessage
 
   sealed trait DownstreamStatus
@@ -42,132 +39,51 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-    // Blocking queue that is accessed from Akka Streams callbacks, but also
-    // from 'wild threads' via OutputStreamAdapter
-    val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
-    // Queue for data that has already been read from `dataQueue` (because there
-    // was demand), but has not been actually written yet.
-    val dataRead = new LinkedBlockingQueue[ByteString]()
+    // Semaphore counting the number of elements we are ready to accept,
+    // which is the demand plus the size of the buffer.
+    val semaphore = new Semaphore(maxBuffer, /* fair =*/ true)
+
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
     final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
 
-      var flush: Option[Promise[Unit]] = None
-      var close: Option[Promise[Unit]] = None
-
-      private var dispatcher: ExecutionContext = null // set in preStart
-      private val blockingThreadRef: AtomicReference[Thread] = new AtomicReference() // for postStop interrupt
-
-      private val downstreamCallback: AsyncCallback[Try[Boolean]] =
-        getAsyncCallback {
-          case Success(true) ⇒
-            // We only call this callback when also populating the buffer, so 'take' is safe here.
-            onPush(dataRead.take())
-          case Success(true) ⇒
-            // Nothing, called in case of interruption.
-          case Failure(ex)   ⇒
-            failStage(ex)
-        }
-
-      private val upstreamCallback: AsyncCallback[(AdapterToStageMessage, Promise[Unit])] =
+      private val upstreamCallback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback(onAsyncMessage)
 
-      def wakeUp(msg: AdapterToStageMessage): Future[Unit] = {
-        val p = Promise[Unit]()
-        upstreamCallback.invoke((msg, p))
-        p.future
-      }
+      def wakeUp(msg: AdapterToStageMessage): Unit =
+        upstreamCallback.invoke(msg)
 
-      private def onAsyncMessage(event: (AdapterToStageMessage, Promise[Unit])): Unit =
-        event._1 match {
-          case Flush ⇒
-            flush = Some(event._2)
-            sendResponseIfNeed()
+      private def onAsyncMessage(event: AdapterToStageMessage): Unit = {
+        event match {
+          case Send(data) ⇒
+            emit(out, data)
           case Close ⇒
-            close = Some(event._2)
-            sendResponseIfNeed()
-       }
-
-      private def unblockUpstream(): Boolean =
-        flush match {
-          case Some(p) ⇒
-            p.complete(Success(()))
-            flush = None
-            true
-          case None ⇒ close match {
-            case Some(p) ⇒
-              downstreamStatus.set(Canceled)
-              p.complete(Success(()))
-              close = None
-              completeStage()
-              true
-            case None ⇒ false
-          }
+            downstreamStatus.set(Canceled)
+            completeStage()
         }
-
-      private def sendResponseIfNeed(): Unit =
-        if (downstreamStatus.get() == Canceled || (dataQueue.isEmpty && dataRead.isEmpty)) unblockUpstream()
-
-      private def onPush(data: ByteString): Unit =
-        if (downstreamStatus.get() == Ok) {
-          push(out, data)
-          sendResponseIfNeed()
-        }
-
-      override def preStart(): Unit = {
-        // this stage is running on the blocking IO dispatcher by default, but we also want to schedule futures
-        // that are blocking, so we need to look it up
-        val actorMat = ActorMaterializerHelper.downcast(materializer)
-        dispatcher = actorMat.system.dispatchers.lookup(actorMat.settings.blockingIoDispatcher)
       }
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
-          implicit val ec = dispatcher
-          Future {
-            val currentThread = Thread.currentThread()
-            // keep track of the thread for postStop interrupt
-            blockingThreadRef.compareAndSet(null, currentThread)
-            try {
-              // AFAICS there is still a possible race condition here, where
-              // on close `sendResponseIfNeed` could observe both queues
-              // as empty and prematurely close.
-              dataRead.put(dataQueue.take())
-              true
-            } catch {
-              case _: InterruptedException ⇒
-                Thread.interrupted()
-                false
-            } finally {
-              blockingThreadRef.compareAndSet(currentThread, null)
-            }
-          }.onComplete(downstreamCallback.invoke)
+          semaphore.release()
         }
       })
 
       override def postStop(): Unit = {
-        //assuming there can be no further in messages
         downstreamStatus.set(Canceled)
-        dataQueue.clear()
-        // if blocked reading, make sure the take() completes
-        dataQueue.put(ByteString.empty)
-        // interrupt any pending blocking take
-        val blockingThread = blockingThreadRef.get()
-        if (blockingThread != null)
-          blockingThread.interrupt()
         super.postStop()
       }
     }
 
     val logic = new OutputStreamSourceLogic
-    (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, writeTimeout))
+    (logic, new OutputStreamAdapter(semaphore, downstreamStatus, logic.wakeUp, writeTimeout))
   }
 }
 
 private[akka] class OutputStreamAdapter(
-  dataQueue:        BlockingQueue[ByteString],
+  unfulfilledDemand:        Semaphore,
   downstreamStatus: AtomicReference[DownstreamStatus],
-  sendToStage:      (AdapterToStageMessage) ⇒ Future[Unit],
+  sendToStage:      (AdapterToStageMessage) ⇒ Unit,
   writeTimeout:     FiniteDuration)
   extends OutputStream {
 
@@ -187,28 +103,15 @@ private[akka] class OutputStreamAdapter(
   private[this] def sendData(data: ByteString): Unit =
     send(() ⇒ {
       try {
-        dataQueue.put(data)
+        // FIXME take into account writeTimeout here.
+        unfulfilledDemand.acquire()
+        sendToStage(Send(data))
       } catch { case NonFatal(ex) ⇒ throw new IOException(ex) }
       if (downstreamStatus.get() == Canceled) {
         isPublisherAlive = false
         throw publisherClosedException
       }
     })
-
-  @scala.throws(classOf[IOException])
-  private[this] def sendMessage(message: AdapterToStageMessage, handleCancelled: Boolean = true) =
-    send(() ⇒
-      try {
-        Await.ready(sendToStage(message), writeTimeout)
-        if (downstreamStatus.get() == Canceled && handleCancelled) {
-          //Publisher considered to be terminated at earliest convenience to minimize messages sending back and forth
-          isPublisherAlive = false
-          throw publisherClosedException
-        }
-      } catch {
-        case e: IOException ⇒ throw e
-        case NonFatal(e)    ⇒ throw new IOException(e)
-      })
 
   @scala.throws(classOf[IOException])
   override def write(b: Int): Unit = {
@@ -221,11 +124,21 @@ private[akka] class OutputStreamAdapter(
   }
 
   @scala.throws(classOf[IOException])
-  override def flush(): Unit = sendMessage(Flush)
+  override def flush(): Unit =
+    // Flushing does nothing: at best we could guarantee that our own buffer
+    // is empty, but that doesn't mean the element has been accepted downstream,
+    // so there is little value in that.
+    ()
 
   @scala.throws(classOf[IOException])
   override def close(): Unit = {
-    sendMessage(Close, handleCancelled = false)
+    send(() ⇒
+      try {
+        sendToStage(Close)
+      } catch {
+        case e: IOException ⇒ throw e
+        case NonFatal(e)    ⇒ throw new IOException(e)
+      })
     isActive = false
   }
 }
