@@ -19,6 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import scala.collection.immutable
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
@@ -41,7 +42,12 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
+    // Blocking queue that is accessed from Akka Streams callbacks, but also
+    // from 'wild threads' via OutputStreamAdapter
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
+    // Queue for data that has already been read from `dataQueue` but not
+    // yet pushed to downstream, only accessed from Akka Streams callbacks.
+    var data = immutable.Seq.empty[ByteString]
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
     final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
@@ -52,10 +58,14 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       private var dispatcher: ExecutionContext = null // set in preStart
       private val blockingThreadRef: AtomicReference[Thread] = new AtomicReference() // for postStop interrupt
 
-      private val downstreamCallback: AsyncCallback[Try[ByteString]] =
+      private val downstreamCallback: AsyncCallback[Try[Unit]] =
         getAsyncCallback {
-          case Success(elem) ⇒ onPush(elem)
-          case Failure(ex)   ⇒ failStage(ex)
+          case Success(()) ⇒
+            val elem = data.head
+            data = data.tail
+            onPush(elem)
+          case Failure(ex)   ⇒
+            failStage(ex)
         }
 
       private val upstreamCallback: AsyncCallback[(AdapterToStageMessage, Promise[Unit])] =
@@ -75,7 +85,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
           case Close ⇒
             close = Some(event._2)
             sendResponseIfNeed()
-        }
+       }
 
       private def unblockUpstream(): Boolean =
         flush match {
@@ -95,7 +105,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         }
 
       private def sendResponseIfNeed(): Unit =
-        if (downstreamStatus.get() == Canceled || dataQueue.isEmpty) unblockUpstream()
+        if (downstreamStatus.get() == Canceled || (dataQueue.isEmpty && data.isEmpty)) unblockUpstream()
 
       private def onPush(data: ByteString): Unit =
         if (downstreamStatus.get() == Ok) {
@@ -118,11 +128,13 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
             // keep track of the thread for postStop interrupt
             blockingThreadRef.compareAndSet(null, currentThread)
             try {
-              dataQueue.take()
+              data = data :+ dataQueue.take()
+              ()
             } catch {
               case _: InterruptedException ⇒
                 Thread.interrupted()
-                ByteString.empty
+                data = data :+ ByteString.empty
+                ()
             } finally {
               blockingThreadRef.compareAndSet(currentThread, null);
             }

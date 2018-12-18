@@ -68,6 +68,21 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       probe.expectComplete()
     }
 
+    // https://github.com/akka/akka/issues/25983
+    "not truncate the stream on close" in assertAllStagesStopped {
+      for (_ <- 1 to 10) {
+        println("doing")
+        val (outputStream, result) =
+          StreamConverters.asOutputStream()
+            .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
+            .run
+        outputStream.write(bytesArray)
+        outputStream.flush()
+        outputStream.close()
+        result.futureValue should be(ByteString(bytesArray))
+      }
+    }
+
     "block flush call until send all buffer to downstream" in assertAllStagesStopped {
       val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
       val s = probe.expectSubscription()
@@ -76,7 +91,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val f = Future(outputStream.flush())
 
       expectTimeout(f, timeout)
-      probe.expectNoMsg(Zero)
+      probe.expectNoMessage(Zero)
 
       s.request(1)
       expectSuccess(f, ())
