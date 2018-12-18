@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery
@@ -37,7 +37,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "generate a A/AAAA from any non-conforming SRV String" in {
-      (noSrvLookups ++ srvWithInvalidDomainNames).foreach { str =>
+      (noSrvLookups ++ srvWithInvalidDomainNames).foreach { str ⇒
         withClue(s"parsing '$str'") {
           val lookup = Lookup.fromString(str)
           lookup.serviceName shouldBe str
@@ -56,7 +56,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false for any non-conforming SRV String" in {
-      noSrvLookups.foreach { str =>
+      noSrvLookups.foreach { str ⇒
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }
@@ -64,7 +64,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false for if domain part in SRV String is an invalid domain name" in {
-      srvWithInvalidDomainNames.foreach { str =>
+      srvWithInvalidDomainNames.foreach { str ⇒
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }

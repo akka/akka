@@ -195,40 +195,39 @@ case object Lookup {
    */
   def create(serviceName: String): Lookup = new Lookup(serviceName, None, None)
 
-
   private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
 
   private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
 
   /**
-    * Create a service Lookup from a string with format:
-    * _portName._protocol.serviceName.
-    * (as specified by https://www.ietf.org/rfc/rfc2782.txt)
-    *
-    * If the passed string conforms with this format, a SRV Lookup is returned.
-    * The serviceName part must be a valid domain name.
-    *
-    * The string is parsed and dismembered to build a Lookup as following:
-    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
-    *
-    * If the string doesn't not conform with the SRV format, a simple A/AAAA Lookup is returned
-    * using the whole string as service name.
-    */
+   * Create a service Lookup from a string with format:
+   * _portName._protocol.serviceName.
+   * (as specified by https://www.ietf.org/rfc/rfc2782.txt)
+   *
+   * If the passed string conforms with this format, a SRV Lookup is returned.
+   * The serviceName part must be a valid domain name.
+   *
+   * The string is parsed and dismembered to build a Lookup as following:
+   * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
+   *
+   * If the string doesn't not conform with the SRV format, a simple A/AAAA Lookup is returned
+   * using the whole string as service name.
+   */
   def fromString(str: String): Lookup =
     str match {
-      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) =>
+      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case _ => Lookup(str)
+      case _ ⇒ Lookup(str)
     }
 
   /**
-    * Returns true if passed string conforms with SRV format. Otherwise returns false.
-    */
+   * Returns true if passed string conforms with SRV format. Otherwise returns false.
+   */
   def isValidSrv(srv: String): Boolean =
     srv match {
-      case SrvQuery(_, _, serviceName) =>  validDomainName(serviceName) 
-      case _ => false
+      case SrvQuery(_, _, serviceName) ⇒ validDomainName(serviceName)
+      case _                           ⇒ false
     }
 
   private def validDomainName(name: String): Boolean =
