@@ -14,8 +14,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     "_portName._protocol.service_name.local",
     "_portName._protocol.servicename,local",
     "_portName._protocol.servicename.local-",
-    "_portName._protocol.-servicename.local"
-  )
+    "_portName._protocol.-servicename.local")
 
   // No SRV that should result in simple A/AAAA lookups
   val noSrvLookups = List(
@@ -25,8 +24,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     "_serviceName.local",
     "_serviceName,local",
     "-serviceName.local",
-    "serviceName.local-"
-  )
+    "serviceName.local-")
 
   "Lookup.fromString" should {
 
