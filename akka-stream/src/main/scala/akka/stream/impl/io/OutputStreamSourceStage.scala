@@ -4,7 +4,7 @@
 
 package akka.stream.impl.io
 
-import java.io.{IOException, OutputStream}
+import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Semaphore
 
@@ -12,7 +12,7 @@ import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
-import akka.stream.{Attributes, Outlet, SourceShape}
+import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.util.ByteString
 
 import scala.concurrent.duration.FiniteDuration
@@ -81,10 +81,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 }
 
 private[akka] class OutputStreamAdapter(
-  unfulfilledDemand:        Semaphore,
-  downstreamStatus: AtomicReference[DownstreamStatus],
-  sendToStage:      (AdapterToStageMessage) ⇒ Unit,
-  writeTimeout:     FiniteDuration)
+  unfulfilledDemand: Semaphore,
+  downstreamStatus:  AtomicReference[DownstreamStatus],
+  sendToStage:       (AdapterToStageMessage) ⇒ Unit,
+  writeTimeout:      FiniteDuration)
   extends OutputStream {
 
   var isActive = true
