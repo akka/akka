@@ -30,6 +30,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
+    akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
+    akka.io.dns.async-dns.ndots = 2
 //    akka.io.dns.async-dns.nameservers = default
   """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
@@ -150,6 +152,43 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name)
       answer.name shouldEqual name
       answer.records.length should be(48)
+    }
+
+    "resolve using search domains where some have not enough ndots" in {
+      val name = "a-single"
+      val expectedName = "a-single.foo.test"
+      val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
+      withClue(answer) {
+        answer.name shouldEqual expectedName
+        answer.records.size shouldEqual 1
+        answer.records.head.name shouldEqual expectedName
+        answer.records.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("192.168.1.20")
+      }
+    }
+
+    "resolve using search domains" in {
+      val name = "a-single.foo"
+      val expectedName = "a-single.foo.test"
+      val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
+      withClue(answer) {
+        answer.name shouldEqual expectedName
+        answer.records.size shouldEqual 1
+        answer.records.head.name shouldEqual expectedName
+        answer.records.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("192.168.1.20")
+      }
+    }
+
+    "resolve localhost even though ndots is greater than 0" in {
+      // This currently works because the nameserver resolves localhost, but in future should work because we've
+      // implemented proper support for /etc/hosts
+      val name = "localhost"
+      val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
+      withClue(answer) {
+        answer.name shouldEqual "localhost"
+        answer.records.size shouldEqual 1
+        answer.records.head.name shouldEqual "localhost"
+        answer.records.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("127.0.0.1")
+      }
     }
 
     def resolve(name: String, requestType: RequestType = Ip()): DnsProtocol.Resolved = {

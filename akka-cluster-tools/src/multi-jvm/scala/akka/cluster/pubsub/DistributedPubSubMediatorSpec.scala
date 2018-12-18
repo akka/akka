@@ -12,7 +12,6 @@ import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec

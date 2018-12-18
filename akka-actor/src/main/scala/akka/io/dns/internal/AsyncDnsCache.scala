@@ -10,8 +10,7 @@ import akka.annotation.InternalApi
 import akka.io.{ Dns, PeriodicCacheCleanup }
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.SimpleDnsCache._
-import akka.io.dns.internal.AsyncDnsResolver.{ Ipv4Type, Ipv6Type, QueryType }
-import akka.io.dns.internal.DnsClient.Answer
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
 import akka.io.dns.{ AAAARecord, ARecord }
 
 import scala.annotation.tailrec
@@ -21,7 +20,7 @@ import scala.collection.immutable
  * Internal API
  */
 @InternalApi class AsyncDnsCache extends Dns with PeriodicCacheCleanup {
-  private val cacheRef = new AtomicReference(new Cache[(String, QueryType), Answer](
+  private val cacheRef = new AtomicReference(new Cache[(String, RequestType), Resolved](
     immutable.SortedSet()(expiryEntryOrdering()),
     immutable.Map(), clock))
 
@@ -32,15 +31,16 @@ import scala.collection.immutable
    * To get Srv or just one type use DnsProtocol
    */
   override def cached(name: String): Option[Dns.Resolved] = {
-    for {
-      ipv4 ← cacheRef.get().get((name, Ipv4Type))
-      ipv6 ← cacheRef.get().get((name, Ipv6Type))
-    } yield {
-      Dns.Resolved(name, (ipv4.rrs ++ ipv6.rrs).collect {
-        case r: ARecord    ⇒ r.ip
-        case r: AAAARecord ⇒ r.ip
-      })
+    val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)
+    val ipv6 = cacheRef.get().get((name, Ip(ipv4 = false))).toList.flatMap(_.records)
+    val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
+
+    val all = (ipv4 ++ ipv6 ++ both).collect {
+      case r: ARecord    ⇒ r.ip
+      case r: AAAARecord ⇒ r.ip
     }
+    if (all.isEmpty) None
+    else Some(Dns.Resolved(name, all))
   }
 
   // Milliseconds since start
@@ -50,14 +50,14 @@ import scala.collection.immutable
     else (now - nanoBase) / 1000000
   }
 
-  private[io] final def get(key: (String, QueryType)): Option[Answer] = {
+  private[io] final def get(key: (String, RequestType)): Option[Resolved] = {
     cacheRef.get().get(key)
   }
 
   @tailrec
-  private[io] final def put(key: (String, QueryType), records: Answer, ttl: CachePolicy): Unit = {
-    val cache: Cache[(String, QueryType), Answer] = cacheRef.get()
-    if (!cacheRef.compareAndSet(cache, cache.put(key, records, ttl)))
+  private[io] final def put(key: (String, RequestType), records: Resolved, ttl: CachePolicy): Unit = {
+    val c = cacheRef.get()
+    if (!cacheRef.compareAndSet(c, c.put(key, records, ttl)))
       put(key, records, ttl)
   }
 

@@ -4,7 +4,7 @@
 
 package akka.cluster.client
 
-import akka.actor.{ Actor, Props, Terminated }
+import akka.actor.{ Actor, Props }
 import akka.cluster.Cluster
 import akka.cluster.pubsub.{ DistributedPubSub, DistributedPubSubMediator }
 import akka.remote.testconductor.RoleName

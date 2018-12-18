@@ -5,8 +5,12 @@
 `async-dns` does not support:
 
 * [Local hosts file](https://github.com/akka/akka/issues/25846) e.g. `/etc/hosts` on Unix systems
-* [Search domains](https://github.com/akka/akka/issues/25825) e.g. in `/etc/resolve.conf` on Unix systems
 * The [nsswitch.conf](https://linux.die.net/man/5/nsswitch.conf) file (no plan to support)
+
+Additionally, while search domains are supported through configuration, detection of the system configured
+[Search domains](https://github.com/akka/akka/issues/25825) is only supported on systems that provide this 
+configuration through a `/etc/resolv.conf` file, i.e. it isn't supported on Windows or OSX, and none of the 
+environment variables that are usually supported on most \*nix OSes are supported.
 
 @@@
 
