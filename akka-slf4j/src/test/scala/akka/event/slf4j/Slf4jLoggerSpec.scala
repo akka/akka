@@ -155,6 +155,14 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("msg=[Message with custom MDC values]")
     }
 
+    "support null marker" in {
+      producer ! StringWithMarker("security-wise interesting message", null)
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("msg=[security-wise interesting message]")
+    }
+
     "Support null values in custom MDC" in {
       producer ! StringWithMDC("Message with null custom MDC values", Map("ticketNumber" → 3671, "ticketDesc" → null))
 
