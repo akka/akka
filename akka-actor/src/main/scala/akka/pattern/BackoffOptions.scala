@@ -83,7 +83,7 @@ object Backoff {
     minBackoff:     FiniteDuration,
     maxBackoff:     FiniteDuration,
     randomFactor:   Double,
-    maxNrOfRetries: Int): BackoffOptions =
+    maxNrOfRetries: Int): BackoffOnFailureOptions =
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor).withMaxNrOfRetries(maxNrOfRetries)
 
   /**
@@ -137,7 +137,7 @@ object Backoff {
     childName:    String,
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
-    randomFactor: Double): BackoffOptions =
+    randomFactor: Double): BackoffOnFailureOptions =
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
@@ -195,7 +195,7 @@ object Backoff {
     minBackoff:     java.time.Duration,
     maxBackoff:     java.time.Duration,
     randomFactor:   Double,
-    maxNrOfRetries: Int): BackoffOptions =
+    maxNrOfRetries: Int): BackoffOnFailureOptions =
     onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxNrOfRetries)
 
   /**
@@ -250,7 +250,7 @@ object Backoff {
     childName:    String,
     minBackoff:   java.time.Duration,
     maxBackoff:   java.time.Duration,
-    randomFactor: Double): BackoffOptions =
+    randomFactor: Double): BackoffOnFailureOptions =
     onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1)
 
   /**
@@ -315,7 +315,7 @@ object Backoff {
     minBackoff:     FiniteDuration,
     maxBackoff:     FiniteDuration,
     randomFactor:   Double,
-    maxNrOfRetries: Int): BackoffOptions =
+    maxNrOfRetries: Int): BackoffOnStopOptions =
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor).withMaxNrOfRetries(maxNrOfRetries)
 
   /**
@@ -376,7 +376,7 @@ object Backoff {
     childName:    String,
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
-    randomFactor: Double): BackoffOptions =
+    randomFactor: Double): BackoffOnStopOptions =
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
@@ -441,7 +441,7 @@ object Backoff {
     minBackoff:     java.time.Duration,
     maxBackoff:     java.time.Duration,
     randomFactor:   Double,
-    maxNrOfRetries: Int): BackoffOptions =
+    maxNrOfRetries: Int): BackoffOnStopOptions =
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxNrOfRetries)
 
   /**
@@ -503,7 +503,7 @@ object Backoff {
     childName:    String,
     minBackoff:   java.time.Duration,
     maxBackoff:   java.time.Duration,
-    randomFactor: Double): BackoffOptions =
+    randomFactor: Double): BackoffOnStopOptions =
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1)
 
 }
@@ -549,23 +549,6 @@ trait BackoffOptions {
   def withDefaultStoppingStrategy: BackoffOptions
 
   /**
-   * Returns a new BackoffOptions with a constant reply to messages that the supervisor receives while its
-   * child is stopped. By default, a message received while the child is stopped is forwarded to `deadLetters`.
-   * With this option, the supervisor will reply to the sender instead.
-   * @param replyWhileStopped The message that the supervisor will send in response to all messages while
-   *   its child is stopped.
-   */
-  def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
-
-  /**
-   * Predicate evaluated for each message, if it returns true and the supervised actor is
-   * stopped then the supervisor will stop its self. If it returns true while
-   * the supervised actor is running then it will be forwarded to the supervised actor and
-   * when the supervised actor stops its self the supervisor will stop its self.
-   */
-  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
-
-  /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
    * By default, the supervisor will retry infinitely.
    * With this option, the supervisor will terminate itself after the maxNoOfRetries is reached.
@@ -575,9 +558,39 @@ trait BackoffOptions {
   def withMaxNrOfRetries(maxNrOfRetries: Int): BackoffOptions
 
   /**
+   * Returns a new BackoffOptions with a constant reply to messages that the supervisor receives while its
+   * child is stopped. By default, a message received while the child is stopped is forwarded to `deadLetters`.
+   * With this option, the supervisor will reply to the sender instead.
+   * @param replyWhileStopped The message that the supervisor will send in response to all messages while
+   *   its child is stopped.
+   */
+  def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
+
+  // for backwards compability with 2.5.19
+  @deprecated("Use through BackoffOnStopOptions instead of BackoffOptions", since = "2.5.20")
+  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
+
+  /**
    * Returns the props to create the back-off supervisor.
    */
   private[akka] def props: Props
+}
+
+sealed trait BackoffOnStopOptions extends BackoffOptions {
+
+  /**
+   * Predicate evaluated for each message, if it returns true and the supervised actor is
+   * stopped then the supervisor will stop its self. If it returns true while
+   * the supervised actor is running then it will be forwarded to the supervised actor and
+   * when the supervised actor stops its self the supervisor will stop its self.
+   */
+  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
+}
+
+sealed trait BackoffOnFailureOptions extends BackoffOptions {
+  // for backwards compability with 2.5.19
+  @deprecated("This has no effect for backoff on failure", since = "2.5.20")
+  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
 }
 
 private final case class BackoffOptionsImpl(
@@ -591,7 +604,7 @@ private final case class BackoffOptionsImpl(
   supervisorStrategy: OneForOneStrategy     = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
   replyWhileStopped:  Option[Any]           = None,
   finalStopMessage:   Option[Any ⇒ Boolean] = None
-) extends BackoffOptions {
+) extends BackoffOptions with BackoffOnStopOptions with BackoffOnFailureOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
@@ -616,7 +629,7 @@ private final case class BackoffOptionsImpl(
     backoffType match {
       //onFailure method in companion object
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
       //onStop method in companion object
       case StopImpliesFailure ⇒
         Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
