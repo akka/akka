@@ -50,7 +50,7 @@ abstract class ActorSelection extends Serializable {
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
+  def forward(message: Any)(implicit context: ActorContext): Unit = tell(message, context.sender())
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
@@ -94,6 +94,7 @@ abstract class ActorSelection extends Serializable {
    * supplied `timeout`.
    *
    */
+  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
   def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
     FutureConverters.toJava[ActorRef](resolveOne(timeout))
 
@@ -107,9 +108,22 @@ abstract class ActorSelection extends Serializable {
    * supplied `timeout`.
    *
    */
-  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = {
+  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
+  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = resolveOne(timeout)
+
+  /**
+   * Java API for [[#resolveOne]]
+   *
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   */
+  def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
     import JavaDurationConverters._
-    resolveOneCS(timeout.asScala)
+    FutureConverters.toJava[ActorRef](resolveOne(timeout.asScala))
   }
 
   override def toString: String = {
@@ -277,7 +291,7 @@ object ActorSelection {
 trait ScalaActorSelection {
   this: ActorSelection ⇒
 
-  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
+  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = tell(msg, sender)
 }
 
 /**

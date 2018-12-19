@@ -116,7 +116,7 @@ To acquire an `ActorRef` for an `ActorSelection` you need to
 send a message to the selection and use the `sender` reference of the reply from
 the actor. There is a built-in `Identify` message that all Actors will understand
 and automatically reply to with a `ActorIdentity` message containing the
-`ActorRef`. This can also be done with the @scala[`resolveOne`]@java[`resolveOneCS`] method of
+`ActorRef`. This can also be done with the `resolveOne` method of
 the `ActorSelection`, which returns a @scala[`Future`]@java[`CompletionStage`] of the matching
 `ActorRef`.
 

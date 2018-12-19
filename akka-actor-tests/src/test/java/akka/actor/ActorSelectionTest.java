@@ -25,12 +25,12 @@ public class ActorSelectionTest extends JUnitSuite {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
-  public void testResolveOneCS() throws Exception {
+  public void testResolveOne() throws Exception {
     ActorRef actorRef = system.actorOf(Props.create(JavaAPITestActor.class), "ref1");
     ActorSelection selection = system.actorSelection("user/ref1");
     Duration timeout = Duration.ofMillis(10);
 
-    CompletionStage<ActorRef> cs = selection.resolveOneCS(timeout);
+    CompletionStage<ActorRef> cs = selection.resolveOne(timeout);
 
     ActorRef resolvedRef = cs.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(actorRef, resolvedRef);

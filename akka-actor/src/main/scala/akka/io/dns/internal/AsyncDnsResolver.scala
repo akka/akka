@@ -81,7 +81,7 @@ private[io] final class AsyncDnsResolver(
     } else {
       resolvers match {
         case Nil ⇒
-          Future.failed(ResolveFailedException(s"Timed out resolving $name with nameservers: $nameServers"))
+          Future.failed(ResolveFailedException(s"Failed to resolve $name with nameservers: $nameServers"))
         case head :: tail ⇒ resolveWithSearch(name, requestType, head).recoverWith {
           case NonFatal(t) ⇒
             log.error(t, "Resolve failed. Trying next name server")
