@@ -24,8 +24,8 @@ import scala.concurrent.duration._
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
 
-  override def self = ActorRefAdapter(untyped.self)
-  override val system = ActorSystemAdapter(untyped.system)
+  final override val self = ActorRefAdapter(untyped.self)
+  final override val system = ActorSystemAdapter(untyped.system)
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty) =
@@ -46,6 +46,12 @@ import scala.concurrent.duration._
             // child that was already stopped
           }
       }
+    } else if (self == child) {
+      throw new IllegalArgumentException(
+        "Only direct children of an actor can be stopped through the actor context, " +
+          s"but you tried to stop [$self] by passing its ActorRef to the `stop` method. " +
+          "Stopping self has to be expressed as explicitly returning a Stop Behavior " +
+          "with `Behaviors.stopped`.")
     } else {
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
