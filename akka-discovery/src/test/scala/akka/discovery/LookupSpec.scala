@@ -36,7 +36,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
       lookup.protocol.value shouldBe "protocol"
     }
 
-    "throw an IllegalArgumentException when passing null SRV String" in {
+    "throw an IllegalArgumentException when passing a 'null' SRV String" in {
       assertThrows[IllegalArgumentException] {
         Lookup.parseSrv(null)
       }
@@ -84,7 +84,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
       }
     }
 
-    "return false for if domain part in SRV String is an invalid domain name" in {
+    "return false if domain part in SRV String is an invalid domain name" in {
       srvWithInvalidDomainNames.foreach { str ⇒
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
