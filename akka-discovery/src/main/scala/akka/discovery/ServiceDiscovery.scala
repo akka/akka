@@ -129,6 +129,7 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
+  * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
  */
 @ApiMayChange
 final class Lookup(
@@ -136,8 +137,8 @@ final class Lookup(
   val portName:    Option[String],
   val protocol:    Option[String]) {
 
-  require(serviceName != null, "serviceName cannot be null")
-  require(serviceName.trim.nonEmpty, "serviceName cannot be empty")
+  require(serviceName != null, "'serviceName' cannot be null")
+  require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")
 
   /**
    * Which port for a service e.g. Akka remoting or HTTP.
@@ -221,7 +222,7 @@ case object Lookup {
       case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case _ ⇒ throw new IllegalArgumentException(s"Invalid SRV string $str")
+      case _ ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str.")
     }
 
   /**
