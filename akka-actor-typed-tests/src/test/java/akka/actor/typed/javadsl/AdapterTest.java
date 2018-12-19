@@ -83,6 +83,13 @@ public class AdapterTest extends JUnitSuite {
         Adapter.watch(context, child);
         Adapter.stop(context, child);
         return same();
+      } else if (message.equals("stop-self")){
+        try {
+          context.stop(context.getSelf());
+        } catch (Exception e){
+          probe.tell(e,akka.actor.ActorRef.noSender());
+        }
+        return same();
       } else {
         return unhandled();
       }
@@ -337,5 +344,14 @@ public class AdapterTest extends JUnitSuite {
     ActorRef<String> typedRef = Adapter.spawnAnonymous(system, Typed1.create(ignore, probe.getRef()));
     typedRef.tell("stop-child");
     probe.expectMsg("terminated");
+  }
+
+  @Test
+  public void stopSelfWillCauseError() {
+    TestKit probe = new TestKit(system);
+    akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
+    ActorRef<String> typedRef = Adapter.spawnAnonymous(system, Typed1.create(ignore, probe.getRef()));
+    typedRef.tell("stop-self");
+    probe.expectMsgClass(IllegalArgumentException.class);
   }
 }
