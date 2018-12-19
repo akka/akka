@@ -4,11 +4,10 @@
 
 package akka.pattern
 
-import scala.concurrent.duration._
-
-import akka.actor._
-import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy._
+import akka.actor.{ OneForOneStrategy, _ }
+
+import scala.concurrent.duration._
 
 /**
  * Back-off supervisor that stops and starts a child actor when the child actor restarts.
@@ -16,20 +15,19 @@ import akka.actor.SupervisorStrategy._
  * with ``akka.pattern.Backoff.onFailure``.
  */
 private class BackoffOnRestartSupervisor(
-  val childProps:        Props,
-  val childName:         String,
-  minBackoff:            FiniteDuration,
-  maxBackoff:            FiniteDuration,
-  val reset:             BackoffReset,
-  randomFactor:          Double,
-  strategy:              OneForOneStrategy,
-  val replyWhileStopped: Option[Any],
-  val finalStopMessage:  Option[Any ⇒ Boolean])
+  val childProps:    Props,
+  val childName:     String,
+  minBackoff:        FiniteDuration,
+  maxBackoff:        FiniteDuration,
+  val reset:         BackoffReset,
+  randomFactor:      Double,
+  strategy:          OneForOneStrategy,
+  replyWhileStopped: Option[Any])
   extends Actor with HandleBackoff
   with ActorLogging {
 
-  import context._
   import BackoffSupervisor._
+  import context._
 
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
@@ -81,6 +79,15 @@ private class BackoffOnRestartSupervisor(
       stop(self)
   }
 
-  def receive = onTerminated orElse handleBackoff
+  def receive: Receive = onTerminated orElse handleBackoff
 
+  protected def handleMessageToChild(msg: Any): Unit = child match {
+    case Some(c) ⇒
+      c.forward(msg)
+    case None ⇒
+      replyWhileStopped match {
+        case None    ⇒ context.system.deadLetters.forward(msg)
+        case Some(r) ⇒ sender() ! r
+      }
+  }
 }
