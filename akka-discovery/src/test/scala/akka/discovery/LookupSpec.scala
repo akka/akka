@@ -71,5 +71,17 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
       }
     }
 
+    "return false for empty SRV String" in {
+      Lookup.isValidSrv("") shouldBe false
+    }
+
+    "return false for 'null' SRV String" in {
+      Lookup.isValidSrv(null) shouldBe false
+    }
+
+    "return true for a SRV with valid domain name" in {
+      Lookup.isValidSrv("_portName._protocol.serviceName.local") shouldBe true
+    }
+
   }
 }
