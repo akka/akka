@@ -4,6 +4,7 @@
 
 package akka.discovery
 
+import java.lang.invoke.MethodHandles
 import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
@@ -135,6 +136,9 @@ final class Lookup(
   val portName:    Option[String],
   val protocol:    Option[String]) {
 
+  require(serviceName != null, "serviceName cannot be null")
+  require(serviceName.trim.nonEmpty, "serviceName cannot be empty")
+
   /**
    * Which port for a service e.g. Akka remoting or HTTP.
    * Maps to "service" for an SRV records.
@@ -210,15 +214,14 @@ case object Lookup {
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
    *
-   * If the string doesn't not conform with the SRV format, a simple A/AAAA Lookup is returned
-   * using the whole string as service name.
+   * @throws IllegalArgumentException If the string doesn't not conform with the SRV format
    */
-  def fromString(str: String): Lookup =
+  def parseSrv(str: String): Lookup =
     str match {
       case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case _ ⇒ Lookup(str)
+      case _ ⇒ throw new IllegalArgumentException(s"Invalid SRV string $str")
     }
 
   /**

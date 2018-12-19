@@ -26,23 +26,44 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     "-serviceName.local",
     "serviceName.local-")
 
-  "Lookup.fromString" should {
+  "Lookup.parseSrv" should {
 
     "generate a SRV Lookup from a SRV String" in {
       val name = "_portName._protocol.serviceName.local"
-      val lookup = Lookup.fromString(name)
+      val lookup = Lookup.parseSrv(name)
       lookup.serviceName shouldBe "serviceName.local"
       lookup.portName.value shouldBe "portName"
       lookup.protocol.value shouldBe "protocol"
     }
 
-    "generate a A/AAAA from any non-conforming SRV String" in {
-      (noSrvLookups ++ srvWithInvalidDomainNames).foreach { str ⇒
+    "throw an IllegalArgumentException when passing null SRV String" in {
+      assertThrows[IllegalArgumentException] {
+        Lookup.parseSrv(null)
+      }
+    }
+
+    "throw an IllegalArgumentException when passing an empty SRV String" in {
+      assertThrows[IllegalArgumentException] {
+        Lookup.parseSrv("")
+      }
+    }
+
+    "throw an IllegalArgumentException for any non-conforming SRV String" in {
+      noSrvLookups.foreach { str ⇒
         withClue(s"parsing '$str'") {
-          val lookup = Lookup.fromString(str)
-          lookup.serviceName shouldBe str
-          lookup.portName shouldBe empty
-          lookup.protocol shouldBe empty
+          assertThrows[IllegalArgumentException] {
+            Lookup.parseSrv(str)
+          }
+        }
+      }
+    }
+
+    "throw an IllegalArgumentException for any SRV with invalid domain names" in {
+      srvWithInvalidDomainNames.foreach { str ⇒
+        withClue(s"parsing '$str'") {
+          assertThrows[IllegalArgumentException] {
+            Lookup.parseSrv(str)
+          }
         }
       }
     }
