@@ -70,7 +70,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     // https://github.com/akka/akka/issues/25983
     "not truncate the stream on close" in assertAllStagesStopped {
-      for (_ <- 1 to 10) {
+      for (_ ← 1 to 10) {
         val (outputStream, result) =
           StreamConverters.asOutputStream()
             .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
