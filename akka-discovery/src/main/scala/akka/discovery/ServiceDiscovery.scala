@@ -129,7 +129,7 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
-  * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
+ * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
  */
 @ApiMayChange
 final class Lookup(
