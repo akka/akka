@@ -14,7 +14,7 @@ import akka.actor.Address
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.artery._
-import akka.util.OptionVal
+import akka.util.{ OptionVal, unused }
 import org.agrona.collections.Long2ObjectHashMap
 
 /**
@@ -376,7 +376,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    * Add `n` occurrence for the given key and call `heavyHittedDetected` if element has become a heavy hitter.
    * Empty keys are omitted.
    */
-  def increment(remoteAddress: Address, value: T, n: Long): Unit = {
+  def increment(@unused remoteAddress: Address, value: T, n: Long): Unit = {
     val count = cms.addObjectAndEstimateCount(value, n)
     addAndCheckIfheavyHitterDetected(value, count)
     alive = true

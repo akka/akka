@@ -6,11 +6,11 @@ package akka.remote.serialization
 
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.protobuf.ByteString
-import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
@@ -176,8 +176,6 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       path = proto.getPath,
       supervisor = deserializeActorRef(system, proto.getSupervisor))
   }
-
-  private def oldSerialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
 
   private def serialize(any: Any): (Int, Boolean, String, Array[Byte]) = {
     val m = any.asInstanceOf[AnyRef]

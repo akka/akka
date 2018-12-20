@@ -4,12 +4,13 @@
 
 package akka.remote.artery
 
-import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.event.{ Logging, LoggingAdapter }
-import akka.util.OptionVal
 import java.nio.ByteBuffer
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.util.{ OptionVal, unused }
 
 /**
  * INTERNAL API
@@ -287,7 +288,7 @@ private[remote] object RemoteInstruments {
   def getKey(kl: Int): Byte = (kl >>> 26).toByte
   def getLength(kl: Int): Int = kl & lengthMask
 
-  def create(system: ExtendedActorSystem, log: LoggingAdapter): Vector[RemoteInstrument] = {
+  def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import scala.collection.JavaConverters._

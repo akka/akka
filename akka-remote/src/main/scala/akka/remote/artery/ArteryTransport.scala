@@ -24,7 +24,6 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.Actor
@@ -56,8 +55,7 @@ import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.util.OptionVal
-import akka.util.WildcardIndex
+import akka.util.{ OptionVal, WildcardIndex, unused }
 
 /**
  * INTERNAL API
@@ -243,8 +241,11 @@ private[remote] object FlushOnShutdown {
 /**
  * INTERNAL API
  */
-private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
-                                      inboundContext: InboundContext, associations: Set[Association]) extends Actor {
+private[remote] class FlushOnShutdown(
+  done:                   Promise[Done],
+  timeout:                FiniteDuration,
+  @unused inboundContext: InboundContext,
+  associations:           Set[Association]) extends Actor {
 
   var remaining = Map.empty[UniqueAddress, Int]
 

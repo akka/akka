@@ -8,10 +8,11 @@ import akka.AkkaException
 import akka.Done
 import akka.actor._
 import akka.event.LoggingAdapter
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
-import akka.util.OptionVal
+import akka.util.{ OptionVal, unused }
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -79,7 +80,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    * @param cmd Command message to send to the transports.
    * @return A Future that indicates when the message was successfully handled or dropped.
    */
-  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
+  def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
   /**
    * A Logger that can be used to log issues that may occur

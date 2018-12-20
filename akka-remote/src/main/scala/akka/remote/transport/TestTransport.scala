@@ -4,16 +4,17 @@
 
 package akka.remote.transport
 
-import TestTransport._
+import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
+
 import akka.actor._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import com.typesafe.config.Config
-import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
+import TestTransport._
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
@@ -37,8 +38,6 @@ class TestTransport(
       conf.getBytes("maximum-payload-bytes").toInt,
       conf.getString("scheme-identifier"))
   }
-
-  import akka.remote.transport.TestTransport._
 
   override def isResponsibleFor(address: Address): Boolean = true
 
@@ -218,7 +217,7 @@ object TestTransport {
      *   The constant the future will be completed with.
      */
     def pushConstant(c: B): Unit = push {
-      (x) ⇒ Future.successful(c)
+      _ ⇒ Future.successful(c)
     }
 
     /**
@@ -228,7 +227,7 @@ object TestTransport {
      *   The throwable the failed future will contain.
      */
     def pushError(e: Throwable): Unit = push {
-      (x) ⇒ Future.failed(e)
+      _ ⇒ Future.failed(e)
     }
 
     /**
@@ -243,7 +242,7 @@ object TestTransport {
       val originalBehavior = currentBehavior
 
       push(
-        (params: A) ⇒ for (delayed ← controlPromise.future; original ← originalBehavior(params)) yield original)
+        (params: A) ⇒ controlPromise.future.flatMap(_ ⇒ originalBehavior(params)))
 
       controlPromise
     }

@@ -4,20 +4,19 @@
 
 package akka.remote.artery
 
-import akka.actor.ActorSystem
-
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.util.control.NoStackTrace
+
+import akka.actor.ActorSystem
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
-import akka.util.OptionVal
+import akka.util.{ OptionVal, unused }
 import akka.Done
-
-import scala.concurrent.Future
 import akka.actor.Address
 
 /**
@@ -50,7 +49,7 @@ private[remote] object OutboundHandshake {
  * INTERNAL API
  */
 private[remote] class OutboundHandshake(
-  system:                  ActorSystem,
+  @unused system:          ActorSystem,
   outboundContext:         OutboundContext,
   outboundEnvelopePool:    ObjectPool[ReusableOutboundEnvelope],
   timeout:                 FiniteDuration,
@@ -129,7 +128,7 @@ private[remote] class OutboundHandshake(
               // when it receives the HandshakeRsp reply
               implicit val ec = materializer.executionContext
               uniqueRemoteAddress.foreach {
-                getAsyncCallback[UniqueAddress] { a ⇒
+                getAsyncCallback[UniqueAddress] { _ ⇒
                   if (handshakeState != Completed) {
                     handshakeCompleted()
                     if (isAvailable(out))

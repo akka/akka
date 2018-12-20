@@ -97,7 +97,7 @@ trait Inbox { this: ActorDSL.type ⇒
       case g: Get ⇒
         if (messages.isEmpty) enqueueQuery(g)
         else sender() ! messages.dequeue()
-      case s @ Select(_, predicate, _) ⇒
+      case s: Select ⇒
         if (messages.isEmpty) enqueueQuery(s)
         else {
           currentSelect = s
