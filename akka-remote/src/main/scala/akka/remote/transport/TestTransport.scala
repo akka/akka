@@ -6,12 +6,12 @@ package akka.remote.transport
 
 import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
 
-import TestTransport._
 import akka.actor._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import com.typesafe.config.Config
+import TestTransport._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -38,8 +38,6 @@ class TestTransport(
       conf.getBytes("maximum-payload-bytes").toInt,
       conf.getString("scheme-identifier"))
   }
-
-  import akka.remote.transport.TestTransport._
 
   override def isResponsibleFor(address: Address): Boolean = true
 
@@ -244,7 +242,7 @@ object TestTransport {
       val originalBehavior = currentBehavior
 
       push(
-        (params: A) ⇒ for (_ ← controlPromise.future; original ← originalBehavior(params)) yield original)
+        (params: A) ⇒ controlPromise.future.flatMap(_ ⇒ originalBehavior(params)))
 
       controlPromise
     }
