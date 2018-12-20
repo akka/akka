@@ -169,7 +169,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
           true
         } else {
           // The entry exists, let's update it.
-          updateExistingHeavyHitter(actualIdx, hashCode, item, count)
+          updateExistingHeavyHitter(actualIdx, count)
           // not a "new" heavy hitter, since we only replaced it (so it was signaled as new once before)
           false
         }
@@ -220,7 +220,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    * Replace existing heavy hitter – give it a new `count` value. This will also restore the heap property, so this
    * might make a previously lowest hitter no longer be one.
    */
-  private def updateExistingHeavyHitter(foundHashIndex: Int, hashCode: HashCodeVal, item: T, count: Long): Unit = {
+  private def updateExistingHeavyHitter(foundHashIndex: Int, count: Long): Unit = {
     if (weights(foundHashIndex) > count)
       throw new IllegalArgumentException(s"Weights can be only incremented or kept the same, not decremented. " +
         s"Previous weight was [${weights(foundHashIndex)}], attempted to modify it to [$count].")

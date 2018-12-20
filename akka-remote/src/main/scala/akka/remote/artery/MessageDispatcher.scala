@@ -41,7 +41,6 @@ private[remote] class MessageDispatcher(
     }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
-    val originalReceiver = recipient.path
 
     recipient match {
 

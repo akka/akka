@@ -13,6 +13,7 @@ import akka.actor.typed.scaladsl
 import akka.annotation.ApiMayChange
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
+import akka.util.unused
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -156,7 +157,7 @@ object Behaviors {
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
    */
-  def receive[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def receive[T](@unused `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

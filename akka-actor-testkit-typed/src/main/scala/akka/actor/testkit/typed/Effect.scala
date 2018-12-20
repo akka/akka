@@ -7,6 +7,7 @@ package akka.actor.testkit.typed
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.JavaDurationConverters._
+import akka.util.unused
 
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -114,18 +115,18 @@ object Effect {
   private[akka] final class SpawnedAnonymousAdapter[T](val ref: ActorRef[T])
     extends Effect with Product with Serializable {
 
-    override def equals(other: Any) = other match {
+    override def equals(other: Any): Boolean = other match {
       case _: SpawnedAnonymousAdapter[_] ⇒ true
       case _                             ⇒ false
     }
     override def hashCode: Int = Nil.##
     override def toString: String = "SpawnedAnonymousAdapter"
 
-    override def productPrefix = "SpawnedAnonymousAdapter"
-    override def productIterator = Iterator.empty
-    override def productArity = 0
+    override def productPrefix: String = "SpawnedAnonymousAdapter"
+    override def productIterator: Iterator[_] = Iterator.empty
+    override def productArity: Int = 0
     override def productElement(n: Int) = throw new NoSuchElementException
-    override def canEqual(o: Any) = o.isInstanceOf[SpawnedAnonymousAdapter[_]]
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[SpawnedAnonymousAdapter[_]]
   }
 
   /**
@@ -134,7 +135,7 @@ object Effect {
   @InternalApi
   private[akka] object SpawnedAnonymousAdapter {
     def apply[T]() = new SpawnedAnonymousAdapter[T](null)
-    def unapply[T](s: SpawnedAnonymousAdapter[T]): Boolean = true
+    def unapply[T](@unused s: SpawnedAnonymousAdapter[T]): Boolean = true
   }
 
   /**

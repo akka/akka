@@ -220,7 +220,7 @@ private[remote] class ReliableDeliverySupervisor(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-    case e @ (_: AssociationProblem) ⇒ Escalate
+    case _: AssociationProblem ⇒ Escalate
     case NonFatal(e) ⇒
       val causedBy = if (e.getCause == null) "" else s"Caused by: [${e.getCause.getMessage}]"
       log.warning(
@@ -359,10 +359,10 @@ private[remote] class ReliableDeliverySupervisor(
         // Resending will be triggered by the incoming GotUid message after the connection finished
         goToActive()
       } else goToIdle()
-    case AttemptSysMsgRedelivery               ⇒ // Ignore
-    case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
-    case s: Send                               ⇒ context.system.deadLetters ! s
-    case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
+    case AttemptSysMsgRedelivery             ⇒ // Ignore
+    case s @ Send(_: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
+    case s: Send                             ⇒ context.system.deadLetters ! s
+    case EndpointWriter.FlushAndStop         ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
       sender() ! EndpointWriter.StoppedReading(w)

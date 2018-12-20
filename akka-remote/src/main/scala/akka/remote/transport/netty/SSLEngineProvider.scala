@@ -20,8 +20,6 @@ import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.RemoteTransportException
 import akka.remote.artery.tcp.SecureRandomFactory
-import akka.stream.IgnoreComplete
-import akka.stream.TLSClosing
 import akka.stream.TLSRole
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -108,10 +106,7 @@ import javax.net.ssl.TrustManagerFactory
     createSSLEngine(sslContext, role)
   }
 
-  private def createSSLEngine(
-    sslContext: SSLContext,
-    role:       TLSRole,
-    closing:    TLSClosing = IgnoreComplete): SSLEngine = {
+  private def createSSLEngine(sslContext: SSLContext, role: TLSRole): SSLEngine = {
 
     val engine = sslContext.createSSLEngine()
 

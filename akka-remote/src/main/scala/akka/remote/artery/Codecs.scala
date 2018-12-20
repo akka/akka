@@ -6,6 +6,10 @@ package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.{ EmptyLocalActorRef, _ }
 import akka.event.Logging
@@ -17,11 +21,7 @@ import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRe
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.stream._
 import akka.stream.stage._
-import akka.util.{ OptionVal, Unsafe }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
+import akka.util.{ OptionVal, Unsafe, unused }
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 
 /**
@@ -43,7 +43,7 @@ private[remote] class Encoder(
   system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
   bufferPool:           EnvelopeBufferPool,
-  streamId:             Int,
+  @unused streamId:     Int,
   debugLogSend:         Boolean,
   version:              Byte)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.OutboundCompressionAccess] {
@@ -59,7 +59,6 @@ private[remote] class Encoder(
       private val headerBuilder = HeaderBuilder.out()
       headerBuilder.setVersion(version)
       headerBuilder.setUid(uniqueLocalAddress.uid)
-      private val localAddress = uniqueLocalAddress.address
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
@@ -331,7 +330,6 @@ private[remote] class Decoder(
 
       override val compressions = inboundCompressions
 
-      private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder.in(compressions)
       private val actorRefResolver: ActorRefResolveCacheWithAddress =
         new ActorRefResolveCacheWithAddress(system.provider.asInstanceOf[RemoteActorRefProvider], uniqueLocalAddress)
@@ -575,9 +573,9 @@ private[remote] class Decoder(
  * INTERNAL API
  */
 private[remote] class Deserializer(
-  inboundContext: InboundContext,
-  system:         ExtendedActorSystem,
-  bufferPool:     EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+  @unused inboundContext: InboundContext,
+  system:                 ExtendedActorSystem,
+  bufferPool:             EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
 
   val in: Inlet[InboundEnvelope] = Inlet("Artery.Deserializer.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Deserializer.out")

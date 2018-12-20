@@ -5,12 +5,12 @@
 package akka.remote.transport
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
-import akka.util.ByteString
+import akka.util.{ ByteString, unused }
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.AkkaException
-
-import scala.util.control.NoStackTrace
 import akka.actor.DeadLetterSuppression
 import akka.event.LoggingAdapter
 
@@ -143,7 +143,7 @@ trait Transport {
    * @param cmd Command message to the transport
    * @return Future that succeeds when the command was handled or dropped
    */
-  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
+  def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
 }
 
