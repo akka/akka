@@ -147,7 +147,7 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
     val timeLeft = deadlineHasTimeLeft
     val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
     restarts = if (timeLeft) restarts + 1 else 1
-    deadline = newDeadlineq
+    deadline = newDeadline
   }
 
   private def handleException(ctx: TypedActorContext[T], signalRestart: () ⇒ Unit): Catcher[Behavior[T]] = {
