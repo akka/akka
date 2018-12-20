@@ -804,10 +804,10 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
-        override def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+        override def aroundReceive(context: TypedActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
 
-        override def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
+        override def aroundSignal(context: TypedActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
           target(context, signal)
       }
 

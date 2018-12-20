@@ -137,7 +137,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   /**
    * INTERNAL API: DeferredBehavior init
    */
-  @InternalApi override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
+  @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
 
     val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
       val n = snapshotEvery()

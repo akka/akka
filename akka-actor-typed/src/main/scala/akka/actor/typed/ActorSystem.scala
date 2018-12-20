@@ -51,7 +51,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   /**
    * A [[akka.actor.typed.Logger]] that can be used to emit log messages
    * without specifying a more detailed source. Typically it is desirable to
-   * use the dedicated `Logger` available from each Actor’s [[ActorContext]]
+   * use the dedicated `Logger` available from each Actor’s [[TypedActorContext]]
    * as that ties the log entries to the actor.
    */
   def log: Logger

@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.*;
-import akka.actor.typed.ActorContext;
+import akka.actor.typed.TypedActorContext;
 
 import java.time.Duration;
 
@@ -39,12 +39,12 @@ public class ActorCompile {
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 = intercept(new BehaviorInterceptor<MyMsg, MyMsg>() {
     @Override
-    public Behavior<MyMsg> aroundReceive(ActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
+    public Behavior<MyMsg> aroundReceive(TypedActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
       return target.apply(context, message);
     }
 
     @Override
-    public Behavior<MyMsg> aroundSignal(ActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
+    public Behavior<MyMsg> aroundSignal(TypedActorContext<MyMsg> context, Signal signal, SignalTarget<MyMsg> target) {
       return target.apply(context, signal);
     }
   }, actor5);
@@ -84,12 +84,12 @@ public class ActorCompile {
   static class MyBehavior extends ExtensibleBehavior<MyMsg> {
 
     @Override
-    public Behavior<MyMsg> receiveSignal(ActorContext<MyMsg> context, Signal message) throws Exception {
+    public Behavior<MyMsg> receiveSignal(TypedActorContext<MyMsg> context, Signal message) throws Exception {
       return this;
     }
 
     @Override
-    public Behavior<MyMsg> receive(ActorContext<MyMsg> context, MyMsg message) throws Exception {
+    public Behavior<MyMsg> receive(TypedActorContext<MyMsg> context, MyMsg message) throws Exception {
       ActorRef<String> adapter = context.asJava().messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
       return this;
     }

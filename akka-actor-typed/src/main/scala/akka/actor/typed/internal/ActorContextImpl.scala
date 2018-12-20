@@ -25,7 +25,7 @@ import akka.util.JavaDurationConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] trait ActorContextImpl[T] extends ActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
+@InternalApi private[akka] trait ActorContextImpl[T] extends TypedActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil

@@ -16,7 +16,7 @@ import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
 import akka.actor.Scheduler
-import akka.actor.typed.ActorContext
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -348,7 +348,7 @@ import akka.util.Timeout
   import akka.cluster.sharding.ShardRegion.{ Passivate ⇒ UntypedPassivate }
 
   def behavior(stopMessage: Any): Behavior[scaladsl.ClusterSharding.ShardCommand] = {
-    def sendUntypedPassivate(entity: ActorRef[_], ctx: ActorContext[_]): Unit = {
+    def sendUntypedPassivate(entity: ActorRef[_], ctx: TypedActorContext[_]): Unit = {
       val pathToShard = entity.toUntyped.path.elements.take(4).mkString("/")
       ctx.asScala.system.toUntyped.actorSelection(pathToShard).tell(UntypedPassivate(stopMessage), entity.toUntyped)
     }
