@@ -152,9 +152,13 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] = delegate.spawn(behavior, name, props)
   /**
-   * Stop actor under test. To make sure it stopped, use [[TestProbe#expectTerminated]] method.
+   * Stop the actor under test and wait until it terminates.
    */
   def stop[T](ref: ActorRef[T]): Unit = delegate.stop(ref)
+  /**
+   * Stop the actor under test and wait `max` until it terminates.
+   */
+  def stop[T](ref: ActorRef[T], max: Duration): Unit = delegate.stop(ref, max.asScala)
 
   /**
    * Shortcut for creating a new test probe for the testkit actor system

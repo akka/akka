@@ -53,21 +53,19 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll {
     }
 
     "be able to stop actors under test" in {
-      val termTime = 5.seconds
+      // Will fail with 'name not unique' exception if the first actor is not fully stopped
       val probe = testKit.createTestProbe[Pong]()
       //#test-stop-actors
       val pinger1 = testKit.spawn(echoActor, "pinger")
       pinger1 ! Ping("hello", probe.ref)
       probe.expectMessage(Pong("hello"))
-      testKit.stop(pinger1)
-      probe.expectTerminated(pinger1, termTime)
+      testKit.stop(pinger1) // Uses default timeout
 
       // Immediately creating an actor with the same name
       val pinger2 = testKit.spawn(echoActor, "pinger")
       pinger2 ! Ping("hello", probe.ref)
       probe.expectMessage(Pong("hello"))
-      testKit.stop(pinger2)
-      probe.expectTerminated(pinger2, termTime)
+      testKit.stop(pinger2, 10.seconds) // Custom timeout
       //#test-stop-actors
     }
   }

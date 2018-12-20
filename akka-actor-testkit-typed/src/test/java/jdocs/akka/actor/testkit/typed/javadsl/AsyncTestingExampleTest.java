@@ -88,21 +88,18 @@ public class AsyncTestingExampleTest {
 
   @Test
   public void testStoppingActors() {
-    Duration termTime = Duration.ofSeconds(5);
     TestProbe<Pong> probe = testKit.createTestProbe();
     //#test-stop-actors
     ActorRef<Ping> pinger1 = testKit.spawn(echoActor, "pinger");
     pinger1.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
     testKit.stop(pinger1);
-    probe.expectTerminated(pinger1, termTime);
 
     // Immediately creating an actor with the same name
     ActorRef<Ping> pinger2 = testKit.spawn(echoActor, "pinger");
     pinger2.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
-    testKit.stop(pinger2);
-    probe.expectTerminated(pinger2, termTime);
+    testKit.stop(pinger2, Duration.ofSeconds(10));
     //#test-stop-actors
   }
 
