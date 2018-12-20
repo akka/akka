@@ -67,6 +67,11 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         override def onPull(): Unit = {
           semaphore.release()
         }
+
+        override def onDownstreamFinish(): Unit = {
+          downstreamStatus.set(Canceled)
+          super.onDownstreamFinish()
+        }
       })
 
       override def postStop(): Unit = {
