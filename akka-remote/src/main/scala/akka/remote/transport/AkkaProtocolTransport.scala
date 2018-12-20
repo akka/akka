@@ -554,7 +554,7 @@ private[transport] class ProtocolStateActor(
   }
 
   onTermination {
-    case StopEvent(reason, _, OutboundUnassociated(remoteAddress, statusPromise, transport)) ⇒
+    case StopEvent(reason, _, OutboundUnassociated(_, statusPromise, _)) ⇒
       statusPromise.tryFailure(reason match {
         case FSM.Failure(info: DisassociateInfo) ⇒ disassociateException(info)
         case _                                   ⇒ new AkkaProtocolException("Transport disassociated before handshake finished")
@@ -611,7 +611,7 @@ private[transport] class ProtocolStateActor(
     case FSM.Failure(ForbiddenUidReason)  ⇒ // no logging
     case FSM.Failure(TimeoutReason(errorMessage)) ⇒
       log.info(errorMessage)
-    case other ⇒ super.logTermination(reason)
+    case _ ⇒ super.logTermination(reason)
   }
 
   private def listenForListenerRegistration(readHandlerPromise: Promise[HandleEventListener]): Unit =

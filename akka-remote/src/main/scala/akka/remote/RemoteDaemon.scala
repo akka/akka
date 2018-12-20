@@ -212,7 +212,7 @@ private[akka] class RemoteSystemDaemon(
 
   private def doCreateActor(message: DaemonMsg, props: Props, deploy: Deploy, path: String, supervisor: ActorRef) = {
     path match {
-      case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+      case ActorPathExtractor(_, elems) if elems.nonEmpty && elems.head == "remote" ⇒
         // TODO RK currently the extracted “address” is just ignored, is that okay?
         // TODO RK canonicalize path so as not to duplicate it always #1446
         val subpath = elems.drop(1)

@@ -24,8 +24,6 @@ import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
-import akka.stream.IgnoreComplete
-import akka.stream.TLSClosing
 import akka.stream.TLSRole
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
@@ -158,8 +156,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     sslContext: SSLContext,
     role:       TLSRole,
     hostname:   String,
-    port:       Int,
-    closing:    TLSClosing = IgnoreComplete): SSLEngine = {
+    port:       Int): SSLEngine = {
 
     val engine = sslContext.createSSLEngine(hostname, port)
 

@@ -496,7 +496,7 @@ private[transport] class ThrottledAssociation(
       inboundThrottleMode = mode
       sender() ! SetThrottleAck
       stay()
-    case Event(Disassociated(info), _) ⇒
+    case Event(Disassociated(_), _) ⇒
       stop() // not notifying the upstream handler is intentional: we are relying on heartbeating
     case Event(FailWith(reason), _) ⇒
       if (upstreamListener ne null) upstreamListener notify Disassociated(reason)
@@ -513,7 +513,7 @@ private[transport] class ThrottledAssociation(
     } catch {
       // This layer should not care about malformed packets. Also, this also useful for testing, because
       // arbitrary payload could be passed in
-      case NonFatal(e) ⇒ None
+      case NonFatal(_) ⇒ None
     }
   }
 
