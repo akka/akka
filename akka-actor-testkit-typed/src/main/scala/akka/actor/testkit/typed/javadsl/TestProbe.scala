@@ -10,15 +10,15 @@ import java.util.{ List ⇒ JList }
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.util.JavaDurationConverters._
+
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
-
-import akka.annotation.InternalApi
 
 object FishingOutcomes {
   /**
