@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal }
+import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContext }
 import akka.util.OptionVal
 
 /**
@@ -33,11 +33,11 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
   }
 
   @throws(classOf[Exception])
-  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+  override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
     receive.receive(ctx, msg)
 
   @throws(classOf[Exception])
-  override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
+  override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] =
     receive.receiveSignal(ctx, msg)
 
   /**

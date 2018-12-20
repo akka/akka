@@ -156,7 +156,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
   import TimerSchedulerImpl._
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: typed.ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: typed.TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val maybeIntercepted = msg match {
       case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
       case msg           ⇒ OptionVal.Some(msg)
@@ -168,7 +168,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
     }
   }
 
-  override def aroundSignal(ctx: typed.ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: typed.TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     signal match {
       case PreRestart | PostStop ⇒ timerSchedulerImpl.cancelAll()
       case _                     ⇒ // unhandled

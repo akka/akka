@@ -90,7 +90,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * the special objects with real Behaviors.
    */
   @throws(classOf[Exception])
-  def receive(ctx: ActorContext[T], msg: T): Behavior[T]
+  def receive(ctx: TypedActorContext[T], msg: T): Behavior[T]
 
   /**
    * Process an incoming [[Signal]] and return the next behavior. This means
@@ -108,7 +108,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * the special objects with real Behaviors.
    */
   @throws(classOf[Exception])
-  def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T]
+  def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T]
 }
 
 object Behavior {
@@ -219,7 +219,7 @@ object Behavior {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val unhandledSignal: PartialFunction[(ActorContext[Nothing], Signal), Behavior[Nothing]] = {
+  @InternalApi private[akka] val unhandledSignal: PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) ⇒ UnhandledBehavior
   }
 
@@ -229,14 +229,14 @@ object Behavior {
    */
   @InternalApi
   private[akka] abstract class DeferredBehavior[T] extends Behavior[T] {
-    def apply(ctx: ActorContext[T]): Behavior[T]
+    def apply(ctx: TypedActorContext[T]): Behavior[T]
   }
   /** INTERNAL API */
   @InternalApi
   private[akka] object DeferredBehavior {
     def apply[T](factory: SAC[T] ⇒ Behavior[T]): Behavior[T] =
       new DeferredBehavior[T] {
-        def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
+        def apply(ctx: TypedActorContext[T]): Behavior[T] = factory(ctx.asScala)
         override def toString: String = s"Deferred(${LineNumbers(factory)})"
       }
   }
@@ -288,7 +288,7 @@ object Behavior {
    * message or signal.
    */
   @tailrec
-  def canonicalize[T](behavior: Behavior[T], current: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
+  def canonicalize[T](behavior: Behavior[T], current: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] =
     behavior match {
       case SameBehavior                  ⇒ current
       case UnhandledBehavior             ⇒ current
@@ -305,7 +305,7 @@ object Behavior {
    */
   @InternalApi
   @tailrec
-  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: ActorContext[T])(f: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
+  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: TypedActorContext[T])(f: Behavior[T] ⇒ Behavior[U]): Behavior[U] =
     nextBehavior match {
       case SameBehavior | `currentBehavior` ⇒ same
       case UnhandledBehavior                ⇒ unhandled
@@ -318,13 +318,13 @@ object Behavior {
    * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack are started
    * and then the resulting behavior is returned.
    */
-  def start[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
+  def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
     // TODO can this be made @tailrec?
     behavior match {
       case innerDeferred: DeferredBehavior[T] ⇒ start(innerDeferred(ctx), ctx)
       case wrapped: WrappingBehavior[T, Any] @unchecked ⇒
         // make sure that a deferred behavior wrapped inside some other behavior is also started
-        val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[ActorContext[Any]])
+        val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
         if (startedInner eq wrapped.nestedBehavior) wrapped
         else wrapped.replaceNested(startedInner)
       case _ ⇒ behavior
@@ -390,13 +390,13 @@ object Behavior {
   /**
    * Execute the behavior with the given message
    */
-  def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] =
+  def interpretMessage[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: T): Behavior[T] =
     interpret(behavior, ctx, msg)
 
   /**
    * Execute the behavior with the given signal
    */
-  def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+  def interpretSignal[T](behavior: Behavior[T], ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
     val result = interpret(behavior, ctx, signal)
     // we need to throw here to allow supervision of deathpact exception
     signal match {
@@ -405,7 +405,7 @@ object Behavior {
     }
   }
 
-  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
+  private def interpret[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: Any): Behavior[T] = {
     behavior match {
       case null ⇒ throw new InvalidMessageException("[null] is not an allowed behavior")
       case SameBehavior | UnhandledBehavior ⇒
@@ -430,7 +430,7 @@ object Behavior {
    * Execute the behavior with the given messages (or signals).
    * The returned [[Behavior]] from each processed message is used for the next message.
    */
-  @InternalApi private[akka] def interpretMessages[T](behavior: Behavior[T], ctx: ActorContext[T], messages: Iterator[T]): Behavior[T] = {
+  @InternalApi private[akka] def interpretMessages[T](behavior: Behavior[T], ctx: TypedActorContext[T], messages: Iterator[T]): Behavior[T] = {
     @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
