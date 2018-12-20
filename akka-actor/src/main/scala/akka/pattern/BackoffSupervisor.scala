@@ -436,8 +436,9 @@ private[akka] trait HandleBackoff { this: Actor ⇒
         finalStopMessage match {
           case None ⇒
           case Some(fsm) ⇒
-            fsm(msg)
-            context.stop(self)
+            if (fsm(msg)) {
+              context.stop(self)
+            }
         }
     }
   }
