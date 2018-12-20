@@ -15,6 +15,7 @@ import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.util.JavaDurationConverters._
+import akka.util.unused
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -47,9 +48,14 @@ object TestProbe {
   def create[M](system: ActorSystem[_]): TestProbe[M] =
     create(name = "testProbe", system)
 
+  def create[M](@unused clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
+    create(system)
+
   def create[M](name: String, system: ActorSystem[_]): TestProbe[M] =
     new TestProbeImpl[M](name, system)
 
+  def create[M](name: String, @unused clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
+    new TestProbeImpl[M](name, system)
 }
 
 /**
