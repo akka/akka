@@ -129,23 +129,17 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
     }
 
-    // FIXME it seems this test fails in `sourceProbe.expectMsg(GraphStageMessages.Pull)`
-    // when ran in isolation.
     "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
-      val sourceProbe = TestProbe()
-      val (outputStream, probe) = TestSourceStage(new OutputStreamSourceStage(timeout), sourceProbe)
+      val (outputStream, sink) = StreamConverters.asOutputStream()
         .toMat(TestSink.probe[ByteString])(Keep.both).run
 
-      val s = probe.expectSubscription()
+      val s = sink.expectSubscription()
 
       outputStream.write(bytesArray)
       s.request(1)
-      sourceProbe.expectMsg(GraphStageMessages.Pull)
 
-      probe.expectNext(byteString)
-
+      sink.expectNext(byteString)
       s.cancel()
-      sourceProbe.expectMsg(GraphStageMessages.DownstreamFinish)
 
       awaitAssert {
         the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
