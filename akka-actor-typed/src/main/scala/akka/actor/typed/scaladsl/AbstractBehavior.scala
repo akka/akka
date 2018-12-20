@@ -55,10 +55,10 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
   def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
 
   @throws(classOf[Exception])
-  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+  override final def receive(ctx: akka.actor.typed.TypedActorContext[T], msg: T): Behavior[T] =
     onMessage(msg)
 
   @throws(classOf[Exception])
-  override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
+  override final def receiveSignal(ctx: akka.actor.typed.TypedActorContext[T], msg: Signal): Behavior[T] =
     onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 }

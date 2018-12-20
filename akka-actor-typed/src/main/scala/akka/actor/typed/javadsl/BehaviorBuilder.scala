@@ -249,9 +249,9 @@ private class BuiltBehavior[T](
   private val signalHandlers:  List[Case[T, Signal]]
 ) extends ExtensibleBehavior[T] {
 
-  override def receive(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx.asJava, msg, messageHandlers)
+  override def receive(ctx: typed.TypedActorContext[T], msg: T): Behavior[T] = receive[T](ctx.asJava, msg, messageHandlers)
 
-  override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](ctx.asJava, msg, signalHandlers)
+  override def receiveSignal(ctx: typed.TypedActorContext[T], msg: Signal): Behavior[T] = receive[Signal](ctx.asJava, msg, signalHandlers)
 
   @tailrec
   private def receive[M](ctx: ActorContext[T], msg: M, handlers: List[Case[T, M]]): Behavior[T] =

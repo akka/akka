@@ -52,27 +52,27 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
     }
   }
 
-  override def aroundStart(ctx: ActorContext[O], target: PreStartTarget[I]): Behavior[I] = {
+  override def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] = {
     try {
       target.start(ctx)
     } catch handleExceptionOnStart(ctx)
   }
 
-  def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
+  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] = {
     try {
       target(ctx, signal)
     } catch handleSignalException(ctx, target)
   }
 
-  def log(ctx: ActorContext[_], t: Throwable): Unit = {
+  def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       ctx.asScala.log.error(t, "Supervisor {} saw failure: {}", this, t.getMessage)
     }
   }
 
-  protected def handleExceptionOnStart(ctx: ActorContext[O]): Catcher[Behavior[I]]
-  protected def handleSignalException(ctx: ActorContext[O], target: SignalTarget[I]): Catcher[Behavior[I]]
-  protected def handleReceiveException(ctx: ActorContext[O], target: ReceiveTarget[I]): Catcher[Behavior[I]]
+  protected def handleExceptionOnStart(ctx: TypedActorContext[O]): Catcher[Behavior[I]]
+  protected def handleSignalException(ctx: TypedActorContext[O], target: SignalTarget[I]): Catcher[Behavior[I]]
+  protected def handleReceiveException(ctx: TypedActorContext[O], target: ReceiveTarget[I]): Catcher[Behavior[I]]
 }
 
 /**
@@ -80,28 +80,28 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
  */
 private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStrategy) extends AbstractSupervisor[T, T, Thr](ss) {
 
-  override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     try {
       target(ctx, msg)
     } catch handleReceiveException(ctx, target)
   }
 
-  protected def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
+  protected def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       Behavior.failed(t)
   }
 
   // convenience if target not required to handle exception
-  protected def handleExceptionOnStart(ctx: ActorContext[T]): Catcher[Behavior[T]] =
+  protected def handleExceptionOnStart(ctx: TypedActorContext[T]): Catcher[Behavior[T]] =
     handleException(ctx)
-  protected def handleSignalException(ctx: ActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] =
+  protected def handleSignalException(ctx: TypedActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
-  protected def handleReceiveException(ctx: ActorContext[T], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
+  protected def handleReceiveException(ctx: TypedActorContext[T], target: ReceiveTarget[T]): Catcher[Behavior[T]] =
     handleException(ctx)
 }
 
 private class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: Stop) extends SimpleSupervisor[T, Thr](strategy) {
-  override def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
+  override def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
       Behavior.failed(t)
@@ -109,7 +109,7 @@ private class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T]
 }
 
 private class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends SimpleSupervisor[T, Thr](ss) {
-  override protected def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
+  override protected def handleException(ctx: TypedActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
       Behaviors.same
@@ -126,7 +126,7 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
     case OptionVal.Some(d) ⇒ d.hasTimeLeft
   }
 
-  override def aroundStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
+  override def aroundStart(ctx: TypedActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     try {
       target.start(ctx)
     } catch {
@@ -143,14 +143,14 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
     }
   }
 
-  private def restart(ctx: ActorContext[_], t: Throwable) = {
+  private def restart(ctx: TypedActorContext[_], t: Throwable) = {
     val timeLeft = deadlineHasTimeLeft
     val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
     restarts = if (timeLeft) restarts + 1 else 1
     deadline = newDeadline
   }
 
-  private def handleException(ctx: ActorContext[T], signalRestart: () ⇒ Unit): Catcher[Behavior[T]] = {
+  private def handleException(ctx: TypedActorContext[T], signalRestart: () ⇒ Unit): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       if (strategy.maxNrOfRetries != -1 && restarts >= strategy.maxNrOfRetries && deadlineHasTimeLeft) {
         throw t
@@ -166,10 +166,10 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
       }
   }
 
-  override protected def handleSignalException(ctx: ActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] = {
+  override protected def handleSignalException(ctx: TypedActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, () ⇒ target(ctx, PreRestart))
   }
-  override protected def handleReceiveException(ctx: ActorContext[T], target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
+  override protected def handleReceiveException(ctx: TypedActorContext[T], target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, () ⇒ target.signalRestart(ctx))
   }
 }
@@ -181,7 +181,7 @@ private class BackoffSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   var blackhole = false
   var restartCount: Int = 0
 
-  override def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     if (blackhole) {
       import akka.actor.typed.scaladsl.adapter._
       ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signal, ctx.asScala.self))
@@ -191,14 +191,14 @@ private class BackoffSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
   }
 
-  override def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[T]): Behavior[T] = {
     try {
       msg.asInstanceOf[Any] match {
         case ScheduledRestart ⇒
           blackhole = false
           ctx.asScala.scheduleOnce(b.resetBackoffAfter, ctx.asScala.self.unsafeUpcast[Any], ResetRestartCount(restartCount))
           try {
-            Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[ActorContext[T]]))
+            Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
           } catch {
             case NonFatal(ex: Thr) if b.maxRestarts > 0 && restartCount >= b.maxRestarts ⇒
               log(ctx, ex)
@@ -222,12 +222,12 @@ private class BackoffSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     } catch handleReceiveException(ctx, target)
   }
 
-  protected def handleExceptionOnStart(ctx: ActorContext[O]): Catcher[Behavior[T]] = {
+  protected def handleExceptionOnStart(ctx: TypedActorContext[O]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       scheduleRestart(ctx, t)
   }
 
-  protected def handleReceiveException(ctx: ActorContext[O], target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
+  protected def handleReceiveException(ctx: TypedActorContext[O], target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       try {
         target.signalRestart(ctx)
@@ -237,7 +237,7 @@ private class BackoffSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       scheduleRestart(ctx, t)
   }
 
-  protected def handleSignalException(ctx: ActorContext[O], target: SignalTarget[T]): Catcher[Behavior[T]] = {
+  protected def handleSignalException(ctx: TypedActorContext[O], target: SignalTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       try {
         target(ctx, PreRestart)
@@ -247,7 +247,7 @@ private class BackoffSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       scheduleRestart(ctx, t)
   }
 
-  private def scheduleRestart(ctx: ActorContext[O], reason: Throwable): Behavior[T] = {
+  private def scheduleRestart(ctx: TypedActorContext[O], reason: Throwable): Behavior[T] = {
     log(ctx, reason)
     val restartDelay = calculateDelay(restartCount, b.minBackoff, b.maxBackoff, b.randomFactor)
     ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self.unsafeUpcast[Any], ScheduledRestart)
