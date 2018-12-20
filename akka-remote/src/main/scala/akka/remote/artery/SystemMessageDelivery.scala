@@ -91,7 +91,6 @@ import akka.util.OptionVal
       private var incarnation = outboundContext.associationState.incarnation
       private val unacknowledged = new ArrayDeque[OutboundEnvelope]
       private var resending = new ArrayDeque[OutboundEnvelope]
-      private var resendingFromSeqNo = -1L
       private var stopping = false
 
       private val giveUpAfterNanos = outboundContext.settings.Advanced.GiveUpSystemMessageAfter.toNanos
@@ -288,7 +287,6 @@ import akka.util.OptionVal
         incarnation = outboundContext.associationState.incarnation
         unacknowledged.clear()
         resending.clear()
-        resendingFromSeqNo = -1L
         cancelTimer(resendInterval)
       }
 

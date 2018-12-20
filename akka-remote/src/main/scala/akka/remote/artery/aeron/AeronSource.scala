@@ -34,7 +34,7 @@ private[remote] object AeronSource {
     () ⇒
       {
         handler.reset
-        val fragmentsRead = sub.poll(handler.fragmentsHandler, 1)
+        sub.poll(handler.fragmentsHandler, 1)
         val msg = handler.messageReceived
         handler.reset() // for GC
         if (msg ne null) {

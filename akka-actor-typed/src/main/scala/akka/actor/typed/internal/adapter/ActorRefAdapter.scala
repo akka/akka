@@ -60,8 +60,8 @@ private[akka] object ActorRefAdapter {
         sysmsg.Watch(
           toUntyped(watchee),
           toUntyped(watcher)))
-      case internal.Unwatch(watchee, watcher)          ⇒ untyped.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
-      case internal.DeathWatchNotification(ref, cause) ⇒ untyped.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
-      case internal.NoMessage                          ⇒ // just to suppress the warning
+      case internal.Unwatch(watchee, watcher)      ⇒ untyped.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
+      case internal.DeathWatchNotification(ref, _) ⇒ untyped.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
+      case internal.NoMessage                      ⇒ // just to suppress the warning
     }
 }

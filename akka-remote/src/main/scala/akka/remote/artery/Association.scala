@@ -172,13 +172,10 @@ private[remote] class Association(
   @volatile private[this] var queuesVisibility = false
 
   private def controlQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(ControlQueueIndex)
-  private def largeQueue: SendQueue.ProducerApi[OutboundEnvelope] = queues(LargeQueueIndex)
 
   @volatile private[this] var _outboundControlIngress: OptionVal[OutboundControlIngress] = OptionVal.None
   @volatile private[this] var materializing = new CountDownLatch(1)
   @volatile private[this] var outboundCompressionAccess: Vector[OutboundCompressionAccess] = Vector.empty
-  // in case there is a restart at the same time as a compression table update
-  private val changeCompressionTimeout = 5.seconds
 
   // keyed by stream queue index
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
@@ -335,7 +332,7 @@ private[remote] class Association(
       if (log.isDebugEnabled) {
         val reason =
           if (removed) "removed unused quarantined association"
-          else s"overflow of send queue, size [$queueSize]"
+          else s"overflow of send queue, size [$qSize]"
         log.debug(
           "Dropping message [{}] from [{}] to [{}] due to {}",
           Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), reason)
@@ -718,7 +715,7 @@ private[remote] class Association(
       queues(queueIndex) = wrapper // use new underlying queue immediately for restarts
       queuesVisibility = true // volatile write for visibility of the queues array
 
-      val (queueValue, testMgmt, changeCompression, completed) =
+      val (queueValue, _, changeCompression, completed) =
         Source.fromGraph(new SendQueue[OutboundEnvelope](sendToDeadLetters))
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)

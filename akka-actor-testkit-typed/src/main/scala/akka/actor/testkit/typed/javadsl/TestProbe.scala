@@ -47,14 +47,9 @@ object TestProbe {
   def create[M](system: ActorSystem[_]): TestProbe[M] =
     create(name = "testProbe", system)
 
-  def create[M](clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
-    create(system)
-
   def create[M](name: String, system: ActorSystem[_]): TestProbe[M] =
     new TestProbeImpl[M](name, system)
 
-  def create[M](name: String, clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
-    new TestProbeImpl[M](name, system)
 }
 
 /**

@@ -101,14 +101,7 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](): TestProbe[M] = testKit.createTestProbe[M]()
-  /**
-   * See corresponding method on [[ActorTestKit]]
-   */
-  def createTestProbe[M](clazz: Class[M]): TestProbe[M] = testKit.createTestProbe(clazz)
-  /**
-   * See corresponding method on [[ActorTestKit]]
-   */
-  def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = testKit.createTestProbe(name, clazz)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */

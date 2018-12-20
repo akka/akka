@@ -12,7 +12,7 @@ import akka.actor.typed.BehaviorInterceptor.{ PreStartTarget, ReceiveTarget, Sig
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.util.OptionVal
+import akka.util.{ OptionVal, unused }
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
@@ -30,7 +30,7 @@ import scala.util.control.NonFatal
       case r: Restart ⇒
         Behaviors.intercept[T, T](new RestartSupervisor(initialBehavior, r))(initialBehavior)
       case r: Stop ⇒
-        Behaviors.intercept[T, T](new StopSupervisor(initialBehavior, r))(initialBehavior)
+        Behaviors.intercept[T, T](new StopSupervisor(r))(initialBehavior)
       case r: Backoff ⇒
         Behaviors.intercept[T, T](new BackoffSupervisor(initialBehavior, r))(initialBehavior)
     }
@@ -86,7 +86,7 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
     } catch handleReceiveException(ctx, target)
   }
 
-  protected def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
+  protected def handleException(@unused ctx: ActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       Behavior.failed(t)
   }
@@ -100,7 +100,7 @@ private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: Super
     handleException(ctx)
 }
 
-private class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: Stop) extends SimpleSupervisor[T, Thr](strategy) {
+private class StopSupervisor[T, Thr <: Throwable: ClassTag](strategy: Stop) extends SimpleSupervisor[T, Thr](strategy) {
   override def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
@@ -137,13 +137,13 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
           throw t
         } else {
           log(ctx, t)
-          restart(ctx, t)
+          restart()
           aroundStart(ctx, target)
         }
     }
   }
 
-  private def restart(ctx: ActorContext[_], t: Throwable) = {
+  private def restart() = {
     val timeLeft = deadlineHasTimeLeft
     val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
     restarts = if (timeLeft) restarts + 1 else 1
@@ -161,7 +161,7 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
           case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
         }
         log(ctx, t)
-        restart(ctx, t)
+        restart()
         Behavior.validateAsInitial(Behavior.start(initial, ctx))
       }
   }

@@ -13,7 +13,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.remote.RemoteActorRefProvider
 import akka.remote.artery.LruBoundedCache
-import akka.util.Unsafe
+import akka.util.{ Unsafe, unused }
 
 /**
  * INTERNAL API: Thread local cache per actor system
@@ -45,7 +45,7 @@ private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSys
     override def initialValue: ActorRefResolveCache = new ActorRefResolveCache(provider)
   }
 
-  def threadLocalCache(provider: RemoteActorRefProvider): ActorRefResolveCache =
+  def threadLocalCache(@unused provider: RemoteActorRefProvider): ActorRefResolveCache =
     current.get
 
 }

@@ -157,22 +157,12 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](): TestProbe[M] = TestProbe.create(system)
-  /**
-   * Shortcut for creating a new test probe for the testkit actor system
-   * @tparam M the type of messages the probe should accept
-   */
-  def createTestProbe[M](clazz: Class[M]): TestProbe[M] = TestProbe.create(clazz, system)
 
   /**
    * Shortcut for creating a new named test probe for the testkit actor system
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String): TestProbe[M] = TestProbe.create(name, system)
-  /**
-   * Shortcut for creating a new named test probe for the testkit actor system
-   * @tparam M the type of messages the probe should accept
-   */
-  def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = TestProbe.create(name, clazz, system)
 
   // Note that if more methods are added here they should also be added to TestKitJunitResource
 
