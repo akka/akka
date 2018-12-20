@@ -6,9 +6,8 @@ package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
 import akka.annotation.DoNotInherit
-
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
@@ -38,7 +37,7 @@ object BehaviorTestKit {
 trait BehaviorTestKit[T] {
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
-  private[akka] def context: akka.actor.typed.TypedActorContext[T]
+  private[akka] def context: TypedActorContext[T]
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.Effect.NoEffects]] if no effects
