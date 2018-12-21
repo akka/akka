@@ -86,13 +86,11 @@ private[akka] class OutputStreamAdapter(
       throw new IOException("Timed out trying to write data to stream")
     }
 
-    val invocationResult =
-      sendToStage.invokeWithFeedback(Send(data))
-        .recoverWith {
-          case NonFatal(e) ⇒ throw new IOException(e)
-        }(ExecutionContexts.sameThreadExecutionContext)
-
-    Await.result(invocationResult, writeTimeout)
+    try {
+      Await.result(sendToStage.invokeWithFeedback(Send(data)), writeTimeout)
+    } catch {
+      case NonFatal(e) => throw new IOException(e)
+    }
   }
 
   @scala.throws(classOf[IOException])
@@ -114,8 +112,10 @@ private[akka] class OutputStreamAdapter(
 
   @scala.throws(classOf[IOException])
   override def close(): Unit = {
-    val invocationResult = sendToStage.invokeWithFeedback(Close)
-      .recoverWith { case NonFatal(e) ⇒ throw new IOException(e) }(ExecutionContexts.sameThreadExecutionContext)
-    Await.result(invocationResult, writeTimeout)
+    try {
+      Await.result(sendToStage.invokeWithFeedback(Close), writeTimeout)
+    } catch {
+      case NonFatal(e) => throw new IOException(e)
+    }
   }
 }
