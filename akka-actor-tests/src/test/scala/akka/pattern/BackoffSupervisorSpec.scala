@@ -350,7 +350,25 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       c1 ! PoisonPill
       expectTerminated(c1)
       expectTerminated(supervisor)
+    }
 
+    "supervisor must not stop when final stop message has not been received" in {
+      val stopMessage = "stop"
+      val supervisorWatcher = TestProbe()
+      val supervisor: ActorRef = create(onStopOptions(maxNrOfRetries = 100).withFinalStopMessage(_ == stopMessage))
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
+      watch(c1)
+      watch(supervisor)
+      supervisorWatcher.watch(supervisor)
+
+      c1 ! PoisonPill
+      expectTerminated(c1)
+      supervisor ! "ping"
+      supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
+
+      supervisor ! stopMessage
+      expectTerminated(supervisor)
     }
   }
 }
