@@ -89,7 +89,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Send(data)), writeTimeout)
     } catch {
-      case NonFatal(e) => throw new IOException(e)
+      case NonFatal(e) ⇒ throw new IOException(e)
     }
   }
 
@@ -115,7 +115,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Close), writeTimeout)
     } catch {
-      case NonFatal(e) => throw new IOException(e)
+      case NonFatal(e) ⇒ throw new IOException(e)
     }
   }
 }
