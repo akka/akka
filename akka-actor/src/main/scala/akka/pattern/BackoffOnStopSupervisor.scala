@@ -78,15 +78,12 @@ private[akka] class BackoffOnStopSupervisor(
       }
     case None ⇒
       replyWhileStopped match {
-        case None    ⇒ context.system.deadLetters.forward(msg)
         case Some(r) ⇒ sender() ! r
+        case None    ⇒ context.system.deadLetters.forward(msg)
       }
       finalStopMessage match {
-        case None ⇒
-        case Some(fsm) ⇒
-          if (fsm(msg)) {
-            context.stop(self)
-          }
+        case Some(fsm) if fsm(msg) ⇒ context.stop(self)
+        case _                     ⇒
       }
   }
 }
