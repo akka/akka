@@ -86,7 +86,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
 
       latch.countDown()
 
-      forN(100)(_ ⇒ probe.expectMessageType[String]) should
+      forN(100)(_ ⇒ probe.receiveOne()) should
         be(forN(100)(i ⇒ s"a$i-B"))
     }
   }

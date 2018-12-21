@@ -52,7 +52,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
         new DeviceGroupQuery.WrappedRespondTemperature(
             new RespondTemperature(0L, "device2", Optional.of(2.0))));
 
-    RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
+    RespondAllTemperatures response = requester.receiveOne();
     assertEquals(1L, response.requestId);
 
     Map<String, TemperatureReading> expectedTemperatures = new HashMap<>();
@@ -91,7 +91,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
         new DeviceGroupQuery.WrappedRespondTemperature(
             new RespondTemperature(0L, "device2", Optional.of(2.0))));
 
-    RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
+    RespondAllTemperatures response = requester.receiveOne();
     assertEquals(1L, response.requestId);
 
     Map<String, TemperatureReading> expectedTemperatures = new HashMap<>();
@@ -128,7 +128,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     device2.stop();
 
-    RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
+    RespondAllTemperatures response = requester.receiveOne();
     assertEquals(1L, response.requestId);
 
     Map<String, TemperatureReading> expectedTemperatures = new HashMap<>();
@@ -169,7 +169,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     device2.stop();
 
-    RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
+    RespondAllTemperatures response = requester.receiveOne();
     assertEquals(1L, response.requestId);
 
     Map<String, TemperatureReading> expectedTemperatures = new HashMap<>();
@@ -206,7 +206,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     // no reply from device2
 
-    RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
+    RespondAllTemperatures response = requester.receiveOne();
     assertEquals(1L, response.requestId);
 
     Map<String, TemperatureReading> expectedTemperatures = new HashMap<>();

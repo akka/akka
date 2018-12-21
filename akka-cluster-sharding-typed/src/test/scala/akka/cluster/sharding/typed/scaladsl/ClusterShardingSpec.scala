@@ -323,10 +323,10 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val p = TestProbe[String]()
 
       charlieRef ! WhoAreYou(p.ref)
-      p.expectMessageType[String] should startWith("I'm charlie")
+      p.receiveOne() should startWith("I'm charlie")
 
       charlieRef tell WhoAreYou(p.ref)
-      p.expectMessageType[String] should startWith("I'm charlie")
+      p.receiveOne() should startWith("I'm charlie")
 
       charlieRef ! StopPlz()
     }
@@ -366,7 +366,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
           }
         })
 
-      p.expectMessageType[TheReply].s should startWith("I'm alice")
+      p.receiveOne().s should startWith("I'm alice")
 
       aliceRef ! StopPlz()
     }
