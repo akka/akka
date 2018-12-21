@@ -55,13 +55,13 @@ import scala.concurrent.duration.FiniteDuration
   override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
     startPeriodicTimer(key, msg, interval.asScala)
 
-  override def startSingleTimer(key: Any, msg: T, timeout: FiniteDuration): Unit =
-    startTimer(key, msg, timeout, repeat = false)
+  override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, repeat = false)
 
-  def startSingleTimer(key: Any, msg: T, timeout: java.time.Duration): Unit =
-    startSingleTimer(key, msg, timeout.asScala)
+  def startSingleTimer(key: Any, msg: T, delay: java.time.Duration): Unit =
+    startSingleTimer(key, msg, delay.asScala)
 
-  private def startTimer(key: Any, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: Any, msg: T, delay: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
       case Some(t) ⇒ cancelTimer(t)
       case None    ⇒
@@ -76,11 +76,11 @@ import scala.concurrent.duration.FiniteDuration
 
     val task =
       if (repeat)
-        ctx.system.scheduler.schedule(timeout, timeout) {
+        ctx.system.scheduler.schedule(delay, delay) {
           ctx.self.unsafeUpcast ! timerMsg
         }(ExecutionContexts.sameThreadExecutionContext)
       else
-        ctx.system.scheduler.scheduleOnce(timeout) {
+        ctx.system.scheduler.scheduleOnce(delay) {
           ctx.self.unsafeUpcast ! timerMsg
         }(ExecutionContexts.sameThreadExecutionContext)
 
