@@ -135,10 +135,26 @@ object ShardCoordinator {
   /**
    * The default implementation of [[ShardCoordinator.LeastShardAllocationStrategy]]
    * allocates new shards to the `ShardRegion` with least number of previously allocated shards.
-   * It picks shards for rebalancing handoff from the `ShardRegion` with most number of previously allocated shards.
+   *
+   * When a node is removed from the cluster the shards on that node will be started on the remaining nodes,
+   * evenly spread on the remaining nodes (by picking regions with least shards).
+   *
+   * When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+   * It picks shards for rebalancing from the `ShardRegion` with most number of previously allocated shards.
    * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
    * i.e. new members in the cluster. There is a configurable threshold of how large the difference
-   * must be to begin the rebalancing. The number of ongoing rebalancing processes can be limited.
+   * must be to begin the rebalancing. The difference between number of shards in the region with most shards and
+   * the region with least shards must be greater than the `rebalanceThreshold` for the rebalance to occur.
+   *
+   * A `rebalanceThreshold` of 1 gives the best distribution and therefore typically the best choice.
+   * A higher threshold means that more shards can be rebalanced at the same time instead of one-by-one.
+   * That has the advantage that the rebalance process can be quicker but has the drawback that the
+   * the number of shards (and therefore load) between different nodes may be significantly different.
+   * Given the recommendation of using 10x shards than number of nodes and `rebalanceThreshold=10` can result
+   * in one node hosting ~2 times the number of shards of other nodes. Example: 1000 shards on 100 nodes means
+   * 10 shards per node. One node may have 19 shards and others 10 without a rebalance occurring.
+   *
+   * The number of ongoing rebalancing processes can be limited by `maxSimultaneousRebalance`.
    */
   @SerialVersionUID(1L)
   class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
@@ -159,9 +175,12 @@ object ShardCoordinator {
           case (_, v) ⇒ v.filterNot(s ⇒ rebalanceInProgress(s))
         }.maxBy(_.size)
         val difference = mostShards.size - leastShards.size
-        if (difference >= rebalanceThreshold)
-          Future.successful(mostShards.take(math.min(difference, maxSimultaneousRebalance - rebalanceInProgress.size)).toSet)
-        else
+        if (difference > rebalanceThreshold) {
+          val n = math.min(
+            math.min(difference - rebalanceThreshold, rebalanceThreshold),
+            maxSimultaneousRebalance - rebalanceInProgress.size)
+          Future.successful(mostShards.sorted.take(n).toSet)
+        } else
           emptyRebalanceResult
       } else emptyRebalanceResult
     }
