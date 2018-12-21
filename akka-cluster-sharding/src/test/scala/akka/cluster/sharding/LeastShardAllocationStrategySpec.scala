@@ -30,7 +30,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.allocateShard(regionA, "003", allocations).futureValue should ===(regionC)
     }
 
-    "rebalance from region with most number of shards [2, 0, 0, rebalanceThreshold=1" in {
+    "rebalance from region with most number of shards [2, 0, 0], rebalanceThreshold=1" in {
       val allocationStrategy = new LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 10)
       val allocations = createAllocations(aCount = 2)
 
