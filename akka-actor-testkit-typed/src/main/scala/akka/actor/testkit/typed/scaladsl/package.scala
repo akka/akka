@@ -10,7 +10,7 @@ package object scaladsl {
 
   /**
    * Scala API. Scale timeouts (durations) during tests with the configured
-   * 'akka.test.timefactor'.
+   * 'akka.actor.testkit.typed.timefactor'.
    * Implicit class providing `dilated` method.
    *
    * {{{
