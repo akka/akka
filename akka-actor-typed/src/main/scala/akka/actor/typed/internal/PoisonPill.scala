@@ -4,7 +4,7 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.ActorContext
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.Signal
@@ -31,10 +31,10 @@ import akka.annotation.InternalApi
  * and process stashed messages before stopping.
  */
 @InternalApi private[akka] final class PoisonPillInterceptor[M] extends BehaviorInterceptor[M, M] {
-  override def aroundReceive(ctx: ActorContext[M], msg: M, target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
+  override def aroundReceive(ctx: TypedActorContext[M], msg: M, target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
     target(ctx, msg)
 
-  override def aroundSignal(ctx: ActorContext[M], signal: Signal, target: BehaviorInterceptor.SignalTarget[M]): Behavior[M] = {
+  override def aroundSignal(ctx: TypedActorContext[M], signal: Signal, target: BehaviorInterceptor.SignalTarget[M]): Behavior[M] = {
     signal match {
       case p: PoisonPill ⇒
         val next = target(ctx, p)

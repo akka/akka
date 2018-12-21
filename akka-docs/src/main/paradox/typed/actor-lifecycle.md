@@ -46,7 +46,8 @@ is a tool that mimics the old style of starting up actors.
 
 ### Spawning Children
 
-Child actors are spawned with @unidoc[akka.actor.typed.ActorContext]'s `spawn`. In the example below, when the root actor
+Child actors are spawned with @scala[@unidoc[akka.actor.typed.scaladsl.ActorContext]]@java[@unidoc[akka.actor.typed.javadsl.ActorContext]]'s `spawn`. 
+In the example below, when the root actor
 is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
 `Start` message, it creates a child actor defined by the behavior `HelloWorldBot.bot`:
 
