@@ -211,6 +211,8 @@ Scala
 Java
 :  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-stop-actors }
 
+The `stop` method can only be used for actors that were spawned by the same `ActorTestKit`. Other actors
+will not be stopped by that method.
 
 ### Test framework integration
 
