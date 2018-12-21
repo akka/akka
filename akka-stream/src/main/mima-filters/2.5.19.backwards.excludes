@@ -1,3 +1,4 @@
 # OutputStreamSourceStage #25983
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.OutputStreamAdapter.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSourceStage$Flush$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.OutputStreamAdapter.*")
