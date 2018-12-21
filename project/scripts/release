@@ -304,7 +304,7 @@ echolog "Successfully created local release"
 # check binary compatibility for dry run
 if [ ! $no_mima ] && [ $dry_run ]; then
   echodry "Running migration manager report..."
-  sbt mimaReportBinaryIssues
+  sbt +mimaReportBinaryIssues
   echodry "Finished migration manager report"
 fi
 
