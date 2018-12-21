@@ -6,6 +6,9 @@ package akka.pattern
 
 import akka.actor.{ Actor, ActorRef, Props }
 
+/**
+ * Implements basic backoff handling for [[BackoffOnRestartSupervisor]] and [[BackoffOnStopSupervisor]].
+ */
 private[akka] trait HandleBackoff {
   this: Actor ⇒
   def childProps: Props
@@ -22,18 +25,16 @@ private[akka] trait HandleBackoff {
 
   override def preStart(): Unit = startChild()
 
-  def startChild(): Unit = {
-    if (child.isEmpty) {
-      child = Some(context.watch(context.actorOf(childProps, childName)))
-    }
+  def startChild(): Unit = if (child.isEmpty) {
+    child = Some(context.watch(context.actorOf(childProps, childName)))
   }
 
-  def handleBackoff: Receive = {
+  def handleBackoff: Actor.Receive = {
     case StartChild ⇒
       startChild()
       reset match {
         case AutoReset(resetBackoff) ⇒
-          val _ = context.system.scheduler.scheduleOnce(resetBackoff, self, ResetRestartCount(restartCount))
+          context.system.scheduler.scheduleOnce(resetBackoff, self, ResetRestartCount(restartCount))
         case _ ⇒ // ignore
       }
 

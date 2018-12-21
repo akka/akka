@@ -552,8 +552,9 @@ trait BackoffOptions {
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
    * By default, the supervisor will retry infinitely.
    * With this option, the supervisor will terminate itself after the maxNoOfRetries is reached.
-   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
-   *  if the limit is exceeded the child actor is stopped
+   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted.
+   *                       If negative, the value is unbounded, otherwise the provided
+   *                       limit is used. If the limit is exceeded the child actor will be stopped.
    */
   def withMaxNrOfRetries(maxNrOfRetries: Int): BackoffOptions
 

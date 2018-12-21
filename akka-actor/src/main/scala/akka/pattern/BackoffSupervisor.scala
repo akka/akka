@@ -278,7 +278,7 @@ object BackoffSupervisor {
 }
 
 // for backwards compability
-@deprecated("Use BackoffSupervisor props method instead", since = "2.5.20")
+@deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.20")
 final class BackoffSupervisor(
   override val childProps: Props,
   override val childName:  String,
