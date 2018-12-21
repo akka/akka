@@ -41,8 +41,11 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-    // Semaphore counting the number of elements we are ready to accept,
-    // which is the demand plus the size of the buffer.
+    // Semaphore counting the number of elements we are ready to accept.
+    // Initially we are ready to accept 'maxBuffer' elements, which will be buffered
+    // by 'emit' if there is no demand yet.
+    // Semaphore permits are taken out of the pool when inserting data into the
+    // OutputStream, and new permits are released when downstream signals demand.
     val semaphore = new Semaphore(maxBuffer, /* fair =*/ true)
 
     final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
