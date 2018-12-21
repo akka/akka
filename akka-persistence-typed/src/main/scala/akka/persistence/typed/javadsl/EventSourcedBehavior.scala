@@ -33,8 +33,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    *
    * Return effects from your handlers in order to instruct persistence on how to act on the incoming message (i.e. persist events).
    */
-  protected final def Effect: EffectFactories[Command, Event, State] =
-    EffectFactories.asInstanceOf[EffectFactories[Command, Event, State]]
+  protected final def Effect: EffectFactories[Event, State] =
+    EffectFactories.asInstanceOf[EffectFactories[Event, State]]
 
   /**
    * Implement by returning the initial empty state object.
