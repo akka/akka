@@ -36,7 +36,7 @@ import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
  */
 @ApiMayChange
 @DoNotInherit
-sealed abstract class Behavior[T] { behavior ⇒
+abstract class Behavior[T] { behavior ⇒
   /**
    * Narrow the type of this Behavior, which is always a safe operation. This
    * method is necessary to implement the contravariant nature of Behavior
