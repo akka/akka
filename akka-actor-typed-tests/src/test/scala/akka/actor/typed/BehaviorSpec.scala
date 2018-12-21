@@ -20,30 +20,30 @@ import org.scalatest.WordSpecLike
 
 object BehaviorSpec {
   sealed trait Command {
-    def expectedResponse(context: ActorContext[Command]): Seq[Event] = Nil
+    def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Nil
   }
   case object GetSelf extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Self(context.asScala.self) :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Self(context.asScala.self) :: Nil
   }
   // Behavior under test must return Unhandled
   case object Miss extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Missed :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Missed :: Nil
   }
   // Behavior under test must return same
   case object Ignore extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Ignored :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Ignored :: Nil
   }
   case object Ping extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Pong :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Pong :: Nil
   }
   case object Swap extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Swapped :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Swapped :: Nil
   }
   case class GetState()(s: State) extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = s :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = s :: Nil
   }
   case class AuxPing(id: Int) extends Command {
-    override def expectedResponse(context: ActorContext[Command]): Seq[Event] = Pong :: Nil
+    override def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Pong :: Nil
   }
   case object Stop extends Command
 
@@ -512,12 +512,12 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: ActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(context: TypedActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(context: TypedActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }
@@ -625,12 +625,12 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: ActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(context: TypedActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(context: TypedActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }

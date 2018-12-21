@@ -5,7 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal }
+import akka.actor.typed.{ TypedActorContext, Behavior, BehaviorInterceptor, Signal }
 import akka.annotation.InternalApi
 
 import scala.collection.immutable.HashMap
@@ -38,7 +38,7 @@ import scala.collection.immutable.HashMap
 
   import BehaviorInterceptor._
 
-  override def aroundStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
+  override def aroundStart(ctx: TypedActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     // when declaring we expect the outermost to win
     // for example with
     // val behavior = ...
@@ -72,7 +72,7 @@ import scala.collection.immutable.HashMap
     case _                                ⇒ false
   }
 
-  override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val mdc = merge(staticMdc, mdcForMessage(msg))
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =
@@ -84,7 +84,7 @@ import scala.collection.immutable.HashMap
     next
   }
 
-  override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
     try {
       target(ctx, signal)

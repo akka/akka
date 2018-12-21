@@ -452,13 +452,13 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap = new BehaviorInterceptor<Command, Command>() {
       @Override
-      public Behavior<Command> aroundReceive(akka.actor.typed.ActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
+      public Behavior<Command> aroundReceive(TypedActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
         interceptProbe.ref().tell(msg);
         return target.apply(ctx, msg);
       }
 
       @Override
-      public Behavior<Command> aroundSignal(akka.actor.typed.ActorContext<Command> ctx, Signal signal, SignalTarget<Command> target) {
+      public Behavior<Command> aroundSignal(TypedActorContext<Command> ctx, Signal signal, SignalTarget<Command> target) {
         signalProbe.ref().tell(signal);
         return target.apply(ctx, signal);
       }

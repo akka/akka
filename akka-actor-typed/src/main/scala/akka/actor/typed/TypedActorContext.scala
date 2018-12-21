@@ -15,7 +15,7 @@ import akka.annotation.ApiMayChange
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] {
+trait TypedActorContext[T] {
   // this should be a pure interface, i.e. only abstract methods
 
   /**
