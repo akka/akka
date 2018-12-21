@@ -8,6 +8,7 @@ import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
+import akka.dispatch.ExecutionContexts
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
@@ -15,6 +16,7 @@ import akka.stream.stage._
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.util.ByteString
 
+import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
@@ -43,8 +45,6 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     // which is the demand plus the size of the buffer.
     val semaphore = new Semaphore(maxBuffer, /* fair =*/ true)
 
-    val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
-
     final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
 
       val upstreamCallback: AsyncCallback[AdapterToStageMessage] =
@@ -55,7 +55,6 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
           case Send(data) ⇒
             emit(out, data)
           case Close ⇒
-            downstreamStatus.set(Canceled)
             completeStage()
         }
       }
@@ -64,55 +63,32 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         override def onPull(): Unit = {
           semaphore.release()
         }
-
-        override def onDownstreamFinish(): Unit = {
-          downstreamStatus.set(Canceled)
-          super.onDownstreamFinish()
-        }
       })
-
-      override def postStop(): Unit = {
-        downstreamStatus.set(Canceled)
-        super.postStop()
-      }
     }
 
     val logic = new OutputStreamSourceLogic
-    (logic, new OutputStreamAdapter(semaphore, downstreamStatus, logic.upstreamCallback, writeTimeout))
+    (logic, new OutputStreamAdapter(semaphore, logic.upstreamCallback, writeTimeout))
   }
 }
 
 private[akka] class OutputStreamAdapter(
   unfulfilledDemand: Semaphore,
-  downstreamStatus:  AtomicReference[DownstreamStatus],
   sendToStage:       AsyncCallback[AdapterToStageMessage],
   writeTimeout:      FiniteDuration)
   extends OutputStream {
 
-  var isActive = true
-  var isPublisherAlive = true
-  def publisherClosedException = new IOException("Reactive stream is terminated, no writes are possible")
-
   @scala.throws(classOf[IOException])
-  private[this] def send(sendAction: () ⇒ Unit): Unit = {
-    if (isActive) {
-      if (isPublisherAlive) sendAction()
-      else throw publisherClosedException
-    } else throw new IOException("OutputStream is closed")
+  private[this] def sendData(data: ByteString): Unit = {
+    unfulfilledDemand.tryAcquire(writeTimeout.toMillis, TimeUnit.MILLISECONDS)
+
+    val invocationResult =
+      sendToStage.invokeWithFeedback(Send(data))
+        .recoverWith {
+          case NonFatal(e) ⇒ throw new IOException(e)
+        }(ExecutionContexts.sameThreadExecutionContext)
+
+    Await.result(invocationResult, writeTimeout)
   }
-
-  @scala.throws(classOf[IOException])
-  private[this] def sendData(data: ByteString): Unit =
-    send(() ⇒ {
-      try {
-        unfulfilledDemand.tryAcquire(writeTimeout.toMillis, TimeUnit.MILLISECONDS)
-        sendToStage.invoke(Send(data))
-      } catch { case NonFatal(ex) ⇒ throw new IOException(ex) }
-      if (downstreamStatus.get() == Canceled) {
-        isPublisherAlive = false
-        throw publisherClosedException
-      }
-    })
 
   @scala.throws(classOf[IOException])
   override def write(b: Int): Unit = {
@@ -133,13 +109,8 @@ private[akka] class OutputStreamAdapter(
 
   @scala.throws(classOf[IOException])
   override def close(): Unit = {
-    send(() ⇒
-      try {
-        sendToStage.invoke(Close)
-      } catch {
-        case e: IOException ⇒ throw e
-        case NonFatal(e)    ⇒ throw new IOException(e)
-      })
-    isActive = false
+    val invocationResult = sendToStage.invokeWithFeedback(Close)
+      .recoverWith { case NonFatal(e) ⇒ throw new IOException(e) }(ExecutionContexts.sameThreadExecutionContext)
+    Await.result(invocationResult, writeTimeout)
   }
 }
