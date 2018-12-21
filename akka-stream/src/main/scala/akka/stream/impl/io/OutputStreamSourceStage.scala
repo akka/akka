@@ -47,11 +47,8 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
     final class OutputStreamSourceLogic extends GraphStageLogic(shape) {
 
-      private val upstreamCallback: AsyncCallback[AdapterToStageMessage] =
+      val upstreamCallback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback(onAsyncMessage)
-
-      def wakeUp(msg: AdapterToStageMessage): Unit =
-        upstreamCallback.invoke(msg)
 
       private def onAsyncMessage(event: AdapterToStageMessage): Unit = {
         event match {
@@ -81,14 +78,14 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     }
 
     val logic = new OutputStreamSourceLogic
-    (logic, new OutputStreamAdapter(semaphore, downstreamStatus, logic.wakeUp, writeTimeout))
+    (logic, new OutputStreamAdapter(semaphore, downstreamStatus, logic.upstreamCallback, writeTimeout))
   }
 }
 
 private[akka] class OutputStreamAdapter(
   unfulfilledDemand: Semaphore,
   downstreamStatus:  AtomicReference[DownstreamStatus],
-  sendToStage:       (AdapterToStageMessage) ⇒ Unit,
+  sendToStage:       AsyncCallback[AdapterToStageMessage],
   writeTimeout:      FiniteDuration)
   extends OutputStream {
 
@@ -110,7 +107,7 @@ private[akka] class OutputStreamAdapter(
       try {
         // FIXME take into account writeTimeout here.
         unfulfilledDemand.acquire()
-        sendToStage(Send(data))
+        sendToStage.invoke(Send(data))
       } catch { case NonFatal(ex) ⇒ throw new IOException(ex) }
       if (downstreamStatus.get() == Canceled) {
         isPublisherAlive = false
@@ -139,7 +136,7 @@ private[akka] class OutputStreamAdapter(
   override def close(): Unit = {
     send(() ⇒
       try {
-        sendToStage(Close)
+        sendToStage.invoke(Close)
       } catch {
         case e: IOException ⇒ throw e
         case NonFatal(e)    ⇒ throw new IOException(e)
