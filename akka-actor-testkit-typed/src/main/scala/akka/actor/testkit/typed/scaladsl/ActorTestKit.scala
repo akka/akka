@@ -177,6 +177,8 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
 
   /**
    * Stop the actor under test and wait until it terminates.
+   * It can only be used for actors that were spawned by this `ActorTestKit`.
+   * Other actors will not be stopped by this method.
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit = try {
     Await.result(internalSystem ? { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, max)
