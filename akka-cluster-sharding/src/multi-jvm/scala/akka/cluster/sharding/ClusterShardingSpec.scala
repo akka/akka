@@ -158,7 +158,7 @@ abstract class ClusterShardingSpecConfig(
         number-of-entities = 1
       }
       least-shard-allocation-strategy {
-        rebalance-threshold = 2
+        rebalance-threshold = 1
         max-simultaneous-rebalance = 1
       }
       distributed-data.durable.lmdb {
