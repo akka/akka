@@ -253,7 +253,7 @@ object Behaviors {
    * signal reception behavior. It's returned by for example [[Behaviors.receiveMessage]].
    */
   @DoNotInherit
-  trait Receive[T] extends ExtensibleBehavior[T] {
+  trait Receive[T] extends Behavior[T] {
     def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
   }
 
