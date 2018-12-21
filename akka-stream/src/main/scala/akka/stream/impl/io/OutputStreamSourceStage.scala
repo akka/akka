@@ -6,7 +6,7 @@ package akka.stream.impl.io
 
 import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.Semaphore
+import java.util.concurrent.{ Semaphore, TimeUnit }
 
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
@@ -105,8 +105,7 @@ private[akka] class OutputStreamAdapter(
   private[this] def sendData(data: ByteString): Unit =
     send(() ⇒ {
       try {
-        // FIXME take into account writeTimeout here.
-        unfulfilledDemand.acquire()
+        unfulfilledDemand.tryAcquire(writeTimeout.toMillis, TimeUnit.MILLISECONDS)
         sendToStage.invoke(Send(data))
       } catch { case NonFatal(ex) ⇒ throw new IOException(ex) }
       if (downstreamStatus.get() == Canceled) {
