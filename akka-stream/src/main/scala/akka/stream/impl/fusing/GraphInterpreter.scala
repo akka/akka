@@ -15,8 +15,8 @@ import akka.annotation.InternalApi
 
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
-
 import akka.stream.Attributes.LogLevels
+import akka.stream.snapshot._
 
 /**
  * INTERNAL API
@@ -647,12 +647,12 @@ import akka.stream.Attributes.LogLevels
     val logicSnapshots = logics.zipWithIndex.map {
       case (logic, idx) ⇒
         val label = logic.originalStage.getOrElse(logic).toString
-        LogicSnapshot(idx, label, logic.attributes)
+        LogicSnapshotImpl(idx, label, logic.attributes)
     }
     val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
     val connectionSnapshots = connections.filter(_ != null)
       .map { connection ⇒
-        ConnectionSnapshot(
+        ConnectionSnapshotImpl(
           connection.id,
           logicSnapshots(logicIndexes(connection.inOwner)),
           logicSnapshots(logicIndexes(connection.outOwner)),
@@ -665,8 +665,8 @@ import akka.stream.Attributes.LogLevels
       }
 
     RunningInterpreterImpl(
-      logicSnapshots,
-      connectionSnapshots,
+      logicSnapshots.toVector,
+      connectionSnapshots.toVector,
       queueStatus,
       runningStages,
       shutdownCounter.toList.map(n ⇒ logicSnapshots(n)))

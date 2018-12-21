@@ -8,6 +8,7 @@ import akka.actor.{ ActorRef, ActorSystem }
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.snapshot._
 import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
@@ -106,7 +107,7 @@ object StreamTestKit {
         running.connections.foreach { connection ⇒
           builder.append("    ")
             .append("Connection(")
-            .append(connection.id)
+            .append(connection.asInstanceOf[ConnectionSnapshotImpl].id)
             .append(", ")
             .append(connection.in.label)
             .append(", ")
@@ -135,8 +136,8 @@ object StreamTestKit {
       }
 
       for (connection ← snapshot.connections) {
-        val inName = "N" + connection.in.index
-        val outName = "N" + connection.out.index
+        val inName = "N" + connection.in.asInstanceOf[LogicSnapshotImpl].index
+        val outName = "N" + connection.out.asInstanceOf[LogicSnapshotImpl].index
 
         builder.append(s"  $inName -> $outName ")
         connection.state match {

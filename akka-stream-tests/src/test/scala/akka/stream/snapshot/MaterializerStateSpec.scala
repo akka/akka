@@ -2,8 +2,9 @@
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream
+package akka.stream.snapshot
 
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.StreamSpec
 

@@ -16,6 +16,7 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
+import akka.stream.snapshot._
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
@@ -638,11 +639,11 @@ import scala.util.control.NonFatal
 
   def toSnapshot: InterpreterSnapshot = {
     if (!isInitialized)
-      UninitializedInterpreter(
+      UninitializedInterpreterImpl(
         logics.zipWithIndex.map {
           case (logic, idx) ⇒
-            LogicSnapshot(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
-        }
+            LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+        }.toVector
       )
     else interpreter.toSnapshot
   }

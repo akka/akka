@@ -5,8 +5,8 @@
 package akka.stream.testkit
 
 import akka.actor.{ ActorRef, ActorSystem }
-import akka.stream.{ MaterializerState, StreamSnapshotImpl }
 import akka.stream.impl.StreamSupervisor
+import akka.stream.snapshot.{ MaterializerState, StreamSnapshotImpl }
 import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.Failed
