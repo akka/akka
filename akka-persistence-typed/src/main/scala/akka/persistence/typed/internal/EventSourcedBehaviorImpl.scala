@@ -67,7 +67,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   import EventSourcedBehaviorImpl.WriterIdentity
 
-  override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
+  override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     Behaviors.supervise {
       Behaviors.setup[Command] { ctx ⇒
         val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
@@ -103,11 +103,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         // not part of the protocol
         val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
           import BehaviorInterceptor._
-          def aroundReceive(ctx: typed.ActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
+          def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
             target(ctx, msg)
           }
 
-          def aroundSignal(ctx: typed.ActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
+          def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
             if (signal == PostStop) {
               eventsourcedSetup.cancelRecoveryTimer()
               clearStashBuffer()

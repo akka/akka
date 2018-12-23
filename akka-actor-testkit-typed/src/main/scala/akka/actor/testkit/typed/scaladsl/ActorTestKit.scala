@@ -4,6 +4,8 @@
 
 package akka.actor.testkit.typed.scaladsl
 
+import java.util.concurrent.TimeoutException
+
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.{ ApiMayChange, InternalApi }
@@ -172,6 +174,18 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+
+  /**
+   * Stop the actor under test and wait until it terminates.
+   * It can only be used for actors that were spawned by this `ActorTestKit`.
+   * Other actors will not be stopped by this method.
+   */
+  def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit = try {
+    Await.result(internalSystem ? { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, max)
+  } catch {
+    case _: TimeoutException ⇒
+      assert(false, s"timeout ($max) during stop() waiting for actor [${ref.path}] to stop")
+  }
 
   /**
    * Shortcut for creating a new test probe for the testkit actor system

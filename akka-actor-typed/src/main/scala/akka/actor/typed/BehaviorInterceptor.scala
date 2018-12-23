@@ -23,7 +23,7 @@ abstract class BehaviorInterceptor[O, I] {
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def aroundStart(ctx: ActorContext[O], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] =
     target.start(ctx)
 
   /**
@@ -33,7 +33,7 @@ abstract class BehaviorInterceptor[O, I] {
    *
    * @return The behavior for next message or signal
    */
-  def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
+  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
 
   /**
    * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
@@ -41,7 +41,7 @@ abstract class BehaviorInterceptor[O, I] {
    *
    * @return The behavior for next message or signal
    */
-  def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
+  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
 
   /**
    * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
@@ -61,7 +61,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait PreStartTarget[T] {
-    def start(ctx: ActorContext[_]): Behavior[T]
+    def start(ctx: TypedActorContext[_]): Behavior[T]
   }
 
   /**
@@ -71,7 +71,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait ReceiveTarget[T] {
-    def apply(ctx: ActorContext[_], msg: T): Behavior[T]
+    def apply(ctx: TypedActorContext[_], msg: T): Behavior[T]
 
     /**
      * INTERNAL API
@@ -82,7 +82,7 @@ object BehaviorInterceptor {
      * is taking place.
      */
     @InternalApi
-    private[akka] def signalRestart(ctx: ActorContext[_]): Unit
+    private[akka] def signalRestart(ctx: TypedActorContext[_]): Unit
   }
 
   /**
@@ -92,7 +92,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait SignalTarget[T] {
-    def apply(ctx: ActorContext[_], signal: Signal): Behavior[T]
+    def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[T]
   }
 
 }

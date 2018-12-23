@@ -12,6 +12,9 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.util.Objects;
+
 import static org.junit.Assert.assertEquals;
 
 //#test-header
@@ -35,6 +38,19 @@ public class AsyncTestingExampleTest {
     public Pong(String message) {
       this.message = message;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Pong)) return false;
+      Pong pong = (Pong) o;
+      return message.equals(pong.message);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(message);
+    }
   }
 
   Behavior<Ping> echoActor = Behaviors.receive((context, ping) -> {
@@ -45,7 +61,7 @@ public class AsyncTestingExampleTest {
 
   //#test-shutdown
   @AfterClass
-  public void cleanup() {
+  public static void cleanup() {
     testKit.shutdownTestKit();
   }
   //#test-shutdown
@@ -68,6 +84,23 @@ public class AsyncTestingExampleTest {
     TestProbe<Pong> probe = testKit.createTestProbe();
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
+  }
+
+  @Test
+  public void testStoppingActors() {
+    TestProbe<Pong> probe = testKit.createTestProbe();
+    //#test-stop-actors
+    ActorRef<Ping> pinger1 = testKit.spawn(echoActor, "pinger");
+    pinger1.tell(new Ping("hello", probe.ref()));
+    probe.expectMessage(new Pong("hello"));
+    testKit.stop(pinger1);
+
+    // Immediately creating an actor with the same name
+    ActorRef<Ping> pinger2 = testKit.spawn(echoActor, "pinger");
+    pinger2.tell(new Ping("hello", probe.ref()));
+    probe.expectMessage(new Pong("hello"));
+    testKit.stop(pinger2, Duration.ofSeconds(10));
+    //#test-stop-actors
   }
 
   @Test

@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
- * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
+ * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
 @InternalApi private[akka] final class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
@@ -102,7 +102,7 @@ import scala.concurrent.duration._
  */
 @InternalApi private[typed] object ActorContextAdapter {
 
-  private def toUntypedImp[U](ctx: ActorContext[_]): a.ActorContext =
+  private def toUntypedImp[U](ctx: TypedActorContext[_]): a.ActorContext =
     ctx match {
       case adapter: ActorContextAdapter[_] ⇒ adapter.untyped
       case _ ⇒
@@ -110,11 +110,11 @@ import scala.concurrent.duration._
           s"($ctx of class ${ctx.getClass.getName})")
     }
 
-  def toUntyped2[U](ctx: ActorContext[_]): a.ActorContext = toUntypedImp(ctx)
+  def toUntyped2[U](ctx: TypedActorContext[_]): a.ActorContext = toUntypedImp(ctx)
 
   def toUntyped[U](ctx: scaladsl.ActorContext[_]): a.ActorContext =
     ctx match {
-      case c: ActorContext[_] ⇒ toUntypedImp(c)
+      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
       case _ ⇒
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($ctx of class ${ctx.getClass.getName})")
@@ -122,7 +122,7 @@ import scala.concurrent.duration._
 
   def toUntyped[U](ctx: javadsl.ActorContext[_]): a.ActorContext =
     ctx match {
-      case c: ActorContext[_] ⇒ toUntypedImp(c)
+      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
       case _ ⇒
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($ctx of class ${ctx.getClass.getName})")

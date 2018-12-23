@@ -202,6 +202,18 @@ Java
 Note that you can add `import testKit._` to get access to the `spawn` and `createTestProbe` methods at the top level
 without prefixing them with `testKit`.
 
+#### Stopping actors
+The method will wait until the actor stops or throw an assertion error in case of a timeout.
+
+Scala
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-stop-actors }
+
+Java
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-stop-actors }
+
+The `stop` method can only be used for actors that were spawned by the same `ActorTestKit`. Other actors
+will not be stopped by that method.
+
 ### Test framework integration
 
 @@@ div { .group-java }
