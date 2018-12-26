@@ -752,8 +752,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
     new TestKit(system) {
       {
         // #source-queue
-        int bufferSize = 5;
-        int elementsToProcess = 3;
+        int bufferSize = 10;
+        int elementsToProcess = 5;
 
         SourceQueueWithComplete<Integer> sourceQueue =
             Source.<Integer>queue(bufferSize, OverflowStrategy.backpressure())
