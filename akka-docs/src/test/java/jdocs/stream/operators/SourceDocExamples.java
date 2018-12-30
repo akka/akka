@@ -13,6 +13,13 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 //#range-imports
 
+//#actor-ref-imports
+import akka.actor.ActorRef;
+import akka.actor.Status.Success;
+import akka.stream.OverflowStrategy;
+import akka.stream.javadsl.Sink;
+//#actor-ref-imports
+
 import java.util.Arrays;
 
 //#imports
@@ -57,6 +64,24 @@ public class SourceDocExamples {
         //#run-range
         source.runForeach(i -> System.out.println(i), materializer);
         //#run-range
+    }
+
+    static void actorRef() {
+        //#actor-ref
+
+        final ActorSystem system = ActorSystem.create();
+        final Materializer materializer = ActorMaterializer.create(system);
+
+        int bufferSize = 100;
+        Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
+
+        ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+        actorRef.tell("hello", ActorRef.noSender());
+        actorRef.tell("hello", ActorRef.noSender());
+
+        // The stream completes successfully with the following message
+        actorRef.tell(new Success("completes stream"), ActorRef.noSender());
+        //#actor-ref
     }
 
 }
