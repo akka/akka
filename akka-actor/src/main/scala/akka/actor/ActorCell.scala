@@ -13,11 +13,10 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
-import akka.dispatch.Envelope
+import akka.dispatch.{ Envelope, MessageDispatcher }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
-import akka.dispatch.MessageDispatcher
 import akka.util.{ Reflect, unused }
 import akka.annotation.InternalApi
 
@@ -461,6 +460,12 @@ private[akka] class ActorCell(
   final def getParent() = parent
   // Java API
   final def getSystem() = system
+  // Java API
+  final override def getDispatcher(): ExecutionContextExecutor = dispatcher
+  // Java API
+  final override def getSelf(): ActorRef = self
+  // Java API
+  final override def getProps(): Props = props
 
   protected def stash(msg: SystemMessage): Unit = {
     assert(msg.unlinked)

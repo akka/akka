@@ -21,7 +21,7 @@ public class TellPatternJavaActor extends AbstractActor {
   public TellPatternJavaActor(ActorRef targetActor) {
     this.target  = targetActor;
     this.breaker = new CircuitBreaker(
-      getContext().dispatcher(), getContext().system().scheduler(),
+      getContext().getDispatcher(), getContext().getSystem().getScheduler(),
       5, Duration.ofSeconds(10), Duration.ofMinutes(1))
       .addOnOpenListener(this::notifyMeOnOpen);
   }
@@ -34,16 +34,16 @@ public class TellPatternJavaActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(String.class, payload -> "call".equals(payload) && breaker.isClosed(), payload -> 
+      .match(String.class, payload -> "call".equals(payload) && breaker.isClosed(), payload ->
         target.tell("message", self())
       )
-      .matchEquals("response", payload -> 
+      .matchEquals("response", payload ->
         breaker.succeed()
       )
       .match(Throwable.class, t ->
         breaker.fail()
       )
-      .match(ReceiveTimeout.class, t ->    
+      .match(ReceiveTimeout.class, t ->
         breaker.fail()
       )
       .build();

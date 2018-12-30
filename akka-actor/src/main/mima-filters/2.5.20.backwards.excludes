@@ -1,0 +1,7 @@
+# Add `getDispatcher` to `akka.actor.AbstractActor.ActorContext`  #26161
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getSelf")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getProps")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getDispatcher")
+# Below is for Scala 2.11.x
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getSender")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.getReceiveTimeout")

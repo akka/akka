@@ -77,7 +77,7 @@ public class SupervisedAsk {
           targetActor.forward(askParam.message, getContext());
           Scheduler scheduler = getContext().getSystem().scheduler();
           timeoutMessage = scheduler.scheduleOnce(askParam.timeout,
-            getSelf(), new AskTimeout(), getContext().dispatcher(), null);
+            getSelf(), new AskTimeout(), getContext().getDispatcher(), null);
         })
         .match(Terminated.class, message -> {
           Throwable ex = new ActorKilledException("Target actor terminated.");
