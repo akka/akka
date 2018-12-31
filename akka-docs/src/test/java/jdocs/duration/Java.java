@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2013-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.duration;
