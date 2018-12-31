@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 @SuppressWarnings("serial")
@@ -767,6 +768,32 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(Boolean.TRUE, Boolean.FALSE);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void cycleSourceMustGenerateSameSequenceInRepeatedFashion() throws Exception {
+    //#cycle
+    final Source<Integer, NotUsed> source = Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
+    CompletionStage<List<Integer>> result = source.grouped(9).runWith(Sink.head(), materializer);
+    List<Integer> emittedValues = result.toCompletableFuture().get();
+    assertThat(emittedValues, is(Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3)));
+    //#cycle
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void cycleSourceMustThr() throws Throwable {
+
+    try {
+      //#cycle-error
+      Iterator<Integer> emptyIterator = Collections.<Integer>emptyList().iterator();
+      Source.cycle(() -> emptyIterator)
+            .runWith(Sink.head(), materializer)
+             // stream will be terminated with IllegalArgumentException
+             //#cycle-error
+            .toCompletableFuture().get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    }
   }
 
   @Test

@@ -330,12 +330,23 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "continuously generate the same sequence" in {
       val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
-      Source.cycle(() ⇒ List(1, 2, 3).iterator).grouped(9).runWith(Sink.head).futureValue should ===(expected)
+      //#cycle
+      Source.cycle(() ⇒ List(1, 2, 3).iterator)
+        .grouped(9)
+        .runWith(Sink.head)
+        // This will produce the Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
+        //#cycle
+        .futureValue should ===(expected)
     }
 
     "throw an exception in case of empty iterator" in {
+      //#cycle-error
       val empty = Iterator.empty
-      assert(Source.cycle(() ⇒ empty).runWith(Sink.head).failed.futureValue.isInstanceOf[IllegalArgumentException])
+      Source.cycle(() ⇒ empty)
+        .runWith(Sink.head)
+        // This will return a failed future with an `IllegalArgumentException`
+        //#cycle-error
+        .failed.futureValue shouldBe an[IllegalArgumentException]
     }
   }
 
