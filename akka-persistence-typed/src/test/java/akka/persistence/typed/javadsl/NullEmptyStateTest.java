@@ -46,13 +46,11 @@ public class NullEmptyStateTest extends JUnitSuite {
     @Override
     public CommandHandler<String, String, String> commandHandler() {
 
-      CommandHandlerBuilder<String, String, String> builder = commandHandlerBuilder();
-
-      builder.forAnyState()
+      return commandHandlerBuilder()
+              .forAnyState()
               .matchCommand("stop"::equals, command -> Effect().stop())
-              .matchCommand(String.class, this::persistCommand);
-
-      return builder.build();
+              .matchCommand(String.class, this::persistCommand)
+              .build();
     }
 
     private Effect<String, String> persistCommand(String command) {
@@ -61,9 +59,10 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      EventHandlerBuilder<String, String> builder = eventHandlerBuilder();
-      builder.forAnyState().matchEvent(String.class, this::applyEvent);
-      return builder.build();
+      return eventHandlerBuilder()
+              .forAnyState()
+              .matchEvent(String.class, this::applyEvent)
+              .build();
     }
 
     private String applyEvent(String state, String event) {

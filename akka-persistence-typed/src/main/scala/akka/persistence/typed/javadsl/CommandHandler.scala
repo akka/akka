@@ -157,7 +157,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   private def addCase(predicate: Command ⇒ Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
     cases = CommandHandlerCase[Command, Event, State](
       commandPredicate = predicate,
-      statePredicate = state ⇒ stateClass.isAssignableFrom(state.getClass) && statePredicate.test(state.asInstanceOf[S]),
+      statePredicate = state ⇒
+        if (state == null) statePredicate.test(state.asInstanceOf[S])
+        else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
       handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
   }
 

@@ -94,7 +94,7 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forAnyState(): EventHandlerBuilderByState[State, State, Event] = {
-    val builder = EventHandlerBuilderByState.builder[State, Event](s ⇒ true)
+    val builder = EventHandlerBuilderByState.builder[State, Event](_ ⇒ true)
     builders = builder :: builders
     builder
   }
@@ -154,7 +154,12 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](val sta
   private var cases: List[EventHandlerCase[State, Event]] = Nil
 
   private def addCase(eventPredicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State]): Unit = {
-    cases = EventHandlerCase[State, Event](_ ⇒ true, eventPredicate, handler) :: cases
+    cases = EventHandlerCase[State, Event](
+      statePredicate = state ⇒
+        if (state == null) statePredicate.test(state.asInstanceOf[S])
+        else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+      eventPredicate = eventPredicate,
+      handler) :: cases
   }
 
   /**
