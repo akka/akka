@@ -17,7 +17,7 @@ trait CopyrightHeader extends AutoPlugin {
 
   override def trigger = allRequirements
 
-  protected def headerMappingSettings: Seq[Def.Setting[_]] = 
+  protected def headerMappingSettings: Seq[Def.Setting[_]] =
     Seq(Compile, Test, MultiJvm).flatMap { config =>
     inConfig(config)(
       Seq(
@@ -30,7 +30,7 @@ trait CopyrightHeader extends AutoPlugin {
       )
     )
   }
-  
+
   override def projectSettings: Seq[Def.Setting[_]] = Def.settings(
     headerMappingSettings,
     additional
@@ -48,7 +48,7 @@ trait CopyrightHeader extends AutoPlugin {
   )
 
   val CurrentYear = java.time.Year.now.getValue.toString
-  val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
+  val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}([-–]\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
   def headerFor(year: String): String =
