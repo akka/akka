@@ -9,31 +9,34 @@ import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys._
 import sbt.Keys._
-import sbt._
+import sbt.{Def, _}
 
 trait CopyrightHeader extends AutoPlugin {
 
-  override def requires = HeaderPlugin
+  override def requires:Plugins = HeaderPlugin
 
   override def trigger = allRequirements
 
-  override def projectSettings = Def.settings(
+  protected def headerMappingSettings: Seq[Def.Setting[_]] = 
     Seq(Compile, Test, MultiJvm).flatMap { config =>
-      inConfig(config)(
-        Seq(
-          headerLicense := Some(HeaderLicense.Custom(headerFor(CurrentYear))),
-          headerMappings := headerMappings.value ++ Map(
-            HeaderFileType.scala -> cStyleComment,
-            HeaderFileType.java -> cStyleComment,
-            HeaderFileType("template") -> cStyleComment
-          )
+    inConfig(config)(
+      Seq(
+        headerLicense := Some(HeaderLicense.Custom(headerFor(CurrentYear))),
+        headerMappings := headerMappings.value ++ Map(
+          HeaderFileType.scala -> cStyleComment,
+          HeaderFileType.java -> cStyleComment,
+          HeaderFileType("template") -> cStyleComment
         )
       )
-    },
+    )
+  }
+  
+  override def projectSettings: Seq[Def.Setting[_]] = Def.settings(
+    headerMappingSettings,
     additional
   )
 
-  def additional = Def.settings(
+  def additional: Seq[Def.Setting[_]] = Def.settings(
     (compile in Compile) := {
       (headerCreate in Compile).value
       (compile in Compile).value
