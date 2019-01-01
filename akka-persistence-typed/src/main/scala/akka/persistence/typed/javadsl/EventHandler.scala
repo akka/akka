@@ -182,16 +182,6 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](val sta
     })
   }
 
-  def matchEvent[E <: Event](eventClass: Class[E], stateClass: Class[S],
-                             biFunction: BiFunction[S, E, State]): EventHandlerBuilderByState[S, State, Event] = {
-
-    cases = EventHandlerCase[State, Event](
-      statePredicate = s ⇒ s != null && stateClass.isAssignableFrom(s.getClass),
-      eventPredicate = e ⇒ eventClass.isAssignableFrom(e.getClass),
-      biFunction.asInstanceOf[BiFunction[State, Event, State]]) :: cases
-    this
-  }
-
   def matchEvent[E <: Event](eventClass: Class[E], supplier: Supplier[State]): EventHandlerBuilderByState[S, State, Event] = {
 
     val supplierBiFunction = new BiFunction[S, E, State] {
@@ -199,16 +189,6 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](val sta
     }
 
     matchEvent(eventClass, supplierBiFunction)
-  }
-
-  def matchEvent[E <: Event](eventClass: Class[E], stateClass: Class[S],
-                             supplier: Supplier[S]): EventHandlerBuilderByState[S, State, Event] = {
-
-    val supplierBiFunction = new BiFunction[S, E, State] {
-      def apply(t: S, u: E): S = supplier.get()
-    }
-
-    matchEvent(eventClass, stateClass, supplierBiFunction)
   }
 
   /**
