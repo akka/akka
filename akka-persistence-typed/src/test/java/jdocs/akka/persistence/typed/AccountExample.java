@@ -10,14 +10,10 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
-public class AccountExample
-    extends EventSourcedBehavior<
-        AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
+public class AccountExample extends EventSourcedBehavior<AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
 
   interface AccountCommand {}
-
   public static class CreateAccount implements AccountCommand {}
-
   public static class Deposit implements AccountCommand {
     public final double amount;
 
@@ -25,7 +21,6 @@ public class AccountExample
       this.amount = amount;
     }
   }
-
   public static class Withdraw implements AccountCommand {
     public final double amount;
 
@@ -33,13 +28,10 @@ public class AccountExample
       this.amount = amount;
     }
   }
-
   public static class CloseAccount implements AccountCommand {}
 
   interface AccountEvent {}
-
   public static class AccountCreated implements AccountEvent {}
-
   public static class Deposited implements AccountEvent {
     public final double amount;
 
@@ -47,7 +39,6 @@ public class AccountExample
       this.amount = amount;
     }
   }
-
   public static class Withdrawn implements AccountEvent {
     public final double amount;
 
@@ -55,21 +46,18 @@ public class AccountExample
       this.amount = amount;
     }
   }
-
   public static class AccountClosed implements AccountEvent {}
 
   interface Account {}
-
   public static class EmptyAccount implements Account {}
-
   public static class OpenedAccount implements Account {
     public final double balance;
 
     OpenedAccount(double balance) {
       this.balance = balance;
     }
-  }
 
+  }
   public static class ClosedAccount implements Account {}
 
   public static Behavior<AccountCommand> behavior(String accountNumber) {
@@ -124,22 +112,26 @@ public class AccountExample
 
   @Override
   public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
-    return initialHandler().orElse(openedAccountHandler()).orElse(closedHandler()).build();
+    return initialHandler()
+      .orElse(openedAccountHandler())
+      .orElse(closedHandler())
+      .build();
   }
 
   @Override
   public EventHandler<Account, AccountEvent> eventHandler() {
-    return eventHandlerBuilder()
-        .matchEvent(AccountCreated.class, EmptyAccount.class, (__, ___) -> new OpenedAccount(0.0))
-        .matchEvent(
-            Deposited.class,
-            OpenedAccount.class,
-            (acc, cmd) -> new OpenedAccount(acc.balance + cmd.amount))
-        .matchEvent(
-            Withdrawn.class,
-            OpenedAccount.class,
-            (acc, cmd) -> new OpenedAccount(acc.balance - cmd.amount))
-        .matchEvent(AccountClosed.class, OpenedAccount.class, (acc, cmd) -> new ClosedAccount())
-        .build();
+    EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
+
+    builder.forStateType(EmptyAccount.class)
+            .matchEvent(AccountCreated.class, () -> new OpenedAccount(0.0));
+
+    builder.forStateType(OpenedAccount.class)
+            .matchEvent(Deposited.class, (acc, cmd) -> new OpenedAccount(acc.balance + cmd.amount))
+            .matchEvent(Withdrawn.class, (acc, cmd) -> new OpenedAccount(acc.balance - cmd.amount))
+            .matchEvent(AccountClosed.class, ClosedAccount::new);
+
+    return builder.build();
   }
+
+
 }

@@ -117,7 +117,7 @@ public class AccountExampleOneLinersInModel extends EventSourcedBehavior<Account
             return new OpenedAccount(balance - withdrawn.amount);
         }
 
-        ClosedAccount closeAccount(AccountClosed cmd) {
+        ClosedAccount closeAccount(AccountClosed evt) {
             return new ClosedAccount();
         }
     }
@@ -151,7 +151,7 @@ public class AccountExampleOneLinersInModel extends EventSourcedBehavior<Account
                 .matchCommand(CloseAccount.class, OpenedAccount::closeCommand);
 
         builder.forStateType(ClosedAccount.class)
-                .matchCommand(AccountCommand.class, (__, ___) -> Effect().unhandled());
+                .matchAny(() -> Effect().unhandled());
 
         return builder.build();
     }
@@ -159,7 +159,17 @@ public class AccountExampleOneLinersInModel extends EventSourcedBehavior<Account
 
     @Override
     public EventHandler<Account, AccountEvent> eventHandler() {
-        throw new RuntimeException("to implement");
+        EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
+
+        builder.forStateType(EmptyAccount.class)
+                .matchEvent(AccountCreated.class, EmptyAccount::openAccount);
+
+        builder.forStateType(OpenedAccount.class)
+                .matchEvent(Deposited.class, OpenedAccount::makeDeposit)
+                .matchEvent(Withdrawn.class, OpenedAccount::makeWithdraw)
+                .matchEvent(AccountClosed.class, OpenedAccount::closeAccount);
+
+        return builder.build();
     }
 
 }

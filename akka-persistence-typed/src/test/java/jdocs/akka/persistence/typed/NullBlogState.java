@@ -9,8 +9,6 @@ import akka.actor.typed.ActorRef;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
-import java.util.Objects;
-
 public class NullBlogState {
 
   interface BlogEvent {
@@ -126,7 +124,7 @@ public class NullBlogState {
     }
 
     private CommandHandlerBuilderByState<BlogCommand, BlogEvent, BlogState, BlogState> postCommandHandler() {
-      return commandHandlerBuilder().forAnyState()
+      return commandHandlerBuilder().forNonNullState()
           .matchCommand(ChangeBody.class, (state, cmd) -> {
             BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
             return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
@@ -159,15 +157,18 @@ public class NullBlogState {
 
     @Override
     public EventHandler<BlogState, BlogEvent> eventHandler() {
-      return eventHandlerBuilder()
-        .matchEvent(PostAdded.class, event ->
-            new BlogState(event.content, false))
-        .matchEvent(BodyChanged.class, (state, chg) ->
-            state.withContent(
-              new PostContent(state.postId(), state.postContent.title, chg.newBody)))
-        .matchEvent(Published.class, (state, event) ->
-            new BlogState(state.postContent, true))
-        .build();
+
+      EventHandlerBuilder<BlogState, BlogEvent> builder = eventHandlerBuilder();
+
+      builder.forNullState()
+              .matchEvent(PostAdded.class, event -> new BlogState(event.content, false));
+
+      builder.forStateType(BlogState.class)
+              .matchEvent(BodyChanged.class, (state, chg) ->
+                      state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+              .matchEvent(Published.class, (state, event) -> new BlogState(state.postContent, true));
+
+      return builder.build();
     }
   }
 }

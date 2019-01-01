@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.function.Predicate
 import java.util.{ Collections, Optional }
 
 import akka.actor.typed
@@ -66,7 +65,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   protected def eventHandler(): EventHandler[State, Event]
 
   protected final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
-    new CommandHandlerBuilder[Command, Event, State]()
+    CommandHandlerBuilder.builder[Command, Event, State]()
   }
 
   /**

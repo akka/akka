@@ -128,7 +128,7 @@ public class OptionalBlogState {
 
     private CommandHandlerBuilderByState<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> postCommandHandler() {
       return commandHandlerBuilder()
-              .forState(state -> state.isPresent())
+              .forState(Optional::isPresent)
                 .matchCommand(ChangeBody.class, (state, cmd) -> {
                   BodyChanged event = new BodyChanged(state.get().postId(), cmd.newBody);
                   return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
@@ -161,15 +161,19 @@ public class OptionalBlogState {
 
     @Override
     public EventHandler<Optional<BlogState>, BlogEvent> eventHandler() {
-      return eventHandlerBuilder()
-        .matchEvent(PostAdded.class, (state, event) ->
-            Optional.of(new BlogState(event.content, false)))
-        .matchEvent(BodyChanged.class, (state, chg) ->
-            state.map(blogState -> blogState.withContent(
-              new PostContent(blogState.postId(), blogState.postContent.title, chg.newBody))))
-        .matchEvent(Published.class, (state, event) ->
-            state.map(blogState -> new BlogState(blogState.postContent, true)))
-        .build();
+
+      EventHandlerBuilder<Optional<BlogState>, BlogEvent> builder = eventHandlerBuilder();
+
+      builder.forState(state -> !state.isPresent())
+              .matchEvent(PostAdded.class,(state, event) -> Optional.of(new BlogState(event.content, false)));
+
+      builder.forState(Optional::isPresent)
+              .matchEvent(BodyChanged.class, (state, chg) ->
+                      state.map(blogState -> blogState.withContent(new PostContent(blogState.postId(), blogState.postContent.title, chg.newBody))))
+              .matchEvent(Published.class, (state, event) ->
+                      state.map(blogState -> new BlogState(blogState.postContent, true)));
+
+      return builder.build();
     }
   }
 }

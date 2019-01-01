@@ -219,12 +219,18 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
 
   @Override
   public EventHandler<AuctionState, AuctionEvent> eventHandler() {
-    return eventHandlerBuilder()
-        .matchEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()))
-        .matchEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
-        .matchEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
-        .matchEvent(AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED))
-        .build();
+    
+    EventHandlerBuilder<AuctionState, AuctionEvent> builder = eventHandlerBuilder();
+
+    builder.forState(auction -> auction.getStatus() == AuctionStatus.NOT_STARTED)
+            .matchEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));
+
+    builder.forState(auction -> auction.getStatus() == AuctionStatus.UNDER_AUCTION)
+            .matchEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
+            .matchEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
+            .matchEvent(AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
+
+    return builder.build();
   }
 
   private PlaceBidResult createResult(AuctionState state, PlaceBidStatus status) {

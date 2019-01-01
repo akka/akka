@@ -99,7 +99,7 @@ public class MovieWatchList extends EventSourcedBehavior<MovieWatchList.Command,
 
   @Override
   public CommandHandler<Command, Event, MovieList> commandHandler() {
-    return commandHandlerBuilder().forAnyState()
+    return commandHandlerBuilder().forNonNullState()
               .matchCommand(AddMovie.class, (state, cmd) -> {
                 return Effect().persist(new MovieAdded(cmd.movieId));
               })
@@ -115,7 +115,7 @@ public class MovieWatchList extends EventSourcedBehavior<MovieWatchList.Command,
 
   @Override
   public EventHandler<MovieList, Event> eventHandler() {
-    return eventHandlerBuilder()
+    return eventHandlerBuilder().forNonNullState()
       .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
       .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
       .build();

@@ -149,14 +149,25 @@ public class AccountExampleOneLinersInModelWithNull extends EventSourcedBehavior
                 .matchCommand(CloseAccount.class, OpenedAccount::closeCommand);
 
         builder.forStateType(ClosedAccount.class)
-                .matchCommand(AccountCommand.class, () -> Effect().unhandled());
+                .matchAny(() -> Effect().unhandled());
 
         return builder.build();
     }
 
     @Override
     public EventHandler<Account, AccountEvent> eventHandler() {
-        throw new RuntimeException("to implement");
+
+        EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
+
+        builder.forNullState()
+                .matchEvent(AccountCreated.class, this::openAccount);
+
+        builder.forStateType(OpenedAccount.class)
+                .matchEvent(Deposited.class, OpenedAccount::makeDeposit)
+                .matchEvent(Withdrawn.class, OpenedAccount::makeWithdraw)
+                .matchEvent(AccountClosed.class, OpenedAccount::closeAccount);
+
+        return builder.build();
     }
 
 
