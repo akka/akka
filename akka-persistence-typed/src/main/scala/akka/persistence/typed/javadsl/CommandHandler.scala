@@ -21,7 +21,12 @@ trait CommandHandler[Command, Event, State] {
   def apply(state: State, command: Command): Effect[Event, State]
 }
 
-class CommandHandlerBuilder[Command, Event, State]() {
+object CommandHandlerBuilder {
+  def builder[Command, Event, State](): CommandHandlerBuilder[Command, Event, State] =
+    new CommandHandlerBuilder[Command, Event, State]
+}
+
+final class CommandHandlerBuilder[Command, Event, State]() {
 
   private var builders: List[CommandHandlerBuilderByState[Command, Event, State, State]] = Nil
 
@@ -29,7 +34,7 @@ class CommandHandlerBuilder[Command, Event, State]() {
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
    *                       useful for example when state type is an Optional
    *
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forState(statePredicate: Predicate[State]): CommandHandlerBuilderByState[Command, Event, State, State] = {
     val builder = CommandHandlerBuilderByState.builder[Command, Event, State](statePredicate)
@@ -38,9 +43,33 @@ class CommandHandlerBuilder[Command, Event, State]() {
   }
 
   /**
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
+   *                       useful for example when state type is an Optional
+   *
+   * @return A new, mutable, CommandHandlerBuilderByState
+   */
+  def forState[S <: State](stateClass: Class[S], statePredicate: Predicate[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    val builder = new CommandHandlerBuilderByState[Command, Event, S, State](stateClass, statePredicate)
+    builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
+    builder
+  }
+
+  /**
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   *
+   * @return A new, mutable, CommandHandlerBuilderByState
+   */
+  def forStateType[S <: State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    val builder = CommandHandlerBuilderByState.builder[Command, Event, S, State](stateClass)
+    builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
+    builder
+  }
+
+  /**
    * The handlers defined by this builder are used when the state is `null`.
    *
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
     val builder = CommandHandlerBuilderByState.builder[Command, Event, State](s ⇒ Objects.isNull(s))
@@ -49,24 +78,24 @@ class CommandHandlerBuilder[Command, Event, State]() {
   }
 
   /**
-   * The handlers defined by this builder are used when any not `null` state.
+   * The handlers defined by this builder are used for any not `null` state.
    *
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
-  def forAnyState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
+  def forNonNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
     val builder = CommandHandlerBuilderByState.builder[Command, Event, State](s ⇒ Objects.nonNull(s))
     builders = builder :: builders
     builder
   }
 
   /**
-   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * The handlers defined by this builder are used for any state.
    *
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
-  def forStateType[S <: State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, S, State](stateClass)
-    builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
+  def forAnyState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
+    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](_ ⇒ true)
+    builders = builder :: builders
     builder
   }
 
@@ -96,7 +125,7 @@ object CommandHandlerBuilderByState {
 
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
   def builder[Command, Event, S <: State, State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] =
     new CommandHandlerBuilderByState(stateClass, statePredicate = trueStatePredicate)
@@ -104,7 +133,7 @@ object CommandHandlerBuilderByState {
   /**
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
    *                       useful for example when state type is an Optional
-   * @return A new, mutable, command handler builder
+   * @return A new, mutable, CommandHandlerBuilderByState
    */
   def builder[Command, Event, State](statePredicate: Predicate[State]): CommandHandlerBuilderByState[Command, Event, State, State] =
     new CommandHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
@@ -120,6 +149,7 @@ object CommandHandlerBuilderByState {
 
 final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @InternalApi private[persistence] (
   val stateClass: Class[S], val statePredicate: Predicate[S]) {
+
   import CommandHandlerBuilderByState.CommandHandlerCase
 
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
@@ -159,6 +189,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
 
   def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), (_, _) ⇒ handler.get())
+    this
+  }
+
+  def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    addCase(_ ⇒ true, (_, _) ⇒ handler.get())
     this
   }
 
