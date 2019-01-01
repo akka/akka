@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 import akka.CopyrightHeader
 import de.heikoseeberger.sbtheader.HeaderPlugin
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
