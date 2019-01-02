@@ -28,3 +28,20 @@ terminated with an exception.
 
 @@@
 
+
+## Examples
+
+Scala
+:  @@snip [cycle.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #cycle }
+
+Java
+:  @@snip [cycle.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #cycle }
+
+
+When iterator is empty the stream will be terminated with _IllegalArgumentException_
+
+Scala
+:  @@snip [cycleError.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #cycle-error }
+
+Java
+:  @@snip [cycle.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #cycle-error }
