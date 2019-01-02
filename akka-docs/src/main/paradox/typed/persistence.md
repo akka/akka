@@ -252,8 +252,8 @@ There is also an example illustrating an @ref:[optional initial state](persisten
 Each command has a single `Effect` which can be:
 
 * Persist events
-* None: Accept the comment but no effects
-* Unhandled: Don't handle this message 
+* None: Accept the command but no effects
+* Unhandled: Don't handle this command 
 
 Note that there is only one of these. It is not possible to both persist and say none/unhandled.
 These are created using @java[a factory that is returned via the `Effect()` method]
