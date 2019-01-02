@@ -9,19 +9,28 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 
-import akka.actor.DeadLetterSuppression
-import akka.annotation.ApiMayChange
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
+import akka.actor.DeadLetterSuppression
+import akka.annotation.ApiMayChange
+import akka.util.HashCode
+
 @ApiMayChange
 object ServiceDiscovery {
 
+  object Resolved {
+    def apply(serviceName: String, addresses: immutable.Seq[ResolvedTarget]): Resolved =
+      new Resolved(serviceName, addresses)
+
+    def unapply(resolved: Resolved): Option[(String, immutable.Seq[ResolvedTarget])] =
+      Some((resolved.serviceName, resolved.addresses))
+  }
+
   /** Result of a successful resolve request */
-  final case class Resolved(serviceName: String, addresses: immutable.Seq[ResolvedTarget])
+  final class Resolved(val serviceName: String, val addresses: immutable.Seq[ResolvedTarget])
     extends DeadLetterSuppression {
 
     /**
@@ -31,6 +40,21 @@ object ServiceDiscovery {
       import scala.collection.JavaConverters._
       addresses.asJava
     }
+
+    override def toString: String = s"Resolved($serviceName,$addresses)"
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: Resolved ⇒ serviceName == other.serviceName && addresses == other.addresses
+      case _               ⇒ false
+    }
+
+    override def hashCode(): Int = {
+      var result = HashCode.SEED
+      result = HashCode.hash(result, serviceName)
+      result = HashCode.hash(result, addresses)
+      result
+    }
+
   }
 
   object ResolvedTarget {
@@ -43,8 +67,23 @@ object ServiceDiscovery {
       (t.address, t.host, t.port)
     }
 
-    def apply(host: String, port: Option[Int]): ResolvedTarget =
-      ResolvedTarget(host, port, Try(InetAddress.getByName(host)).toOption)
+    /**
+     * @param host the hostname or the IP address of the target
+     * @param port optional port number
+     * @param address IP address of the target. This is used during cluster bootstap when available.
+     */
+    def apply(host: String, port: Option[Int]): ResolvedTarget = {
+      // FIXME API should we really have this? Isn't InetAddress.getByName doing blocking DNS lookup?
+      new ResolvedTarget(host, port, Try(InetAddress.getByName(host)).toOption)
+    }
+
+    /**
+     * @param host the hostname or the IP address of the target
+     * @param port optional port number
+     * @param address IP address of the target. This is used during cluster bootstap when available.
+     */
+    def apply(host: String, port: Option[Int], address: Option[InetAddress]): ResolvedTarget =
+      new ResolvedTarget(host, port, address)
   }
 
   /**
@@ -53,10 +92,10 @@ object ServiceDiscovery {
    * @param port optional port number
    * @param address optional IP address of the target. This is used during cluster bootstap when available.
    */
-  final case class ResolvedTarget(
-    host:    String,
-    port:    Option[Int],
-    address: Option[InetAddress]
+  final class ResolvedTarget(
+    val host:    String,
+    val port:    Option[Int],
+    val address: Option[InetAddress]
   ) {
 
     /**
@@ -74,6 +113,22 @@ object ServiceDiscovery {
       import scala.compat.java8.OptionConverters._
       address.asJava
     }
+
+    override def toString: String = s"ResolvedTarget($host,$port,$address)"
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: ResolvedTarget ⇒ host == other.host && port == other.port && address == other.address
+      case _                     ⇒ false
+    }
+
+    override def hashCode(): Int = {
+      var result = HashCode.SEED
+      result = HashCode.hash(result, host)
+      result = HashCode.hash(result, port)
+      result = HashCode.hash(result, address)
+      result
+    }
+
   }
 
 }
@@ -86,7 +141,10 @@ object ServiceDiscovery {
  *
  */
 @ApiMayChange
-final case class Lookup(serviceName: String, portName: Option[String], protocol: Option[String]) {
+final class Lookup(
+  val serviceName: String,
+  val portName:    Option[String],
+  val protocol:    Option[String]) {
 
   /**
    * Which port for a service e.g. Akka remoting or HTTP.
@@ -99,6 +157,28 @@ final case class Lookup(serviceName: String, portName: Option[String], protocol:
    * Maps to "protocol" for SRV records.
    */
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
+
+  private def copy(
+    serviceName: String         = serviceName,
+    portName:    Option[String] = portName,
+    protocol:    Option[String] = protocol): Lookup =
+    new Lookup(serviceName, portName, protocol)
+
+  override def toString: String = s"Lookup($serviceName,$portName,$protocol)"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Lookup ⇒ serviceName == other.serviceName && portName == other.portName && protocol == other.protocol
+    case _             ⇒ false
+  }
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, serviceName)
+    result = HashCode.hash(result, portName)
+    result = HashCode.hash(result, protocol)
+    result
+  }
+
 }
 
 @ApiMayChange
@@ -110,6 +190,12 @@ case object Lookup {
    * and protocol
    */
   def apply(serviceName: String): Lookup = new Lookup(serviceName, None, None)
+
+  /**
+   * Create a service Lookup with `serviceName`, optional `portName` and optional `protocol`.
+   */
+  def apply(serviceName: String, portName: Option[String], protocol: Option[String]): Lookup =
+    new Lookup(serviceName, portName, protocol)
 
   /**
    * Java API

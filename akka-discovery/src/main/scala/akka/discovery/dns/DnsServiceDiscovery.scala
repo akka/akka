@@ -45,7 +45,7 @@ private object DnsServiceDiscovery {
         } else {
           addresses
         }
-      case other ⇒ im.Seq.empty[ResolvedTarget]
+      case _ ⇒ im.Seq.empty[ResolvedTarget]
     }
 
     Resolved(srvRequest, addresses)
@@ -79,8 +79,8 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
 
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     lookup match {
-      case Lookup(name, Some(portName), Some(protocol)) ⇒
-        val srvRequest = s"_$portName._$protocol.$name"
+      case l: Lookup if l.portName.isDefined && l.protocol.isDefined ⇒
+        val srvRequest = s"_${l.portName.get}._${l.protocol.get}.${l.serviceName}"
         log.debug("Lookup [{}] translated to SRV query [{}] as contains portName and protocol", lookup, srvRequest)
         dns.ask(DnsProtocol.Resolve(srvRequest, Srv))(resolveTimeout).map {
           case resolved: DnsProtocol.Resolved ⇒
