@@ -102,28 +102,28 @@ public class AccountExampleOneLiners extends EventSourcedBehavior<AccountExample
     }
 
 
-    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account> initialHandler() {
+    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account> initialCmdHandler() {
         return commandHandlerBuilder().forStateType(EmptyAccount.class)
                 .matchCommand(CreateAccount.class, this::createAccount);
     }
 
-    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountHandler() {
+    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountCmdHandler() {
         return commandHandlerBuilder().forStateType(OpenedAccount.class)
                 .matchCommand(Deposit.class, this::depositCommand)
                 .matchCommand(Withdraw.class, this::withdrawCommand)
                 .matchCommand(CloseAccount.class, this::closeCommand);
     }
 
-    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
+    private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedCmdHandler() {
         return commandHandlerBuilder().forStateType(ClosedAccount.class)
                 .matchAny(() -> Effect().unhandled());
     }
 
     @Override
     public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
-        return initialHandler()
-                .orElse(openedAccountHandler())
-                .orElse(closedHandler())
+        return initialCmdHandler()
+                .orElse(openedAccountCmdHandler())
+                .orElse(closedCmdHandler())
                 .build();
     }
 
@@ -144,20 +144,22 @@ public class AccountExampleOneLiners extends EventSourcedBehavior<AccountExample
         return new ClosedAccount();
     }
 
-    @Override
-    public EventHandler<Account, AccountEvent> eventHandler() {
-
-        EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
-
-        builder.forStateType(EmptyAccount.class)
+    private EventHandlerBuilderByState<EmptyAccount, Account, AccountEvent> initialEvtHandler() {
+        return eventHandlerBuilder()
+                .forStateType(EmptyAccount.class)
                 .matchEvent(AccountCreated.class, this::openAccount);
+    }
 
-        builder.forStateType(OpenedAccount.class)
+    private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent> openedAccountEvtHandler() {
+        return eventHandlerBuilder()
+                .forStateType(OpenedAccount.class)
                 .matchEvent(Deposited.class, this::makeDeposit)
                 .matchEvent(Withdrawn.class, this::makeWithdraw)
                 .matchEvent(AccountClosed.class, ClosedAccount::new);
-
-        return builder.build();
+    }
+    @Override
+    public EventHandler<Account, AccountEvent> eventHandler() {
+        return initialEvtHandler().orElse(openedAccountEvtHandler()).build();
     }
 
 

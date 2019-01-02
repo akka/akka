@@ -99,26 +99,28 @@ public class MovieWatchList extends EventSourcedBehavior<MovieWatchList.Command,
 
   @Override
   public CommandHandler<Command, Event, MovieList> commandHandler() {
-    return commandHandlerBuilder().forNonNullState()
-              .matchCommand(AddMovie.class, (state, cmd) -> {
-                return Effect().persist(new MovieAdded(cmd.movieId));
-              })
-              .matchCommand(RemoveMovie.class, (state, cmd) -> {
-                return Effect().persist(new MovieRemoved(cmd.movieId));
-              })
-              .matchCommand(GetMovieList.class, (state, cmd) -> {
-                cmd.replyTo.tell(state);
-                return Effect().none();
-              })
-              .build();
+    return commandHandlerBuilder()
+            .forAnyState()
+            .matchCommand(AddMovie.class, (state, cmd) -> {
+              return Effect().persist(new MovieAdded(cmd.movieId));
+            })
+            .matchCommand(RemoveMovie.class, (state, cmd) -> {
+              return Effect().persist(new MovieRemoved(cmd.movieId));
+            })
+            .matchCommand(GetMovieList.class, (state, cmd) -> {
+              cmd.replyTo.tell(state);
+              return Effect().none();
+            })
+            .build();
   }
 
   @Override
   public EventHandler<MovieList, Event> eventHandler() {
-    return eventHandlerBuilder().forNonNullState()
-      .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
-      .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
-      .build();
+    return eventHandlerBuilder()
+            .forAnyState()
+            .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
+            .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
+            .build();
   }
 
 

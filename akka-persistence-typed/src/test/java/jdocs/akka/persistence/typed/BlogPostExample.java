@@ -223,7 +223,7 @@ public class BlogPostExample {
       EventHandlerBuilder<BlogState, BlogEvent> builder = eventHandlerBuilder();
 
       builder.forStateType(BlankState.class)
-              .matchEvent(PostAdded.class, (__, event) -> new DraftState(event.content));
+              .matchEvent(PostAdded.class, event -> new DraftState(event.content));
 
       builder.forStateType(DraftState.class)
               .matchEvent(BodyChanged.class, (state, chg) ->

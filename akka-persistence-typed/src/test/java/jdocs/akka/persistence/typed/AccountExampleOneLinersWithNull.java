@@ -145,20 +145,22 @@ public class AccountExampleOneLinersWithNull extends EventSourcedBehavior<Accoun
         return new ClosedAccount();
     }
 
-    @Override
-    public EventHandler<Account, AccountEvent> eventHandler() {
-        EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
-
-        builder.forNullState()
+    private EventHandlerBuilderByState<Account, Account, AccountEvent> initialEvtHandler() {
+        return eventHandlerBuilder()
+                .forNullState()
                 .matchEvent(AccountCreated.class, this::openAccount);
+    }
 
-        builder.forStateType(OpenedAccount.class)
+    private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent> openedAccountEvtHandler() {
+        return eventHandlerBuilder()
+                .forStateType(OpenedAccount.class)
                 .matchEvent(Deposited.class, this::makeDeposit)
                 .matchEvent(Withdrawn.class, this::makeWithdraw)
                 .matchEvent(AccountClosed.class, ClosedAccount::new);
-
-        return builder.build();
-
+    }
+    @Override
+    public EventHandler<Account, AccountEvent> eventHandler() {
+        return initialEvtHandler().orElse(openedAccountEvtHandler()).build();
     }
 
 
