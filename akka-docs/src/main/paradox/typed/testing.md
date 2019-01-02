@@ -214,6 +214,32 @@ Java
 The `stop` method can only be used for actors that were spawned by the same `ActorTestKit`. Other actors
 will not be stopped by that method.
 
+### Observing mocked behavior
+
+When testing a component (which may be an actor or not) that interacts with other actors it can be useful to not have to
+run the other actors it depends on. Instead, you might want to create mock behaviors that accept and possibly respond to
+messages in the same way the other actor would do but without executing any actual logic.
+In addition to this it can also be useful to observe those interactions to assert that the component under test did send
+the expected messages.
+This allows the same kinds of tests as untyped `TestActor`/`Autopilot`.
+
+As an example, let's assume we'd like to test the following component:
+
+Scala
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #under-test-2 }
+
+Java
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #under-test-2 }
+
+In our test, we create a mocked `publisher` actor. Additionally we use `Behaviors.monitor` with a `TestProbe` in order
+to be able to verify the interaction of the `producer` with the `publisher`:
+
+Scala
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-observe-mocked-behavior }
+
+Java
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-observe-mocked-behavior }
+
 ### Test framework integration
 
 @@@ div { .group-java }
