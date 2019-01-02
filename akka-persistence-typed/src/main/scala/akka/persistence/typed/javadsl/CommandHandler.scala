@@ -9,7 +9,10 @@ import java.util.function.{ BiFunction, Predicate, Supplier, Function ⇒ JFunct
 
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal._
+import akka.persistence.typed.javadsl.CommandHandlerBuilderByState.CommandHandlerCase
 import akka.util.OptionVal
+
+import scala.compat.java8.FunctionConverters._
 
 /**
  * FunctionalInterface for reacting on commands
@@ -72,7 +75,8 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](s ⇒ Objects.isNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.isNull(s))
+    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
@@ -83,7 +87,8 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forNonNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](s ⇒ Objects.nonNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.nonNull(s))
+    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
@@ -94,7 +99,8 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forAnyState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](_ ⇒ true)
+    val predicate: Predicate[State] = asJavaPredicate(_ ⇒ true)
+    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
@@ -164,7 +170,7 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   }
 
   /**
-   * Match any command which the given `predicate` returns true for
+   * Matches any command which the given `predicate` returns true for
    */
   def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), handler)
@@ -172,30 +178,60 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   }
 
   /**
-   * Match any command which the given `predicate` returns true for
+   * Matches any command which the given `predicate` returns true for.
+   *
+   * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
+   * the state in a `BiFunction`.
    */
-  def matchCommand(predicate: Predicate[Command], handler: Function[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd ⇒ predicate.test(cmd), (_, cmd) ⇒ handler.asInstanceOf[Function[Command, Effect[Event, State]]].apply(cmd))
+  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, Effect[Event, State]] {
+      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+    })
     this
   }
 
+  /**
+   * Matches commands that are of the given `commandClass` or subclass thereof
+   */
   def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
     this
   }
 
-  def matchCommand[C <: Command](commandClass: Class[C], handler: Function[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), (_, cmd) ⇒ handler.asInstanceOf[Function[Command, Effect[Event, State]]].apply(cmd))
-    this
+  /**
+   * Matches commands that are of the given `commandClass` or subclass thereof.
+   *
+   * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
+   * the state in a `BiFunction`.
+   */
+  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
+      override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
+    })
   }
 
+  /**
+   * Matches commands that are of the given `commandClass` or subclass thereof.
+   *
+   * Use this when you just need to initialize the `State` without using any data from the command.
+   */
   def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), (_, _) ⇒ handler.get())
-    this
+    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
+      override def apply(state: S, cmd: C): Effect[Event, State] = handler.get()
+    })
   }
 
+  /**
+   * Matches any command.
+   *
+   * Use this to declare a command handler that will match any command. This is particular useful when encoding
+   * a finite state machine in which the final state is not supposed to handle any new command.
+   *
+   */
   def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(_ ⇒ true, (_, _) ⇒ handler.get())
+    addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
+      override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
+    })
     this
   }
 

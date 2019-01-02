@@ -10,6 +10,8 @@ import java.util.function.{ BiFunction, Predicate, Supplier, Function ⇒ JFunct
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
+import scala.compat.java8.FunctionConverters._
+
 /**
  * FunctionalInterface for reacting on events having been persisted
  *
@@ -72,7 +74,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forNullState(): EventHandlerBuilderByState[State, State, Event] = {
-    val builder = EventHandlerBuilderByState.builder[State, Event](s ⇒ Objects.isNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.isNull(s))
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
   }
@@ -83,7 +86,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forNonNullState(): EventHandlerBuilderByState[State, State, Event] = {
-    val builder = EventHandlerBuilderByState.builder[State, Event](s ⇒ Objects.nonNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.nonNull(s))
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
   }
@@ -94,7 +98,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forAnyState(): EventHandlerBuilderByState[State, State, Event] = {
-    val builder = EventHandlerBuilderByState.builder[State, Event](_ ⇒ true)
+    val predicate: Predicate[State] = asJavaPredicate(_ ⇒ true)
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
   }
@@ -182,6 +187,11 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](val sta
     })
   }
 
+  /**
+   * Match any event which is an instance of `E` or a subtype of `E`.
+   *
+   * Use this when then `State` and the `Event` are not needed in the `handler`.
+   */
   def matchEvent[E <: Event](eventClass: Class[E], supplier: Supplier[State]): EventHandlerBuilderByState[S, State, Event] = {
 
     val supplierBiFunction = new BiFunction[S, E, State] {

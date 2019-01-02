@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
@@ -117,7 +117,7 @@ public class AccountExampleOneLinersWithNull extends EventSourcedBehavior<Accoun
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
         return commandHandlerBuilder().forStateType(ClosedAccount.class)
-                .matchCommand(AccountCommand.class, () -> Effect().unhandled());
+                .matchAny(() -> Effect().unhandled());
     }
 
     @Override
