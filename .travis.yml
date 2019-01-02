@@ -6,8 +6,10 @@ scala:
   - "2.12.8"
   - "2.11.12"
 
-jdk:
-  - oraclejdk8
+before_install:
+  # using jabba for custom jdk management
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@1.8.192-12
 
 addons:
   apt:
@@ -22,10 +24,12 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.jabba/jdk
 
 script:
+  - jabba use "adopt@1.8.192-12"
   # need to override as the default is to test
-  - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues test:compile
+  - sbt -jvm-opts .jvmopts-travis ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues test:compile
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
   # check policies, if on master also upload
