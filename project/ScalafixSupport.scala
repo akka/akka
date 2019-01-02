@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package sbt
 
 import java.io.{ File => JFile }
