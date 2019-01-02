@@ -1,4 +1,4 @@
-import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
 enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
   ScalafixIgnoreFilePlugin)
@@ -61,7 +61,7 @@ lazy val root = Project(
  )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
- )
+ ).enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
