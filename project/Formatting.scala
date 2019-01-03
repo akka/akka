@@ -4,10 +4,9 @@
 
 package akka
 
-import sbt._
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import sbt._
 
 object Formatting {
   import scalariform.formatter.preferences._
