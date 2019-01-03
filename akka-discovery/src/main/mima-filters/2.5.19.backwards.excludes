@@ -9,6 +9,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscov
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#Resolved.productIterator")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#Resolved.productPrefix")
 ProblemFilters.exclude[MissingTypesProblem]("akka.discovery.ServiceDiscovery$ResolvedTarget")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#ResolvedTarget.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#ResolvedTarget.productElement")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#ResolvedTarget.productArity")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#ResolvedTarget.copy$default$2")

@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 import akka.actor.DeadLetterSuppression
 import akka.annotation.ApiMayChange
@@ -65,16 +64,6 @@ object ServiceDiscovery {
 
     implicit val addressOrdering: Ordering[ResolvedTarget] = Ordering.by { t ⇒
       (t.address, t.host, t.port)
-    }
-
-    /**
-     * @param host the hostname or the IP address of the target
-     * @param port optional port number
-     * @param address IP address of the target. This is used during cluster bootstap when available.
-     */
-    def apply(host: String, port: Option[Int]): ResolvedTarget = {
-      // FIXME API should we really have this? Isn't InetAddress.getByName doing blocking DNS lookup?
-      new ResolvedTarget(host, port, Try(InetAddress.getByName(host)).toOption)
     }
 
     /**
