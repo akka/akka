@@ -18,10 +18,9 @@ import static jdocs.typed.tutorial_4.DeviceProtocol.*;
 
 public class DeviceTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
-  //#device-read-test
+  // #device-read-test
   @Test
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
     TestProbe<RespondTemperature> probe = testKit.createTestProbe(RespondTemperature.class);
@@ -31,9 +30,9 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(42L, response.requestId);
     assertEquals(Optional.empty(), response.value);
   }
-  //#device-read-test
+  // #device-read-test
 
-  //#device-write-read-test
+  // #device-write-read-test
   @Test
   public void testReplyWithLatestTemperatureReading() {
     TestProbe<TemperatureRecorded> recordProbe = testKit.createTestProbe(TemperatureRecorded.class);
@@ -56,6 +55,6 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-  //#device-write-read-test
+  // #device-write-read-test
 
 }

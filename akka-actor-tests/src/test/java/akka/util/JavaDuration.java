@@ -19,5 +19,4 @@ public class JavaDuration extends JUnitSuite {
     assert Duration.Zero().lteq(Duration.Inf());
     assert Duration.Inf().gt(Duration.Zero().neg());
   }
-
 }

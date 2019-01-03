@@ -6,7 +6,7 @@ package jdocs.cluster;
 
 import java.io.Serializable;
 
-//#messages
+// #messages
 public interface StatsMessages {
 
   public static class StatsJob implements Serializable {
@@ -54,6 +54,5 @@ public interface StatsMessages {
       return "JobFailed(" + reason + ")";
     }
   }
-
 }
-//#messages
+// #messages

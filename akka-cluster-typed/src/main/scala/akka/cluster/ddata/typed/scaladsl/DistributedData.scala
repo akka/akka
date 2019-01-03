@@ -11,7 +11,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.Props
 import akka.cluster.{ ddata ⇒ dd }
-import akka.cluster.typed.{ Cluster ⇒ ClusterT }
 import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {

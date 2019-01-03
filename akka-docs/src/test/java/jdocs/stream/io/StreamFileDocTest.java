@@ -46,20 +46,19 @@ public class StreamFileDocTest extends AbstractJavaTest {
     mat = null;
   }
 
-
   final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   {
-      // Using 4 spaces here to align with code in try block below.
-      //#file-source
-      final Path file = Paths.get("example.csv");
-      //#file-source
+    // Using 4 spaces here to align with code in try block below.
+    // #file-source
+    final Path file = Paths.get("example.csv");
+    // #file-source
   }
 
   {
-      //#file-sink
-      final Path file = Paths.get("greeting.txt");
-      //#file-sink
+    // #file-sink
+    final Path file = Paths.get("greeting.txt");
+    // #file-sink
   }
 
   @Test
@@ -67,15 +66,12 @@ public class StreamFileDocTest extends AbstractJavaTest {
     final Path file = Files.createTempFile(getClass().getName(), ".tmp");
 
     try {
-      //#file-source
+      // #file-source
       Sink<ByteString, CompletionStage<Done>> printlnSink =
-        Sink.<ByteString> foreach(chunk -> System.out.println(chunk.utf8String()));
+          Sink.<ByteString>foreach(chunk -> System.out.println(chunk.utf8String()));
 
-      CompletionStage<IOResult> ioResult =
-        FileIO.fromPath(file)
-          .to(printlnSink)
-          .run(mat);
-      //#file-source
+      CompletionStage<IOResult> ioResult = FileIO.fromPath(file).to(printlnSink).run(mat);
+      // #file-source
     } finally {
       Files.delete(file);
     }
@@ -87,10 +83,10 @@ public class StreamFileDocTest extends AbstractJavaTest {
 
     try {
       Sink<ByteString, CompletionStage<IOResult>> fileSink =
-      //#custom-dispatcher-code
-      FileIO.toPath(file)
-        .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
-      //#custom-dispatcher-code
+          // #custom-dispatcher-code
+          FileIO.toPath(file)
+              .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
+      // #custom-dispatcher-code
     } finally {
       Files.delete(file);
     }
@@ -101,14 +97,13 @@ public class StreamFileDocTest extends AbstractJavaTest {
     final Path file = Files.createTempFile(getClass().getName(), ".tmp");
 
     try {
-      //#file-sink
+      // #file-sink
       Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(file);
       Source<String, NotUsed> textSource = Source.single("Hello Akka Stream!");
 
-      CompletionStage<IOResult> ioResult = textSource
-        .map(ByteString::fromString)
-        .runWith(fileSink, mat);
-      //#file-sink
+      CompletionStage<IOResult> ioResult =
+          textSource.map(ByteString::fromString).runWith(fileSink, mat);
+      // #file-sink
     } finally {
       Files.delete(file);
     }

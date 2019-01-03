@@ -28,62 +28,69 @@ public class RestartDocTest {
     public static Http get(ActorSystem system) {
       return new Http();
     }
+
     public CompletionStage<Http> singleRequest(String uri) {
       return new CompletableFuture<>();
     }
+
     public NotUsed entity() {
       return NotUsed.getInstance();
     }
   }
+
   public static class HttpRequest {
     public static String create(String uri) {
       return uri;
     }
   }
+
   public static class ServerSentEvent {}
+
   public static class EventStreamUnmarshalling {
     public static EventStreamUnmarshalling fromEventStream() {
       return new EventStreamUnmarshalling();
     }
-    public CompletionStage<Source<ServerSentEvent, NotUsed>> unmarshall(Http http, Materializer mat) {
+
+    public CompletionStage<Source<ServerSentEvent, NotUsed>> unmarshall(
+        Http http, Materializer mat) {
       return new CompletableFuture<>();
     }
   }
-  public void doSomethingElse() {
 
-  }
+  public void doSomethingElse() {}
 
   public void recoverWithBackoffSource() {
-    //#restart-with-backoff-source
-    Source<ServerSentEvent, NotUsed> eventStream = RestartSource.withBackoff(
+    // #restart-with-backoff-source
+    Source<ServerSentEvent, NotUsed> eventStream =
+        RestartSource.withBackoff(
             Duration.ofSeconds(3), // min backoff
             Duration.ofSeconds(30), // max backoff
-        0.2, // adds 20% "noise" to vary the intervals slightly
-        20, // limits the amount of restarts to 20
-        () ->
-            // Create a source from a future of a source
-            Source.fromSourceCompletionStage(
-                // Issue a GET request on the event stream
-                Http.get(system).singleRequest(HttpRequest.create("http://example.com/eventstream"))
-                    .thenCompose(response ->
-                        // Unmarshall it to a stream of ServerSentEvents
-                        EventStreamUnmarshalling.fromEventStream()
-                            .unmarshall(response, materializer)
-                    )
-            )
-    );
-    //#restart-with-backoff-source
+            0.2, // adds 20% "noise" to vary the intervals slightly
+            20, // limits the amount of restarts to 20
+            () ->
+                // Create a source from a future of a source
+                Source.fromSourceCompletionStage(
+                    // Issue a GET request on the event stream
+                    Http.get(system)
+                        .singleRequest(HttpRequest.create("http://example.com/eventstream"))
+                        .thenCompose(
+                            response ->
+                                // Unmarshall it to a stream of ServerSentEvents
+                                EventStreamUnmarshalling.fromEventStream()
+                                    .unmarshall(response, materializer))));
+    // #restart-with-backoff-source
 
-    //#with-kill-switch
-    KillSwitch killSwitch = eventStream
-        .viaMat(KillSwitches.single(), Keep.right())
-        .toMat(Sink.foreach(event -> System.out.println("Got event: " + event)), Keep.left())
-        .run(materializer);
+    // #with-kill-switch
+    KillSwitch killSwitch =
+        eventStream
+            .viaMat(KillSwitches.single(), Keep.right())
+            .toMat(Sink.foreach(event -> System.out.println("Got event: " + event)), Keep.left())
+            .run(materializer);
 
     doSomethingElse();
 
     killSwitch.shutdown();
-    //#with-kill-switch
+    // #with-kill-switch
 
   }
 }

@@ -18,81 +18,91 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
+/** */
 public class MessageJavaTest extends JUnitSuite {
-  private Map<String,Object> empty = new HashMap<String, Object>();
+  private Map<String, Object> empty = new HashMap<String, Object>();
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("MessageJavaTest");
+      new AkkaJUnitActorSystemResource("MessageJavaTest");
 
   private final ActorSystem system = actorSystemResource.getSystem();
   private Camel camel = (Camel) CamelExtension.get(system);
 
-  CamelMessage message(Object body){ return new CamelMessage(body, new HashMap<String, Object>()); }
-  CamelMessage message(Object body, Map<String, Object> headers){ return new CamelMessage(body, headers); }
-
-
-  @Test public void shouldConvertDoubleBodyToString() {
-    assertEquals("1.4", message("1.4", empty).getBodyAs(String.class,camel.context()));
+  CamelMessage message(Object body) {
+    return new CamelMessage(body, new HashMap<String, Object>());
   }
 
-  @Test(expected=NoTypeConversionAvailableException.class)
+  CamelMessage message(Object body, Map<String, Object> headers) {
+    return new CamelMessage(body, headers);
+  }
+
+  @Test
+  public void shouldConvertDoubleBodyToString() {
+    assertEquals("1.4", message("1.4", empty).getBodyAs(String.class, camel.context()));
+  }
+
+  @Test(expected = NoTypeConversionAvailableException.class)
   public void shouldThrowExceptionWhenConvertingDoubleBodyToInputStream() {
-    message(1.4).getBodyAs(InputStream.class,camel.context());
+    message(1.4).getBodyAs(InputStream.class, camel.context());
   }
 
-  @Test public void shouldConvertDoubleHeaderToString() {
-    CamelMessage message = message("test" , createMap("test", 1.4));
-    assertEquals("1.4", message.getHeaderAs("test", String.class,camel.context()));
+  @Test
+  public void shouldConvertDoubleHeaderToString() {
+    CamelMessage message = message("test", createMap("test", 1.4));
+    assertEquals("1.4", message.getHeaderAs("test", String.class, camel.context()));
   }
 
-  @Test public void shouldReturnSubsetOfHeaders() {
-    CamelMessage message = message("test" , createMap("A", "1", "B", "2"));
+  @Test
+  public void shouldReturnSubsetOfHeaders() {
+    CamelMessage message = message("test", createMap("A", "1", "B", "2"));
     assertEquals(createMap("B", "2"), message.getHeaders(createSet("B")));
   }
 
-  @Test(expected=UnsupportedOperationException.class)
+  @Test(expected = UnsupportedOperationException.class)
   public void shouldReturnSubsetOfHeadersUnmodifiable() {
-    CamelMessage message = message("test" , createMap("A", "1", "B", "2"));
+    CamelMessage message = message("test", createMap("A", "1", "B", "2"));
     message.getHeaders(createSet("B")).put("x", "y");
   }
 
-  @Test public void shouldReturnAllHeaders() {
-    CamelMessage message = message("test" , createMap("A", "1", "B", "2"));
+  @Test
+  public void shouldReturnAllHeaders() {
+    CamelMessage message = message("test", createMap("A", "1", "B", "2"));
     assertEquals(createMap("A", "1", "B", "2"), message.getHeaders());
   }
 
-  @Test(expected=UnsupportedOperationException.class)
+  @Test(expected = UnsupportedOperationException.class)
   public void shouldReturnAllHeadersUnmodifiable() {
-    CamelMessage message = message("test" , createMap("A", "1", "B", "2"));
+    CamelMessage message = message("test", createMap("A", "1", "B", "2"));
     message.getHeaders().put("x", "y");
   }
 
-  @Test public void shouldTransformBodyAndPreserveHeaders() {
+  @Test
+  public void shouldTransformBodyAndPreserveHeaders() {
     assertEquals(
-      message("ab", createMap("A", "1")),
-      message("a" , createMap("A", "1")).mapBody(new TestTransformer()));
+        message("ab", createMap("A", "1")),
+        message("a", createMap("A", "1")).mapBody(new TestTransformer()));
   }
 
-  @Test public void shouldConvertBodyAndPreserveHeaders() {
+  @Test
+  public void shouldConvertBodyAndPreserveHeaders() {
     assertEquals(
-      message("1.4", createMap("A", "1")),
-      message(1.4  , createMap("A", "1")).withBodyAs(String.class,camel.context()));
+        message("1.4", createMap("A", "1")),
+        message(1.4, createMap("A", "1")).withBodyAs(String.class, camel.context()));
   }
 
-  @Test public void shouldSetBodyAndPreserveHeaders() {
+  @Test
+  public void shouldSetBodyAndPreserveHeaders() {
     assertEquals(
-      message("test2" , createMap("A", "1")),
-      message("test1" , createMap("A", "1")).withBody("test2"));
+        message("test2", createMap("A", "1")),
+        message("test1", createMap("A", "1")).withBody("test2"));
   }
 
-  @Test public void shouldSetHeadersAndPreserveBody() {
+  @Test
+  public void shouldSetHeadersAndPreserveBody() {
     assertEquals(
-      message("test1" , createMap("C", "3")),
-      message("test1" , createMap("A", "1")).withHeaders(createMap("C", "3")));
+        message("test1", createMap("C", "3")),
+        message("test1", createMap("A", "1")).withHeaders(createMap("C", "3")));
   }
 
   @Test
@@ -112,7 +122,7 @@ public class MessageJavaTest extends JUnitSuite {
   private static Map<String, Object> createMap(Object... pairs) {
     HashMap<String, Object> map = new HashMap<String, Object>();
     for (int i = 0; i < pairs.length; i += 2) {
-      map.put((String)pairs[i], pairs[i+1]);
+      map.put((String) pairs[i], pairs[i + 1]);
     }
     return map;
   }
@@ -123,5 +133,4 @@ public class MessageJavaTest extends JUnitSuite {
       return param + "b";
     }
   }
-
 }

@@ -25,5 +25,4 @@ public class ByteStringTest extends JUnitSuite {
     sb.append(ByteString.fromString("World"));
     assertEquals(ByteString.fromString("Hello World"), sb.result());
   }
-
 }

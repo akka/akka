@@ -16,15 +16,20 @@ class BlockingFutureActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Integer.class, i -> {
-        System.out.println("Calling blocking Future: " + i);
-        Future<Integer> f = Futures.future(() -> {
-          Thread.sleep(5000);
-          System.out.println("Blocking future finished: " + i);
-          return i;
-        }, ec);
-      })
-      .build();
+        .match(
+            Integer.class,
+            i -> {
+              System.out.println("Calling blocking Future: " + i);
+              Future<Integer> f =
+                  Futures.future(
+                      () -> {
+                        Thread.sleep(5000);
+                        System.out.println("Blocking future finished: " + i);
+                        return i;
+                      },
+                      ec);
+            })
+        .build();
   }
 }
 // #blocking-in-future

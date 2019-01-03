@@ -8,10 +8,10 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
-//#imports
+// #imports
 import akka.stream.*;
 import akka.stream.javadsl.*;
-//#imports
+// #imports
 import jdocs.AbstractJavaTest;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
@@ -56,8 +56,8 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     mat = null;
   }
 
-  static abstract class Model {
-    //#model
+  abstract static class Model {
+    // #model
     public static class Author {
       public final String handle;
 
@@ -67,7 +67,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
       // ...
 
-      //#model
+      // #model
 
       @Override
       public String toString() {
@@ -96,11 +96,11 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
       public int hashCode() {
         return handle != null ? handle.hashCode() : 0;
       }
-      //#model
+      // #model
     }
-    //#model
+    // #model
 
-    //#model
+    // #model
 
     public static class Hashtag {
       public final String name;
@@ -110,7 +110,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
       }
 
       // ...
-      //#model
+      // #model
 
       @Override
       public int hashCode() {
@@ -119,12 +119,9 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
       @Override
       public boolean equals(Object obj) {
-        if (this == obj)
-          return true;
-        if (obj == null)
-          return false;
-        if (getClass() != obj.getClass())
-          return false;
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
         Hashtag other = (Hashtag) obj;
         return name.equals(other.name);
       }
@@ -133,11 +130,11 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
       public String toString() {
         return "Hashtag(" + name + ")";
       }
-      //#model
+      // #model
     }
-    //#model
+    // #model
 
-    //#model
+    // #model
 
     public static class Tweet {
       public final Author author;
@@ -151,69 +148,85 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
       }
 
       public Set<Hashtag> hashtags() {
-        return Arrays.asList(body.split(" ")).stream()
-          .filter(a -> a.startsWith("#"))
-          .map(a -> new Hashtag(a))
-          .collect(Collectors.toSet());
+        return Arrays.asList(body.split(" "))
+            .stream()
+            .filter(a -> a.startsWith("#"))
+            .map(a -> new Hashtag(a))
+            .collect(Collectors.toSet());
       }
 
       // ...
-      //#model
+      // #model
 
       @Override
       public String toString() {
         return "Tweet(" + author + "," + timestamp + "," + body + ")";
       }
 
-      //#model
+      // #model
     }
-    //#model
+    // #model
 
-    //#model
+    // #model
 
     public static final Hashtag AKKA = new Hashtag("#akka");
-    //#model
+    // #model
 
-    public static final Source<Tweet, NotUsed> tweets = Source.from(
-      Arrays.asList(new Tweet[] {
-        new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"),
-        new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"),
-        new Tweet(new Author("bantonsson"), System.currentTimeMillis(), "#akka !"),
-        new Tweet(new Author("drewhk"), System.currentTimeMillis(), "#akka !"),
-        new Tweet(new Author("ktosopl"), System.currentTimeMillis(), "#akka on the rocks!"),
-        new Tweet(new Author("mmartynas"), System.currentTimeMillis(), "wow #akka !"),
-        new Tweet(new Author("akkateam"), System.currentTimeMillis(), "#akka rocks!"),
-        new Tweet(new Author("bananaman"), System.currentTimeMillis(), "#bananas rock!"),
-        new Tweet(new Author("appleman"), System.currentTimeMillis(), "#apples rock!"),
-        new Tweet(new Author("drama"), System.currentTimeMillis(), "we compared #apples to #oranges!")
-      }));
+    public static final Source<Tweet, NotUsed> tweets =
+        Source.from(
+            Arrays.asList(
+                new Tweet[] {
+                  new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"),
+                  new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"),
+                  new Tweet(new Author("bantonsson"), System.currentTimeMillis(), "#akka !"),
+                  new Tweet(new Author("drewhk"), System.currentTimeMillis(), "#akka !"),
+                  new Tweet(
+                      new Author("ktosopl"), System.currentTimeMillis(), "#akka on the rocks!"),
+                  new Tweet(new Author("mmartynas"), System.currentTimeMillis(), "wow #akka !"),
+                  new Tweet(new Author("akkateam"), System.currentTimeMillis(), "#akka rocks!"),
+                  new Tweet(new Author("bananaman"), System.currentTimeMillis(), "#bananas rock!"),
+                  new Tweet(new Author("appleman"), System.currentTimeMillis(), "#apples rock!"),
+                  new Tweet(
+                      new Author("drama"),
+                      System.currentTimeMillis(),
+                      "we compared #apples to #oranges!")
+                }));
   }
 
-  static abstract class Example0 {
-    //#tweet-source
+  abstract static class Example0 {
+    // #tweet-source
     Source<Tweet, NotUsed> tweets;
-    //#tweet-source
+    // #tweet-source
   }
 
-  static abstract class Example1 {
-    //#first-sample
-    //#materializer-setup
+  abstract static class Example1 {
+    // #first-sample
+    // #materializer-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
     final Materializer mat = ActorMaterializer.create(system);
-    //#first-sample
-    //#materializer-setup
+    // #first-sample
+    // #materializer-setup
   }
 
   static class Example2 {
-    public void run(final Materializer mat) throws TimeoutException, InterruptedException, ExecutionException {
-      //#backpressure-by-readline
+    public void run(final Materializer mat)
+        throws TimeoutException, InterruptedException, ExecutionException {
+      // #backpressure-by-readline
       final CompletionStage<Done> completion =
-        Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-          .map(i -> { System.out.println("map => " + i); return i; })
-          .runForeach(i -> System.console().readLine("Element = %s continue reading? [press enter]\n", i), mat);
+          Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+              .map(
+                  i -> {
+                    System.out.println("map => " + i);
+                    return i;
+                  })
+              .runForeach(
+                  i ->
+                      System.console()
+                          .readLine("Element = %s continue reading? [press enter]\n", i),
+                  mat);
 
       completion.toCompletableFuture().get(1, TimeUnit.SECONDS);
-      //#backpressure-by-readline
+      // #backpressure-by-readline
     }
   }
 
@@ -221,60 +234,57 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
   public void demonstrateFilterAndMap() {
     final SilenceSystemOut.System System = SilenceSystemOut.get();
 
-    //#first-sample
+    // #first-sample
 
-    //#authors-filter-map
+    // #authors-filter-map
     final Source<Author, NotUsed> authors =
-      tweets
-        .filter(t -> t.hashtags().contains(AKKA))
-        .map(t -> t.author);
-    //#first-sample
-    //#authors-filter-map
+        tweets.filter(t -> t.hashtags().contains(AKKA)).map(t -> t.author);
+    // #first-sample
+    // #authors-filter-map
 
     new Object() {
-      //#authors-collect
+      // #authors-collect
       JavaPartialFunction<Tweet, Author> collectFunction =
-        new JavaPartialFunction<Tweet, Author>() {
-          public Author apply(Tweet t, boolean isCheck) {
-            if (t.hashtags().contains(AKKA)) {
-              if (isCheck) return null; // to spare the expensive or side-effecting code
-              return t.author;
-            } else {
-              throw noMatch();
+          new JavaPartialFunction<Tweet, Author>() {
+            public Author apply(Tweet t, boolean isCheck) {
+              if (t.hashtags().contains(AKKA)) {
+                if (isCheck) return null; // to spare the expensive or side-effecting code
+                return t.author;
+              } else {
+                throw noMatch();
+              }
             }
-          }
-        };
+          };
 
-      final Source<Author, NotUsed> authors =
-        tweets.collect(collectFunction);
-      //#authors-collect
+      final Source<Author, NotUsed> authors = tweets.collect(collectFunction);
+      // #authors-collect
     };
 
-    //#first-sample
+    // #first-sample
 
-    //#authors-foreachsink-println
+    // #authors-foreachsink-println
     authors.runWith(Sink.foreach(a -> System.out.println(a)), mat);
-    //#first-sample
-    //#authors-foreachsink-println
+    // #first-sample
+    // #authors-foreachsink-println
 
-    //#authors-foreach-println
+    // #authors-foreach-println
     authors.runForeach(a -> System.out.println(a), mat);
-    //#authors-foreach-println
+    // #authors-foreach-println
   }
 
   @Test
   public void demonstrateMapConcat() {
-    //#hashtags-mapConcat
+    // #hashtags-mapConcat
     final Source<Hashtag, NotUsed> hashtags =
-      tweets.mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
-    //#hashtags-mapConcat
+        tweets.mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
+    // #hashtags-mapConcat
   }
 
-  static abstract class HiddenDefinitions {
-    //#graph-dsl-broadcast
+  abstract static class HiddenDefinitions {
+    // #graph-dsl-broadcast
     Sink<Author, NotUsed> writeAuthors;
     Sink<Hashtag, NotUsed> writeHashtags;
-    //#graph-dsl-broadcast
+    // #graph-dsl-broadcast
   }
 
   @Test
@@ -282,82 +292,88 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     final Sink<Author, CompletionStage<Done>> writeAuthors = Sink.ignore();
     final Sink<Hashtag, CompletionStage<Done>> writeHashtags = Sink.ignore();
 
-    //#graph-dsl-broadcast
-    RunnableGraph.fromGraph(GraphDSL.create(b -> {
-      final UniformFanOutShape<Tweet, Tweet> bcast = b.add(Broadcast.create(2));
-      final FlowShape<Tweet, Author> toAuthor =
-    	  b.add(Flow.of(Tweet.class).map(t -> t.author));
-      final FlowShape<Tweet, Hashtag> toTags =
-          b.add(Flow.of(Tweet.class).mapConcat(t -> new ArrayList<Hashtag>(t.hashtags())));
-      final SinkShape<Author> authors = b.add(writeAuthors);
-      final SinkShape<Hashtag> hashtags = b.add(writeHashtags);
+    // #graph-dsl-broadcast
+    RunnableGraph.fromGraph(
+            GraphDSL.create(
+                b -> {
+                  final UniformFanOutShape<Tweet, Tweet> bcast = b.add(Broadcast.create(2));
+                  final FlowShape<Tweet, Author> toAuthor =
+                      b.add(Flow.of(Tweet.class).map(t -> t.author));
+                  final FlowShape<Tweet, Hashtag> toTags =
+                      b.add(
+                          Flow.of(Tweet.class)
+                              .mapConcat(t -> new ArrayList<Hashtag>(t.hashtags())));
+                  final SinkShape<Author> authors = b.add(writeAuthors);
+                  final SinkShape<Hashtag> hashtags = b.add(writeHashtags);
 
-      b.from(b.add(tweets)).viaFanOut(bcast).via(toAuthor).to(authors);
-                                 b.from(bcast).via(toTags).to(hashtags);
-      return ClosedShape.getInstance();
-    })).run(mat);
-    //#graph-dsl-broadcast
+                  b.from(b.add(tweets)).viaFanOut(bcast).via(toAuthor).to(authors);
+                  b.from(bcast).via(toTags).to(hashtags);
+                  return ClosedShape.getInstance();
+                }))
+        .run(mat);
+    // #graph-dsl-broadcast
   }
 
   long slowComputation(Tweet t) {
     try {
       // act as if performing some heavy computation
       Thread.sleep(500);
-    } catch (InterruptedException e) {}
+    } catch (InterruptedException e) {
+    }
     return 42;
   }
 
   @Test
   public void demonstrateSlowProcessing() {
-    //#tweets-slow-consumption-dropHead
+    // #tweets-slow-consumption-dropHead
     tweets
-      .buffer(10, OverflowStrategy.dropHead())
-      .map(t -> slowComputation(t))
-      .runWith(Sink.ignore(), mat);
-    //#tweets-slow-consumption-dropHead
+        .buffer(10, OverflowStrategy.dropHead())
+        .map(t -> slowComputation(t))
+        .runWith(Sink.ignore(), mat);
+    // #tweets-slow-consumption-dropHead
   }
 
   @Test
   public void demonstrateCountOnFiniteStream() {
-    //#tweets-fold-count
+    // #tweets-fold-count
     final Sink<Integer, CompletionStage<Integer>> sumSink =
-      Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
+        Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
     final RunnableGraph<CompletionStage<Integer>> counter =
         tweets.map(t -> 1).toMat(sumSink, Keep.right());
 
     final CompletionStage<Integer> sum = counter.run(mat);
 
-    sum.thenAcceptAsync(c -> System.out.println("Total tweets processed: " + c),
-        system.dispatcher());
-    //#tweets-fold-count
+    sum.thenAcceptAsync(
+        c -> System.out.println("Total tweets processed: " + c), system.dispatcher());
+    // #tweets-fold-count
 
     new Object() {
-      //#tweets-fold-count-oneline
+      // #tweets-fold-count-oneline
       final CompletionStage<Integer> sum = tweets.map(t -> 1).runWith(sumSink, mat);
-      //#tweets-fold-count-oneline
+      // #tweets-fold-count-oneline
     };
   }
 
   @Test
   public void demonstrateMaterializeMultipleTimes() {
-    final Source<Tweet, NotUsed> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
+    final Source<Tweet, NotUsed> tweetsInMinuteFromNow =
+        tweets; // not really in second, just acting as if
 
-    //#tweets-runnable-flow-materialized-twice
+    // #tweets-runnable-flow-materialized-twice
     final Sink<Integer, CompletionStage<Integer>> sumSink =
-      Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
+        Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
     final RunnableGraph<CompletionStage<Integer>> counterRunnableGraph =
-      tweetsInMinuteFromNow
-        .filter(t -> t.hashtags().contains(AKKA))
-        .map(t -> 1)
-        .toMat(sumSink, Keep.right());
+        tweetsInMinuteFromNow
+            .filter(t -> t.hashtags().contains(AKKA))
+            .map(t -> 1)
+            .toMat(sumSink, Keep.right());
 
     // materialize the stream once in the morning
     final CompletionStage<Integer> morningTweetsCount = counterRunnableGraph.run(mat);
     // and once in the evening, reusing the blueprint
     final CompletionStage<Integer> eveningTweetsCount = counterRunnableGraph.run(mat);
-    //#tweets-runnable-flow-materialized-twice
+    // #tweets-runnable-flow-materialized-twice
 
   }
-
 }

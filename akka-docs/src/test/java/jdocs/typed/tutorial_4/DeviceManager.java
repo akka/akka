@@ -18,14 +18,14 @@ import java.util.Map;
 
 import static jdocs.typed.tutorial_4.DeviceManagerProtocol.*;
 
-//#device-manager-full
+// #device-manager-full
 public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
 
   public static Behavior<DeviceManagerMessage> createBehavior() {
     return Behaviors.setup(DeviceManager::new);
   }
 
-  private static class DeviceGroupTerminated implements DeviceManagerMessage{
+  private static class DeviceGroupTerminated implements DeviceManagerMessage {
     public final String groupId;
 
     DeviceGroupTerminated(String groupId) {
@@ -49,7 +49,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
     } else {
       context.getLog().info("Creating device group actor for {}", groupId);
       ActorRef<DeviceGroupMessage> groupActor =
-        context.spawn(DeviceGroup.createBehavior(groupId), "group-" + groupId);
+          context.spawn(DeviceGroup.createBehavior(groupId), "group-" + groupId);
       context.watchWith(groupActor, new DeviceGroupTerminated(groupId));
       groupActor.tell(trackMsg);
       groupIdToActor.put(groupId, groupActor);
@@ -86,6 +86,5 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
     context.getLog().info("DeviceManager stopped");
     return this;
   }
-
 }
-//#device-manager-full
+// #device-manager-full

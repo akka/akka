@@ -11,37 +11,41 @@ import akka.actor.typed.Behavior;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Test creating [[MutableActor]]s using [[ReceiveBuilder]]
- */
+/** Test creating [[MutableActor]]s using [[ReceiveBuilder]] */
 public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void testMutableCounter() {
-    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.setup(context -> new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
-      int currentValue = 0;
+    Behavior<BehaviorBuilderTest.CounterMessage> mutable =
+        Behaviors.setup(
+            context ->
+                new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
+                  int currentValue = 0;
 
-      private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(BehaviorBuilderTest.Increase message) {
-        currentValue++;
-        return this;
-      }
+                  private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(
+                      BehaviorBuilderTest.Increase message) {
+                    currentValue++;
+                    return this;
+                  }
 
-      private Behavior<BehaviorBuilderTest.CounterMessage> receiveGet(BehaviorBuilderTest.Get get) {
-        get.sender.tell(new BehaviorBuilderTest.Got(currentValue));
-        return this;
-      }
+                  private Behavior<BehaviorBuilderTest.CounterMessage> receiveGet(
+                      BehaviorBuilderTest.Get get) {
+                    get.sender.tell(new BehaviorBuilderTest.Got(currentValue));
+                    return this;
+                  }
 
-      @Override
-      public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
-        return receiveBuilder()
-          .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
-          .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
-          .build();
-      }
-    });
+                  @Override
+                  public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+                    return receiveBuilder()
+                        .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
+                        .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
+                        .build();
+                  }
+                });
   }
 
-  private static class MyAbstractBehavior extends AbstractBehavior<BehaviorBuilderTest.CounterMessage> {
+  private static class MyAbstractBehavior
+      extends AbstractBehavior<BehaviorBuilderTest.CounterMessage> {
     private int value;
 
     public MyAbstractBehavior(int initialValue) {

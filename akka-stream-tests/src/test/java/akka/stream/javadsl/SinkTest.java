@@ -33,14 +33,15 @@ public class SinkTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
     final Sink<Object, Publisher<Object>> pubSink = Sink.asPublisher(AsPublisher.WITH_FANOUT);
     @SuppressWarnings("unused")
-    final Publisher<Object> publisher = Source.from(new ArrayList<Object>()).runWith(pubSink, materializer);
+    final Publisher<Object> publisher =
+        Source.from(new ArrayList<Object>()).runWith(pubSink, materializer);
   }
 
   @Test
@@ -55,7 +56,8 @@ public class SinkTest extends StreamTest {
   public void mustBeAbleToUseFold() throws Exception {
     Sink<Integer, CompletionStage<Integer>> foldSink = Sink.fold(0, (arg1, arg2) -> arg1 + arg2);
     @SuppressWarnings("unused")
-    CompletionStage<Integer> integerFuture = Source.from(new ArrayList<Integer>()).runWith(foldSink, materializer);
+    CompletionStage<Integer> integerFuture =
+        Source.from(new ArrayList<Integer>()).runWith(foldSink, materializer);
   }
 
   @Test
@@ -72,7 +74,8 @@ public class SinkTest extends StreamTest {
   @Test
   public void mustBeAbleToUseCollector() throws Exception {
     final List<Integer> list = Arrays.asList(1, 2, 3);
-    final Sink<Integer, CompletionStage<List<Integer>>> collectorSink = StreamConverters.javaCollector(Collectors::toList);
+    final Sink<Integer, CompletionStage<List<Integer>>> collectorSink =
+        StreamConverters.javaCollector(Collectors::toList);
     CompletionStage<List<Integer>> result = Source.from(list).runWith(collectorSink, materializer);
     assertEquals(list, result.toCompletableFuture().get(1, TimeUnit.SECONDS));
   }
@@ -85,13 +88,16 @@ public class SinkTest extends StreamTest {
     final Sink<Integer, ?> sink1 = Sink.actorRef(probe1.getRef(), "done1");
     final Sink<Integer, ?> sink2 = Sink.actorRef(probe2.getRef(), "done2");
 
-    final Sink<Integer, ?> sink = Sink.combine(sink1, sink2, new ArrayList<Sink<Integer, ?>>(),
+    final Sink<Integer, ?> sink =
+        Sink.combine(
+            sink1,
+            sink2,
+            new ArrayList<Sink<Integer, ?>>(),
             new Function<Integer, Graph<UniformFanOutShape<Integer, Integer>, NotUsed>>() {
               public Graph<UniformFanOutShape<Integer, Integer>, NotUsed> apply(Integer elem) {
                 return Broadcast.create(elem);
               }
-            }
-    );
+            });
 
     Source.from(Arrays.asList(0, 1)).runWith(sink, materializer);
 
@@ -106,15 +112,20 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseContramap() throws Exception {
-    List<Integer> out = Source.range(0, 2).toMat(Sink.<Integer>seq().contramap(x -> x + 1), Keep.right())
-      .run(materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
+    List<Integer> out =
+        Source.range(0, 2)
+            .toMat(Sink.<Integer>seq().contramap(x -> x + 1), Keep.right())
+            .run(materializer)
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
 
     assertEquals(Arrays.asList(1, 2, 3), out);
   }
 
   @Test
   public void mustBeAbleToUsePreMaterialize() throws Exception {
-    Pair<CompletionStage<String>, Sink<String, NotUsed>> pair = Sink.<String>head().preMaterialize(materializer);
+    Pair<CompletionStage<String>, Sink<String, NotUsed>> pair =
+        Sink.<String>head().preMaterialize(materializer);
 
     CompletableFuture<String> future = pair.first().toCompletableFuture();
     assertEquals(false, future.isDone()); // not yet, only once actually source attached
@@ -122,7 +133,7 @@ public class SinkTest extends StreamTest {
     String element = "element";
     Source.single(element).runWith(pair.second(), materializer);
 
-    String got = future.get(3, TimeUnit.SECONDS);// should complete nicely
+    String got = future.get(3, TimeUnit.SECONDS); // should complete nicely
     assertEquals(element, got);
     assertEquals(true, future.isDone());
   }
@@ -130,6 +141,9 @@ public class SinkTest extends StreamTest {
   public void mustSuitablyOverrideAttributeHandlingMethods() {
     @SuppressWarnings("unused")
     final Sink<Integer, CompletionStage<Integer>> s =
-        Sink.<Integer> head().withAttributes(Attributes.name("")).addAttributes(Attributes.asyncBoundary()).named("");
+        Sink.<Integer>head()
+            .withAttributes(Attributes.name(""))
+            .addAttributes(Attributes.asyncBoundary())
+            .named("");
   }
 }

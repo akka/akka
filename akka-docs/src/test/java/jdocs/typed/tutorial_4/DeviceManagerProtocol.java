@@ -8,7 +8,7 @@ import akka.actor.typed.ActorRef;
 
 import java.util.Set;
 
-//#device-registration-msgs
+// #device-registration-msgs
 abstract class DeviceManagerProtocol {
   // no instances of DeviceManagerProtocol class
   private DeviceManagerProtocol() {}
@@ -36,9 +36,9 @@ abstract class DeviceManagerProtocol {
       this.device = device;
     }
   }
-  //#device-registration-msgs
+  // #device-registration-msgs
 
-  //#device-list-msgs
+  // #device-list-msgs
   public static final class RequestDeviceList implements DeviceManagerMessage, DeviceGroupMessage {
     final long requestId;
     final String groupId;
@@ -60,8 +60,8 @@ abstract class DeviceManagerProtocol {
       this.ids = ids;
     }
   }
-  //#device-list-msgs
+  // #device-list-msgs
 
-  //#device-registration-msgs
+  // #device-registration-msgs
 }
-//#device-registration-msgs
+// #device-registration-msgs

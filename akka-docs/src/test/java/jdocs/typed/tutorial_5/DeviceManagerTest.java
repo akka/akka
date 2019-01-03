@@ -16,8 +16,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeviceManagerTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testReplyToRegistrationRequests() {
@@ -32,5 +31,4 @@ public class DeviceManagerTest extends JUnitSuite {
     DeviceRegistered registered2 = probe.expectMessageClass(DeviceRegistered.class);
     assertNotEquals(registered1.device, registered2.device);
   }
-
 }

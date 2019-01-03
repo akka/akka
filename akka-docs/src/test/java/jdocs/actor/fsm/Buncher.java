@@ -4,7 +4,7 @@
 
 package jdocs.actor.fsm;
 
-//#simple-imports
+// #simple-imports
 import akka.actor.AbstractFSM;
 import akka.actor.ActorRef;
 import akka.japi.pf.UnitMatch;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.time.Duration;
-//#simple-imports
+// #simple-imports
 
 import static jdocs.actor.fsm.Buncher.Data;
 import static jdocs.actor.fsm.Buncher.State.*;
@@ -20,75 +20,100 @@ import static jdocs.actor.fsm.Buncher.State;
 import static jdocs.actor.fsm.Buncher.Uninitialized.*;
 import static jdocs.actor.fsm.Events.*;
 
-//#simple-fsm
+// #simple-fsm
 public class Buncher extends AbstractFSM<State, Data> {
   {
-    //#fsm-body
+    // #fsm-body
     startWith(Idle, Uninitialized);
 
-    //#when-syntax
-    when(Idle,
-      matchEvent(SetTarget.class, Uninitialized.class,
-        (setTarget, uninitialized) ->
-          stay().using(new Todo(setTarget.getRef(), new LinkedList<>()))));
-    //#when-syntax
+    // #when-syntax
+    when(
+        Idle,
+        matchEvent(
+            SetTarget.class,
+            Uninitialized.class,
+            (setTarget, uninitialized) ->
+                stay().using(new Todo(setTarget.getRef(), new LinkedList<>()))));
+    // #when-syntax
 
-    //#transition-elided
+    // #transition-elided
     onTransition(
-      matchState(Active, Idle, () -> {
-        // reuse this matcher
-        final UnitMatch<Data> m = UnitMatch.create(
-          matchData(Todo.class,
-            todo -> todo.getTarget().tell(new Batch(todo.getQueue()), getSelf())));
-        m.match(stateData());
-      }).
-      state(Idle, Active, () -> {/* Do something here */}));
-    //#transition-elided
+        matchState(
+                Active,
+                Idle,
+                () -> {
+                  // reuse this matcher
+                  final UnitMatch<Data> m =
+                      UnitMatch.create(
+                          matchData(
+                              Todo.class,
+                              todo ->
+                                  todo.getTarget().tell(new Batch(todo.getQueue()), getSelf())));
+                  m.match(stateData());
+                })
+            .state(
+                Idle,
+                Active,
+                () -> {
+                  /* Do something here */
+                }));
+    // #transition-elided
 
-    when(Active, Duration.ofSeconds(1L),
-      matchEvent(Arrays.asList(Flush.class, StateTimeout()), Todo.class,
-        (event, todo) -> goTo(Idle).using(todo.copy(new LinkedList<>()))));
+    when(
+        Active,
+        Duration.ofSeconds(1L),
+        matchEvent(
+            Arrays.asList(Flush.class, StateTimeout()),
+            Todo.class,
+            (event, todo) -> goTo(Idle).using(todo.copy(new LinkedList<>()))));
 
-    //#unhandled-elided
+    // #unhandled-elided
     whenUnhandled(
-      matchEvent(Queue.class, Todo.class,
-        (queue, todo) -> goTo(Active).using(todo.addElement(queue.getObj()))).
-        anyEvent((event, state) -> {
-          log().warning("received unhandled request {} in state {}/{}",
-            event, stateName(), state);
-          return stay();
-        }));
-    //#unhandled-elided
+        matchEvent(
+                Queue.class,
+                Todo.class,
+                (queue, todo) -> goTo(Active).using(todo.addElement(queue.getObj())))
+            .anyEvent(
+                (event, state) -> {
+                  log()
+                      .warning(
+                          "received unhandled request {} in state {}/{}",
+                          event,
+                          stateName(),
+                          state);
+                  return stay();
+                }));
+    // #unhandled-elided
 
     initialize();
-    //#fsm-body
+    // #fsm-body
   }
-  //#simple-fsm
+  // #simple-fsm
 
   static
-  //#simple-state
+  // #simple-state
   // states
   enum State {
-    Idle, Active
+    Idle,
+    Active
   }
 
-  //#simple-state
+  // #simple-state
   static
-  //#simple-state
+  // #simple-state
   // state data
-  interface Data {
-  }
+  interface Data {}
 
-  //#simple-state
+  // #simple-state
   static
-  //#simple-state
+  // #simple-state
   enum Uninitialized implements Data {
     Uninitialized
   }
 
-  //#simple-state
+  // #simple-state
   static
-  //#simple-state
+  // #simple-state
   final class Todo implements Data {
     private final ActorRef target;
     private final List<Object> queue;
@@ -105,14 +130,11 @@ public class Buncher extends AbstractFSM<State, Data> {
     public List<Object> getQueue() {
       return queue;
     }
-    //#boilerplate
+    // #boilerplate
 
     @Override
     public String toString() {
-      return "Todo{" +
-        "target=" + target +
-        ", queue=" + queue +
-        '}';
+      return "Todo{" + "target=" + target + ", queue=" + queue + '}';
     }
 
     public Todo addElement(Object element) {
@@ -128,9 +150,9 @@ public class Buncher extends AbstractFSM<State, Data> {
     public Todo copy(ActorRef target) {
       return new Todo(target, this.queue);
     }
-    //#boilerplate
+    // #boilerplate
   }
-  //#simple-state
-  //#simple-fsm
+  // #simple-state
+  // #simple-fsm
 }
-//#simple-fsm
+// #simple-fsm

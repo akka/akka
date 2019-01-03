@@ -2,9 +2,7 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-/**
-  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.actor.typed;
 
 import org.junit.Test;
@@ -27,7 +25,8 @@ public class ActorSystemTest extends JUnitSuite {
 
   @Test
   public void testGetWhenTerminatedWithoutTermination() {
-    final ActorSystem system = ActorSystem.create(Behavior.empty(), "GetWhenTerminatedWithoutTermination");
+    final ActorSystem system =
+        ActorSystem.create(Behavior.empty(), "GetWhenTerminatedWithoutTermination");
     assertFalse(system.getWhenTerminated().toCompletableFuture().isDone());
   }
 }

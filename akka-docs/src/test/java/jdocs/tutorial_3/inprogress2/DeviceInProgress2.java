@@ -4,7 +4,7 @@
 
 package jdocs.tutorial_3.inprogress2;
 
-//#device-with-read
+// #device-with-read
 
 import java.util.Optional;
 
@@ -29,7 +29,7 @@ class Device extends AbstractActor {
     return Props.create(Device.class, () -> new Device(groupId, deviceId));
   }
 
-  //#read-protocol-2
+  // #read-protocol-2
   public static final class ReadTemperature {
     final long requestId;
 
@@ -47,7 +47,7 @@ class Device extends AbstractActor {
       this.value = value;
     }
   }
-  //#read-protocol-2
+  // #read-protocol-2
 
   Optional<Double> lastTemperatureReading = Optional.empty();
 
@@ -64,12 +64,14 @@ class Device extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-            .match(ReadTemperature.class, r -> {
-              getSender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+        .match(
+            ReadTemperature.class,
+            r -> {
+              getSender()
+                  .tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
             })
-            .build();
+        .build();
   }
-
 }
 
-//#device-with-read
+// #device-with-read

@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#iot-supervisor
+// #iot-supervisor
 package com.example;
 
 import akka.actor.AbstractActor;
@@ -31,9 +31,7 @@ public class IotSupervisor extends AbstractActor {
   // No need to handle any messages
   @Override
   public Receive createReceive() {
-    return receiveBuilder()
-            .build();
+    return receiveBuilder().build();
   }
-
 }
-//#iot-supervisor
+// #iot-supervisor

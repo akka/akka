@@ -16,8 +16,8 @@ import java.util.Optional;
 
 public class OptionalBlogState {
 
-  interface BlogEvent {
-  }
+  interface BlogEvent {}
+
   public static class PostAdded implements BlogEvent {
     private final String postId;
     private final PostContent content;
@@ -64,8 +64,8 @@ public class OptionalBlogState {
     }
   }
 
-  public interface BlogCommand {
-  }
+  public interface BlogCommand {}
+
   public static class AddPost implements BlogCommand {
     final PostContent content;
     final ActorRef<AddPostDone> replyTo;
@@ -75,6 +75,7 @@ public class OptionalBlogState {
       this.replyTo = replyTo;
     }
   }
+
   public static class AddPostDone implements BlogCommand {
     final String postId;
 
@@ -82,6 +83,7 @@ public class OptionalBlogState {
       this.postId = postId;
     }
   }
+
   public static class GetPost implements BlogCommand {
     final ActorRef<PostContent> replyTo;
 
@@ -89,6 +91,7 @@ public class OptionalBlogState {
       this.replyTo = replyTo;
     }
   }
+
   public static class ChangeBody implements BlogCommand {
     final String newBody;
     final ActorRef<Done> replyTo;
@@ -98,6 +101,7 @@ public class OptionalBlogState {
       this.replyTo = replyTo;
     }
   }
+
   public static class Publish implements BlogCommand {
     final ActorRef<Done> replyTo;
 
@@ -105,6 +109,7 @@ public class OptionalBlogState {
       this.replyTo = replyTo;
     }
   }
+
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -117,32 +122,47 @@ public class OptionalBlogState {
     }
   }
 
-  public static class BlogBehavior extends EventSourcedBehavior<BlogCommand, BlogEvent, Optional<BlogState>> {
+  public static class BlogBehavior
+      extends EventSourcedBehavior<BlogCommand, BlogEvent, Optional<BlogState>> {
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> initialCommandHandler() {
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
+        initialCommandHandler() {
       return commandHandlerBuilder(state -> !state.isPresent())
-          .matchCommand(AddPost.class, (state, cmd) -> {
-            PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
-            return Effect().persist(event)
-                .thenRun(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
-          });
+          .matchCommand(
+              AddPost.class,
+              (state, cmd) -> {
+                PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
+                return Effect()
+                    .persist(event)
+                    .thenRun(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+              });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> postCommandHandler() {
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
+        postCommandHandler() {
       return commandHandlerBuilder(state -> state.isPresent())
-          .matchCommand(ChangeBody.class, (state, cmd) -> {
-            BodyChanged event = new BodyChanged(state.get().postId(), cmd.newBody);
-            return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
-          })
-          .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.get().postId())).thenRun(() -> {
-                System.out.println("Blog post published: " + state.get().postId());
-                cmd.replyTo.tell(Done.getInstance());
-              }))
-          .matchCommand(GetPost.class, (state, cmd) -> {
-            cmd.replyTo.tell(state.get().postContent);
-            return Effect().none();
-          })
+          .matchCommand(
+              ChangeBody.class,
+              (state, cmd) -> {
+                BodyChanged event = new BodyChanged(state.get().postId(), cmd.newBody);
+                return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
+              })
+          .matchCommand(
+              Publish.class,
+              (state, cmd) ->
+                  Effect()
+                      .persist(new Published(state.get().postId()))
+                      .thenRun(
+                          () -> {
+                            System.out.println("Blog post published: " + state.get().postId());
+                            cmd.replyTo.tell(Done.getInstance());
+                          }))
+          .matchCommand(
+              GetPost.class,
+              (state, cmd) -> {
+                cmd.replyTo.tell(state.get().postContent);
+                return Effect().none();
+              })
           .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
 
@@ -163,14 +183,20 @@ public class OptionalBlogState {
     @Override
     public EventHandler<Optional<BlogState>, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
-        .matchEvent(PostAdded.class, (state, event) ->
-            Optional.of(new BlogState(event.content, false)))
-        .matchEvent(BodyChanged.class, (state, chg) ->
-            state.map(blogState -> blogState.withContent(
-              new PostContent(blogState.postId(), blogState.postContent.title, chg.newBody))))
-        .matchEvent(Published.class, (state, event) ->
-            state.map(blogState -> new BlogState(blogState.postContent, true)))
-        .build();
+          .matchEvent(
+              PostAdded.class, (state, event) -> Optional.of(new BlogState(event.content, false)))
+          .matchEvent(
+              BodyChanged.class,
+              (state, chg) ->
+                  state.map(
+                      blogState ->
+                          blogState.withContent(
+                              new PostContent(
+                                  blogState.postId(), blogState.postContent.title, chg.newBody))))
+          .matchEvent(
+              Published.class,
+              (state, event) -> state.map(blogState -> new BlogState(blogState.postContent, true)))
+          .build();
     }
   }
 }

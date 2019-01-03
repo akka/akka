@@ -18,12 +18,14 @@ import static org.junit.Assert.*;
 public class ReceiveBuilderTest extends JUnitSuite {
 
   public static interface Msg {}
+
   public static class Msg1 implements Msg {
     @Override
     public String toString() {
       return "Msg1";
     }
   }
+
   public static class Msg2 implements Msg {
     public final String value;
 
@@ -41,18 +43,13 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       Msg2 other = (Msg2) obj;
       if (value == null) {
-        if (other.value != null)
-          return false;
-      } else if (!value.equals(other.value))
-        return false;
+        if (other.value != null) return false;
+      } else if (!value.equals(other.value)) return false;
       return true;
     }
 
@@ -60,7 +57,6 @@ public class ReceiveBuilderTest extends JUnitSuite {
     public String toString() {
       return "Msg2 [value=" + value + "]";
     }
-
   }
 
   // using instance variable, because lambdas can only modify final fields
@@ -76,11 +72,10 @@ public class ReceiveBuilderTest extends JUnitSuite {
     result = r;
   }
 
-
   @Before
   public void beforeEach() {
     result = "";
-   }
+  }
 
   @Test
   public void shouldNotMatchWhenEmpty() {
@@ -91,9 +86,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchByClass() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg1.class, m -> result("match Msg1"))
-        .build();
+    Receive rcv = ReceiveBuilder.create().match(Msg1.class, m -> result("match Msg1")).build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
@@ -105,9 +98,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchBySubclass() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg.class, m -> result("match Msg"))
-        .build();
+    Receive rcv = ReceiveBuilder.create().match(Msg.class, m -> result("match Msg")).build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg", result());
@@ -134,11 +125,12 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchDelegatingToSpecificMethod() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg1.class, this::handleMsg)
-        .match(Msg2.class, this::handleMsg)
-        .match(Msg.class, this::handleMsg)
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .match(Msg1.class, this::handleMsg)
+            .match(Msg2.class, this::handleMsg)
+            .match(Msg.class, this::handleMsg)
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
@@ -158,10 +150,11 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchDelegatingToGeneralMethod() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg1.class, this::anotherHandleMsg)
-        .match(Msg2.class, this::anotherHandleMsg)
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .match(Msg1.class, this::anotherHandleMsg)
+            .match(Msg2.class, this::anotherHandleMsg)
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
@@ -173,10 +166,11 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchByPredicate() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg1.class, m -> true, m -> result("match Msg1"))
-        .match(Msg2.class, m -> m.value.equals("foo"), m -> result("match Msg2"))
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .match(Msg1.class, m -> true, m -> result("match Msg1"))
+            .match(Msg2.class, m -> m.value.equals("foo"), m -> result("match Msg2"))
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
@@ -191,29 +185,31 @@ public class ReceiveBuilderTest extends JUnitSuite {
     assertFalse(rcv.onMessage().isDefinedAt(42));
   }
 
-  private boolean externalPredicateAlwaysTrue(){
-      return true;
+  private boolean externalPredicateAlwaysTrue() {
+    return true;
   }
 
   @Test
-  public void shouldMatchByExternalPredicate(){
-      Receive rcv = ReceiveBuilder.create()
-              .match(Msg1.class, this::externalPredicateAlwaysTrue, m -> result("match Msg1"))
-              .build();
-      assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
-      rcv.onMessage().apply(new Msg1());
-      assertEquals("match Msg1", result());
-      assertFalse(rcv.onMessage().isDefinedAt(new Msg2("foo")));
+  public void shouldMatchByExternalPredicate() {
+    Receive rcv =
+        ReceiveBuilder.create()
+            .match(Msg1.class, this::externalPredicateAlwaysTrue, m -> result("match Msg1"))
+            .build();
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
+    rcv.onMessage().apply(new Msg1());
+    assertEquals("match Msg1", result());
+    assertFalse(rcv.onMessage().isDefinedAt(new Msg2("foo")));
   }
 
   @Test
   public void shouldMatchEquals() {
     Msg2 msg2 = new Msg2("foo");
-    Receive rcv = ReceiveBuilder.create()
-        .matchEquals(msg2, m -> result("match msg2"))
-        .matchEquals("foo", m -> result("match foo"))
-        .matchEquals(17, m -> result("match 17"))
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .matchEquals(msg2, m -> result("match msg2"))
+            .matchEquals("foo", m -> result("match foo"))
+            .matchEquals(17, m -> result("match 17"))
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg2("foo")));
     rcv.onMessage().apply(new Msg2("foo"));
     assertEquals("match msg2", result());
@@ -233,10 +229,11 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchAny() {
-    Receive rcv = ReceiveBuilder.create()
-        .match(Msg1.class, m -> result("match Msg1"))
-        .matchAny(m -> result("match any"))
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .match(Msg1.class, m -> result("match Msg1"))
+            .matchAny(m -> result("match any"))
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
@@ -251,11 +248,14 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldMatchUnchecked() {
-    Receive rcv = ReceiveBuilder.create()
-        .matchUnchecked(List.class, (List<String> list) -> {
-          result("match List");
-        })
-        .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .matchUnchecked(
+                List.class,
+                (List<String> list) -> {
+                  result("match List");
+                })
+            .build();
     List<String> list = Arrays.asList("foo");
     assertTrue(rcv.onMessage().isDefinedAt(list));
     rcv.onMessage().apply(list);
@@ -265,11 +265,14 @@ public class ReceiveBuilderTest extends JUnitSuite {
   @Test(expected = ClassCastException.class)
   public void shouldThrowWhenUncheckedWithWrongTypes() {
     // note that this doesn't compile with ordinary match
-    Receive rcv = ReceiveBuilder.create()
-      .matchUnchecked(String.class, (Integer i) -> {
-        result(String.valueOf(i + 2));
-      })
-      .build();
+    Receive rcv =
+        ReceiveBuilder.create()
+            .matchUnchecked(
+                String.class,
+                (Integer i) -> {
+                  result(String.valueOf(i + 2));
+                })
+            .build();
     assertTrue(rcv.onMessage().isDefinedAt("foo"));
     rcv.onMessage().apply("foo");
   }

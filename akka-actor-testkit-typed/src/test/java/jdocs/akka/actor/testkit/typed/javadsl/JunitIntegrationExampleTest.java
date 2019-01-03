@@ -12,14 +12,12 @@ import org.junit.Test;
 
 public class JunitIntegrationExampleTest {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testSomething() {
     TestProbe<String> probe = testKit.createTestProbe();
     // ... assertions etc.
   }
-
 }
 // #junit-integration

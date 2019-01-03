@@ -11,17 +11,17 @@ import java.util.Set;
 import akka.cluster.ddata.AbstractReplicatedData;
 import akka.cluster.ddata.GSet;
 
-//#twophaseset
+// #twophaseset
 public class TwoPhaseSet extends AbstractReplicatedData<TwoPhaseSet> {
-  
+
   public final GSet<String> adds;
   public final GSet<String> removals;
-  
+
   public TwoPhaseSet(GSet<String> adds, GSet<String> removals) {
     this.adds = adds;
     this.removals = removals;
   }
-  
+
   public static TwoPhaseSet create() {
     return new TwoPhaseSet(GSet.create(), GSet.create());
   }
@@ -29,7 +29,7 @@ public class TwoPhaseSet extends AbstractReplicatedData<TwoPhaseSet> {
   public TwoPhaseSet add(String element) {
     return new TwoPhaseSet(adds.add(element), removals);
   }
-  
+
   public TwoPhaseSet remove(String element) {
     return new TwoPhaseSet(adds, removals.add(element));
   }
@@ -42,8 +42,7 @@ public class TwoPhaseSet extends AbstractReplicatedData<TwoPhaseSet> {
 
   @Override
   public TwoPhaseSet mergeData(TwoPhaseSet that) {
-    return new TwoPhaseSet(this.adds.merge(that.adds), 
-        this.removals.merge(that.removals));
+    return new TwoPhaseSet(this.adds.merge(that.adds), this.removals.merge(that.removals));
   }
 }
-//#twophaseset
+// #twophaseset
