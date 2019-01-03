@@ -6,6 +6,7 @@ package akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
 import scala.collection.{ immutable ⇒ im }
+import scala.util.Try
 
 import akka.actor.ActorSystem
 import akka.cluster.Cluster
@@ -18,7 +19,7 @@ object JoinConfig {
 
   val Key = "akka.cluster.sharding.number-of-shards"
 
-  private val baseConfig: Config =
+  val baseConfig: Config =
     ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
       akka.cluster.sharding.state-store-mode = "persistence"
@@ -47,6 +48,7 @@ abstract class JoinConfigCompatCheckClusterShardingSpec extends AkkaSpec(
     nodes :+= sys
     sys match {
       case seed if seed eq system ⇒
+        configured(system) should ===(JoinConfig.Shards)
         val seedNode = Cluster(seed)
         seedNode.join(seedNode.selfAddress)
         awaitCond(seedNode.readView.isSingletonCluster, duration)
@@ -59,7 +61,8 @@ abstract class JoinConfigCompatCheckClusterShardingSpec extends AkkaSpec(
   }
 
   protected def configured(system: ActorSystem): Int =
-    system.settings.config.getInt(JoinConfig.Key)
+    Try(system.settings.config.getInt(JoinConfig.Key))
+      .getOrElse(0)
 
 }
 
