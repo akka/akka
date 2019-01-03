@@ -10,17 +10,17 @@ import com.typesafe.config.ConfigFactory
 import sbt.file
 import sbt.internal.sbtscalafix.Compat
 
-trait ProjectFileIgnoreSupport extends ProjectFileSupport {
+trait ProjectFileIgnoreSupport {
   protected val stdoutLogger = Compat.ConsoleLogger(System.out)
 
-  protected def ignoreFileName: String
+  protected def ignoreConfigFileName: String
 
   protected def descriptor: String
 
   lazy val ignoredFiles: Set[String] = {
     import scala.collection.JavaConverters._
-    val config = ConfigFactory.parseFile(file(ignoreFileName))
-    stdoutLogger.info(s"Loading ignored-files from $ignoreFileName:[${config.origin().url().toURI.getPath}]")
+    val config = ConfigFactory.parseFile(file(ignoreConfigFileName))
+    stdoutLogger.info(s"Loading ignored-files from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
     config
       .getStringList("ignored-files")
       .asScala
@@ -29,8 +29,8 @@ trait ProjectFileIgnoreSupport extends ProjectFileSupport {
 
   lazy val ignoredPackages: Set[String] = {
     import scala.collection.JavaConverters._
-    val config = ConfigFactory.parseFile(file(ignoreFileName))
-    stdoutLogger.info(s"Loading ignored-packages from $ignoreFileName:[${config.origin().url().toURI.getPath}]")
+    val config = ConfigFactory.parseFile(file(ignoreConfigFileName))
+    stdoutLogger.info(s"Loading ignored-packages from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
     config
       .getStringList("ignored-packages")
       .asScala
@@ -62,5 +62,28 @@ trait ProjectFileIgnoreSupport extends ProjectFileSupport {
 
   protected def isIgnoredByFileOrPackages(file: File): Boolean = {
     isIgnoredByFile(file) || isIgnoredByPackages(file)
+  }
+
+  protected def getPackageName(fileName: String): Option[String] = {
+    def getPackageName0(fileType: String): String = {
+      import java.io.{File => JFile}
+      fileName.split(JFile.separatorChar)
+        .dropWhile(part ⇒ part != fileType)
+        .drop(1)
+        .dropRight(1)
+        .mkString(".")
+    }
+
+    fileName.split('.').lastOption match {
+      case Some(fileType) ⇒
+        fileType match {
+          case "java" ⇒
+            Option(getPackageName0("java"))
+          case "scala" ⇒
+            Option(getPackageName0("scala"))
+          case _ ⇒ None
+        }
+      case None ⇒ None
+    }
   }
 }

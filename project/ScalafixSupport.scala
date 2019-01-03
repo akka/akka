@@ -9,7 +9,7 @@ import sbt.Keys.unmanagedSources
 
 trait ScalafixSupport extends ProjectFileIgnoreSupport {
 
-  final override protected val ignoreFileName: String = ".scalafix.conf"
+  final override protected val ignoreConfigFileName: String = ".scalafix.conf"
 
   final override protected val descriptor: String = "scalafix"
 

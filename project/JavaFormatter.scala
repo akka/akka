@@ -12,7 +12,7 @@ object JavaFormatter extends AutoPlugin with ProjectFileIgnoreSupport {
 
   override def requires: Plugins = JavaFormatterPlugin
 
-  final override protected val ignoreFileName: String = ".sbt-java-formatter.conf"
+  final override protected val ignoreConfigFileName: String = ".sbt-java-formatter.conf"
 
   final override protected val descriptor: String = "sbt-java-formatter"
 

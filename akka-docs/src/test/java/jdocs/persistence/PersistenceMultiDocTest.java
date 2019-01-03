@@ -75,10 +75,8 @@ public class PersistenceMultiDocTest {
                   .getSystem()
                   .settings()
                   .config()
-                  .getValue(
-                      "journal-plugin") // or a very different configuration coming from an external
-                                        // service.
-              );
+                  // or a very different configuration coming from an external service.
+                  .getValue("journal-plugin"));
     }
 
     // Configuration which contains the snapshot store plugin id defined above
@@ -93,7 +91,7 @@ public class PersistenceMultiDocTest {
                   .config()
                   .getValue(
                       "snapshot-store-plugin") // or a very different configuration coming from an
-                                               // external service.
+              // external service.
               );
     }
   }

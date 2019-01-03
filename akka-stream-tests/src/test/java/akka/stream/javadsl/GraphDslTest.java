@@ -45,28 +45,28 @@ public class GraphDslTest extends StreamTest {
 
     final RunnableGraph<CompletionStage<List<String>>> result =
         RunnableGraph.fromGraph(
-            GraphDSL // create() function binds sink, out which is sink's out port and builder DSL
-                .create( // we need to reference out's shape in the builder DSL below (in to()
-                         // function)
-                    sink, // previously created sink (Sink)
-                    (builder, out) -> { // variables: builder (GraphDSL.Builder) and out (SinkShape)
-                      final UniformFanOutShape<Integer, Integer> bcast =
-                          builder.add(Broadcast.create(2));
-                      final UniformFanInShape<Integer, Integer> merge =
-                          builder.add(Merge.create(2));
+            GraphDSL
+                // create() function binds sink, out which is sink's out port and builder DSL
+                .create(
+                // we need to reference out's shape in the builder DSL below (in to() function)
+                sink, // previously created sink (Sink)
+                (builder, out) -> { // variables: builder (GraphDSL.Builder) and out (SinkShape)
+                  final UniformFanOutShape<Integer, Integer> bcast =
+                      builder.add(Broadcast.create(2));
+                  final UniformFanInShape<Integer, Integer> merge = builder.add(Merge.create(2));
 
-                      final Outlet<Integer> source = builder.add(in).out();
-                      builder
-                          .from(source)
-                          .via(builder.add(f1))
-                          .viaFanOut(bcast)
-                          .via(builder.add(f2))
-                          .viaFanIn(merge)
-                          .via(builder.add(f3.grouped(1000)))
-                          .to(out); // to() expects a SinkShape
-                      builder.from(bcast).via(builder.add(f4)).toFanIn(merge);
-                      return ClosedShape.getInstance();
-                    }));
+                  final Outlet<Integer> source = builder.add(in).out();
+                  builder
+                      .from(source)
+                      .via(builder.add(f1))
+                      .viaFanOut(bcast)
+                      .via(builder.add(f2))
+                      .viaFanIn(merge)
+                      .via(builder.add(f3.grouped(1000)))
+                      .to(out); // to() expects a SinkShape
+                  builder.from(bcast).via(builder.add(f4)).toFanIn(merge);
+                  return ClosedShape.getInstance();
+                }));
     // #simple-graph-dsl
     final List<String> list =
         result.run(materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
