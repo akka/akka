@@ -33,7 +33,8 @@ object AkkaValidatePullRequest extends AutoPlugin {
       GitHub.envTokenOrThrow.map { token =>
         Credentials("GitHub API", "api.github.com", "", token)
       }
-    }
+    },
+    additionalTasks := Seq.empty
   )
 
   override lazy val buildSettings = Seq(
@@ -51,8 +52,6 @@ object AkkaValidatePullRequest extends AutoPlugin {
     fork in ValidatePR := (fork in Test).value,
     testGrouping in ValidatePR := (testGrouping in Test).value,
     javaOptions in ValidatePR := (javaOptions in Test).value,
-
-    additionalTasks := Seq.empty,
 
     prValidatorTasks := Seq(test in ValidatePR) ++ additionalTasks.value,
     prValidatorEnforcedBuildAllTasks := Seq(test in Test) ++ additionalTasks.value
