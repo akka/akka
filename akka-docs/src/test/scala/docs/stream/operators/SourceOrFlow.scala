@@ -61,7 +61,7 @@ object SourceOrFlow {
 
     //#scan
     val source = Source(1 to 5)
-    source.scan(0)((acc, x) => acc + x).runForeach(println)
+    source.scan(0)((acc, x) ⇒ acc + x).runForeach(println)
     // 0  (= 0)
     // 1  (= 0 + 1)
     // 3  (= 0 + 1 + 2)
