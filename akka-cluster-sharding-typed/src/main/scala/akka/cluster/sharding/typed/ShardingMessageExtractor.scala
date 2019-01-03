@@ -25,7 +25,7 @@ object ShardingMessageExtractor {
     stopMessage:    M)(
     extractEntityId: M ⇒ String): ShardingMessageExtractor[M, M] =
     new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
-      def entityId(message: M) = extractEntityId(message)
+      def entityId(message: M): String = extractEntityId(message)
     }
 
 }
@@ -62,6 +62,16 @@ abstract class ShardingMessageExtractor[E, M] {
 
 }
 
+trait ShardIdExtractor {
+
+  def numberOfShards: Int
+
+  /** Returns the shard identifier for a given entity id, based on the `numberOfShards`. */
+  def compute(entityId: String): String =
+    scala.math.abs(entityId.hashCode % numberOfShards).toString
+
+}
+
 /**
  * Default message extractor type, using envelopes to identify what entity a message is for
  * and the hashcode of the entityId to decide which shard an entity belongs to.
@@ -72,10 +82,10 @@ abstract class ShardingMessageExtractor[E, M] {
  */
 final class HashCodeMessageExtractor[M](
   val numberOfShards: Int)
-  extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
+  extends ShardingMessageExtractor[ShardingEnvelope[M], M] with ShardIdExtractor {
 
   override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = compute(entityId)
   override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
 }
 
@@ -89,9 +99,9 @@ final class HashCodeMessageExtractor[M](
  */
 abstract class HashCodeNoEnvelopeMessageExtractor[M](
   val numberOfShards: Int)
-  extends ShardingMessageExtractor[M, M] {
+  extends ShardingMessageExtractor[M, M] with ShardIdExtractor {
 
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = compute(entityId)
   override final def unwrapMessage(message: M): M = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
