@@ -11,6 +11,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -277,5 +278,14 @@ trait ActorContext[T] extends TypedActorContext[T] {
     responseTimeout: Duration,
     createRequest:   java.util.function.Function[ActorRef[Res], Req],
     applyToResponse: BiFunction[Res, Throwable, T]): Unit
+
+  /**
+   * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with
+   * the given function.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   */
+  def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit
 
 }

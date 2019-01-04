@@ -8,7 +8,7 @@ import akka.actor.typed._
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.util.Timeout
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -274,5 +274,14 @@ trait ActorContext[T] extends TypedActorContext[T] { this: akka.actor.typed.java
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+
+  /**
+   * Sends the result of the given `Future` to this Actor (“`self`”), after adapted it with
+   * the given function.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   */
+  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] ⇒ T): Unit
 
 }
