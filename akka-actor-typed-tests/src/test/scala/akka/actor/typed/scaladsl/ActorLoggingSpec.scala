@@ -15,6 +15,8 @@ import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
+class SomeClass
+
 class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -59,6 +61,26 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
           }
         }, "the-actor-with-class")
+      }
+    }
+
+    "allow for adapting log source and class" in {
+      val eventFilter = EventFilter.custom({
+        case l: LogEvent ⇒
+          l.logClass == classOf[SomeClass] &&
+            l.logSource == "who-knows-where-it-came-from" &&
+            l.mdc == Map("mdc" -> true) // mdc should be kept
+      }, occurrences = 1)
+
+      eventFilter.intercept {
+        spawn(Behaviors.setup[String] { context ⇒
+          val log = context.log.withMdc(Map("mdc" -> true))
+            .withLoggerClass(classOf[SomeClass])
+            .withLogSource("who-knows-where-it-came-from")
+          log.info("Started")
+
+          Behaviors.empty
+        }, "the-actor-with-custom-class")
       }
     }
 
@@ -222,7 +244,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       ) {
           Behaviors.setup { context ⇒
             context.log.info("Starting")
-            Behaviors.receiveMessage { message ⇒
+            Behaviors.receiveMessage { _ ⇒
               context.log.info("Got message!")
               Behaviors.same
             }
@@ -366,7 +388,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide a withMdc decorator" in {
       val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(
         Behaviors.setup { context ⇒
-          Behaviors.receiveMessage { message ⇒
+          Behaviors.receiveMessage { _ ⇒
             context.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
             // after log.withMdc so we know it didn't change the outer mdc
             context.log.info("Got message behavior.withMdc!")

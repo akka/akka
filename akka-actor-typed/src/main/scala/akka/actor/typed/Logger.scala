@@ -738,4 +738,14 @@ abstract class Logger private[akka] () {
    * See also [[akka.actor.typed.javadsl.Behaviors.withMdc]]
    */
   def withMdc(mdc: java.util.Map[String, Any]): Logger
+
+  /**
+   * Return a new logger sharing properties of this logger except the logger class
+   */
+  def withLoggerClass(clazz: Class[_]): Logger
+
+  /**
+   * Return a new logger sharing properties of this logger except the log source
+   */
+  def withLogSource(logSource: String): Logger
 }
