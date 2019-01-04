@@ -104,8 +104,8 @@ import akka.util.JavaDurationConverters._
   def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit = {
     future.whenComplete(new BiConsumer[Value, Throwable] {
       def accept(value: Value, ex: Throwable): Unit = {
-        if (value != null) self ! applyToResult.apply(value, null)
-        if (ex != null) self ! applyToResult.apply(null.asInstanceOf[Value], ex)
+        if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
+        if (ex != null) self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
       }
     })
   }
