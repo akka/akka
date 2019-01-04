@@ -18,6 +18,13 @@ abstract class BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
 
   /**
+   * Allows for bypassing the interceptor for certain messages. Useful if the official protocol and the actual
+   * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
+   * the actor still knows how to deal with.
+   */
+  def applyFor(message: Any): Boolean = true
+
+  /**
    * Override to intercept actor startup. To trigger startup of
    * the next behavior in the stack, call `target.start()`.
    * @return The returned behavior will be the "started" behavior of the actor used to accept
