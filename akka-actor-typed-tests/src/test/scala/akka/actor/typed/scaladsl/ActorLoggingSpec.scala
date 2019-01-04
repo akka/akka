@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ Behavior, LogMarker }
 import akka.event.Logging
-import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
+import akka.event.Logging.{ LogEvent, LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
@@ -41,6 +41,24 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       EventFilter.info("got message Hello", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1).intercept {
         actor ! "Hello"
+      }
+    }
+
+    "contain the class name where the first log was called" in {
+      val eventFilter = EventFilter.custom({
+        case l: LogEvent ⇒
+          l.logClass == classOf[ActorLoggingSpec]
+      }, occurrences = 1)
+
+      eventFilter.intercept {
+        spawn(Behaviors.setup[String] { context ⇒
+          context.log.info("Started")
+
+          Behaviors.receive { (context, message) ⇒
+            context.log.info("got message {}", message)
+            Behaviors.same
+          }
+        }, "the-actor-with-class")
       }
     }
 
