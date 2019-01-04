@@ -172,6 +172,19 @@ class SourceOrFlow {
     //#conflate
   }
 
+  void scanExample() {
+    //#scan
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    source.scan(0, (acc, x) -> acc + x).runForeach(System.out::println, materializer);
+    // 0  (= 0)
+    // 1  (= 0 + 1)
+    // 3  (= 0 + 1 + 2)
+    // 6  (= 0 + 1 + 2 + 3)
+    // 10 (= 0 + 1 + 2 + 3 + 4)
+    // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
+    //#scan
+  }
+
   static //#conflateWithSeed-type
   class Summed {
 
