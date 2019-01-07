@@ -7,13 +7,13 @@ package docs.akka.typed
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
+
 import akka.Done
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
 
 object StashDocSpec {
   // #stashing
@@ -59,10 +59,9 @@ object StashDocSpec {
                 replyTo ! state
                 Behaviors.same
               case Save(value, replyTo) ⇒
-                import context.executionContext
-                db.save(id, value).onComplete {
-                  case Success(_)     ⇒ context.self ! SaveSuccess
-                  case Failure(cause) ⇒ context.self ! DBError(cause)
+                context.pipeToSelf(db.save(id, value)) {
+                  case Success(_)     ⇒ SaveSuccess
+                  case Failure(cause) ⇒ DBError(cause)
                 }
                 saving(value, replyTo)
             }
@@ -82,12 +81,9 @@ object StashDocSpec {
             }
           }
 
-        import context.executionContext
-        db.load(id).onComplete {
-          case Success(value) ⇒
-            context.self ! InitialState(value)
-          case Failure(cause) ⇒
-            context.self ! DBError(cause)
+        context.pipeToSelf(db.load(id)) {
+          case Success(value) ⇒ InitialState(value)
+          case Failure(cause) ⇒ DBError(cause)
         }
 
         init()
@@ -96,7 +92,7 @@ object StashDocSpec {
   // #stashing
 }
 
-class StashDocSpec extends WordSpec with Matchers {
+class StashDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import StashDocSpec.DB
   import StashDocSpec.DataAccess
 
@@ -108,24 +104,19 @@ class StashDocSpec extends WordSpec with Matchers {
         override def save(id: String, value: String): Future[Done] = Future.successful(Done)
         override def load(id: String): Future[String] = Future.successful("TheValue")
       }
-      val testKit = BehaviorTestKit(DataAccess.behavior(id = "17", db))
-      val getInbox = TestInbox[String]()
-      testKit.run(DataAccess.Get(getInbox.ref))
-      val initialStateMsg = testKit.selfInbox().receiveMessage()
-      testKit.run(initialStateMsg)
-      getInbox.expectMessage("TheValue")
+      val dataAccess = spawn(DataAccess.behavior(id = "17", db))
+      val getProbe = createTestProbe[String]()
+      dataAccess ! DataAccess.Get(getProbe.ref)
+      getProbe.expectMessage("TheValue")
 
-      val saveInbox = TestInbox[Done]()
-      testKit.run(DataAccess.Save("UpdatedValue", saveInbox.ref))
-      testKit.run(DataAccess.Get(getInbox.ref))
-      val saveSuccessMsg = testKit.selfInbox().receiveMessage()
-      testKit.run(saveSuccessMsg)
-      saveInbox.expectMessage(Done)
-      getInbox.expectMessage("UpdatedValue")
+      val saveProbe = createTestProbe[Done]()
+      dataAccess ! DataAccess.Save("UpdatedValue", saveProbe.ref)
+      dataAccess ! DataAccess.Get(getProbe.ref)
+      saveProbe.expectMessage(Done)
+      getProbe.expectMessage("UpdatedValue")
 
-      testKit.run(DataAccess.Get(getInbox.ref))
-      getInbox.expectMessage("UpdatedValue")
-
+      dataAccess ! DataAccess.Get(getProbe.ref)
+      getProbe.expectMessage("UpdatedValue")
     }
   }
 }
