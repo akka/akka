@@ -41,6 +41,11 @@ object Source {
   def empty[O](): Source[O, NotUsed] = _empty.asInstanceOf[Source[O, NotUsed]]
 
   /**
+   * Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()`
+   */
+  def empty[T](clazz: Class[T]): Source[T, NotUsed] = empty[T]()
+
+  /**
    * Create a `Source` which materializes a [[java.util.concurrent.CompletableFuture]] which controls what element
    * will be emitted by the Source.
    * If the materialized promise is completed with a filled Optional, that value will be produced downstream,

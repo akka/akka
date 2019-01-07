@@ -771,6 +771,14 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void createEmptySource() throws Exception {
+      List<Integer> actual = Source.empty(Integer.class)
+              .runWith(Sink.seq(), materializer)
+              .toCompletableFuture().get();
+      assertThat(actual, is(Collections.emptyList()));
+  }
+
+  @Test
   public void cycleSourceMustGenerateSameSequenceInRepeatedFashion() throws Exception {
     //#cycle
     final Source<Integer, NotUsed> source = Source.cycle(() -> Arrays.asList(1, 2, 3).iterator());
@@ -781,7 +789,7 @@ public class SourceTest extends StreamTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void cycleSourceMustThr() throws Throwable {
+  public void cycleSourceMustThrow() throws Throwable {
 
     try {
       //#cycle-error
