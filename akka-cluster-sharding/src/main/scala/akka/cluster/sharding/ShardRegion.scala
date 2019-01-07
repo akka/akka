@@ -123,11 +123,11 @@ object ShardRegion {
 
     /** INTERNAL API */
     @InternalApi
-    private[sharding] def shardId(entityId: String, numberOfShards: Int): String = {
+    private[sharding] def shardId(id: String, maxNumberOfShards: Int): String = {
       // It would be better to have abs(id.hashCode % maxNumberOfShards), see issue #25034
       // but to avoid getting different values when rolling upgrade we keep the old way,
       // and it doesn't have any serious consequences
-      math.abs(entityId.hashCode % numberOfShards).toString
+      (math.abs(id.hashCode) % maxNumberOfShards).toString
     }
   }
 
