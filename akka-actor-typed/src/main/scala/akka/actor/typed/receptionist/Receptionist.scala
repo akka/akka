@@ -31,7 +31,7 @@ abstract class Receptionist extends Extension {
 
   private def hasCluster: Boolean = {
     // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.untyped.ProviderClass
+    val provider = system.settings.untypedSettings.ProviderClass
     provider == "akka.cluster.ClusterActorRefProvider"
   }
 

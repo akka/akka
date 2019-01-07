@@ -10,7 +10,7 @@ import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ untyped }
 import com.typesafe.config.ConfigFactory
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
@@ -24,7 +24,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 @InternalApi private[akka] final class ActorSystemStub(val name: String)
   extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] with InternalRecipientRef[Nothing] {
 
-  override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
+  override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
@@ -51,11 +51,11 @@ import akka.actor.typed.internal.InternalRecipientRef
     def shutdown(): Unit = ()
   }
 
-  override def dynamicAccess: a.DynamicAccess = new a.ReflectiveDynamicAccess(getClass.getClassLoader)
+  override def dynamicAccess: untyped.DynamicAccess = new untyped.ReflectiveDynamicAccess(getClass.getClassLoader)
 
   override def logConfiguration(): Unit = log.info(settings.toString)
 
-  override def scheduler: a.Scheduler = throw new UnsupportedOperationException("no scheduler")
+  override def scheduler: untyped.Scheduler = throw new UnsupportedOperationException("no scheduler")
 
   private val terminationPromise = Promise[Terminated]
   override def terminate(): Future[akka.actor.typed.Terminated] = {

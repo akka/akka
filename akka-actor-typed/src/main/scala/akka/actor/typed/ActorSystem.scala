@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ untyped }
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
@@ -78,14 +78,14 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def dynamicAccess: a.DynamicAccess
+  def dynamicAccess: untyped.DynamicAccess
 
   /**
    * A generic scheduler that can initiate the execution of tasks after some delay.
    * It is recommended to use the ActorContext’s scheduling capabilities for sending
    * messages to actors instead of registering a Runnable for execution using this facility.
    */
-  def scheduler: a.Scheduler
+  def scheduler: untyped.Scheduler
 
   /**
    * Facilities for lookup up thread-pools from configuration.
@@ -225,39 +225,39 @@ object ActorSystem {
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
-    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
+    val system = new untyped.ActorSystemImpl(name, appConfig, cl, executionContext,
       Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps, isGuardian = true)), setup)
-    untyped.start()
+    system.start()
 
-    untyped.guardian ! GuardianActorAdapter.Start
-    ActorSystemAdapter.AdapterExtension(untyped).adapter
+    system.guardian ! GuardianActorAdapter.Start
+    ActorSystemAdapter.AdapterExtension(system).adapter
   }
 
   /**
    * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
    * Akka Typed [[Behavior]].
    */
-  def wrap(untyped: a.ActorSystem): ActorSystem[Nothing] = ActorSystemAdapter.AdapterExtension(untyped.asInstanceOf[a.ActorSystemImpl]).adapter
+  def wrap(system: untyped.ActorSystem): ActorSystem[Nothing] = ActorSystemAdapter.AdapterExtension(system.asInstanceOf[untyped.ActorSystemImpl]).adapter
 }
 
 /**
  * The configuration settings that were parsed from the config by an [[ActorSystem]].
  * This class is immutable.
  */
-final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, val name: String) {
+final class Settings(val config: Config, val untypedSettings: untyped.ActorSystem.Settings, val name: String) {
   def this(_cl: ClassLoader, _config: Config, name: String) = this({
     val config = _config.withFallback(ConfigFactory.defaultReference(_cl))
     config.checkValid(ConfigFactory.defaultReference(_cl), "akka")
     config
-  }, new a.ActorSystem.Settings(_cl, _config, name), name)
+  }, new untyped.ActorSystem.Settings(_cl, _config, name), name)
 
-  def this(untyped: a.ActorSystem.Settings) = this(untyped.config, untyped, untyped.name)
+  def this(settings: untyped.ActorSystem.Settings) = this(settings.config, settings, settings.name)
 
   private var foundSettings = List.empty[String]
 
   foundSettings = foundSettings.reverse
 
-  def setup: ActorSystemSetup = untyped.setup
+  def setup: ActorSystemSetup = untypedSettings.setup
 
   override def toString: String = s"Settings($name,\n  ${foundSettings.mkString("\n  ")})"
 }
