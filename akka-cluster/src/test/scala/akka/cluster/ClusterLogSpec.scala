@@ -68,7 +68,7 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
       cluster.settings.LogInfoVerbose should ===(false)
       join("is the new leader")
       awaitUp()
-      down("is no longer the leader")
+      down("is no longer leader")
     }
   }
 }
