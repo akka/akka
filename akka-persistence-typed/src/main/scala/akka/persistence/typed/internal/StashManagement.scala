@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.internal
 
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ untyped }
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.actor.{ DeadLetter, StashOverflowException }
@@ -33,7 +33,7 @@ private[akka] trait StashManagement[C, E, S] {
       case e: StashOverflowException ⇒
         setup.internalStashOverflowStrategy match {
           case DiscardToDeadLetterStrategy ⇒
-            val noSenderBecauseAkkaTyped: a.ActorRef = a.ActorRef.noSender
+            val noSenderBecauseAkkaTyped: untyped.ActorRef = untyped.ActorRef.noSender
             context.system.deadLetters.tell(DeadLetter(msg, noSenderBecauseAkkaTyped, context.self.toUntyped))
 
           case ReplyToStrategy(_) ⇒
