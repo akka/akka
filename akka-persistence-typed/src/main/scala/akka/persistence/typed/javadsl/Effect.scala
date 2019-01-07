@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 /**
  * INTERNAL API: see `class EffectFactories`
  */
-@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing, Nothing]
+@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing]
 
 /**
  * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
  *
  * Not for user extension
  */
-@DoNotInherit sealed class EffectFactories[Command, Event, State] {
+@DoNotInherit sealed class EffectFactories[Event, State] {
   /**
    * Persist a single event
    */
