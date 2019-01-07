@@ -64,7 +64,7 @@ private[akka] trait Children { this: ActorCell ⇒
     val r = randomName(new java.lang.StringBuilder("$$"))
     val n = if (name != "") s"$r-$name" else r
     val childPath = new ChildActorPath(self.path, n, ActorCell.newUid())
-    val ref = new FunctionRef(childPath, provider, system.eventStream, f)
+    val ref = new FunctionRef(childPath, provider, system, f)
 
     @tailrec def rec(): Unit = {
       val old = functionRefs

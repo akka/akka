@@ -61,8 +61,15 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
       s ! GetForwarder(testActor)
       val f = expectMsgType[FunctionRef]
       forwarder.watch(f)
+      forwarder.isWatching(f) should ===(true)
       s ! DropForwarder(f)
       expectMsg(Forwarded(Terminated(f)(true, false), f))
+
+      // Upon receiving the Terminated message, unwatch() must be called from a
+      // safe context (i.e. normally from the parent Actor).
+      forwarder.isWatching(f) should ===(true)
+      forwarder.unwatch(f)
+      forwarder.isWatching(f) should ===(false)
     }
 
     "terminate when their parent terminates" in {
@@ -87,7 +94,7 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
     "not registered" must {
       "not be found" in {
         val provider = system.asInstanceOf[ExtendedActorSystem].provider
-        val ref = new FunctionRef(testActor.path / "blabla", provider, system.eventStream, (x, y) ⇒ ())
+        val ref = new FunctionRef(testActor.path / "blabla", provider, system, (x, y) ⇒ ())
         EventFilter[SerializationCheckFailedException](start = "Failed to serialize and deserialize message of type akka.actor.FunctionRefSpec", occurrences = 1) intercept {
           // needs to be something that fails when the deserialized form is not a FunctionRef
           // this relies upon serialize-messages during tests
