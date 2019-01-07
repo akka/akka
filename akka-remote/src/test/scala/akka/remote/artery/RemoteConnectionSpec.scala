@@ -30,13 +30,13 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       // try to talk to it before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
-      localProbe.expectNoMsg(1.seconds)
+      localProbe.expectNoMessage(1.seconds)
 
       // then start the remote system and try again
       val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
-      localProbe.expectNoMsg(2.seconds)
+      localProbe.expectNoMessage(2.seconds)
       remoteSystem.actorOf(TestActors.echoActorProps, "echo")
 
       within(5.seconds) {
@@ -51,23 +51,24 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       val localSystem = newRemoteSystem()
 
       val localPort = port(localSystem)
+      val localHost = address(localSystem).host.get
       muteSystem(localSystem)
 
       val localProbe = new TestProbe(localSystem)
       localSystem.actorOf(TestActors.echoActorProps, "echo")
 
-      val remotePort = temporaryServerAddress(udp = true).getPort
+      val remotePort = temporaryServerAddress(localHost, udp = true).getPort
 
       // try to talk to remote before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
-      localProbe.expectNoMsg(1.seconds)
+      localProbe.expectNoMessage(1.seconds)
 
       // then when it is up, talk from other system
       val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
-      localProbe.expectNoMsg(2.seconds)
+      localProbe.expectNoMessage(2.seconds)
       val otherProbe = new TestProbe(remoteSystem)
       val otherSender = otherProbe.ref
       val thisSelection = remoteSystem.actorSelection(s"akka://${localSystem.name}@localhost:$localPort/user/echo")
