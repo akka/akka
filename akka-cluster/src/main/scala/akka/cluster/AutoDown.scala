@@ -56,7 +56,7 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
   extends AutoDownBase(autoDownUnreachableAfter) with ActorLogging {
 
   val cluster = Cluster(context.system)
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
 
   override def selfAddress = cluster.selfAddress
 

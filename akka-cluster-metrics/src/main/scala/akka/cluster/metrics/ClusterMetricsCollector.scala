@@ -130,7 +130,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler }
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
   val metrics = ClusterMetricsExtension(context.system)
   import metrics.settings._
 

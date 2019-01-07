@@ -140,7 +140,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       new ObjectName("akka:type=Cluster")
 
   private def clusterView = cluster.readView
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
 
   /**
    * Creates the cluster JMX MBean and registers it in the MBean server.
