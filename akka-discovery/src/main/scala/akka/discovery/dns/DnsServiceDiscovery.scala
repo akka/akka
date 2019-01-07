@@ -45,7 +45,7 @@ private object DnsServiceDiscovery {
         } else {
           addresses
         }
-      case other ⇒ im.Seq.empty[ResolvedTarget]
+      case _ ⇒ im.Seq.empty[ResolvedTarget]
     }
 
     Resolved(srvRequest, addresses)
@@ -78,33 +78,32 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     if (ipString.startsWith("/")) ipString.tail else ipString
 
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
-    lookup match {
-      case Lookup(name, Some(portName), Some(protocol)) ⇒
-        val srvRequest = s"_$portName._$protocol.$name"
-        log.debug("Lookup [{}] translated to SRV query [{}] as contains portName and protocol", lookup, srvRequest)
-        dns.ask(DnsProtocol.Resolve(srvRequest, Srv))(resolveTimeout).map {
-          case resolved: DnsProtocol.Resolved ⇒
-            log.debug("Resolved Dns.Resolved: {}", resolved)
-            srvRecordsToResolved(srvRequest, resolved)
-          case resolved ⇒
-            log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
-            Resolved(srvRequest, Nil)
-        }
-      case _ ⇒
-        log.debug("Lookup[{}] translated to A/AAAA lookup as does not have portName and protocol", lookup)
-        dns.ask(DnsProtocol.Resolve(lookup.serviceName, Ip()))(resolveTimeout).map {
-          case resolved: DnsProtocol.Resolved ⇒
-            log.debug("Resolved Dns.Resolved: {}", resolved)
-            val addresses = resolved.records.collect {
-              case a: ARecord    ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
-              case a: AAAARecord ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
-            }
-            Resolved(lookup.serviceName, addresses)
-          case resolved ⇒
-            log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
-            Resolved(lookup.serviceName, Nil)
+    if (lookup.portName.isDefined && lookup.protocol.isDefined) {
+      val srvRequest = s"_${lookup.portName.get}._${lookup.protocol.get}.${lookup.serviceName}"
+      log.debug("Lookup [{}] translated to SRV query [{}] as contains portName and protocol", lookup, srvRequest)
+      dns.ask(DnsProtocol.Resolve(srvRequest, Srv))(resolveTimeout).map {
+        case resolved: DnsProtocol.Resolved ⇒
+          log.debug("Resolved Dns.Resolved: {}", resolved)
+          srvRecordsToResolved(srvRequest, resolved)
+        case resolved ⇒
+          log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
+          Resolved(srvRequest, Nil)
+      }
+    } else {
+      log.debug("Lookup[{}] translated to A/AAAA lookup as does not have portName and protocol", lookup)
+      dns.ask(DnsProtocol.Resolve(lookup.serviceName, Ip()))(resolveTimeout).map {
+        case resolved: DnsProtocol.Resolved ⇒
+          log.debug("Resolved Dns.Resolved: {}", resolved)
+          val addresses = resolved.records.collect {
+            case a: ARecord    ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
+            case a: AAAARecord ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
+          }
+          Resolved(lookup.serviceName, addresses)
+        case resolved ⇒
+          log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
+          Resolved(lookup.serviceName, Nil)
 
-        }
+      }
     }
   }
 
