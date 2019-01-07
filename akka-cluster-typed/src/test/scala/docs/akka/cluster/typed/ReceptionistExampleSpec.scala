@@ -16,6 +16,7 @@ import akka.cluster.typed.{ Cluster, Join, Subscribe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{ Millis, Seconds, Span }
 
 import scala.collection.immutable.Set
 import scala.reflect.ClassTag
@@ -193,6 +194,9 @@ class ReceptionistExampleSpec extends WordSpec with ScalaFutures {
 
   import ReceptionistExampleSpec._
   import PingPongExample._
+
+  implicit override val patienceConfig =
+    PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "A local basic example" must {
     "show register" in {
