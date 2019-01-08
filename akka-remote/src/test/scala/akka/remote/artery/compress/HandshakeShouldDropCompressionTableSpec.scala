@@ -18,9 +18,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object HandshakeShouldDropCompressionTableSpec {
-  // need the port before systemB is started
-  val portB = SocketUtil.temporaryLocalPort(udp = true)
-
   val commonConfig = ConfigFactory.parseString(s"""
      akka {
        remote.artery.advanced.handshake-timeout = 10s
@@ -39,10 +36,10 @@ object HandshakeShouldDropCompressionTableSpec {
 
 class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(HandshakeShouldDropCompressionTableSpec.commonConfig)
   with ImplicitSender with BeforeAndAfter {
-  import HandshakeShouldDropCompressionTableSpec._
 
   implicit val t = Timeout(3.seconds)
   var systemB: ActorSystem = null
+  val portB = freePort()
 
   before {
     systemB = newRemoteSystem(

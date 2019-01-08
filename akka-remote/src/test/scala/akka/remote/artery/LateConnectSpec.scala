@@ -25,7 +25,7 @@ object LateConnectSpec {
 
 class LateConnectSpec extends ArteryMultiNodeSpec(LateConnectSpec.config) with ImplicitSender {
 
-  val portB = SocketUtil.temporaryLocalPort(udp = true)
+  val portB = freePort()
   lazy val systemB = newRemoteSystem(
     name = Some("systemB"),
     extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
