@@ -5,7 +5,7 @@
 package akka.remote.artery
 
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorRefScope, ActorSelection, Identify, PoisonPill, Props, Terminated }
-import akka.testkit.{ ImplicitSender, SocketUtil, TestActors }
+import akka.testkit.{ ImplicitSender, TestActors }
 
 import scala.concurrent.duration._
 import akka.testkit.JavaSerializable
@@ -37,10 +37,10 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
     // TODO fails with not receiving the localGrandchild value, seems to go to dead letters
     "select actors across node boundaries" ignore {
 
-      val remotePort = SocketUtil.temporaryLocalPort(udp = true)
+      val remotePort = freePort()
       val remoteSysName = "remote-" + system.name
 
-      val localPort = SocketUtil.temporaryLocalPort(udp = true)
+      val localPort = freePort()
       val localSysName = "local-" + system.name
 
       def config(port: Int) =
@@ -58,7 +58,7 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
         extraConfig = Some(config(localPort)),
         name = Some(localSysName))
 
-      val remoteSystem = newRemoteSystem(
+      newRemoteSystem(
         extraConfig = Some(config(remotePort)),
         name = Some(remoteSysName))
 
@@ -149,9 +149,9 @@ class RemoteActorSelectionSpec extends ArteryMultiNodeSpec with ImplicitSender {
       child2 ! 55
       expectMsg(55)
       // msg to old ActorRef (different uid) should not get through
-      child2.path.uid should not be (remoteChild.path.uid)
+      child2.path.uid should not be remoteChild.path.uid
       remoteChild ! 56
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
       localSystem.actorSelection(localSystem / "looker2" / "child") ! 57
       expectMsg(57)
     }

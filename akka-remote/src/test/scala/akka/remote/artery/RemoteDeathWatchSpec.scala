@@ -14,7 +14,7 @@ import akka.remote.QuarantinedEvent
 import akka.remote.RARP
 
 object RemoteDeathWatchSpec {
-  val otherPort = SocketUtil.temporaryLocalPort(udp = true)
+  val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
 
   val config = ConfigFactory.parseString(s"""
     akka {

@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import akka.actor.ActorSystem
-import akka.testkit.SocketUtil._
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
 
 import scala.concurrent.duration._
@@ -25,7 +24,7 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       muteSystem(localSystem)
       val localProbe = new TestProbe(localSystem)
 
-      val remotePort = temporaryLocalPort(udp = true)
+      val remotePort = freePort()
 
       // try to talk to it before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
@@ -51,13 +50,12 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       val localSystem = newRemoteSystem()
 
       val localPort = port(localSystem)
-      val localHost = address(localSystem).host.get
       muteSystem(localSystem)
 
       val localProbe = new TestProbe(localSystem)
       localSystem.actorOf(TestActors.echoActorProps, "echo")
 
-      val remotePort = temporaryServerAddress(localHost, udp = true).getPort
+      val remotePort = freePort()
 
       // try to talk to remote before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
