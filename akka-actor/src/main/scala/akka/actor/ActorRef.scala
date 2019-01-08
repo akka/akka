@@ -4,21 +4,20 @@
 
 package akka.actor
 
+import java.util.concurrent.ConcurrentHashMap
+
+import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.control.NonFatal
 
 import akka.dispatch._
 import akka.dispatch.sysmsg._
-import java.lang.{ IllegalStateException, UnsupportedOperationException }
-
-import akka.serialization.{ JavaSerializer, Serialization }
-import akka.event.{ EventStream, Logging, MarkerLoggingAdapter }
-import scala.annotation.tailrec
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
-
-import scala.util.control.NonFatal
-
 import akka.event.AddressTerminatedTopic
+import akka.event.EventStream
+import akka.event.Logging
+import akka.event.MarkerLoggingAdapter
+import akka.serialization.JavaSerializer
+import akka.serialization.Serialization
 import akka.util.OptionVal
 
 object ActorRef {
@@ -705,8 +704,8 @@ private[akka] class VirtualPathContainer(
  * and do not prevent the parent from terminating. FunctionRef is properly
  * registered for remote lookup and ActorSelection.
  *
- * When using the watch() feature you must ensure that upon reception of the
- * Terminated message the watched actorRef is unwatch()ed.
+ * It can be watched, and also `watch` other actors. Upon receiving the Terminated message,
+ * `unwatch` must be called, which is different from an ordinary actor.
  */
 private[akka] final class FunctionRef(
   override val path:     ActorPath,
@@ -726,69 +725,63 @@ private[akka] final class FunctionRef(
       case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
       case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
       case DeathWatchNotification(actorRef, _, _) ⇒
-        // Upon receiving the Terminated message, unwatch() must be called from a
-        // safe context (i.e. normally from the parent Actor).
-        // That is the reason for nor unwatching here.
         this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))(actorRef)
       case _ ⇒ //ignore all other messages
     }
   }
 
+  // requires sychronized access because AddressTerminatedTopic must be updated together with this
   private[this] var watching = ActorCell.emptyActorRefSet
-  private[this] val _watchedBy = new AtomicReference[Set[ActorRef]](ActorCell.emptyActorRefSet)
+  // requires sychronized access because AddressTerminatedTopic must be updated together with this
+  private[this] var _watchedBy = ActorCell.emptyActorRefSet
 
-  override def isTerminated: Boolean = _watchedBy.get() == null
+  override def isTerminated: Boolean = _watchedBy eq null
 
   //noinspection EmptyCheck
-  protected def sendTerminated(): Unit = {
+  protected def sendTerminated(): Unit = synchronized {
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
 
-    val watchedBy = _watchedBy.getAndSet(null)
-    if (watchedBy != null) {
-      if (watchedBy.nonEmpty) {
-        watchedBy foreach sendTerminated(ifLocal = false)
-        watchedBy foreach sendTerminated(ifLocal = true)
+    if (_watchedBy != null) {
+      if (_watchedBy.nonEmpty) {
+        _watchedBy foreach sendTerminated(ifLocal = false)
+        _watchedBy foreach sendTerminated(ifLocal = true)
       }
+
       if (watching.nonEmpty) {
         watching foreach unwatchWatched
         watching = Set.empty
       }
+
+      unsubscribeAddressTerminated()
+      _watchedBy = null
     }
-    unsubscribeAddressTerminated()
   }
 
   private def sendTerminated(ifLocal: Boolean)(watcher: ActorRef): Unit =
     if (watcher.asInstanceOf[ActorRefScope].isLocal == ifLocal)
       watcher.asInstanceOf[InternalActorRef].sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
 
-  @tailrec private def addressTerminated(address: Address): Unit = {
+  private def addressTerminated(address: Address): Unit = synchronized {
     // cleanup watchedBy since we know they are dead
-    _watchedBy.get() match {
+    _watchedBy match {
       case null ⇒ // terminated
       case watchedBy ⇒
-        val watchingBefore = watching
-        val watchByBefore = watchedBy
-        var watchedByAfter = watchedBy
-        for (a ← watchedBy; if a.path.address == address)
-          watchedByAfter -= a
-        if (_watchedBy.compareAndSet(watchedBy, watchedByAfter)) {
-          val watchingAfter = watching
-          val watchByAfter = watchedByOrEmpty
-          updateAddressTerminatedSubscription(OptionVal.None, watchingBefore, watchingAfter, watchByBefore, watchByAfter)
-          // send DeathWatchNotification to self for all matching subjects
-          for (a ← watching; if a.path.address == address) {
-            this.sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = false, addressTerminated = true))
-          }
-        } else
-          addressTerminated(address) // try again
+        maintainAddressTerminatedSubscription(OptionVal.None) {
+          for (a ← watchedBy; if a.path.address == address)
+            _watchedBy -= a
+        }
+        // send DeathWatchNotification to self for all matching subjects
+        for (a ← watching; if a.path.address == address) {
+          this.sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = false, addressTerminated = true))
+        }
     }
   }
 
   override def stop(): Unit = sendTerminated()
 
-  @tailrec private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
-    _watchedBy.get() match {
+  private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = synchronized {
+    _watchedBy match {
       case null ⇒
         sendTerminated(ifLocal = true)(watcher)
         sendTerminated(ifLocal = false)(watcher)
@@ -799,15 +792,9 @@ private[akka] final class FunctionRef(
 
         if (watcheeSelf && !watcherSelf) {
           if (!watchedBy.contains(watcher)) {
-            val watchingBefore = watching
-            val watchByBefore = watchedBy
-            if (_watchedBy.compareAndSet(watchedBy, watchedBy + watcher)) {
-              val watchingAfter = watching
-              val watchByAfter = watchedByOrEmpty
-              updateAddressTerminatedSubscription(OptionVal.Some(watcher), watchingBefore, watchingAfter,
-                watchByBefore, watchByAfter)
-            } else
-              addWatcher(watchee, watcher) // try again
+            maintainAddressTerminatedSubscription(OptionVal.Some(watcher)) {
+              _watchedBy = watchedBy + watcher
+            }
           }
         } else if (!watcheeSelf && watcherSelf) {
           publish(Logging.Warning(path.toString, classOf[FunctionRef], s"externally triggered watch from $watcher to $watchee is illegal on FunctionRef"))
@@ -817,8 +804,8 @@ private[akka] final class FunctionRef(
     }
   }
 
-  @tailrec private def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
-    _watchedBy.get() match {
+  private def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = synchronized {
+    _watchedBy match {
       case null ⇒ // do nothing...
       case watchedBy ⇒
         val watcheeSelf = watchee == this
@@ -826,15 +813,9 @@ private[akka] final class FunctionRef(
 
         if (watcheeSelf && !watcherSelf) {
           if (watchedBy.contains(watcher)) {
-            val watchingBefore = watching
-            val watchByBefore = watchedBy
-            if (_watchedBy.compareAndSet(watchedBy, watchedBy - watcher)) {
-              val watchingAfter = watching
-              val watchByAfter = watchedByOrEmpty
-              updateAddressTerminatedSubscription(OptionVal.Some(watcher), watchingBefore, watchingAfter,
-                watchByBefore, watchByAfter)
-            } else
-              remWatcher(watchee, watcher) // try again
+            maintainAddressTerminatedSubscription(OptionVal.Some(watcher)) {
+              _watchedBy = watchedBy - watcher
+            }
           }
         } else if (!watcheeSelf && watcherSelf) {
           publish(Logging.Warning(path.toString, classOf[FunctionRef], s"externally triggered unwatch from $watcher to $watchee is illegal on FunctionRef"))
@@ -847,96 +828,68 @@ private[akka] final class FunctionRef(
   private def publish(e: Logging.LogEvent): Unit = try system.eventStream.publish(e) catch { case NonFatal(_) ⇒ }
 
   /**
-   * Have this FunctionRef watch the given Actor. This method must not be
-   * called concurrently from different threads, it should only be called by
-   * its parent Actor.
+   * Have this FunctionRef watch the given Actor.
    *
-   * Upon receiving the Terminated message, unwatch() must be called from a
-   * safe context (i.e. normally from the parent Actor).
+   * Upon receiving the Terminated message, `unwatch` must be called, which is different from an ordinary actor.
    */
-  def watch(actorRef: ActorRef): Unit = {
-    maintainAddressTerminatedSubscription(actorRef) {
+  def watch(actorRef: ActorRef): Unit = synchronized {
+    maintainAddressTerminatedSubscription(OptionVal.Some(actorRef)) {
       watching += actorRef
     }
     actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Watch(actorRef.asInstanceOf[InternalActorRef], this))
   }
 
   /**
-   * Have this FunctionRef unwatch the given Actor. This method must not be
-   * called concurrently from different threads, it should only be called by
-   * its parent Actor.
+   * Have this FunctionRef unwatch the given Actor.
+   *
+   * Upon receiving the Terminated message, `unwatch` must be called, which is different from an ordinary actor.
    */
-  def unwatch(actorRef: ActorRef): Unit = {
-    maintainAddressTerminatedSubscription(actorRef) {
+  def unwatch(actorRef: ActorRef): Unit = synchronized {
+    maintainAddressTerminatedSubscription(OptionVal.Some(actorRef)) {
       watching -= actorRef
     }
     actorRef.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(actorRef.asInstanceOf[InternalActorRef], this))
   }
 
   /**
-   * Query whether this FunctionRef is currently watching the given Actor. This
-   * method must not be called concurrently from different threads, it should
-   * only be called by its parent Actor.
+   * Query whether this FunctionRef is currently watching the given Actor.
    */
-  def isWatching(actorRef: ActorRef): Boolean = watching.contains(actorRef)
-
-  private def watchedByOrEmpty: Set[ActorRef] =
-    _watchedBy.get match {
-      case null      ⇒ ActorCell.emptyActorRefSet // terminated
-      case watchedBy ⇒ watchedBy
-    }
+  def isWatching(actorRef: ActorRef): Boolean = synchronized {
+    watching.contains(actorRef)
+  }
 
   /**
    * Starts subscription to AddressTerminated if not already subscribing and the
    * block adds a non-local ref to watching or watchedBy.
    * Ends subscription to AddressTerminated if subscribing and the
    * block removes the last non-local ref from watching and watchedBy.
+   *
+   * This method must only be used from synchronized methods because AddressTerminatedTopic
+   * must be updated together with changes to watching or watchedBy.
    */
-  private def maintainAddressTerminatedSubscription[T](change: ActorRef)(block: ⇒ T): T = {
-    if (isNonLocal(change)) {
-      val watchingBefore = watching
-      val watchedByBefore = watchedByOrEmpty
-
-      val result = block
-
-      val watchingAfter = watching
-      val watchedByAfter = watchedByOrEmpty
-
-      updateAddressTerminatedSubscription(OptionVal.Some(change), watchingBefore, watchingAfter, watchedByBefore, watchedByAfter)
-
-      result
-    } else {
-      block
+  private def maintainAddressTerminatedSubscription[T](change: OptionVal[ActorRef])(block: ⇒ T): T = {
+    def isNonLocal(ref: ActorRef) = ref match {
+      case a: InternalActorRef if !a.isLocal ⇒ true
+      case _                                 ⇒ false
     }
-  }
 
-  /**
-   * Starts subscription to AddressTerminated if not already subscribing and the
-   * change in the before/after sets adds a non-local ref to watching or watchedBy.
-   * Ends subscription to AddressTerminated if subscribing and the
-   * change in the before/after sets removes the last non-local ref from watching and watchedBy.
-   */
-  private def updateAddressTerminatedSubscription(
-    change:          OptionVal[ActorRef],
-    watchingBefore:  Set[ActorRef],
-    watchingAfter:   Set[ActorRef],
-    watchedByBefore: Set[ActorRef],
-    watchedByAfter:  Set[ActorRef]): Unit = {
+    def watchedByOrEmpty: Set[ActorRef] =
+      if (_watchedBy eq null) ActorCell.emptyActorRefSet else _watchedBy
 
     change match {
-      case OptionVal.Some(ref) if !isNonLocal(ref) ⇒ // update not needed
+      case OptionVal.Some(ref) if !isNonLocal(ref) ⇒
+        // AddressTerminatedTopic update not needed
+        block
       case _ ⇒
-        val had = (watchingBefore exists isNonLocal) || (watchedByBefore exists isNonLocal)
-        val has = (watchingAfter exists isNonLocal) || (watchedByAfter exists isNonLocal)
+        def hasNonLocalAddress: Boolean = (watching exists isNonLocal) || (watchedByOrEmpty exists isNonLocal)
+
+        val had = hasNonLocalAddress
+        val result = block
+        val has = hasNonLocalAddress
         if (had && !has) unsubscribeAddressTerminated()
         else if (!had && has) subscribeAddressTerminated()
+        result
     }
-  }
-
-  private def isNonLocal(ref: ActorRef) = ref match {
-    case null                              ⇒ true
-    case a: InternalActorRef if !a.isLocal ⇒ true
-    case _                                 ⇒ false
   }
 
   private def unsubscribeAddressTerminated(): Unit = AddressTerminatedTopic(system).unsubscribe(this)
