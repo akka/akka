@@ -138,7 +138,7 @@ public class AccountExampleOneLinersInModelWithNull extends EventSourcedBehavior
     @Override
     public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
 
-        CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder = commandHandlerBuilder();
+        CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder = newCommandHandlerBuilder();
 
         builder.forNullState()
                 .matchCommand(CreateAccount.class, this::createAccount);
@@ -157,7 +157,7 @@ public class AccountExampleOneLinersInModelWithNull extends EventSourcedBehavior
     @Override
     public EventHandler<Account, AccountEvent> eventHandler() {
 
-        EventHandlerBuilder<Account, AccountEvent> builder = eventHandlerBuilder();
+        EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
 
         builder.forNullState()
                 .matchEvent(AccountCreated.class, this::openAccount);

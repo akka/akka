@@ -32,14 +32,14 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
 
   // Command handler for the not started state.
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> notStartedHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forState(state -> state.getStatus() == AuctionStatus.NOT_STARTED)
         .matchCommand(StartAuction.class, this::startAuction)
         .matchCommand(PlaceBid.class, (state, cmd) -> Effect().reply(cmd, createResult(state, PlaceBidStatus.NOT_STARTED)));
 
   // Command handler for the under auction state.
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> underAuctionHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forState(state -> state.getStatus() == AuctionStatus.UNDER_AUCTION)
         .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
         .matchCommand(PlaceBid.class, this::placeBid)
@@ -47,7 +47,7 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
 
   // Command handler for the completed state.
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> completedHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forState(state -> state.getStatus() == AuctionStatus.COMPLETE)
         .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
         .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
@@ -55,7 +55,7 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
 
   // Command handler for the cancelled state.
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> cancelledHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forState(state -> state.getStatus() == AuctionStatus.CANCELLED)
         .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
         .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
@@ -63,12 +63,12 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
         .matchCommand(PlaceBid.class, (state, cmd) -> Effect().reply(cmd, createResult(state, PlaceBidStatus.CANCELLED)));
 
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> getAuctionHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forStateType(AuctionState.class)
         .matchCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
 
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState> cancelHandler =
-    commandHandlerBuilder()
+    newCommandHandlerBuilder()
       .forStateType(AuctionState.class)
         .matchCommand(CancelAuction.class, this::cancelAuction);
   // Note, an item can go from completed to cancelled, since it is the item service that controls
@@ -220,7 +220,7 @@ public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionE
   @Override
   public EventHandler<AuctionState, AuctionEvent> eventHandler() {
     
-    EventHandlerBuilder<AuctionState, AuctionEvent> builder = eventHandlerBuilder();
+    EventHandlerBuilder<AuctionState, AuctionEvent> builder = newEventHandlerBuilder();
 
     builder.forState(auction -> auction.getStatus() == AuctionStatus.NOT_STARTED)
             .matchEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));

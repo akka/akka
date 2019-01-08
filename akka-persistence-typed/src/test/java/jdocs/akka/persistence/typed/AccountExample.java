@@ -74,13 +74,13 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
   }
 
   private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account> initialCmdHandler() {
-    return commandHandlerBuilder()
+    return newCommandHandlerBuilder()
             .forStateType(EmptyAccount.class)
               .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
   }
 
   private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountCmdHandler() {
-    return commandHandlerBuilder()
+    return newCommandHandlerBuilder()
             .forStateType(OpenedAccount.class)
               .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
               .matchCommand(Withdraw.class, (acc, cmd) -> {
@@ -105,7 +105,7 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
   }
 
   private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedCmdHandler() {
-    return commandHandlerBuilder()
+    return newCommandHandlerBuilder()
             .forStateType(ClosedAccount.class)
             .matchAny(() -> Effect().unhandled());
   }
@@ -120,13 +120,13 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
 
 
   private EventHandlerBuilderByState<EmptyAccount, Account, AccountEvent> initialEvtHandler() {
-    return eventHandlerBuilder()
+    return newEventHandlerBuilder()
             .forStateType(EmptyAccount.class)
             .matchEvent(AccountCreated.class, () -> new OpenedAccount(0.0));
   }
 
   private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent> openedAccountEvtHandler() {
-    return eventHandlerBuilder()
+    return newEventHandlerBuilder()
             .forStateType(OpenedAccount.class)
             .matchEvent(Deposited.class, (acc, cmd) -> new OpenedAccount(acc.balance + cmd.amount))
             .matchEvent(Withdrawn.class, (acc, cmd) -> new OpenedAccount(acc.balance - cmd.amount))

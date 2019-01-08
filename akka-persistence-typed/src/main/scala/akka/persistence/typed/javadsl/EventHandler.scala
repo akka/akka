@@ -33,8 +33,9 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   private var builders: List[EventHandlerBuilderByState[State, State, Event]] = Nil
 
   /**
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       useful for example when state type is an Optional
+   * Use this method to define event handlers that are selected when the passed predicate holds true.
+   *
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
    * @return A new, mutable, EventHandlerBuilderByState
    */
@@ -45,9 +46,11 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   }
 
   /**
+   * Use this method to define event handlers that are selected when the passed predicate holds true
+   * for a given subtype of your model. Useful when the model is defined as class hierarchy.
+   *
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       useful for example when state type is an Optional
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
    * @return A new, mutable, EventHandlerBuilderByState
    */
@@ -58,6 +61,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   }
 
   /**
+   * Use this method to define command handlers for a given subtype of your model. Useful when the model is defined as class hierarchy.
+   *
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
    *
    * @return A new, mutable, EventHandlerBuilderByState
@@ -70,6 +75,7 @@ final class EventHandlerBuilder[State >: Null, Event]() {
 
   /**
    * The handlers defined by this builder are used when the state is `null`.
+   * This variant is particular useful when the empty state of your model is defined as `null`.
    *
    * @return A new, mutable, EventHandlerBuilderByState
    */
@@ -93,7 +99,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   }
 
   /**
-   * The handlers defined by this builder are used for any  state.
+   * The handlers defined by this builder are used for any state.
+   * This variant is particular useful for models that have a single type (ie: no class hierarchy).
    *
    * @return A new, mutable, EventHandlerBuilderByState
    */

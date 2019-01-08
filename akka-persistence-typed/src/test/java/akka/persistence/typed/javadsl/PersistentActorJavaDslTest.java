@@ -203,8 +203,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public CommandHandler<Command, Incremented, State> commandHandler() {
-      return commandHandlerBuilder()
-              .forStateType(State.class)
+      return newCommandHandlerBuilder()
+                .forAnyState()
                 .matchCommand(Increment.class, this::increment)
                 .matchCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
                 .matchCommand(GetValue.class, this::getValue)
@@ -275,8 +275,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public EventHandler<State, Incremented> eventHandler() {
-      return eventHandlerBuilder()
-              .forNonNullState()
+      return newEventHandlerBuilder()
+              .forAnyState()
               .matchEvent(Incremented.class, this::applyIncremented)
               .build();
     }

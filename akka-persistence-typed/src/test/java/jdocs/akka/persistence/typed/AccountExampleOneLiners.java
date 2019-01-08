@@ -103,19 +103,19 @@ public class AccountExampleOneLiners extends EventSourcedBehavior<AccountExample
 
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account> initialCmdHandler() {
-        return commandHandlerBuilder().forStateType(EmptyAccount.class)
+        return newCommandHandlerBuilder().forStateType(EmptyAccount.class)
                 .matchCommand(CreateAccount.class, this::createAccount);
     }
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountCmdHandler() {
-        return commandHandlerBuilder().forStateType(OpenedAccount.class)
+        return newCommandHandlerBuilder().forStateType(OpenedAccount.class)
                 .matchCommand(Deposit.class, this::depositCommand)
                 .matchCommand(Withdraw.class, this::withdrawCommand)
                 .matchCommand(CloseAccount.class, this::closeCommand);
     }
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedCmdHandler() {
-        return commandHandlerBuilder().forStateType(ClosedAccount.class)
+        return newCommandHandlerBuilder().forStateType(ClosedAccount.class)
                 .matchAny(() -> Effect().unhandled());
     }
 
@@ -145,13 +145,13 @@ public class AccountExampleOneLiners extends EventSourcedBehavior<AccountExample
     }
 
     private EventHandlerBuilderByState<EmptyAccount, Account, AccountEvent> initialEvtHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
                 .forStateType(EmptyAccount.class)
                 .matchEvent(AccountCreated.class, this::openAccount);
     }
 
     private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent> openedAccountEvtHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
                 .forStateType(OpenedAccount.class)
                 .matchEvent(Deposited.class, this::makeDeposit)
                 .matchEvent(Withdrawn.class, this::makeWithdraw)

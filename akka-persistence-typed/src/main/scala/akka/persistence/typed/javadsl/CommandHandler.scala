@@ -34,8 +34,9 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   private var builders: List[CommandHandlerBuilderByState[Command, Event, State, State]] = Nil
 
   /**
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       useful for example when state type is an Optional
+   * Use this method to define command handlers that are selected when the passed predicate holds true.
+   *
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
    * @return A new, mutable, CommandHandlerBuilderByState
    */
@@ -46,9 +47,11 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   }
 
   /**
+   * Use this method to define command handlers that are selected when the passed predicate holds true
+   * for a given subtype of your model. Useful when the model is defined as class hierarchy.
+   *
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       useful for example when state type is an Optional
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
    * @return A new, mutable, CommandHandlerBuilderByState
    */
@@ -59,8 +62,9 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   }
 
   /**
-   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * Use this method to define command handlers for a given subtype of your model. Useful when the model is defined as class hierarchy.
    *
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`.
    * @return A new, mutable, CommandHandlerBuilderByState
    */
   def forStateType[S <: State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
@@ -71,6 +75,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
 
   /**
    * The handlers defined by this builder are used when the state is `null`.
+   * This variant is particular useful when the empty state of your model is defined as `null`.
    *
    * @return A new, mutable, CommandHandlerBuilderByState
    */
@@ -95,6 +100,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
 
   /**
    * The handlers defined by this builder are used for any state.
+   * This variant is particular useful for models that have a single type (ie: no class hierarchy).
    *
    * @return A new, mutable, CommandHandlerBuilderByState
    */

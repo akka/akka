@@ -86,8 +86,8 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public CommandHandler<Command, String, String> commandHandler() {
-      return commandHandlerBuilder()
-              .forStateType(String.class)
+      return newCommandHandlerBuilder()
+              .forAnyState()
               .matchCommand(Add.class, this::add)
               .matchCommand(AddWithConfirmation.class, this::addWithConfirmation)
               .matchCommand(Get.class, this::getState)
@@ -110,8 +110,8 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return eventHandlerBuilder()
-              .forStateType(String.class)
+      return newEventHandlerBuilder()
+              .forAnyState()
               .matchEvent(String.class, this::applyEvent)
               .build();
     }

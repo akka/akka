@@ -46,7 +46,7 @@ public class NullEmptyStateTest extends JUnitSuite {
     @Override
     public CommandHandler<String, String, String> commandHandler() {
 
-      return commandHandlerBuilder()
+      return newCommandHandlerBuilder()
               .forAnyState()
               .matchCommand("stop"::equals, command -> Effect().stop())
               .matchCommand(String.class, this::persistCommand)
@@ -59,7 +59,7 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return eventHandlerBuilder()
+      return newEventHandlerBuilder()
               .forAnyState()
               .matchEvent(String.class, this::applyEvent)
               .build();

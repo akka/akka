@@ -133,8 +133,8 @@ public class HelloWorldPersistentEntityExample {
 
     @Override
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
-      return commandHandlerBuilder()
-              .forStateType(KnownPeople.class)
+      return newCommandHandlerBuilder()
+              .forAnyState()
               .matchCommand(Greet.class, this::greet)
               .build();
     }

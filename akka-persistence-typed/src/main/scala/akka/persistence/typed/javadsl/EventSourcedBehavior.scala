@@ -64,14 +64,14 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected def eventHandler(): EventHandler[State, Event]
 
-  protected final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
+  protected final def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
     CommandHandlerBuilder.builder[Command, Event, State]()
   }
 
   /**
    * @return A new, mutable, event handler builder
    */
-  protected final def eventHandlerBuilder(): EventHandlerBuilder[State, Event] =
+  protected final def newEventHandlerBuilder(): EventHandlerBuilder[State, Event] =
     EventHandlerBuilder.builder[State, Event]()
 
   /**

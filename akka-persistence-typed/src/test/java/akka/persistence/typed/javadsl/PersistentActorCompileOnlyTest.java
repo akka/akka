@@ -173,7 +173,7 @@ public class PersistentActorCompileOnlyTest {
       public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
 
      //#commonChainedEffects
-     return commandHandlerBuilder()
+     return newCommandHandlerBuilder()
              .forStateType(ExampleState.class)
              .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
                .thenRun(() -> cmd.sender.tell(new Ack()))
@@ -185,7 +185,7 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public EventHandler<ExampleState, MyEvent> eventHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
                 .forStateType(ExampleState.class)
                 .matchEvent(Evt.class, (state, event) -> {
                   state.events.add(event.data);
@@ -301,8 +301,8 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder()
-                .forStateType(EventsInFlight.class)
+        return newCommandHandlerBuilder()
+                .forAnyState()
                 .matchCommand(DoSideEffect.class,
                   (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
                     .thenRun(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
@@ -312,8 +312,8 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public EventHandler<EventsInFlight, Event> eventHandler() {
-        return eventHandlerBuilder()
-                .forStateType(EventsInFlight.class)
+        return newEventHandlerBuilder()
+                .forAnyState()
                 .matchEvent(IntentRecord.class, (state, event) -> {
                   int nextCorrelationId = event.correlationId;
                   Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);

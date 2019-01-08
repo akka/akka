@@ -10,8 +10,6 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
-import java.util.Objects;
-
 public class AccountExampleOneLinersWithNull extends EventSourcedBehavior<AccountExampleOneLinersWithNull.AccountCommand, AccountExampleOneLinersWithNull.AccountEvent, AccountExampleOneLinersWithNull.Account> {
 
     interface AccountCommand {}
@@ -104,19 +102,19 @@ public class AccountExampleOneLinersWithNull extends EventSourcedBehavior<Accoun
 
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, Account, Account> initialHandler() {
-        return commandHandlerBuilder().forNullState()
+        return newCommandHandlerBuilder().forNullState()
                 .matchCommand(CreateAccount.class, this::createAccount);
     }
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountHandler() {
-        return commandHandlerBuilder().forStateType(OpenedAccount.class)
+        return newCommandHandlerBuilder().forStateType(OpenedAccount.class)
                 .matchCommand(Deposit.class, this::depositCommand)
                 .matchCommand(Withdraw.class, this::withdrawCommand)
                 .matchCommand(CloseAccount.class, this::closeCommand);
     }
 
     private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
-        return commandHandlerBuilder().forStateType(ClosedAccount.class)
+        return newCommandHandlerBuilder().forStateType(ClosedAccount.class)
                 .matchAny(() -> Effect().unhandled());
     }
 
@@ -146,13 +144,13 @@ public class AccountExampleOneLinersWithNull extends EventSourcedBehavior<Accoun
     }
 
     private EventHandlerBuilderByState<Account, Account, AccountEvent> initialEvtHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
                 .forNullState()
                 .matchEvent(AccountCreated.class, this::openAccount);
     }
 
     private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent> openedAccountEvtHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
                 .forStateType(OpenedAccount.class)
                 .matchEvent(Deposited.class, this::makeDeposit)
                 .matchEvent(Withdrawn.class, this::makeWithdraw)
