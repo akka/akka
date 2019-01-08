@@ -733,28 +733,31 @@ private[akka] final class FunctionRef(
   // requires sychronized access because AddressTerminatedTopic must be updated together with this
   private[this] var watching = ActorCell.emptyActorRefSet
   // requires sychronized access because AddressTerminatedTopic must be updated together with this
-  private[this] var _watchedBy = ActorCell.emptyActorRefSet
+  private[this] var _watchedBy: OptionVal[Set[ActorRef]] = OptionVal.Some(ActorCell.emptyActorRefSet)
 
-  override def isTerminated: Boolean = _watchedBy eq null
+  override def isTerminated: Boolean = _watchedBy.isEmpty
 
   //noinspection EmptyCheck
   protected def sendTerminated(): Unit = synchronized {
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
 
-    if (_watchedBy != null) {
-      if (_watchedBy.nonEmpty) {
-        _watchedBy foreach sendTerminated(ifLocal = false)
-        _watchedBy foreach sendTerminated(ifLocal = true)
-      }
+    _watchedBy match {
+      case OptionVal.Some(watchedBy) ⇒
+        if (watchedBy.nonEmpty) {
+          watchedBy foreach sendTerminated(ifLocal = false)
+          watchedBy foreach sendTerminated(ifLocal = true)
+        }
 
-      if (watching.nonEmpty) {
-        watching foreach unwatchWatched
-        watching = Set.empty
-      }
+        if (watching.nonEmpty) {
+          watching foreach unwatchWatched
+          watching = Set.empty
+        }
 
-      unsubscribeAddressTerminated()
-      _watchedBy = null
+        unsubscribeAddressTerminated()
+        _watchedBy = OptionVal.None
+
+      case OptionVal.None ⇒
     }
   }
 
@@ -765,11 +768,10 @@ private[akka] final class FunctionRef(
   private def addressTerminated(address: Address): Unit = synchronized {
     // cleanup watchedBy since we know they are dead
     _watchedBy match {
-      case null ⇒ // terminated
-      case watchedBy ⇒
+      case OptionVal.None ⇒ // terminated
+      case OptionVal.Some(watchedBy) ⇒
         maintainAddressTerminatedSubscription(OptionVal.None) {
-          for (a ← watchedBy; if a.path.address == address)
-            _watchedBy -= a
+          _watchedBy = OptionVal.Some(watchedBy.filterNot(_.path.address == address))
         }
         // send DeathWatchNotification to self for all matching subjects
         for (a ← watching; if a.path.address == address) {
@@ -782,18 +784,18 @@ private[akka] final class FunctionRef(
 
   private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = synchronized {
     _watchedBy match {
-      case null ⇒
+      case OptionVal.None ⇒
         sendTerminated(ifLocal = true)(watcher)
         sendTerminated(ifLocal = false)(watcher)
 
-      case watchedBy ⇒
+      case OptionVal.Some(watchedBy) ⇒
         val watcheeSelf = watchee == this
         val watcherSelf = watcher == this
 
         if (watcheeSelf && !watcherSelf) {
           if (!watchedBy.contains(watcher)) {
             maintainAddressTerminatedSubscription(OptionVal.Some(watcher)) {
-              _watchedBy = watchedBy + watcher
+              _watchedBy = OptionVal.Some(watchedBy + watcher)
             }
           }
         } else if (!watcheeSelf && watcherSelf) {
@@ -806,15 +808,15 @@ private[akka] final class FunctionRef(
 
   private def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = synchronized {
     _watchedBy match {
-      case null ⇒ // do nothing...
-      case watchedBy ⇒
+      case OptionVal.None ⇒ // do nothing...
+      case OptionVal.Some(watchedBy) ⇒
         val watcheeSelf = watchee == this
         val watcherSelf = watcher == this
 
         if (watcheeSelf && !watcherSelf) {
           if (watchedBy.contains(watcher)) {
             maintainAddressTerminatedSubscription(OptionVal.Some(watcher)) {
-              _watchedBy = watchedBy - watcher
+              _watchedBy = OptionVal.Some(watchedBy - watcher)
             }
           }
         } else if (!watcheeSelf && watcherSelf) {
@@ -874,7 +876,10 @@ private[akka] final class FunctionRef(
     }
 
     def watchedByOrEmpty: Set[ActorRef] =
-      if (_watchedBy eq null) ActorCell.emptyActorRefSet else _watchedBy
+      _watchedBy match {
+        case OptionVal.Some(watchedBy) ⇒ watchedBy
+        case OptionVal.None            ⇒ ActorCell.emptyActorRefSet
+      }
 
     change match {
       case OptionVal.Some(ref) if !isNonLocal(ref) ⇒

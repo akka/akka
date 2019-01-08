@@ -62,9 +62,7 @@ object StreamRefSpec extends MultiNodeConfig {
         val (done: Future[Done], ref: Future[SourceRef[String]]) =
           Source(1 to 1000)
             .map(n ⇒ s"elem-$n")
-            .watchTermination() {
-              case (_, d) ⇒ d
-            }
+            .watchTermination()(Keep.right)
             .toMat(StreamRefs.sourceRef())(Keep.both)
             .mapMaterializedValue { m ⇒
               streamLifecycleProbe ! s"started-$streamId"
@@ -210,9 +208,7 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
 
         Source(1 to 1000)
           .map(n ⇒ s"elem-$n")
-          .watchTermination() {
-            case (_, d) ⇒ d
-          }
+          .watchTermination()(Keep.right)
           .to(ready.sinkRef)
           .run()
           .onComplete(_ ⇒ streamLifecycle1.ref ! "ended-system-42-tmp")
