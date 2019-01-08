@@ -4,7 +4,6 @@
 
 package akka.discovery
 
-import java.lang.invoke.MethodHandles
 import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
