@@ -112,7 +112,7 @@ import scala.concurrent.duration._
     case Udp.Received(data, remote) ⇒
       log.debug("Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
-      log.debug("Decoded UDP DNS response [{}]", data)
+      log.debug("Decoded UDP DNS response [{}]", msg)
 
       if (msg.flags.isTruncated) {
         log.debug("DNS response truncated, falling back to TCP")
