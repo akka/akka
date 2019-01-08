@@ -5,8 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.TraversalBuilder
-import akka.stream.{ Graph, Attributes, Shape }
+import akka.stream.{ Graph, Shape }
 
 trait GraphApply {
   /**

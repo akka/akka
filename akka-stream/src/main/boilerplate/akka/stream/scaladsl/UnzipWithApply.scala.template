@@ -5,11 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.impl.StreamLayout
 import akka.stream.stage._
 
 object UnzipWithApply {
-  import scala.language.implicitConversions
 
   abstract trait UnzipWithCreator[In, Out, T] {
     def create(unzipper: Function1[In, Out]): T
