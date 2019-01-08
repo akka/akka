@@ -4,11 +4,10 @@
 
 package akka.remote.artery
 
-import akka.actor.BootstrapSetup
+import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
@@ -25,9 +24,16 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def localSystem = system
   def localPort = port(localSystem)
   def port(system: ActorSystem): Int = RARP(system).provider.getDefaultAddress.port.get
-  def address(sys: ActorSystem) = RARP(sys).provider.getDefaultAddress
+  def address(sys: ActorSystem): Address = RARP(sys).provider.getDefaultAddress
   def rootActorPath(sys: ActorSystem) = RootActorPath(address(sys))
   def nextGeneratedSystemName = s"${localSystem.name}-remote-${remoteSystems.size}"
+  def freePort(): Int = {
+    val udp = ArteryMultiNodeSpec.arteryUdpEnabled(system.settings.config)
+    (address(system).host match {
+      case Some(host) ⇒ SocketUtil.temporaryServerAddress(host, udp)
+      case None       ⇒ SocketUtil.temporaryServerAddress(udp = udp)
+    }).getPort
+  }
 
   private var remoteSystems: Vector[ActorSystem] = Vector.empty
 
@@ -67,5 +73,16 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def arteryTcpTlsEnabled(system: ActorSystem = system): Boolean = {
     val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
     arterySettings.Enabled && arterySettings.Transport == ArterySettings.TlsTcp
+  }
+}
+
+object ArteryMultiNodeSpec {
+  def arteryUdpEnabled(systemConfig: Config): Boolean = {
+    val arterySettings = ArterySettings(systemConfig.getConfig("akka.remote.artery"))
+    arterySettings.Transport == ArterySettings.AeronUpd
+  }
+
+  def freePort(systemConfig: Config): Int = {
+    SocketUtil.temporaryLocalPort(ArteryMultiNodeSpec.arteryUdpEnabled(systemConfig))
   }
 }

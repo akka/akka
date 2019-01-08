@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import akka.actor.ActorSystem
-import akka.testkit.SocketUtil._
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
 
 import scala.concurrent.duration._
@@ -25,18 +24,18 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       muteSystem(localSystem)
       val localProbe = new TestProbe(localSystem)
 
-      val remotePort = temporaryLocalPort(udp = true)
+      val remotePort = freePort()
 
       // try to talk to it before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
-      localProbe.expectNoMsg(1.seconds)
+      localProbe.expectNoMessage(1.seconds)
 
       // then start the remote system and try again
       val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
-      localProbe.expectNoMsg(2.seconds)
+      localProbe.expectNoMessage(2.seconds)
       remoteSystem.actorOf(TestActors.echoActorProps, "echo")
 
       within(5.seconds) {
@@ -56,18 +55,18 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
       val localProbe = new TestProbe(localSystem)
       localSystem.actorOf(TestActors.echoActorProps, "echo")
 
-      val remotePort = temporaryServerAddress(udp = true).getPort
+      val remotePort = freePort()
 
       // try to talk to remote before it is up
       val selection = localSystem.actorSelection(s"akka://$nextGeneratedSystemName@localhost:$remotePort/user/echo")
       selection.tell("ping", localProbe.ref)
-      localProbe.expectNoMsg(1.seconds)
+      localProbe.expectNoMessage(1.seconds)
 
       // then when it is up, talk from other system
       val remoteSystem = newRemoteSystem(extraConfig = Some(s"akka.remote.artery.canonical.port=$remotePort"))
 
       muteSystem(remoteSystem)
-      localProbe.expectNoMsg(2.seconds)
+      localProbe.expectNoMessage(2.seconds)
       val otherProbe = new TestProbe(remoteSystem)
       val otherSender = otherProbe.ref
       val thisSelection = remoteSystem.actorSelection(s"akka://${localSystem.name}@localhost:$localPort/user/echo")
