@@ -4,6 +4,9 @@
 
 package akka.cluster.sharding.typed
 
+import akka.annotation.InternalApi
+import akka.cluster.sharding.ShardRegion.HashCodeMessageExtractor
+
 object ShardingMessageExtractor {
 
   /**
@@ -27,7 +30,6 @@ object ShardingMessageExtractor {
     new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
       def entityId(message: M) = extractEntityId(message)
     }
-
 }
 
 /**
@@ -75,7 +77,7 @@ final class HashCodeMessageExtractor[M](
   extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
 
   override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
 }
 
@@ -91,7 +93,7 @@ abstract class HashCodeNoEnvelopeMessageExtractor[M](
   val numberOfShards: Int)
   extends ShardingMessageExtractor[M, M] {
 
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override final def unwrapMessage(message: M): M = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
