@@ -221,7 +221,7 @@ case object Lookup {
       case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case _ ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str.")
+      case _ ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
     }
 
   /**
