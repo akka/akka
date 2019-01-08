@@ -67,8 +67,9 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
+    val interceptMessageType = interceptor.interceptMessageType
     val result =
-      if (interceptor.applyFor(msg))
+      if (interceptMessageType == null || interceptMessageType.isAssignableFrom(msg.getClass))
         interceptor.aroundReceive(ctx, msg, receiveTarget)
       else
         receiveTarget.apply(ctx, msg.asInstanceOf[I])

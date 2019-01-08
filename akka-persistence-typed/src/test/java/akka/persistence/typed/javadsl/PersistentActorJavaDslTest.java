@@ -453,8 +453,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     BehaviorInterceptor<Command, Command> tap = new BehaviorInterceptor<Command, Command>() {
 
       @Override
-      public boolean applyFor(Object msg) {
-        return msg instanceof Command;
+      public Class<Command> interceptMessageType() {
+        return Command.class;
       }
 
       @Override
