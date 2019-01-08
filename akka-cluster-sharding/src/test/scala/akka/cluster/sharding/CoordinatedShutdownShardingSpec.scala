@@ -81,7 +81,7 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
       sys1.log.warning(s"Pinging entities... ping $i msg 1")
       val p1 = TestProbe()(sys2)
       region2.tell(1, p1.ref)
-      p1.expectMsg(1.seconds, 1)
+      p1.expectMsg(1)
       sys1.log.warning(s"Pinging entities... ping $i msg 2")
       val p2 = TestProbe()(sys2)
       region2.tell(2, p2.ref)
