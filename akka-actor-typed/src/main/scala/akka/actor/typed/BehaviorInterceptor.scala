@@ -18,6 +18,17 @@ abstract class BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
 
   /**
+   * Allows for applying the interceptor only to certain message types. Useful if the official protocol and the actual
+   * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
+   * the actor still knows how to deal with. Note that this is only possible to use when `O` and `I` are the same type.
+   *
+   * @return A subtype of `O` that should be intercepted or `null` to intercept all `O`s.
+   *         Subtypes of `O` matching this are passed directly to the inner behavior without interception.
+   */
+  // null for all to avoid having to deal with class tag/explicit class in the default case of no filter
+  def interceptMessageType: Class[_ <: O] = null
+
+  /**
    * Override to intercept actor startup. To trigger startup of
    * the next behavior in the stack, call `target.start()`.
    * @return The returned behavior will be the "started" behavior of the actor used to accept
