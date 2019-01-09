@@ -254,7 +254,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
     val serializer = try getSerializerById(serializerId) catch {
       case _: NoSuchElementException ⇒ throw new NotSerializableException(
-        s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+        s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
           "akka.actor.serializers is not in synch between the two systems.")
     }
 
