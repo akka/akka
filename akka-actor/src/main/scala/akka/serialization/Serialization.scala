@@ -188,8 +188,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     Try {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
-          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems.")
+          s"Cannot find serializer with id [$serializerId] ${clazz.map(c ⇒ "(class [" + c.getName + "]").getOrElse()}. " +
+            "The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in sync between the two systems.")
       }
       withTransportInformation { () ⇒
         serializer.fromBinary(bytes, clazz).asInstanceOf[T]
@@ -205,8 +206,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     Try {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
-          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems.")
+          s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in sync between the two systems.")
       }
       deserializeByteArray(bytes, serializer, manifest)
     }
