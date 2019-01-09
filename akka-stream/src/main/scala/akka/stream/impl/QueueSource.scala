@@ -181,7 +181,6 @@ import scala.util.control.NonFatal
         }
       }
 
-      // SourceQueueWithComplete impl
       override def watchCompletion() = completion.future
       override def offer(element: T): Future[QueueOfferResult] = {
         val p = Promise[QueueOfferResult]
