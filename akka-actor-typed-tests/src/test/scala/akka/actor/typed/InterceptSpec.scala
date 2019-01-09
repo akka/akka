@@ -10,8 +10,8 @@ import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 
@@ -46,7 +46,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     // keeping the instance equality as "isSame" for these
   }
 
-  "Intercept" should {
+  "Intercept" must {
 
     "intercept messages" in {
       val probe = TestProbe[String]()
@@ -198,115 +198,149 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       innerBehaviorStarted.get should ===(false)
     }
 
-  }
+    "intercept with nested setup" in {
+      val probe = TestProbe[String]()
+      val interceptor = snitchingInterceptor(probe.ref)
 
-  "intercept with nested setup" in {
-    val probe = TestProbe[String]()
-    val interceptor = snitchingInterceptor(probe.ref)
-
-    val ref: ActorRef[String] = spawn(Behaviors.intercept(interceptor)(
-      Behaviors.setup { _ ⇒
-        var count = 0
-        Behaviors.receiveMessage[String] { m ⇒
-          count += 1
-          probe.ref ! s"actual behavior $m-$count"
-          Behaviors.same
-        }
-      }
-    ))
-
-    ref ! "a"
-    probe.expectMessage("before a")
-    probe.expectMessage("actual behavior a-1")
-    probe.expectMessage("after a")
-
-    ref ! "b"
-    probe.expectMessage("before b")
-    probe.expectMessage("actual behavior b-2")
-    probe.expectMessage("after b")
-  }
-
-  "intercept with recursivly setup" in {
-    val probe = TestProbe[String]()
-    val interceptor = snitchingInterceptor(probe.ref)
-
-    def next(count1: Int): Behavior[String] = {
-      Behaviors.intercept(interceptor)(
+      val ref: ActorRef[String] = spawn(Behaviors.intercept(interceptor)(
         Behaviors.setup { _ ⇒
-          var count2 = 0
+          var count = 0
           Behaviors.receiveMessage[String] { m ⇒
-            count2 += 1
-            probe.ref ! s"actual behavior $m-$count1-$count2"
-            next(count1 + 1)
+            count += 1
+            probe.ref ! s"actual behavior $m-$count"
+            Behaviors.same
           }
         }
-      )
+      ))
+
+      ref ! "a"
+      probe.expectMessage("before a")
+      probe.expectMessage("actual behavior a-1")
+      probe.expectMessage("after a")
+
+      ref ! "b"
+      probe.expectMessage("before b")
+      probe.expectMessage("actual behavior b-2")
+      probe.expectMessage("after b")
     }
 
-    val ref: ActorRef[String] = spawn(next(1))
+    "intercept with recursivly setup" in {
+      val probe = TestProbe[String]()
+      val interceptor = snitchingInterceptor(probe.ref)
 
-    ref ! "a"
-    probe.expectMessage("before a")
-    probe.expectMessage("actual behavior a-1-1")
-    probe.expectMessage("after a")
+      def next(count1: Int): Behavior[String] = {
+        Behaviors.intercept(interceptor)(
+          Behaviors.setup { _ ⇒
+            var count2 = 0
+            Behaviors.receiveMessage[String] { m ⇒
+              count2 += 1
+              probe.ref ! s"actual behavior $m-$count1-$count2"
+              next(count1 + 1)
+            }
+          }
+        )
+      }
 
-    ref ! "b"
-    probe.expectMessage("before b")
-    probe.expectMessage("actual behavior b-2-1")
-    probe.expectMessage("after b")
+      val ref: ActorRef[String] = spawn(next(1))
 
-    ref ! "c"
-    probe.expectMessage("before c")
-    probe.expectMessage("actual behavior c-3-1")
-    probe.expectMessage("after c")
-  }
+      ref ! "a"
+      probe.expectMessage("before a")
+      probe.expectMessage("actual behavior a-1-1")
+      probe.expectMessage("after a")
 
-  "not allow intercept setup(same)" in {
-    val probe = TestProbe[String]()
-    val interceptor = snitchingInterceptor(probe.ref)
+      ref ! "b"
+      probe.expectMessage("before b")
+      probe.expectMessage("actual behavior b-2-1")
+      probe.expectMessage("after b")
 
-    EventFilter[ActorInitializationException](occurrences = 1).intercept {
-      val ref = spawn(Behaviors.intercept(interceptor)(
-        Behaviors.setup[String] { _ ⇒ Behaviors.same[String] }))
+      ref ! "c"
+      probe.expectMessage("before c")
+      probe.expectMessage("actual behavior c-3-1")
+      probe.expectMessage("after c")
+    }
+
+    "not allow intercept setup(same)" in {
+      val probe = TestProbe[String]()
+      val interceptor = snitchingInterceptor(probe.ref)
+
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        val ref = spawn(Behaviors.intercept(interceptor)(
+          Behaviors.setup[String] { _ ⇒ Behaviors.same[String] }))
+        probe.expectTerminated(ref, probe.remainingOrDefault)
+      }
+
+    }
+
+    "be useful for implementing PoisonPill" in {
+
+      def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
+        case Msg(hello, replyTo) ⇒
+          replyTo ! s"$hello-$count"
+          inner(count + 1)
+      }
+
+      val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
+        override def aroundReceive(context: TypedActorContext[Any], message: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
+          message match {
+            case MyPoisonPill ⇒ Behaviors.stopped
+            case m: Msg       ⇒ target(context, m)
+            case _            ⇒ Behaviors.unhandled
+          }
+
+        override def aroundSignal(context: TypedActorContext[Any], signal: Signal, target: SignalTarget[Msg]): Behavior[Msg] =
+          target.apply(context, signal)
+
+      }
+
+      val decorated: Behavior[Msg] =
+        Behaviors.intercept(poisonInterceptor)(inner(0)).narrow
+
+      val ref = spawn(decorated)
+      val probe = TestProbe[String]()
+      ref ! Msg("hello", probe.ref)
+      probe.expectMessage("hello-0")
+      ref ! Msg("hello", probe.ref)
+      probe.expectMessage("hello-1")
+
+      ref.unsafeUpcast[Any] ! MyPoisonPill
+
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
 
-  }
+    "be able to intercept a subset of the messages" in {
+      trait Message
+      class A extends Message
+      class B extends Message
 
-  "be useful for implementing PoisonPill" in {
+      val interceptProbe = TestProbe[Message]()
 
-    def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
-      case Msg(hello, replyTo) ⇒
-        replyTo ! s"$hello-$count"
-        inner(count + 1)
-    }
+      val partialInterceptor: BehaviorInterceptor[Message, Message] = new BehaviorInterceptor[Message, Message] {
 
-    val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
-      override def aroundReceive(context: TypedActorContext[Any], message: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
-        message match {
-          case MyPoisonPill ⇒ Behaviors.stopped
-          case m: Msg       ⇒ target(context, m)
-          case _            ⇒ Behaviors.unhandled
+        override def interceptMessageType = classOf[B]
+
+        override def aroundReceive(ctx: TypedActorContext[Message], msg: Message, target: ReceiveTarget[Message]): Behavior[Message] = {
+          interceptProbe.ref ! msg
+          target(ctx, msg)
         }
 
-      override def aroundSignal(context: TypedActorContext[Any], signal: Signal, target: SignalTarget[Msg]): Behavior[Msg] =
-        target.apply(context, signal)
+        override def aroundSignal(ctx: TypedActorContext[Message], signal: Signal, target: SignalTarget[Message]): Behavior[Message] =
+          target(ctx, signal)
+      }
 
+      val probe = TestProbe[Message]()
+      val ref = spawn(Behaviors.intercept(partialInterceptor)(Behaviors.receiveMessage { msg ⇒
+        probe.ref ! msg
+        Behaviors.same
+      }))
+
+      ref ! new A
+      ref ! new B
+
+      probe.expectMessageType[A]
+      interceptProbe.expectMessageType[B]
+      probe.expectMessageType[B]
     }
 
-    val decorated: Behavior[Msg] =
-      Behaviors.intercept(poisonInterceptor)(inner(0)).narrow
-
-    val ref = spawn(decorated)
-    val probe = TestProbe[String]()
-    ref ! Msg("hello", probe.ref)
-    probe.expectMessage("hello-0")
-    ref ! Msg("hello", probe.ref)
-    probe.expectMessage("hello-1")
-
-    ref.unsafeUpcast[Any] ! MyPoisonPill
-
-    probe.expectTerminated(ref, probe.remainingOrDefault)
   }
 
 }
