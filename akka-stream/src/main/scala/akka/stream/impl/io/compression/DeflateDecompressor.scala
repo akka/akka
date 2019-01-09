@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.stream.Attributes
 
 /** INTERNAL API */
-@InternalApi private[akka] class DeflateDecompressor(maxBytesPerChunk: Int)
+@InternalApi private[akka] class DeflateDecompressor(maxBytesPerChunk: Int, nowrap: Boolean)
   extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {

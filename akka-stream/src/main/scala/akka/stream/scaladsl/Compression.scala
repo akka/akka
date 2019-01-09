@@ -65,7 +65,7 @@ object Compression {
    *
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
-  def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk))
+  def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault, nowrap: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk, nowrap))
       .named("inflate")
 }
