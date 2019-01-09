@@ -37,7 +37,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException when passing a 'null' SRV String" in {
-      assertThrows[IllegalArgumentException] {
+      assertThrows[NullPointerException] {
         Lookup.parseSrv(null)
       }
     }

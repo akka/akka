@@ -214,6 +214,8 @@ case object Lookup {
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
    *
+   *
+   * @throws NullPointerException If the passed string is null
    * @throws IllegalArgumentException If the string doesn't not conform with the SRV format
    */
   def parseSrv(str: String): Lookup =
@@ -221,7 +223,8 @@ case object Lookup {
       case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case _ ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
+      case null ⇒ throw new NullPointerException("Unable to create Lookup from passed SRV string. Passed value is 'null'")
+      case _    ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
     }
 
   /**
