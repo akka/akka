@@ -20,7 +20,10 @@ import akka.testkit.WithLogCapturing
 object CoordinatedShutdownShardingSpec {
   val config =
     """
-    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    // at least while resolving #26214
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.TestEventListener"]
+
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -75,12 +78,15 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
   def pingEntities(): Unit = {
     awaitAssert({
       val p1 = TestProbe()(sys2)
+      log.debug(s"Sending 1 to ${p1.ref.path}")
       region2.tell(1, p1.ref)
       p1.expectMsg(1)
       val p2 = TestProbe()(sys2)
+      log.debug(s"Sending 2 to ${p2.ref.path}")
       region2.tell(2, p2.ref)
       p2.expectMsg(2)
       val p3 = TestProbe()(sys2)
+      log.debug(s"Sending 3 to ${p3.ref.path}")
       region2.tell(3, p3.ref)
       p3.expectMsg(3)
     }, 20.seconds)

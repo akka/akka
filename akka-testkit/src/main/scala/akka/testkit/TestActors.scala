@@ -4,7 +4,7 @@
 
 package akka.testkit
 
-import akka.actor.{ Props, Actor, ActorRef }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 
 /**
  * A collection of common actor patterns used in tests.
@@ -14,9 +14,13 @@ object TestActors {
   /**
    * EchoActor sends back received messages (unmodified).
    */
-  class EchoActor extends Actor {
+  class EchoActor extends Actor with ActorLogging {
+    log.debug("Echo actor starting at [{}]", self.path)
+
     override def receive = {
-      case message ⇒ sender() ! message
+      case message ⇒
+        log.debug("Echo actor at [{}] echo'ing [{}]", self.path, message)
+        sender() ! message
     }
   }
 
