@@ -25,21 +25,21 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class DataBot extends AbstractActor {
-  
+
   private static final String TICK = "tick";
-  
+
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  private final ActorRef replicator = 
+  private final ActorRef replicator =
       DistributedData.get(getContext().getSystem()).replicator();
   private final Cluster node = Cluster.get(getContext().getSystem());
 
   private final Cancellable tickTask = getContext().getSystem().scheduler().schedule(
      Duration.ofSeconds(5), Duration.ofSeconds(5), getSelf(), TICK,
-      getContext().dispatcher(), getSelf());
+      getContext().getDispatcher(), getSelf());
 
   private final Key<ORSet<String>> dataKey = ORSetKey.create("key");
-  
+
   @SuppressWarnings("unchecked")
   @Override
   public Receive createReceive() {
@@ -57,18 +57,18 @@ public class DataBot extends AbstractActor {
       // add
       log.info("Adding: {}", s);
       Update<ORSet<String>> update = new Update<>(
-          dataKey, 
-          ORSet.create(), 
-          Replicator.writeLocal(), 
+          dataKey,
+          ORSet.create(),
+          Replicator.writeLocal(),
           curr ->  curr.add(node, s));
        replicator.tell(update, getSelf());
     } else {
       // remove
       log.info("Removing: {}", s);
       Update<ORSet<String>> update = new Update<>(
-          dataKey, 
-          ORSet.create(), 
-          Replicator.writeLocal(), 
+          dataKey,
+          ORSet.create(),
+          Replicator.writeLocal(),
           curr ->  curr.remove(node, s));
       replicator.tell(update, getSelf());
     }
@@ -79,19 +79,19 @@ public class DataBot extends AbstractActor {
     ORSet<String> data = c.dataValue();
     log.info("Current elements: {}", data.getElements());
   }
-  
+
   private void receiveUpdateResponse() {
     // ignore
   }
 
-  
+
   @Override
   public void preStart() {
     Subscribe<ORSet<String>> subscribe = new Subscribe<>(dataKey, getSelf());
     replicator.tell(subscribe, ActorRef.noSender());
   }
 
-  @Override 
+  @Override
   public void postStop(){
     tickTask.cancel();
   }

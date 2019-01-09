@@ -54,9 +54,9 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
     final Scheduler scheduler = getContext().getSystem().scheduler();
     this.continueTask = scheduler
       .schedule(refreshInterval, refreshInterval, getSelf(), CONTINUE,
-                getContext().dispatcher(), getSelf());
+                getContext().getDispatcher(), getSelf());
   }
-  
+
   @Override
   public Receive createReceive() {
     return receiveBuilder()
@@ -70,7 +70,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
       .build();
   }
 
-  public static Props props(Connection conn, String tag, Long offset, 
+  public static Props props(Connection conn, String tag, Long offset,
       Duration refreshInterval) {
     return Props.create(MyEventsByTagJavaPublisher.class, () ->
       new MyEventsByTagJavaPublisher(conn, tag, offset, refreshInterval));
@@ -105,7 +105,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
             final Long id = in.first();
             final byte[] bytes = in.second();
 
-            final PersistentRepr p = 
+            final PersistentRepr p =
                 serialization.deserialize(bytes, PersistentRepr.class).get();
 
             return new EventEnvelope(Offset.sequence(id), p.persistenceId(), p.sequenceNr(), p.payload());
