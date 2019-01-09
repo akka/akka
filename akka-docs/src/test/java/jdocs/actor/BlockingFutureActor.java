@@ -11,7 +11,7 @@ import scala.concurrent.Future;
 
 // #blocking-in-future
 class BlockingFutureActor extends AbstractActor {
-  ExecutionContext ec = getContext().dispatcher();
+  ExecutionContext ec = getContext().getDispatcher();
 
   @Override
   public Receive createReceive() {

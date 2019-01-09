@@ -141,7 +141,7 @@ public class FaultHandlingDocSample {
           progressListener = getSender();
           getContext().getSystem().scheduler().schedule(
             Duration.ZERO,  Duration.ofSeconds(1L), getSelf(), Do,
-            getContext().dispatcher(), null
+            getContext().getDispatcher(), null
           );
         }).
         matchEquals(Do, x -> {
@@ -293,7 +293,7 @@ public class FaultHandlingDocSample {
           // Try to re-establish storage after while
           getContext().getSystem().scheduler().scheduleOnce(
             Duration.ofSeconds(10), getSelf(), Reconnect,
-            getContext().dispatcher(), null);
+            getContext().getDispatcher(), null);
         }).
         matchEquals(Reconnect, o -> {
           // Re-establish storage after the scheduled delay
@@ -346,7 +346,7 @@ public class FaultHandlingDocSample {
       this.key = key;
       this.count = initialValue;
     }
-    
+
     @Override
     public Receive createReceive() {
       return LoggingReceive.create(receiveBuilder().

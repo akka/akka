@@ -26,7 +26,7 @@ public class DangerousJavaActor extends AbstractActor {
 
   public DangerousJavaActor() {
     this.breaker = new CircuitBreaker(
-      getContext().dispatcher(), getContext().system().scheduler(),
+      getContext().getDispatcher(), getContext().getSystem().getScheduler(),
       5, Duration.ofSeconds(10), Duration.ofMinutes(1))
       .addOnOpenListener(this::notifyMeOnOpen);
   }
@@ -47,7 +47,7 @@ public class DangerousJavaActor extends AbstractActor {
       match(String.class, "is my middle name"::equals, m -> pipe(
         breaker.callWithCircuitBreakerCS(() ->
           CompletableFuture.supplyAsync(this::dangerousCall)
-        ), getContext().dispatcher()
+        ), getContext().getDispatcher()
       ).to(sender()))
       .match(String.class, "block for me"::equals, m -> {
         sender().tell(breaker

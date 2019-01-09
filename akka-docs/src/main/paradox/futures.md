@@ -45,7 +45,7 @@ dispatcher doubles as an `ExecutionContext`. If the nature of the Future
 calls invoked by the actor matches or is compatible with the activities of that
 actor (e.g. all CPU bound and no latency requirements), then it may be easiest
 to reuse the dispatcher for running the Futures by importing
-@scala[`context.dispatcher`]@java[`getContext().dispatcher()`].
+@scala[`context.dispatcher`]@java[`getContext().getDispatcher()`].
 
 Scala
 :  @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #context-dispatcher }

@@ -12,6 +12,7 @@ import java.util.Optional
 
 import akka.util.JavaDurationConverters
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 
 /**
@@ -49,6 +50,30 @@ object AbstractActor {
    */
   @DoNotInherit
   trait ActorContext extends akka.actor.ActorContext {
+
+    /**
+     * The ActorRef representing this actor
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getSelf(): ActorRef
+
+    /**
+     * Retrieve the Props which were used to create this actor.
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getProps(): Props
+
+    /**
+     * Returns the sender 'ActorRef' of the current message.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getSender(): ActorRef = sender()
 
     /**
      * Returns an unmodifiable Java Collection containing the linked actors
@@ -94,6 +119,14 @@ object AbstractActor {
     def getSystem(): ActorSystem
 
     /**
+     * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getDispatcher(): ExecutionContextExecutor
+
+    /**
      * Changes the Actor's behavior to become the new 'Receive' handler.
      * Replaces the current behavior on the top of the behavior stack.
      *
@@ -119,6 +152,18 @@ object AbstractActor {
      */
     def become(behavior: Receive, discardOld: Boolean): Unit =
       become(behavior.onMessage.asInstanceOf[PartialFunction[Any, Unit]], discardOld)
+
+    /**
+     * Gets the current receive timeout.
+     * When specified, the receive method should be able to handle a [[akka.actor.ReceiveTimeout]] message.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getReceiveTimeout(): java.time.Duration = {
+      import JavaDurationConverters._
+      receiveTimeout.asJava
+    }
 
     /**
      * Defines the inactivity timeout after which the sending of a [[akka.actor.ReceiveTimeout]] message is triggered.

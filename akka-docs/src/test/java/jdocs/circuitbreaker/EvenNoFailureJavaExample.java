@@ -17,7 +17,7 @@ public class EvenNoFailureJavaExample extends AbstractActor {
 
     public EvenNoFailureJavaExample() {
         this.breaker = new CircuitBreaker(
-                getContext().dispatcher(), getContext().system().scheduler(),
+                getContext().getDispatcher(), getContext().getSystem().getScheduler(),
                 5, Duration.ofSeconds(10), Duration.ofMinutes(1));
     }
 
