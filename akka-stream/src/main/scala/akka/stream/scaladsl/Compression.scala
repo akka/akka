@@ -65,7 +65,16 @@ object Compression {
    *
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
-  def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault, nowrap: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
+  def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
+    inflate(maxBytesPerChunk, false)
+
+  /**
+   * Creates a Flow that decompresses a deflate-compressed stream of data.
+   *
+   * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
+   * @param nowrap if true then use GZIP compatible decompression
+   */
+  def inflate(maxBytesPerChunk: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk, nowrap))
       .named("inflate")
 }
