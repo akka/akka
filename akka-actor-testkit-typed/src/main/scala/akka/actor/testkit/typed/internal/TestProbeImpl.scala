@@ -4,24 +4,36 @@
 
 package akka.actor.testkit.typed.internal
 
+import java.time.{ Duration ⇒ JDuration }
+import java.util.concurrent.BlockingDeque
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.function.Supplier
+import java.util.{ List ⇒ JList }
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.annotation.InternalApi
-import akka.actor.testkit.typed.javadsl.{ TestProbe ⇒ JavaTestProbe }
-import akka.actor.testkit.typed.scaladsl.{ TestDuration, TestProbe ⇒ ScalaTestProbe }
-import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
-import akka.util.PrettyDuration._
-import akka.util.{ BoxedType, Timeout }
-import akka.util.JavaDurationConverters._
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import akka.actor.testkit.typed.FishingOutcome
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.javadsl.{ TestProbe ⇒ JavaTestProbe }
+import akka.actor.testkit.typed.scaladsl.TestDuration
+import akka.actor.testkit.typed.scaladsl.{ TestProbe ⇒ ScalaTestProbe }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Terminated
+import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.InternalApi
+import akka.util.BoxedType
+import akka.util.JavaDurationConverters._
+import akka.util.PrettyDuration._
+import akka.util.Timeout
 
 @InternalApi
 private[akka] object TestProbeImpl {
@@ -53,7 +65,7 @@ private[akka] object TestProbeImpl {
 private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_]) extends JavaTestProbe[M] with ScalaTestProbe[M] {
 
   import TestProbeImpl._
-  protected implicit val settings = TestKitSettings(system)
+  protected implicit val settings: TestKitSettings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
   private val terminations = new LinkedBlockingDeque[Terminated]
 
@@ -64,8 +76,6 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    * block end.
    */
   private var lastWasNoMessage = false
-
-  private var lastMessage: Option[M] = None
 
   private val testActor: ActorRef[M] = {
     // FIXME arbitrary timeout?
@@ -78,14 +88,14 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def remainingOrDefault: FiniteDuration = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
 
-  override def getRemainingOrDefault: java.time.Duration = remainingOrDefault.asJava
+  override def getRemainingOrDefault: JDuration = remainingOrDefault.asJava
 
   override def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
     case _                 ⇒ assertFail("`remaining` may not be called outside of `within`")
   }
 
-  override def getRemaining: java.time.Duration = remaining.asJava
+  override def getRemaining: JDuration = remaining.asJava
 
   override def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
     case x if x eq Duration.Undefined ⇒ duration
@@ -93,33 +103,38 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     case f: FiniteDuration            ⇒ f - now
   }
 
-  override def getRemainingOr(duration: java.time.Duration): java.time.Duration =
+  override def getRemainingOr(duration: JDuration): JDuration =
     remainingOr(duration.asScala).asJava
 
-  private def remainingOrDilated(max: Duration): FiniteDuration = max match {
-    case x if x eq Duration.Undefined ⇒ remainingOrDefault
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
-    case f: FiniteDuration            ⇒ f.dilated
-  }
+  override def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(min, max.dilated, f)
 
-  override protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T = {
-    val _max = max.dilated
+  override def within[T](max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(Duration.Zero, max.dilated, f)
+
+  override def within[T](min: JDuration, max: JDuration)(f: Supplier[T]): T =
+    within_internal(min.asScala, max.asScala.dilated, f.get())
+
+  def within[T](max: JDuration)(f: Supplier[T]): T =
+    within_internal(Duration.Zero, max.asScala.dilated, f.get())
+
+  private def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T = {
     val start = now
     val rem = if (end == Duration.Undefined) Duration.Inf else end - start
     assert(rem >= min, s"required min time $min not possible, only ${rem.pretty} left")
 
     lastWasNoMessage = false
 
-    val max_diff = _max min rem
-    val prev_end = end
-    end = start + max_diff
+    val maxDiff = max min rem
+    val prevEnd = end
+    end = start + maxDiff
 
-    val ret = try f finally end = prev_end
+    val ret = try f finally end = prevEnd
 
     val diff = now - start
     assert(min <= diff, s"block took ${diff.pretty}, should at least have been $min")
     if (!lastWasNoMessage) {
-      assert(diff <= max_diff, s"block took ${diff.pretty}, exceeding ${max_diff.pretty}")
+      assert(diff <= maxDiff, s"block took ${diff.pretty}, exceeding ${maxDiff.pretty}")
     }
 
     ret
@@ -129,13 +144,13 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def expectMessage[T <: M](max: FiniteDuration, obj: T): T = expectMessage_internal(max.dilated, obj)
 
-  override def expectMessage[T <: M](max: java.time.Duration, obj: T): T =
+  override def expectMessage[T <: M](max: JDuration, obj: T): T =
     expectMessage(max.asScala, obj)
 
   override def expectMessage[T <: M](max: FiniteDuration, hint: String, obj: T): T =
     expectMessage_internal(max.dilated, obj, Some(hint))
 
-  override def expectMessage[T <: M](max: java.time.Duration, hint: String, obj: T): T =
+  override def expectMessage[T <: M](max: JDuration, hint: String, obj: T): T =
     expectMessage(max.asScala, hint, obj)
 
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
@@ -150,7 +165,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def receiveOne(): M = receiveOne(remainingOrDefault)
 
-  override def receiveOne(max: java.time.Duration): M = receiveOne(max.asScala)
+  override def receiveOne(max: JDuration): M = receiveOne(max.asScala)
 
   def receiveOne(max: FiniteDuration): M =
     receiveOne_internal(max.dilated).
@@ -173,14 +188,13 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       }
     )
     lastWasNoMessage = false
-    lastMessage = message
     message
   }
 
   override def expectNoMessage(max: FiniteDuration): Unit =
     expectNoMessage_internal(max)
 
-  override def expectNoMessage(max: java.time.Duration): Unit =
+  override def expectNoMessage(max: JDuration): Unit =
     expectNoMessage(max.asScala)
 
   override def expectNoMessage(): Unit =
@@ -194,7 +208,19 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
-  override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
+  override def expectMessageType[T <: M](implicit t: ClassTag[T]): T =
+    expectMessageClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
+
+  override def expectMessageType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
+    expectMessageClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
+
+  override def expectMessageClass[T <: M](clazz: Class[T]): T =
+    expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
+
+  override def expectMessageClass[T <: M](clazz: Class[T], max: JDuration): T =
+    expectMessageClass_internal(max.asScala.dilated, clazz)
+
+  private def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne_internal(max)
     val bt = BoxedType(c)
     o match {
@@ -204,7 +230,19 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
-  override protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
+  override def receiveN(n: Int): immutable.Seq[M] =
+    receiveN_internal(n, remainingOrDefault)
+
+  override def receiveN(n: Int, max: FiniteDuration): immutable.Seq[M] =
+    receiveN_internal(n, max.dilated)
+
+  override def receiveMessages(n: Int): JList[M] =
+    receiveN_internal(n, getRemainingOrDefault.asScala).asJava
+
+  override def receiveMessages(n: Int, max: JDuration): JList[M] =
+    receiveN_internal(n, max.asScala.dilated).asJava
+
+  private def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
     val stop = max + now
     for (x ← 1 to n) yield {
       val timeout = stop - now
@@ -216,7 +254,19 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
-  override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
+  override def fishForMessage(max: FiniteDuration, hint: String)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
+    fishForMessage_internal(max.dilated, hint, fisher)
+
+  override def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
+    fishForMessage(max, "")(fisher)
+
+  override def fishForMessage(max: JDuration, fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
+    fishForMessage(max, "", fisher)
+
+  override def fishForMessage(max: JDuration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
+    fishForMessage_internal(max.asScala.dilated, hint, fisher.apply).asJava
+
+  private def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
     @tailrec def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
       val maybeMsg = receiveOne_internal(timeout)
@@ -243,10 +293,19 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       }
     }
 
-    loop(max.dilated, Nil)
+    loop(max, Nil)
   }
 
-  override def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
+  override def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit =
+    expectTerminated_internal(actorRef, max.dilated)
+
+  override def expectTerminated[U](actorRef: ActorRef[U]): Unit =
+    expectTerminated_internal(actorRef, remainingOrDefault)
+
+  override def expectTerminated[U](actorRef: ActorRef[U], max: JDuration): Unit =
+    expectTerminated_internal(actorRef, max.asScala.dilated)
+
+  private def expectTerminated_internal[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
     testActor.asInstanceOf[ActorRef[AnyRef]] ! WatchActor(actorRef)
     val message =
       if (max == Duration.Zero) {
@@ -260,15 +319,26 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
   }
 
-  override def expectTerminated[U](actorRef: ActorRef[U], max: java.time.Duration): Unit =
-    expectTerminated(actorRef, max.asScala)
+  override def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: FiniteDuration): A =
+    awaitAssert_internal(a, max.dilated, interval)
 
-  override def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, supplier: Supplier[A]): A =
-    awaitAssert(supplier.get(), if (max == java.time.Duration.ZERO) Duration.Undefined else max.asScala, interval.asScala)
+  override def awaitAssert[A](a: ⇒ A, max: FiniteDuration): A =
+    awaitAssert_internal(a, max.dilated, 100.millis)
 
-  override def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
-    val _max = remainingOrDilated(max)
-    val stop = now + _max
+  override def awaitAssert[A](a: ⇒ A): A =
+    awaitAssert_internal(a, remainingOrDefault, 100.millis)
+
+  override def awaitAssert[A](max: JDuration, interval: JDuration, supplier: Supplier[A]): A =
+    awaitAssert_internal(supplier.get(), max.asScala.dilated, interval.asScala)
+
+  def awaitAssert[A](max: JDuration, supplier: Supplier[A]): A =
+    awaitAssert(max, JDuration.ofMillis(100), supplier)
+
+  def awaitAssert[A](supplier: Supplier[A]): A =
+    awaitAssert(getRemainingOrDefault, supplier)
+
+  private def awaitAssert_internal[A](a: ⇒ A, max: FiniteDuration, interval: FiniteDuration): A = {
+    val stop = now + max
 
     @tailrec
     def poll(t: Duration): A = {
@@ -294,7 +364,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       }
     }
 
-    poll(_max min interval)
+    poll(max min interval)
   }
 
   /**
