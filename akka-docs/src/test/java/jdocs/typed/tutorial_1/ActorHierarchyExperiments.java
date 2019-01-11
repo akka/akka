@@ -13,7 +13,7 @@ import org.scalatest.junit.JUnitSuite;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.PostStop;
 
-//#print-refs
+// #print-refs
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -36,9 +36,7 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
-      .onMessageEquals("printit", this::printIt)
-      .build();
+    return receiveBuilder().onMessageEquals("printit", this::printIt).build();
   }
 
   private Behavior<String> printIt() {
@@ -46,11 +44,10 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
     System.out.println("Second: " + secondRef);
     return this;
   }
-
 }
-//#print-refs
+// #print-refs
 
-//#start-stop
+// #start-stop
 class StartStopActor1 extends AbstractBehavior<String> {
 
   static Behavior<String> createBehavior() {
@@ -63,17 +60,16 @@ class StartStopActor1 extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-      return receiveBuilder()
-      .onMessageEquals("stop", Behaviors::stopped)
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+    return receiveBuilder()
+        .onMessageEquals("stop", Behaviors::stopped)
+        .onSignal(PostStop.class, signal -> postStop())
+        .build();
   }
 
   private Behavior<String> postStop() {
     System.out.println("first stopped");
     return this;
   }
-
 }
 
 class StartStopActor2 extends AbstractBehavior<String> {
@@ -88,9 +84,7 @@ class StartStopActor2 extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+    return receiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
   }
 
   private Behavior<String> postStop() {
@@ -98,9 +92,9 @@ class StartStopActor2 extends AbstractBehavior<String> {
     return this;
   }
 }
-//#start-stop
+// #start-stop
 
-//#supervise
+// #supervise
 class SupervisingActor extends AbstractBehavior<String> {
 
   static Behavior<String> createBehavior() {
@@ -110,16 +104,16 @@ class SupervisingActor extends AbstractBehavior<String> {
   private final ActorRef<String> child;
 
   private SupervisingActor(ActorContext<String> context) {
-    child = context.spawn(
-      Behaviors.supervise(SupervisedActor.createBehavior()).onFailure(SupervisorStrategy.restart()),
-      "supervised-actor");
+    child =
+        context.spawn(
+            Behaviors.supervise(SupervisedActor.createBehavior())
+                .onFailure(SupervisorStrategy.restart()),
+            "supervised-actor");
   }
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
-      .onMessageEquals("failChild", this::failChild)
-      .build();
+    return receiveBuilder().onMessageEquals("failChild", this::failChild).build();
   }
 
   private Behavior<String> failChild() {
@@ -141,10 +135,10 @@ class SupervisedActor extends AbstractBehavior<String> {
   @Override
   public Receive<String> createReceive() {
     return receiveBuilder()
-      .onMessageEquals("fail", this::fail)
-      .onSignal(PreRestart.class, signal -> preRestart())
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+        .onMessageEquals("fail", this::fail)
+        .onSignal(PreRestart.class, signal -> preRestart())
+        .onSignal(PostStop.class, signal -> postStop())
+        .build();
   }
 
   private Behavior<String> fail() {
@@ -162,10 +156,9 @@ class SupervisedActor extends AbstractBehavior<String> {
     return this;
   }
 }
-//#supervise
+// #supervise
 
-
-//#print-refs
+// #print-refs
 
 class Main extends AbstractBehavior<String> {
 
@@ -181,9 +174,7 @@ class Main extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
-      .onMessageEquals("start", this::start)
-      .build();
+    return receiveBuilder().onMessageEquals("start", this::start).build();
   }
 
   private Behavior<String> start() {
@@ -200,28 +191,27 @@ public class ActorHierarchyExperiments {
     ActorSystem.create(Main.createBehavior(), "testSystem");
   }
 }
-//#print-refs
-
+// #print-refs
 
 class ActorHierarchyExperimentsTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testStartAndStopActors() {
-    //#start-stop-main
+    // #start-stop-main
     ActorRef<String> first = testKit.spawn(StartStopActor1.createBehavior(), "first");
     first.tell("stop");
-    //#start-stop-main
+    // #start-stop-main
   }
 
   @Test
   public void testSuperviseActors() throws Exception {
-    //#supervise-main
-    ActorRef<String> supervisingActor = testKit.spawn(SupervisingActor.createBehavior(), "supervising-actor");
+    // #supervise-main
+    ActorRef<String> supervisingActor =
+        testKit.spawn(SupervisingActor.createBehavior(), "supervising-actor");
     supervisingActor.tell("failChild");
-    //#supervise-main
+    // #supervise-main
     Thread.sleep(200); // allow for the println/logging to complete
   }
 }

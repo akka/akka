@@ -38,43 +38,44 @@ public class RecipeWorkerPool extends RecipeTest {
     mat = null;
   }
 
-  //#worker-pool
+  // #worker-pool
   public static <In, Out> Flow<In, Out, NotUsed> balancer(
       Flow<In, Out, NotUsed> worker, int workerCount) {
-    return Flow.fromGraph(GraphDSL.create(b -> {
-        boolean waitForAllDownstreams = true;
-        final UniformFanOutShape<In, In> balance =
-                b.add(Balance.<In>create(workerCount, waitForAllDownstreams));
-        final UniformFanInShape<Out, Out> merge =
-                b.add(Merge.<Out>create(workerCount));
+    return Flow.fromGraph(
+        GraphDSL.create(
+            b -> {
+              boolean waitForAllDownstreams = true;
+              final UniformFanOutShape<In, In> balance =
+                  b.add(Balance.<In>create(workerCount, waitForAllDownstreams));
+              final UniformFanInShape<Out, Out> merge = b.add(Merge.<Out>create(workerCount));
 
-        for (int i = 0; i < workerCount; i++) {
-            b.from(balance.out(i)).via(b.add(worker.async())).toInlet(merge.in(i));
-        }
+              for (int i = 0; i < workerCount; i++) {
+                b.from(balance.out(i)).via(b.add(worker.async())).toInlet(merge.in(i));
+              }
 
-        return FlowShape.of(balance.in(), merge.out());
-    }));
+              return FlowShape.of(balance.in(), merge.out());
+            }));
   }
-  //#worker-pool
+  // #worker-pool
 
   @Test
   public void workForVersion1() throws Exception {
     new TestKit(system) {
       {
         Source<Message, NotUsed> data =
-          Source
-            .from(Arrays.asList("1", "2", "3", "4", "5"))
-            .map(t -> new Message(t));
+            Source.from(Arrays.asList("1", "2", "3", "4", "5")).map(t -> new Message(t));
 
-        Flow<Message, Message, NotUsed> worker = Flow.of(Message.class).map(m -> new Message(m.msg + " done"));
+        Flow<Message, Message, NotUsed> worker =
+            Flow.of(Message.class).map(m -> new Message(m.msg + " done"));
 
-        //#worker-pool2
+        // #worker-pool2
         Flow<Message, Message, NotUsed> balancer = balancer(worker, 3);
         Source<Message, NotUsed> processedJobs = data.via(balancer);
-        //#worker-pool2
+        // #worker-pool2
 
         FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);
-        CompletionStage<List<String>> future = processedJobs.map(m -> m.msg).limit(10).runWith(Sink.seq(), mat);
+        CompletionStage<List<String>> future =
+            processedJobs.map(m -> m.msg).limit(10).runWith(Sink.seq(), mat);
         List<String> got = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
         assertTrue(got.contains("1 done"));
         assertTrue(got.contains("2 done"));
@@ -84,5 +85,4 @@ public class RecipeWorkerPool extends RecipeTest {
       }
     };
   }
-
 }

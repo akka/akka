@@ -4,8 +4,7 @@
 
 package jdocs.dispatcher;
 
-//#mailbox-marker-interface
+// #mailbox-marker-interface
 // Marker interface used for mailbox requirements mapping
-public interface MyUnboundedMessageQueueSemantics {
-}
-//#mailbox-marker-interface
+public interface MyUnboundedMessageQueueSemantics {}
+// #mailbox-marker-interface

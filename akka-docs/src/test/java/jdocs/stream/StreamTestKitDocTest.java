@@ -26,7 +26,6 @@ import akka.stream.javadsl.*;
 import akka.stream.testkit.*;
 import akka.stream.testkit.javadsl.*;
 
-
 public class StreamTestKitDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
@@ -47,92 +46,93 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
   @Test
   public void strictCollection() throws Exception {
-    //#strict-collection
-    final Sink<Integer, CompletionStage<Integer>> sinkUnderTest = Flow.of(Integer.class)
-      .map(i -> i * 2)
-      .toMat(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
+    // #strict-collection
+    final Sink<Integer, CompletionStage<Integer>> sinkUnderTest =
+        Flow.of(Integer.class)
+            .map(i -> i * 2)
+            .toMat(Sink.fold(0, (agg, next) -> agg + next), Keep.right());
 
-    final CompletionStage<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4))
-      .runWith(sinkUnderTest, mat);
+    final CompletionStage<Integer> future =
+        Source.from(Arrays.asList(1, 2, 3, 4)).runWith(sinkUnderTest, mat);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assert(result == 20);
-    //#strict-collection
+    assert (result == 20);
+    // #strict-collection
   }
 
   @Test
   public void groupedPartOfInfiniteStream() throws Exception {
-    //#grouped-infinite
-    final Source<Integer, NotUsed> sourceUnderTest = Source.repeat(1)
-      .map(i -> i * 2);
+    // #grouped-infinite
+    final Source<Integer, NotUsed> sourceUnderTest = Source.repeat(1).map(i -> i * 2);
 
-    final CompletionStage<List<Integer>> future = sourceUnderTest
-      .take(10)
-      .runWith(Sink.seq(), mat);
+    final CompletionStage<List<Integer>> future = sourceUnderTest.take(10).runWith(Sink.seq(), mat);
     final List<Integer> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(result, Collections.nCopies(10, 2));
-    //#grouped-infinite
+    // #grouped-infinite
   }
 
   @Test
   public void foldedStream() throws Exception {
-    //#folded-stream
-    final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
-      .takeWhile(i -> i < 5);
+    // #folded-stream
+    final Flow<Integer, Integer, NotUsed> flowUnderTest =
+        Flow.of(Integer.class).takeWhile(i -> i < 5);
 
-    final CompletionStage<Integer> future = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
-      .via(flowUnderTest).runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
+    final CompletionStage<Integer> future =
+        Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
+            .via(flowUnderTest)
+            .runWith(Sink.fold(0, (agg, next) -> agg + next), mat);
     final Integer result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assert(result == 10);
-    //#folded-stream
+    assert (result == 10);
+    // #folded-stream
   }
 
   @Test
   public void pipeToTestProbe() throws Exception {
-    //#pipeto-testprobe
-    final Source<List<Integer>, NotUsed> sourceUnderTest = Source
-      .from(Arrays.asList(1, 2, 3, 4))
-      .grouped(2);
+    // #pipeto-testprobe
+    final Source<List<Integer>, NotUsed> sourceUnderTest =
+        Source.from(Arrays.asList(1, 2, 3, 4)).grouped(2);
 
     final TestKit probe = new TestKit(system);
-    final CompletionStage<List<List<Integer>>> future = sourceUnderTest
-      .grouped(2)
-      .runWith(Sink.head(), mat);
+    final CompletionStage<List<List<Integer>>> future =
+        sourceUnderTest.grouped(2).runWith(Sink.head(), mat);
     akka.pattern.Patterns.pipe(future, system.dispatcher()).to(probe.getRef());
     probe.expectMsg(Duration.ofSeconds(3), Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4)));
-    //#pipeto-testprobe
+    // #pipeto-testprobe
   }
 
-  public enum Tick { TOCK, COMPLETED };
+  public enum Tick {
+    TOCK,
+    COMPLETED
+  };
 
   @Test
   public void sinkActorRef() throws Exception {
-    //#sink-actorref
-    final Source<Tick, Cancellable> sourceUnderTest = Source.tick(
-      Duration.ZERO,
-      Duration.ofMillis(200),
-      Tick.TOCK);
+    // #sink-actorref
+    final Source<Tick, Cancellable> sourceUnderTest =
+        Source.tick(Duration.ZERO, Duration.ofMillis(200), Tick.TOCK);
 
     final TestKit probe = new TestKit(system);
-    final Cancellable cancellable = sourceUnderTest.to(Sink.actorRef(probe.getRef(), Tick.COMPLETED)).run(mat);
+    final Cancellable cancellable =
+        sourceUnderTest.to(Sink.actorRef(probe.getRef(), Tick.COMPLETED)).run(mat);
     probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
     probe.expectNoMessage(Duration.ofMillis(100));
     probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
     cancellable.cancel();
     probe.expectMsg(Duration.ofSeconds(3), Tick.COMPLETED);
-    //#sink-actorref
+    // #sink-actorref
   }
 
   @Test
   public void sourceActorRef() throws Exception {
-    //#source-actorref
-    final Sink<Integer, CompletionStage<String>> sinkUnderTest = Flow.of(Integer.class)
-      .map(i -> i.toString())
-      .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
+    // #source-actorref
+    final Sink<Integer, CompletionStage<String>> sinkUnderTest =
+        Flow.of(Integer.class)
+            .map(i -> i.toString())
+            .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
 
     final Pair<ActorRef, CompletionStage<String>> refAndCompletionStage =
-      Source.<Integer>actorRef(8, OverflowStrategy.fail())
-        .toMat(sinkUnderTest, Keep.both())
-        .run(mat);
+        Source.<Integer>actorRef(8, OverflowStrategy.fail())
+            .toMat(sinkUnderTest, Keep.both())
+            .run(mat);
     final ActorRef ref = refAndCompletionStage.first();
     final CompletionStage<String> future = refAndCompletionStage.second();
 
@@ -143,45 +143,42 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     final String result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(result, "123");
-    //#source-actorref
+    // #source-actorref
   }
 
   @Test
   public void testSinkProbe() {
-    //#test-sink-probe
-    final Source<Integer, NotUsed> sourceUnderTest = Source.from(Arrays.asList(1, 2, 3, 4))
-      .filter(elem -> elem % 2 == 0)
-      .map(elem -> elem * 2);
+    // #test-sink-probe
+    final Source<Integer, NotUsed> sourceUnderTest =
+        Source.from(Arrays.asList(1, 2, 3, 4)).filter(elem -> elem % 2 == 0).map(elem -> elem * 2);
 
     sourceUnderTest
-      .runWith(TestSink.probe(system), mat)
-      .request(2)
-      .expectNext(4, 8)
-      .expectComplete();
-    //#test-sink-probe
+        .runWith(TestSink.probe(system), mat)
+        .request(2)
+        .expectNext(4, 8)
+        .expectComplete();
+    // #test-sink-probe
   }
 
   @Test
   public void testSourceProbe() {
-    //#test-source-probe
+    // #test-source-probe
     final Sink<Integer, NotUsed> sinkUnderTest = Sink.cancelled();
 
     TestSource.<Integer>probe(system)
-      .toMat(sinkUnderTest, Keep.left())
-      .run(mat)
-      .expectCancellation();
-    //#test-source-probe
+        .toMat(sinkUnderTest, Keep.left())
+        .run(mat)
+        .expectCancellation();
+    // #test-source-probe
   }
 
   @Test
   public void injectingFailure() throws Exception {
-    //#injecting-failure
+    // #injecting-failure
     final Sink<Integer, CompletionStage<Integer>> sinkUnderTest = Sink.head();
 
     final Pair<TestPublisher.Probe<Integer>, CompletionStage<Integer>> probeAndCompletionStage =
-      TestSource.<Integer>probe(system)
-        .toMat(sinkUnderTest, Keep.both())
-        .run(mat);
+        TestSource.<Integer>probe(system).toMat(sinkUnderTest, Keep.both()).run(mat);
     final TestPublisher.Probe<Integer> probe = probeAndCompletionStage.first();
     final CompletionStage<Integer> future = probeAndCompletionStage.second();
     probe.sendError(new Exception("boom"));
@@ -193,25 +190,28 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
       final Throwable exception = ee.getCause();
       assertEquals(exception.getMessage(), "boom");
     }
-    //#injecting-failure
+    // #injecting-failure
   }
 
   @Test
   public void testSourceAndTestSink() throws Exception {
-    //#test-source-and-sink
-    final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
-      .mapAsyncUnordered(2, sleep -> akka.pattern.Patterns.after(
-        Duration.ofMillis(10),
-        system.scheduler(),
-        system.dispatcher(),
-        CompletableFuture.completedFuture(sleep)
-      ));
+    // #test-source-and-sink
+    final Flow<Integer, Integer, NotUsed> flowUnderTest =
+        Flow.of(Integer.class)
+            .mapAsyncUnordered(
+                2,
+                sleep ->
+                    akka.pattern.Patterns.after(
+                        Duration.ofMillis(10),
+                        system.scheduler(),
+                        system.dispatcher(),
+                        CompletableFuture.completedFuture(sleep)));
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubAndSub =
-      TestSource.<Integer>probe(system)
-        .via(flowUnderTest)
-        .toMat(TestSink.<Integer>probe(system), Keep.both())
-        .run(mat);
+        TestSource.<Integer>probe(system)
+            .via(flowUnderTest)
+            .toMat(TestSink.<Integer>probe(system), Keep.both())
+            .run(mat);
     final TestPublisher.Probe<Integer> pub = pubAndSub.first();
     final TestSubscriber.Probe<Integer> sub = pubAndSub.second();
 
@@ -223,7 +223,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
     pub.sendError(new Exception("Power surge in the linear subroutine C-47!"));
     final Throwable ex = sub.expectError();
-    assert(ex.getMessage().contains("C-47"));
-    //#test-source-and-sink
+    assert (ex.getMessage().contains("C-47"));
+    // #test-source-and-sink
   }
 }

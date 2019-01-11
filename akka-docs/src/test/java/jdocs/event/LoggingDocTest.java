@@ -4,37 +4,37 @@
 
 package jdocs.event;
 
-//#imports
+// #imports
 import akka.actor.*;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-//#imports
+// #imports
 
-//#imports-listener
+// #imports-listener
 import akka.event.Logging.InitializeLogger;
 import akka.event.Logging.Error;
 import akka.event.Logging.Warning;
 import akka.event.Logging.Info;
 import akka.event.Logging.Debug;
 
-//#imports-listener
+// #imports-listener
 
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import java.util.Optional;
 
-//#imports-mdc
+// #imports-mdc
 import akka.event.DiagnosticLoggingAdapter;
 import java.util.HashMap;
 import java.util.Map;
-//#imports-mdc
+// #imports-mdc
 
-//#imports-deadletter
+// #imports-deadletter
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-//#imports-deadletter
+// #imports-deadletter
 
 public class LoggingDocTest extends AbstractJavaTest {
 
@@ -56,25 +56,28 @@ public class LoggingDocTest extends AbstractJavaTest {
 
   @Test
   public void subscribeToDeadLetters() {
-    //#deadletters
+    // #deadletters
     final ActorSystem system = ActorSystem.create("DeadLetters");
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
     system.getEventStream().subscribe(actor, DeadLetter.class);
-    //#deadletters
+    // #deadletters
     TestKit.shutdownActorSystem(system);
   }
 
-  //#superclass-subscription-eventstream
-  interface AllKindsOfMusic { }
+  // #superclass-subscription-eventstream
+  interface AllKindsOfMusic {}
 
   class Jazz implements AllKindsOfMusic {
-    final public String artist;
+    public final String artist;
+
     public Jazz(String artist) {
       this.artist = artist;
     }
   }
+
   class Electronic implements AllKindsOfMusic {
-    final public String artist;
+    public final String artist;
+
     public Electronic(String artist) {
       this.artist = artist;
     }
@@ -82,23 +85,23 @@ public class LoggingDocTest extends AbstractJavaTest {
 
   static class Listener extends AbstractActor {
     @Override
-      public Receive createReceive() {
-        return receiveBuilder()
-          .match(Jazz.class, msg ->
-            System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
-          )
-          .match(Electronic.class, msg ->
-            System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
-          )
+    public Receive createReceive() {
+      return receiveBuilder()
+          .match(
+              Jazz.class,
+              msg -> System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg))
+          .match(
+              Electronic.class,
+              msg -> System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg))
           .build();
-      }
+    }
   }
-  //#superclass-subscription-eventstream
+  // #superclass-subscription-eventstream
 
   @Test
   public void subscribeBySubclassification() {
     final ActorSystem system = ActorSystem.create("DeadLetters");
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
     system.getEventStream().subscribe(actor, DeadLetter.class);
 
@@ -113,7 +116,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     // jazzListener and musicListener will be notified about Jazz:
     system.getEventStream().publish(new Jazz("Sonny Rollins"));
 
-    //#superclass-subscription-eventstream
+    // #superclass-subscription-eventstream
     TestKit.shutdownActorSystem(system);
   }
 
@@ -122,20 +125,21 @@ public class LoggingDocTest extends AbstractJavaTest {
     final ActorSystem system = ActorSystem.create("SuppressedDeadLetters");
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
 
-    //#suppressed-deadletters
+    // #suppressed-deadletters
     system.getEventStream().subscribe(actor, SuppressedDeadLetter.class);
-    //#suppressed-deadletters
+    // #suppressed-deadletters
 
     TestKit.shutdownActorSystem(system);
   }
+
   @Test
   public void subscribeToAllDeadLetters() {
     final ActorSystem system = ActorSystem.create("AllDeadLetters");
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
 
-    //#all-deadletters
+    // #all-deadletters
     system.getEventStream().subscribe(actor, AllDeadLetters.class);
-    //#all-deadletters
+    // #all-deadletters
 
     TestKit.shutdownActorSystem(system);
   }
@@ -143,14 +147,14 @@ public class LoggingDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateMultipleArgs() {
     final ActorSystem system = ActorSystem.create("multiArg");
-    //#array
-    final Object[] args = new Object[] { "The", "brown", "fox", "jumps", 42 };
+    // #array
+    final Object[] args = new Object[] {"The", "brown", "fox", "jumps", 42};
     system.log().debug("five parameters: {}, {}, {}, {}, {}", args);
-    //#array
+    // #array
     TestKit.shutdownActorSystem(system);
   }
 
-  //#my-actor
+  // #my-actor
   class MyActor extends AbstractActor {
     LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -161,86 +165,98 @@ public class LoggingDocTest extends AbstractJavaTest {
 
     @Override
     public void preRestart(Throwable reason, Optional<Object> message) {
-      log.error(reason, "Restarting due to [{}] when processing [{}]",
-        reason.getMessage(), message.isPresent() ? message.get() : "");
+      log.error(
+          reason,
+          "Restarting due to [{}] when processing [{}]",
+          reason.getMessage(),
+          message.isPresent() ? message.get() : "");
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("test", msg ->
-          log.info("Received test")
-        )
-        .matchAny(msg ->
-          log.warning("Received unknown message: {}", msg)
-        )
-        .build();
+          .matchEquals("test", msg -> log.info("Received test"))
+          .matchAny(msg -> log.warning("Received unknown message: {}", msg))
+          .build();
     }
   }
 
-  //#my-actor
+  // #my-actor
 
-  //#mdc-actor
+  // #mdc-actor
   class MdcActor extends AbstractActor {
 
-      final DiagnosticLoggingAdapter log = Logging.getLogger(this);
+    final DiagnosticLoggingAdapter log = Logging.getLogger(this);
 
-      @Override
-      public Receive createReceive() {
-        return receiveBuilder()
-          .matchAny(msg -> {
-            Map<String, Object> mdc;
-            mdc = new HashMap<String, Object>();
-            mdc.put("requestId", 1234);
-            mdc.put("visitorId", 5678);
-            log.setMDC(mdc);
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+          .matchAny(
+              msg -> {
+                Map<String, Object> mdc;
+                mdc = new HashMap<String, Object>();
+                mdc.put("requestId", 1234);
+                mdc.put("visitorId", 5678);
+                log.setMDC(mdc);
 
-            log.info("Starting new request");
+                log.info("Starting new request");
 
-            log.clearMDC();
-          })
+                log.clearMDC();
+              })
           .build();
-      }
+    }
   }
 
-  //#mdc-actor
+  // #mdc-actor
 
-  //#my-event-listener
+  // #my-event-listener
   class MyEventListener extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(InitializeLogger.class, msg -> {
-          getSender().tell(Logging.loggerInitialized(), getSelf());
-        })
-        .match(Error.class, msg -> {
-          // ...
-        })
-        .match(Warning.class, msg -> {
-          // ...
-        })
-        .match(Info.class, msg -> {
-          // ...
-        })
-        .match(Debug.class, msg -> {
-          // ...
-        })
-        .build();
+          .match(
+              InitializeLogger.class,
+              msg -> {
+                getSender().tell(Logging.loggerInitialized(), getSelf());
+              })
+          .match(
+              Error.class,
+              msg -> {
+                // ...
+              })
+          .match(
+              Warning.class,
+              msg -> {
+                // ...
+              })
+          .match(
+              Info.class,
+              msg -> {
+                // ...
+              })
+          .match(
+              Debug.class,
+              msg -> {
+                // ...
+              })
+          .build();
     }
   }
-  //#my-event-listener
+  // #my-event-listener
 
-  static
-  //#deadletter-actor
-  public class DeadLetterActor extends AbstractActor {
+  public
+  // #deadletter-actor
+  static class DeadLetterActor extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(DeadLetter.class, msg -> {
-          System.out.println(msg);
-        })
-        .build();
+          .match(
+              DeadLetter.class,
+              msg -> {
+                System.out.println(msg);
+              })
+          .build();
     }
   }
-  //#deadletter-actor
+  // #deadletter-actor
 }

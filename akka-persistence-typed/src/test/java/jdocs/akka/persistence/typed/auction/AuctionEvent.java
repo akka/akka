@@ -6,23 +6,15 @@ package jdocs.akka.persistence.typed.auction;
 
 import java.util.UUID;
 
-/**
- * A persisted auction event.
- */
+/** A persisted auction event. */
 public interface AuctionEvent {
 
-  /**
-   * The auction started.
-   */
+  /** The auction started. */
   final class AuctionStarted implements AuctionEvent {
 
-    /**
-     * The item that the auction started on.
-     */
+    /** The item that the auction started on. */
     private final UUID itemId;
-    /**
-     * The auction details.
-     */
+    /** The auction details. */
     private final Auction auction;
 
     public AuctionStarted(UUID itemId, Auction auction) {
@@ -39,18 +31,12 @@ public interface AuctionEvent {
     }
   }
 
-  /**
-   * A bid was placed.
-   */
+  /** A bid was placed. */
   final class BidPlaced implements AuctionEvent {
 
-    /**
-     * The item that the bid was placed on.
-     */
+    /** The item that the bid was placed on. */
     private final UUID itemId;
-    /**
-     * The bid.
-     */
+    /** The bid. */
     private final Bid bid;
 
     public BidPlaced(UUID itemId, Bid bid) {
@@ -67,14 +53,10 @@ public interface AuctionEvent {
     }
   }
 
-  /**
-   * Bidding finished.
-   */
+  /** Bidding finished. */
   final class BiddingFinished implements AuctionEvent {
 
-    /**
-     * The item that bidding finished for.
-     */
+    /** The item that bidding finished for. */
     private final UUID itemId;
 
     public BiddingFinished(UUID itemId) {
@@ -86,14 +68,10 @@ public interface AuctionEvent {
     }
   }
 
-  /**
-   * The auction was cancelled.
-   */
+  /** The auction was cancelled. */
   final class AuctionCancelled implements AuctionEvent {
 
-    /**
-     * The item that the auction was cancelled for.
-     */
+    /** The item that the auction was cancelled for. */
     private final UUID itemId;
 
     public AuctionCancelled(UUID itemId) {
@@ -104,5 +82,4 @@ public interface AuctionEvent {
       return itemId;
     }
   }
-
 }

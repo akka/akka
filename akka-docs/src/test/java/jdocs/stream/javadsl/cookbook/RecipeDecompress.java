@@ -21,42 +21,40 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeDecompress extends RecipeTest {
 
-    static ActorSystem system;
-    static Materializer mat;
+  static ActorSystem system;
+  static Materializer mat;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create("RecipeDecompress");
-        mat = ActorMaterializer.create(system);
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create("RecipeDecompress");
+    mat = ActorMaterializer.create(system);
+  }
 
-    @AfterClass
-    public static void tearDown() {
-        TestKit.shutdownActorSystem(system);
-        system = null;
-        mat = null;
-    }
+  @AfterClass
+  public static void tearDown() {
+    TestKit.shutdownActorSystem(system);
+    system = null;
+    mat = null;
+  }
 
-    @Test
-    public void parseLines() throws Exception {
-        final Source<ByteString, NotUsed> dataStream =
-            Source.single(ByteString.fromString("Hello World"));
+  @Test
+  public void parseLines() throws Exception {
+    final Source<ByteString, NotUsed> dataStream =
+        Source.single(ByteString.fromString("Hello World"));
 
-        final Source<ByteString, NotUsed> compressedStream =
-            dataStream.via(Compression.gzip());
+    final Source<ByteString, NotUsed> compressedStream = dataStream.via(Compression.gzip());
 
-        //#decompress-gzip
-        final Source<ByteString, NotUsed> decompressedStream =
-            compressedStream.via(Compression.gunzip(100));
-        //#decompress-gzip
+    // #decompress-gzip
+    final Source<ByteString, NotUsed> decompressedStream =
+        compressedStream.via(Compression.gunzip(100));
+    // #decompress-gzip
 
-        ByteString decompressedData =
-            decompressedStream
-                .runFold(ByteString.empty(), ByteString::concat, mat)
-                .toCompletableFuture()
-                .get(1, TimeUnit.SECONDS);
-        String decompressedString = decompressedData.utf8String();
-        Assert.assertEquals("Hello World", decompressedString);
-    }
-
+    ByteString decompressedData =
+        decompressedStream
+            .runFold(ByteString.empty(), ByteString::concat, mat)
+            .toCompletableFuture()
+            .get(1, TimeUnit.SECONDS);
+    String decompressedString = decompressedData.utf8String();
+    Assert.assertEquals("Hello World", decompressedString);
+  }
 }

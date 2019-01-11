@@ -22,15 +22,15 @@ import static org.junit.Assert.assertEquals;
 
 public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
-  public static final Config config = ConfigFactory.parseString(
-          "akka.actor.provider = cluster \n" +
-          "akka.remote.netty.tcp.port = 0 \n" +
-          "akka.remote.artery.canonical.port = 0 \n" +
-          "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
-          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+  public static final Config config =
+      ConfigFactory.parseString(
+          "akka.actor.provider = cluster \n"
+              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.artery.canonical.port = 0 \n"
+              + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
+              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
   private ClusterSharding _sharding = null;
 
@@ -42,9 +42,9 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
       sharding.init(
-        Entity.ofPersistentEntity(
-          HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
+          Entity.ofPersistentEntity(
+              HelloWorld.ENTITY_TYPE_KEY,
+              ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
       _sharding = sharding;
     }
     return _sharding;
@@ -64,5 +64,4 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
     assertEquals("Bob", greeting2.whom);
     assertEquals(2, greeting2.numberOfPeople);
   }
-
 }

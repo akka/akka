@@ -122,17 +122,17 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // using awaitAssert to retry because it might take longer for the groupActor
     // to see the Terminated, that order is undefined
-    probe.awaitAssert(() -> {
-      groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
-      DeviceGroup.ReplyDeviceList r = 
-        probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-      assertEquals(1L, r.requestId);
-      assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
-      return null;
-    });
+    probe.awaitAssert(
+        () -> {
+          groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
+          DeviceGroup.ReplyDeviceList r = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+          assertEquals(1L, r.requestId);
+          assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
+          return null;
+        });
   }
 
-  //#group-query-integration-test
+  // #group-query-integration-test
   @Test
   public void testCollectTemperaturesFromAllActiveDevices() {
     TestKit probe = new TestKit(system);
@@ -158,7 +158,8 @@ public class DeviceGroupTest extends JUnitSuite {
     // No temperature for device 3
 
     groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
-    DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
+    DeviceGroup.RespondAllTemperatures response =
+        probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
     assertEquals(0L, response.requestId);
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
@@ -168,5 +169,5 @@ public class DeviceGroupTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#group-query-integration-test
+  // #group-query-integration-test
 }

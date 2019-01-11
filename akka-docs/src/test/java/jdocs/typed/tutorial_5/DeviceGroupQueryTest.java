@@ -22,13 +22,13 @@ import static org.junit.Assert.assertEquals;
 
 public class DeviceGroupQueryTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
-  //#query-test-normal
+  // #query-test-normal
   @Test
   public void testReturnTemperatureValueForWorkingDevices() {
-    TestProbe<RespondAllTemperatures> requester = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> requester =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
     TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
 
@@ -36,20 +36,21 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor = testKit.spawn(DeviceGroupQuery.createBehavior(
-      deviceIdToActor,
-      1L,
-      requester.getRef(),
-      Duration.ofSeconds(3)));
+    ActorRef<DeviceGroupQueryMessage> queryActor =
+        testKit.spawn(
+            DeviceGroupQuery.createBehavior(
+                deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     device1.expectMessageClass(ReadTemperature.class);
     device2.expectMessageClass(ReadTemperature.class);
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device1", Optional.of(1.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device1", Optional.of(1.0))));
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device2", Optional.of(2.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
     assertEquals(1L, response.requestId);
@@ -60,12 +61,13 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#query-test-normal
+  // #query-test-normal
 
-  //#query-test-no-reading
+  // #query-test-no-reading
   @Test
   public void testReturnTemperatureNotAvailableForDevicesWithNoReadings() {
-    TestProbe<RespondAllTemperatures> requester = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> requester =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
     TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
 
@@ -73,20 +75,21 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor = testKit.spawn(DeviceGroupQuery.createBehavior(
-      deviceIdToActor,
-      1L,
-      requester.getRef(),
-      Duration.ofSeconds(3)));
+    ActorRef<DeviceGroupQueryMessage> queryActor =
+        testKit.spawn(
+            DeviceGroupQuery.createBehavior(
+                deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
     assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device1", Optional.empty())));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device1", Optional.empty())));
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device2", Optional.of(2.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     RespondAllTemperatures response = requester.expectMessageClass(RespondAllTemperatures.class);
     assertEquals(1L, response.requestId);
@@ -97,12 +100,13 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#query-test-no-reading
+  // #query-test-no-reading
 
-  //#query-test-stopped
+  // #query-test-stopped
   @Test
   public void testReturnDeviceNotAvailableIfDeviceStopsBeforeAnswering() {
-    TestProbe<RespondAllTemperatures> requester = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> requester =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
     TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
 
@@ -110,17 +114,17 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor = testKit.spawn(DeviceGroupQuery.createBehavior(
-      deviceIdToActor,
-      1L,
-      requester.getRef(),
-      Duration.ofSeconds(3)));
+    ActorRef<DeviceGroupQueryMessage> queryActor =
+        testKit.spawn(
+            DeviceGroupQuery.createBehavior(
+                deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
     assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device1", Optional.of(1.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     device2.stop();
 
@@ -133,12 +137,13 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#query-test-stopped
+  // #query-test-stopped
 
-  //#query-test-stopped-later
+  // #query-test-stopped-later
   @Test
   public void testReturnTemperatureReadingEvenIfDeviceStopsAfterAnswering() {
-    TestProbe<RespondAllTemperatures> requester = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> requester =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
     TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
 
@@ -146,20 +151,21 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor = testKit.spawn(DeviceGroupQuery.createBehavior(
-      deviceIdToActor,
-      1L,
-      requester.getRef(),
-      Duration.ofSeconds(3)));
+    ActorRef<DeviceGroupQueryMessage> queryActor =
+        testKit.spawn(
+            DeviceGroupQuery.createBehavior(
+                deviceIdToActor, 1L, requester.getRef(), Duration.ofSeconds(3)));
 
     assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
     assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device1", Optional.of(1.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device1", Optional.of(1.0))));
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device2", Optional.of(2.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device2", Optional.of(2.0))));
 
     device2.stop();
 
@@ -172,12 +178,13 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#query-test-stopped-later
+  // #query-test-stopped-later
 
-  //#query-test-timeout
+  // #query-test-timeout
   @Test
   public void testReturnDeviceTimedOutIfDeviceDoesNotAnswerInTime() {
-    TestProbe<RespondAllTemperatures> requester = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> requester =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     TestProbe<DeviceMessage> device1 = testKit.createTestProbe(DeviceMessage.class);
     TestProbe<DeviceMessage> device2 = testKit.createTestProbe(DeviceMessage.class);
 
@@ -185,17 +192,17 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     deviceIdToActor.put("device1", device1.getRef());
     deviceIdToActor.put("device2", device2.getRef());
 
-    ActorRef<DeviceGroupQueryMessage> queryActor = testKit.spawn(DeviceGroupQuery.createBehavior(
-      deviceIdToActor,
-      1L,
-      requester.getRef(),
-      Duration.ofMillis(200)));
+    ActorRef<DeviceGroupQueryMessage> queryActor =
+        testKit.spawn(
+            DeviceGroupQuery.createBehavior(
+                deviceIdToActor, 1L, requester.getRef(), Duration.ofMillis(200)));
 
     assertEquals(0L, device1.expectMessageClass(ReadTemperature.class).requestId);
     assertEquals(0L, device2.expectMessageClass(ReadTemperature.class).requestId);
 
-    queryActor.tell(new DeviceGroupQuery.WrappedRespondTemperature(
-      new RespondTemperature(0L, "device1", Optional.of(1.0))));
+    queryActor.tell(
+        new DeviceGroupQuery.WrappedRespondTemperature(
+            new RespondTemperature(0L, "device1", Optional.of(1.0))));
 
     // no reply from device2
 
@@ -208,5 +215,5 @@ public class DeviceGroupQueryTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#query-test-timeout
+  // #query-test-timeout
 }

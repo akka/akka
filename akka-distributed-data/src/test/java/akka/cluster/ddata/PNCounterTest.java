@@ -8,7 +8,6 @@ import java.math.BigInteger;
 
 public class PNCounterTest {
 
-
   public void compileOnlyPNCounterApiTest() {
     // primarily to check API accessibility with overloads/types
     SelfUniqueAddress node1 = null;
@@ -21,6 +20,5 @@ public class PNCounterTest {
 
     PNCounter c4 = c3.decrement(node2, BigInteger.valueOf(2));
     PNCounter c5 = c4.decrement(node2, 7L);
-
   }
 }

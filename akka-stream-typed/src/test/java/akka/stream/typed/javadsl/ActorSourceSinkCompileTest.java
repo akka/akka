@@ -15,9 +15,13 @@ import akka.stream.javadsl.Source;
 public class ActorSourceSinkCompileTest {
 
   interface Protocol {}
+
   class Init implements Protocol {}
+
   class Msg implements Protocol {}
+
   class Complete implements Protocol {}
+
   class Failure implements Protocol {
     public Exception ex;
   }
@@ -31,57 +35,52 @@ public class ActorSourceSinkCompileTest {
     final ActorRef<String> ref = null;
 
     Source.<String>queue(10, OverflowStrategy.dropBuffer())
-      .map(s -> s + "!")
-      .to(ActorSink.actorRef(ref, "DONE", ex -> "FAILED: " + ex.getMessage()));
+        .map(s -> s + "!")
+        .to(ActorSink.actorRef(ref, "DONE", ex -> "FAILED: " + ex.getMessage()));
   }
 
   {
     final ActorRef<Protocol> ref = null;
 
     Source.<String>queue(10, OverflowStrategy.dropBuffer())
-      .to(ActorSink.actorRefWithAck(
-        ref,
-        (sender, msg) -> new Init(),
-        (sender) -> new Msg(),
-        "ACK",
-        new Complete(),
-        (f) -> new Failure()));
+        .to(
+            ActorSink.actorRefWithAck(
+                ref,
+                (sender, msg) -> new Init(),
+                (sender) -> new Msg(),
+                "ACK",
+                new Complete(),
+                (f) -> new Failure()));
   }
 
   {
-    ActorSource
-      .actorRef(
-        (m) -> m == "complete",
-        new JavaPartialFunction<String, Throwable>() {
+    ActorSource.actorRef(
+            (m) -> m == "complete",
+            new JavaPartialFunction<String, Throwable>() {
+              @Override
+              public Throwable apply(String x, boolean isCheck) throws Exception {
+                throw noMatch();
+              }
+            },
+            10,
+            OverflowStrategy.dropBuffer())
+        .to(Sink.seq());
+  }
+
+  {
+    final JavaPartialFunction<Protocol, Throwable> failureMatcher =
+        new JavaPartialFunction<Protocol, Throwable>() {
           @Override
-          public Throwable apply(String x, boolean isCheck) throws Exception {
-            throw noMatch();
+          public Throwable apply(Protocol p, boolean isCheck) throws Exception {
+            if (p instanceof Failure) {
+              return ((Failure) p).ex;
+            } else {
+              throw noMatch();
+            }
           }
-        },
-        10,
-        OverflowStrategy.dropBuffer())
-      .to(Sink.seq());
+        };
+
+    ActorSource.actorRef((m) -> false, failureMatcher, 10, OverflowStrategy.dropBuffer())
+        .to(Sink.seq());
   }
-
-  {
-    final JavaPartialFunction<Protocol, Throwable> failureMatcher = new JavaPartialFunction<Protocol, Throwable>() {
-      @Override
-      public Throwable apply(Protocol p, boolean isCheck) throws Exception {
-        if (p instanceof Failure) {
-          return ((Failure)p).ex;
-        }
-        else {
-          throw noMatch();
-        }
-      }
-    };
-
-    ActorSource
-      .actorRef(
-        (m) -> false,
-        failureMatcher, 10,
-        OverflowStrategy.dropBuffer())
-      .to(Sink.seq());
-  }
-
 }

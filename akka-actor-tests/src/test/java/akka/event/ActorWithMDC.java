@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class ActorWithMDC extends AbstractActor {
 
-    private final DiagnosticLoggingAdapter logger = Logging.getLogger(this);
+  private final DiagnosticLoggingAdapter logger = Logging.getLogger(this);
 
   @Override
   public Receive createReceive() {
@@ -33,36 +33,34 @@ public class ActorWithMDC extends AbstractActor {
     logger.setMDC(mdc);
 
     switch (log.level()) {
-    case 1:
-      logger.error(log.message);
-      break;
-    case 2:
-      logger.warning(log.message);
-      break;
-    case 3:
-      logger.info(log.message);
-      break;
-    default:
-      logger.debug(log.message);
-      break;
+      case 1:
+        logger.error(log.message);
+        break;
+      case 2:
+        logger.warning(log.message);
+        break;
+      case 3:
+        logger.info(log.message);
+        break;
+      default:
+        logger.debug(log.message);
+        break;
     }
 
     logger.clearMDC();
   }
 
-    public static class Log {
-        private final Object level;
-        public final String message;
+  public static class Log {
+    private final Object level;
+    public final String message;
 
-        public Log(Object level, String message) {
-            this.level = level;
-            this.message = message;
-        }
-
-        public int level() {
-            return (Integer) this.level;
-        }
+    public Log(Object level, String message) {
+      this.level = level;
+      this.message = message;
     }
 
-
+    public int level() {
+      return (Integer) this.level;
+    }
+  }
 }

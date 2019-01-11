@@ -14,13 +14,13 @@ abstract class DeviceProtocol {
 
   interface DeviceMessage {}
 
-  //#write-protocol
+  // #write-protocol
   public static final class RecordTemperature implements DeviceMessage {
     final long requestId;
     final double value;
     final ActorRef<TemperatureRecorded> replyTo;
 
-    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo){
+    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo) {
       this.requestId = requestId;
       this.value = value;
       this.replyTo = replyTo;
@@ -34,7 +34,7 @@ abstract class DeviceProtocol {
       this.requestId = requestId;
     }
   }
-  //#write-protocol
+  // #write-protocol
 
   public static final class ReadTemperature implements DeviceMessage {
     final long requestId;
@@ -55,5 +55,4 @@ abstract class DeviceProtocol {
       this.value = value;
     }
   }
-
 }

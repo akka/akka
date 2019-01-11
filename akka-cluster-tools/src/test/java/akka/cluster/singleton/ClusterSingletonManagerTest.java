@@ -20,33 +20,36 @@ public class ClusterSingletonManagerTest {
     final ActorRef queue = null;
     final ActorRef testActor = null;
 
-    //#create-singleton-manager
+    // #create-singleton-manager
     final ClusterSingletonManagerSettings settings =
-      ClusterSingletonManagerSettings.create(system).withRole("worker");
+        ClusterSingletonManagerSettings.create(system).withRole("worker");
 
     system.actorOf(
-      ClusterSingletonManager.props(
-        Props.create(Consumer.class, () -> new Consumer(queue, testActor)),
-        TestSingletonMessages.end(),
-        settings),
-      "consumer");
-    //#create-singleton-manager
+        ClusterSingletonManager.props(
+            Props.create(Consumer.class, () -> new Consumer(queue, testActor)),
+            TestSingletonMessages.end(),
+            settings),
+        "consumer");
+    // #create-singleton-manager
 
-    //#create-singleton-proxy
+    // #create-singleton-proxy
     ClusterSingletonProxySettings proxySettings =
         ClusterSingletonProxySettings.create(system).withRole("worker");
 
     ActorRef proxy =
-      system.actorOf(ClusterSingletonProxy.props("/user/consumer", proxySettings),
-        "consumerProxy");
-    //#create-singleton-proxy
+        system.actorOf(
+            ClusterSingletonProxy.props("/user/consumer", proxySettings), "consumerProxy");
+    // #create-singleton-proxy
 
-    //#create-singleton-proxy-dc
+    // #create-singleton-proxy-dc
     ActorRef proxyDcB =
-      system.actorOf(ClusterSingletonProxy.props("/user/consumer",
-        ClusterSingletonProxySettings.create(system)
-          .withRole("worker")
-          .withDataCenter("B")), "consumerProxyDcB");
-    //#create-singleton-proxy-dc
+        system.actorOf(
+            ClusterSingletonProxy.props(
+                "/user/consumer",
+                ClusterSingletonProxySettings.create(system)
+                    .withRole("worker")
+                    .withDataCenter("B")),
+            "consumerProxyDcB");
+    // #create-singleton-proxy-dc
   }
 }

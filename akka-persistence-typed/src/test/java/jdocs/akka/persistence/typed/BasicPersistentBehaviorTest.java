@@ -17,17 +17,22 @@ import java.util.Set;
 
 public class BasicPersistentBehaviorTest {
 
-  //#structure
+  // #structure
   public interface Command {}
+
   public interface Event {}
+
   public static class State {}
 
-  //#supervision
+  // #supervision
   public static class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
     public MyPersistentBehavior(PersistenceId persistenceId) {
-      super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+      super(
+          persistenceId,
+          SupervisorStrategy.restartWithBackoff(
+              Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
     }
-    //#supervision
+    // #supervision
 
     @Override
     public State emptyState() {
@@ -42,42 +47,44 @@ public class BasicPersistentBehaviorTest {
     }
 
     @Override
-    public EventHandler<State, Event>  eventHandler() {
+    public EventHandler<State, Event> eventHandler() {
       return (state, event) -> {
         throw new RuntimeException("TODO: process the event return the next state");
       };
     }
 
-    //#recovery
+    // #recovery
     @Override
     public void onRecoveryCompleted(State state) {
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
     }
-    //#recovery
+    // #recovery
 
-    //#tagging
+    // #tagging
     @Override
     public Set<String> tagsFor(Event event) {
       throw new RuntimeException("TODO: inspect the event and return any tags it should have");
     }
-    //#tagging
+    // #tagging
   }
 
   static EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
       new MyPersistentBehavior(new PersistenceId("pid"));
-  //#structure
+  // #structure
 
-  //#wrapPersistentBehavior
-  static Behavior<Command> debugAlwaysSnapshot = Behaviors.setup((context) -> {
+  // #wrapPersistentBehavior
+  static Behavior<Command> debugAlwaysSnapshot =
+      Behaviors.setup(
+          (context) -> {
             return new MyPersistentBehavior(new PersistenceId("pid")) {
               @Override
               public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
-                context.getLog().info("Snapshot actor {} => state: {}",
-                        context.getSelf().path().name(), state);
+                context
+                    .getLog()
+                    .info("Snapshot actor {} => state: {}", context.getSelf().path().name(), state);
                 return true;
               }
             };
-          }
-  );
-  //#wrapPersistentBehavior
+          });
+  // #wrapPersistentBehavior
 }

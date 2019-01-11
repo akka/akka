@@ -14,7 +14,7 @@ import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-//#device-manager-full
+// #device-manager-full
 public class DeviceManager extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -22,7 +22,7 @@ public class DeviceManager extends AbstractActor {
     return Props.create(DeviceManager.class, DeviceManager::new);
   }
 
-  //#device-manager-msgs
+  // #device-manager-msgs
   public static final class RequestTrackDevice {
     public final String groupId;
     public final String deviceId;
@@ -33,10 +33,9 @@ public class DeviceManager extends AbstractActor {
     }
   }
 
-  public static final class DeviceRegistered {
-  }
+  public static final class DeviceRegistered {}
 
-  //#device-manager-msgs
+  // #device-manager-msgs
   final Map<String, ActorRef> groupIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
@@ -75,10 +74,9 @@ public class DeviceManager extends AbstractActor {
 
   public Receive createReceive() {
     return receiveBuilder()
-            .match(RequestTrackDevice.class, this::onTrackDevice)
-            .match(Terminated.class, this::onTerminated)
-            .build();
+        .match(RequestTrackDevice.class, this::onTrackDevice)
+        .match(Terminated.class, this::onTerminated)
+        .build();
   }
-
 }
-//#device-manager-full
+// #device-manager-full

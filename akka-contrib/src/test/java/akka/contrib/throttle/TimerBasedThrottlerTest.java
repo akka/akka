@@ -21,19 +21,23 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 public class TimerBasedThrottlerTest extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource(
-      "TimerBasedThrottlerTest", ConfigFactory.parseString("akka.log-dead-letters=off"));
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource(
+          "TimerBasedThrottlerTest", ConfigFactory.parseString("akka.log-dead-letters=off"));
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void demonstrateUsage() {
-    //#demo-code
+    // #demo-code
     // A simple actor that prints whatever it receives
     ActorRef printer = system.actorOf(Props.create(Printer.class));
     // The throttler for this example, setting the rate
-    ActorRef throttler = system.actorOf(Props.create(TimerBasedThrottler.class,
-        new Throttler.Rate(3, Duration.create(1, TimeUnit.SECONDS))));
+    ActorRef throttler =
+        system.actorOf(
+            Props.create(
+                TimerBasedThrottler.class,
+                new Throttler.Rate(3, Duration.create(1, TimeUnit.SECONDS))));
     // Set the target
     throttler.tell(new Throttler.SetTarget(printer), null);
     // These three messages will be sent to the target immediately
@@ -44,32 +48,31 @@ public class TimerBasedThrottlerTest extends JUnitSuite {
     throttler.tell("4", null);
     throttler.tell("5", null);
 
-    //#demo-code
+    // #demo-code
 
   }
 
-  static//#demo-code
-  //A simple actor that prints whatever it receives
-  public class Printer extends AbstractActor {
+  public // #demo-code
+  // A simple actor that prints whatever it receives
+  static class Printer extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(message -> {
-          System.out.println(message);
-        })
-        .build();
+          .matchAny(
+              message -> {
+                System.out.println(message);
+              })
+          .build();
     }
   }
 
-  //#demo-code
+  // #demo-code
 
   static class System {
     static Out out = new Out();
 
     static class Out {
-      void println(Object s) {
-      }
+      void println(Object s) {}
     }
   }
-
 }

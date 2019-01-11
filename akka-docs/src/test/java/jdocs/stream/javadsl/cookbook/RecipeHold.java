@@ -41,7 +41,7 @@ public class RecipeHold extends RecipeTest {
     mat = null;
   }
 
-  //#hold-version-1
+  // #hold-version-1
   class HoldWithInitial<T> extends GraphStage<FlowShape<T, T>> {
 
     public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
@@ -65,19 +65,23 @@ public class RecipeHold extends RecipeTest {
         private T currentValue = initial;
 
         {
-          setHandler(in, new AbstractInHandler() {
-            @Override
-            public void onPush() throws Exception {
-              currentValue = grab(in);
-              pull(in);
-            }
-          });
-          setHandler(out, new AbstractOutHandler() {
-            @Override
-            public void onPull() throws Exception {
-              push(out, currentValue);
-            }
-          });
+          setHandler(
+              in,
+              new AbstractInHandler() {
+                @Override
+                public void onPush() throws Exception {
+                  currentValue = grab(in);
+                  pull(in);
+                }
+              });
+          setHandler(
+              out,
+              new AbstractOutHandler() {
+                @Override
+                public void onPull() throws Exception {
+                  push(out, currentValue);
+                }
+              });
         }
 
         @Override
@@ -87,9 +91,9 @@ public class RecipeHold extends RecipeTest {
       };
     }
   }
-  //#hold-version-1
+  // #hold-version-1
 
-  //#hold-version-2
+  // #hold-version-2
   class HoldWithWait<T> extends GraphStage<FlowShape<T, T>> {
     public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
     public Outlet<T> out = Outlet.<T>create("HoldWithInitial.out");
@@ -107,34 +111,37 @@ public class RecipeHold extends RecipeTest {
         private boolean waitingFirstValue = true;
 
         {
-          setHandler(in, new AbstractInHandler() {
-            @Override
-            public void onPush() throws Exception {
-              currentValue = grab(in);
-              if (waitingFirstValue) {
-                waitingFirstValue = false;
-                if (isAvailable(out)) push(out, currentValue);
-              }
-              pull(in);
-            }
-          });
-          setHandler(out, new AbstractOutHandler() {
-            @Override
-            public void onPull() throws Exception {
-              if (!waitingFirstValue) push(out, currentValue);
-            }
-          });
+          setHandler(
+              in,
+              new AbstractInHandler() {
+                @Override
+                public void onPush() throws Exception {
+                  currentValue = grab(in);
+                  if (waitingFirstValue) {
+                    waitingFirstValue = false;
+                    if (isAvailable(out)) push(out, currentValue);
+                  }
+                  pull(in);
+                }
+              });
+          setHandler(
+              out,
+              new AbstractOutHandler() {
+                @Override
+                public void onPull() throws Exception {
+                  if (!waitingFirstValue) push(out, currentValue);
+                }
+              });
         }
 
         @Override
         public void preStart() {
           pull(in);
         }
-
       };
     }
   }
-  //#hold-version-2
+  // #hold-version-2
 
   @Test
   public void workForVersion1() throws Exception {
@@ -144,7 +151,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.via(new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(mat);
+            source.via(new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(mat);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -172,7 +179,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.via(new HoldWithWait<>()).toMat(sink, Keep.both()).run(mat);
+            source.via(new HoldWithWait<>()).toMat(sink, Keep.both()).run(mat);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -196,5 +203,4 @@ public class RecipeHold extends RecipeTest {
       }
     };
   }
-
 }

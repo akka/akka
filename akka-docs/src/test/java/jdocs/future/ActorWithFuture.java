@@ -4,12 +4,12 @@
 
 package jdocs.future;
 
-//#context-dispatcher
+// #context-dispatcher
 import akka.actor.AbstractActor;
 import akka.dispatch.Futures;
 
 public class ActorWithFuture extends AbstractActor {
-  ActorWithFuture(){
+  ActorWithFuture() {
     Futures.future(() -> "hello", getContext().dispatcher());
   }
 

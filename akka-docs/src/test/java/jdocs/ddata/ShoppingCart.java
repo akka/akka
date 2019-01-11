@@ -30,12 +30,10 @@ import akka.cluster.ddata.Replicator.WriteMajority;
 @SuppressWarnings("unchecked")
 public class ShoppingCart extends AbstractActor {
 
-  //#read-write-majority
-  private final WriteConsistency writeMajority = 
-      new WriteMajority(Duration.ofSeconds(3));
-  private final static ReadConsistency readMajority = 
-      new ReadMajority(Duration.ofSeconds(3));
-  //#read-write-majority
+  // #read-write-majority
+  private final WriteConsistency writeMajority = new WriteMajority(Duration.ofSeconds(3));
+  private static final ReadConsistency readMajority = new ReadMajority(Duration.ofSeconds(3));
+  // #read-write-majority
 
   public static final String GET_CART = "getCart";
 
@@ -87,33 +85,30 @@ public class ShoppingCart extends AbstractActor {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       LineItem other = (LineItem) obj;
       if (productId == null) {
-        if (other.productId != null)
-          return false;
-      } else if (!productId.equals(other.productId))
-        return false;
-      if (quantity != other.quantity)
-        return false;
+        if (other.productId != null) return false;
+      } else if (!productId.equals(other.productId)) return false;
+      if (quantity != other.quantity) return false;
       if (title == null) {
-        if (other.title != null)
-          return false;
-      } else if (!title.equals(other.title))
-        return false;
+        if (other.title != null) return false;
+      } else if (!title.equals(other.title)) return false;
       return true;
     }
 
     @Override
     public String toString() {
-      return "LineItem [productId=" + productId + ", title=" + title + ", quantity=" + quantity + "]";
+      return "LineItem [productId="
+          + productId
+          + ", title="
+          + title
+          + ", quantity="
+          + quantity
+          + "]";
     }
-
   }
 
   public static Props props(String userId) {
@@ -121,10 +116,12 @@ public class ShoppingCart extends AbstractActor {
   }
 
   private final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
-  private final SelfUniqueAddress node = DistributedData.get(getContext().getSystem()).selfUniqueAddress();
+  private final SelfUniqueAddress node =
+      DistributedData.get(getContext().getSystem()).selfUniqueAddress();
 
   @SuppressWarnings("unused")
   private final String userId;
+
   private final Key<LWWMap<String, LineItem>> dataKey;
 
   public ShoppingCart(String userId) {
@@ -134,34 +131,37 @@ public class ShoppingCart extends AbstractActor {
 
   @Override
   public Receive createReceive() {
-    return matchGetCart()
-      .orElse(matchAddItem())
-      .orElse(matchRemoveItem())
-      .orElse(matchOther());
+    return matchGetCart().orElse(matchAddItem()).orElse(matchRemoveItem()).orElse(matchOther());
   }
 
-  //#get-cart
+  // #get-cart
   private Receive matchGetCart() {
     return receiveBuilder()
-      .matchEquals(GET_CART, s -> receiveGetCart())
-      .match(GetSuccess.class, this::isResponseToGetCart,
-        g -> receiveGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
-      .match(NotFound.class, this::isResponseToGetCart,
-        n -> receiveNotFound((NotFound<LWWMap<String, LineItem>>) n))
-      .match(GetFailure.class, this::isResponseToGetCart,
-        f -> receiveGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
-      .build();
+        .matchEquals(GET_CART, s -> receiveGetCart())
+        .match(
+            GetSuccess.class,
+            this::isResponseToGetCart,
+            g -> receiveGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
+        .match(
+            NotFound.class,
+            this::isResponseToGetCart,
+            n -> receiveNotFound((NotFound<LWWMap<String, LineItem>>) n))
+        .match(
+            GetFailure.class,
+            this::isResponseToGetCart,
+            f -> receiveGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
+        .build();
   }
 
   private void receiveGetCart() {
     Optional<Object> ctx = Optional.of(getSender());
-    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx),
-        getSelf());
+    replicator.tell(
+        new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx), getSelf());
   }
 
   private boolean isResponseToGetCart(GetResponse<?> response) {
-    return response.key().equals(dataKey) && 
-        (response.getRequest().orElse(null) instanceof ActorRef);
+    return response.key().equals(dataKey)
+        && (response.getRequest().orElse(null) instanceof ActorRef);
   }
 
   private void receiveGetSuccess(GetSuccess<LWWMap<String, LineItem>> g) {
@@ -178,25 +178,24 @@ public class ShoppingCart extends AbstractActor {
   private void receiveGetFailure(GetFailure<LWWMap<String, LineItem>> f) {
     // ReadMajority failure, try again with local read
     Optional<Object> ctx = Optional.of(getSender());
-    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, Replicator.readLocal(), 
-        ctx), getSelf());
+    replicator.tell(
+        new Replicator.Get<LWWMap<String, LineItem>>(dataKey, Replicator.readLocal(), ctx),
+        getSelf());
   }
-  //#get-cart
+  // #get-cart
 
-  //#add-item
+  // #add-item
   private Receive matchAddItem() {
-    return receiveBuilder()
-      .match(AddItem.class, this::receiveAddItem)
-      .build();
+    return receiveBuilder().match(AddItem.class, this::receiveAddItem).build();
   }
 
   private void receiveAddItem(AddItem add) {
-    Update<LWWMap<String, LineItem>> update = new Update<>(dataKey, LWWMap.create(), writeMajority,
-        cart -> updateCart(cart, add.item));
+    Update<LWWMap<String, LineItem>> update =
+        new Update<>(dataKey, LWWMap.create(), writeMajority, cart -> updateCart(cart, add.item));
     replicator.tell(update, getSelf());
   }
 
-  //#add-item
+  // #add-item
 
   private LWWMap<String, LineItem> updateCart(LWWMap<String, LineItem> data, LineItem item) {
     if (data.contains(item.productId)) {
@@ -211,29 +210,37 @@ public class ShoppingCart extends AbstractActor {
 
   private Receive matchRemoveItem() {
     return receiveBuilder()
-      .match(RemoveItem.class, this::receiveRemoveItem)
-      .match(GetSuccess.class, this::isResponseToRemoveItem,
-        g -> receiveRemoveItemGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
-      .match(GetFailure.class, this::isResponseToRemoveItem,
-        f -> receiveRemoveItemGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
-      .match(NotFound.class, this::isResponseToRemoveItem, n -> {/* nothing to remove */})
-      .build();
+        .match(RemoveItem.class, this::receiveRemoveItem)
+        .match(
+            GetSuccess.class,
+            this::isResponseToRemoveItem,
+            g -> receiveRemoveItemGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
+        .match(
+            GetFailure.class,
+            this::isResponseToRemoveItem,
+            f -> receiveRemoveItemGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
+        .match(
+            NotFound.class,
+            this::isResponseToRemoveItem,
+            n -> {
+              /* nothing to remove */
+            })
+        .build();
   }
 
-  //#remove-item
+  // #remove-item
   private void receiveRemoveItem(RemoveItem rm) {
     // Try to fetch latest from a majority of nodes first, since ORMap
     // remove must have seen the item to be able to remove it.
     Optional<Object> ctx = Optional.of(rm);
-    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx),
-        getSelf());
+    replicator.tell(
+        new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx), getSelf());
   }
 
   private void receiveRemoveItemGetSuccess(GetSuccess<LWWMap<String, LineItem>> g) {
     RemoveItem rm = (RemoveItem) g.getRequest().get();
     removeItem(rm.productId);
   }
-
 
   private void receiveRemoveItemGetFailure(GetFailure<LWWMap<String, LineItem>> f) {
     // ReadMajority failed, fall back to best effort local value
@@ -242,29 +249,34 @@ public class ShoppingCart extends AbstractActor {
   }
 
   private void removeItem(String productId) {
-    Update<LWWMap<String, LineItem>> update = new Update<>(dataKey, LWWMap.create(), writeMajority,
-        cart -> cart.remove(node, productId));
+    Update<LWWMap<String, LineItem>> update =
+        new Update<>(dataKey, LWWMap.create(), writeMajority, cart -> cart.remove(node, productId));
     replicator.tell(update, getSelf());
   }
 
   private boolean isResponseToRemoveItem(GetResponse<?> response) {
-    return response.key().equals(dataKey) && 
-        (response.getRequest().orElse(null) instanceof RemoveItem);
+    return response.key().equals(dataKey)
+        && (response.getRequest().orElse(null) instanceof RemoveItem);
   }
-  //#remove-item
+  // #remove-item
 
   private Receive matchOther() {
     return receiveBuilder()
-      .match(UpdateSuccess.class, u -> {
-        // ok
-      })
-      .match(UpdateTimeout.class, t -> {
-        // will eventually be replicated
-      })
-      .match(UpdateFailure.class, f -> {
-        throw new IllegalStateException("Unexpected failure: " + f);
-      })
-      .build();
+        .match(
+            UpdateSuccess.class,
+            u -> {
+              // ok
+            })
+        .match(
+            UpdateTimeout.class,
+            t -> {
+              // will eventually be replicated
+            })
+        .match(
+            UpdateFailure.class,
+            f -> {
+              throw new IllegalStateException("Unexpected failure: " + f);
+            })
+        .build();
   }
-
 }

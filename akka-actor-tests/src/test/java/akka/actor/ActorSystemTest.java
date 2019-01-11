@@ -19,7 +19,7 @@ public class ActorSystemTest extends JUnitSuite {
 
   @Rule
   public final AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("ActorSystemTest");
+      new AkkaJUnitActorSystemResource("ActorSystemTest");
 
   private ActorSystem system = null;
 

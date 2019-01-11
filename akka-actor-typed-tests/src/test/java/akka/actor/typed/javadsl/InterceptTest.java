@@ -20,24 +20,32 @@ public class InterceptTest extends JUnitSuite {
   @Test
   public void interceptMessage() {
     final TestProbe<String> interceptProbe = testKit.createTestProbe();
-    BehaviorInterceptor<String, String> interceptor = new BehaviorInterceptor<String, String>() {
-      @Override
-      public Behavior<String> aroundReceive(TypedActorContext<String> ctx, String msg, ReceiveTarget<String> target) {
-        interceptProbe.getRef().tell(msg);
-        return target.apply(ctx, msg);
-      }
+    BehaviorInterceptor<String, String> interceptor =
+        new BehaviorInterceptor<String, String>() {
+          @Override
+          public Behavior<String> aroundReceive(
+              TypedActorContext<String> ctx, String msg, ReceiveTarget<String> target) {
+            interceptProbe.getRef().tell(msg);
+            return target.apply(ctx, msg);
+          }
 
-      @Override
-      public Behavior<String> aroundSignal(TypedActorContext<String> ctx, Signal signal, SignalTarget<String> target) {
-        return target.apply(ctx, signal);
-      }
-    };
+          @Override
+          public Behavior<String> aroundSignal(
+              TypedActorContext<String> ctx, Signal signal, SignalTarget<String> target) {
+            return target.apply(ctx, signal);
+          }
+        };
 
     final TestProbe<String> probe = testKit.createTestProbe();
-    ActorRef<String> ref = testKit.spawn(Behaviors.intercept(interceptor, Behaviors.receiveMessage((String msg) -> {
-      probe.getRef().tell(msg);
-      return Behaviors.same();
-    })));
+    ActorRef<String> ref =
+        testKit.spawn(
+            Behaviors.intercept(
+                interceptor,
+                Behaviors.receiveMessage(
+                    (String msg) -> {
+                      probe.getRef().tell(msg);
+                      return Behaviors.same();
+                    })));
     ref.tell("Hello");
 
     interceptProbe.expectMessage("Hello");
@@ -45,36 +53,46 @@ public class InterceptTest extends JUnitSuite {
   }
 
   interface Message {}
+
   static class A implements Message {}
+
   static class B implements Message {}
 
   @Test
   public void interceptMessagesSelectively() {
     final TestProbe<Message> interceptProbe = testKit.createTestProbe();
-    BehaviorInterceptor<Message, Message> interceptor = new BehaviorInterceptor<Message, Message>() {
+    BehaviorInterceptor<Message, Message> interceptor =
+        new BehaviorInterceptor<Message, Message>() {
 
-      @Override
-      public Class<? extends Message> interceptMessageType() {
-        return B.class;
-      }
+          @Override
+          public Class<? extends Message> interceptMessageType() {
+            return B.class;
+          }
 
-      @Override
-      public Behavior<Message> aroundReceive(TypedActorContext<Message> ctx, Message msg, ReceiveTarget<Message> target) {
-        interceptProbe.getRef().tell(msg);
-        return target.apply(ctx, msg);
-      }
+          @Override
+          public Behavior<Message> aroundReceive(
+              TypedActorContext<Message> ctx, Message msg, ReceiveTarget<Message> target) {
+            interceptProbe.getRef().tell(msg);
+            return target.apply(ctx, msg);
+          }
 
-      @Override
-      public Behavior<Message> aroundSignal(TypedActorContext<Message> ctx, Signal signal, SignalTarget<Message> target) {
-        return target.apply(ctx, signal);
-      }
-    };
+          @Override
+          public Behavior<Message> aroundSignal(
+              TypedActorContext<Message> ctx, Signal signal, SignalTarget<Message> target) {
+            return target.apply(ctx, signal);
+          }
+        };
 
     final TestProbe<Message> probe = testKit.createTestProbe();
-    ActorRef<Message> ref = testKit.spawn(Behaviors.intercept(interceptor, Behaviors.receiveMessage((Message msg) -> {
-      probe.getRef().tell(msg);
-      return Behaviors.same();
-    })));
+    ActorRef<Message> ref =
+        testKit.spawn(
+            Behaviors.intercept(
+                interceptor,
+                Behaviors.receiveMessage(
+                    (Message msg) -> {
+                      probe.getRef().tell(msg);
+                      return Behaviors.same();
+                    })));
     ref.tell(new A());
     ref.tell(new B());
 
@@ -82,5 +100,4 @@ public class InterceptTest extends JUnitSuite {
     interceptProbe.expectMessageClass(B.class);
     probe.expectMessageClass(B.class);
   }
-
 }

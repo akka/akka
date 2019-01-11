@@ -30,7 +30,11 @@ public class RecipeLoggingElements extends RecipeTest {
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("RecipeLoggingElements", ConfigFactory.parseString("akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
+    system =
+        ActorSystem.create(
+            "RecipeLoggingElements",
+            ConfigFactory.parseString(
+                "akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
     mat = ActorMaterializer.create(system);
   }
 
@@ -49,12 +53,13 @@ public class RecipeLoggingElements extends RecipeTest {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
 
-        //#println-debug
-        mySource.map(elem -> {
-          System.out.println(elem);
-          return elem;
-        });
-        //#println-debug
+        // #println-debug
+        mySource.map(
+            elem -> {
+              System.out.println(elem);
+              return elem;
+            });
+        // #println-debug
       }
     };
   }
@@ -69,28 +74,32 @@ public class RecipeLoggingElements extends RecipeTest {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
 
-        //#log-custom
+        // #log-custom
         // customise log levels
-        mySource.log("before-map")
-          .withAttributes(Attributes.createLogLevels(
-            Logging.WarningLevel(), //onElement
-            Logging.InfoLevel(),    //onFinish
-            Logging.DebugLevel()    //onFailure
-          ))
-          .map(i -> analyse(i));
+        mySource
+            .log("before-map")
+            .withAttributes(
+                Attributes.createLogLevels(
+                    Logging.WarningLevel(), // onElement
+                    Logging.InfoLevel(), // onFinish
+                    Logging.DebugLevel() // onFailure
+                    ))
+            .map(i -> analyse(i));
 
         // or provide custom logging adapter
         final LoggingAdapter adapter = Logging.getLogger(system, "customLogger");
         mySource.log("custom", adapter);
-        //#log-custom
+        // #log-custom
 
-
-        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3).intercept(new AbstractFunction0<Object> () {
-          public Void apply() {
-            mySource.log("custom", adapter).runWith(Sink.ignore(), mat);
-            return null;
-          }
-        }, system);
+        new DebugFilter("customLogger", "[custom] Element: ", false, false, 3)
+            .intercept(
+                new AbstractFunction0<Object>() {
+                  public Void apply() {
+                    mySource.log("custom", adapter).runWith(Sink.ignore(), mat);
+                    return null;
+                  }
+                },
+                system);
       }
     };
   }
@@ -99,14 +108,13 @@ public class RecipeLoggingElements extends RecipeTest {
   public void errorLog() throws Exception {
     new TestKit(system) {
       {
-        //#log-error
+        // #log-error
         Source.from(Arrays.asList(-1, 0, 1))
-          .map(x -> 1 / x) //throwing ArithmeticException: / by zero
-          .log("error logging")
-          .runWith(Sink.ignore(), mat);
-        //#log-error
+            .map(x -> 1 / x) // throwing ArithmeticException: / by zero
+            .log("error logging")
+            .runWith(Sink.ignore(), mat);
+        // #log-error
       }
     };
   }
-
 }

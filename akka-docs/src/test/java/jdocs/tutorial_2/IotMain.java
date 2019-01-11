@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#iot-app
+// #iot-app
 package com.example;
 
 import java.io.IOException;
@@ -25,6 +25,5 @@ public class IotMain {
       system.terminate();
     }
   }
-
 }
-//#iot-app
+// #iot-app

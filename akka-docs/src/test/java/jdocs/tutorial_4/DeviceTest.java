@@ -32,7 +32,7 @@ public class DeviceTest extends JUnitSuite {
     system = null;
   }
 
-  //#device-registration-tests
+  // #device-registration-tests
   @Test
   public void testReplyToRegistrationRequests() {
     TestKit probe = new TestKit(system);
@@ -54,9 +54,9 @@ public class DeviceTest extends JUnitSuite {
     deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "wrongDevice"), probe.getRef());
     probe.expectNoMessage();
   }
-  //#device-registration-tests
+  // #device-registration-tests
 
-  //#device-read-test
+  // #device-read-test
   @Test
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
     TestKit probe = new TestKit(system);
@@ -66,9 +66,9 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(42L, response.requestId);
     assertEquals(Optional.empty(), response.value);
   }
-  //#device-read-test
+  // #device-read-test
 
-  //#device-write-read-test
+  // #device-write-read-test
   @Test
   public void testReplyWithLatestTemperatureReading() {
     TestKit probe = new TestKit(system);
@@ -90,6 +90,6 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-  //#device-write-read-test
+  // #device-write-read-test
 
 }

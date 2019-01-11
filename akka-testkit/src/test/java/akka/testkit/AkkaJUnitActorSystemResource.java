@@ -11,23 +11,15 @@ import com.typesafe.config.Config;
 import org.junit.rules.ExternalResource;
 
 /**
- * This is a resource for creating an actor system before test start and shut it
- * down afterwards.
+ * This is a resource for creating an actor system before test start and shut it down afterwards.
  *
- * To use it on a class level add this to your test class:
- *
- * <code>
+ * <p>To use it on a class level add this to your test class: <code>
  * &#64;ClassRule
  * public static AkkaJUnitActorSystemResource actorSystemResource =
  *   new AkkaJUnitActorSystemResource(name, config);
  *
  * private final ActorSystem system = actorSystemResource.getSystem();
- * </code>
- *
- *
- *            To use it on a per test level add this to your test class:
- *
- *            <code>
+ * </code> To use it on a per test level add this to your test class: <code>
  * &#64;Rule
  * public AkkaJUnitActorSystemResource actorSystemResource =
  *   new AkkaJUnitActorSystemResource(name, config);
@@ -38,14 +30,10 @@ import org.junit.rules.ExternalResource;
  * public void beforeEach() {
  *   system = actorSystemResource.getSystem();
  * }
- * </code>
- *
- *         Note that it is important to not use <code>getSystem</code> from the
- *         constructor of the test, because some test runners may create an
- *         instance of the class without actually using it later, resulting in
- *         memory leaks because of not shutting down the actor system.
+ * </code> Note that it is important to not use <code>getSystem</code> from the constructor of the
+ * test, because some test runners may create an instance of the class without actually using it
+ * later, resulting in memory leaks because of not shutting down the actor system.
  */
-
 public class AkkaJUnitActorSystemResource extends ExternalResource {
   private ActorSystem system = null;
   private final String name;
@@ -53,12 +41,9 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
 
   private ActorSystem createSystem(String name, Config config) {
     try {
-      if (config == null)
-        return ActorSystem.create(name);
-      else
-        return ActorSystem.create(name, config);
-    }
-    catch (Exception e) {
+      if (config == null) return ActorSystem.create(name);
+      else return ActorSystem.create(name, config);
+    } catch (Exception e) {
       e.printStackTrace();
       return null;
     }

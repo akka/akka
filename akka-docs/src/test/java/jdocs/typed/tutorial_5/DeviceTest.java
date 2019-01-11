@@ -20,8 +20,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeviceTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testReplyWithEmptyReadingIfNoTemperatureIsKnown() {
@@ -55,5 +54,4 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-
 }

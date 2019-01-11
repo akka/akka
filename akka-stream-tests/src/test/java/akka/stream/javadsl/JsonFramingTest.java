@@ -21,29 +21,35 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.Assert.assertEquals;
 
 public class JsonFramingTest extends StreamTest {
-    public JsonFramingTest() {
-        super(actorSystemResource);
-    }
+  public JsonFramingTest() {
+    super(actorSystemResource);
+  }
 
-    @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource =
-            new AkkaJUnitActorSystemResource("JsonFramingTest", AkkaSpec.testConf());
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("JsonFramingTest", AkkaSpec.testConf());
 
-    @Test
-    public void mustBeAbleToParseJsonArray() throws InterruptedException, ExecutionException, TimeoutException {
-        // #using-json-framing
-        String input = "[{ \"name\" : \"john\" }, { \"name\" : \"Ég get etið gler án þess að meiða mig\" }, { \"name\" : \"jack\" }]";
-        CompletionStage<ArrayList<String>> result = Source.single(ByteString.fromString(input))
-                .via(JsonFraming.objectScanner(Integer.MAX_VALUE))
-                .runFold(new ArrayList<String>(), (acc, entry) -> {
-                    acc.add(entry.utf8String());
-                    return acc;
-                }, materializer);
-        // #using-json-framing
+  @Test
+  public void mustBeAbleToParseJsonArray()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    // #using-json-framing
+    String input =
+        "[{ \"name\" : \"john\" }, { \"name\" : \"Ég get etið gler án þess að meiða mig\" }, { \"name\" : \"jack\" }]";
+    CompletionStage<ArrayList<String>> result =
+        Source.single(ByteString.fromString(input))
+            .via(JsonFraming.objectScanner(Integer.MAX_VALUE))
+            .runFold(
+                new ArrayList<String>(),
+                (acc, entry) -> {
+                  acc.add(entry.utf8String());
+                  return acc;
+                },
+                materializer);
+    // #using-json-framing
 
-        List<String> frames = result.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        assertEquals("{ \"name\" : \"john\" }", frames.get(0));
-        assertEquals("{ \"name\" : \"Ég get etið gler án þess að meiða mig\" }", frames.get(1));
-        assertEquals("{ \"name\" : \"jack\" }", frames.get(2));
-    }
+    List<String> frames = result.toCompletableFuture().get(5, TimeUnit.SECONDS);
+    assertEquals("{ \"name\" : \"john\" }", frames.get(0));
+    assertEquals("{ \"name\" : \"Ég get etið gler án þess að meiða mig\" }", frames.get(1));
+    assertEquals("{ \"name\" : \"jack\" }", frames.get(2));
+  }
 }

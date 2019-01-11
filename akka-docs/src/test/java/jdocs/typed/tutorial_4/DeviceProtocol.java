@@ -20,7 +20,7 @@ abstract class DeviceProtocol {
     final double value;
     final ActorRef<TemperatureRecorded> replyTo;
 
-    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo){
+    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo) {
       this.requestId = requestId;
       this.value = value;
       this.replyTo = replyTo;
@@ -55,10 +55,10 @@ abstract class DeviceProtocol {
     }
   }
 
-  //#passivate-msg
+  // #passivate-msg
   static enum Passivate implements DeviceMessage {
     INSTANCE
   }
-  //#passivate-msg
+  // #passivate-msg
 
 }
