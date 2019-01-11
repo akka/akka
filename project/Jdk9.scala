@@ -20,11 +20,16 @@ object Jdk9 extends AutoPlugin {
     if (System.getProperty("java.version").startsWith("1.")) Seq()
     else values
 
+  val SCALA_SOURCE_DIRECTORY = "scala-jdk-9"
+  val SCALA_TEST_SOURCE_DIRECTORY = "scala-jdk9-only"
+  val JAVA_SOURCE_DIRECTORY = "java-jdk-9"
+  val JAVA_TEST_SOURCE_DIRECTORY = "java-jdk9-only"
+  
   val compileJdk9Settings = Seq(
     // following the scala-2.12, scala-sbt-1.0, ... convention
     unmanagedSourceDirectories := notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq(
-      (Compile / sourceDirectory).value / "scala-jdk-9",
-      (Compile / sourceDirectory).value / "java-jdk-9"
+      (Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY,
+      (Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY
     ))),
     scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "9"))),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "9")))
