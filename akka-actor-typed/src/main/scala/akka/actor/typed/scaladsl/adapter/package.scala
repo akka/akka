@@ -6,7 +6,7 @@ package akka.actor.typed
 package scaladsl
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.internal.adapter._
+import akka.actor.typed.internal.adapter.{ PropsAdapter ⇒ _, _ }
 import akka.annotation.InternalApi
 
 /**

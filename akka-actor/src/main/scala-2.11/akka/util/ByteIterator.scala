@@ -4,6 +4,8 @@
 
 package akka.util
 
+import akka.util.Collections.EmptyImmutableSeq
+
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.annotation.tailrec
@@ -33,7 +35,7 @@ object ByteIterator {
     @inline final def head: Byte = array(from)
 
     final def next(): Byte = {
-      if (!hasNext) Iterator.empty.next
+      if (!hasNext) EmptyImmutableSeq.iterator.next()
       else { val i = from; from = from + 1; array(i) }
     }
 
@@ -106,7 +108,7 @@ object ByteIterator {
       if (n <= this.len) {
         Array.copy(this.array, this.from, xs, offset, n)
         this.drop(n)
-      } else Iterator.empty.next
+      } else EmptyImmutableSeq.iterator.next()
     }
 
     private def wrappedByteBuffer: ByteBuffer = ByteBuffer.wrap(array, from, len).asReadOnlyBuffer
@@ -313,7 +315,7 @@ object ByteIterator {
 
     @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
       if (n <= 0) this else {
-        if (isEmpty) Iterator.empty.next
+        if (isEmpty) EmptyImmutableSeq.iterator.next()
         val nDone = if (current.len >= elemSize) {
           val nCurrent = math.min(n, current.len / elemSize)
           getMult(xs, offset, nCurrent)
@@ -436,16 +438,19 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     (this, that)
   }
 
-  override def indexWhere(p: Byte ⇒ Boolean): Int = {
-    var index = 0
+  override def indexWhere(p: Byte ⇒ Boolean): Int = indexWhere(p, 0)
+  def indexWhere(p: Byte ⇒ Boolean, from: Int): Int = {
+    var index = from
     var found = false
     while (!found && hasNext) if (p(next())) { found = true } else { index += 1 }
     if (found) index else -1
   }
 
-  def indexOf(elem: Byte): Int = indexWhere { _ == elem }
+  def indexOf(elem: Byte): Int = indexOf(elem, 0)
+  def indexOf(elem: Byte, from: Int): Int = indexWhere(_ == elem, 0)
 
-  override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
+  override def indexOf[B >: Byte](elem: B): Int = indexOf[B](elem, 0)
+  def indexOf[B >: Byte](elem: B, from: Int): Int = indexWhere(_ == elem, from)
 
   def toByteString: ByteString
 

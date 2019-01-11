@@ -28,6 +28,7 @@ import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -587,7 +588,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   val accepting: Receive = {
     case ManagementCommand(cmd) ⇒
       val allStatuses: immutable.Seq[Future[Boolean]] =
-        transportMapping.values.map(transport ⇒ transport.managementCommand(cmd))(scala.collection.breakOut)
+        transportMapping.values.iterator.map(transport ⇒ transport.managementCommand(cmd)).to(immutable.IndexedSeq)
       akka.compat.Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
 
     case Quarantine(address, uidToQuarantineOption) ⇒
@@ -715,10 +716,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case ShutdownAndFlush ⇒
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      def shutdownAll[T](resources: TraversableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
-        (Future sequence resources.map(shutdown)) map { _.forall(identity) } recover {
-          case NonFatal(_) ⇒ false
-        }
+      def shutdownAll[T](resources: IterableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
+        Future.sequence(resources.toList.map(shutdown))
+          .map(_.forall(identity))
+          .recover {
+            case NonFatal(_) ⇒ false
+          }
       }
 
       (for {

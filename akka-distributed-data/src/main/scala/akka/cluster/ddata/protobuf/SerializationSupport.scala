@@ -11,7 +11,6 @@ import java.util.zip.GZIPOutputStream
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
 import scala.collection.JavaConverters._
-import scala.collection.breakOut
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -21,6 +20,7 @@ import akka.serialization._
 import akka.protobuf.ByteString
 import akka.protobuf.MessageLite
 import akka.cluster.ddata.VersionVector
+import akka.util.ccompat._
 
 /**
  * Some useful serialization helper methods.
@@ -124,8 +124,8 @@ trait SerializationSupport {
     else if (entries.size == 1)
       VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
     else {
-      val versions: TreeMap[UniqueAddress, Long] = versionVector.getEntriesList.asScala.map(entry ⇒
-        uniqueAddressFromProto(entry.getNode) → entry.getVersion)(breakOut)
+      val versions: TreeMap[UniqueAddress, Long] = scala.collection.immutable.TreeMap.from(versionVector.getEntriesList.asScala.iterator.map(entry ⇒
+        uniqueAddressFromProto(entry.getNode) → entry.getVersion))
       VersionVector(versions)
     }
   }

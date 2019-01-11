@@ -17,10 +17,11 @@ import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
-import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
+import scala.collection.immutable
+import akka.util.ccompat._
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input.
@@ -239,12 +240,12 @@ object Sink {
    * may be used to ensure boundedness.
    * Materializes into a `Future` of `That[T]` containing all the collected elements.
    * `That[T]` is limited to the limitations of the CanBuildFrom associated with it. For example, `Seq` is limited to
-   * `Int.MaxValue` elements. See [The Architecture of Scala Collections](https://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html) for more info.
+   * `Int.MaxValue` elements. See [The Architecture of Scala 2.13's Collections](https://docs.scala-lang.org/overviews/core/architecture-of-scala-213-collections.html) for more info.
    * This Sink will cancel the stream after having received that many elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
-  def collection[T, That](implicit cbf: CanBuildFrom[Nothing, T, That with immutable.Traversable[_]]): Sink[T, Future[That]] =
+  def collection[T, That](implicit cbf: Factory[T, That with immutable.Iterable[_]]): Sink[T, Future[That]] =
     Sink.fromGraph(new SeqStage[T, That])
 
   /**

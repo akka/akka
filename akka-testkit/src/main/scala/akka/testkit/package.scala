@@ -5,6 +5,7 @@
 package akka
 
 import akka.actor.ActorSystem
+import akka.util.ccompat._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.collection.immutable
@@ -14,7 +15,7 @@ package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit system: ActorSystem): T = {
     def now = System.currentTimeMillis
 
-    system.eventStream.publish(TestEvent.Mute(eventFilters.to[immutable.Seq]))
+    system.eventStream.publish(TestEvent.Mute(eventFilters.to(immutable.Seq)))
 
     try {
       val result = block
@@ -27,7 +28,7 @@ package object testkit {
 
       result
     } finally {
-      system.eventStream.publish(TestEvent.UnMute(eventFilters.to[immutable.Seq]))
+      system.eventStream.publish(TestEvent.UnMute(eventFilters.to(immutable.Seq)))
     }
   }
 

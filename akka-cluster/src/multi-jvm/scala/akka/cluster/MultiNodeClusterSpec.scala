@@ -17,6 +17,7 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
 import akka.event.Logging.ErrorLevel
+import akka.util.ccompat._
 
 import scala.concurrent.duration._
 import scala.collection.immutable
@@ -24,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
+import akka.util.ccompat.imm._
 
 import scala.concurrent.Await
 
@@ -273,7 +275,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * be determined from the `RoleName`.
    */
   def assertLeader(nodesInCluster: RoleName*): Unit =
-    if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to[immutable.Seq])
+    if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to(immutable.Seq))
 
   /**
    * Assert that the cluster has elected the correct leader
@@ -310,7 +312,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) should not contain (a)))
       awaitAssert(clusterView.members.size should ===(numberOfMembers))
-      awaitAssert(clusterView.members.map(_.status) should ===(Set(MemberStatus.Up)))
+      awaitAssert(clusterView.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.collectFirst {
         case m if m.dataCenter == cluster.settings.SelfDataCenter ⇒ m.address

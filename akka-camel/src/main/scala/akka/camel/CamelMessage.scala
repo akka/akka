@@ -11,16 +11,16 @@ import akka.AkkaException
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 import scala.util.Try
-import scala.collection.JavaConversions._
 import akka.dispatch.Mapper
+import scala.collection.JavaConverters._
 
 /**
  * An immutable representation of a Camel message.
  */
 @deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
 class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments: Map[String, DataHandler]) extends Serializable with Product {
-  def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap, Map.empty[String, DataHandler]) //Java
-  def this(body: Any, headers: JMap[String, Any], attachments: JMap[String, DataHandler]) = this(body, headers.toMap, attachments.toMap) //Java
+  def this(body: Any, headers: JMap[String, Any]) = this(body, headers.asScala.toMap, Map.empty[String, DataHandler]) //Java
+  def this(body: Any, headers: JMap[String, Any], attachments: JMap[String, DataHandler]) = this(body, headers.asScala.toMap, attachments.asScala.toMap) //Java
   def this(body: Any, headers: Map[String, Any]) = this(body, headers.toMap, Map.empty[String, DataHandler])
 
   def copy(body: Any = this.body, headers: Map[String, Any] = this.headers): CamelMessage = CamelMessage(body, headers, this.attachments)
@@ -30,26 +30,26 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
    */
-  def headers(names: Set[String]): Map[String, Any] = headers filterKeys names
+  def headers(names: Set[String]): Map[String, Any] = (headers filterKeys names).toMap
 
   /**
    * Java API: Returns those headers from this message whose name is contained in <code>names</code>.
    * The returned headers map is backed up by an immutable headers map. Any attempt to modify
    * the returned map will throw an exception.
    */
-  def getHeaders(names: JSet[String]): JMap[String, Any] = headers(names.toSet)
+  def getHeaders(names: JSet[String]): JMap[String, Any] = headers(names.asScala.toSet).asJava
 
   /**
    * Java API: Returns all headers from this message. The returned headers map is backed up by this
    * message's immutable headers map. Any attempt to modify the returned map will throw an
    * exception.
    */
-  def getHeaders: JMap[String, Any] = headers
+  def getHeaders: JMap[String, Any] = headers.asJava
 
   /**
    * Java API: Creates a new CamelMessage with given <code>headers</code>. A copy of the headers map is made.
    */
-  def withHeaders[A](headers: JMap[String, A]): CamelMessage = copy(this.body, headers.toMap)
+  def withHeaders[A](headers: JMap[String, A]): CamelMessage = copy(this.body, headers.asScala.toMap)
 
   /**
    * Returns the header by given <code>name</code> parameter in a [[scala.util.Try]]. The header is  converted to type <code>T</code>, which is returned
@@ -138,26 +138,26 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
   /**
    * Returns those attachments from this message whose name is contained in <code>names</code>.
    */
-  def attachments(names: Set[String]): Map[String, DataHandler] = attachments filterKeys names
+  def attachments(names: Set[String]): Map[String, DataHandler] = (attachments filterKeys names).toMap
 
   /**
    * Java API: Returns those attachments from this message whose name is contained in <code>names</code>.
    * The returned headers map is backed up by an immutable headers map. Any attempt to modify
    * the returned map will throw an exception.
    */
-  def getAttachments(names: JSet[String]): JMap[String, DataHandler] = attachments(names.toSet)
+  def getAttachments(names: JSet[String]): JMap[String, DataHandler] = attachments(names.asScala.toSet).asJava
 
   /**
    * Java API: Returns all attachments from this message. The returned attachments map is backed up by this
    * message's immutable headers map. Any attempt to modify the returned map will throw an
    * exception.
    */
-  def getAttachments: JMap[String, DataHandler] = attachments
+  def getAttachments: JMap[String, DataHandler] = attachments.asJava
 
   /**
    * Java API: Creates a new CamelMessage with given <code>attachments</code>. A copy of the attachments map is made.
    */
-  def withAttachments(attachments: JMap[String, DataHandler]): CamelMessage = CamelMessage(this.body, this.headers, attachments.toMap)
+  def withAttachments(attachments: JMap[String, DataHandler]): CamelMessage = CamelMessage(this.body, this.headers, attachments.asScala.toMap)
 
   /**
    * SCALA API: Creates a new CamelMessage with given <code>attachments</code>.
@@ -250,7 +250,7 @@ object CamelMessage extends ((Any, Map[String, Any]) ⇒ CamelMessage) {
    *                in the Camel message.
    */
   private[camel] def from(camelMessage: JCamelMessage, headers: Map[String, Any]): CamelMessage =
-    CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders, camelMessage.getAttachments.toMap)
+    CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders.asScala, camelMessage.getAttachments.asScala.toMap)
 
   /**
    * Creates a new CamelMessageWithAttachments object from the Camel message.
@@ -261,7 +261,7 @@ object CamelMessage extends ((Any, Map[String, Any]) ⇒ CamelMessage) {
    *                in the Camel message.
    */
   private[camel] def from(camelMessage: JCamelMessage, headers: Map[String, Any], attachments: Map[String, DataHandler]): CamelMessage =
-    CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders, attachments ++ camelMessage.getAttachments)
+    CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders.asScala, attachments ++ camelMessage.getAttachments.asScala)
 
   /**
    * INTERNAL API

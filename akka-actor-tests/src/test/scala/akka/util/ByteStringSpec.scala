@@ -35,7 +35,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       for {
         chunks ← Gen.choose(0, s)
         bytes ← Gen.listOfN(chunks, genSimpleByteString(1, 1 max (s / (chunks max 1))))
-      } yield (ByteString.empty /: bytes)(_ ++ _)
+      } yield bytes.foldLeft(ByteString.empty)(_ ++ _)
     }
   }
 
@@ -762,11 +762,16 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
     "serialize correctly" when {
       "parsing regular ByteString1C as compat" in {
-        val oldSerd = "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
+        val oldSerd =
+          if (util.Properties.versionNumberString.startsWith("2.11") || util.Properties.versionNumberString.startsWith("2.12"))
+            "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
+          else
+            // The data is the same, but the class hierarchy changed in 2.13:
+            "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e676c083a30328adea002000078720014616b6b612e7574696c2e42797465537472696e678efa6cf8286d3c930200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
         val bs = ByteString("teststring", "UTF8")
         val str = hexFromSer(bs)
 
-        require(oldSerd == str)
+        str should be(oldSerd)
       }
 
       "given all types of ByteString" in {

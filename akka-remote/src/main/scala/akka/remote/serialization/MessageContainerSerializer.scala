@@ -14,6 +14,7 @@ import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.remote.ContainerFormats
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
+import akka.util.ccompat._
 
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
@@ -67,14 +68,14 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
       manifest).get
 
     import scala.collection.JavaConverters._
-    val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.map { x ⇒
+    val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.iterator.map { x ⇒
       x.getType match {
         case CHILD_NAME    ⇒ SelectChildName(x.getMatcher)
         case CHILD_PATTERN ⇒ SelectChildPattern(x.getMatcher)
         case PARENT        ⇒ SelectParent
       }
 
-    }(collection.breakOut)
+    }.to(immutable.IndexedSeq)
     val wildcardFanOut = if (selectionEnvelope.hasWildcardFanOut) selectionEnvelope.getWildcardFanOut else false
     ActorSelectionMessage(msg, elements, wildcardFanOut)
   }
