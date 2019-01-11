@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.cluster.MemberStatus.Removed
 import akka.testkit.TestKitBase
@@ -102,7 +104,7 @@ trait ClusterTestKit extends TestKitBase {
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
      * Once original system is removed, a new [[ActorSystem]] is started using the same address.
      */
-    def quitAndRestart(actorSystem: ActorSystem, config: Config): ActorSystem = {
+    def quitAndRestart(actorSystem: ActorSystem, config: Config, within: Duration = 100.millis): ActorSystem = {
       require(isRegistered(actorSystem), "Unknown actor system")
 
       // is this first seed node?
@@ -113,7 +115,10 @@ trait ClusterTestKit extends TestKitBase {
 
       // remove old before starting the new one
       cluster.leave(cluster.readView.selfAddress)
-      awaitCond(cluster.readView.status == Removed, message = s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
+      awaitCond(
+        cluster.readView.status == Removed,
+        message = s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]",
+        interval = within)
 
       shutdown(actorSystem)
       awaitCond(cluster.isTerminated)
@@ -131,5 +136,16 @@ trait ClusterTestKit extends TestKitBase {
       if (firstSeedNode) newActorSystemAsFirst(newConfig)
       else newActorSystem(newConfig)
     }
+
+    /**
+     * Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]].
+     */
+    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).readView.status == MemberStatus.Up
+
+    /**
+     * Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown.
+     */
+    def isTerminated(system: ActorSystem): Boolean = Cluster(system).readView.isTerminated
+
   }
 }
