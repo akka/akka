@@ -5,6 +5,7 @@
 package akka.util
 
 import scala.collection.immutable
+import akka.util.ccompat._
 
 /**
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!
@@ -172,7 +173,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
    */
   protected final def findValues(key: K): Set[V] = root.innerFindValues(key)
   protected def innerFindValues(key: K): Set[V] =
-    (Set.empty[V] /: subkeys) { (s, n) ⇒
+    subkeys.foldLeft(Set.empty[V]) { (s, n) ⇒
       if (sc.isSubclass(key, n.key))
         s ++ n.innerFindValues(key)
       else
@@ -184,7 +185,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
    */
   protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] = root.innerFindSubKeys(key, except)
   protected def innerFindSubKeys(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
-    (Set.empty[K] /: subkeys) { (s, n) ⇒
+    subkeys.foldLeft(Set.empty[K]) { (s, n) ⇒
       if (sc.isEqual(key, n.key)) s
       else n.innerFindSubKeys(key, except) ++ {
         if (sc.isSubclass(n.key, key) && !except.exists(e ⇒ sc.isEqual(key, e.key)))
@@ -209,7 +210,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
   }
 
   private def mergeChangesByKey(changes: Changes): Changes =
-    (emptyMergeMap[K, V] /: changes) {
+    changes.foldLeft(emptyMergeMap[K, V]) {
       case (m, (k, s)) ⇒ m.updated(k, m(k) ++ s)
-    }.to[immutable.Seq]
+    }.to(immutable.Seq)
 }

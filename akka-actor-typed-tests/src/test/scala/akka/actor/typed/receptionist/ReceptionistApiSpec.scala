@@ -32,18 +32,20 @@ object ReceptionistApiSpec {
     // to work
     val registered: Future[Receptionist.Registered] =
       system.receptionist ? (Receptionist.Register(key, service, _))
-    registered.onSuccess {
+    registered.foreach {
       case key.Registered(ref) ⇒
         // ref is the right type here
         ref ! "woho"
+      case _ ⇒ ()
     }
 
     // one-off ask outside of actor, should be uncommon but not rare
     val found: Future[Receptionist.Listing] =
       system.receptionist ? (Receptionist.Find(key, _))
-    found.onSuccess {
+    found.foreach {
       case key.Listing(instances) ⇒
         instances.foreach(_ ! "woho")
+      case _ ⇒ ()
     }
 
     Behaviors.setup[Any] { context ⇒

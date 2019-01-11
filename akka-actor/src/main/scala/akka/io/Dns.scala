@@ -15,7 +15,8 @@ import java.util.function.{ Function ⇒ JFunction }
 
 import akka.util.unused
 
-import scala.collection.{ breakOut, immutable }
+import scala.collection.immutable
+import akka.util.ccompat._
 
 abstract class Dns {
 
@@ -56,12 +57,12 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
-      val ipv4: immutable.Seq[Inet4Address] = addresses.collect({
+      val ipv4: immutable.Seq[Inet4Address] = addresses.iterator.collect({
         case a: Inet4Address ⇒ a
-      })(breakOut)
-      val ipv6: immutable.Seq[Inet6Address] = addresses.collect({
+      }).to(immutable.IndexedSeq)
+      val ipv6: immutable.Seq[Inet6Address] = addresses.iterator.collect({
         case a: Inet6Address ⇒ a
-      })(breakOut)
+      }).to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
   }

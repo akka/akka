@@ -136,7 +136,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         expectTerminated(r)
 
         var r2: ActorRef = null
-        awaitAssert(r2 = newReplicator()) // try until name is free
+        awaitAssert { r2 = newReplicator() } // try until name is free
 
         // note that it will stash the commands until loading completed
         r2 ! Get(KeyA, ReadLocal)
@@ -184,7 +184,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     expectTerminated(r)
 
     var r2: ActorRef = null
-    awaitAssert(r2 = newReplicator()) // try until name is free
+    awaitAssert { r2 = newReplicator() } // try until name is free
     awaitAssert {
       r2 ! GetKeyIds
       expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
@@ -221,7 +221,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       expectTerminated(r)
 
       var r2: ActorRef = null
-      awaitAssert(r2 = newReplicator()) // try until name is free
+      awaitAssert { r2 = newReplicator() } // try until name is free
       awaitAssert {
         r2 ! GetKeyIds
         expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])

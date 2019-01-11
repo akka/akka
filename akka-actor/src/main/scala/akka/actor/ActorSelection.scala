@@ -22,6 +22,7 @@ import akka.util.{ Helpers, JavaDurationConverters, Timeout }
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
+import akka.util.ccompat._
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -203,12 +204,12 @@ object ActorSelection {
    * intention is to send messages frequently.
    */
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
-    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.collect({
+    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator.collect({
       case x if !x.isEmpty ⇒
         if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
         else if (x == "..") SelectParent
         else SelectChildName(x)
-    })(scala.collection.breakOut)
+    }).to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled

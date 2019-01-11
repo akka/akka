@@ -12,14 +12,14 @@ object VectorClockPerfSpec {
   import VectorClock._
 
   def createVectorClockOfSize(size: Int): (VectorClock, SortedSet[Node]) =
-    ((VectorClock(), SortedSet.empty[Node]) /: (1 to size)) {
+    (1 to size).foldLeft((VectorClock(), SortedSet.empty[Node])) {
       case ((vc, nodes), i) ⇒
         val node = Node(i.toString)
         (vc :+ node, nodes + node)
     }
 
   def copyVectorClock(vc: VectorClock): VectorClock = {
-    val versions = (TreeMap.empty[Node, Long] /: vc.versions) {
+    val versions = vc.versions.foldLeft(TreeMap.empty[Node, Long]) {
       case (versions, (n, t)) ⇒ versions.updated(Node.fromHash(n), t)
     }
     vc.copy(versions = versions)

@@ -19,6 +19,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.util.ccompat._
 
 object Player {
 
@@ -85,7 +86,7 @@ trait Player { this: TestConductorExt ⇒
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(name: String*): Unit = enter(Settings.BarrierTimeout, name.to[immutable.Seq])
+  def enter(name: String*): Unit = enter(Settings.BarrierTimeout, name.to(immutable.Seq))
 
   /**
    * Enter the named barriers, one after the other, in the order given. Will

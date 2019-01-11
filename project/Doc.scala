@@ -61,7 +61,10 @@ object Scaladoc extends AutoPlugin {
           if (name.endsWith(".html") && !name.startsWith("index-") &&
             !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            val hd = try source.getLines().exists(lines =>
+              lines.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+              lines.contains("<svg id=\"graph")
+            )
             catch {
               case e: Exception ⇒ throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()

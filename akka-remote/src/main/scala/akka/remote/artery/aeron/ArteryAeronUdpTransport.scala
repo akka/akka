@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -28,6 +29,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
+import akka.util.ccompat._
 import io.aeron.Aeron
 import io.aeron.AvailableImageHandler
 import io.aeron.CncFileDescriptor
@@ -346,9 +348,9 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { _ ⇒
+          (0 until inboundLanes).iterator.map { _ ⇒
             laneHub.toMat(lane)(Keep.right).run()(materializer)
-          }(collection.breakOut)
+          }.to(immutable.Vector)
 
         import system.dispatcher
 

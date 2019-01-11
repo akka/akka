@@ -49,13 +49,13 @@ private[akka] object ChildrenContainer {
   final case class Creation() extends SuspendReason with WaitingForChildren
   case object Termination extends SuspendReason
 
-  class ChildRestartsIterable(stats: immutable.MapLike[_, ChildStats, _]) extends PartialImmutableValuesIterable[ChildStats, ChildRestartStats] {
+  class ChildRestartsIterable(stats: immutable.Map[_, ChildStats]) extends PartialImmutableValuesIterable[ChildStats, ChildRestartStats] {
     override final def apply(c: ChildStats) = c.asInstanceOf[ChildRestartStats]
     override final def isDefinedAt(c: ChildStats) = c.isInstanceOf[ChildRestartStats]
     override final def valuesIterator = stats.valuesIterator
   }
 
-  class ChildrenIterable(stats: immutable.MapLike[_, ChildStats, _]) extends PartialImmutableValuesIterable[ChildStats, ActorRef] {
+  class ChildrenIterable(stats: immutable.Map[_, ChildStats]) extends PartialImmutableValuesIterable[ChildStats, ActorRef] {
     override final def apply(c: ChildStats) = c.asInstanceOf[ChildRestartStats].child
     override final def isDefinedAt(c: ChildStats) = c.isInstanceOf[ChildRestartStats]
     override final def valuesIterator = stats.valuesIterator

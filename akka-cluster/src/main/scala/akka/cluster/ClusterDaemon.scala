@@ -1258,9 +1258,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
 
     if (changedMembers.nonEmpty) {
-      // replace changed members
-      val newMembers = changedMembers union localMembers
-      val newGossip = localGossip.copy(members = newMembers)
+      val newGossip = localGossip.update(changedMembers)
       updateLatestGossip(newGossip)
 
       // log status changes

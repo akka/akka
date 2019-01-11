@@ -24,6 +24,7 @@ import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.BalancingPool
 import akka.routing.TailChoppingGroup
 import akka.routing.TailChoppingPool
+import scala.collection.JavaConverters._
 
 object RouterDocSpec {
 
@@ -396,9 +397,8 @@ router-dispatcher {}
     val router10b: ActorRef =
       context.actorOf(BalancingPool(20).props(Props[Worker]), "router10b")
     //#balancing-pool-3
-    import scala.collection.JavaConversions._
     for (i ← 1 to 100) router10b ! i
-    val threads10b = Thread.getAllStackTraces.keySet.filter { _.getName contains "router10b" }
+    val threads10b = Thread.getAllStackTraces.keySet.asScala.filter { _.getName contains "router10b" }
     val threads10bNr = threads10b.size
     require(threads10bNr == 5, s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
 
