@@ -16,8 +16,8 @@ public class Consumer extends AbstractActor {
 
   ActorRef queue;
   ActorRef delegateTo;
-  int      current = 0;
-  boolean  stoppedBeforeUnregistration = true;
+  int current = 0;
+  boolean stoppedBeforeUnregistration = true;
 
   public Consumer(ActorRef _queue, ActorRef _delegateTo) {
     queue = _queue;
@@ -31,43 +31,34 @@ public class Consumer extends AbstractActor {
 
   @Override
   public void postStop() {
-    if (stoppedBeforeUnregistration)
-      log.warning("Stopped before unregistration");
+    if (stoppedBeforeUnregistration) log.warning("Stopped before unregistration");
   }
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Integer.class, n -> {
-        if(n <= current)
-          getContext().stop(self());
-        else {
-          current = n;
-          delegateTo.tell(n, getSelf());
-        }
-      })
-      .match(RegistrationOk.class, message ->
-        delegateTo.tell(message, getSelf())
-      )
-      .match(UnexpectedRegistration.class, message ->
-        delegateTo.tell(message, getSelf())
-      )
-      .match(GetCurrent.class, message ->
-        getSender().tell(current, getSelf())
-      )
-      //#consumer-end
-      .match(End.class, message ->
-        queue.tell(UnregisterConsumer.class, getSelf())
-      )
-      .match(UnregistrationOk.class, message -> {
-          stoppedBeforeUnregistration = false;
-          getContext().stop(getSelf());
-        }
-      )
-      .match(Ping.class, message ->
-          getSender().tell(TestSingletonMessages.pong(), getSelf())
-      )
-      //#consumer-end
-      .build();
+        .match(
+            Integer.class,
+            n -> {
+              if (n <= current) getContext().stop(self());
+              else {
+                current = n;
+                delegateTo.tell(n, getSelf());
+              }
+            })
+        .match(RegistrationOk.class, message -> delegateTo.tell(message, getSelf()))
+        .match(UnexpectedRegistration.class, message -> delegateTo.tell(message, getSelf()))
+        .match(GetCurrent.class, message -> getSender().tell(current, getSelf()))
+        // #consumer-end
+        .match(End.class, message -> queue.tell(UnregisterConsumer.class, getSelf()))
+        .match(
+            UnregistrationOk.class,
+            message -> {
+              stoppedBeforeUnregistration = false;
+              getContext().stop(getSelf());
+            })
+        .match(Ping.class, message -> getSender().tell(TestSingletonMessages.pong(), getSelf()))
+        // #consumer-end
+        .build();
   }
 }

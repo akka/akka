@@ -23,9 +23,10 @@ public class ActorPublisherTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorPublisherTest", AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("ActorPublisherTest", AkkaSpec.testConf());
 
-    public static class TestPublisher extends UntypedActorPublisher<Integer> {
+  public static class TestPublisher extends UntypedActorPublisher<Integer> {
 
     @Override
     public void onReceive(Object msg) {
@@ -43,18 +44,21 @@ public class ActorPublisherTest extends StreamTest {
   @Test
   public void mustHaveJavaAPI() {
     final TestKit probe = new TestKit(system);
-    final ActorRef ref = system
-      .actorOf(Props.create(TestPublisher.class).withDispatcher("akka.test.stream-dispatcher"));
+    final ActorRef ref =
+        system.actorOf(
+            Props.create(TestPublisher.class).withDispatcher("akka.test.stream-dispatcher"));
     final Publisher<Integer> publisher = UntypedActorPublisher.create(ref);
     Source.fromPublisher(publisher)
-      .runForeach(new akka.japi.function.Procedure<Integer>() {
-        private static final long serialVersionUID = 1L;
-        @Override
-        public void apply(Integer elem) throws Exception {
-          probe.getRef().tell(elem, ActorRef.noSender());
-        }
-      }, materializer);
+        .runForeach(
+            new akka.japi.function.Procedure<Integer>() {
+              private static final long serialVersionUID = 1L;
+
+              @Override
+              public void apply(Integer elem) throws Exception {
+                probe.getRef().tell(elem, ActorRef.noSender());
+              }
+            },
+            materializer);
     probe.expectMsgEquals(1);
   }
-
 }

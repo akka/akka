@@ -18,8 +18,7 @@ import static org.junit.Assert.*;
 
 public class TestProbeTest extends JUnitSuite {
 
-  @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testReceiveOne() {
@@ -27,10 +26,11 @@ public class TestProbeTest extends JUnitSuite {
 
     List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(10));
 
-    eventsT.forEach(e->{
-      probe.getRef().tell(e);
-      assertEquals(probe.receiveOne(), e);
-    });
+    eventsT.forEach(
+        e -> {
+          probe.getRef().tell(e);
+          assertEquals(probe.receiveOne(), e);
+        });
 
     probe.expectNoMessage();
   }
@@ -41,10 +41,11 @@ public class TestProbeTest extends JUnitSuite {
 
     List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(2));
 
-    eventsT.forEach(e->{
-      probe.getRef().tell(e);
-      assertEquals(probe.receiveOne(Duration.ofMillis(100)), e);
-    });
+    eventsT.forEach(
+        e -> {
+          probe.getRef().tell(e);
+          assertEquals(probe.receiveOne(Duration.ofMillis(100)), e);
+        });
 
     probe.expectNoMessage();
   }
@@ -58,19 +59,25 @@ public class TestProbeTest extends JUnitSuite {
   @Test
   public void testAwaitAssert() {
     TestProbe<String> probe = TestProbe.create(testKit.system());
-    probe.awaitAssert(() -> {
-      // ... something ...
-      return null;
-    });
-    probe.awaitAssert(Duration.ofSeconds(3), () -> {
-      // ... something ...
-      return null;
-    });
+    probe.awaitAssert(
+        () -> {
+          // ... something ...
+          return null;
+        });
+    probe.awaitAssert(
+        Duration.ofSeconds(3),
+        () -> {
+          // ... something ...
+          return null;
+        });
     String awaitAssertResult =
-      probe.awaitAssert(Duration.ofSeconds(3), Duration.ofMillis(100), () -> {
-        // ... something ...
-        return "some result";
-      });
+        probe.awaitAssert(
+            Duration.ofSeconds(3),
+            Duration.ofMillis(100),
+            () -> {
+              // ... something ...
+              return "some result";
+            });
     assertEquals("some result", awaitAssertResult);
   }
 
@@ -90,22 +97,28 @@ public class TestProbeTest extends JUnitSuite {
     probe.getRef().tell("one");
     probe.getRef().tell("one");
     probe.getRef().tell("two");
-    List<String> results = probe.fishForMessage(Duration.ofSeconds(3), "hint", message -> {
-      if (message.equals("one")) return FishingOutcomes.continueAndIgnore();
-      else if (message.equals("two")) return FishingOutcomes.complete();
-      else return FishingOutcomes.fail("error");
-    });
+    List<String> results =
+        probe.fishForMessage(
+            Duration.ofSeconds(3),
+            "hint",
+            message -> {
+              if (message.equals("one")) return FishingOutcomes.continueAndIgnore();
+              else if (message.equals("two")) return FishingOutcomes.complete();
+              else return FishingOutcomes.fail("error");
+            });
     assertEquals(Arrays.asList("two"), results);
   }
 
   @Test
   public void testWithin() {
     TestProbe<String> probe = TestProbe.create(testKit.system());
-    String withinResult = probe.within(Duration.ofSeconds(3), () -> {
-      // ... something ...
-      return "result";
-    });
+    String withinResult =
+        probe.within(
+            Duration.ofSeconds(3),
+            () -> {
+              // ... something ...
+              return "result";
+            });
     assertEquals("result", withinResult);
   }
-
 }

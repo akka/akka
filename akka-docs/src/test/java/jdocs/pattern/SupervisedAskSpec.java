@@ -17,15 +17,17 @@ import java.util.concurrent.TimeUnit;
 
 public class SupervisedAskSpec {
 
-  public Object execute(Class<? extends AbstractActor> someActor,
-      Object message, Duration timeout, ActorRefFactory actorSystem)
+  public Object execute(
+      Class<? extends AbstractActor> someActor,
+      Object message,
+      Duration timeout,
+      ActorRefFactory actorSystem)
       throws Exception {
     // example usage
     try {
-      ActorRef supervisorCreator = SupervisedAsk
-          .createSupervisorCreator(actorSystem);
-      CompletionStage<Object> finished = SupervisedAsk.askOf(supervisorCreator,
-          Props.create(someActor), message, timeout);
+      ActorRef supervisorCreator = SupervisedAsk.createSupervisorCreator(actorSystem);
+      CompletionStage<Object> finished =
+          SupervisedAsk.askOf(supervisorCreator, Props.create(someActor), message, timeout);
       return finished.toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (Exception e) {
       // exception propagated by supervision

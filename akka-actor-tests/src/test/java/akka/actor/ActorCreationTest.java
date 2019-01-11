@@ -42,8 +42,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  static interface I<T> extends Creator<AbstractActor> {
-  }
+  static interface I<T> extends Creator<AbstractActor> {}
 
   static class F implements I<Object> {
     @Override
@@ -52,7 +51,6 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-
   static class G implements Creator {
     public Object create() {
       return null;
@@ -60,8 +58,7 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   abstract class H extends AbstractActor {
-    public H(String a) {
-    }
+    public H(String a) {}
   }
 
   static class P implements Creator<AbstractActor> {
@@ -99,7 +96,6 @@ public class ActorCreationTest extends JUnitSuite {
     public Receive createReceive() {
       return receiveBuilder().build();
     }
-
   }
 
   public static class TestActor2 extends UntypedAbstractActor {
@@ -107,39 +103,41 @@ public class ActorCreationTest extends JUnitSuite {
     public static Props propsUsingCreator(final int magicNumber) {
       // You need to specify the actual type of the returned actor
       // since runtime type information erased
-      return Props.create(TestActor2.class, new Creator<TestActor2>() {
-        private static final long serialVersionUID = 1L;
+      return Props.create(
+          TestActor2.class,
+          new Creator<TestActor2>() {
+            private static final long serialVersionUID = 1L;
 
-        @Override
-        public TestActor2 create() throws Exception {
-          return new TestActor2(magicNumber);
-        }
-      });
+            @Override
+            public TestActor2 create() throws Exception {
+              return new TestActor2(magicNumber);
+            }
+          });
     }
 
     public static Props propsUsingCreatorWithoutClass(final int magicNumber) {
-      return Props.create(new Creator<TestActor2>() {
-        private static final long serialVersionUID = 1L;
+      return Props.create(
+          new Creator<TestActor2>() {
+            private static final long serialVersionUID = 1L;
 
-        @Override
-        public TestActor2 create() throws Exception {
-          return new TestActor2(magicNumber);
-        }
-      });
+            @Override
+            public TestActor2 create() throws Exception {
+              return new TestActor2(magicNumber);
+            }
+          });
     }
 
-    private static final Creator<TestActor2> staticCreator = new Creator<TestActor2>() {
-      private static final long serialVersionUID = 1L;
+    private static final Creator<TestActor2> staticCreator =
+        new Creator<TestActor2>() {
+          private static final long serialVersionUID = 1L;
 
-      @Override
-      public TestActor2 create() throws Exception {
-        return new TestActor2(12);
-      }
-    };
+          @Override
+          public TestActor2 create() throws Exception {
+            return new TestActor2(12);
+          }
+        };
 
     public static Props propsUsingStaticCreator(final int magicNumber) {
-
-
 
       return Props.create(staticCreator);
     }
@@ -151,8 +149,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
 
     @Override
-    public void onReceive(Object msg) {
-    }
+    public void onReceive(Object msg) {}
   }
 
   public static class Issue20537Reproducer extends UntypedAbstractActor {
@@ -171,26 +168,27 @@ public class ActorCreationTest extends JUnitSuite {
       }
     }
 
-    public Issue20537Reproducer(boolean create) {
-    }
+    public Issue20537Reproducer(boolean create) {}
 
     @Override
-    public void onReceive(Object message) throws Exception {
-    }
+    public void onReceive(Object message) throws Exception {}
   }
 
   @Test
   public void testWrongAnonymousInPlaceCreator() {
     try {
-      Props.create(new Creator<Actor>() {
-        @Override
-        public Actor create() throws Exception {
-          return null;
-        }
-      });
+      Props.create(
+          new Creator<Actor>() {
+            @Override
+            public Actor create() throws Exception {
+              return null;
+            }
+          });
       assert false;
     } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
+      assertEquals(
+          "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+          e.getMessage());
     }
   }
 
@@ -201,7 +199,9 @@ public class ActorCreationTest extends JUnitSuite {
       Props.create(new G());
       assert false;
     } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead", e.getMessage());
+      assertEquals(
+          "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
+          e.getMessage());
     }
     Props.create(AbstractActor.class, new G());
   }
@@ -218,7 +218,9 @@ public class ActorCreationTest extends JUnitSuite {
       Props.create(new C() {}); // has implicit reference to outer class
       org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
     } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
+      assertEquals(
+          "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+          e.getMessage());
     }
   }
 
@@ -253,7 +255,9 @@ public class ActorCreationTest extends JUnitSuite {
       Props.create(H.class, "a");
       assert false;
     } catch (IllegalArgumentException e) {
-      assertEquals(String.format("Actor class [%s] must not be abstract", H.class.getName()), e.getMessage());
+      assertEquals(
+          String.format("Actor class [%s] must not be abstract", H.class.getName()),
+          e.getMessage());
     }
   }
 
@@ -268,7 +272,8 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testAnonymousClassCreatedInStaticMethodCreator() {
-    final Creator<AbstractActor> anonymousCreatorFromStaticMethod = createAnonymousCreatorInStaticMethod();
+    final Creator<AbstractActor> anonymousCreatorFromStaticMethod =
+        createAnonymousCreatorInStaticMethod();
     Props.create(anonymousCreatorFromStaticMethod);
   }
 
@@ -282,12 +287,14 @@ public class ActorCreationTest extends JUnitSuite {
   public void testAnonymousClassCreatorWithArguments() {
     try {
       final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello") {
-        // captures enclosing class
-      };
+            // captures enclosing class
+          };
       Props.create(anonymousCreatorFromStaticMethod);
       org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
     } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
+      assertEquals(
+          "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+          e.getMessage());
     }
   }
 
@@ -305,7 +312,8 @@ public class ActorCreationTest extends JUnitSuite {
       TestActor.propsUsingLamdaWithoutClass(17);
       org.junit.Assert.fail("Should have detected lambda erasure, and thrown");
     } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
+      assertEquals(
+          "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
           e.getMessage());
     }
   }
@@ -324,16 +332,17 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testIssue20537Reproducer() {
-    final Issue20537Reproducer.ReproducerCreator creator = new Issue20537Reproducer.ReproducerCreator(false);
+    final Issue20537Reproducer.ReproducerCreator creator =
+        new Issue20537Reproducer.ReproducerCreator(false);
     final Props p = Props.create(creator);
     assertEquals(Issue20537Reproducer.class, p.actorClass());
 
-    ArrayList<Props> pList = IntStream.range(0, 4).mapToObj(i -> Props.create(creator))
-        .collect(toCollection(ArrayList::new));
+    ArrayList<Props> pList =
+        IntStream.range(0, 4)
+            .mapToObj(i -> Props.create(creator))
+            .collect(toCollection(ArrayList::new));
     for (Props each : pList) {
       assertEquals(Issue20537Reproducer.class, each.actorClass());
     }
   }
-
-
 }

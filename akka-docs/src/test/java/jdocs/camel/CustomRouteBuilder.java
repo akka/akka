@@ -3,12 +3,12 @@
  */
 
 package jdocs.camel;
-//#CustomRoute
+// #CustomRoute
 import akka.actor.ActorRef;
 import akka.camel.internal.component.CamelPath;
 import org.apache.camel.builder.RouteBuilder;
 
-public class CustomRouteBuilder extends RouteBuilder{
+public class CustomRouteBuilder extends RouteBuilder {
   private String uri;
 
   public CustomRouteBuilder(ActorRef responder) {
@@ -19,4 +19,4 @@ public class CustomRouteBuilder extends RouteBuilder{
     from("jetty:http://localhost:8877/camel/custom").to(uri);
   }
 }
-//#CustomRoute
+// #CustomRoute

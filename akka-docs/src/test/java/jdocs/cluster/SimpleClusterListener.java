@@ -18,16 +18,16 @@ public class SimpleClusterListener extends AbstractActor {
   LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
   Cluster cluster = Cluster.get(getContext().getSystem());
 
-  //subscribe to cluster changes
+  // subscribe to cluster changes
   @Override
   public void preStart() {
-    //#subscribe
-    cluster.subscribe(getSelf(), ClusterEvent.initialStateAsEvents(), 
-        MemberEvent.class, UnreachableMember.class);
-    //#subscribe
+    // #subscribe
+    cluster.subscribe(
+        getSelf(), ClusterEvent.initialStateAsEvents(), MemberEvent.class, UnreachableMember.class);
+    // #subscribe
   }
 
-  //re-subscribe when restart
+  // re-subscribe when restart
   @Override
   public void postStop() {
     cluster.unsubscribe(getSelf());
@@ -36,18 +36,26 @@ public class SimpleClusterListener extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(MemberUp.class, mUp -> {
-        log.info("Member is Up: {}", mUp.member());
-      })
-      .match(UnreachableMember.class, mUnreachable -> {
-        log.info("Member detected as unreachable: {}", mUnreachable.member());
-      })
-      .match(MemberRemoved.class, mRemoved -> {
-        log.info("Member is Removed: {}", mRemoved.member());
-      })
-      .match(MemberEvent.class, message -> {
-        // ignore
-      })
-      .build();
+        .match(
+            MemberUp.class,
+            mUp -> {
+              log.info("Member is Up: {}", mUp.member());
+            })
+        .match(
+            UnreachableMember.class,
+            mUnreachable -> {
+              log.info("Member detected as unreachable: {}", mUnreachable.member());
+            })
+        .match(
+            MemberRemoved.class,
+            mRemoved -> {
+              log.info("Member is Removed: {}", mRemoved.member());
+            })
+        .match(
+            MemberEvent.class,
+            message -> {
+              // ignore
+            })
+        .build();
   }
 }

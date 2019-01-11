@@ -7,25 +7,15 @@ package jdocs.akka.persistence.typed.auction;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * A bid.
- */
+/** A bid. */
 public final class Bid {
-  /**
-   * The bidder.
-   */
+  /** The bidder. */
   private final UUID bidder;
-  /**
-   * The time the bid was placed.
-   */
+  /** The time the bid was placed. */
   private final Instant bidTime;
-  /**
-   * The bid price.
-   */
+  /** The bid price. */
   private final int bidPrice;
-  /**
-   * The maximum the bidder is willing to bid.
-   */
+  /** The maximum the bidder is willing to bid. */
   private final int maximumBid;
 
   public Bid(UUID bidder, Instant bidTime, int bidPrice, int maximumBid) {

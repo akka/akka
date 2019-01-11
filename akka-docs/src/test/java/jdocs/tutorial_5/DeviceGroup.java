@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-//#query-added
+// #query-added
 public class DeviceGroup extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -49,7 +49,7 @@ public class DeviceGroup extends AbstractActor {
     }
   }
 
-  //#query-protocol
+  // #query-protocol
   public static final class RequestAllTemperatures {
     final long requestId;
 
@@ -68,8 +68,7 @@ public class DeviceGroup extends AbstractActor {
     }
   }
 
-  public static interface TemperatureReading {
-  }
+  public static interface TemperatureReading {}
 
   public static final class Temperature implements TemperatureReading {
     public final double value;
@@ -96,9 +95,7 @@ public class DeviceGroup extends AbstractActor {
 
     @Override
     public String toString() {
-      return "Temperature{" +
-        "value=" + value +
-        '}';
+      return "Temperature{" + "value=" + value + '}';
     }
   }
 
@@ -113,8 +110,7 @@ public class DeviceGroup extends AbstractActor {
   public enum DeviceTimedOut implements TemperatureReading {
     INSTANCE
   }
-  //#query-protocol
-
+  // #query-protocol
 
   final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
@@ -129,7 +125,7 @@ public class DeviceGroup extends AbstractActor {
     log.info("DeviceGroup {} stopped", groupId);
   }
 
-  //#query-added
+  // #query-added
   private void onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
       ActorRef ref = deviceIdToActor.get(trackMsg.deviceId);
@@ -137,7 +133,9 @@ public class DeviceGroup extends AbstractActor {
         ref.forward(trackMsg, getContext());
       } else {
         log.info("Creating device actor for {}", trackMsg.deviceId);
-        ActorRef deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        ActorRef deviceActor =
+            getContext()
+                .actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
         getContext().watch(deviceActor);
         deviceActor.forward(trackMsg, getContext());
         actorToDeviceId.put(deviceActor, trackMsg.deviceId);
@@ -145,9 +143,9 @@ public class DeviceGroup extends AbstractActor {
       }
     } else {
       log.warning(
-              "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-              groupId, this.groupId
-      );
+          "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+          groupId,
+          this.groupId);
     }
   }
 
@@ -162,30 +160,38 @@ public class DeviceGroup extends AbstractActor {
     actorToDeviceId.remove(deviceActor);
     deviceIdToActor.remove(deviceId);
   }
-  //#query-added
+  // #query-added
 
   private void onAllTemperatures(RequestAllTemperatures r) {
-    // since Java collections are mutable, we want to avoid sharing them between actors (since multiple Actors (threads)
-    // modifying the same mutable data-structure is not safe), and perform a defensive copy of the mutable map:
+    // since Java collections are mutable, we want to avoid sharing them between actors (since
+    // multiple Actors (threads)
+    // modifying the same mutable data-structure is not safe), and perform a defensive copy of the
+    // mutable map:
     //
-    // Feel free to use your favourite immutable data-structures library with Akka in Java applications!
+    // Feel free to use your favourite immutable data-structures library with Akka in Java
+    // applications!
     Map<ActorRef, String> actorToDeviceIdCopy = new HashMap<>(this.actorToDeviceId);
 
-    getContext().actorOf(DeviceGroupQuery.props(
-        actorToDeviceIdCopy, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
+    getContext()
+        .actorOf(
+            DeviceGroupQuery.props(
+                actorToDeviceIdCopy,
+                r.requestId,
+                getSender(),
+                new FiniteDuration(3, TimeUnit.SECONDS)));
   }
 
   @Override
   public Receive createReceive() {
-    //#query-added
+    // #query-added
     return receiveBuilder()
-            .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
-            .match(RequestDeviceList.class, this::onDeviceList)
-            .match(Terminated.class, this::onTerminated)
-            //#query-added
-            // ... other cases omitted
-            .match(RequestAllTemperatures.class, this::onAllTemperatures)
-            .build();
+        .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+        .match(RequestDeviceList.class, this::onDeviceList)
+        .match(Terminated.class, this::onTerminated)
+        // #query-added
+        // ... other cases omitted
+        .match(RequestAllTemperatures.class, this::onAllTemperatures)
+        .build();
   }
 }
-//#query-added
+// #query-added

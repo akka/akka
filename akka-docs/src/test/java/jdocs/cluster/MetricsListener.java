@@ -4,7 +4,7 @@
 
 package jdocs.cluster;
 
-//#metrics-listener
+// #metrics-listener
 import akka.actor.AbstractActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.CurrentClusterState;
@@ -21,37 +21,40 @@ public class MetricsListener extends AbstractActor {
   LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   Cluster cluster = Cluster.get(getContext().getSystem());
-  
+
   ClusterMetricsExtension extension = ClusterMetricsExtension.get(getContext().getSystem());
 
-  
   // Subscribe unto ClusterMetricsEvent events.
   @Override
   public void preStart() {
-	  extension.subscribe(getSelf());
+    extension.subscribe(getSelf());
   }
 
   // Unsubscribe from ClusterMetricsEvent events.
   @Override
   public void postStop() {
-	  extension.unsubscribe(getSelf());
+    extension.unsubscribe(getSelf());
   }
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(ClusterMetricsChanged.class, clusterMetrics -> {
-        for (NodeMetrics nodeMetrics : clusterMetrics.getNodeMetrics()) {
-          if (nodeMetrics.address().equals(cluster.selfAddress())) {
-            logHeap(nodeMetrics);
-            logCpu(nodeMetrics);
-          }
-        }
-      })
-      .match(CurrentClusterState.class, message -> {
-        // Ignore.
-      })
-      .build();
+        .match(
+            ClusterMetricsChanged.class,
+            clusterMetrics -> {
+              for (NodeMetrics nodeMetrics : clusterMetrics.getNodeMetrics()) {
+                if (nodeMetrics.address().equals(cluster.selfAddress())) {
+                  logHeap(nodeMetrics);
+                  logCpu(nodeMetrics);
+                }
+              }
+            })
+        .match(
+            CurrentClusterState.class,
+            message -> {
+              // Ignore.
+            })
+        .build();
   }
 
   void logHeap(NodeMetrics nodeMetrics) {
@@ -64,10 +67,8 @@ public class MetricsListener extends AbstractActor {
   void logCpu(NodeMetrics nodeMetrics) {
     Cpu cpu = StandardMetrics.extractCpu(nodeMetrics);
     if (cpu != null && cpu.systemLoadAverage().isDefined()) {
-      log.info("Load: {} ({} processors)", cpu.systemLoadAverage().get(), 
-        cpu.processors());
+      log.info("Load: {} ({} processors)", cpu.systemLoadAverage().get(), cpu.processors());
     }
   }
-
 }
-//#metrics-listener
+// #metrics-listener

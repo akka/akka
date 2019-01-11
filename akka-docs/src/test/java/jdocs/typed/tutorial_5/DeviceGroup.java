@@ -19,19 +19,20 @@ import java.util.Map;
 import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
 import static jdocs.typed.tutorial_5.DeviceProtocol.DeviceMessage;
 
-//#query-added
+// #query-added
 public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   public static Behavior<DeviceGroupMessage> createBehavior(String groupId) {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
-  private class DeviceTerminated implements DeviceGroupMessage{
+  private class DeviceTerminated implements DeviceGroupMessage {
     public final ActorRef<DeviceProtocol.DeviceMessage> device;
     public final String groupId;
     public final String deviceId;
 
-    DeviceTerminated(ActorRef<DeviceProtocol.DeviceMessage> device, String groupId, String deviceId) {
+    DeviceTerminated(
+        ActorRef<DeviceProtocol.DeviceMessage> device, String groupId, String deviceId) {
       this.device = device;
       this.groupId = groupId;
       this.deviceId = deviceId;
@@ -48,7 +49,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
     context.getLog().info("DeviceGroup {} started", groupId);
   }
 
-  //#query-added
+  // #query-added
   private DeviceGroup onTrackDevice(RequestTrackDevice trackMsg) {
     if (this.groupId.equals(trackMsg.groupId)) {
       ActorRef<DeviceMessage> deviceActor = deviceIdToActor.get(trackMsg.deviceId);
@@ -56,16 +57,21 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
         trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
       } else {
         context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
-        deviceActor = context.spawn(Device.createBehavior(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
-        context.watchWith(deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
+        deviceActor =
+            context.spawn(
+                Device.createBehavior(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        context.watchWith(
+            deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
         trackMsg.replyTo.tell(new DeviceRegistered(deviceActor));
       }
     } else {
-      context.getLog().warning(
+      context
+          .getLog()
+          .warning(
               "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-              groupId, this.groupId
-      );
+              groupId,
+              this.groupId);
     }
     return this;
   }
@@ -86,17 +92,21 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
     return this;
   }
 
-  //#query-added
+  // #query-added
 
   private DeviceGroup onAllTemperatures(RequestAllTemperatures r) {
-    // since Java collections are mutable, we want to avoid sharing them between actors (since multiple Actors (threads)
-    // modifying the same mutable data-structure is not safe), and perform a defensive copy of the mutable map:
+    // since Java collections are mutable, we want to avoid sharing them between actors (since
+    // multiple Actors (threads)
+    // modifying the same mutable data-structure is not safe), and perform a defensive copy of the
+    // mutable map:
     //
-    // Feel free to use your favourite immutable data-structures library with Akka in Java applications!
+    // Feel free to use your favourite immutable data-structures library with Akka in Java
+    // applications!
     Map<String, ActorRef<DeviceMessage>> deviceIdToActorCopy = new HashMap<>(this.deviceIdToActor);
 
-    context.spawnAnonymous(DeviceGroupQuery.createBehavior(
-      deviceIdToActorCopy, r.requestId, r.replyTo, Duration.ofSeconds(3)));
+    context.spawnAnonymous(
+        DeviceGroupQuery.createBehavior(
+            deviceIdToActorCopy, r.requestId, r.replyTo, Duration.ofSeconds(3)));
 
     return this;
   }
@@ -104,15 +114,16 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
   @Override
   public Receive<DeviceGroupMessage> createReceive() {
     return receiveBuilder()
-      //#query-added
-      .onMessage(RequestTrackDevice.class, this::onTrackDevice)
-      .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
-      .onMessage(DeviceTerminated.class, this::onTerminated)
-      .onSignal(PostStop.class, signal -> postStop())
-      //#query-added
-      // ... other cases omitted
-      .onMessage(RequestAllTemperatures.class, r -> r.groupId.equals(groupId), this::onAllTemperatures)
-      .build();
+        // #query-added
+        .onMessage(RequestTrackDevice.class, this::onTrackDevice)
+        .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)
+        .onMessage(DeviceTerminated.class, this::onTerminated)
+        .onSignal(PostStop.class, signal -> postStop())
+        // #query-added
+        // ... other cases omitted
+        .onMessage(
+            RequestAllTemperatures.class, r -> r.groupId.equals(groupId), this::onAllTemperatures)
+        .build();
   }
 }
-//#query-added
+// #query-added

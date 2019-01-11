@@ -38,14 +38,13 @@ public class RecipeDroppyBroadcast extends RecipeTest {
   @Test
   public void work() throws Exception {
     new TestKit(system) {
-      //#droppy-bcast
+      // #droppy-bcast
       // Makes a sink drop elements if too slow
-      public <T> Sink<T, CompletionStage<Done>> droppySink(Sink<T, CompletionStage<Done>> sink, int size) {
-        return Flow.<T> create()
-          .buffer(size, OverflowStrategy.dropHead())
-          .toMat(sink, Keep.right());
+      public <T> Sink<T, CompletionStage<Done>> droppySink(
+          Sink<T, CompletionStage<Done>> sink, int size) {
+        return Flow.<T>create().buffer(size, OverflowStrategy.dropHead()).toMat(sink, Keep.right());
       }
-      //#droppy-bcast
+      // #droppy-bcast
 
       {
         final List<Integer> nums = new ArrayList<>();
@@ -59,20 +58,21 @@ public class RecipeDroppyBroadcast extends RecipeTest {
 
         final Source<Integer, NotUsed> myData = Source.from(nums);
 
-        //#droppy-bcast2
-        RunnableGraph.fromGraph(GraphDSL.create(builder -> {
-          final int outputCount = 3;
-          final UniformFanOutShape<Integer, Integer> bcast =
-            builder.add(Broadcast.create(outputCount));
-          builder.from(builder.add(myData)).toFanOut(bcast);
-          builder.from(bcast).to(builder.add(droppySink(mySink1, 10)));
-          builder.from(bcast).to(builder.add(droppySink(mySink2, 10)));
-          builder.from(bcast).to(builder.add(droppySink(mySink3, 10)));
-          return ClosedShape.getInstance();
-        }));
-        //#droppy-bcast2
+        // #droppy-bcast2
+        RunnableGraph.fromGraph(
+            GraphDSL.create(
+                builder -> {
+                  final int outputCount = 3;
+                  final UniformFanOutShape<Integer, Integer> bcast =
+                      builder.add(Broadcast.create(outputCount));
+                  builder.from(builder.add(myData)).toFanOut(bcast);
+                  builder.from(bcast).to(builder.add(droppySink(mySink1, 10)));
+                  builder.from(bcast).to(builder.add(droppySink(mySink2, 10)));
+                  builder.from(bcast).to(builder.add(droppySink(mySink3, 10)));
+                  return ClosedShape.getInstance();
+                }));
+        // #droppy-bcast2
       }
     };
   }
-
 }

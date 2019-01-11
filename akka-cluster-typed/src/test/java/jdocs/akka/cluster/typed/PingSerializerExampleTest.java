@@ -25,7 +25,7 @@ public class PingSerializerExampleTest {
     }
   }
 
-  //#serializer
+  // #serializer
   public class PingSerializer extends SerializerWithStringManifest {
 
     final ExtendedActorSystem system;
@@ -46,22 +46,19 @@ public class PingSerializerExampleTest {
 
     @Override
     public String manifest(Object obj) {
-      if (obj instanceof Ping)
-        return PING_MANIFEST;
-      else if (obj instanceof Pong)
-        return PONG_MANIFEST;
-      else
-        throw new IllegalArgumentException("Unknown type: " + obj);
+      if (obj instanceof Ping) return PING_MANIFEST;
+      else if (obj instanceof Pong) return PONG_MANIFEST;
+      else throw new IllegalArgumentException("Unknown type: " + obj);
     }
 
     @Override
     public byte[] toBinary(Object obj) {
       if (obj instanceof Ping)
-        return actorRefResolver.toSerializationFormat(((Ping) obj).replyTo).getBytes(StandardCharsets.UTF_8);
-      else if (obj instanceof Pong)
-        return new byte[0];
-      else
-        throw new IllegalArgumentException("Unknown type: " + obj);
+        return actorRefResolver
+            .toSerializationFormat(((Ping) obj).replyTo)
+            .getBytes(StandardCharsets.UTF_8);
+      else if (obj instanceof Pong) return new byte[0];
+      else throw new IllegalArgumentException("Unknown type: " + obj);
     }
 
     @Override
@@ -77,5 +74,5 @@ public class PingSerializerExampleTest {
       }
     }
   }
-  //#serializer
+  // #serializer
 }

@@ -30,7 +30,7 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
     // do nothing
   }
 
-  //#offer-source
+  // #offer-source
   static class RequestLogs {
     public final long streamId;
 
@@ -50,9 +50,7 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
   static class DataSource extends AbstractActor {
     @Override
     public Receive createReceive() {
-      return receiveBuilder()
-          .match(RequestLogs.class, this::handleRequestLogs)
-          .build();
+      return receiveBuilder().match(RequestLogs.class, this::handleRequestLogs).build();
     }
 
     private void handleRequestLogs(RequestLogs requestLogs) {
@@ -67,25 +65,26 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       return Source.repeat("[INFO] some interesting logs here (for id: " + streamId + ")");
     }
   }
-  //#offer-source
+  // #offer-source
 
   public void offerSource() {
-    new TestKit(system) {{
+    new TestKit(system) {
+      {
 
-      //#offer-source-use
-      ActorRef sourceActor = system.actorOf(Props.create(DataSource.class), "dataSource");
+        // #offer-source-use
+        ActorRef sourceActor = system.actorOf(Props.create(DataSource.class), "dataSource");
 
-      sourceActor.tell(new RequestLogs(1337), getTestActor());
-      LogsOffer offer = expectMsgClass(LogsOffer.class);
+        sourceActor.tell(new RequestLogs(1337), getTestActor());
+        LogsOffer offer = expectMsgClass(LogsOffer.class);
 
-      offer.sourceRef.getSource()
-          .runWith(Sink.foreach(log -> System.out.println(log)), mat);
+        offer.sourceRef.getSource().runWith(Sink.foreach(log -> System.out.println(log)), mat);
 
-      //#offer-source-use
-    }};
+        // #offer-source-use
+      }
+    };
   }
 
-  //#offer-sink
+  // #offer-sink
   static class PrepareUpload {
     final String id;
 
@@ -93,6 +92,7 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       this.id = id;
     }
   }
+
   static class MeasurementsSinkReady {
     final String id;
     final SinkRef<String> sinkRef;
@@ -107,13 +107,18 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-          .match(PrepareUpload.class, prepare -> {
-            Sink<String, NotUsed> sink = logsSinkFor(prepare.id);
-            CompletionStage<SinkRef<String>> sinkRef = StreamRefs.<String>sinkRef().to(sink).run(mat);
+          .match(
+              PrepareUpload.class,
+              prepare -> {
+                Sink<String, NotUsed> sink = logsSinkFor(prepare.id);
+                CompletionStage<SinkRef<String>> sinkRef =
+                    StreamRefs.<String>sinkRef().to(sink).run(mat);
 
-            Patterns.pipe(sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)), context().dispatcher())
-                .to(sender());
-          })
+                Patterns.pipe(
+                        sinkRef.thenApply(ref -> new MeasurementsSinkReady(prepare.id, ref)),
+                        context().dispatcher())
+                    .to(sender());
+              })
           .build();
     }
 
@@ -121,40 +126,43 @@ public class FlowStreamRefsDocTest extends AbstractJavaTest {
       return Sink.<String>ignore().mapMaterializedValue(done -> NotUsed.getInstance());
     }
   }
-  //#offer-sink
+  // #offer-sink
 
   public void offerSink() {
-    new TestKit(system) {{
+    new TestKit(system) {
+      {
 
-      //#offer-sink-use
-      ActorRef receiver = system.actorOf(Props.create(DataReceiver.class), "dataReceiver");
+        // #offer-sink-use
+        ActorRef receiver = system.actorOf(Props.create(DataReceiver.class), "dataReceiver");
 
-      receiver.tell(new PrepareUpload("system-42-tmp"), getTestActor());
-      MeasurementsSinkReady ready = expectMsgClass(MeasurementsSinkReady.class);
+        receiver.tell(new PrepareUpload("system-42-tmp"), getTestActor());
+        MeasurementsSinkReady ready = expectMsgClass(MeasurementsSinkReady.class);
 
-      Source.repeat("hello")
-          .runWith(ready.sinkRef.getSink(), mat);
-      //#offer-sink-use
-    }};
+        Source.repeat("hello").runWith(ready.sinkRef.getSink(), mat);
+        // #offer-sink-use
+      }
+    };
   }
 
   public void configureTimeouts() {
-    new TestKit(system) {{
+    new TestKit(system) {
+      {
 
-      //#attr-sub-timeout
-      FiniteDuration timeout = FiniteDuration.create(5, TimeUnit.SECONDS);
-      Attributes timeoutAttributes = StreamRefAttributes.subscriptionTimeout(timeout);
+        // #attr-sub-timeout
+        FiniteDuration timeout = FiniteDuration.create(5, TimeUnit.SECONDS);
+        Attributes timeoutAttributes = StreamRefAttributes.subscriptionTimeout(timeout);
 
-      // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
-      Source.repeat("hello")
-          .runWith(StreamRefs.<String>sourceRef().addAttributes(timeoutAttributes), mat);
+        // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
+        Source.repeat("hello")
+            .runWith(StreamRefs.<String>sourceRef().addAttributes(timeoutAttributes), mat);
 
-      // configuring SinkRef.source:
-      StreamRefs.<String>sinkRef().addAttributes(timeoutAttributes)
-          .runWith(Sink.<String>ignore(), mat); // not very interesting sink, just an example
+        // configuring SinkRef.source:
+        StreamRefs.<String>sinkRef()
+            .addAttributes(timeoutAttributes)
+            .runWith(Sink.<String>ignore(), mat); // not very interesting sink, just an example
 
-      //#attr-sub-timeout
-    }};
+        // #attr-sub-timeout
+      }
+    };
   }
-
 }

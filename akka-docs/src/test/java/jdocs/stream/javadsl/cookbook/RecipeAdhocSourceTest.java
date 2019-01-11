@@ -48,18 +48,21 @@ public class RecipeAdhocSourceTest extends RecipeTest {
     mat = null;
   }
 
-  //#adhoc-source
+  // #adhoc-source
   public <T> Source<T, ?> adhocSource(Source<T, ?> source, Duration timeout, int maxRetries) {
     return Source.lazily(
-      () -> source.backpressureTimeout(timeout).recoverWithRetries(
-        maxRetries,
-        new PFBuilder()
-          .match(TimeoutException.class, ex ->  Source.lazily(() -> source.backpressureTimeout(timeout)))
-          .build()
-      )
-    );
+        () ->
+            source
+                .backpressureTimeout(timeout)
+                .recoverWithRetries(
+                    maxRetries,
+                    new PFBuilder()
+                        .match(
+                            TimeoutException.class,
+                            ex -> Source.lazily(() -> source.backpressureTimeout(timeout)))
+                        .build()));
   }
-  //#adhoc-source
+  // #adhoc-source
 
   @Test
   @Ignore
@@ -68,7 +71,14 @@ public class RecipeAdhocSourceTest extends RecipeTest {
       {
         AtomicBoolean isStarted = new AtomicBoolean();
         adhocSource(
-          Source.empty().mapMaterializedValue(x -> {isStarted.set(true); return x;}), duration200mills, 3);
+            Source.empty()
+                .mapMaterializedValue(
+                    x -> {
+                      isStarted.set(true);
+                      return x;
+                    }),
+            duration200mills,
+            3);
         Thread.sleep(300);
         assertEquals(false, isStarted.get());
       }
@@ -80,9 +90,10 @@ public class RecipeAdhocSourceTest extends RecipeTest {
   public void startStream() throws Exception {
     new TestKit(system) {
       {
-        TestSubscriber.Probe<String> probe = adhocSource(Source.repeat("a"), duration200mills, 3)
-          .toMat(TestSink.probe(system), Keep.right())
-          .run(mat);
+        TestSubscriber.Probe<String> probe =
+            adhocSource(Source.repeat("a"), duration200mills, 3)
+                .toMat(TestSink.probe(system), Keep.right())
+                .run(mat);
         probe.requestNext("a");
       }
     };
@@ -94,12 +105,15 @@ public class RecipeAdhocSourceTest extends RecipeTest {
     new TestKit(system) {
       {
         Promise<Done> shutdown = Futures.promise();
-        TestSubscriber.Probe<String> probe = adhocSource(
-          Source.repeat("a").watchTermination((a, term) ->
-            term.thenRun(() -> shutdown.success(Done.getInstance()))
-          ), duration200mills, 3)
-          .toMat(TestSink.probe(system), Keep.right())
-          .run(mat);
+        TestSubscriber.Probe<String> probe =
+            adhocSource(
+                    Source.repeat("a")
+                        .watchTermination(
+                            (a, term) -> term.thenRun(() -> shutdown.success(Done.getInstance()))),
+                    duration200mills,
+                    3)
+                .toMat(TestSink.probe(system), Keep.right())
+                .run(mat);
 
         probe.requestNext("a");
         Thread.sleep(300);
@@ -115,12 +129,14 @@ public class RecipeAdhocSourceTest extends RecipeTest {
       {
         Promise<Done> shutdown = Futures.promise();
         TestSubscriber.Probe<String> probe =
-          adhocSource(
-            Source.repeat("a").watchTermination((a, term) ->
-              term.thenRun(() -> shutdown.success(Done.getInstance()))
-            ), duration200mills, 3)
-            .toMat(TestSink.probe(system), Keep.right())
-            .run(mat);
+            adhocSource(
+                    Source.repeat("a")
+                        .watchTermination(
+                            (a, term) -> term.thenRun(() -> shutdown.success(Done.getInstance()))),
+                    duration200mills,
+                    3)
+                .toMat(TestSink.probe(system), Keep.right())
+                .run(mat);
 
         probe.requestNext("a");
         Thread.sleep(100);
@@ -146,16 +162,19 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         Promise<Done> shutdown = Futures.promise();
         AtomicInteger startedCount = new AtomicInteger(0);
 
-        Source<String, ?> source = Source.<String>empty()
-          .mapMaterializedValue(x -> startedCount.incrementAndGet())
-          .concat(Source.repeat("a"));
+        Source<String, ?> source =
+            Source.<String>empty()
+                .mapMaterializedValue(x -> startedCount.incrementAndGet())
+                .concat(Source.repeat("a"));
 
         TestSubscriber.Probe<String> probe =
-          adhocSource(source.watchTermination((a, term) ->
-            term.thenRun(() -> shutdown.success(Done.getInstance()))
-          ), duration200mills, 3)
-            .toMat(TestSink.probe(system), Keep.right())
-            .run(mat);
+            adhocSource(
+                    source.watchTermination(
+                        (a, term) -> term.thenRun(() -> shutdown.success(Done.getInstance()))),
+                    duration200mills,
+                    3)
+                .toMat(TestSink.probe(system), Keep.right())
+                .run(mat);
 
         probe.requestNext("a");
         assertEquals(1, startedCount.get());
@@ -173,16 +192,19 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         Promise<Done> shutdown = Futures.promise();
         AtomicInteger startedCount = new AtomicInteger(0);
 
-        Source<String, ?> source = Source.<String>empty()
-          .mapMaterializedValue(x -> startedCount.incrementAndGet())
-          .concat(Source.repeat("a"));
+        Source<String, ?> source =
+            Source.<String>empty()
+                .mapMaterializedValue(x -> startedCount.incrementAndGet())
+                .concat(Source.repeat("a"));
 
         TestSubscriber.Probe<String> probe =
-          adhocSource(source.watchTermination((a, term) ->
-            term.thenRun(() -> shutdown.success(Done.getInstance()))
-          ), duration200mills, 3)
-            .toMat(TestSink.probe(system), Keep.right())
-            .run(mat);
+            adhocSource(
+                    source.watchTermination(
+                        (a, term) -> term.thenRun(() -> shutdown.success(Done.getInstance()))),
+                    duration200mills,
+                    3)
+                .toMat(TestSink.probe(system), Keep.right())
+                .run(mat);
 
         probe.requestNext("a");
         assertEquals(1, startedCount.get());
@@ -200,14 +222,13 @@ public class RecipeAdhocSourceTest extends RecipeTest {
 
         Thread.sleep(500);
         probe.requestNext("a");
-        assertEquals(4, startedCount.get()); //startCount == 4, which means "re"-tried 3 times
+        assertEquals(4, startedCount.get()); // startCount == 4, which means "re"-tried 3 times
 
         Thread.sleep(500);
         assertEquals(TimeoutException.class, probe.expectError().getClass());
-        probe.request(1); //send demand
-        probe.expectNoMessage(FiniteDuration.create(200, "milliseconds")); //but no more restart
+        probe.request(1); // send demand
+        probe.expectNoMessage(FiniteDuration.create(200, "milliseconds")); // but no more restart
       }
     };
   }
-  
 }

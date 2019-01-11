@@ -14,32 +14,37 @@ public class JavaIdentityStage<T> extends GraphStage<FlowShape<T, T>> {
   private Outlet<T> _out = Outlet.create("Identity.out");
   private FlowShape<T, T> _shape = FlowShape.of(_in, _out);
 
-  public Inlet<T> in() { return _in; }
-  public Outlet<T> out() { return _out; }
+  public Inlet<T> in() {
+    return _in;
+  }
 
+  public Outlet<T> out() {
+    return _out;
+  }
 
   @Override
   public GraphStageLogic createLogic(Attributes inheritedAttributes) {
     return new GraphStageLogic(shape()) {
 
       {
-        setHandler(in(), new AbstractInHandler() {
-          @Override
-          public void onPush() {
-            push(out(), grab(in()));
-          }
+        setHandler(
+            in(),
+            new AbstractInHandler() {
+              @Override
+              public void onPush() {
+                push(out(), grab(in()));
+              }
+            });
 
-        });
-
-        setHandler(out(), new AbstractOutHandler() {
-          @Override
-          public void onPull() {
-            pull(in());
-          }
-        });
-
+        setHandler(
+            out(),
+            new AbstractOutHandler() {
+              @Override
+              public void onPull() {
+                pull(in());
+              }
+            });
       }
-
     };
   }
 

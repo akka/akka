@@ -25,7 +25,7 @@ public class BlockingDispatcherTest {
       Thread.sleep(5000 * 6);
 
     } catch (InterruptedException e) {
-      //swallow the exception
+      // swallow the exception
     } finally {
       system.terminate();
     }

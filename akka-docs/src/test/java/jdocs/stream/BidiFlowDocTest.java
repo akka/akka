@@ -46,90 +46,99 @@ public class BidiFlowDocTest extends AbstractJavaTest {
     mat = null;
   }
 
-  //#codec
+  // #codec
   static interface Message {}
+
   static class Ping implements Message {
     final int id;
-    public Ping(int id) { this.id = id; }
+
+    public Ping(int id) {
+      this.id = id;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (o instanceof Ping) {
         return ((Ping) o).id == id;
       } else return false;
     }
+
     @Override
     public int hashCode() {
       return id;
     }
   }
+
   static class Pong implements Message {
     final int id;
-    public Pong(int id) { this.id = id; }
+
+    public Pong(int id) {
+      this.id = id;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (o instanceof Pong) {
         return ((Pong) o).id == id;
       } else return false;
     }
+
     @Override
     public int hashCode() {
       return id;
     }
   }
-  
-  //#codec-impl
+
+  // #codec-impl
   public static ByteString toBytes(Message msg) {
-    //#implementation-details-elided
+    // #implementation-details-elided
     if (msg instanceof Ping) {
       final int id = ((Ping) msg).id;
-      return new ByteStringBuilder().putByte((byte) 1)
-          .putInt(id, ByteOrder.LITTLE_ENDIAN).result();
+      return new ByteStringBuilder().putByte((byte) 1).putInt(id, ByteOrder.LITTLE_ENDIAN).result();
     } else {
       final int id = ((Pong) msg).id;
-      return new ByteStringBuilder().putByte((byte) 2)
-          .putInt(id, ByteOrder.LITTLE_ENDIAN).result();
+      return new ByteStringBuilder().putByte((byte) 2).putInt(id, ByteOrder.LITTLE_ENDIAN).result();
     }
-    //#implementation-details-elided
+    // #implementation-details-elided
   }
-  
+
   public static Message fromBytes(ByteString bytes) {
-    //#implementation-details-elided
+    // #implementation-details-elided
     final ByteIterator it = bytes.iterator();
-    switch(it.getByte()) {
-    case 1:
-      return new Ping(it.getInt(ByteOrder.LITTLE_ENDIAN));
-    case 2:
-      return new Pong(it.getInt(ByteOrder.LITTLE_ENDIAN));
-    default:
-      throw new RuntimeException("message format error");
+    switch (it.getByte()) {
+      case 1:
+        return new Ping(it.getInt(ByteOrder.LITTLE_ENDIAN));
+      case 2:
+        return new Pong(it.getInt(ByteOrder.LITTLE_ENDIAN));
+      default:
+        throw new RuntimeException("message format error");
     }
-    //#implementation-details-elided
+    // #implementation-details-elided
   }
-  //#codec-impl
-  
-  //#codec
+  // #codec-impl
+
+  // #codec
   @SuppressWarnings("unused")
-  //#codec
+  // #codec
   public final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> codecVerbose =
-      BidiFlow.fromGraph(GraphDSL.create(b -> {
-        final FlowShape<Message, ByteString> top =
-                b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
-        final FlowShape<ByteString, Message> bottom =
-                b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::fromBytes));
-        return BidiShape.fromFlows(top, bottom);
-      }));
+      BidiFlow.fromGraph(
+          GraphDSL.create(
+              b -> {
+                final FlowShape<Message, ByteString> top =
+                    b.add(Flow.of(Message.class).map(BidiFlowDocTest::toBytes));
+                final FlowShape<ByteString, Message> bottom =
+                    b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::fromBytes));
+                return BidiShape.fromFlows(top, bottom);
+              }));
 
   public final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> codec =
       BidiFlow.fromFunctions(BidiFlowDocTest::toBytes, BidiFlowDocTest::fromBytes);
-  //#codec
-  
-  //#framing
+  // #codec
+
+  // #framing
   public static ByteString addLengthHeader(ByteString bytes) {
     final int len = bytes.size();
-    return new ByteStringBuilder()
-      .putInt(len, ByteOrder.LITTLE_ENDIAN)
-      .append(bytes)
-      .result();
+    return new ByteStringBuilder().putInt(len, ByteOrder.LITTLE_ENDIAN).append(bytes).result();
   }
 
   public static class FrameParser extends GraphStage<FlowShape<ByteString, ByteString>> {
@@ -152,32 +161,36 @@ public class BidiFlowDocTest extends AbstractJavaTest {
         private int needed = -1;
 
         {
-          setHandler(in, new AbstractInHandler() {
-            @Override
-            public void onPush() throws Exception {
-              ByteString bytes = grab(in);
-              stash = stash.concat(bytes);
-              run();
-            }
+          setHandler(
+              in,
+              new AbstractInHandler() {
+                @Override
+                public void onPush() throws Exception {
+                  ByteString bytes = grab(in);
+                  stash = stash.concat(bytes);
+                  run();
+                }
 
-            @Override
-            public void onUpstreamFinish() throws Exception {
-              // either we are done
-              if (stash.isEmpty()) completeStage();
-              // or we still have bytes to emit
-              // wait with completion and let run() complete when the
-              // rest of the stash has been sent downstream
-              else if (isAvailable(out)) run();
-            }
-          });
+                @Override
+                public void onUpstreamFinish() throws Exception {
+                  // either we are done
+                  if (stash.isEmpty()) completeStage();
+                  // or we still have bytes to emit
+                  // wait with completion and let run() complete when the
+                  // rest of the stash has been sent downstream
+                  else if (isAvailable(out)) run();
+                }
+              });
 
-          setHandler(out, new AbstractOutHandler() {
-            @Override
-            public void onPull() throws Exception {
-              if (isClosed(in)) run();
-              else pull(in);
-            }
-          });
+          setHandler(
+              out,
+              new AbstractOutHandler() {
+                @Override
+                public void onPull() throws Exception {
+                  if (isClosed(in)) run();
+                  else pull(in);
+                }
+              });
         }
 
         private void run() {
@@ -207,20 +220,22 @@ public class BidiFlowDocTest extends AbstractJavaTest {
       };
     }
   }
-  
+
   public final BidiFlow<ByteString, ByteString, ByteString, ByteString, NotUsed> framing =
-      BidiFlow.fromGraph(GraphDSL.create(b -> {
-        final FlowShape<ByteString, ByteString> top =
-                b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
-        final FlowShape<ByteString, ByteString> bottom =
-                b.add(Flow.of(ByteString.class).via(new FrameParser()));
-        return BidiShape.fromFlows(top, bottom);
-      }));
-  //#framing
-  
+      BidiFlow.fromGraph(
+          GraphDSL.create(
+              b -> {
+                final FlowShape<ByteString, ByteString> top =
+                    b.add(Flow.of(ByteString.class).map(BidiFlowDocTest::addLengthHeader));
+                final FlowShape<ByteString, ByteString> bottom =
+                    b.add(Flow.of(ByteString.class).via(new FrameParser()));
+                return BidiShape.fromFlows(top, bottom);
+              }));
+  // #framing
+
   @Test
   public void mustCompose() throws Exception {
-    //#compose
+    // #compose
     /* construct protocol stack
      *         +------------------------------------+
      *         | stack                              |
@@ -232,26 +247,23 @@ public class BidiFlowDocTest extends AbstractJavaTest {
      *         |  +-------+            +---------+  |
      *         +------------------------------------+
      */
-    final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> stack =
-        codec.atop(framing);
+    final BidiFlow<Message, ByteString, ByteString, Message, NotUsed> stack = codec.atop(framing);
 
     // test it by plugging it into its own inverse and closing the right end
     final Flow<Message, Message, NotUsed> pingpong =
-        Flow.of(Message.class).collect(new PFBuilder<Message, Message>()
-            .match(Ping.class, p -> new Pong(p.id))
-            .build()
-            );
-    final Flow<Message, Message, NotUsed> flow =
-        stack.atop(stack.reversed()).join(pingpong);
-    final CompletionStage<List<Message>> result = Source
-        .from(Arrays.asList(0, 1, 2))
-        .<Message> map(id -> new Ping(id))
-        .via(flow)
-        .grouped(10)
-        .runWith(Sink.<List<Message>> head(), mat);
+        Flow.of(Message.class)
+            .collect(
+                new PFBuilder<Message, Message>().match(Ping.class, p -> new Pong(p.id)).build());
+    final Flow<Message, Message, NotUsed> flow = stack.atop(stack.reversed()).join(pingpong);
+    final CompletionStage<List<Message>> result =
+        Source.from(Arrays.asList(0, 1, 2))
+            .<Message>map(id -> new Ping(id))
+            .via(flow)
+            .grouped(10)
+            .runWith(Sink.<List<Message>>head(), mat);
     assertArrayEquals(
-        new Message[] { new Pong(0), new Pong(1), new Pong(2) },
+        new Message[] {new Pong(0), new Pong(1), new Pong(2)},
         result.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray(new Message[0]));
-    //#compose
+    // #compose
   }
 }

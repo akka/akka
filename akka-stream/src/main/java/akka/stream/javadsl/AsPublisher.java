@@ -5,5 +5,6 @@
 package akka.stream.javadsl;
 
 public enum AsPublisher {
-  WITH_FANOUT, WITHOUT_FANOUT
+  WITH_FANOUT,
+  WITHOUT_FANOUT
 }

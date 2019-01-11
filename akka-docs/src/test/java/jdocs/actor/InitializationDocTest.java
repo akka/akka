@@ -31,15 +31,15 @@ public class InitializationDocTest extends AbstractJavaTest {
   public static void afterClass() {
     TestKit.shutdownActorSystem(system);
   }
-  
-  static public class PreStartInitExample extends AbstractActor {
+
+  public static class PreStartInitExample extends AbstractActor {
 
     @Override
     public Receive createReceive() {
       return AbstractActor.emptyBehavior();
     }
 
-    //#preStartInit
+    // #preStartInit
     @Override
     public void preStart() {
       // Initialize children here
@@ -48,40 +48,44 @@ public class InitializationDocTest extends AbstractJavaTest {
     // Overriding postRestart to disable the call to preStart()
     // after restarts
     @Override
-    public void postRestart(Throwable reason) {
-    }
+    public void postRestart(Throwable reason) {}
 
     // The default implementation of preRestart() stops all the children
     // of the actor. To opt-out from stopping the children, we
     // have to override preRestart()
     @Override
-    public void preRestart(Throwable reason, Optional<Object> message)
-      throws Exception {
+    public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
       // Keep the call to postStop(), but no stopping of children
       postStop();
     }
-    //#preStartInit
+    // #preStartInit
 
   }
 
   public static class MessageInitExample extends AbstractActor {
     private String initializeMe = null;
 
-    //#messageInit
+    // #messageInit
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("init", m1 -> {
-          initializeMe = "Up and running";
-          getContext().become(receiveBuilder()
-            .matchEquals("U OK?", m2 -> {
-              getSender().tell(initializeMe, getSelf());
-            })
-            .build());
-        })
-        .build();
+          .matchEquals(
+              "init",
+              m1 -> {
+                initializeMe = "Up and running";
+                getContext()
+                    .become(
+                        receiveBuilder()
+                            .matchEquals(
+                                "U OK?",
+                                m2 -> {
+                                  getSender().tell(initializeMe, getSelf());
+                                })
+                            .build());
+              })
+          .build();
     }
-    //#messageInit
+    // #messageInit
   }
 
   public class GenericMessage<T> {
@@ -96,11 +100,13 @@ public class InitializationDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchUnchecked(GenericMessage.class, (GenericMessage<String> msg) -> {
-          GenericMessage<String> message = msg;
-          getSender().tell(message.value.toUpperCase(), getSelf());
-        })
-        .build();
+          .matchUnchecked(
+              GenericMessage.class,
+              (GenericMessage<String> msg) -> {
+                GenericMessage<String> message = msg;
+                getSender().tell(message.value.toUpperCase(), getSelf());
+              })
+          .build();
     }
   }
 
@@ -110,82 +116,102 @@ public class InitializationDocTest extends AbstractJavaTest {
       FI.TypedPredicate<GenericMessage<String>> typedPredicate = s -> !s.value.isEmpty();
 
       return receiveBuilder()
-        .matchUnchecked(GenericMessage.class, typedPredicate, (GenericMessage<String> msg) -> {
-          getSender().tell(msg.value.toUpperCase(), getSelf());
-        })
-        .build();
+          .matchUnchecked(
+              GenericMessage.class,
+              typedPredicate,
+              (GenericMessage<String> msg) -> {
+                getSender().tell(msg.value.toUpperCase(), getSelf());
+              })
+          .build();
     }
   }
 
   static class GenericActorWithPredicateAlwaysResponse extends AbstractActor {
-      private boolean alwaysResponse() {
-          return true;
-      }
-
-      @Override
-      public Receive createReceive() {
-          return receiveBuilder()
-                  .matchUnchecked(GenericMessage.class, this::alwaysResponse, (GenericMessage<String> msg) -> {
-                      getSender().tell(msg.value.toUpperCase(), getSelf());
-                  })
-                  .build();
-      }
+    private boolean alwaysResponse() {
+      return true;
     }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+          .matchUnchecked(
+              GenericMessage.class,
+              this::alwaysResponse,
+              (GenericMessage<String> msg) -> {
+                getSender().tell(msg.value.toUpperCase(), getSelf());
+              })
+          .build();
+    }
+  }
 
   @Test
   public void testIt() {
 
-    new TestKit(system) {{
-      ActorRef testactor = system.actorOf(Props.create(MessageInitExample.class), "testactor");
-      String msg = "U OK?";
+    new TestKit(system) {
+      {
+        ActorRef testactor = system.actorOf(Props.create(MessageInitExample.class), "testactor");
+        String msg = "U OK?";
 
-      testactor.tell(msg, getRef());
-      expectNoMessage(Duration.ofSeconds(1));
+        testactor.tell(msg, getRef());
+        expectNoMessage(Duration.ofSeconds(1));
 
-      testactor.tell("init", getRef());
-      testactor.tell(msg, getRef());
-      expectMsgEquals("Up and running");
-    }};
+        testactor.tell("init", getRef());
+        testactor.tell(msg, getRef());
+        expectMsgEquals("Up and running");
+      }
+    };
   }
 
   @Test
   public void testGenericActor() {
-    new TestKit(system) {{
-      ActorRef genericTestActor = system.actorOf(Props.create(GenericActor.class), "genericActor");
-      GenericMessage<String> genericMessage = new GenericMessage<String>("a");
+    new TestKit(system) {
+      {
+        ActorRef genericTestActor =
+            system.actorOf(Props.create(GenericActor.class), "genericActor");
+        GenericMessage<String> genericMessage = new GenericMessage<String>("a");
 
-      genericTestActor.tell(genericMessage, getRef());
-      expectMsgEquals("A");
-    }};
+        genericTestActor.tell(genericMessage, getRef());
+        expectMsgEquals("A");
+      }
+    };
   }
 
   @Test
   public void actorShouldNotRespondForEmptyMessage() {
-    new TestKit(system) {{
-      ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicate.class), "genericActorWithPredicate");
-      GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
-      GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
+    new TestKit(system) {
+      {
+        ActorRef genericTestActor =
+            system.actorOf(
+                Props.create(GenericActorWithPredicate.class), "genericActorWithPredicate");
+        GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
+        GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
 
-      genericTestActor.tell(emptyGenericMessage, getRef());
-      expectNoMessage();
+        genericTestActor.tell(emptyGenericMessage, getRef());
+        expectNoMessage();
 
-      genericTestActor.tell(nonEmptyGenericMessage, getRef());
-      expectMsgEquals("A");
-    }};
+        genericTestActor.tell(nonEmptyGenericMessage, getRef());
+        expectMsgEquals("A");
+      }
+    };
   }
 
-    @Test
-   public void actorShouldAlwaysRespondForEmptyMessage() {
-      new TestKit(system) {{
-           ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicateAlwaysResponse.class), "genericActorWithPredicateAlwaysResponse");
-           GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
-           GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
+  @Test
+  public void actorShouldAlwaysRespondForEmptyMessage() {
+    new TestKit(system) {
+      {
+        ActorRef genericTestActor =
+            system.actorOf(
+                Props.create(GenericActorWithPredicateAlwaysResponse.class),
+                "genericActorWithPredicateAlwaysResponse");
+        GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
+        GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
 
-           genericTestActor.tell(emptyGenericMessage, getRef());
-           expectMsg("");
+        genericTestActor.tell(emptyGenericMessage, getRef());
+        expectMsg("");
 
-           genericTestActor.tell(nonEmptyGenericMessage, getRef());
-           expectMsgEquals("A");
-       }};
-    }
+        genericTestActor.tell(nonEmptyGenericMessage, getRef());
+        expectMsgEquals("A");
+      }
+    };
+  }
 }

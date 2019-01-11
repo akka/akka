@@ -18,9 +18,9 @@ import akka.event.LoggingAdapter;
 import jdocs.tutorial_4.Device;
 import jdocs.tutorial_4.DeviceManager;
 
-//#device-group-full
-//#device-group-remove
-//#device-group-register
+// #device-group-full
+// #device-group-remove
+// #device-group-register
 public class DeviceGroup extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -33,8 +33,8 @@ public class DeviceGroup extends AbstractActor {
   public static Props props(String groupId) {
     return Props.create(DeviceGroup.class, () -> new DeviceGroup(groupId));
   }
-  //#device-group-register
-  //#device-group-remove
+  // #device-group-register
+  // #device-group-remove
 
   public static final class RequestDeviceList {
     final long requestId;
@@ -53,13 +53,13 @@ public class DeviceGroup extends AbstractActor {
       this.ids = ids;
     }
   }
-  //#device-group-remove
-  //#device-group-register
+  // #device-group-remove
+  // #device-group-register
 
   final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
-  //#device-group-register
+  // #device-group-register
   final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-  //#device-group-register
+  // #device-group-register
 
   @Override
   public void preStart() {
@@ -78,28 +78,30 @@ public class DeviceGroup extends AbstractActor {
         deviceActor.forward(trackMsg, getContext());
       } else {
         log.info("Creating device actor for {}", trackMsg.deviceId);
-        deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
-        //#device-group-register
+        deviceActor =
+            getContext()
+                .actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        // #device-group-register
         getContext().watch(deviceActor);
         actorToDeviceId.put(deviceActor, trackMsg.deviceId);
-        //#device-group-register
+        // #device-group-register
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
         deviceActor.forward(trackMsg, getContext());
       }
     } else {
       log.warning(
-              "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-              groupId, this.groupId
-      );
+          "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+          groupId,
+          this.groupId);
     }
   }
-  //#device-group-register
-  //#device-group-remove
+  // #device-group-register
+  // #device-group-remove
 
   private void onDeviceList(RequestDeviceList r) {
     getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
   }
-  //#device-group-remove
+  // #device-group-remove
 
   private void onTerminated(Terminated t) {
     ActorRef deviceActor = t.getActor();
@@ -108,21 +110,21 @@ public class DeviceGroup extends AbstractActor {
     actorToDeviceId.remove(deviceActor);
     deviceIdToActor.remove(deviceId);
   }
-  //#device-group-register
+  // #device-group-register
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-            .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
-            //#device-group-register
-            //#device-group-remove
-            .match(RequestDeviceList.class, this::onDeviceList)
-            //#device-group-remove
-            .match(Terminated.class, this::onTerminated)
-            //#device-group-register
-            .build();
+        .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+        // #device-group-register
+        // #device-group-remove
+        .match(RequestDeviceList.class, this::onDeviceList)
+        // #device-group-remove
+        .match(Terminated.class, this::onTerminated)
+        // #device-group-register
+        .build();
   }
 }
-//#device-group-register
-//#device-group-remove
-//#device-group-full
+// #device-group-register
+// #device-group-remove
+// #device-group-full

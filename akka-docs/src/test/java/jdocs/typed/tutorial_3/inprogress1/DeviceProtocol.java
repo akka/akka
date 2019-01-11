@@ -8,11 +8,10 @@ import akka.actor.typed.ActorRef;
 
 import java.util.Optional;
 
-//#read-protocol-1
+// #read-protocol-1
 abstract class DeviceProtocol {
   // no instances of DeviceProtocol class
-  private DeviceProtocol() {
-  }
+  private DeviceProtocol() {}
 
   interface DeviceMessage {}
 
@@ -31,7 +30,5 @@ abstract class DeviceProtocol {
       this.value = value;
     }
   }
-
 }
-//#read-protocol-1
-
+// #read-protocol-1

@@ -24,32 +24,36 @@ import akka.stream.testkit.Utils;
 import akka.util.ByteString;
 
 public class OutputStreamSourceTest extends StreamTest {
-    public OutputStreamSourceTest() {
-        super(actorSystemResource);
-    }
+  public OutputStreamSourceTest() {
+    super(actorSystemResource);
+  }
 
-    @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSourceTest2",
-            Utils.UnboundedMailboxConfig());
-    @Test
-    public void mustSendEventsViaOutputStream() throws Exception {
-        final TestKit probe = new TestKit(system);
-        final Duration timeout = Duration.ofSeconds(3);
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("OutputStreamSourceTest2", Utils.UnboundedMailboxConfig());
 
-        final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
-        final OutputStream s = source.to(Sink.foreach(new Procedure<ByteString>() {
-            private static final long serialVersionUID = 1L;
-            public void apply(ByteString elem) {
-                probe.getRef().tell(elem, ActorRef.noSender());
-            }
-        })).run(materializer);
+  @Test
+  public void mustSendEventsViaOutputStream() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Duration timeout = Duration.ofSeconds(3);
 
-        s.write("a".getBytes());
-        
-        
-        assertEquals(ByteString.fromString("a"), probe.receiveOne(timeout));
-        s.close();
+    final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
+    final OutputStream s =
+        source
+            .to(
+                Sink.foreach(
+                    new Procedure<ByteString>() {
+                      private static final long serialVersionUID = 1L;
 
-    }
+                      public void apply(ByteString elem) {
+                        probe.getRef().tell(elem, ActorRef.noSender());
+                      }
+                    }))
+            .run(materializer);
 
+    s.write("a".getBytes());
+
+    assertEquals(ByteString.fromString("a"), probe.receiveOne(timeout));
+    s.close();
+  }
 }

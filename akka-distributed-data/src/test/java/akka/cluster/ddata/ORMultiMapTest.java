@@ -12,6 +12,5 @@ public class ORMultiMapTest {
     ORMultiMap<String, String> orMultiMap = ORMultiMap.create();
     orMultiMap.addBinding(node, "a", "1");
     orMultiMap.removeBinding(node, "a", "1");
-
   }
 }

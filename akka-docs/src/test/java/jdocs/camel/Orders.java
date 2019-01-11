@@ -3,7 +3,7 @@
  */
 
 package jdocs.camel;
-//#Producer
+// #Producer
 import akka.camel.javaapi.UntypedProducerActor;
 
 public class Orders extends UntypedProducerActor {
@@ -11,4 +11,4 @@ public class Orders extends UntypedProducerActor {
     return "jms:queue:Orders";
   }
 }
-//#Producer
+// #Producer

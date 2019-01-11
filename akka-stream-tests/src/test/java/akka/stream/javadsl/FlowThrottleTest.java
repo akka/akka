@@ -20,31 +20,33 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 
 public class FlowThrottleTest extends StreamTest {
-    public FlowThrottleTest() {
-        super(actorSystemResource);
-    }
+  public FlowThrottleTest() {
+    super(actorSystemResource);
+  }
 
-    @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource =
-            new AkkaJUnitActorSystemResource("ThrottleTest", AkkaSpec.testConf());
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("ThrottleTest", AkkaSpec.testConf());
 
-    @Test
-    public void mustWorksForTwoStreams() throws Exception {
-        final Flow<Integer, Integer, NotUsed> sharedThrottle =
-            Flow.of(Integer.class)
-              .throttle(1,java.time.Duration.ofDays(1), 1, ThrottleMode.enforcing());
+  @Test
+  public void mustWorksForTwoStreams() throws Exception {
+    final Flow<Integer, Integer, NotUsed> sharedThrottle =
+        Flow.of(Integer.class)
+            .throttle(1, java.time.Duration.ofDays(1), 1, ThrottleMode.enforcing());
 
-        CompletionStage<List<Integer>> result1 =
-          Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
+    CompletionStage<List<Integer>> result1 =
+        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
 
-        // If there is accidental shared state then we would not be able to pass through the single element
-        assertEquals(result1.toCompletableFuture().get(3, TimeUnit.SECONDS), Collections.singletonList(1));
+    // If there is accidental shared state then we would not be able to pass through the single
+    // element
+    assertEquals(
+        result1.toCompletableFuture().get(3, TimeUnit.SECONDS), Collections.singletonList(1));
 
-        // It works with a new stream, too
-        CompletionStage<List<Integer>> result2 =
-          Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
+    // It works with a new stream, too
+    CompletionStage<List<Integer>> result2 =
+        Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);
 
-        assertEquals(result2.toCompletableFuture().get(3, TimeUnit.SECONDS), Collections.singletonList(1));
-    }
-
+    assertEquals(
+        result2.toCompletableFuture().get(3, TimeUnit.SECONDS), Collections.singletonList(1));
+  }
 }

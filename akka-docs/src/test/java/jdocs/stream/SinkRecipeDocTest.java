@@ -19,26 +19,26 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class SinkRecipeDocTest extends AbstractJavaTest {
-    static ActorSystem system;
-    static Materializer mat;
+  static ActorSystem system;
+  static Materializer mat;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create("SinkRecipeDocTest");
-        mat = ActorMaterializer.create(system);
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create("SinkRecipeDocTest");
+    mat = ActorMaterializer.create(system);
+  }
 
-    @Test
-    public void foreachAsync() {
-        final Function<Integer, CompletionStage<Void>> asyncProcessing = param -> CompletableFuture.completedFuture(param).thenAccept(System.out::println);
+  @Test
+  public void foreachAsync() {
+    final Function<Integer, CompletionStage<Void>> asyncProcessing =
+        param -> CompletableFuture.completedFuture(param).thenAccept(System.out::println);
 
-        //#forseachAsync-processing
-        //final Function<Integer, CompletionStage<Void>> asyncProcessing = _
+    // #forseachAsync-processing
+    // final Function<Integer, CompletionStage<Void>> asyncProcessing = _
 
-        final Source<Integer, NotUsed> numberSource = Source.range(1, 100);
+    final Source<Integer, NotUsed> numberSource = Source.range(1, 100);
 
-        numberSource
-            .runWith(Sink.foreachAsync(10, asyncProcessing), mat);
-        //#forseachAsync-processing
-    }
+    numberSource.runWith(Sink.foreachAsync(10, asyncProcessing), mat);
+    // #forseachAsync-processing
+  }
 }

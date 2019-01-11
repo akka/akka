@@ -25,19 +25,17 @@ public class AttributesTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("AttributesTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("AttributesTest", AkkaSpec.testConf());
 
   final Attributes attributes =
-      Attributes.name("a")
-      .and(Attributes.name("b"))
-      .and(Attributes.inputBuffer(1, 2));
+      Attributes.name("a").and(Attributes.name("b")).and(Attributes.inputBuffer(1, 2));
 
   @Test
   public void mustGetAttributesByClass() {
     assertEquals(
-      Arrays.asList(new Attributes.Name("b"), new Attributes.Name("a")),
-      attributes.getAttributeList(Attributes.Name.class));
+        Arrays.asList(new Attributes.Name("b"), new Attributes.Name("a")),
+        attributes.getAttributeList(Attributes.Name.class));
     assertEquals(
         Collections.singletonList(new Attributes.InputBuffer(1, 2)),
         attributes.getAttributeList(Attributes.InputBuffer.class));
@@ -46,36 +44,29 @@ public class AttributesTest extends StreamTest {
   @Test
   public void mustGetAttributeByClass() {
     assertEquals(
-      new Attributes.Name("b"),
-      attributes.getAttribute(Attributes.Name.class, new Attributes.Name("default")));
+        new Attributes.Name("b"),
+        attributes.getAttribute(Attributes.Name.class, new Attributes.Name("default")));
   }
 
   @Test
   public void mustGetMissingAttributeByClass() {
-    assertEquals(
-        Optional.empty(),
-        attributes.getAttribute(Attributes.LogLevels.class));
+    assertEquals(Optional.empty(), attributes.getAttribute(Attributes.LogLevels.class));
   }
 
   @Test
   public void mustGetPossiblyMissingAttributeByClass() {
     assertEquals(
-        Optional.of(new Attributes.Name("b")),
-        attributes.getAttribute(Attributes.Name.class));
+        Optional.of(new Attributes.Name("b")), attributes.getAttribute(Attributes.Name.class));
   }
 
   @Test
   public void mustGetPossiblyMissingFirstAttributeByClass() {
     assertEquals(
-        Optional.of(new Attributes.Name("a")),
-        attributes.getFirstAttribute(Attributes.Name.class));
+        Optional.of(new Attributes.Name("a")), attributes.getFirstAttribute(Attributes.Name.class));
   }
 
   @Test
   public void mustGetMissingFirstAttributeByClass() {
-    assertEquals(
-        Optional.empty(),
-        attributes.getFirstAttribute(Attributes.LogLevels.class));
+    assertEquals(Optional.empty(), attributes.getFirstAttribute(Attributes.LogLevels.class));
   }
-
 }
