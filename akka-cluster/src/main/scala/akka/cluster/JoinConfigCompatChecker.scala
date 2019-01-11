@@ -48,42 +48,16 @@ object JoinConfigCompatChecker {
       }
 
     if (result.isEmpty) Valid
-    else Invalid(result)
-  }
-
-  /**
-   * Computes the difference of `actualConfig` and `toCheck` to determine
-   * whether new required keys are in `toCheck` and not in `actualConfig`.
-   *
-   * @param requiredKeys a Seq of required keys
-   * @param toCheck      the Config instance to be checked
-   * @param actualConfig the Config instance containing the expected values
-   */
-  def diff(requiredKeys: im.Seq[String], toCheck: Config, actualConfig: Config): ConfigValidation = {
-
-    def keys(c: Config) = c.entrySet().asScala.map(_.getKey).toSet
-    // simplify
-    val joiningKeys = keys(toCheck)
-
-    val sharedRequirements = joiningKeys & requiredKeys.toSet
-
-    val isValid =
-      sharedRequirements.size == requiredKeys.size &&
-        requiredKeys.forall(sharedRequirements.contains)
-
-    if (isValid) {
-      val updates = joiningKeys &~ keys(actualConfig)
-      if (updates.isEmpty) Valid else ValidNel
-    } else Invalid(im.Seq.empty)
+    else Invalid(result.to[im.Seq])
   }
 
   /**
    * Checks that all `requiredKeys` are available in `toCheck` Config
    * and its values match exactly the values in `currentConfig`.
    *
-   * @param requiredKeys a Seq of required keys
-   * @param toCheck      the Config instance to be checked
-   * @param actualConfig the Config instance containing the expected values
+   * @param requiredKeys - a Seq of required keys
+   * @param toCheck - the Config instance to be checked
+   * @param actualConfig - the Config instance containing the expected values
    */
   def fullMatch(requiredKeys: im.Seq[String], toCheck: Config, actualConfig: Config): ConfigValidation = {
 
@@ -107,9 +81,7 @@ object JoinConfigCompatChecker {
       else Invalid(incompatibleKeys.to[im.Seq])
     }
 
-    val checkDiff = diff(requiredKeys, toCheck, actualConfig)
-
-    exists(requiredKeys, toCheck) ++ checkEquality ++ checkDiff
+    exists(requiredKeys, toCheck) ++ checkEquality
   }
 
   /**
@@ -201,19 +173,6 @@ sealed trait ConfigValidation {
 }
 
 case object Valid extends ConfigValidation {
-  /**
-   * Java API: get the singleton instance
-   */
-  def getInstance = this
-}
-
-/**
- * Marker for when new keys are found by an implied validity with a NonEmptyList (Nel).
- * This indicates that there is no notion of
- * - invalid: if during a rolling upgrade
- * - valid: as there is no value to check validity against
- */
-case object ValidNel extends ConfigValidation {
   /**
    * Java API: get the singleton instance
    */

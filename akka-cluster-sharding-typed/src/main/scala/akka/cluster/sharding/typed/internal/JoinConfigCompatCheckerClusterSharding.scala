@@ -5,10 +5,10 @@
 package akka.cluster.sharding.typed.internal
 
 import akka.annotation.InternalApi
-import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker }
+import akka.cluster.{ConfigValidation, JoinConfigCompatChecker, Valid}
 import com.typesafe.config.Config
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{immutable => im}
 
 /**
  * INTERNAL API
@@ -19,7 +19,10 @@ private[akka] final class JoinConfigCompatCheckClusterSharding extends JoinConfi
   override def requiredKeys: im.Seq[String] =
     im.Seq("akka.cluster.sharding.number-of-shards")
 
-  override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
-    JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
+  override def check(toCheck: Config, actualConfig: Config): ConfigValidation = {
+    if (toCheck.hasPath("akka.cluster.sharding.number-of-shards"))
+      JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
+    else
+      Valid
+  }
 }
-

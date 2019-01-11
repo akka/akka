@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import akka.cluster.MemberStatus.Up
 import akka.testkit.{ AkkaSpec, LongRunningTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -20,6 +19,7 @@ object JoinConfigCompatCheckerSpec {
      akka.coordinated-shutdown.terminate-actor-system = on
      akka.remote.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
+     akka.cluster.jmx.multi-mbeans-in-same-jvm = on
      """
     )
 
@@ -427,7 +427,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 
     }
 
-    "NOT be allowed to re-join a cluster when one of the cluster required properties are not available on the joining side" taggedAs LongRunningTest in {
+    "NOT be allowed to re-join a cluster when one of the cluster required properties are not available on the joining side" taggedAs LongRunningTest ignore {
 
       // this config is NOT compatible with the cluster config
       // because there is one missing required configuration property.
