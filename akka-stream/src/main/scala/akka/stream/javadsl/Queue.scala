@@ -32,8 +32,8 @@ trait SourceQueue[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult]
 
   /**
-   * Method returns a [[CompletionStage]] that will be completed if this stage completes,
-   * or will be failed when the stream is failed.
+   * Method returns a [[CompletionStage]] that will be completed if this
+   * operator completes, or will be failed when the stream is failed.
    */
   def watchCompletion(): CompletionStage[Done]
 }
@@ -61,8 +61,9 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
   def fail(ex: Throwable): Unit
 
   /**
-   * Method returns a [[CompletionStage]] that will be completed if this stage completes,
-   * or will be failed when the stream fails, for example when [[SourceQueueWithComplete.fail]] is invoked.
+   * Method returns a [[CompletionStage]] that will be completed if this
+   * operator completes, or will be failed when the stream fails,
+   * for example when [[SourceQueueWithComplete.fail]] is invoked.
    */
   override def watchCompletion(): CompletionStage[Done]
 }
