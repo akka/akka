@@ -18,6 +18,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import akka.util.ccompat.imm._
 
 object MultiDcClusterShardingSpec {
   sealed trait EntityMsg {
@@ -131,7 +132,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
       awaitAssert({
         withClue(s"Members: ${Cluster(system).state}") {
           Cluster(system).state.members.size should ===(4)
-          Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(system).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }, 10.seconds)
 

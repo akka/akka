@@ -11,9 +11,9 @@ import scala.collection.SortedSet
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
-import scala.collection.breakOut
 import scala.util.Random
 
 /**
@@ -275,10 +275,10 @@ import scala.util.Random
       if (preferNodesWithDifferentView(state)) {
         // If it's time to try to gossip to some nodes with a different view
         // gossip to a random alive same dc member with preference to a member with older gossip version
-        latestGossip.members.collect {
+        latestGossip.members.iterator.collect {
           case m if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state.validNodeForGossip(m.uniqueAddress) ⇒
             m.uniqueAddress
-        }(breakOut)
+        }.to(Vector)
       } else Vector.empty
 
     // Fall back to localGossip

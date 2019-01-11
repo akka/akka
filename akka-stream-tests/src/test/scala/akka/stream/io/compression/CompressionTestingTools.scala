@@ -7,6 +7,7 @@ package akka.stream.io.compression
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -25,7 +26,7 @@ object CompressionTestingTools {
       }
     }
   }
-  implicit class EnhancedByteStringTraversableOnce(val byteStrings: TraversableOnce[ByteString]) extends AnyVal {
+  implicit class EnhancedByteStringTraversableOnce(val byteStrings: IterableOnce[ByteString]) extends AnyVal {
     def join: ByteString = byteStrings.foldLeft(ByteString.empty)(_ ++ _)
   }
   implicit class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {

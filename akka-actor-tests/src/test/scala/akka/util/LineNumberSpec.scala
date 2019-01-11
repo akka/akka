@@ -11,7 +11,7 @@ import scala.util.Properties
 
 class LineNumberSpec extends AkkaSpec {
 
-  private val isScala212 = Properties.versionNumberString.startsWith("2.12")
+  private val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   "LineNumbers" when {
 
@@ -24,11 +24,11 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for larger functions" in {
         val result = LineNumbers(twoline)
-        if (isScala212)
-          // because how scala 2.12 does the same as Java Lambdas
-          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 15))
-        else
+        if (isScala211)
           result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 17))
+        else
+          // because how scala 2.12+ does the same as Java Lambdas
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 15))
       }
 
       "work for partial functions" in {
@@ -37,11 +37,11 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for `def`" in {
         val result = LineNumbers(method("foo"))
-        if (isScala212)
+        if (isScala211)
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 25, 27))
+        else
           // because how scala 2.12 does the same as Java Lambdas
           result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 26, 27))
-        else
-          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 25, 27))
       }
 
     }

@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch
 
 import akka.testkit.TestActor.AutoPilot
 import akka.util.JavaDurationConverters
+import akka.util.ccompat._
 
 /**
  * Provides factory methods for various Publishers.
@@ -363,7 +364,7 @@ object TestSubscriber {
      * Expect multiple stream elements.
      */
     @annotation.varargs def expectNext(e1: I, e2: I, es: I*): Self =
-      expectNextN((e1 +: e2 +: es).map(identity)(collection.breakOut))
+      expectNextN((e1 +: e2 +: es).iterator.map(identity).to(immutable.IndexedSeq))
 
     /**
      * Fluent DSL
@@ -371,7 +372,7 @@ object TestSubscriber {
      * Expect multiple stream elements in arbitrary order.
      */
     @annotation.varargs def expectNextUnordered(e1: I, e2: I, es: I*): Self =
-      expectNextUnorderedN((e1 +: e2 +: es).map(identity)(collection.breakOut))
+      expectNextUnorderedN((e1 +: e2 +: es).iterator.map(identity).to(immutable.IndexedSeq))
 
     /**
      * Expect and return the next `n` stream elements.

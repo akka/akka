@@ -12,6 +12,7 @@ import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
+import akka.util.ccompat._
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -280,7 +281,7 @@ object UdpMessage {
    * message, or the manager will reply with a [[Udp.CommandFailed]] message.
    */
   def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Command =
-    Bind(handler, endpoint, options.asScala.to)
+    Bind(handler, endpoint, options.asScala.to(immutable.IndexedSeq))
   /**
    * Bind without specifying options.
    */
@@ -303,7 +304,7 @@ object UdpMessage {
    * The “simple sender” will not stop itself, you will have to send it a [[akka.actor.PoisonPill]]
    * when you want to close the socket.
    */
-  def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to)
+  def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to(immutable.IndexedSeq))
   /**
    * Retrieve a simple sender without specifying options.
    */

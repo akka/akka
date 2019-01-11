@@ -16,6 +16,7 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.BoxedType
+import akka.util.ccompat._
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -39,7 +40,7 @@ sealed trait TestEvent
  */
 object TestEvent {
   object Mute {
-    def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.to[immutable.Seq])
+    def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.to(immutable.Seq))
   }
   final case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
@@ -48,7 +49,7 @@ object TestEvent {
     def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
   object UnMute {
-    def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.to[immutable.Seq])
+    def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.to(immutable.Seq))
   }
   final case class UnMute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**

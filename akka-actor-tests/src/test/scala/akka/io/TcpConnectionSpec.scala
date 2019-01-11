@@ -24,7 +24,7 @@ import akka.io.Inet.SocketOption
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
 import akka.util.{ ByteString, Helpers }
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddress
 import java.util.Random
 import java.net.SocketTimeoutException
 import java.nio.file.Files

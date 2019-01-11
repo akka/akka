@@ -58,7 +58,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
-      val expectedIntervals = namedIntervals + ("persistence_id-3" → 3L, "persistence_id-4" → 3L)
+      val expectedIntervals = namedIntervals + "persistence_id-3" → 3L + "persistence_id-4" → 3L
 
       for ((id, interval) ← expectedIntervals) {
         var segment = 0

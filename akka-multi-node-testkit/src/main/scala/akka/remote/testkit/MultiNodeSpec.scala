@@ -25,6 +25,7 @@ import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.RemoteTransportException
 import org.jboss.netty.channel.ChannelException
+import akka.util.ccompat._
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -383,7 +384,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   def enterBarrier(name: String*): Unit =
     testConductor.enter(
       Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
-      name.to[immutable.Seq])
+      name.to(immutable.Seq))
 
   /**
    * Query the controller for the transport address of the given node (by role name) and
@@ -434,7 +435,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
     val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer
     deployments(role) foreach { str ⇒
-      val deployString = (str /: replacements) {
+      val deployString = replacements.foldLeft(str) {
         case (base, r @ Replacement(tag, _)) ⇒
           base.indexOf(tag) match {
             case -1 ⇒ base
