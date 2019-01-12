@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
@@ -70,6 +71,24 @@ public class ActorLoggingTest extends JUnitSuite {
             1);
 
     testKit.spawn(behavior);
+    eventFilter.awaitDone(FiniteDuration.create(3, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void logMessagesBehavior() {
+    Behavior<String> behavior = Behaviors.logMessages(Behaviors.empty());
+
+    CustomEventFilter eventFilter =
+        new CustomEventFilter(
+            new PFBuilder<Logging.LogEvent, Object>()
+                .match(
+                    Logging.LogEvent.class,
+                    (event) -> event.message().equals("received message Hello"))
+                .build(),
+            1);
+
+    ActorRef<String> ref = testKit.spawn(behavior);
+    ref.tell("Hello");
     eventFilter.awaitDone(FiniteDuration.create(3, TimeUnit.SECONDS));
   }
 }
