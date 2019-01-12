@@ -5,10 +5,10 @@
 package akka.cluster.sharding.typed.internal
 
 import akka.annotation.InternalApi
-import akka.cluster.{ConfigValidation, JoinConfigCompatChecker, Valid}
+import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
 import com.typesafe.config.Config
 
-import scala.collection.{immutable => im}
+import scala.collection.{ immutable ⇒ im }
 
 /**
  * INTERNAL API
