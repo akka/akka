@@ -156,12 +156,12 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
    * be valid both ways: v1 => v2, v2 => v1. Uses a timeout of 20 seconds and
    * defaults to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`.
    *
-   * @param size      the cluster size - number of nodes to create for the cluster
-   * @param v1Config  the version of config to base validation against
-   * @param v2Config  the upgraded version of config being validated
+   * @param clusterSize the cluster size - number of nodes to create for the cluster
+   * @param v1Config    the version of config to base validation against
+   * @param v2Config    the upgraded version of config being validated
    */
-  def upgradeCluster(size: Int, v1Config: Config, v2Config: Config): Unit =
-    upgradeCluster(size, v1Config, v2Config, timeout = 20.seconds, true)
+  def upgradeCluster(clusterSize: Int, v1Config: Config, v2Config: Config): Unit =
+    upgradeCluster(clusterSize, v1Config, v2Config, timeout = 20.seconds, true)
 
   /**
    * Starts the given `size` number of nodes and forms a cluster. Shuffles the order
@@ -170,25 +170,26 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
    * Note that the two versions of config are validated against each other and have to
    * be valid both ways: v1 => v2, v2 => v1.
    *
-   * @param size          the cluster size - number of nodes to create for the cluster
+   * @param clusterSize   the cluster size - number of nodes to create for the cluster
    * @param baseConfig    the version of config to base validation against
    * @param upgradeConfig the upgraded version of config being validated
    * @param timeout       the duration to wait for a member to be [[MemberStatus.Up]]
    * @param enforced      toggle `akka.cluster.configuration-compatibility-check.enforce-on-join` on or off
    */
-  def upgradeCluster(size: Int, baseConfig: Config, upgradeConfig: Config, timeout: FiniteDuration, enforced: Boolean): Unit = {
+  def upgradeCluster(clusterSize: Int, baseConfig: Config, upgradeConfig: Config, timeout: FiniteDuration, enforced: Boolean): Unit = {
+    require(clusterSize > 1, s"'clusterSize' must be > 1 but was $clusterSize")
+
     val util = new ClusterTestUtil(system.name)
 
-    val config = (version: Config) ⇒
-      if (enforced) version else unenforced(version)
+    val config = (version: Config) ⇒ if (enforced) version else unenforced(version)
 
     try {
-      val nodes = for (_ ← 0 until size) yield {
+      val nodes = for (_ ← 0 until clusterSize) yield {
         val system = util.newActorSystem(config(baseConfig))
         util.joinCluster(system)
         system
       }
-      awaitCond(nodes.forall(util.isMemberUp), timeout * size)
+      awaitCond(nodes.forall(util.isMemberUp), timeout * clusterSize)
 
       val rolling = Random.shuffle(nodes)
 
@@ -197,7 +198,7 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
         util.joinCluster(restarted)
         awaitCond(util.isMemberUp(restarted), timeout)
       }
-      awaitCond(Cluster(rolling.head).readView.members.size == nodes.size, timeout * size)
+      awaitCond(Cluster(rolling.head).readView.members.size == rolling.size, timeout * clusterSize)
 
     } finally util.shutdownAll()
   }

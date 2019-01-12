@@ -31,6 +31,14 @@ object JoinConfigCompatCheckerRollingUpdateSpec {
       }
     """).withFallback(v1Config)
 
+  val v2ConfigIncompatible: Config = ConfigFactory.parseString(
+    """
+      akka.cluster.new-configuration = "v2"
+      akka.cluster.configuration-compatibility-check.checkers {
+        rolling-upgrade-test = "akka.cluster.JoinConfigCompatRollingUpdateChecker"
+      }
+    """).withFallback(baseConfig)
+
 }
 
 class JoinConfigCompatCheckerRollingUpdateSpec extends RollingUpgradeClusterSpec(
@@ -39,11 +47,16 @@ class JoinConfigCompatCheckerRollingUpdateSpec extends RollingUpgradeClusterSpec
   import JoinConfigCompatCheckerRollingUpdateSpec._
 
   "A Node" must {
-    "be allowed to re-join a cluster if it has a new, additional configuration the others do not have" taggedAs LongRunningTest in {
-      upgradeCluster(size = 3, v1Config, v2Config, timeout = 20.seconds, enforced = true)
+    "not be allowed to re-join a cluster if it has a new, additional configuration the others do not have and not the old" taggedAs LongRunningTest in {
+      intercept[AssertionError] {
+        upgradeCluster(3, v1Config, v2ConfigIncompatible, timeout = 20.seconds, enforced = true)
+      }
+    }
+    "be allowed to re-join a cluster if it has a new, additional property and checker the others do not have" taggedAs LongRunningTest in {
+      upgradeCluster(3, v1Config, v2Config, timeout = 20.seconds, enforced = true)
     }
     "be allowed to re-join a cluster if it has a new, additional configuration the others do not have and configured to NOT enforce it" taggedAs LongRunningTest in {
-      upgradeCluster(size = 3, v1Config, v2Config, timeout = 20.seconds, enforced = false)
+      upgradeCluster(3, v1Config, v2Config, timeout = 20.seconds, enforced = false)
     }
   }
 }
