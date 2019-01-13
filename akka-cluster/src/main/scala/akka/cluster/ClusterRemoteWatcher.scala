@@ -31,6 +31,9 @@ private[cluster] object ClusterRemoteWatcher {
     heartbeatExpectedResponseAfter: FiniteDuration): Props =
     Props(classOf[ClusterRemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+
+  private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus) extends NoSerializationVerificationNeeded
+
 }
 
 /**
@@ -55,11 +58,11 @@ private[cluster] class ClusterRemoteWatcher(
     unreachableReaperInterval,
     heartbeatExpectedResponseAfter) {
 
+  import ClusterRemoteWatcher.DelayedQuarantine
+
   private val arteryEnabled = RARP(context.system).provider.remoteSettings.Artery.Enabled
   val cluster = Cluster(context.system)
   import cluster.selfAddress
-
-  private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus) extends NoSerializationVerificationNeeded
 
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 

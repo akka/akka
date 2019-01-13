@@ -262,7 +262,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
 
       InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
     } catch {
-      case ex: akka.protobuf.InvalidProtocolBufferException ⇒
+      case _: akka.protobuf.InvalidProtocolBufferException ⇒
         // nodes previous to 2.5.9 sends just an address
         InternalClusterAction.InitJoinAck(addressFromBinary(bytes), UncheckedConfig)
     }
