@@ -128,12 +128,16 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
+ * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
  */
 @ApiMayChange
 final class Lookup(
   val serviceName: String,
   val portName:    Option[String],
   val protocol:    Option[String]) {
+
+  require(serviceName != null, "'serviceName' cannot be null")
+  require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")
 
   /**
    * Which port for a service e.g. Akka remoting or HTTP.
@@ -194,6 +198,47 @@ case object Lookup {
    * and protocol
    */
   def create(serviceName: String): Lookup = new Lookup(serviceName, None, None)
+
+  private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
+
+  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
+
+  /**
+   * Create a service Lookup from a string with format:
+   * _portName._protocol.serviceName.
+   * (as specified by https://www.ietf.org/rfc/rfc2782.txt)
+   *
+   * If the passed string conforms with this format, a SRV Lookup is returned.
+   * The serviceName part must be a valid domain name.
+   *
+   * The string is parsed and dismembered to build a Lookup as following:
+   * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
+   *
+   *
+   * @throws NullPointerException If the passed string is null
+   * @throws IllegalArgumentException If the string doesn't not conform with the SRV format
+   */
+  def parseSrv(str: String): Lookup =
+    str match {
+      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
+        Lookup(serviceName).withPortName(portName).withProtocol(protocol)
+
+      case null ⇒ throw new NullPointerException("Unable to create Lookup from passed SRV string. Passed value is 'null'")
+      case _    ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
+    }
+
+  /**
+   * Returns true if passed string conforms with SRV format. Otherwise returns false.
+   */
+  def isValidSrv(srv: String): Boolean =
+    srv match {
+      case SrvQuery(_, _, serviceName) ⇒ validDomainName(serviceName)
+      case _                           ⇒ false
+    }
+
+  private def validDomainName(name: String): Boolean =
+    DomainName.pattern.asPredicate().test(name)
+
 }
 
 /**
