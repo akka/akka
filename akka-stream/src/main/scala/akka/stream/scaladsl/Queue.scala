@@ -30,8 +30,11 @@ trait SourceQueue[T] {
   def offer(elem: T): Future[QueueOfferResult]
 
   /**
-   * Method returns a [[Future]] that will be completed if the stream completes,
-   * or will be failed when the operator faces an internal failure.
+   * Method returns a [[Future]] that will be completed if this operator
+   * completes, or will be failed when the operator faces an internal failure.
+   *
+   * Note that this only means the elements have been passed downstream, not
+   * that downstream has successfully processed them.
    */
   def watchCompletion(): Future[Done]
 }
@@ -43,6 +46,9 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
   /**
    * Complete the stream normally. Use `watchCompletion` to be notified of this
    * operation’s success.
+   *
+   * Note that this only means the elements have been passed downstream, not
+   * that downstream has successfully processed them.
    */
   def complete(): Unit
 
@@ -53,8 +59,12 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
   def fail(ex: Throwable): Unit
 
   /**
-   * Method returns a [[Future]] that will be completed if the stream completes,
-   * or will be failed when the operator faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
+   * Method returns a [[Future]] that will be completed if this operator
+   * completes, or will be failed when the stream fails,
+   * for example when [[SourceQueueWithComplete.fail]] is invoked.
+   *
+   * Note that this only means the elements have been passed downstream, not
+   * that downstream has successfully processed them.
    */
   def watchCompletion(): Future[Done]
 }
