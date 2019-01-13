@@ -609,7 +609,7 @@ object Source {
    * call when buffer is full.
    *
    * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
-   * It returns future that completes with success when stream is completed or fail when stream is failed.
+   * It returns future that completes with success when the operator is completed or fails when the stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
    * for downstream demand unless there is another message waiting for downstream demand, in that case
