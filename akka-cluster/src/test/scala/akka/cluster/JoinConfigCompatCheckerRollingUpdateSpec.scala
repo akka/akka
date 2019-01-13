@@ -64,7 +64,7 @@ class JoinConfigCompatCheckerRollingUpdateSpec extends RollingUpgradeClusterSpec
 class JoinConfigCompatRollingUpdateChecker extends JoinConfigCompatChecker {
   override def requiredKeys: im.Seq[String] = im.Seq("akka.cluster.new-configuration")
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation = {
-    if (toCheck.hasPath("akka.cluster.new-configuration"))
+    if (toCheck.hasPath(requiredKeys.head))
       JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
     else Valid
   }

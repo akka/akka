@@ -35,7 +35,7 @@ object JoinConfig {
       .withFallback(baseConfig)
 }
 
-abstract class JoinConfigCompatCheckClusterShardingSpec extends AkkaSpec(
+abstract class JoinConfigCompatCheckerClusterShardingSpec extends AkkaSpec(
   JoinConfig.joinConfig(JoinConfig.Shards)) {
 
   protected val duration = 5.seconds
@@ -66,7 +66,7 @@ abstract class JoinConfigCompatCheckClusterShardingSpec extends AkkaSpec(
 
 }
 
-class JoinConfigIncompatibilitySpec extends JoinConfigCompatCheckClusterShardingSpec {
+class JoinConfigIncompatibilitySpec extends JoinConfigCompatCheckerClusterShardingSpec {
   "A Joining Node" must {
 
     s"not be allowed to join a cluster with different '${JoinConfig.Key}'" taggedAs LongRunningTest in {
@@ -80,7 +80,7 @@ class JoinConfigIncompatibilitySpec extends JoinConfigCompatCheckClusterSharding
   }
 }
 
-class JoinConfigCompatibilitySpec extends JoinConfigCompatCheckClusterShardingSpec {
+class JoinConfigCompatibilitySpec extends JoinConfigCompatCheckerClusterShardingSpec {
   "A Joining Node" must {
 
     s"be allowed to join a cluster with the same '${JoinConfig.Key}'" taggedAs LongRunningTest in {

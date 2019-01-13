@@ -107,7 +107,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 
     }
 
-    "be allowed to join a cluster when one of its required properties are not available on cluster side" taggedAs LongRunningTest in {
+    "NOT be allowed to join a cluster when one of its required properties are not available on cluster side" taggedAs LongRunningTest in {
 
       // this config is NOT compatible with the cluster config
       // because there is one missing required configuration property.
@@ -427,7 +427,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 
     }
 
-    "NOT be allowed to re-join a cluster when one of the cluster required properties are not available on the joining side" taggedAs LongRunningTest ignore {
+    "NOT be allowed to re-join a cluster when one of the cluster required properties are not available on the joining side" taggedAs LongRunningTest in {
 
       // this config is NOT compatible with the cluster config
       // because there is one missing required configuration property.
