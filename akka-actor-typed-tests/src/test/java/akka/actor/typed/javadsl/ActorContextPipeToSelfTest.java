@@ -23,10 +23,10 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
 
   @ClassRule
   public static final TestKitJunitResource testKit =
-      new TestKitJunitResource(ConfigFactory.parseString(
-      "pipe-to-self-spec-dispatcher.executor = thread-pool-executor\n" +
-          "pipe-to-self-spec-dispatcher.type = PinnedDispatcher\n"
-  ));
+      new TestKitJunitResource(
+          ConfigFactory.parseString(
+              "pipe-to-self-spec-dispatcher.executor = thread-pool-executor\n"
+                  + "pipe-to-self-spec-dispatcher.type = PinnedDispatcher\n"));
 
   static final class Msg {
     final String response;
@@ -40,11 +40,13 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
     }
   }
 
-  @Test public void handlesSuccess() {
+  @Test
+  public void handlesSuccess() {
     assertEquals("ok: hi", responseFrom(CompletableFuture.completedFuture("hi")));
   }
 
-  @Test public void handlesFailure() {
+  @Test
+  public void handlesFailure() {
     assertEquals("ko: boom", responseFrom(failedFuture(new RuntimeException("boom"))));
   }
 
@@ -56,19 +58,28 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
 
   private String responseFrom(final CompletionStage<String> future) {
     final TestProbe<Msg> probe = testKit.createTestProbe();
-    final Behavior<Msg> behavior = Behaviors.setup(context -> {
-      context.pipeToSelf(future, (string, exception) -> {
-        final String response;
-        if (string != null) response = String.format("ok: %s", string);
-        else if (exception != null) response = String.format("ko: %s", exception.getMessage());
-        else response = "???";
-        return new Msg(response, context.getSelf().path().name(), Thread.currentThread().getName());
-      });
-      return Behaviors.receiveMessage(msg -> {
-        probe.getRef().tell(msg);
-        return Behaviors.stopped();
-      });
-    });
+    final Behavior<Msg> behavior =
+        Behaviors.setup(
+            context -> {
+              context.pipeToSelf(
+                  future,
+                  (string, exception) -> {
+                    final String response;
+                    if (string != null) response = String.format("ok: %s", string);
+                    else if (exception != null)
+                      response = String.format("ko: %s", exception.getMessage());
+                    else response = "???";
+                    return new Msg(
+                        response,
+                        context.getSelf().path().name(),
+                        Thread.currentThread().getName());
+                  });
+              return Behaviors.receiveMessage(
+                  msg -> {
+                    probe.getRef().tell(msg);
+                    return Behaviors.stopped();
+                  });
+            });
     final String name = "pipe-to-self-spec";
     final Props props = Props.empty().withDispatcherFromConfig("pipe-to-self-spec-dispatcher");
 
@@ -77,7 +88,8 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
     final Msg msg = probe.expectMessageClass(Msg.class);
 
     assertEquals("pipe-to-self-spec", msg.selfName);
-    assertThat(msg.threadName, startsWith("ActorContextPipeToSelfTest-pipe-to-self-spec-dispatcher"));
+    assertThat(
+        msg.threadName, startsWith("ActorContextPipeToSelfTest-pipe-to-self-spec-dispatcher"));
     return msg.response;
   }
 }

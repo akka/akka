@@ -27,7 +27,11 @@ public class RecipeSourceFromFunction extends RecipeTest {
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("RecipeSourceFromFunction", ConfigFactory.parseString("akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
+    system =
+        ActorSystem.create(
+            "RecipeSourceFromFunction",
+            ConfigFactory.parseString(
+                "akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
     mat = ActorMaterializer.create(system);
   }
 
@@ -46,16 +50,13 @@ public class RecipeSourceFromFunction extends RecipeTest {
       }
 
       {
-        //#source-from-function
-        final Source<String, NotUsed> source = Source
-          .repeat(NotUsed.getInstance())
-          .map(elem -> builderFunction());
-        //#source-from-function
+        // #source-from-function
+        final Source<String, NotUsed> source =
+            Source.repeat(NotUsed.getInstance()).map(elem -> builderFunction());
+        // #source-from-function
 
-        final List<String> result = source
-          .take(2)
-          .runWith(Sink.seq(), mat)
-          .toCompletableFuture().get(3, TimeUnit.SECONDS);
+        final List<String> result =
+            source.take(2).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         Assert.assertEquals(2, result.size());
       }

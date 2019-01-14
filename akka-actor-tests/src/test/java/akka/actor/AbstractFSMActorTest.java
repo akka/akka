@@ -24,9 +24,7 @@ public class AbstractFSMActorTest extends JUnitSuite {
       this.probe = probe;
       onTransition(this::logTransition);
       startWith("start", "data");
-      when("start", matchEventEquals("next", (newState, data) ->
-        goTo(newState)
-      ));
+      when("start", matchEventEquals("next", (newState, data) -> goTo(newState)));
       when("next", AbstractFSM.NullFunction());
       initialize();
     }
@@ -36,10 +34,9 @@ public class AbstractFSMActorTest extends JUnitSuite {
     }
   }
 
-
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("AbstractFSMActorTest",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("AbstractFSMActorTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -55,6 +52,4 @@ public class AbstractFSMActorTest extends JUnitSuite {
 
     probe.expectMsg("Transitioning from start to next.");
   }
-
-
 }

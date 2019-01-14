@@ -10,19 +10,13 @@ import akka.persistence.typed.ExpectingReply;
 
 import java.util.UUID;
 
-/**
- * An auction command.
- */
+/** An auction command. */
 public interface AuctionCommand {
 
-  /**
-   * Start the auction.
-   */
+  /** Start the auction. */
   final class StartAuction implements AuctionCommand, ExpectingReply<Done> {
 
-    /**
-     * The auction to start.
-     */
+    /** The auction to start. */
     private final Auction auction;
 
     private final ActorRef<Done> replyTo;
@@ -42,9 +36,7 @@ public interface AuctionCommand {
     }
   }
 
-  /**
-   * Cancel the auction.
-   */
+  /** Cancel the auction. */
   final class CancelAuction implements AuctionCommand, ExpectingReply<Done> {
     private final ActorRef<Done> replyTo;
 
@@ -56,12 +48,9 @@ public interface AuctionCommand {
     public ActorRef<Done> replyTo() {
       return replyTo;
     }
-
   }
 
-  /**
-   * Place a bid on the auction.
-   */
+  /** Place a bid on the auction. */
   final class PlaceBid implements AuctionCommand, ExpectingReply<PlaceBidReply> {
 
     private final int bidPrice;
@@ -91,37 +80,21 @@ public interface AuctionCommand {
 
   interface PlaceBidReply {}
 
-  /**
-   * The status of placing a bid.
-   */
+  /** The status of placing a bid. */
   enum PlaceBidStatus {
-    /**
-     * The bid was accepted, and is the current highest bid.
-     */
+    /** The bid was accepted, and is the current highest bid. */
     ACCEPTED(BidResultStatus.ACCEPTED),
-    /**
-     * The bid was accepted, but was outbidded by the maximum bid of the current highest bidder.
-     */
+    /** The bid was accepted, but was outbidded by the maximum bid of the current highest bidder. */
     ACCEPTED_OUTBID(BidResultStatus.ACCEPTED_OUTBID),
-    /**
-     * The bid was accepted, but is below the reserve.
-     */
+    /** The bid was accepted, but is below the reserve. */
     ACCEPTED_BELOW_RESERVE(BidResultStatus.ACCEPTED_BELOW_RESERVE),
-    /**
-     * The bid was not at least the current bid plus the increment.
-     */
+    /** The bid was not at least the current bid plus the increment. */
     TOO_LOW(BidResultStatus.TOO_LOW),
-    /**
-     * The auction hasn't started.
-     */
+    /** The auction hasn't started. */
     NOT_STARTED(BidResultStatus.NOT_STARTED),
-    /**
-     * The auction has already finished.
-     */
+    /** The auction has already finished. */
     FINISHED(BidResultStatus.FINISHED),
-    /**
-     * The auction has been cancelled.
-     */
+    /** The auction has been cancelled. */
     CANCELLED(BidResultStatus.CANCELLED);
 
     public final BidResultStatus bidResultStatus;
@@ -152,22 +125,14 @@ public interface AuctionCommand {
     }
   }
 
-  /**
-   * The result of placing a bid.
-   */
+  /** The result of placing a bid. */
   final class PlaceBidResult implements PlaceBidReply {
 
-    /**
-     * The current price of the auction.
-     */
+    /** The current price of the auction. */
     private final int currentPrice;
-    /**
-     * The status of the attempt to place a bid.
-     */
+    /** The status of the attempt to place a bid. */
     private final PlaceBidStatus status;
-    /**
-     * The current winning bidder.
-     */
+    /** The current winning bidder. */
     private final UUID currentBidder;
 
     public PlaceBidResult(PlaceBidStatus status, int currentPrice, UUID currentBidder) {
@@ -201,9 +166,7 @@ public interface AuctionCommand {
     }
   }
 
-  /**
-   * Finish bidding.
-   */
+  /** Finish bidding. */
   final class FinishBidding implements AuctionCommand, ExpectingReply<Done> {
 
     private final ActorRef<Done> replyTo;
@@ -218,9 +181,7 @@ public interface AuctionCommand {
     }
   }
 
-  /**
-   * Get the auction.
-   */
+  /** Get the auction. */
   final class GetAuction implements AuctionCommand, ExpectingReply<AuctionState> {
     private final ActorRef<AuctionState> replyTo;
 

@@ -19,15 +19,20 @@ public class ActorSourceExample {
   // #actor-source-ref
 
   interface Protocol {}
+
   class Message implements Protocol {
     private final String msg;
+
     public Message(String msg) {
       this.msg = msg;
     }
   }
+
   class Complete implements Protocol {}
+
   class Fail implements Protocol {
     private final Exception ex;
+
     public Fail(Exception ex) {
       this.ex = ex;
     }
@@ -40,32 +45,34 @@ public class ActorSourceExample {
     // #actor-source-ref
 
     final JavaPartialFunction<Protocol, Throwable> failureMatcher =
-      new JavaPartialFunction<Protocol, Throwable>() {
-        public Throwable apply(Protocol p, boolean isCheck) {
-          if (p instanceof Fail) {
-            return ((Fail)p).ex;
-          } else {
-            throw noMatch();
+        new JavaPartialFunction<Protocol, Throwable>() {
+          public Throwable apply(Protocol p, boolean isCheck) {
+            if (p instanceof Fail) {
+              return ((Fail) p).ex;
+            } else {
+              throw noMatch();
+            }
           }
-        }
-      };
+        };
 
-    final Source<Protocol, ActorRef<Protocol>> source = ActorSource.actorRef(
-      (m) -> m instanceof Complete,
-      failureMatcher,
-      8,
-      OverflowStrategy.fail()
-    );
+    final Source<Protocol, ActorRef<Protocol>> source =
+        ActorSource.actorRef(
+            (m) -> m instanceof Complete, failureMatcher, 8, OverflowStrategy.fail());
 
-    final ActorRef<Protocol> ref = source.collect(new JavaPartialFunction<Protocol, String>() {
-      public String apply(Protocol p, boolean isCheck) {
-        if (p instanceof Message) {
-          return ((Message)p).msg;
-       } else {
-          throw noMatch();
-       }
-     }
-    }).to(Sink.foreach(System.out::println)).run(mat);
+    final ActorRef<Protocol> ref =
+        source
+            .collect(
+                new JavaPartialFunction<Protocol, String>() {
+                  public String apply(Protocol p, boolean isCheck) {
+                    if (p instanceof Message) {
+                      return ((Message) p).msg;
+                    } else {
+                      throw noMatch();
+                    }
+                  }
+                })
+            .to(Sink.foreach(System.out::println))
+            .run(mat);
 
     ref.tell(new Message("msg1"));
     // ref.tell("msg2"); Does not compile

@@ -18,11 +18,10 @@ import akka.io.Tcp.Received;
 import akka.io.TcpMessage;
 import akka.util.ByteString;
 
-//#simple-echo-handler
+// #simple-echo-handler
 public class SimpleEchoHandler extends AbstractActor {
-  
-  final LoggingAdapter log = Logging
-      .getLogger(getContext().getSystem(), getSelf());
+
+  final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), getSelf());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -42,42 +41,50 @@ public class SimpleEchoHandler extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Received.class, msg -> {
-        final ByteString data = msg.data();
-        buffer(data);
-        connection.tell(TcpMessage.write(data, ACK), getSelf());
-        // now switch behavior to “waiting for acknowledgement”
-        getContext().become(buffering(), false);
-  
-      })
-      .match(ConnectionClosed.class, msg -> {
-        getContext().stop(getSelf());
-      })
-      .build();
+        .match(
+            Received.class,
+            msg -> {
+              final ByteString data = msg.data();
+              buffer(data);
+              connection.tell(TcpMessage.write(data, ACK), getSelf());
+              // now switch behavior to “waiting for acknowledgement”
+              getContext().become(buffering(), false);
+            })
+        .match(
+            ConnectionClosed.class,
+            msg -> {
+              getContext().stop(getSelf());
+            })
+        .build();
   }
 
   private final Receive buffering() {
     return receiveBuilder()
-      .match(Received.class, msg -> {
-        buffer(msg.data());
-        
-      })
-      .match(Event.class, msg -> msg == ACK, msg -> {
-        acknowledge();
-
-      })
-      .match(ConnectionClosed.class, msg -> {
-        if (msg.isPeerClosed()) {
-          closing = true;
-        } else {
-          // could also be ErrorClosed, in which case we just give up
-          getContext().stop(getSelf());
-        }
-      })
-      .build();
+        .match(
+            Received.class,
+            msg -> {
+              buffer(msg.data());
+            })
+        .match(
+            Event.class,
+            msg -> msg == ACK,
+            msg -> {
+              acknowledge();
+            })
+        .match(
+            ConnectionClosed.class,
+            msg -> {
+              if (msg.isPeerClosed()) {
+                closing = true;
+              } else {
+                // could also be ErrorClosed, in which case we just give up
+                getContext().stop(getSelf());
+              }
+            })
+        .build();
   }
 
-  //#storage-omitted
+  // #storage-omitted
   public void postStop() {
     log.info("transferred {} bytes from/to [{}]", transferred, remote);
   }
@@ -88,10 +95,10 @@ public class SimpleEchoHandler extends AbstractActor {
 
   private boolean suspended = false;
   private boolean closing = false;
-  
+
   private final Event ACK = new Event() {};
 
-  //#simple-helpers
+  // #simple-helpers
   protected void buffer(ByteString data) {
     storage.add(data);
     stored += data.size();
@@ -117,7 +124,7 @@ public class SimpleEchoHandler extends AbstractActor {
       connection.tell(TcpMessage.resumeReading(), getSelf());
       suspended = false;
     }
-    
+
     if (storage.isEmpty()) {
       if (closing) {
         getContext().stop(getSelf());
@@ -128,7 +135,7 @@ public class SimpleEchoHandler extends AbstractActor {
       connection.tell(TcpMessage.write(storage.peek(), ACK), getSelf());
     }
   }
-  //#simple-helpers
-  //#storage-omitted
+  // #simple-helpers
+  // #storage-omitted
 }
-//#simple-echo-handler
+// #simple-echo-handler

@@ -4,7 +4,7 @@
 
 package jdocs.extension;
 
-//#imports
+// #imports
 import akka.actor.Extension;
 import akka.actor.AbstractExtensionId;
 import akka.actor.ExtensionIdProvider;
@@ -14,7 +14,7 @@ import com.typesafe.config.Config;
 import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 
-//#imports
+// #imports
 
 import jdocs.AbstractJavaTest;
 import akka.actor.AbstractActor;
@@ -22,9 +22,9 @@ import org.junit.Test;
 
 public class SettingsExtensionDocTest extends AbstractJavaTest {
 
-  static
-  //#extension
-  public class SettingsImpl implements Extension {
+  public
+  // #extension
+  static class SettingsImpl implements Extension {
 
     public final String DB_URI;
     public final Duration CIRCUIT_BREAKER_TIMEOUT;
@@ -32,18 +32,17 @@ public class SettingsExtensionDocTest extends AbstractJavaTest {
     public SettingsImpl(Config config) {
       DB_URI = config.getString("myapp.db.uri");
       CIRCUIT_BREAKER_TIMEOUT =
-        Duration.ofMillis(config.getDuration("myapp.circuit-breaker.timeout", TimeUnit.MILLISECONDS));
+          Duration.ofMillis(
+              config.getDuration("myapp.circuit-breaker.timeout", TimeUnit.MILLISECONDS));
     }
-
   }
 
-  //#extension
+  // #extension
 
-  static
-  //#extensionid
-  public class Settings extends AbstractExtensionId<SettingsImpl>
-    implements ExtensionIdProvider {
-    public final static Settings SettingsProvider = new Settings();
+  public
+  // #extensionid
+  static class Settings extends AbstractExtensionId<SettingsImpl> implements ExtensionIdProvider {
+    public static final Settings SettingsProvider = new Settings();
 
     private Settings() {}
 
@@ -56,18 +55,16 @@ public class SettingsExtensionDocTest extends AbstractJavaTest {
     }
   }
 
-  //#extensionid
+  // #extensionid
 
-  static
-  //#extension-usage-actor
-  public class MyActor extends AbstractActor {
+  public
+  // #extension-usage-actor
+  static class MyActor extends AbstractActor {
     // typically you would use static import of the Settings.SettingsProvider field
-    final SettingsImpl settings =
-      Settings.SettingsProvider.get(getContext().getSystem());
-    Connection connection =
-      connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
+    final SettingsImpl settings = Settings.SettingsProvider.get(getContext().getSystem());
+    Connection connection = connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
 
-  //#extension-usage-actor
+    // #extension-usage-actor
 
     public Connection connect(String dbUri, Duration circuitBreakerTimeout) {
       return new Connection();
@@ -77,24 +74,22 @@ public class SettingsExtensionDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return AbstractActor.emptyBehavior();
     }
-  //#extension-usage-actor
+    // #extension-usage-actor
   }
-  //#extension-usage-actor
+  // #extension-usage-actor
 
-  public static class Connection {
-  }
+  public static class Connection {}
 
   @Test
   public void demonstrateHowToCreateAndUseAnAkkaExtensionInJava() {
     final ActorSystem system = null;
     try {
-      //#extension-usage
+      // #extension-usage
       // typically you would use static import of the Settings.SettingsProvider field
       String dbUri = Settings.SettingsProvider.get(system).DB_URI;
-      //#extension-usage
+      // #extension-usage
     } catch (Exception e) {
-      //do nothing
+      // do nothing
     }
   }
-
 }

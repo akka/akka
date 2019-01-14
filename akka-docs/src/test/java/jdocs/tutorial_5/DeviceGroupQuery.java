@@ -20,11 +20,10 @@ import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-//#query-full
-//#query-outline
+// #query-full
+// #query-outline
 public class DeviceGroupQuery extends AbstractActor {
-  public static final class CollectionTimeout {
-  }
+  public static final class CollectionTimeout {}
 
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -34,18 +33,35 @@ public class DeviceGroupQuery extends AbstractActor {
 
   Cancellable queryTimeoutTimer;
 
-  public DeviceGroupQuery(Map<ActorRef, String> actorToDeviceId, long requestId, ActorRef requester, FiniteDuration timeout) {
+  public DeviceGroupQuery(
+      Map<ActorRef, String> actorToDeviceId,
+      long requestId,
+      ActorRef requester,
+      FiniteDuration timeout) {
     this.actorToDeviceId = actorToDeviceId;
     this.requestId = requestId;
     this.requester = requester;
 
-    queryTimeoutTimer = getContext().getSystem().scheduler().scheduleOnce(
-            timeout, getSelf(), new CollectionTimeout(), getContext().getDispatcher(), getSelf()
-    );
+    queryTimeoutTimer =
+        getContext()
+            .getSystem()
+            .scheduler()
+            .scheduleOnce(
+                timeout,
+                getSelf(),
+                new CollectionTimeout(),
+                getContext().getDispatcher(),
+                getSelf());
   }
 
-  public static Props props(Map<ActorRef, String> actorToDeviceId, long requestId, ActorRef requester, FiniteDuration timeout) {
-    return Props.create(DeviceGroupQuery.class, () -> new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout));
+  public static Props props(
+      Map<ActorRef, String> actorToDeviceId,
+      long requestId,
+      ActorRef requester,
+      FiniteDuration timeout) {
+    return Props.create(
+        DeviceGroupQuery.class,
+        () -> new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout));
   }
 
   @Override
@@ -61,28 +77,38 @@ public class DeviceGroupQuery extends AbstractActor {
     queryTimeoutTimer.cancel();
   }
 
-  //#query-outline
-  //#query-state
+  // #query-outline
+  // #query-state
   @Override
   public Receive createReceive() {
     return waitingForReplies(new HashMap<>(), actorToDeviceId.keySet());
   }
 
   public Receive waitingForReplies(
-          Map<String, DeviceGroup.TemperatureReading> repliesSoFar,
-          Set<ActorRef> stillWaiting) {
+      Map<String, DeviceGroup.TemperatureReading> repliesSoFar, Set<ActorRef> stillWaiting) {
     return receiveBuilder()
-            .match(Device.RespondTemperature.class, r -> {
+        .match(
+            Device.RespondTemperature.class,
+            r -> {
               ActorRef deviceActor = getSender();
-              DeviceGroup.TemperatureReading reading = r.value
+              DeviceGroup.TemperatureReading reading =
+                  r.value
                       .map(v -> (DeviceGroup.TemperatureReading) new DeviceGroup.Temperature(v))
                       .orElse(DeviceGroup.TemperatureNotAvailable.INSTANCE);
               receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
             })
-            .match(Terminated.class, t -> {
-              receivedResponse(t.getActor(), DeviceGroup.DeviceNotAvailable.INSTANCE, stillWaiting, repliesSoFar);
+        .match(
+            Terminated.class,
+            t -> {
+              receivedResponse(
+                  t.getActor(),
+                  DeviceGroup.DeviceNotAvailable.INSTANCE,
+                  stillWaiting,
+                  repliesSoFar);
             })
-            .match(CollectionTimeout.class, t -> {
+        .match(
+            CollectionTimeout.class,
+            t -> {
               Map<String, DeviceGroup.TemperatureReading> replies = new HashMap<>(repliesSoFar);
               for (ActorRef deviceActor : stillWaiting) {
                 String deviceId = actorToDeviceId.get(deviceActor);
@@ -91,15 +117,16 @@ public class DeviceGroupQuery extends AbstractActor {
               requester.tell(new DeviceGroup.RespondAllTemperatures(requestId, replies), getSelf());
               getContext().stop(getSelf());
             })
-            .build();
+        .build();
   }
-  //#query-state
+  // #query-state
 
-  //#query-collect-reply
-  public void receivedResponse(ActorRef deviceActor,
-                               DeviceGroup.TemperatureReading reading,
-                               Set<ActorRef> stillWaiting,
-                               Map<String, DeviceGroup.TemperatureReading> repliesSoFar) {
+  // #query-collect-reply
+  public void receivedResponse(
+      ActorRef deviceActor,
+      DeviceGroup.TemperatureReading reading,
+      Set<ActorRef> stillWaiting,
+      Map<String, DeviceGroup.TemperatureReading> repliesSoFar) {
     getContext().unwatch(deviceActor);
     String deviceId = actorToDeviceId.get(deviceActor);
 
@@ -115,8 +142,8 @@ public class DeviceGroupQuery extends AbstractActor {
       getContext().become(waitingForReplies(newRepliesSoFar, newStillWaiting));
     }
   }
-  //#query-collect-reply
-  //#query-outline
+  // #query-collect-reply
+  // #query-outline
 }
-//#query-outline
-//#query-full
+// #query-outline
+// #query-full

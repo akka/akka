@@ -23,7 +23,7 @@ public class InboxDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("InboxDocTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("InboxDocTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -31,26 +31,26 @@ public class InboxDocTest extends AbstractJavaTest {
   public void demonstrateInbox() {
     final TestKit probe = new TestKit(system);
     final ActorRef target = probe.getRef();
-    //#inbox
+    // #inbox
     final Inbox inbox = Inbox.create(system);
     inbox.send(target, "hello");
-    //#inbox
+    // #inbox
     probe.expectMsgEquals("hello");
     probe.send(probe.getLastSender(), "world");
-    //#inbox
+    // #inbox
     try {
       assert inbox.receive(Duration.ofSeconds(1)).equals("world");
     } catch (java.util.concurrent.TimeoutException e) {
       // timeout
     }
-    //#inbox
+    // #inbox
   }
-  
+
   @Test
   public void demonstrateWatch() {
     final TestKit probe = new TestKit(system);
     final ActorRef target = probe.getRef();
-    //#watch
+    // #watch
     final Inbox inbox = Inbox.create(system);
     inbox.watch(target);
     target.tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -59,7 +59,6 @@ public class InboxDocTest extends AbstractJavaTest {
     } catch (java.util.concurrent.TimeoutException e) {
       // timeout
     }
-    //#watch
+    // #watch
   }
-
 }

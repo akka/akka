@@ -42,20 +42,27 @@ public class RecipeFlattenList extends RecipeTest {
   public void workWithMapConcat() throws Exception {
     new TestKit(system) {
       {
-        Source<List<Message>, NotUsed> someDataSource = Source
-          .from(Arrays.asList(Arrays.asList(new Message("1")), Arrays.asList(new Message("2"), new Message("3"))));
+        Source<List<Message>, NotUsed> someDataSource =
+            Source.from(
+                Arrays.asList(
+                    Arrays.asList(new Message("1")),
+                    Arrays.asList(new Message("2"), new Message("3"))));
 
-        //#flattening-lists
+        // #flattening-lists
         Source<List<Message>, NotUsed> myData = someDataSource;
         Source<Message, NotUsed> flattened = myData.mapConcat(i -> i);
-        //#flattening-lists
+        // #flattening-lists
 
-        List<Message> got = flattened.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
+        List<Message> got =
+            flattened
+                .limit(10)
+                .runWith(Sink.seq(), mat)
+                .toCompletableFuture()
+                .get(1, TimeUnit.SECONDS);
         assertEquals(got.get(0), new Message("1"));
         assertEquals(got.get(1), new Message("2"));
         assertEquals(got.get(2), new Message("3"));
       }
     };
   }
-
 }

@@ -8,10 +8,10 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorSystem;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-//#adapter-import
+// #adapter-import
 // in Java use the static methods on Adapter to convert from untyped to typed
 import akka.actor.typed.javadsl.Adapter;
-//#adapter-import
+// #adapter-import
 import akka.testkit.javadsl.TestKit;
 import akka.testkit.TestProbe;
 import org.junit.Test;
@@ -23,8 +23,8 @@ import static akka.actor.typed.javadsl.Behaviors.stopped;
 
 public class TypedWatchingUntypedTest extends JUnitSuite {
 
-  //#typed
-  public static abstract class Typed {
+  // #typed
+  public abstract static class Typed {
     public static class Ping {
       public final akka.actor.typed.ActorRef<Pong> replyTo;
 
@@ -33,31 +33,35 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
       }
     }
 
-    interface Command { }
-    public static class Pong implements Command { }
+    interface Command {}
+
+    public static class Pong implements Command {}
 
     public static Behavior<Command> behavior() {
-      return akka.actor.typed.javadsl.Behaviors.setup(context -> {
-        akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
+      return akka.actor.typed.javadsl.Behaviors.setup(
+          context -> {
+            akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
 
-        Adapter.watch(context, second);
+            Adapter.watch(context, second);
 
-        second.tell(new Typed.Ping(context.getSelf().narrow()),
-          Adapter.toUntyped(context.getSelf()));
+            second.tell(
+                new Typed.Ping(context.getSelf().narrow()), Adapter.toUntyped(context.getSelf()));
 
-        return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
-          .onMessage(Typed.Pong.class, (_ctx, message) -> {
-            Adapter.stop(context, second);
-            return same();
-          })
-          .onSignal(akka.actor.typed.Terminated.class, (_ctx, sig) -> stopped())
-          .build();
-      });
+            return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
+                .onMessage(
+                    Typed.Pong.class,
+                    (_ctx, message) -> {
+                      Adapter.stop(context, second);
+                      return same();
+                    })
+                .onSignal(akka.actor.typed.Terminated.class, (_ctx, sig) -> stopped())
+                .build();
+          });
     }
   }
-  //#typed
+  // #typed
 
-  //#untyped
+  // #untyped
   public static class Untyped extends AbstractActor {
     public static akka.actor.Props props() {
       return akka.actor.Props.create(Untyped.class);
@@ -66,20 +70,22 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Typed.Ping.class, message -> {
-          message.replyTo.tell(new Typed.Pong());
-        })
-        .build();
+          .match(
+              Typed.Ping.class,
+              message -> {
+                message.replyTo.tell(new Typed.Pong());
+              })
+          .build();
     }
   }
-  //#untyped
+  // #untyped
 
   @Test
   public void testItWorks() {
-    //#create
+    // #create
     ActorSystem as = ActorSystem.create();
     ActorRef<Typed.Command> typed = Adapter.spawn(as, Typed.behavior(), "Typed");
-    //#create
+    // #create
     TestProbe probe = new TestProbe(as);
     probe.watch(Adapter.toUntyped(typed));
     probe.expectTerminated(Adapter.toUntyped(typed), Duration.create(1, "second"));

@@ -9,22 +9,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * The auction state.
- */
+/** The auction state. */
 public final class AuctionState {
 
-  /**
-   * The auction details.
-   */
+  /** The auction details. */
   private final Optional<Auction> auction;
-  /**
-   * The status of the auction.
-   */
+  /** The status of the auction. */
   private final AuctionStatus status;
-  /**
-   * The bidding history for the auction.
-   */
+  /** The bidding history for the auction. */
   private final List<Bid> biddingHistory;
 
   public AuctionState(Optional<Auction> auction, AuctionStatus status, List<Bid> biddingHistory) {
@@ -38,7 +30,8 @@ public final class AuctionState {
   }
 
   public static AuctionState start(Auction auction) {
-    return new AuctionState(Optional.of(auction), AuctionStatus.UNDER_AUCTION, Collections.emptyList());
+    return new AuctionState(
+        Optional.of(auction), AuctionStatus.UNDER_AUCTION, Collections.emptyList());
   }
 
   public AuctionState withStatus(AuctionStatus status) {

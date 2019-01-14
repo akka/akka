@@ -15,7 +15,7 @@ import akka.actor.ActorRef;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
 
-//#frontend
+// #frontend
 public class TransformationFrontend extends AbstractActor {
 
   List<ActorRef> backends = new ArrayList<ActorRef>();
@@ -24,25 +24,31 @@ public class TransformationFrontend extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(TransformationJob.class, job -> backends.isEmpty(), job -> {
-        getSender().tell(
-          new JobFailed("Service unavailable, try again later", job),
-            getSender());
-      })
-      .match(TransformationJob.class, job -> {
-        jobCounter++;
-        backends.get(jobCounter % backends.size())
-          .forward(job, getContext());
-      })
-      .matchEquals(BACKEND_REGISTRATION, x -> {
-        getContext().watch(getSender());
-        backends.add(getSender());
-      })
-      .match(Terminated.class, terminated -> {
-        backends.remove(terminated.getActor());
-      })
-      .build();
+        .match(
+            TransformationJob.class,
+            job -> backends.isEmpty(),
+            job -> {
+              getSender()
+                  .tell(new JobFailed("Service unavailable, try again later", job), getSender());
+            })
+        .match(
+            TransformationJob.class,
+            job -> {
+              jobCounter++;
+              backends.get(jobCounter % backends.size()).forward(job, getContext());
+            })
+        .matchEquals(
+            BACKEND_REGISTRATION,
+            x -> {
+              getContext().watch(getSender());
+              backends.add(getSender());
+            })
+        .match(
+            Terminated.class,
+            terminated -> {
+              backends.remove(terminated.getActor());
+            })
+        .build();
   }
-
 }
-//#frontend
+// #frontend

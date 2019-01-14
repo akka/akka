@@ -9,9 +9,14 @@ import com.typesafe.config.ConfigFactory;
 
 public class DummyJavaReadJournalProvider implements ReadJournalProvider {
 
-  public static final Config config = ConfigFactory.parseString(DummyJavaReadJournal.Identifier + " { \n"
-      + "   class = \"" + DummyJavaReadJournalProvider.class.getCanonicalName() + "\" \n" 
-      + " }\n\n");
+  public static final Config config =
+      ConfigFactory.parseString(
+          DummyJavaReadJournal.Identifier
+              + " { \n"
+              + "   class = \""
+              + DummyJavaReadJournalProvider.class.getCanonicalName()
+              + "\" \n"
+              + " }\n\n");
 
   private final DummyJavaReadJournal readJournal = new DummyJavaReadJournal();
 
@@ -24,5 +29,4 @@ public class DummyJavaReadJournalProvider implements ReadJournalProvider {
   public DummyJavaReadJournal javadslReadJournal() {
     return readJournal;
   }
-
 }

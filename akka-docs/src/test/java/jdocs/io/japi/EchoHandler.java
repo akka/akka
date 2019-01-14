@@ -21,11 +21,10 @@ import akka.io.Tcp.WritingResumed;
 import akka.io.TcpMessage;
 import akka.util.ByteString;
 
-//#echo-handler
+// #echo-handler
 public class EchoHandler extends AbstractActor {
 
-  final LoggingAdapter log = Logging
-      .getLogger(getContext().getSystem(), getSelf());
+  final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), getSelf());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -33,16 +32,17 @@ public class EchoHandler extends AbstractActor {
   public static final long MAX_STORED = 100000000;
   public static final long HIGH_WATERMARK = MAX_STORED * 5 / 10;
   public static final long LOW_WATERMARK = MAX_STORED * 2 / 10;
-  
+
   private long transferred;
   private int storageOffset = 0;
   private long stored = 0;
   private Queue<ByteString> storage = new LinkedList<ByteString>();
 
   private boolean suspended = false;
-  
+
   private static class Ack implements Event {
     public final int ack;
+
     public Ack(int ack) {
       this.ack = ack;
     }
@@ -51,7 +51,7 @@ public class EchoHandler extends AbstractActor {
   public EchoHandler(ActorRef connection, InetSocketAddress remote) {
     this.connection = connection;
     this.remote = remote;
-    
+
     writing = writing();
 
     // sign death pact: this actor stops when the connection is closed
@@ -60,137 +60,150 @@ public class EchoHandler extends AbstractActor {
     // start out in optimistic write-through mode
     getContext().become(writing);
   }
-  
+
   @Override
-    public Receive createReceive() {
-      return writing;
-    }
-
-  private final Receive writing;
-  
-  private Receive writing() { 
-    return receiveBuilder()
-      .match(Received.class, msg -> {
-        final ByteString data = msg.data();
-        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), getSelf());
-        buffer(data);
-
-      })
-      .match(Integer.class,  msg -> {
-        acknowledge(msg);
-      })
-      .match(CommandFailed.class, msg -> {
-        final Write w = (Write) msg.cmd();
-        connection.tell(TcpMessage.resumeWriting(), getSelf());
-        getContext().become(buffering((Ack) w.ack()));
-      })
-      .match(ConnectionClosed.class, msg -> {
-        if (msg.isPeerClosed()) {
-          if (storage.isEmpty()) {
-            getContext().stop(getSelf());
-          } else {
-            getContext().become(closing());
-          }
-        }
-      })
-      .build();
+  public Receive createReceive() {
+    return writing;
   }
 
-  //#buffering
-  
-  final static class BufferingState {
+  private final Receive writing;
+
+  private Receive writing() {
+    return receiveBuilder()
+        .match(
+            Received.class,
+            msg -> {
+              final ByteString data = msg.data();
+              connection.tell(TcpMessage.write(data, new Ack(currentOffset())), getSelf());
+              buffer(data);
+            })
+        .match(
+            Integer.class,
+            msg -> {
+              acknowledge(msg);
+            })
+        .match(
+            CommandFailed.class,
+            msg -> {
+              final Write w = (Write) msg.cmd();
+              connection.tell(TcpMessage.resumeWriting(), getSelf());
+              getContext().become(buffering((Ack) w.ack()));
+            })
+        .match(
+            ConnectionClosed.class,
+            msg -> {
+              if (msg.isPeerClosed()) {
+                if (storage.isEmpty()) {
+                  getContext().stop(getSelf());
+                } else {
+                  getContext().become(closing());
+                }
+              }
+            })
+        .build();
+  }
+
+  // #buffering
+
+  static final class BufferingState {
     int toAck = 10;
     boolean peerClosed = false;
   }
-  
+
   protected Receive buffering(final Ack nack) {
     final BufferingState state = new BufferingState();
-    
+
     return receiveBuilder()
-      .match(Received.class, msg -> {
-        buffer(msg.data());
-
-      })
-      .match(WritingResumed.class, msg -> {
-        writeFirst();
-
-      })
-      .match(ConnectionClosed.class, msg -> {
-        if (msg.isPeerClosed())
-          state.peerClosed = true;
-        else
-          getContext().stop(getSelf());
-
-      })
-      .match(Integer.class, ack -> {
-        acknowledge(ack);
-
-        if (ack >= nack.ack) {
-          // otherwise it was the ack of the last successful write
-
-          if (storage.isEmpty()) {
-            if (state.peerClosed)
-              getContext().stop(getSelf());
-            else
-              getContext().become(writing);
-
-          } else {
-            if (state.toAck > 0) {
-              // stay in ACK-based mode for a short while
+        .match(
+            Received.class,
+            msg -> {
+              buffer(msg.data());
+            })
+        .match(
+            WritingResumed.class,
+            msg -> {
               writeFirst();
-              --state.toAck;
-            } else {
-              // then return to NACK-based again
-              writeAll();
-              if (state.peerClosed)
-                getContext().become(closing());
-              else
-                getContext().become(writing);
-            }
-          }
-        }
-      })
-      .build();
-  }
-  //#buffering
+            })
+        .match(
+            ConnectionClosed.class,
+            msg -> {
+              if (msg.isPeerClosed()) state.peerClosed = true;
+              else getContext().stop(getSelf());
+            })
+        .match(
+            Integer.class,
+            ack -> {
+              acknowledge(ack);
 
-  //#closing
+              if (ack >= nack.ack) {
+                // otherwise it was the ack of the last successful write
+
+                if (storage.isEmpty()) {
+                  if (state.peerClosed) getContext().stop(getSelf());
+                  else getContext().become(writing);
+
+                } else {
+                  if (state.toAck > 0) {
+                    // stay in ACK-based mode for a short while
+                    writeFirst();
+                    --state.toAck;
+                  } else {
+                    // then return to NACK-based again
+                    writeAll();
+                    if (state.peerClosed) getContext().become(closing());
+                    else getContext().become(writing);
+                  }
+                }
+              }
+            })
+        .build();
+  }
+  // #buffering
+
+  // #closing
   protected Receive closing() {
     return receiveBuilder()
-      .match(CommandFailed.class, msg -> {
-        // the command can only have been a Write
-        connection.tell(TcpMessage.resumeWriting(), getSelf());
-        getContext().become(closeResend(), false);
-      })
-      .match(Integer.class, msg -> {  
-        acknowledge(msg);
-        if (storage.isEmpty())
-          getContext().stop(getSelf());
-      })
-      .build();
+        .match(
+            CommandFailed.class,
+            msg -> {
+              // the command can only have been a Write
+              connection.tell(TcpMessage.resumeWriting(), getSelf());
+              getContext().become(closeResend(), false);
+            })
+        .match(
+            Integer.class,
+            msg -> {
+              acknowledge(msg);
+              if (storage.isEmpty()) getContext().stop(getSelf());
+            })
+        .build();
   }
 
   protected Receive closeResend() {
     return receiveBuilder()
-      .match(WritingResumed.class, msg -> {
-        writeAll();
-        getContext().unbecome();
-      })
-      .match(Integer.class, msg -> {
-        acknowledge(msg);
-      })
-      .build();
+        .match(
+            WritingResumed.class,
+            msg -> {
+              writeAll();
+              getContext().unbecome();
+            })
+        .match(
+            Integer.class,
+            msg -> {
+              acknowledge(msg);
+            })
+        .build();
   }
-  //#closing
+  // #closing
 
-  //#storage-omitted
+  // #storage-omitted
 
   @Override
   public void postStop() {
     log.info("transferred {} bytes from/to [{}]", transferred, remote);
   }
 
-  //#helpers
+  // #helpers
   protected void buffer(ByteString data) {
     storage.add(data);
     stored += data.size();
@@ -221,7 +234,7 @@ public class EchoHandler extends AbstractActor {
       suspended = false;
     }
   }
-  //#helpers
+  // #helpers
 
   protected int currentOffset() {
     return storageOffset + storage.size();
@@ -238,6 +251,6 @@ public class EchoHandler extends AbstractActor {
     connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), getSelf());
   }
 
-  //#storage-omitted
+  // #storage-omitted
 }
-//#echo-handler
+// #echo-handler

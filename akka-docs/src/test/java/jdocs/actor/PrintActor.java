@@ -11,10 +11,12 @@ class PrintActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Integer.class, i -> {
-        System.out.println("PrintActor: " + i);
-      })
-      .build();
+        .match(
+            Integer.class,
+            i -> {
+              System.out.println("PrintActor: " + i);
+            })
+        .build();
   }
 }
 // #print-actor

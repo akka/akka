@@ -9,9 +9,9 @@ import java.util.List;
 
 public class Events {
 
-  static
-  //#simple-events
-  public final class SetTarget {
+  public
+  // #simple-events
+  static final class SetTarget {
     private final ActorRef ref;
 
     public SetTarget(ActorRef ref) {
@@ -21,21 +21,19 @@ public class Events {
     public ActorRef getRef() {
       return ref;
     }
-    //#boilerplate
+    // #boilerplate
 
     @Override
     public String toString() {
-      return "SetTarget{" +
-        "ref=" + ref +
-        '}';
+      return "SetTarget{" + "ref=" + ref + '}';
     }
-    //#boilerplate
+    // #boilerplate
   }
 
-  //#simple-events
-  static
-  //#simple-events
-  public final class Queue {
+  // #simple-events
+  public
+  // #simple-events
+  static final class Queue {
     private final Object obj;
 
     public Queue(Object obj) {
@@ -45,21 +43,19 @@ public class Events {
     public Object getObj() {
       return obj;
     }
-    //#boilerplate
+    // #boilerplate
 
     @Override
     public String toString() {
-      return "Queue{" +
-        "obj=" + obj +
-        '}';
+      return "Queue{" + "obj=" + obj + '}';
     }
-    //#boilerplate
+    // #boilerplate
   }
 
-  //#simple-events
-  static
-  //#simple-events
-  public final class Batch {
+  // #simple-events
+  public
+  // #simple-events
+  static final class Batch {
     private final List<Object> list;
 
     public Batch(List<Object> list) {
@@ -69,7 +65,7 @@ public class Events {
     public List<Object> getList() {
       return list;
     }
-    //#boilerplate
+    // #boilerplate
 
     @Override
     public boolean equals(Object o) {
@@ -89,20 +85,25 @@ public class Events {
     @Override
     public String toString() {
       final StringBuilder builder = new StringBuilder();
-      builder.append( "Batch{list=");
-      list.stream().forEachOrdered(e -> { builder.append(e); builder.append(","); });
+      builder.append("Batch{list=");
+      list.stream()
+          .forEachOrdered(
+              e -> {
+                builder.append(e);
+                builder.append(",");
+              });
       int len = builder.length();
       builder.replace(len, len, "}");
       return builder.toString();
     }
-    //#boilerplate
+    // #boilerplate
   }
 
-  //#simple-events
-  static
-  //#simple-events
-  public enum Flush {
+  // #simple-events
+  public
+  // #simple-events
+  static enum Flush {
     Flush
   }
-  //#simple-events
+  // #simple-events
 }

@@ -18,15 +18,20 @@ public class ActorSinkExample {
   // #actor-sink-ref
 
   interface Protocol {}
+
   class Message implements Protocol {
     private final String msg;
+
     public Message(String msg) {
       this.msg = msg;
     }
   }
+
   class Complete implements Protocol {}
+
   class Fail implements Protocol {
     private final Throwable ex;
+
     public Fail(Throwable ex) {
       this.ex = ex;
     }
@@ -40,14 +45,9 @@ public class ActorSinkExample {
 
     final ActorRef<Protocol> actor = null;
 
-    final Sink<Protocol, NotUsed> sink = ActorSink.actorRef(
-      actor,
-      new Complete(),
-      Fail::new
-    );
+    final Sink<Protocol, NotUsed> sink = ActorSink.actorRef(actor, new Complete(), Fail::new);
 
     Source.<Protocol>single(new Message("msg1")).runWith(sink, mat);
     // #actor-sink-ref
   }
-
 }
