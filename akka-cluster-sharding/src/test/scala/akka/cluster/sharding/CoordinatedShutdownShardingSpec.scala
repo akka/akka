@@ -84,7 +84,7 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
       val p3 = TestProbe()(sys2)
       region2.tell(3, p3.ref)
       p3.expectMsg(1.seconds, 3)
-    }, 20.seconds)
+    }, 10.seconds)
   }
 
   "Sharding and CoordinatedShutdown" must {
