@@ -590,15 +590,17 @@ private[akka] class ShardRegion(
 
   def receiveCommand(cmd: ShardRegionCommand): Unit = cmd match {
     case Retry ⇒
+      sendGracefulShutdownToCoordinator()
+
       if (shardBuffers.nonEmpty)
         retryCount += 1
       if (coordinator.isEmpty)
         register()
       else {
-        sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
-        tryCompleteGracefulShutdown()
       }
+
+      tryCompleteGracefulShutdown()
 
     case GracefulShutdown ⇒
       log.debug("Starting graceful shutdown of region and all its shards")
