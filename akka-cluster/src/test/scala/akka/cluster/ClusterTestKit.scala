@@ -160,8 +160,11 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
    * @param v1Config    the version of config to base validation against
    * @param v2Config    the upgraded version of config being validated
    */
-  def upgradeCluster(clusterSize: Int, v1Config: Config, v2Config: Config): Unit =
-    upgradeCluster(clusterSize, v1Config, v2Config, timeout = 20.seconds, true)
+  def upgradeCluster(clusterSize: Int, v1Config: Config, v2Config: Config): Unit = {
+    val timeout = 20.seconds
+    val awaitAll = timeout * clusterSize
+    upgradeCluster(clusterSize, v1Config, v2Config, timeout, awaitAll, true, true)
+  }
 
   /**
    * Starts the given `size` number of nodes and forms a cluster. Shuffles the order
@@ -173,10 +176,20 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
    * @param clusterSize   the cluster size - number of nodes to create for the cluster
    * @param baseConfig    the version of config to base validation against
    * @param upgradeConfig the upgraded version of config being validated
-   * @param timeout       the duration to wait for a member to be [[MemberStatus.Up]]
+   * @param timeout       the duration to wait for each member to be [[MemberStatus.Up]] on re-join
+   * @param awaitAll      the duration to wait for all members to be [[MemberStatus.Up]] on initial join,
+   *                      and for the one node not upgraded to register member size  as `clusterSize` on upgrade
    * @param enforced      toggle `akka.cluster.configuration-compatibility-check.enforce-on-join` on or off
+   * @param shouldRejoin  the condition being tested on attempted re-join: members up or terminated
    */
-  def upgradeCluster(clusterSize: Int, baseConfig: Config, upgradeConfig: Config, timeout: FiniteDuration, enforced: Boolean): Unit = {
+  def upgradeCluster(
+    clusterSize:   Int,
+    baseConfig:    Config,
+    upgradeConfig: Config,
+    timeout:       FiniteDuration,
+    awaitAll:      FiniteDuration,
+    enforced:      Boolean,
+    shouldRejoin:  Boolean): Unit = {
     require(clusterSize > 1, s"'clusterSize' must be > 1 but was $clusterSize")
 
     val util = new ClusterTestUtil(system.name)
@@ -189,16 +202,16 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
         util.joinCluster(system)
         system
       }
-      awaitCond(nodes.forall(util.isMemberUp), timeout * clusterSize)
+      awaitCond(nodes.forall(util.isMemberUp), awaitAll)
 
       val rolling = Random.shuffle(nodes)
 
       for (restarting ← rolling.tail) {
         val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
         util.joinCluster(restarted)
-        awaitCond(util.isMemberUp(restarted), timeout)
+        awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted), timeout)
       }
-      awaitCond(Cluster(rolling.head).readView.members.size == rolling.size, timeout * clusterSize)
+      awaitCond(Cluster(rolling.head).readView.members.size == (if (shouldRejoin) rolling.size else 1), awaitAll)
 
     } finally util.shutdownAll()
   }
