@@ -90,7 +90,7 @@ final case class ClusterRouterGroupSettings(
     throw new IllegalArgumentException("routeesPaths must be defined")
 
   routeesPaths.foreach {
-    case RelativeActorPath(elements) ⇒ // good
+    case RelativeActorPath(_) ⇒ // good
     case p ⇒
       throw new IllegalArgumentException(s"routeesPaths [$p] is not a valid actor path without address information")
   }
@@ -421,7 +421,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
       if (unusedNodes.nonEmpty) {
         Some((unusedNodes.head, settings.routeesPaths.head))
       } else {
-        val (address, used) = usedRouteePaths.minBy { case (address, used) ⇒ used.size }
+        val (address, used) = usedRouteePaths.minBy { case (_, used) ⇒ used.size }
         // pick next of the unused paths
         settings.routeesPaths.collectFirst { case p if !used.contains(p) ⇒ (address, p) }
       }

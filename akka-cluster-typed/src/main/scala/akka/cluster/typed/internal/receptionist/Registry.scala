@@ -91,7 +91,7 @@ import scala.concurrent.duration.Deadline
 
   def pruneTombstones(): ShardedServiceRegistry = {
     copy(tombstones = tombstones.filter {
-      case (ref, deadline) ⇒ deadline.hasTimeLeft
+      case (_, deadline) ⇒ deadline.hasTimeLeft
     })
   }
 

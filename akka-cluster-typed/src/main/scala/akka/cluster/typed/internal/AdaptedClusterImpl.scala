@@ -104,7 +104,7 @@ private[akka] object AdapterClusterImpl {
     }.narrow[ClusterStateSubscription]
   }
 
-  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((ctx, msg) ⇒
+  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((_, msg) ⇒
     msg match {
       case Join(address) ⇒
         adaptedCluster.join(address)
