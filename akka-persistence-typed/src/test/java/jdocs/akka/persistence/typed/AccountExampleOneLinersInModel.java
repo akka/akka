@@ -10,167 +10,164 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
-public class AccountExampleOneLinersInModel extends EventSourcedBehavior<AccountExampleOneLinersInModel.AccountCommand, AccountExampleOneLinersInModel.AccountEvent, AccountExampleOneLinersInModel.Account> {
+public class AccountExampleOneLinersInModel
+    extends EventSourcedBehavior<
+        AccountExampleOneLinersInModel.AccountCommand,
+        AccountExampleOneLinersInModel.AccountEvent,
+        AccountExampleOneLinersInModel.Account> {
 
-    interface AccountCommand {
+  interface AccountCommand {}
+
+  public static class CreateAccount implements AccountCommand {}
+
+  public static class Deposit implements AccountCommand {
+    public final double amount;
+
+    public Deposit(double amount) {
+      this.amount = amount;
+    }
+  }
+
+  public static class Withdraw implements AccountCommand {
+    public final double amount;
+
+    public Withdraw(double amount) {
+      this.amount = amount;
+    }
+  }
+
+  public static class CloseAccount implements AccountCommand {}
+
+  interface AccountEvent {}
+
+  public static class AccountCreated implements AccountEvent {}
+
+  public static class Deposited implements AccountEvent {
+    public final double amount;
+
+    Deposited(double amount) {
+      this.amount = amount;
+    }
+  }
+
+  public static class Withdrawn implements AccountEvent {
+    public final double amount;
+
+    Withdrawn(double amount) {
+      this.amount = amount;
+    }
+  }
+
+  public static class AccountClosed implements AccountEvent {}
+
+  interface Account {}
+
+  public class EmptyAccount implements Account {
+
+    Effect<AccountEvent, Account> createAccount(CreateAccount cmd) {
+      return Effect().persist(new AccountCreated());
     }
 
-    public static class CreateAccount implements AccountCommand {
+    OpenedAccount openAccount(AccountCreated evt) {
+      return new OpenedAccount(0.0);
+    }
+  }
+
+  public class OpenedAccount implements Account {
+    public final double balance;
+
+    OpenedAccount(double balance) {
+      this.balance = balance;
     }
 
-    public static class Deposit implements AccountCommand {
-        public final double amount;
-
-        public Deposit(double amount) {
-            this.amount = amount;
-        }
+    Effect<AccountEvent, Account> depositCommand(Deposit deposit) {
+      return Effect().persist(new Deposited(deposit.amount));
     }
 
-    public static class Withdraw implements AccountCommand {
-        public final double amount;
-
-        public Withdraw(double amount) {
-            this.amount = amount;
-        }
+    Effect<AccountEvent, Account> withdrawCommand(Withdraw withdraw) {
+      if ((balance - withdraw.amount) < 0.0) {
+        return Effect().unhandled(); // TODO replies are missing in this example
+      } else {
+        return Effect()
+            .persist(new Withdrawn(withdraw.amount))
+            .thenRun(
+                acc2 -> {
+                  // we know this cast is safe, but somewhat ugly
+                  OpenedAccount openAccount = (OpenedAccount) acc2;
+                  // do some side-effect using balance
+                  System.out.println(openAccount.balance);
+                });
+      }
     }
 
-    public static class CloseAccount implements AccountCommand {
+    Effect<AccountEvent, Account> closeCommand(CloseAccount cmd) {
+      if (balance == 0.0) return Effect().persist(new AccountClosed());
+      else return Effect().unhandled();
     }
 
-    interface AccountEvent {
+    OpenedAccount makeDeposit(Deposited deposit) {
+      return new OpenedAccount(balance + deposit.amount);
     }
 
-    public static class AccountCreated implements AccountEvent {
+    OpenedAccount makeWithdraw(Withdrawn withdrawn) {
+      return new OpenedAccount(balance - withdrawn.amount);
     }
 
-    public static class Deposited implements AccountEvent {
-        public final double amount;
-
-        Deposited(double amount) {
-            this.amount = amount;
-        }
+    ClosedAccount closeAccount(AccountClosed evt) {
+      return new ClosedAccount();
     }
+  }
 
-    public static class Withdrawn implements AccountEvent {
-        public final double amount;
+  public class ClosedAccount implements Account {}
 
-        Withdrawn(double amount) {
-            this.amount = amount;
-        }
-    }
+  public static Behavior<AccountCommand> behavior(String accountNumber) {
+    return Behaviors.setup(context -> new AccountExampleOneLinersInModel(context, accountNumber));
+  }
 
-    public static class AccountClosed implements AccountEvent {
-    }
+  public AccountExampleOneLinersInModel(
+      ActorContext<AccountCommand> context, String accountNumber) {
+    super(new PersistenceId(accountNumber));
+  }
 
-    interface Account {
-    }
+  @Override
+  public Account emptyState() {
+    return new EmptyAccount();
+  }
 
-    public class EmptyAccount implements Account {
+  @Override
+  public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
+    CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder =
+        newCommandHandlerBuilder();
 
-        Effect<AccountEvent, Account> createAccount(CreateAccount cmd) {
-            return Effect().persist(new AccountCreated());
-        }
+    builder
+        .forStateType(EmptyAccount.class)
+        .matchCommand(CreateAccount.class, EmptyAccount::createAccount);
 
-        OpenedAccount openAccount(AccountCreated evt) {
-            return new OpenedAccount(0.0);
-        }
+    builder
+        .forStateType(OpenedAccount.class)
+        .matchCommand(Deposit.class, OpenedAccount::depositCommand)
+        .matchCommand(Withdraw.class, OpenedAccount::withdrawCommand)
+        .matchCommand(CloseAccount.class, OpenedAccount::closeCommand);
 
-    }
+    builder.forStateType(ClosedAccount.class).matchAny(() -> Effect().unhandled());
 
-    public class OpenedAccount implements Account {
-        public final double balance;
+    return builder.build();
+  }
 
-        OpenedAccount(double balance) {
-            this.balance = balance;
-        }
+  @Override
+  public EventHandler<Account, AccountEvent> eventHandler() {
+    EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
 
-        Effect<AccountEvent, Account> depositCommand(Deposit deposit) {
-            return Effect().persist(new Deposited(deposit.amount));
-        }
+    builder
+        .forStateType(EmptyAccount.class)
+        .matchEvent(AccountCreated.class, EmptyAccount::openAccount);
 
-        Effect<AccountEvent, Account> withdrawCommand(Withdraw withdraw) {
-            if ((balance - withdraw.amount) < 0.0) {
-                return Effect().unhandled(); // TODO replies are missing in this example
-            } else {
-                return Effect().persist(new Withdrawn(withdraw.amount))
-                        .thenRun(acc2 -> {
-                            // we know this cast is safe, but somewhat ugly
-                            OpenedAccount openAccount = (OpenedAccount) acc2;
-                            // do some side-effect using balance
-                            System.out.println(openAccount.balance);
-                        });
-            }
-        }
+    builder
+        .forStateType(OpenedAccount.class)
+        .matchEvent(Deposited.class, OpenedAccount::makeDeposit)
+        .matchEvent(Withdrawn.class, OpenedAccount::makeWithdraw)
+        .matchEvent(AccountClosed.class, OpenedAccount::closeAccount);
 
-        Effect<AccountEvent, Account> closeCommand(CloseAccount cmd) {
-            if (balance == 0.0)
-                return Effect().persist(new AccountClosed());
-            else
-                return Effect().unhandled();
-        }
-
-        OpenedAccount makeDeposit(Deposited deposit) {
-            return new OpenedAccount(balance + deposit.amount);
-        }
-
-        OpenedAccount makeWithdraw(Withdrawn withdrawn) {
-            return new OpenedAccount(balance - withdrawn.amount);
-        }
-
-        ClosedAccount closeAccount(AccountClosed evt) {
-            return new ClosedAccount();
-        }
-    }
-
-    public class ClosedAccount implements Account {
-    }
-
-    public static Behavior<AccountCommand> behavior(String accountNumber) {
-        return Behaviors.setup(context -> new AccountExampleOneLinersInModel(context, accountNumber));
-    }
-
-    public AccountExampleOneLinersInModel(ActorContext<AccountCommand> context, String accountNumber) {
-        super(new PersistenceId(accountNumber));
-    }
-
-    @Override
-    public Account emptyState() {
-        return new EmptyAccount();
-    }
-
-    @Override
-    public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
-        CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder = newCommandHandlerBuilder();
-
-        builder.forStateType(EmptyAccount.class)
-                .matchCommand(CreateAccount.class, EmptyAccount::createAccount);
-
-        builder.forStateType(OpenedAccount.class)
-                .matchCommand(Deposit.class, OpenedAccount::depositCommand)
-                .matchCommand(Withdraw.class, OpenedAccount::withdrawCommand)
-                .matchCommand(CloseAccount.class, OpenedAccount::closeCommand);
-
-        builder.forStateType(ClosedAccount.class)
-                .matchAny(() -> Effect().unhandled());
-
-        return builder.build();
-    }
-
-
-    @Override
-    public EventHandler<Account, AccountEvent> eventHandler() {
-        EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
-
-        builder.forStateType(EmptyAccount.class)
-                .matchEvent(AccountCreated.class, EmptyAccount::openAccount);
-
-        builder.forStateType(OpenedAccount.class)
-                .matchEvent(Deposited.class, OpenedAccount::makeDeposit)
-                .matchEvent(Withdrawn.class, OpenedAccount::makeWithdraw)
-                .matchEvent(AccountClosed.class, OpenedAccount::closeAccount);
-
-        return builder.build();
-    }
-
+    return builder.build();
+  }
 }
-
