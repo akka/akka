@@ -6,8 +6,11 @@ package akka.cluster
 
 import akka.actor.ActorSystem
 import akka.cluster.MemberStatus.Removed
-import akka.testkit.TestKitBase
+import akka.testkit.{ AkkaSpec, TestKitBase }
 import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.util.Random
 
 /**
  * Builds on TestKitBase to provide some extra utilities to run cluster test.
@@ -131,5 +134,90 @@ trait ClusterTestKit extends TestKitBase {
       if (firstSeedNode) newActorSystemAsFirst(newConfig)
       else newActorSystem(newConfig)
     }
+
+    /**
+     * Returns true if the cluster instance for the provided [[ActorSystem]] is [[MemberStatus.Up]].
+     */
+    def isMemberUp(system: ActorSystem): Boolean = Cluster(system).readView.status == MemberStatus.Up
+
+    /**
+     * Returns true if the cluster instance for the provided [[ActorSystem]] has be shutdown.
+     */
+    def isTerminated(system: ActorSystem): Boolean = Cluster(system).readView.isTerminated
+
   }
+}
+
+abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config) with ClusterTestKit {
+
+  /**
+   * Starts `size`
+   * Note that the two versions of config are validated against each other and have to
+   * be valid both ways: v1 => v2, v2 => v1. Uses a timeout of 20 seconds and
+   * defaults to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`.
+   *
+   * @param clusterSize the cluster size - number of nodes to create for the cluster
+   * @param v1Config    the version of config to base validation against
+   * @param v2Config    the upgraded version of config being validated
+   */
+  def upgradeCluster(clusterSize: Int, v1Config: Config, v2Config: Config): Unit = {
+    val timeout = 20.seconds
+    val awaitAll = timeout * clusterSize
+    upgradeCluster(clusterSize, v1Config, v2Config, timeout, awaitAll, true, true)
+  }
+
+  /**
+   * Starts the given `size` number of nodes and forms a cluster. Shuffles the order
+   * of nodes randomly and restarts the tail using the update `v2Config` config.
+   *
+   * Note that the two versions of config are validated against each other and have to
+   * be valid both ways: v1 => v2, v2 => v1.
+   *
+   * @param clusterSize   the cluster size - number of nodes to create for the cluster
+   * @param baseConfig    the version of config to base validation against
+   * @param upgradeConfig the upgraded version of config being validated
+   * @param timeout       the duration to wait for each member to be [[MemberStatus.Up]] on re-join
+   * @param awaitAll      the duration to wait for all members to be [[MemberStatus.Up]] on initial join,
+   *                      and for the one node not upgraded to register member size  as `clusterSize` on upgrade
+   * @param enforced      toggle `akka.cluster.configuration-compatibility-check.enforce-on-join` on or off
+   * @param shouldRejoin  the condition being tested on attempted re-join: members up or terminated
+   */
+  def upgradeCluster(
+    clusterSize:   Int,
+    baseConfig:    Config,
+    upgradeConfig: Config,
+    timeout:       FiniteDuration,
+    awaitAll:      FiniteDuration,
+    enforced:      Boolean,
+    shouldRejoin:  Boolean): Unit = {
+    require(clusterSize > 1, s"'clusterSize' must be > 1 but was $clusterSize")
+
+    val util = new ClusterTestUtil(system.name)
+
+    val config = (version: Config) ⇒ if (enforced) version else unenforced(version)
+
+    try {
+      val nodes = for (_ ← 0 until clusterSize) yield {
+        val system = util.newActorSystem(config(baseConfig))
+        util.joinCluster(system)
+        system
+      }
+      awaitCond(nodes.forall(util.isMemberUp), awaitAll)
+
+      val rolling = Random.shuffle(nodes)
+
+      for (restarting ← rolling.tail) {
+        val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
+        util.joinCluster(restarted)
+        awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted), timeout)
+      }
+      awaitCond(Cluster(rolling.head).readView.members.size == (if (shouldRejoin) rolling.size else 1), awaitAll)
+
+    } finally util.shutdownAll()
+  }
+
+  def unenforced(config: Config): Config =
+    ConfigFactory
+      .parseString("""akka.cluster.configuration-compatibility-check.enforce-on-join = off""")
+      .withFallback(config)
 }
