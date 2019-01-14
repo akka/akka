@@ -149,14 +149,14 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = createTestProbe[EventT]()
       eventsT(10).forall { e ⇒
         probe.ref ! e
-        probe.receiveOne == e
+        probe.receiveMessage == e
       } should ===(true)
 
       probe.expectNoMessage()
     }
 
     "timeout if expected single message is not received by a provided timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne(100.millis))
+      intercept[AssertionError](createTestProbe[EventT]().receiveMessage(100.millis))
     }
 
     "support watch and stop of probe" in {
@@ -189,7 +189,7 @@ class TestProbeTimeoutSpec extends ScalaTestWithActorTestKit(TestProbeSpec.timeo
   "The test probe" must {
 
     "timeout if expected single message is not received by the default timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne())
+      intercept[AssertionError](createTestProbe[EventT]().receiveMessage())
     }
   }
 }

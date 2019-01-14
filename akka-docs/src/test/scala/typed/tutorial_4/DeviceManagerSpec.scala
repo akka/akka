@@ -17,11 +17,11 @@ class DeviceManagerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val managerActor = spawn(DeviceManager())
 
       managerActor ! RequestTrackDevice("group1", "device", probe.ref)
-      val registered1 = probe.receiveOne()
+      val registered1 = probe.receiveMessage()
 
       // another group
       managerActor ! RequestTrackDevice("group2", "device", probe.ref)
-      val registered2 = probe.receiveOne()
+      val registered2 = probe.receiveMessage()
 
       registered1.device should !==(registered2.device)
     }

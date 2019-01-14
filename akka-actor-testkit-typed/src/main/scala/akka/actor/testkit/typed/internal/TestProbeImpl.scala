@@ -153,7 +153,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def expectMessage[T <: M](max: JDuration, hint: String, obj: T): T =
     expectMessage(max.asScala, hint, obj)
 
-  private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
+  private def expectMessage_internal[T <: M](max: FiniteDuration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne_internal(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     o match {
@@ -163,13 +163,15 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
-  override def receiveOne(): M = receiveOne(remainingOrDefault)
+  override def receiveMessage(): M = receiveMessage_internal(remainingOrDefault)
 
-  override def receiveOne(max: JDuration): M = receiveOne(max.asScala)
+  override def receiveMessage(max: JDuration): M = receiveMessage(max.asScala)
 
-  def receiveOne(max: FiniteDuration): M =
-    receiveOne_internal(max.dilated).
-      getOrElse(assertFail(s"Timeout ($max) during receiveOne while waiting for message."))
+  override def receiveMessage(max: FiniteDuration): M = receiveMessage_internal(max.dilated)
+
+  def receiveMessage_internal(max: FiniteDuration): M =
+    receiveOne_internal(max).
+      getOrElse(assertFail(s"Timeout ($max) during receiveMessage while waiting for message."))
 
   /**
    * Receive one message from the internal queue of the TestActor. If the given
@@ -177,14 +179,12 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    *
    * This method does NOT automatically scale its Duration parameter!
    */
-  private def receiveOne_internal(max: Duration): Option[M] = {
+  private def receiveOne_internal(max: FiniteDuration): Option[M] = {
     val message = Option(
       if (max == Duration.Zero) {
         queue.pollFirst
-      } else if (max.isFinite) {
-        queue.pollFirst(max.length, max.unit)
       } else {
-        queue.takeFirst
+        queue.pollFirst(max.length, max.unit)
       }
     )
     lastWasNoMessage = false
