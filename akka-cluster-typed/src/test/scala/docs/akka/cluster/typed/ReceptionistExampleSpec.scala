@@ -13,7 +13,6 @@ import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }
 
-
 object PingPongExample {
   //#ping-service
   val PingServiceKey = ServiceKey[Ping]("pingService")
