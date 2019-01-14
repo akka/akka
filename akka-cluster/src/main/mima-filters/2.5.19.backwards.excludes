@@ -1,0 +1,4 @@
+# #26087 Fix compiler warnings in akka-cluster and akka-cluster-typed
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterDaemon.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterDaemon.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterRemoteWatcher#DelayedQuarantine.this")
