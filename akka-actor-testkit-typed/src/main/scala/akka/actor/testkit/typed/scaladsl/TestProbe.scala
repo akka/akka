@@ -160,16 +160,16 @@ object TestProbe {
   def receiveMessage(max: FiniteDuration): M
 
   /**
-   * Same as `receiveN(n, remaining)` but using the default timeout as deadline.
+   * Same as `receiveMessages(n, remaining)` but using the default timeout as deadline.
    */
-  def receiveN(n: Int): immutable.Seq[M]
+  def receiveMessages(n: Int): immutable.Seq[M]
 
   /**
    * Receive `n` messages in a row before the given deadline.
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def receiveN(n: Int, max: FiniteDuration): immutable.Seq[M]
+  def receiveMessages(n: Int, max: FiniteDuration): immutable.Seq[M]
 
   /**
    * Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming

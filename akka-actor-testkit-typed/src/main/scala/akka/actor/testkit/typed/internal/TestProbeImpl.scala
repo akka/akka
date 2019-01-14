@@ -230,19 +230,19 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     }
   }
 
-  override def receiveN(n: Int): immutable.Seq[M] =
-    receiveN_internal(n, remainingOrDefault)
+  override def receiveMessages(n: Int): immutable.Seq[M] =
+    receiveMessages_internal(n, remainingOrDefault)
 
-  override def receiveN(n: Int, max: FiniteDuration): immutable.Seq[M] =
-    receiveN_internal(n, max.dilated)
+  override def receiveMessages(n: Int, max: FiniteDuration): immutable.Seq[M] =
+    receiveMessages_internal(n, max.dilated)
 
-  override def receiveMessages(n: Int): JList[M] =
-    receiveN_internal(n, getRemainingOrDefault.asScala).asJava
+  override def receiveSeveralMessages(n: Int): JList[M] =
+    receiveMessages_internal(n, getRemainingOrDefault.asScala).asJava
 
-  override def receiveMessages(n: Int, max: JDuration): JList[M] =
-    receiveN_internal(n, max.asScala.dilated).asJava
+  override def receiveSeveralMessages(n: Int, max: JDuration): JList[M] =
+    receiveMessages_internal(n, max.asScala.dilated).asJava
 
-  private def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
+  private def receiveMessages_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
     val stop = max + now
     for (x ← 1 to n) yield {
       val timeout = stop - now
