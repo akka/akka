@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_5;
@@ -23,8 +23,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeviceGroupTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testReplyToRegistrationRequests() {
@@ -113,16 +112,17 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // using awaitAssert to retry because it might take longer for the groupActor
     // to see the Terminated, that order is undefined
-    registeredProbe.awaitAssert(() -> {
-      groupActor.tell(new RequestDeviceList(1L, "group", deviceListProbe.getRef()));
-      ReplyDeviceList r = deviceListProbe.receiveOne();
-      assertEquals(1L, r.requestId);
-      assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
-      return null;
-    });
+    registeredProbe.awaitAssert(
+        () -> {
+          groupActor.tell(new RequestDeviceList(1L, "group", deviceListProbe.getRef()));
+          ReplyDeviceList r = deviceListProbe.receiveOne();
+          assertEquals(1L, r.requestId);
+          assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
+          return null;
+        });
   }
 
-    //#group-query-integration-test
+  // #group-query-integration-test
   @Test
   public void testCollectTemperaturesFromAllActiveDevices() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
@@ -145,7 +145,8 @@ public class DeviceGroupTest extends JUnitSuite {
     assertEquals(1L, recordProbe.receiveOne().requestId);
     // No temperature for device 3
 
-    TestProbe<RespondAllTemperatures> allTempProbe = testKit.createTestProbe(RespondAllTemperatures.class);
+    TestProbe<RespondAllTemperatures> allTempProbe =
+        testKit.createTestProbe(RespondAllTemperatures.class);
     groupActor.tell(new RequestAllTemperatures(0L, "group", allTempProbe.getRef()));
     RespondAllTemperatures response = allTempProbe.receiveOne();
     assertEquals(0L, response.requestId);
@@ -157,5 +158,5 @@ public class DeviceGroupTest extends JUnitSuite {
 
     assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#group-query-integration-test
+  // #group-query-integration-test
 }

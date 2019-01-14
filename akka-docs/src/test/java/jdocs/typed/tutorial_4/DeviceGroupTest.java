@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_4;
@@ -21,10 +21,9 @@ import static jdocs.typed.tutorial_4.DeviceProtocol.*;
 
 public class DeviceGroupTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
-  //#device-group-test-registration
+  // #device-group-test-registration
   @Test
   public void testReplyToRegistrationRequests() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
@@ -53,9 +52,9 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new RequestTrackDevice("wrongGroup", "device1", probe.getRef()));
     probe.expectNoMessage();
   }
-  //#device-group-test-registration
+  // #device-group-test-registration
 
-  //#device-group-test3
+  // #device-group-test3
   @Test
   public void testReturnSameActorForSameDeviceId() {
     TestProbe<DeviceRegistered> probe = testKit.createTestProbe(DeviceRegistered.class);
@@ -69,9 +68,9 @@ public class DeviceGroupTest extends JUnitSuite {
     DeviceRegistered registered2 = probe.receiveOne();
     assertEquals(registered1.device, registered2.device);
   }
-  //#device-group-test3
+  // #device-group-test3
 
-  //#device-group-list-terminate-test
+  // #device-group-list-terminate-test
   @Test
   public void testListActiveDevices() {
     TestProbe<DeviceRegistered> registeredProbe = testKit.createTestProbe(DeviceRegistered.class);
@@ -116,13 +115,14 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // using awaitAssert to retry because it might take longer for the groupActor
     // to see the Terminated, that order is undefined
-    registeredProbe.awaitAssert(() -> {
-      groupActor.tell(new RequestDeviceList(1L, "group", deviceListProbe.getRef()));
-      ReplyDeviceList r = deviceListProbe.receiveOne();
-      assertEquals(1L, r.requestId);
-      assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
-      return null;
-    });
+    registeredProbe.awaitAssert(
+        () -> {
+          groupActor.tell(new RequestDeviceList(1L, "group", deviceListProbe.getRef()));
+          ReplyDeviceList r = deviceListProbe.receiveOne();
+          assertEquals(1L, r.requestId);
+          assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
+          return null;
+        });
   }
-  //#device-group-list-terminate-test
+  // #device-group-list-terminate-test
 }
