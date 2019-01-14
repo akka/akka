@@ -302,7 +302,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
       }
 
-      Behaviors.receive[Command] { (ctx, msg) ⇒
+      Behaviors.receive[Command] { (_, msg) ⇒
         msg match {
           // support two heterogenous types of messages without union types
           case cmd: InternalCommand ⇒ onInternalCommand(cmd)

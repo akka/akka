@@ -183,7 +183,7 @@ import akka.actor.typed.Terminated
           }
         }
           .receiveSignal {
-            case (ctx, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
+            case (_, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
               stopSubscribeAdapter(ref)
           }
       }
