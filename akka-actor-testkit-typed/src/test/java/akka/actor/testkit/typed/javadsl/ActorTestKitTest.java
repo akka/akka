@@ -19,8 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ActorTestKitTest extends JUnitSuite {
 
-  @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void systemNameShouldComeFromTestClassViaJunitResource() {
@@ -51,10 +50,12 @@ public class ActorTestKitTest extends JUnitSuite {
   @Test
   public void testKitShouldSpawnActor() throws Exception {
     final CompletableFuture<Done> started = new CompletableFuture<>();
-    testKit.spawn(Behaviors.setup((context) -> {
-      started.complete(done());
-      return Behaviors.same();
-    }));
+    testKit.spawn(
+        Behaviors.setup(
+            (context) -> {
+              started.complete(done());
+              return Behaviors.same();
+            }));
     started.get(3, TimeUnit.SECONDS);
   }
 }

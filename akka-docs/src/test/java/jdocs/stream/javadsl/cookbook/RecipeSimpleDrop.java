@@ -45,30 +45,34 @@ public class RecipeSimpleDrop extends RecipeTest {
   public void work() throws Exception {
     new TestKit(system) {
       {
-    	@SuppressWarnings("unused")
-        //#simple-drop
+        @SuppressWarnings("unused")
+        // #simple-drop
         final Flow<Message, Message, NotUsed> droppyStream =
-          Flow.of(Message.class).conflate((lastMessage, newMessage) -> newMessage);
-        //#simple-drop
-    	final TestLatch latch = new TestLatch(2, system);
+            Flow.of(Message.class).conflate((lastMessage, newMessage) -> newMessage);
+        // #simple-drop
+        final TestLatch latch = new TestLatch(2, system);
         final Flow<Message, Message, NotUsed> realDroppyStream =
-                Flow.of(Message.class).conflate((lastMessage, newMessage) -> { latch.countDown(); return newMessage; });
+            Flow.of(Message.class)
+                .conflate(
+                    (lastMessage, newMessage) -> {
+                      latch.countDown();
+                      return newMessage;
+                    });
 
-        final Pair<TestPublisher.Probe<Message>, TestSubscriber.Probe<Message>> pubSub = TestSource
-          .<Message> probe(system)
-          .via(realDroppyStream)
-          .toMat(TestSink.probe(system),
-            (pub, sub) -> new Pair<>(pub, sub))
-          .run(mat);
+        final Pair<TestPublisher.Probe<Message>, TestSubscriber.Probe<Message>> pubSub =
+            TestSource.<Message>probe(system)
+                .via(realDroppyStream)
+                .toMat(TestSink.probe(system), (pub, sub) -> new Pair<>(pub, sub))
+                .run(mat);
         final TestPublisher.Probe<Message> pub = pubSub.first();
         final TestSubscriber.Probe<Message> sub = pubSub.second();
 
         pub.sendNext(new Message("1"));
         pub.sendNext(new Message("2"));
         pub.sendNext(new Message("3"));
-        
+
         Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
-        
+
         sub.requestNext(new Message("3"));
 
         pub.sendComplete();

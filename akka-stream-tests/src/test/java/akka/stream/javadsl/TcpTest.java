@@ -49,17 +49,19 @@ public class TcpTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("TcpTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("TcpTest", AkkaSpec.testConf());
 
   final Sink<IncomingConnection, CompletionStage<Done>> echoHandler =
-      Sink.foreach(new Procedure<IncomingConnection>() {
-        public void apply(IncomingConnection conn) {
-          conn.handleWith(Flow.of(ByteString.class), materializer);
-        }
-      });
+      Sink.foreach(
+          new Procedure<IncomingConnection>() {
+            public void apply(IncomingConnection conn) {
+              conn.handleWith(Flow.of(ByteString.class), materializer);
+            }
+          });
 
   final List<ByteString> testInput = new ArrayList<ByteString>();
+
   {
     for (char c = 'a'; c <= 'z'; c++) {
       testInput.add(ByteString.fromString(String.valueOf(c)));
@@ -68,26 +70,31 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustWorkInHappyCase() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
-    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostString(), serverAddress.getPort());
+    final InetSocketAddress serverAddress =
+        SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
+    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
+        Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
     final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    final CompletionStage<ByteString> resultFuture = Source
-        .from(testInput)
-        .via(Tcp.get(system).outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
-        .runFold(ByteString.empty(),
-            new Function2<ByteString, ByteString, ByteString>() {
-              public ByteString apply(ByteString acc, ByteString elem) {
-                return acc.concat(elem);
-              }
-            }, materializer);
+    final CompletionStage<ByteString> resultFuture =
+        Source.from(testInput)
+            .via(
+                Tcp.get(system)
+                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
+            .runFold(
+                ByteString.empty(),
+                new Function2<ByteString, ByteString, ByteString>() {
+                  public ByteString apply(ByteString acc, ByteString elem) {
+                    return acc.concat(elem);
+                  }
+                },
+                materializer);
 
     final byte[] result = resultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS).toArray();
-    for (int i = 0; i < testInput.size(); i ++) {
+    for (int i = 0; i < testInput.size(); i++) {
       assertEquals(testInput.get(i).head(), result[i]);
     }
 
@@ -96,30 +103,41 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustReportServerBindFailure() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
-    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostString(), serverAddress.getPort());
+    final InetSocketAddress serverAddress =
+        SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
+    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
+        Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
     final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    new TestKit(system) {{
-      new EventFilter(BindException.class, system).occurrences(1).intercept(() -> {
-        try {
-          binding.to(echoHandler).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
-          assertTrue("Expected BindFailedException, but nothing was reported", false);
-        } catch (ExecutionException e) {
-          if (e.getCause() instanceof BindFailedException) {} // all good
-          else throw new AssertionError("failed", e);
-          // expected
-          b.unbind();
-        } catch (Exception e) {
-          throw new AssertionError("failed", e);
-        }
-        return null;
-      });
-    }};
+    new TestKit(system) {
+      {
+        new EventFilter(BindException.class, system)
+            .occurrences(1)
+            .intercept(
+                () -> {
+                  try {
+                    binding
+                        .to(echoHandler)
+                        .run(materializer)
+                        .toCompletableFuture()
+                        .get(5, TimeUnit.SECONDS);
+                    assertTrue("Expected BindFailedException, but nothing was reported", false);
+                  } catch (ExecutionException e) {
+                    if (e.getCause() instanceof BindFailedException) {
+                    } // all good
+                    else throw new AssertionError("failed", e);
+                    // expected
+                    b.unbind();
+                  } catch (Exception e) {
+                    throw new AssertionError("failed", e);
+                  }
+                  return null;
+                });
+      }
+    };
   }
 
   @Test
@@ -128,9 +146,14 @@ public class TcpTest extends StreamTest {
     try {
       try {
         Source.from(testInput)
-            .viaMat(Tcp.get(system).outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
+            .viaMat(
+                Tcp.get(system)
+                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
                 Keep.right())
-            .to(Sink.<ByteString> ignore()).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+            .to(Sink.<ByteString>ignore())
+            .run(materializer)
+            .toCompletableFuture()
+            .get(5, TimeUnit.SECONDS);
         assertTrue("Expected StreamTcpException, but nothing was reported", false);
       } catch (ExecutionException e) {
         throw e.getCause();
@@ -178,13 +201,13 @@ public class TcpTest extends StreamTest {
     String[] cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config());
     defaultParams.setCipherSuites(cipherSuites);
 
-    TLSProtocol.NegotiateNewSession negotiateNewSession = TLSProtocol.negotiateNewSession()
-        .withCipherSuites(cipherSuites)
-        .withProtocols(protocols)
-        .withParameters(defaultParams)
-        .withClientAuth(TLSClientAuth.none());
+    TLSProtocol.NegotiateNewSession negotiateNewSession =
+        TLSProtocol.negotiateNewSession()
+            .withCipherSuites(cipherSuites)
+            .withProtocols(protocols)
+            .withParameters(defaultParams)
+            .withClientAuth(TLSClientAuth.none());
 
     // #setting-up-ssl-context
   }
-
 }

@@ -12,16 +12,16 @@ import com.typesafe.config.ConfigFactory;
 
 class SeparateDispatcherTest {
   public static void main(String args[]) {
-    Config config = ConfigFactory.parseString(
-      "my-blocking-dispatcher {\n" +
-        "  type = Dispatcher\n" +
-        "  executor = \"thread-pool-executor\"\n" +
-        "  thread-pool-executor {\n" +
-        "    fixed-pool-size = 16\n" +
-        "  }\n" +
-        "  throughput = 1\n" +
-        "}\n"
-    );
+    Config config =
+        ConfigFactory.parseString(
+            "my-blocking-dispatcher {\n"
+                + "  type = Dispatcher\n"
+                + "  executor = \"thread-pool-executor\"\n"
+                + "  thread-pool-executor {\n"
+                + "    fixed-pool-size = 16\n"
+                + "  }\n"
+                + "  throughput = 1\n"
+                + "}\n");
 
     ActorSystem system = ActorSystem.create("BlockingDispatcherTest", config);
 
@@ -38,7 +38,7 @@ class SeparateDispatcherTest {
       Thread.sleep(5000 * 6);
 
     } catch (InterruptedException e) {
-      //swallow the exception
+      // swallow the exception
     } finally {
       system.terminate();
     }

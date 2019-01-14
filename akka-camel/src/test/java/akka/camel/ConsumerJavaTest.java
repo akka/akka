@@ -25,29 +25,41 @@ public class ConsumerJavaTest extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("ConsumerJavaTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("ConsumerJavaTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
   public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() throws Exception {
-    new TestKit(system) {{
-      String result = new EventFilter(Exception.class, system).occurrences(1).intercept(() -> {
-        FiniteDuration duration = Duration.create(1, TimeUnit.SECONDS);
-        Timeout timeout = new Timeout(duration);
-        Camel camel = CamelExtension.get(system);
-        ExecutionContext executionContext = system.dispatcher();
-        try {
-          Await.result(
-            camel.activationFutureFor(system.actorOf(Props.create(SampleErrorHandlingConsumer.class), "sample-error-handling-consumer"), timeout, executionContext),
-            duration);
-          return camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
-        }
-        catch (Exception e) {
-          return e.getMessage();
-        }
-      });
-      assertEquals("error: hello", result);
-    }};
+    new TestKit(system) {
+      {
+        String result =
+            new EventFilter(Exception.class, system)
+                .occurrences(1)
+                .intercept(
+                    () -> {
+                      FiniteDuration duration = Duration.create(1, TimeUnit.SECONDS);
+                      Timeout timeout = new Timeout(duration);
+                      Camel camel = CamelExtension.get(system);
+                      ExecutionContext executionContext = system.dispatcher();
+                      try {
+                        Await.result(
+                            camel.activationFutureFor(
+                                system.actorOf(
+                                    Props.create(SampleErrorHandlingConsumer.class),
+                                    "sample-error-handling-consumer"),
+                                timeout,
+                                executionContext),
+                            duration);
+                        return camel
+                            .template()
+                            .requestBody("direct:error-handler-test-java", "hello", String.class);
+                      } catch (Exception e) {
+                        return e.getMessage();
+                      }
+                    });
+        assertEquals("error: hello", result);
+      }
+    };
   }
 }

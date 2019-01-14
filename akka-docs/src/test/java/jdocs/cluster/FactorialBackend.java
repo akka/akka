@@ -10,22 +10,22 @@ import java.util.concurrent.CompletableFuture;
 import akka.actor.AbstractActor;
 import static akka.pattern.Patterns.pipe;
 
-//#backend
+// #backend
 public class FactorialBackend extends AbstractActor {
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Integer.class, n -> {
+        .match(
+            Integer.class,
+            n -> {
+              CompletableFuture<FactorialResult> result =
+                  CompletableFuture.supplyAsync(() -> factorial(n))
+                      .thenApply((factorial) -> new FactorialResult(n, factorial));
 
-        CompletableFuture<FactorialResult> result =
-          CompletableFuture.supplyAsync(() -> factorial(n))
-            .thenApply((factorial) -> new FactorialResult(n, factorial));
-
-        pipe(result, getContext().dispatcher()).to(getSender());
-
-      })
-      .build();
+              pipe(result, getContext().dispatcher()).to(getSender());
+            })
+        .build();
   }
 
   BigInteger factorial(int n) {
@@ -36,5 +36,4 @@ public class FactorialBackend extends AbstractActor {
     return acc;
   }
 }
-//#backend
-
+// #backend

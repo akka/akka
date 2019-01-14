@@ -19,8 +19,8 @@ import static org.junit.Assert.assertEquals;
 public class ActorSelectionTest extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorSelectionTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("ActorSelectionTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 

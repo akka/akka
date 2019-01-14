@@ -18,21 +18,23 @@ public class ClusterApiTest extends JUnitSuite {
 
   @Test
   public void joinLeaveAndObserve() throws Exception {
-    Config config = ConfigFactory.parseString(
-        "akka.actor.provider = cluster \n" +
-        "akka.remote.netty.tcp.port = 0 \n"+
-        "akka.remote.artery.canonical.port = 0 \n"+
-        "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
-        "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"+
-        "akka.coordinated-shutdown.terminate-actor-system = off \n"+
-        "akka.actor { \n"+
-        "  serialize-messages = off \n"+
-        "  allow-java-serialization = off \n"+
-        "}"
-    );
+    Config config =
+        ConfigFactory.parseString(
+            "akka.actor.provider = cluster \n"
+                + "akka.remote.netty.tcp.port = 0 \n"
+                + "akka.remote.artery.canonical.port = 0 \n"
+                + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
+                + "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"
+                + "akka.coordinated-shutdown.terminate-actor-system = off \n"
+                + "akka.actor { \n"
+                + "  serialize-messages = off \n"
+                + "  allow-java-serialization = off \n"
+                + "}");
 
-    ActorSystem<?> system1 = ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
-    ActorSystem<?> system2 = ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
+    ActorSystem<?> system1 =
+        ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
+    ActorSystem<?> system2 =
+        ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));
 
     try {
       Cluster cluster1 = Cluster.get(system1);
@@ -49,7 +51,6 @@ public class ClusterApiTest extends JUnitSuite {
       cluster2.manager().tell(new Join(cluster1.selfMember().address()));
       probe2.expectMessageClass(SelfUp.class);
 
-
       cluster2.subscriptions().tell(new Subscribe<>(probe2.ref().narrow(), SelfRemoved.class));
       cluster2.manager().tell(new Leave(cluster2.selfMember().address()));
 
@@ -58,7 +59,5 @@ public class ClusterApiTest extends JUnitSuite {
       // TODO no java API to terminate actor system
       Await.result(system1.terminate().zip(system2.terminate()), Duration.create("5 seconds"));
     }
-
   }
-
 }

@@ -11,7 +11,7 @@ public class PersistenceEventAdapterDocTest {
 
   @SuppressWarnings("unused")
   static
-  //#identity-event-adapter
+  // #identity-event-adapter
   class MyEventAdapter implements EventAdapter {
     @Override
     public String manifest(Object event) {
@@ -28,5 +28,5 @@ public class PersistenceEventAdapterDocTest {
       return EventSeq.single(event); // identity
     }
   }
-  //#identity-event-adapter
+  // #identity-event-adapter
 }

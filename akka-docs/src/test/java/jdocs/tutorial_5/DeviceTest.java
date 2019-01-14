@@ -85,5 +85,4 @@ public class DeviceTest extends JUnitSuite {
     assertEquals(4L, response2.requestId);
     assertEquals(Optional.of(55.0), response2.value);
   }
-
 }

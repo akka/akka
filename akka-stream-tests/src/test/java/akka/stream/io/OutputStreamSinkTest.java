@@ -24,31 +24,35 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
-public class OutputStreamSinkTest  extends StreamTest {
-    public OutputStreamSinkTest() {
-        super(actorSystemResource);
-    }
+public class OutputStreamSinkTest extends StreamTest {
+  public OutputStreamSinkTest() {
+    super(actorSystemResource);
+  }
 
-    @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("OutputStreamSinkTest",
-            Utils.UnboundedMailboxConfig());
-    @Test
-    public void mustSignalFailureViaIoResult() throws Exception {
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("OutputStreamSinkTest", Utils.UnboundedMailboxConfig());
 
-      final OutputStream os = new OutputStream() {
-        volatile int left = 3;
-        public void write(int data) {
-          if (left == 0) {
-            throw new RuntimeException("Can't accept more data.");
+  @Test
+  public void mustSignalFailureViaIoResult() throws Exception {
+
+    final OutputStream os =
+        new OutputStream() {
+          volatile int left = 3;
+
+          public void write(int data) {
+            if (left == 0) {
+              throw new RuntimeException("Can't accept more data.");
+            }
+            left -= 1;
           }
-          left -= 1;
-        }
-      };
-      final CompletionStage<IOResult> resultFuture = Source.single(ByteString.fromString("123456")).runWith(StreamConverters.fromOutputStream(() -> os), materializer);
-      final IOResult result = resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        };
+    final CompletionStage<IOResult> resultFuture =
+        Source.single(ByteString.fromString("123456"))
+            .runWith(StreamConverters.fromOutputStream(() -> os), materializer);
+    final IOResult result = resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
-      assertFalse(result.wasSuccessful());
-      assertTrue(result.getError().getMessage().equals("Can't accept more data."));
-    }
-
+    assertFalse(result.wasSuccessful());
+    assertTrue(result.getError().getMessage().equals("Can't accept more data."));
+  }
 }

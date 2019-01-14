@@ -4,7 +4,7 @@
 
 package jdocs.ddata.protobuf;
 
-//#serializer
+// #serializer
 import jdocs.ddata.TwoPhaseSet;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet.Builder;
@@ -16,13 +16,13 @@ import akka.cluster.ddata.GSet;
 import akka.cluster.ddata.protobuf.AbstractSerializationSupport;
 
 public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
-  
+
   private final ExtendedActorSystem system;
 
   public TwoPhaseSetSerializer(ExtendedActorSystem system) {
     this.system = system;
   }
-  
+
   @Override
   public ExtendedActorSystem system() {
     return this.system;
@@ -33,7 +33,7 @@ public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
     return false;
   }
 
-  @Override 
+  @Override
   public int identifier() {
     return 99998;
   }
@@ -43,8 +43,7 @@ public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
     if (obj instanceof TwoPhaseSet) {
       return twoPhaseSetToProto((TwoPhaseSet) obj).toByteArray();
     } else {
-      throw new IllegalArgumentException(
-          "Can't serialize object of type " + obj.getClass());
+      throw new IllegalArgumentException("Can't serialize object of type " + obj.getClass());
     }
   }
 
@@ -69,9 +68,8 @@ public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
   }
 
   protected TwoPhaseSet twoPhaseSetFromBinary(byte[] bytes) {
-    try {  
-      TwoPhaseSetMessages.TwoPhaseSet msg = 
-          TwoPhaseSetMessages.TwoPhaseSet.parseFrom(bytes);
+    try {
+      TwoPhaseSetMessages.TwoPhaseSet msg = TwoPhaseSetMessages.TwoPhaseSet.parseFrom(bytes);
       GSet<String> adds = GSet.create();
       for (String elem : msg.getAddsList()) {
         adds = adds.add(elem);
@@ -88,6 +86,4 @@ public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
     }
   }
 }
-//#serializer
-
-
+// #serializer

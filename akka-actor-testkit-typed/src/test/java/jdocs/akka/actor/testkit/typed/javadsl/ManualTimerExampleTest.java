@@ -4,7 +4,7 @@
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-//#manual-scheduling-simple
+// #manual-scheduling-simple
 
 import akka.actor.typed.Behavior;
 import akka.actor.testkit.typed.javadsl.ManualTime;
@@ -27,18 +27,22 @@ public class ManualTimerExampleTest extends JUnitSuite {
   private final ManualTime manualTime = ManualTime.get(testKit.system());
 
   static final class Tick {}
+
   static final class Tock {}
 
   @Test
   public void testScheduleNonRepeatedTicks() {
     TestProbe<Tock> probe = testKit.createTestProbe();
-    Behavior<Tick> behavior = Behaviors.withTimers(timer -> {
-      timer.startSingleTimer("T", new Tick(), Duration.ofMillis(10));
-      return Behaviors.receive( (context, tick) -> {
-        probe.ref().tell(new Tock());
-        return Behaviors.same();
-      });
-    });
+    Behavior<Tick> behavior =
+        Behaviors.withTimers(
+            timer -> {
+              timer.startSingleTimer("T", new Tick(), Duration.ofMillis(10));
+              return Behaviors.receive(
+                  (context, tick) -> {
+                    probe.ref().tell(new Tock());
+                    return Behaviors.same();
+                  });
+            });
 
     testKit.spawn(behavior);
 
@@ -49,7 +53,5 @@ public class ManualTimerExampleTest extends JUnitSuite {
 
     manualTime.expectNoMessageFor(Duration.ofSeconds(10), probe);
   }
-
-
 }
-//#manual-scheduling-simple
+// #manual-scheduling-simple

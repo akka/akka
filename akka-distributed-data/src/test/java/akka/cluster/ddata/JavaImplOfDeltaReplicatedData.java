@@ -4,12 +4,13 @@
 
 package akka.cluster.ddata;
 
-
 import java.util.Optional;
 
 // same delta type
-public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<JavaImplOfDeltaReplicatedData, JavaImplOfDeltaReplicatedData>
-  implements ReplicatedDelta {
+public class JavaImplOfDeltaReplicatedData
+    extends AbstractDeltaReplicatedData<
+        JavaImplOfDeltaReplicatedData, JavaImplOfDeltaReplicatedData>
+    implements ReplicatedDelta {
 
   @Override
   public JavaImplOfDeltaReplicatedData mergeData(JavaImplOfDeltaReplicatedData other) {
@@ -35,5 +36,4 @@ public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<J
   public JavaImplOfDeltaReplicatedData zero() {
     return new JavaImplOfDeltaReplicatedData();
   }
-
 }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-//#immutable-message
+// #immutable-message
 public class ImmutableMessage {
   private final int sequenceNumber;
   private final List<String> values;
@@ -26,4 +26,4 @@ public class ImmutableMessage {
     return values;
   }
 }
-//#immutable-message
+// #immutable-message

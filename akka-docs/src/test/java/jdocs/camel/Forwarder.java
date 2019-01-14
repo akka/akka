@@ -3,7 +3,7 @@
  */
 
 package jdocs.camel;
-//#RouteResponse
+// #RouteResponse
 import akka.actor.ActorRef;
 import akka.camel.javaapi.UntypedProducerActor;
 
@@ -25,4 +25,4 @@ public class Forwarder extends UntypedProducerActor {
     target.forward(message, getContext());
   }
 }
-//#RouteResponse
+// #RouteResponse

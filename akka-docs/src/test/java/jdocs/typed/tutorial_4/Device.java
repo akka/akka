@@ -4,7 +4,7 @@
 
 package jdocs.typed.tutorial_4;
 
-//#device-with-passivate
+// #device-with-passivate
 
 import java.util.Optional;
 
@@ -15,14 +15,14 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
-//#device-with-passivate
+// #device-with-passivate
 import static jdocs.typed.tutorial_4.DeviceProtocol.*;
 /*
 //#device-with-passivate
 import static com.lightbend.akka.sample.DeviceProtocol.*;
 //#device-with-passivate
 */
-//#device-with-passivate
+// #device-with-passivate
 
 public class Device extends AbstractBehavior<DeviceMessage> {
 
@@ -47,11 +47,11 @@ public class Device extends AbstractBehavior<DeviceMessage> {
   @Override
   public Receive<DeviceMessage> createReceive() {
     return receiveBuilder()
-      .onMessage(RecordTemperature.class, this::recordTemperature)
-      .onMessage(ReadTemperature.class, this::readTemperature)
-      .onMessage(Passivate.class, m -> Behaviors.stopped())
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+        .onMessage(RecordTemperature.class, this::recordTemperature)
+        .onMessage(ReadTemperature.class, this::readTemperature)
+        .onMessage(Passivate.class, m -> Behaviors.stopped())
+        .onSignal(PostStop.class, signal -> postStop())
+        .build();
   }
 
   private Behavior<DeviceMessage> recordTemperature(RecordTemperature r) {
@@ -71,4 +71,4 @@ public class Device extends AbstractBehavior<DeviceMessage> {
     return Behaviors.stopped();
   }
 }
-//#device-with-passivate
+// #device-with-passivate

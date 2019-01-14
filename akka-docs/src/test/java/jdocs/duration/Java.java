@@ -4,24 +4,24 @@
 
 package jdocs.duration;
 
-//#import
+// #import
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.Deadline;
-//#import
+// #import
 
 class Java {
   public void demo() {
-    //#dsl
+    // #dsl
     final Duration fivesec = Duration.create(5, "seconds");
     final Duration threemillis = Duration.create("3 millis");
     final Duration diff = fivesec.minus(threemillis);
     assert diff.lt(fivesec);
     assert Duration.Zero().lt(Duration.Inf());
-    //#dsl
-    //#deadline
+    // #dsl
+    // #deadline
     final Deadline deadline = Duration.create(10, "seconds").fromNow();
     final Duration rest = deadline.timeLeft();
-    //#deadline
+    // #deadline
     rest.toString();
   }
 }

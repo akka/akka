@@ -4,7 +4,7 @@
 
 package jdocs.ddata.protobuf;
 
-//#serializer
+// #serializer
 import jdocs.ddata.TwoPhaseSet;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages;
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages.TwoPhaseSet2.Builder;
@@ -15,7 +15,7 @@ import akka.cluster.ddata.protobuf.AbstractSerializationSupport;
 import akka.cluster.ddata.protobuf.ReplicatedDataSerializer;
 
 public class TwoPhaseSetSerializer2 extends AbstractSerializationSupport {
-  
+
   private final ExtendedActorSystem system;
   private final ReplicatedDataSerializer replicatedDataSerializer;
 
@@ -23,7 +23,7 @@ public class TwoPhaseSetSerializer2 extends AbstractSerializationSupport {
     this.system = system;
     this.replicatedDataSerializer = new ReplicatedDataSerializer(system);
   }
-  
+
   @Override
   public ExtendedActorSystem system() {
     return this.system;
@@ -34,7 +34,7 @@ public class TwoPhaseSetSerializer2 extends AbstractSerializationSupport {
     return false;
   }
 
-  @Override 
+  @Override
   public int identifier() {
     return 99998;
   }
@@ -44,8 +44,7 @@ public class TwoPhaseSetSerializer2 extends AbstractSerializationSupport {
     if (obj instanceof TwoPhaseSet) {
       return twoPhaseSetToProto((TwoPhaseSet) obj).toByteArray();
     } else {
-      throw new IllegalArgumentException(
-          "Can't serialize object of type " + obj.getClass());
+      throw new IllegalArgumentException("Can't serialize object of type " + obj.getClass());
     }
   }
 
@@ -65,24 +64,20 @@ public class TwoPhaseSetSerializer2 extends AbstractSerializationSupport {
 
   @SuppressWarnings("unchecked")
   protected TwoPhaseSet twoPhaseSetFromBinary(byte[] bytes) {
-    try {  
-      TwoPhaseSetMessages.TwoPhaseSet2 msg = 
-          TwoPhaseSetMessages.TwoPhaseSet2.parseFrom(bytes);
-      
+    try {
+      TwoPhaseSetMessages.TwoPhaseSet2 msg = TwoPhaseSetMessages.TwoPhaseSet2.parseFrom(bytes);
+
       GSet<String> adds = GSet.create();
-      if (msg.hasAdds())
-        adds = (GSet<String>) otherMessageFromBinary(msg.getAdds().toByteArray());
-      
+      if (msg.hasAdds()) adds = (GSet<String>) otherMessageFromBinary(msg.getAdds().toByteArray());
+
       GSet<String> removals = GSet.create();
       if (msg.hasRemovals())
         adds = (GSet<String>) otherMessageFromBinary(msg.getRemovals().toByteArray());
-      
+
       return new TwoPhaseSet(adds, removals);
     } catch (Exception e) {
       throw new RuntimeException(e.getMessage(), e);
     }
   }
 }
-//#serializer
-
-
+// #serializer

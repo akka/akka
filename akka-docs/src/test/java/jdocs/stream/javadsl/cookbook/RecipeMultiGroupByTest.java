@@ -92,48 +92,57 @@ public class RecipeMultiGroupByTest extends RecipeTest {
       }
 
       {
+        final Source<Message, NotUsed> elems =
+            Source.from(Arrays.asList("1: a", "1: b", "all: c", "all: d", "1: e"))
+                .map(s -> new Message(s));
 
-        final Source<Message, NotUsed> elems = Source
-          .from(Arrays.asList("1: a", "1: b", "all: c", "all: d", "1: e"))
-          .map(s -> new Message(s));
-
-        //#multi-groupby
+        // #multi-groupby
         final Function<Message, List<Topic>> topicMapper = m -> extractTopics(m);
 
-        final Source<Pair<Message, Topic>, NotUsed> messageAndTopic = elems
-          .mapConcat((Message msg) -> {
-            List<Topic> topicsForMessage = topicMapper.apply(msg);
-            // Create a (Msg, Topic) pair for each of the topics
+        final Source<Pair<Message, Topic>, NotUsed> messageAndTopic =
+            elems.mapConcat(
+                (Message msg) -> {
+                  List<Topic> topicsForMessage = topicMapper.apply(msg);
+                  // Create a (Msg, Topic) pair for each of the topics
 
-            // the message belongs to
-            return topicsForMessage
-              .stream()
-              .map(topic -> new Pair<Message, Topic>(msg, topic))
-              .collect(toList());
-        });
+                  // the message belongs to
+                  return topicsForMessage
+                      .stream()
+                      .map(topic -> new Pair<Message, Topic>(msg, topic))
+                      .collect(toList());
+                });
 
-        SubSource<Pair<Message, Topic>, NotUsed> multiGroups = messageAndTopic
-          .groupBy(2, pair -> pair.second())
-          .map(pair -> {
-            Message message = pair.first();
-            Topic topic = pair.second();
+        SubSource<Pair<Message, Topic>, NotUsed> multiGroups =
+            messageAndTopic
+                .groupBy(2, pair -> pair.second())
+                .map(
+                    pair -> {
+                      Message message = pair.first();
+                      Topic topic = pair.second();
 
-            // do what needs to be done
-            //#multi-groupby
-            return pair;
-            //#multi-groupby
-          });
-        //#multi-groupby
+                      // do what needs to be done
+                      // #multi-groupby
+                      return pair;
+                      // #multi-groupby
+                    });
+        // #multi-groupby
 
-        CompletionStage<List<String>> result = multiGroups
-          .grouped(10)
-          .mergeSubstreams()
-          .map(pair -> {
-            Topic topic = pair.get(0).second();
-            return topic.name + mkString(pair.stream().map(p -> p.first().msg).collect(toList()), "[", ", ", "]");
-          })
-          .grouped(10)
-          .runWith(Sink.head(), mat);
+        CompletionStage<List<String>> result =
+            multiGroups
+                .grouped(10)
+                .mergeSubstreams()
+                .map(
+                    pair -> {
+                      Topic topic = pair.get(0).second();
+                      return topic.name
+                          + mkString(
+                              pair.stream().map(p -> p.first().msg).collect(toList()),
+                              "[",
+                              ", ",
+                              "]");
+                    })
+                .grouped(10)
+                .runWith(Sink.head(), mat);
 
         List<String> got = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
         assertTrue(got.contains("1[1: a, 1: b, all: c, all: d, 1: e]"));
@@ -147,8 +156,6 @@ public class RecipeMultiGroupByTest extends RecipeTest {
     for (String s : l) {
       sb.append(s).append(separate);
     }
-    return sb
-      .delete(sb.length() - separate.length(), sb.length())
-      .append(end).toString();
+    return sb.delete(sb.length() - separate.length(), sb.length()).append(end).toString();
   }
 }

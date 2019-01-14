@@ -8,41 +8,43 @@ import akka.actor.*;
 import akka.pattern.Backoff;
 import akka.pattern.BackoffSupervisor;
 import akka.testkit.TestActors.EchoActor;
-//#backoff-imports
+// #backoff-imports
 import java.time.Duration;
-//#backoff-imports
+// #backoff-imports
 
 public class BackoffSupervisorDocTest {
 
-  void exampleStop (ActorSystem system) {
-    //#backoff-stop
+  void exampleStop(ActorSystem system) {
+    // #backoff-stop
     final Props childProps = Props.create(EchoActor.class);
 
-    final Props  supervisorProps = BackoffSupervisor.props(
-      Backoff.onStop(
-        childProps,
-        "myEcho",
-        Duration.ofSeconds(3),
-        Duration.ofSeconds(30),
-        0.2)); // adds 20% "noise" to vary the intervals slightly
+    final Props supervisorProps =
+        BackoffSupervisor.props(
+            Backoff.onStop(
+                childProps,
+                "myEcho",
+                Duration.ofSeconds(3),
+                Duration.ofSeconds(30),
+                0.2)); // adds 20% "noise" to vary the intervals slightly
 
     system.actorOf(supervisorProps, "echoSupervisor");
-    //#backoff-stop
+    // #backoff-stop
   }
 
-  void exampleFailure (ActorSystem system) {
-    //#backoff-fail
+  void exampleFailure(ActorSystem system) {
+    // #backoff-fail
     final Props childProps = Props.create(EchoActor.class);
 
-    final Props  supervisorProps = BackoffSupervisor.props(
-      Backoff.onFailure(
-        childProps,
-        "myEcho",
-        Duration.ofSeconds(3),
-        Duration.ofSeconds(30),
-        0.2)); // adds 20% "noise" to vary the intervals slightly
+    final Props supervisorProps =
+        BackoffSupervisor.props(
+            Backoff.onFailure(
+                childProps,
+                "myEcho",
+                Duration.ofSeconds(3),
+                Duration.ofSeconds(30),
+                0.2)); // adds 20% "noise" to vary the intervals slightly
 
     system.actorOf(supervisorProps, "echoSupervisor");
-    //#backoff-fail
+    // #backoff-fail
   }
 }

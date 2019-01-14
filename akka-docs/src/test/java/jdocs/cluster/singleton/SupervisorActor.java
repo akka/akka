@@ -4,7 +4,7 @@
 
 package jdocs.cluster.singleton;
 
-//#singleton-supervisor-actor
+// #singleton-supervisor-actor
 import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
 import akka.actor.ActorRef;
@@ -15,6 +15,7 @@ public class SupervisorActor extends AbstractActor {
   final Props childProps;
   final SupervisorStrategy supervisorStrategy;
   final ActorRef child;
+
   SupervisorActor(Props childProps, SupervisorStrategy supervisorStrategy) {
     this.childProps = childProps;
     this.supervisorStrategy = supervisorStrategy;
@@ -28,9 +29,7 @@ public class SupervisorActor extends AbstractActor {
 
   @Override
   public Receive createReceive() {
-    return receiveBuilder()
-             .matchAny(msg -> child.forward(msg, getContext()))
-             .build();
+    return receiveBuilder().matchAny(msg -> child.forward(msg, getContext())).build();
   }
 }
-//#singleton-supervisor-actor
+// #singleton-supervisor-actor

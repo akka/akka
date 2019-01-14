@@ -61,65 +61,73 @@ public class RateTransformationDocTest extends AbstractJavaTest {
 
   @Test
   public void conflateShouldSummarize() throws Exception {
-    //#conflate-summarize
+    // #conflate-summarize
     final Flow<Double, Tuple3<Double, Double, Integer>, NotUsed> statsFlow =
-      Flow.of(Double.class)
-        .conflateWithSeed(elem -> Collections.singletonList(elem), (acc, elem) -> {
-          return Stream
-            .concat(acc.stream(), Collections.singletonList(elem).stream())
-            .collect(Collectors.toList());
-        })
-        .map(s -> {
-          final Double mean = s.stream().mapToDouble(d -> d).sum() / s.size();
-          final DoubleStream se = s.stream().mapToDouble(x -> Math.pow(x - mean, 2));
-          final Double stdDev = Math.sqrt(se.sum() / s.size());
-          return new Tuple3<>(stdDev, mean, s.size());
-        });
-    //#conflate-summarize
+        Flow.of(Double.class)
+            .conflateWithSeed(
+                elem -> Collections.singletonList(elem),
+                (acc, elem) -> {
+                  return Stream.concat(acc.stream(), Collections.singletonList(elem).stream())
+                      .collect(Collectors.toList());
+                })
+            .map(
+                s -> {
+                  final Double mean = s.stream().mapToDouble(d -> d).sum() / s.size();
+                  final DoubleStream se = s.stream().mapToDouble(x -> Math.pow(x - mean, 2));
+                  final Double stdDev = Math.sqrt(se.sum() / s.size());
+                  return new Tuple3<>(stdDev, mean, s.size());
+                });
+    // #conflate-summarize
 
-    final CompletionStage<List<Tuple3<Double, Double, Integer>>> fut = Source.repeat(0).map(i -> r.nextGaussian())
-      .via(statsFlow)
-      .grouped(10)
-      .runWith(Sink.head(), mat);
+    final CompletionStage<List<Tuple3<Double, Double, Integer>>> fut =
+        Source.repeat(0)
+            .map(i -> r.nextGaussian())
+            .via(statsFlow)
+            .grouped(10)
+            .runWith(Sink.head(), mat);
 
     fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
   @Test
   public void conflateShouldSample() throws Exception {
-    //#conflate-sample
+    // #conflate-sample
     final Double p = 0.01;
-    final Flow<Double, Double, NotUsed> sampleFlow = Flow.of(Double.class)
-      .conflateWithSeed(elem -> Collections.singletonList(elem), (acc, elem) -> {
-        if (r.nextDouble() < p) {
-          return Stream
-            .concat(acc.stream(), Collections.singletonList(elem).stream())
-            .collect(Collectors.toList());
-        }
-        return acc;
-      })
-      .mapConcat(d -> d);
-    //#conflate-sample
+    final Flow<Double, Double, NotUsed> sampleFlow =
+        Flow.of(Double.class)
+            .conflateWithSeed(
+                elem -> Collections.singletonList(elem),
+                (acc, elem) -> {
+                  if (r.nextDouble() < p) {
+                    return Stream.concat(acc.stream(), Collections.singletonList(elem).stream())
+                        .collect(Collectors.toList());
+                  }
+                  return acc;
+                })
+            .mapConcat(d -> d);
+    // #conflate-sample
 
-    final CompletionStage<Double> fut = Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
-      .via(sampleFlow)
-      .runWith(Sink.fold(0.0, (agg, next) -> agg + next), mat);
+    final CompletionStage<Double> fut =
+        Source.from(new ArrayList<Double>(Collections.nCopies(1000, 1.0)))
+            .via(sampleFlow)
+            .runWith(Sink.fold(0.0, (agg, next) -> agg + next), mat);
 
     final Double count = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
 
   @Test
   public void extrapolateShouldRepeatLast() throws Exception {
-    //#extrapolate-last
-    final Flow<Double, Double, NotUsed> lastFlow = Flow.of(Double.class)
-      .extrapolate(in -> Stream.iterate(in, i -> i).iterator());
-    //#extrapolate-last
+    // #extrapolate-last
+    final Flow<Double, Double, NotUsed> lastFlow =
+        Flow.of(Double.class).extrapolate(in -> Stream.iterate(in, i -> i).iterator());
+    // #extrapolate-last
 
-    final Pair<TestPublisher.Probe<Double>, CompletionStage<List<Double>>> probeFut = TestSource.<Double> probe(system)
-      .via(lastFlow)
-      .grouped(10)
-      .toMat(Sink.head(), Keep.both())
-      .run(mat);
+    final Pair<TestPublisher.Probe<Double>, CompletionStage<List<Double>>> probeFut =
+        TestSource.<Double>probe(system)
+            .via(lastFlow)
+            .grouped(10)
+            .toMat(Sink.head(), Keep.both())
+            .run(mat);
 
     final TestPublisher.Probe<Double> probe = probeFut.first();
     final CompletionStage<List<Double>> fut = probeFut.second();
@@ -131,13 +139,14 @@ public class RateTransformationDocTest extends AbstractJavaTest {
 
   @Test
   public void extrapolateShouldSeedFirst() throws Exception {
-    //#extrapolate-seed
+    // #extrapolate-seed
     Double initial = 2.0;
-    final Flow<Double, Double, NotUsed> lastFlow = Flow.of(Double.class)
-            .extrapolate(in -> Stream.iterate(in, i -> i).iterator(), initial);
-    //#extrapolate-seed
+    final Flow<Double, Double, NotUsed> lastFlow =
+        Flow.of(Double.class).extrapolate(in -> Stream.iterate(in, i -> i).iterator(), initial);
+    // #extrapolate-seed
 
-    final CompletionStage<List<Double>> fut = TestSource.<Double> probe(system)
+    final CompletionStage<List<Double>> fut =
+        TestSource.<Double>probe(system)
             .via(lastFlow)
             .grouped(10)
             .toMat(Sink.head(), Keep.right())
@@ -145,28 +154,39 @@ public class RateTransformationDocTest extends AbstractJavaTest {
 
     final List<Double> extrapolated = fut.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(extrapolated.size(), 10);
-    assertEquals(extrapolated.stream().mapToDouble(d -> d).sum(), 10*initial, 0.1);
+    assertEquals(extrapolated.stream().mapToDouble(d -> d).sum(), 10 * initial, 0.1);
   }
 
   @Test
   public void extrapolateShouldTrackDrift() throws Exception {
     @SuppressWarnings("unused")
-    //#extrapolate-drift
-    final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow = Flow.of(Double.class)
+    // #extrapolate-drift
+    final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow =
+        Flow.of(Double.class)
             .map(d -> new Pair<>(d, 0))
-            .extrapolate(d -> Stream.iterate(1, i -> i + 1).map(i -> new Pair<>(d.first(), i)).iterator());
-    //#extrapolate-drift
+            .extrapolate(
+                d -> Stream.iterate(1, i -> i + 1).map(i -> new Pair<>(d.first(), i)).iterator());
+    // #extrapolate-drift
     final TestLatch latch = new TestLatch(2, system);
-    final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow = Flow.of(Double.class)
-            .map(d -> {
-              latch.countDown();
-              return new Pair<>(d, 0);
-            })
-            .extrapolate(d -> { latch.countDown(); return Stream.iterate(1, i -> i + 1).map(i -> new Pair<>(d.first(), i)).iterator(); });
+    final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow =
+        Flow.of(Double.class)
+            .map(
+                d -> {
+                  latch.countDown();
+                  return new Pair<>(d, 0);
+                })
+            .extrapolate(
+                d -> {
+                  latch.countDown();
+                  return Stream.iterate(1, i -> i + 1)
+                      .map(i -> new Pair<>(d.first(), i))
+                      .iterator();
+                });
 
-    final Pair<TestPublisher.Probe<Double>, TestSubscriber.Probe<Pair<Double, Integer>>> pubSub = TestSource.<Double> probe(system)
+    final Pair<TestPublisher.Probe<Double>, TestSubscriber.Probe<Pair<Double, Integer>>> pubSub =
+        TestSource.<Double>probe(system)
             .via(realDriftFlow)
-            .toMat(TestSink.<Pair<Double, Integer>> probe(system), Keep.both())
+            .toMat(TestSink.<Pair<Double, Integer>>probe(system), Keep.both())
             .run(mat);
 
     final TestPublisher.Probe<Double> pub = pubSub.first();
@@ -187,18 +207,25 @@ public class RateTransformationDocTest extends AbstractJavaTest {
   @Test
   public void expandShouldTrackDrift() throws Exception {
     @SuppressWarnings("unused")
-    //#expand-drift
-	final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow = Flow.of(Double.class)
-      .expand(d -> Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator());
-    //#expand-drift
+    // #expand-drift
+    final Flow<Double, Pair<Double, Integer>, NotUsed> driftFlow =
+        Flow.of(Double.class)
+            .expand(d -> Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator());
+    // #expand-drift
     final TestLatch latch = new TestLatch(2, system);
-    final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow = Flow.of(Double.class)
-    	      .expand(d -> { latch.countDown(); return Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator(); });
+    final Flow<Double, Pair<Double, Integer>, NotUsed> realDriftFlow =
+        Flow.of(Double.class)
+            .expand(
+                d -> {
+                  latch.countDown();
+                  return Stream.iterate(0, i -> i + 1).map(i -> new Pair<>(d, i)).iterator();
+                });
 
-    final Pair<TestPublisher.Probe<Double>, TestSubscriber.Probe<Pair<Double, Integer>>> pubSub = TestSource.<Double> probe(system)
-      .via(realDriftFlow)
-      .toMat(TestSink.<Pair<Double, Integer>> probe(system), Keep.both())
-      .run(mat);
+    final Pair<TestPublisher.Probe<Double>, TestSubscriber.Probe<Pair<Double, Integer>>> pubSub =
+        TestSource.<Double>probe(system)
+            .via(realDriftFlow)
+            .toMat(TestSink.<Pair<Double, Integer>>probe(system), Keep.both())
+            .run(mat);
 
     final TestPublisher.Probe<Double> pub = pubSub.first();
     final TestSubscriber.Probe<Pair<Double, Integer>> sub = pubSub.second();
@@ -214,5 +241,4 @@ public class RateTransformationDocTest extends AbstractJavaTest {
     Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
     sub.requestNext(new Pair<>(2.0, 0));
   }
-
 }

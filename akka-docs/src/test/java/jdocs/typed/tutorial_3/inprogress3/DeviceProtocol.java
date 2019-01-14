@@ -10,12 +10,11 @@ import java.util.Optional;
 
 abstract class DeviceProtocol {
   // no instances of DeviceProtocol class
-  private DeviceProtocol() {
-  }
+  private DeviceProtocol() {}
 
   interface DeviceMessage {}
 
-  //#write-protocol-1
+  // #write-protocol-1
   public static final class RecordTemperature implements DeviceMessage {
     final double value;
 
@@ -23,6 +22,5 @@ abstract class DeviceProtocol {
       this.value = value;
     }
   }
-  //#write-protocol-1
+  // #write-protocol-1
 }
-

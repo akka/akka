@@ -3,12 +3,12 @@
  */
 
 package jdocs.camel;
-//#TransformOutgoingMessage
+// #TransformOutgoingMessage
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedProducerActor;
 import akka.dispatch.Mapper;
 
-public class Transformer extends UntypedProducerActor{
+public class Transformer extends UntypedProducerActor {
   private String uri;
 
   public Transformer(String uri) {
@@ -20,17 +20,18 @@ public class Transformer extends UntypedProducerActor{
   }
 
   private CamelMessage upperCase(CamelMessage msg) {
-    return msg.mapBody(new Mapper<String,String>() {
-      @Override
-      public String apply(String body) {
-        return body.toUpperCase();
-      }
-    });
+    return msg.mapBody(
+        new Mapper<String, String>() {
+          @Override
+          public String apply(String body) {
+            return body.toUpperCase();
+          }
+        });
   }
 
   @Override
   public Object onTransformOutgoingMessage(Object message) {
-    if(message instanceof CamelMessage) {
+    if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
       return upperCase(camelMessage);
     } else {
@@ -38,4 +39,4 @@ public class Transformer extends UntypedProducerActor{
     }
   }
 }
-//#TransformOutgoingMessage
+// #TransformOutgoingMessage

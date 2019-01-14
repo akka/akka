@@ -26,8 +26,8 @@ public class KillSwitchTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
 
   @Test
   public void beAbleToUseKillSwitch() throws Exception {
@@ -36,14 +36,13 @@ public class KillSwitchTest extends StreamTest {
     final SharedKillSwitch killSwitch = KillSwitches.shared("testSwitch");
 
     final SharedKillSwitch k =
-      Source.fromPublisher(upstream)
-        .viaMat(killSwitch.flow(), Keep.right())
-        .to(Sink.fromSubscriber(downstream)).run(materializer);
+        Source.fromPublisher(upstream)
+            .viaMat(killSwitch.flow(), Keep.right())
+            .to(Sink.fromSubscriber(downstream))
+            .run(materializer);
 
     final CompletionStage<Done> completionStage =
-      Source.single(1)
-        .via(killSwitch.flow())
-        .runWith(Sink.ignore(), materializer);
+        Source.single(1).via(killSwitch.flow()).runWith(Sink.ignore(), materializer);
 
     downstream.request(1);
     upstream.sendNext(1);
@@ -66,8 +65,8 @@ public class KillSwitchTest extends StreamTest {
     final SharedKillSwitch killSwitch = KillSwitches.shared("testSwitch");
 
     Source.fromPublisher(upstream)
-      .viaMat(killSwitch.flow(), Keep.right())
-      .runWith(Sink.fromSubscriber(downstream), materializer);
+        .viaMat(killSwitch.flow(), Keep.right())
+        .runWith(Sink.fromSubscriber(downstream), materializer);
 
     downstream.request(1);
     upstream.sendNext(1);
@@ -82,18 +81,18 @@ public class KillSwitchTest extends StreamTest {
     assertEquals(te, te2);
   }
 
-
   @Test
   public void beAbleToUseSingleKillSwitch() throws Exception {
     final TestPublisher.Probe<Integer> upstream = TestPublisher.probe(0, system);
     final TestSubscriber.Probe<Integer> downstream = TestSubscriber.probe(system);
-    final Graph<FlowShape<Integer, Integer>, UniqueKillSwitch> killSwitchFlow = KillSwitches.single();
+    final Graph<FlowShape<Integer, Integer>, UniqueKillSwitch> killSwitchFlow =
+        KillSwitches.single();
 
     final UniqueKillSwitch killSwitch =
-      Source.fromPublisher(upstream)
-        .viaMat(killSwitchFlow, Keep.right())
-        .to(Sink.fromSubscriber(downstream)).run(materializer);
-
+        Source.fromPublisher(upstream)
+            .viaMat(killSwitchFlow, Keep.right())
+            .to(Sink.fromSubscriber(downstream))
+            .run(materializer);
 
     downstream.request(1);
     upstream.sendNext(1);
@@ -104,5 +103,4 @@ public class KillSwitchTest extends StreamTest {
     upstream.expectCancellation();
     downstream.expectComplete();
   }
-
 }

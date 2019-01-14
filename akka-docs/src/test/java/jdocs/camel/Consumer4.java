@@ -3,7 +3,7 @@
  */
 
 package jdocs.camel;
-//#Consumer4
+// #Consumer4
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 import scala.concurrent.duration.Duration;
@@ -12,8 +12,7 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.concurrent.TimeUnit;
 
 public class Consumer4 extends UntypedConsumerActor {
-  private final static FiniteDuration timeout =
-    Duration.create(500, TimeUnit.MILLISECONDS);
+  private static final FiniteDuration timeout = Duration.create(500, TimeUnit.MILLISECONDS);
 
   @Override
   public FiniteDuration replyTimeout() {
@@ -28,9 +27,8 @@ public class Consumer4 extends UntypedConsumerActor {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
       String body = camelMessage.getBodyAs(String.class, getCamelContext());
-      getSender().tell(String.format("Hello %s",body), getSelf());
-    } else
-      unhandled(message);
+      getSender().tell(String.format("Hello %s", body), getSelf());
+    } else unhandled(message);
   }
 }
-//#Consumer4
+// #Consumer4

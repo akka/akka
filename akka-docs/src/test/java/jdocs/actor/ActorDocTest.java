@@ -26,43 +26,43 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-//#import-props
+// #import-props
 import akka.actor.Props;
-//#import-props
-//#import-actorRef
+// #import-props
+// #import-actorRef
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-//#import-actorRef
-//#import-identify
+// #import-actorRef
+// #import-identify
 import akka.actor.ActorIdentity;
 import akka.actor.ActorSelection;
 import akka.actor.Identify;
-//#import-identify
-//#import-ask
+// #import-identify
+// #import-ask
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
 import java.util.concurrent.CompletableFuture;
-//#import-ask
-//#import-gracefulStop
+// #import-ask
+// #import-gracefulStop
 import static akka.pattern.Patterns.gracefulStop;
 import akka.pattern.AskTimeoutException;
 import java.util.concurrent.CompletionStage;
 
-//#import-gracefulStop
-//#import-terminated
+// #import-gracefulStop
+// #import-terminated
 import akka.actor.Terminated;
-//#import-terminated
+// #import-terminated
 
 public class ActorDocTest extends AbstractJavaTest {
 
-  public static Config config = ConfigFactory.parseString(
-    "akka {\n" +
-      "  loggers = [\"akka.testkit.TestEventListener\"]\n" +
-      "  loglevel = \"WARNING\"\n" +
-      "  stdout-loglevel = \"WARNING\"\n" +
-      "}\n"
-  );
+  public static Config config =
+      ConfigFactory.parseString(
+          "akka {\n"
+              + "  loggers = [\"akka.testkit.TestEventListener\"]\n"
+              + "  loglevel = \"WARNING\"\n"
+              + "  stdout-loglevel = \"WARNING\"\n"
+              + "}\n");
 
   static ActorSystem system = null;
 
@@ -76,48 +76,46 @@ public class ActorDocTest extends AbstractJavaTest {
     TestKit.shutdownActorSystem(system);
   }
 
-  static
-  //#context-actorOf
-  public class FirstActor extends AbstractActor {
+  public
+  // #context-actorOf
+  static class FirstActor extends AbstractActor {
     final ActorRef child = getContext().actorOf(Props.create(MyActor.class), "myChild");
 
-    //#plus-some-behavior
+    // #plus-some-behavior
     @Override
     public Receive createReceive() {
-      return receiveBuilder()
-        .matchAny(x -> getSender().tell(x, getSelf()))
-        .build();
+      return receiveBuilder().matchAny(x -> getSender().tell(x, getSelf())).build();
     }
-    //#plus-some-behavior
+    // #plus-some-behavior
   }
-  //#context-actorOf
+  // #context-actorOf
 
-  static public class SomeActor extends AbstractActor {
-    //#createReceive
+  public static class SomeActor extends AbstractActor {
+    // #createReceive
     @Override
     public Receive createReceive() {
-      return receiveBuilder()
-        .match(String.class, s -> System.out.println(s.toLowerCase()))
-        .build();
+      return receiveBuilder().match(String.class, s -> System.out.println(s.toLowerCase())).build();
     }
-    //#createReceive
+    // #createReceive
   }
 
-  static
-  //#well-structured
-  public class WellStructuredActor extends AbstractActor {
+  public
+  // #well-structured
+  static class WellStructuredActor extends AbstractActor {
 
     public static class Msg1 {}
+
     public static class Msg2 {}
+
     public static class Msg3 {}
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Msg1.class, this::receiveMsg1)
-        .match(Msg2.class, this::receiveMsg2)
-        .match(Msg3.class, this::receiveMsg3)
-        .build();
+          .match(Msg1.class, this::receiveMsg1)
+          .match(Msg2.class, this::receiveMsg2)
+          .match(Msg3.class, this::receiveMsg3)
+          .build();
     }
 
     private void receiveMsg1(Msg1 msg) {
@@ -132,26 +130,24 @@ public class ActorDocTest extends AbstractJavaTest {
       // actual work
     }
   }
-  //#well-structured
+  // #well-structured
 
-  static
-  //#optimized
-  public class OptimizedActor extends UntypedAbstractActor {
+  public
+  // #optimized
+  static class OptimizedActor extends UntypedAbstractActor {
 
     public static class Msg1 {}
+
     public static class Msg2 {}
+
     public static class Msg3 {}
 
     @Override
     public void onReceive(Object msg) throws Exception {
-      if (msg instanceof Msg1)
-        receiveMsg1((Msg1) msg);
-      else if (msg instanceof Msg2)
-        receiveMsg2((Msg2) msg);
-      else if (msg instanceof Msg3)
-        receiveMsg3((Msg3) msg);
-      else
-        unhandled(msg);
+      if (msg instanceof Msg1) receiveMsg1((Msg1) msg);
+      else if (msg instanceof Msg2) receiveMsg2((Msg2) msg);
+      else if (msg instanceof Msg3) receiveMsg3((Msg3) msg);
+      else unhandled(msg);
     }
 
     private void receiveMsg1(Msg1 msg) {
@@ -166,9 +162,9 @@ public class ActorDocTest extends AbstractJavaTest {
       // actual work
     }
   }
-  //#optimized
+  // #optimized
 
-  static public class ActorWithArgs extends AbstractActor {
+  public static class ActorWithArgs extends AbstractActor {
     private final String args;
 
     public ActorWithArgs(String args) {
@@ -177,18 +173,19 @@ public class ActorDocTest extends AbstractJavaTest {
 
     @Override
     public Receive createReceive() {
-      return receiveBuilder().matchAny(x -> { }).build();
+      return receiveBuilder().matchAny(x -> {}).build();
     }
   }
 
-  static
-  //#props-factory
-  public class DemoActor extends AbstractActor {
+  public
+  // #props-factory
+  static class DemoActor extends AbstractActor {
     /**
      * Create Props for an actor of this type.
+     *
      * @param magicNumber The magic number to be passed to this actor’s constructor.
-     * @return a Props for creating this actor, which can then be further configured
-     *         (e.g. calling `.withDispatcher()` on it)
+     * @return a Props for creating this actor, which can then be further configured (e.g. calling
+     *     `.withDispatcher()` on it)
      */
     static Props props(Integer magicNumber) {
       // You need to specify the actual type of the returned actor
@@ -205,34 +202,36 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Integer.class, i -> {
-          getSender().tell(i + magicNumber, getSelf());
-        })
-        .build();
+          .match(
+              Integer.class,
+              i -> {
+                getSender().tell(i + magicNumber, getSelf());
+              })
+          .build();
     }
   }
 
-  //#props-factory
-  static
-  //#props-factory
-  public class SomeOtherActor extends AbstractActor {
+  // #props-factory
+  public
+  // #props-factory
+  static class SomeOtherActor extends AbstractActor {
     // Props(new DemoActor(42)) would not be safe
     ActorRef demoActor = getContext().actorOf(DemoActor.props(42), "demo");
     // ...
-    //#props-factory
+    // #props-factory
     @Override
     public Receive createReceive() {
       return AbstractActor.emptyBehavior();
     }
-    //#props-factory
+    // #props-factory
   }
-  //#props-factory
+  // #props-factory
 
-  static
-  //#messages-in-companion
-  public class DemoMessagesActor extends AbstractLoggingActor {
+  public
+  // #messages-in-companion
+  static class DemoMessagesActor extends AbstractLoggingActor {
 
-    static public class Greeting {
+    public static class Greeting {
       private final String from;
 
       public Greeting(String from) {
@@ -247,14 +246,15 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Greeting.class, g -> {
-          log().info("I was greeted by {}", g.getGreeter());
-        })
-        .build();
+          .match(
+              Greeting.class,
+              g -> {
+                log().info("I was greeted by {}", g.getGreeter());
+              })
+          .build();
     }
   }
-  //#messages-in-companion
-
+  // #messages-in-companion
 
   public static class LifecycleMethods extends AbstractActor {
 
@@ -268,9 +268,8 @@ public class ActorDocTest extends AbstractJavaTest {
      *
      * BOYSCOUT RULE: whenever you read this, verify that!
      */
-    //#lifecycle-callbacks
-    public void preStart() {
-    }
+    // #lifecycle-callbacks
+    public void preStart() {}
 
     public void preRestart(Throwable reason, Optional<Object> message) {
       for (ActorRef each : getContext().getChildren()) {
@@ -284,9 +283,8 @@ public class ActorDocTest extends AbstractJavaTest {
       preStart();
     }
 
-    public void postStop() {
-    }
-    //#lifecycle-callbacks
+    public void postStop() {}
+    // #lifecycle-callbacks
 
   }
 
@@ -298,49 +296,49 @@ public class ActorDocTest extends AbstractJavaTest {
       return AbstractActor.emptyBehavior();
     }
 
-    //#preStart
+    // #preStart
     @Override
     public void preStart() {
       target = getContext().actorOf(Props.create(MyActor.class, "target"));
     }
-    //#preStart
-    //#postStop
+    // #preStart
+    // #postStop
     @Override
     public void postStop() {
-      //#clean-up-some-resources
+      // #clean-up-some-resources
       final String message = "stopped";
-      //#tell
+      // #tell
       // don’t forget to think about who is the sender (2nd argument)
       target.tell(message, getSelf());
-      //#tell
+      // #tell
       final Object result = "";
-      //#forward
+      // #forward
       target.forward(result, getContext());
-      //#forward
+      // #forward
       target = null;
-      //#clean-up-some-resources
+      // #clean-up-some-resources
     }
-    //#postStop
+    // #postStop
 
     // compilation test only
     public void compileSelections() {
-      //#selection-local
+      // #selection-local
       // will look up this absolute path
       getContext().actorSelection("/user/serviceA/actor");
       // will look up sibling beneath same supervisor
       getContext().actorSelection("../joe");
-      //#selection-local
+      // #selection-local
 
-      //#selection-wildcard
+      // #selection-wildcard
       // will look all children to serviceB with names starting with worker
       getContext().actorSelection("/user/serviceB/worker*");
       // will look up all siblings beneath same supervisor
       getContext().actorSelection("../*");
-      //#selection-wildcard
+      // #selection-wildcard
 
-      //#selection-remote
+      // #selection-remote
       getContext().actorSelection("akka.tcp://app@otherhost:1234/user/serviceB");
-      //#selection-remote
+      // #selection-remote
     }
   }
 
@@ -349,18 +347,19 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(x -> {
-          //#reply-exception
-          try {
-            String result = operation();
-            getSender().tell(result, getSelf());
-          } catch (Exception e) {
-            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
-            throw e;
-          }
-          //#reply-exception
-        })
-        .build();
+          .matchAny(
+              x -> {
+                // #reply-exception
+                try {
+                  String result = operation();
+                  getSender().tell(result, getSelf());
+                } catch (Exception e) {
+                  getSender().tell(new akka.actor.Status.Failure(e), getSelf());
+                  throw e;
+                }
+                // #reply-exception
+              })
+          .build();
     }
 
     private String operation() {
@@ -368,87 +367,98 @@ public class ActorDocTest extends AbstractJavaTest {
     }
   }
 
-  static
-  //#gracefulStop-actor
-  public class Manager extends AbstractActor {
+  public
+  // #gracefulStop-actor
+  static class Manager extends AbstractActor {
     private static enum Shutdown {
       Shutdown
     }
+
     public static final Shutdown SHUTDOWN = Shutdown.Shutdown;
 
     private ActorRef worker =
-    getContext().watch(getContext().actorOf(Props.create(Cruncher.class), "worker"));
+        getContext().watch(getContext().actorOf(Props.create(Cruncher.class), "worker"));
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("job", s -> {
-          worker.tell("crunch", getSelf());
-        })
-        .matchEquals(SHUTDOWN, x -> {
-          worker.tell(PoisonPill.getInstance(), getSelf());
-          getContext().become(shuttingDown());
-        })
-        .build();
+          .matchEquals(
+              "job",
+              s -> {
+                worker.tell("crunch", getSelf());
+              })
+          .matchEquals(
+              SHUTDOWN,
+              x -> {
+                worker.tell(PoisonPill.getInstance(), getSelf());
+                getContext().become(shuttingDown());
+              })
+          .build();
     }
 
     private AbstractActor.Receive shuttingDown() {
       return receiveBuilder()
-        .matchEquals("job", s ->
-            getSender().tell("service unavailable, shutting down", getSelf())
-        )
-        .match(Terminated.class, t -> t.actor().equals(worker), t ->
-          getContext().stop(getSelf())
-        )
-        .build();
+          .matchEquals(
+              "job", s -> getSender().tell("service unavailable, shutting down", getSelf()))
+          .match(Terminated.class, t -> t.actor().equals(worker), t -> getContext().stop(getSelf()))
+          .build();
     }
   }
-  //#gracefulStop-actor
+  // #gracefulStop-actor
 
   @Test
   public void usePatternsGracefulStop() throws Exception {
     ActorRef actorRef = system.actorOf(Props.create(Manager.class));
-    //#gracefulStop
+    // #gracefulStop
     try {
       CompletionStage<Boolean> stopped =
-        gracefulStop(actorRef, Duration.ofSeconds(5), Manager.SHUTDOWN);
+          gracefulStop(actorRef, Duration.ofSeconds(5), Manager.SHUTDOWN);
       stopped.toCompletableFuture().get(6, TimeUnit.SECONDS);
       // the actor has been stopped
     } catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
     }
-    //#gracefulStop
+    // #gracefulStop
   }
-
 
   public static class Cruncher extends AbstractActor {
     @Override
     public Receive createReceive() {
-      return receiveBuilder().matchEquals("crunch", s -> { }).build();
+      return receiveBuilder().matchEquals("crunch", s -> {}).build();
     }
   }
 
-  static
-  //#swapper
-  public class Swapper extends AbstractLoggingActor {
+  public
+  // #swapper
+  static class Swapper extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals(Swap, s -> {
-          log().info("Hi");
-          getContext().become(receiveBuilder().
-            matchEquals(Swap, x -> {
-              log().info("Ho");
-              getContext().unbecome(); // resets the latest 'become' (just for fun)
-            }).build(), false); // push on top instead of replace
-        }).build();
+          .matchEquals(
+              Swap,
+              s -> {
+                log().info("Hi");
+                getContext()
+                    .become(
+                        receiveBuilder()
+                            .matchEquals(
+                                Swap,
+                                x -> {
+                                  log().info("Ho");
+                                  getContext()
+                                      .unbecome(); // resets the latest 'become' (just for fun)
+                                })
+                            .build(),
+                        false); // push on top instead of replace
+              })
+          .build();
     }
   }
 
-  //#swapper
-  static
-  //#swapper
-  public class SwapperApp {
+  // #swapper
+  public
+  // #swapper
+  static class SwapperApp {
     public static void main(String[] args) {
       ActorSystem system = ActorSystem.create("SwapperSystem");
       ActorRef swapper = system.actorOf(Props.create(Swapper.class), "swapper");
@@ -461,16 +471,15 @@ public class ActorDocTest extends AbstractJavaTest {
       system.terminate();
     }
   }
-  //#swapper
-
+  // #swapper
 
   @Test
   public void creatingActorWithSystemActorOf() {
-    //#system-actorOf
+    // #system-actorOf
     // ActorSystem is a heavy object: create only one per application
     final ActorSystem system = ActorSystem.create("MySystem", config);
     final ActorRef myActor = system.actorOf(Props.create(MyActor.class), "myactor");
-    //#system-actorOf
+    // #system-actorOf
     try {
       new TestKit(system) {
         {
@@ -486,7 +495,8 @@ public class ActorDocTest extends AbstractJavaTest {
   @Test
   public void creatingGraduallyBuiltActorWithSystemActorOf() {
     final ActorSystem system = ActorSystem.create("MySystem", config);
-    final ActorRef actor = system.actorOf(Props.create(GraduallyBuiltActor.class), "graduallyBuiltActor");
+    final ActorRef actor =
+        system.actorOf(Props.create(GraduallyBuiltActor.class), "graduallyBuiltActor");
     try {
       new TestKit(system) {
         {
@@ -501,37 +511,36 @@ public class ActorDocTest extends AbstractJavaTest {
 
   @Test
   public void creatingPropsConfig() {
-    //#creating-props
+    // #creating-props
     Props props1 = Props.create(MyActor.class);
-    Props props2 = Props.create(ActorWithArgs.class,
-      () -> new ActorWithArgs("arg")); // careful, see below
+    Props props2 =
+        Props.create(ActorWithArgs.class, () -> new ActorWithArgs("arg")); // careful, see below
     Props props3 = Props.create(ActorWithArgs.class, "arg");
-    //#creating-props
+    // #creating-props
 
-    //#creating-props-deprecated
+    // #creating-props-deprecated
     // NOT RECOMMENDED within another actor:
     // encourages to close over enclosing class
-    Props props7 = Props.create(ActorWithArgs.class,
-      () -> new ActorWithArgs("arg"));
-    //#creating-props-deprecated
+    Props props7 = Props.create(ActorWithArgs.class, () -> new ActorWithArgs("arg"));
+    // #creating-props-deprecated
   }
 
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void creatingPropsIllegal() {
-    //#creating-props-illegal
+    // #creating-props-illegal
     // This will throw an IllegalArgumentException since some runtime
     // type information of the lambda is erased.
     // Use Props.create(actorClass, Creator) instead.
     Props props = Props.create(() -> new ActorWithArgs("arg"));
-    //#creating-props-illegal
+    // #creating-props-illegal
   }
 
-  static
-  //#receive-timeout
-  public class ReceiveTimeoutActor extends AbstractActor {
-    //#receive-timeout
+  public
+  // #receive-timeout
+  static class ReceiveTimeoutActor extends AbstractActor {
+    // #receive-timeout
     ActorRef target = getContext().getSystem().deadLetters();
-    //#receive-timeout
+    // #receive-timeout
     public ReceiveTimeoutActor() {
       // To set an initial delay
       getContext().setReceiveTimeout(Duration.ofSeconds(10));
@@ -540,25 +549,29 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("Hello", s -> {
-          // To set in a response to a message
-          getContext().setReceiveTimeout(Duration.ofSeconds(1));
-          //#receive-timeout
-          target = getSender();
-          target.tell("Hello world", getSelf());
-          //#receive-timeout
-        })
-        .match(ReceiveTimeout.class, r -> {
-          // To turn it off
-          getContext().cancelReceiveTimeout();
-          //#receive-timeout
-          target.tell("timeout", getSelf());
-          //#receive-timeout
-        })
-        .build();
+          .matchEquals(
+              "Hello",
+              s -> {
+                // To set in a response to a message
+                getContext().setReceiveTimeout(Duration.ofSeconds(1));
+                // #receive-timeout
+                target = getSender();
+                target.tell("Hello world", getSelf());
+                // #receive-timeout
+              })
+          .match(
+              ReceiveTimeout.class,
+              r -> {
+                // To turn it off
+                getContext().cancelReceiveTimeout();
+                // #receive-timeout
+                target.tell("timeout", getSelf());
+                // #receive-timeout
+              })
+          .build();
     }
   }
-  //#receive-timeout
+  // #receive-timeout
 
   @Test
   public void using_receiveTimeout() {
@@ -572,46 +585,51 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
-  static
-  //#hot-swap-actor
-  public class HotSwapActor extends AbstractActor {
+  public
+  // #hot-swap-actor
+  static class HotSwapActor extends AbstractActor {
     private AbstractActor.Receive angry;
     private AbstractActor.Receive happy;
 
     public HotSwapActor() {
       angry =
-        receiveBuilder()
-          .matchEquals("foo", s -> {
-            getSender().tell("I am already angry?", getSelf());
-          })
-          .matchEquals("bar", s -> {
-            getContext().become(happy);
-          })
-          .build();
+          receiveBuilder()
+              .matchEquals(
+                  "foo",
+                  s -> {
+                    getSender().tell("I am already angry?", getSelf());
+                  })
+              .matchEquals(
+                  "bar",
+                  s -> {
+                    getContext().become(happy);
+                  })
+              .build();
 
-      happy = receiveBuilder()
-        .matchEquals("bar", s -> {
-          getSender().tell("I am already happy :-)", getSelf());
-        })
-        .matchEquals("foo", s -> {
-          getContext().become(angry);
-        })
-        .build();
+      happy =
+          receiveBuilder()
+              .matchEquals(
+                  "bar",
+                  s -> {
+                    getSender().tell("I am already happy :-)", getSelf());
+                  })
+              .matchEquals(
+                  "foo",
+                  s -> {
+                    getContext().become(angry);
+                  })
+              .build();
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("foo", s ->
-          getContext().become(angry)
-        )
-        .matchEquals("bar", s ->
-          getContext().become(happy)
-        )
-        .build();
+          .matchEquals("foo", s -> getContext().become(angry))
+          .matchEquals("bar", s -> getContext().become(happy))
+          .build();
     }
   }
-  //#hot-swap-actor
+  // #hot-swap-actor
 
   @Test
   public void using_hot_swap() {
@@ -632,37 +650,47 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
-
-  static
-  //#stash
-  public class ActorWithProtocol extends AbstractActorWithStash {
+  public
+  // #stash
+  static class ActorWithProtocol extends AbstractActorWithStash {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("open", s -> {
-          getContext().become(receiveBuilder()
-            .matchEquals("write", ws -> { /* do writing */ })
-            .matchEquals("close", cs -> {
-              unstashAll();
-              getContext().unbecome();
-            })
-            .matchAny(msg -> stash())
-            .build(), false);
-        })
-        .matchAny(msg -> stash())
-        .build();
+          .matchEquals(
+              "open",
+              s -> {
+                getContext()
+                    .become(
+                        receiveBuilder()
+                            .matchEquals(
+                                "write",
+                                ws -> {
+                                  /* do writing */
+                                })
+                            .matchEquals(
+                                "close",
+                                cs -> {
+                                  unstashAll();
+                                  getContext().unbecome();
+                                })
+                            .matchAny(msg -> stash())
+                            .build(),
+                        false);
+              })
+          .matchAny(msg -> stash())
+          .build();
     }
   }
-  //#stash
+  // #stash
 
   @Test
   public void using_Stash() {
     final ActorRef actor = system.actorOf(Props.create(ActorWithProtocol.class), "stash");
   }
 
-  static
-  //#watch
-  public class WatchActor extends AbstractActor {
+  public
+  // #watch
+  static class WatchActor extends AbstractActor {
     private final ActorRef child = getContext().actorOf(Props.empty(), "target");
     private ActorRef lastSender = system.deadLetters();
 
@@ -673,17 +701,22 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("kill", s -> {
-          getContext().stop(child);
-          lastSender = getSender();
-        })
-        .match(Terminated.class, t -> t.actor().equals(child), t -> {
-          lastSender.tell("finished", getSelf());
-        })
-        .build();
+          .matchEquals(
+              "kill",
+              s -> {
+                getContext().stop(child);
+                lastSender = getSender();
+              })
+          .match(
+              Terminated.class,
+              t -> t.actor().equals(child),
+              t -> {
+                lastSender.tell("finished", getSelf());
+              })
+          .build();
     }
   }
-  //#watch
+  // #watch
 
   @Test
   public void using_watch() {
@@ -697,12 +730,12 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
-  static
-  //#identify
-  public class Follower extends AbstractActor {
+  public
+  // #identify
+  static class Follower extends AbstractActor {
     final Integer identifyId = 1;
 
-    public Follower(){
+    public Follower() {
       ActorSelection selection = getContext().actorSelection("/user/another");
       selection.tell(new Identify(identifyId), getSelf());
     }
@@ -710,26 +743,31 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(ActorIdentity.class, id -> id.getActorRef().isPresent(), id -> {
-          ActorRef ref = id.getActorRef().get();
-          getContext().watch(ref);
-          getContext().become(active(ref));
-        })
-        .match(ActorIdentity.class, id -> !id.getActorRef().isPresent(), id -> {
-          getContext().stop(getSelf());
-        })
-        .build();
+          .match(
+              ActorIdentity.class,
+              id -> id.getActorRef().isPresent(),
+              id -> {
+                ActorRef ref = id.getActorRef().get();
+                getContext().watch(ref);
+                getContext().become(active(ref));
+              })
+          .match(
+              ActorIdentity.class,
+              id -> !id.getActorRef().isPresent(),
+              id -> {
+                getContext().stop(getSelf());
+              })
+          .build();
     }
 
     final AbstractActor.Receive active(final ActorRef another) {
       return receiveBuilder()
-        .match(Terminated.class, t -> t.actor().equals(another), t ->
-          getContext().stop(getSelf())
-        )
-        .build();
+          .match(
+              Terminated.class, t -> t.actor().equals(another), t -> getContext().stop(getSelf()))
+          .build();
     }
   }
-  //#identify
+  // #identify
 
   @Test
   public void using_Identify() {
@@ -753,27 +791,27 @@ public class ActorDocTest extends AbstractJavaTest {
         ActorRef actorB = system.actorOf(TestActors.echoActorProps());
         ActorRef actorC = getRef();
 
-        //#ask-pipe
+        // #ask-pipe
         final Duration t = Duration.ofSeconds(5);
 
         // using 1000ms timeout
         CompletableFuture<Object> future1 =
-          ask(actorA, "request", Duration.ofMillis(1000)).toCompletableFuture();
+            ask(actorA, "request", Duration.ofMillis(1000)).toCompletableFuture();
 
         // using timeout from above
-        CompletableFuture<Object> future2 =
-          ask(actorB, "another request", t).toCompletableFuture();
+        CompletableFuture<Object> future2 = ask(actorB, "another request", t).toCompletableFuture();
 
         CompletableFuture<Result> transformed =
-          CompletableFuture.allOf(future1, future2)
-          .thenApply(v -> {
-            String x = (String) future1.join();
-            String s = (String) future2.join();
-            return new Result(x, s);
-          });
+            CompletableFuture.allOf(future1, future2)
+                .thenApply(
+                    v -> {
+                      String x = (String) future1.join();
+                      String s = (String) future2.join();
+                      return new Result(x, s);
+                    });
 
         pipe(transformed, system.dispatcher()).to(actorC);
-        //#ask-pipe
+        // #ask-pipe
 
         expectMsgEquals(new Result("request", "another request"));
       }
@@ -786,12 +824,12 @@ public class ActorDocTest extends AbstractJavaTest {
       {
         ActorRef victim = system.actorOf(TestActors.echoActorProps());
         watch(victim);
-        //#kill
+        // #kill
         victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
 
         // expecting the actor to indeed terminate:
         expectTerminated(Duration.ofSeconds(3), victim);
-        //#kill
+        // #kill
       }
     };
   }
@@ -802,9 +840,9 @@ public class ActorDocTest extends AbstractJavaTest {
       {
         ActorRef victim = system.actorOf(TestActors.echoActorProps());
         watch(victim);
-        //#poison-pill
+        // #poison-pill
         victim.tell(akka.actor.PoisonPill.getInstance(), ActorRef.noSender());
-        //#poison-pill
+        // #poison-pill
         expectTerminated(Duration.ofSeconds(3), victim);
       }
     };
@@ -813,28 +851,28 @@ public class ActorDocTest extends AbstractJavaTest {
   @Test
   public void coordinatedShutdown() {
     final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
-    //#coordinated-shutdown-addTask
-    CoordinatedShutdown.get(system).addTask(
-      CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskName",
-      () -> {
-        return akka.pattern.Patterns.ask(someActor, "stop", Duration.ofSeconds(5))
-          .thenApply(reply -> Done.getInstance());
-    });
-    //#coordinated-shutdown-addTask
+    // #coordinated-shutdown-addTask
+    CoordinatedShutdown.get(system)
+        .addTask(
+            CoordinatedShutdown.PhaseBeforeServiceUnbind(),
+            "someTaskName",
+            () -> {
+              return akka.pattern.Patterns.ask(someActor, "stop", Duration.ofSeconds(5))
+                  .thenApply(reply -> Done.getInstance());
+            });
+    // #coordinated-shutdown-addTask
 
-    //#coordinated-shutdown-jvm-hook
-    CoordinatedShutdown.get(system).addJvmShutdownHook(() ->
-      System.out.println("custom JVM shutdown hook...")
-    );
-    //#coordinated-shutdown-jvm-hook
+    // #coordinated-shutdown-jvm-hook
+    CoordinatedShutdown.get(system)
+        .addJvmShutdownHook(() -> System.out.println("custom JVM shutdown hook..."));
+    // #coordinated-shutdown-jvm-hook
 
     // don't run this
     if (false) {
-      //#coordinated-shutdown-run
-      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll(
-          CoordinatedShutdown.unknownReason());
-      //#coordinated-shutdown-run
+      // #coordinated-shutdown-run
+      CompletionStage<Done> done =
+          CoordinatedShutdown.get(system).runAll(CoordinatedShutdown.unknownReason());
+      // #coordinated-shutdown-run
     }
   }
-
 }
