@@ -21,7 +21,7 @@ public class TestProbeTest extends JUnitSuite {
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
-  public void testReceiveOne() {
+  public void testReceiveMessage() {
     TestProbe<EventT> probe = TestProbe.create(testKit.system());
 
     List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(10));
@@ -29,14 +29,14 @@ public class TestProbeTest extends JUnitSuite {
     eventsT.forEach(
         e -> {
           probe.getRef().tell(e);
-          assertEquals(probe.receiveOne(), e);
+          assertEquals(probe.receiveMessage(), e);
         });
 
     probe.expectNoMessage();
   }
 
   @Test
-  public void testReceiveOneMaxDuration() {
+  public void testReceiveMessageMaxDuration() {
     TestProbe<EventT> probe = TestProbe.create(testKit.system());
 
     List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(2));
@@ -44,16 +44,16 @@ public class TestProbeTest extends JUnitSuite {
     eventsT.forEach(
         e -> {
           probe.getRef().tell(e);
-          assertEquals(probe.receiveOne(Duration.ofMillis(100)), e);
+          assertEquals(probe.receiveMessage(Duration.ofMillis(100)), e);
         });
 
     probe.expectNoMessage();
   }
 
   @Test(expected = AssertionError.class)
-  public void testReceiveOneFailOnTimeout() {
+  public void testReceiveMessageFailOnTimeout() {
     TestProbe<EventT> probe = TestProbe.create(testKit.system());
-    probe.receiveOne(Duration.ofMillis(100));
+    probe.receiveMessage(Duration.ofMillis(100));
   }
 
   @Test

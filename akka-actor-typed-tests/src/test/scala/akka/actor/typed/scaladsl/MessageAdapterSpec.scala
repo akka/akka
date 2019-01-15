@@ -71,12 +71,12 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val response1 = probe.expectMessageType[AnotherPong]
+      val response1 = probe.receiveMessage()
       response1.selfName should ===("snitch")
       response1.threadName should startWith("MessageAdapterSpec-snitch-dispatcher")
 
       // and from the spawnMessageAdapter
-      val response2 = probe.expectMessageType[AnotherPong]
+      val response2 = probe.receiveMessage()
       response2.selfName should ===("snitch")
       response2.threadName should startWith("MessageAdapterSpec-snitch-dispatcher")
     }

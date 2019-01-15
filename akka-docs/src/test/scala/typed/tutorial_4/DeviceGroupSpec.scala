@@ -21,12 +21,12 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val groupActor = spawn(DeviceGroup("group"))
 
       groupActor ! RequestTrackDevice("group", "device1", probe.ref)
-      val registered1 = probe.expectMessageType[DeviceRegistered]
+      val registered1 = probe.receiveMessage()
       val deviceActor1 = registered1.device
 
       // another deviceId
       groupActor ! RequestTrackDevice("group", "device2", probe.ref)
-      val registered2 = probe.expectMessageType[DeviceRegistered]
+      val registered2 = probe.receiveMessage()
       val deviceActor2 = registered2.device
       deviceActor1 should !==(deviceActor2)
 
@@ -53,11 +53,11 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val groupActor = spawn(DeviceGroup("group"))
 
       groupActor ! RequestTrackDevice("group", "device1", probe.ref)
-      val registered1 = probe.expectMessageType[DeviceRegistered]
+      val registered1 = probe.receiveMessage()
 
       // registering same again should be idempotent
       groupActor ! RequestTrackDevice("group", "device1", probe.ref)
-      val registered2 = probe.expectMessageType[DeviceRegistered]
+      val registered2 = probe.receiveMessage()
 
       registered1.device should ===(registered2.device)
     }
@@ -69,10 +69,10 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val groupActor = spawn(DeviceGroup("group"))
 
       groupActor ! RequestTrackDevice("group", "device1", registeredProbe.ref)
-      registeredProbe.expectMessageType[DeviceRegistered]
+      registeredProbe.receiveMessage()
 
       groupActor ! RequestTrackDevice("group", "device2", registeredProbe.ref)
-      registeredProbe.expectMessageType[DeviceRegistered]
+      registeredProbe.receiveMessage()
 
       val deviceListProbe = createTestProbe[ReplyDeviceList]()
       groupActor ! RequestDeviceList(requestId = 0, groupId = "group", deviceListProbe.ref)
@@ -84,11 +84,11 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val groupActor = spawn(DeviceGroup("group"))
 
       groupActor ! RequestTrackDevice("group", "device1", registeredProbe.ref)
-      val registered1 = registeredProbe.expectMessageType[DeviceRegistered]
+      val registered1 = registeredProbe.receiveMessage()
       val toShutDown = registered1.device
 
       groupActor ! RequestTrackDevice("group", "device2", registeredProbe.ref)
-      registeredProbe.expectMessageType[DeviceRegistered]
+      registeredProbe.receiveMessage()
 
       val deviceListProbe = createTestProbe[ReplyDeviceList]()
       groupActor ! RequestDeviceList(requestId = 0, groupId = "group", deviceListProbe.ref)

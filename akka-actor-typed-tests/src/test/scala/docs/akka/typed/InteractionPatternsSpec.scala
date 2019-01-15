@@ -74,7 +74,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       otherActor ! Request("give me cookies", context.self)
       // #request-response-send
 
-      probe.expectMessageType[Response]
+      probe.receiveMessage()
     }
 
     "contain a sample for adapted response" in {

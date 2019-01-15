@@ -133,7 +133,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
     val untypedRegion = UntypedClusterSharding(system.toUntyped)
     regionStateProbe.awaitAssert {
       untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toUntyped)
-      regionStateProbe.expectMessageType[CurrentShardRegionState].shards.foreach { shardState ⇒
+      regionStateProbe.receiveMessage().shards.foreach { shardState ⇒
         shardState.entityIds should not contain entityId
       }
     }

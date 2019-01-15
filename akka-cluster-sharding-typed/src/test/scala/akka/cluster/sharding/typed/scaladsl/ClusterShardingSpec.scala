@@ -323,10 +323,10 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val p = TestProbe[String]()
 
       charlieRef ! WhoAreYou(p.ref)
-      p.expectMessageType[String] should startWith("I'm charlie")
+      p.receiveMessage() should startWith("I'm charlie")
 
       charlieRef tell WhoAreYou(p.ref)
-      p.expectMessageType[String] should startWith("I'm charlie")
+      p.receiveMessage() should startWith("I'm charlie")
 
       charlieRef ! StopPlz()
     }
@@ -366,7 +366,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
           }
         })
 
-      p.expectMessageType[TheReply].s should startWith("I'm alice")
+      p.receiveMessage().s should startWith("I'm alice")
 
       aliceRef ! StopPlz()
     }
@@ -426,7 +426,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       (1 to numberOfEntities).foreach { n ⇒
         shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(probe1.ref))
       }
-      val replies1 = probe1.receiveN(numberOfEntities, 10.seconds)
+      val replies1 = probe1.receiveMessages(numberOfEntities, 10.seconds)
 
       Cluster(system2).manager ! Leave(Cluster(system2).selfMember.address)
 
@@ -439,7 +439,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       (1 to numberOfEntities).foreach { n ⇒
         shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(probe2.ref))
       }
-      val replies2 = probe2.receiveN(numberOfEntities, 10.seconds)
+      val replies2 = probe2.receiveMessages(numberOfEntities, 10.seconds)
       replies2 should !==(replies1) // different addresses
     }
   }

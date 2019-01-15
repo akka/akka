@@ -66,7 +66,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val pong = probe.expectMessageType[Pong]
+      val pong = probe.receiveMessage()
 
       pong.selfName should ===("snitch1")
       pong.threadName should startWith("ActorContextAskSpec-snitch-dispatcher")

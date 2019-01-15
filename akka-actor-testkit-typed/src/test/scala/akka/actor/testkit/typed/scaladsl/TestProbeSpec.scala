@@ -123,25 +123,25 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
-    "allow receiving N messages" in {
+    "allow receiving several messages" in {
       val probe = TestProbe[String]()
 
       probe.ref ! "one"
       probe.ref ! "two"
       probe.ref ! "three"
 
-      val result = probe.receiveN(3)
+      val result = probe.receiveMessages(3)
 
       result should ===(List("one", "two", "three"))
     }
 
-    "time out when not receiving N messages" in {
+    "time out when not receiving several messages" in {
       val probe = TestProbe[String]()
 
       probe.ref ! "one"
 
       intercept[AssertionError] {
-        probe.receiveN(3, 50.millis)
+        probe.receiveMessages(3, 50.millis)
       }
     }
 
@@ -149,14 +149,14 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = createTestProbe[EventT]()
       eventsT(10).forall { e ⇒
         probe.ref ! e
-        probe.receiveOne == e
+        probe.receiveMessage == e
       } should ===(true)
 
       probe.expectNoMessage()
     }
 
     "timeout if expected single message is not received by a provided timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne(100.millis))
+      intercept[AssertionError](createTestProbe[EventT]().receiveMessage(100.millis))
     }
 
     "support watch and stop of probe" in {
@@ -189,7 +189,7 @@ class TestProbeTimeoutSpec extends ScalaTestWithActorTestKit(TestProbeSpec.timeo
   "The test probe" must {
 
     "timeout if expected single message is not received by the default timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne())
+      intercept[AssertionError](createTestProbe[EventT]().receiveMessage())
     }
   }
 }
