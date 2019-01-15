@@ -23,7 +23,16 @@ object Compression {
    * @param maxBytesPerChunk Maximum length of the output [[ByteString]] chunk.
    */
   def inflate(maxBytesPerChunk: Int): Flow[ByteString, ByteString, NotUsed] =
-    scaladsl.Compression.inflate(maxBytesPerChunk).asJava
+    inflate(maxBytesPerChunk, false)
+
+  /**
+   * Same as [[inflate]] with configurable maximum output length and nowrap
+   *
+   * @param maxBytesPerChunk Maximum length of the output [[ByteString]] chunk.
+   * @param nowrap if true then use GZIP compatible decompression
+   */
+  def inflate(maxBytesPerChunk: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
+    scaladsl.Compression.inflate(maxBytesPerChunk, nowrap).asJava
 
   /**
    * Creates a flow that gzip-compresses a stream of ByteStrings. Note that the compressor
