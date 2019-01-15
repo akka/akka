@@ -172,25 +172,25 @@ abstract class TestProbe[M] {
   /**
    * Receive one message of type `M` within the default timeout as deadline.
    */
-  def receiveOne(): M
+  def receiveMessage(): M
 
   /**
    * Receive one message of type `M`. Wait time is bounded by the `max` duration,
    * with an [[AssertionError]] raised in case of timeout.
    */
-  def receiveOne(max: Duration): M
+  def receiveMessage(max: Duration): M
 
   /**
-   * Same as `receiveMessages(n, remaining)` but using the default timeout as deadline.
+   * Same as `receiveSeveralMessages(n, remaining)` but using the default timeout as deadline.
    */
-  def receiveMessages(n: Int): JList[M]
+  def receiveSeveralMessages(n: Int): JList[M]
 
   /**
    * Receive `n` messages in a row before the given deadline.
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def receiveMessages(n: Int, max: Duration): JList[M]
+  def receiveSeveralMessages(n: Int, max: Duration): JList[M]
 
   /**
    * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming

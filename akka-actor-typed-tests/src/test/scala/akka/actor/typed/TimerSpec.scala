@@ -307,7 +307,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
 
       val probe = TestProbe[Array[StackTraceElement]]()
       spawn(next(0, probe.ref))
-      val elements = probe.expectMessageType[Array[StackTraceElement]]
+      val elements = probe.receiveMessage()
       if (elements.count(_.getClassName == "TimerInterceptor") > 1)
         fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
     }

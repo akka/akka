@@ -50,8 +50,8 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
       try {
         val clusterNode2 = Cluster(adaptedSystem2)
 
-        val node1Probe = TestProbe[AnyRef]()(system)
-        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2)
+        val node1Probe = TestProbe[ClusterDomainEvent]()(system)
+        val node2Probe = TestProbe[ClusterDomainEvent]()(adaptedSystem2)
 
         // initial cached selfMember
         clusterNode1.selfMember.status should ===(MemberStatus.Removed)

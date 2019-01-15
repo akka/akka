@@ -24,11 +24,11 @@ public class DeviceManagerTest extends JUnitSuite {
     ActorRef<DeviceManagerMessage> managerActor = testKit.spawn(DeviceManager.createBehavior());
 
     managerActor.tell(new RequestTrackDevice("group1", "device", probe.getRef()));
-    DeviceRegistered registered1 = probe.expectMessageClass(DeviceRegistered.class);
+    DeviceRegistered registered1 = probe.receiveMessage();
 
     // another group
     managerActor.tell(new RequestTrackDevice("group2", "device", probe.getRef()));
-    DeviceRegistered registered2 = probe.expectMessageClass(DeviceRegistered.class);
+    DeviceRegistered registered2 = probe.receiveMessage();
     assertNotEquals(registered1.device, registered2.device);
   }
 }

@@ -34,7 +34,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val parentReply = TestProbe[ActorRef[Message]]()
       val parent = spawn(SpawnProtocol.behavior, "parent")
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
-      val child = parentReply.expectMessageType[ActorRef[Message]]
+      val child = parentReply.receiveMessage()
       child.path.name should ===("child")
       child.path.parent.name should ===("parent")
 
@@ -57,11 +57,11 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       try {
         val guardianReply = TestProbe[ActorRef[Message]]()(sys)
         sys ! SpawnProtocol.Spawn(target, "child1", Props.empty, guardianReply.ref)
-        val child1 = guardianReply.expectMessageType[ActorRef[Message]]
+        val child1 = guardianReply.receiveMessage()
         child1.path.elements.mkString("/", "/", "") should ===("/user/child1")
 
         sys ! SpawnProtocol.Spawn(target, "child2", Props.empty, guardianReply.ref)
-        val child2 = guardianReply.expectMessageType[ActorRef[Message]]
+        val child2 = guardianReply.receiveMessage()
         child2.path.elements.mkString("/", "/", "") should ===("/user/child2")
       } finally {
         ActorTestKit.shutdown(sys)
@@ -73,21 +73,21 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val parent = spawn(SpawnProtocol.behavior, "parent3")
 
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
-      val child0 = parentReply.expectMessageType[ActorRef[Message]]
+      val child0 = parentReply.receiveMessage()
       child0.path.name should ===("child")
 
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
-      val child1 = parentReply.expectMessageType[ActorRef[Message]]
+      val child1 = parentReply.receiveMessage()
       child1.path.name should ===("child-1")
 
       // take the generated name
       parent ! SpawnProtocol.Spawn(target, "child-2", Props.empty, parentReply.ref)
-      val child2 = parentReply.expectMessageType[ActorRef[Message]]
+      val child2 = parentReply.receiveMessage()
       child2.path.name should ===("child-2")
 
       // "child" is taken, and also "child-1" and "child-2"
       parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
-      val child3 = parentReply.expectMessageType[ActorRef[Message]]
+      val child3 = parentReply.receiveMessage()
       child3.path.name should ===("child-3")
     }
   }

@@ -500,7 +500,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
           Behaviors.same
       }.decorate)
       actor ! "create"
-      val children = probe.expectMessageType[Children]
+      val children = probe.receiveMessage()
       actor ! "A"
       probe.expectMessage(Seq.empty)
       actor ! "all"
@@ -575,7 +575,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       }.decorate)
       val adapterName = "hello"
       actor ! adapterName
-      val adapter = probe.expectMessageType[ActorRef[String]]
+      val adapter = probe.receiveMessage()
       adapter.path.name should include(adapterName)
       adapter ! "message"
       messages.expectMessage(actor → "received message")

@@ -55,12 +55,12 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
     EntityRef<HelloWorld.Command> world = sharding().entityRefFor(HelloWorld.ENTITY_TYPE_KEY, "1");
     TestProbe<HelloWorld.Greeting> probe = testKit.createTestProbe(HelloWorld.Greeting.class);
     world.tell(new HelloWorld.Greet("Alice", probe.getRef()));
-    HelloWorld.Greeting greeting1 = probe.expectMessageClass(HelloWorld.Greeting.class);
+    HelloWorld.Greeting greeting1 = probe.receiveMessage();
     assertEquals("Alice", greeting1.whom);
     assertEquals(1, greeting1.numberOfPeople);
 
     world.tell(new HelloWorld.Greet("Bob", probe.getRef()));
-    HelloWorld.Greeting greeting2 = probe.expectMessageClass(HelloWorld.Greeting.class);
+    HelloWorld.Greeting greeting2 = probe.receiveMessage();
     assertEquals("Bob", greeting2.whom);
     assertEquals(2, greeting2.numberOfPeople);
   }
