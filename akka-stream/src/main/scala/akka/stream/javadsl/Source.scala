@@ -3473,5 +3473,5 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @ApiMayChange
   def startContextPropagation[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Ctx, Out, Mat] =
-    new javadsl.SourceWithContext(scaladsl.SourceWithContext(this.asScala).mapContext(extractContext.apply))
+    new scaladsl.SourceWithContext(this.asScala.map(x ⇒ (x, extractContext.apply(x)))).asJava
 }
