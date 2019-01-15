@@ -215,11 +215,12 @@ final class Source[+Out, +Mat](
 
       combineRest(2, rest.iterator)
     })
+
   /**
    * API MAY CHANGE
    */
   @ApiMayChange
-  def startContextPropagation[Ctx](f: Out ⇒ Ctx): SourceWithContext[Ctx, Out, Mat] = SourceWithContext(this).mapContext(f)
+  def startContextPropagation[Ctx](f: Out ⇒ Ctx): SourceWithContext[Ctx, Out, Mat] = new SourceWithContext(this.map(e ⇒ (e, f(e))))
 }
 
 object Source {
