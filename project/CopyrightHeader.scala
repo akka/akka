@@ -15,7 +15,7 @@ trait CopyrightHeader extends AutoPlugin {
 
   override def requires:Plugins = HeaderPlugin
 
-  override def trigger = allRequirements
+  override def trigger: PluginTrigger = allRequirements
 
   protected def headerMappingSettings: Seq[Def.Setting[_]] =
     Seq(Compile, Test, MultiJvm).flatMap { config =>
