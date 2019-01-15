@@ -5,11 +5,14 @@
 package akka.pattern
 
 import akka.actor.{ Actor, ActorRef, Props }
+import akka.annotation.InternalApi
 
 /**
+ * INTERNAL API
+ *
  * Implements basic backoff handling for [[BackoffOnRestartSupervisor]] and [[BackoffOnStopSupervisor]].
  */
-private[akka] trait HandleBackoff {
+@InternalApi private[akka] trait HandleBackoff {
   this: Actor ⇒
   def childProps: Props
   def childName: String

@@ -6,15 +6,18 @@ package akka.pattern
 
 import akka.actor.SupervisorStrategy._
 import akka.actor.{ OneForOneStrategy, _ }
+import akka.annotation.InternalApi
 
 import scala.concurrent.duration._
 
 /**
+ * INTERNAL API
+ *
  * Back-off supervisor that stops and starts a child actor when the child actor restarts.
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
  * with ``akka.pattern.Backoff.onFailure``.
  */
-private class BackoffOnRestartSupervisor(
+@InternalApi private class BackoffOnRestartSupervisor(
   val childProps:    Props,
   val childName:     String,
   minBackoff:        FiniteDuration,
