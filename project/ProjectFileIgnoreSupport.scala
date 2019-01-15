@@ -20,7 +20,7 @@ trait ProjectFileIgnoreSupport {
   lazy val ignoredFiles: Set[String] = {
     import scala.collection.JavaConverters._
     val config = ConfigFactory.parseFile(file(ignoreConfigFileName))
-    stdoutLogger.info(s"Loading ignored-files from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
+    stdoutLogger.debug(s"Loading ignored-files from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
     config
       .getStringList("ignored-files")
       .asScala
@@ -30,7 +30,7 @@ trait ProjectFileIgnoreSupport {
   lazy val ignoredPackages: Set[String] = {
     import scala.collection.JavaConverters._
     val config = ConfigFactory.parseFile(file(ignoreConfigFileName))
-    stdoutLogger.info(s"Loading ignored-packages from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
+    stdoutLogger.debug(s"Loading ignored-packages from $ignoreConfigFileName:[${config.origin().url().toURI.getPath}]")
     config
       .getStringList("ignored-packages")
       .asScala
@@ -40,7 +40,7 @@ trait ProjectFileIgnoreSupport {
   protected def isIgnoredByFile(file: File): Boolean = {
     val ignoredByFile = ignoredFiles(file.getName)
     if (ignoredByFile) {
-      stdoutLogger.info(s"$descriptor ignored file with file name:${file.getName} file:[${file.toPath}]")
+      stdoutLogger.debug(s"$descriptor ignored file with file name:${file.getName} file:[${file.toPath}]")
     }
     ignoredByFile
   }
@@ -51,7 +51,7 @@ trait ProjectFileIgnoreSupport {
         case Some(packageName) =>
           val ignored = packageName.startsWith(pkg)
           if (ignored) {
-            stdoutLogger.info(s"$descriptor ignored file with pkg:$pkg file:[${file.toPath}] ")
+            stdoutLogger.debug(s"$descriptor ignored file with pkg:$pkg file:[${file.toPath}] ")
           }
           ignored
         case None => false
