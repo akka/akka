@@ -613,6 +613,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
    */
   override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[RunnableGraph[Mat]]
+
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  def asJava[JMat >: Mat]: javadsl.RunnableGraph[JMat] = javadsl.RunnableGraph.fromGraph(this)
 }
 
 /**
