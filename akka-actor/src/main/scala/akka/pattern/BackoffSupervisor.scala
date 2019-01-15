@@ -16,7 +16,7 @@ import scala.util.Try
 object BackoffSupervisor {
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor.
+   * Props for creating a `BackoffSupervisor` actor.
    *
    * Exceptions in the child are handled with the default supervision strategy, i.e.
    * most exceptions will immediately restart the child. You can define another
@@ -42,7 +42,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor.
+   * Props for creating a `BackoffSupervisor` actor.
    *
    * Exceptions in the child are handled with the default supervision strategy, i.e.
    * most exceptions will immediately restart the child. You can define another
@@ -76,7 +76,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor.
+   * Props for creating a `BackoffSupervisor` actor.
    *
    * Exceptions in the child are handled with the default supervision strategy, i.e.
    * most exceptions will immediately restart the child. You can define another
@@ -102,7 +102,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor.
+   * Props for creating a `BackoffSupervisor` actor.
    *
    * Exceptions in the child are handled with the default supervision strategy, i.e.
    * most exceptions will immediately restart the child. You can define another
@@ -132,7 +132,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor with a custom
+   * Props for creating a `BackoffSupervisor` actor with a custom
    * supervision strategy.
    *
    * Exceptions in the child are handled with the given `supervisionStrategy`. A
@@ -166,7 +166,7 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor with a custom
+   * Props for creating a `BackoffSupervisor` actor with a custom
    * supervision strategy.
    *
    * Exceptions in the child are handled with the given `supervisionStrategy`. A
@@ -197,26 +197,26 @@ object BackoffSupervisor {
   }
 
   /**
-   * Props for creating a [[BackoffSupervisor]] actor from [[BackoffOptions]].
+   * Props for creating a `BackoffSupervisor` actor from [[BackoffOptions]].
    *
    * @param options the [[BackoffOptions]] that specify how to construct a backoff-supervisor.
    */
   def props(options: BackoffOptions): Props = options.props
 
   /**
-   * Send this message to the [[BackoffSupervisor]] and it will reply with
+   * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
   final case object GetCurrentChild
 
   /**
-   * Java API: Send this message to the [[BackoffSupervisor]] and it will reply with
+   * Java API: Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
   def getCurrentChild = GetCurrentChild
 
   /**
-   * Send this message to the [[BackoffSupervisor]] and it will reply with
+   * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
   final case class CurrentChild(ref: Option[ActorRef]) {
@@ -227,25 +227,25 @@ object BackoffSupervisor {
   }
 
   /**
-   * Send this message to the [[BackoffSupervisor]] and it will reset the back-off.
+   * Send this message to the `BackoffSupervisor` and it will reset the back-off.
    * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
    */
   final case object Reset
 
   /**
-   * Java API: Send this message to the [[BackoffSupervisor]] and it will reset the back-off.
+   * Java API: Send this message to the `BackoffSupervisor` and it will reset the back-off.
    * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
    */
   def reset = Reset
 
   /**
-   * Send this message to the [[BackoffSupervisor]] and it will reply with
+   * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.RestartCount]] containing the current restart count.
    */
   final case object GetRestartCount
 
   /**
-   * Java API: Send this message to the [[BackoffSupervisor]] and it will reply with
+   * Java API: Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.RestartCount]] containing the current restart count.
    */
   def getRestartCount = GetRestartCount

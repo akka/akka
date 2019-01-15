@@ -6,15 +6,18 @@ package akka.pattern
 
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.annotation.InternalApi
 
 import scala.concurrent.duration.FiniteDuration
 
 /**
+ * INTERNAL API
+ *
  * Back-off supervisor that stops and starts a child actor using a back-off algorithm when the child actor stops.
  * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
  * with `Backoff.onStop`.
  */
-private[akka] class BackoffOnStopSupervisor(
+@InternalApi private[akka] class BackoffOnStopSupervisor(
   val childProps:    Props,
   val childName:     String,
   minBackoff:        FiniteDuration,
@@ -30,7 +33,6 @@ private[akka] class BackoffOnStopSupervisor(
   import BackoffSupervisor._
   import context.dispatcher
 
-  // to keep binary compatibility with 2.4.1
   override val supervisorStrategy = strategy match {
     case oneForOne: OneForOneStrategy ⇒
       OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
@@ -73,8 +75,9 @@ private[akka] class BackoffOnStopSupervisor(
   protected def handleMessageToChild(msg: Any): Unit = child match {
     case Some(c) ⇒
       c.forward(msg)
-      if (!finalStopMessageReceived && finalStopMessage.isDefined) {
-        finalStopMessageReceived = finalStopMessage.get.apply(msg)
+      if (!finalStopMessageReceived) finalStopMessage match {
+        case Some(fsm) ⇒ finalStopMessageReceived = fsm(msg)
+        case None      ⇒
       }
     case None ⇒
       replyWhileStopped match {
