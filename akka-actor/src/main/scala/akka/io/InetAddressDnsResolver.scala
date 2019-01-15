@@ -15,7 +15,7 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 /** Respects the settings that can be set on the Java runtime via parameters. */
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
@@ -33,21 +33,25 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   private final val DefaultPositive = Ttl.fromPositive(30.seconds)
 
   private lazy val defaultCachePolicy: CachePolicy =
-    Try(Security.getProperty(CachePolicyProp).toInt)
-      .orElse(Try(System.getProperty(CachePolicyPropFallback).toInt))
-      .map(parsePolicy)
-      .getOrElse {
-        log.warning("No caching TTL defined. Using default value {}.", DefaultPositive)
-        DefaultPositive
+    Option(Security.getProperty(CachePolicyProp)).filter(_ != "")
+      .orElse(Option(System.getProperty(CachePolicyPropFallback))).filter(_ != "")
+      .map(x ⇒ Try(x.toInt)) match {
+        case None             ⇒ DefaultPositive
+        case Some(Success(n)) ⇒ parsePolicy(n)
+        case Some(Failure(_)) ⇒
+          log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
+          DefaultPositive
       }
 
   private lazy val defaultNegativeCachePolicy: CachePolicy =
-    Try(Security.getProperty(NegativeCachePolicyProp).toInt)
-      .orElse(Try(System.getProperty(NegativeCachePolicyPropFallback).toInt))
-      .map(parsePolicy)
-      .getOrElse {
-        log.warning("No negative caching TTL defined. Using default value {}.", Never)
-        Never
+    Option(Security.getProperty(NegativeCachePolicyProp)).filter(_ != "")
+      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback))).filter(_ != "")
+      .map(x ⇒ Try(x.toInt)) match {
+        case None             ⇒ Never
+        case Some(Success(n)) ⇒ parsePolicy(n)
+        case Some(Failure(_)) ⇒
+          log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
+          Never
       }
 
   private def parsePolicy(n: Int): CachePolicy = {
