@@ -34,7 +34,7 @@ public class SinkTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("SinkTest", AkkaSpec.testConf());
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
