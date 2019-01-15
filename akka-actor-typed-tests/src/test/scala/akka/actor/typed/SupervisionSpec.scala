@@ -922,15 +922,17 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     }
 
     "fail after more than limit in restart.withLimit when deferred factory throws" in new FailingDeferredTestSetup(
-      failCount = 3,
+      failCount = 20,
       strategy = SupervisorStrategy.restart.withLimit(2, 1.second)
     ) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        EventFilter[TestException](occurrences = 1).intercept {
+        EventFilter[TestException](occurrences = 2).intercept {
           spawn(behv)
 
-          // restarted 2 times before it gave up
+          // first one from initial setup
+          probe.expectMessage(StartFailed)
+          // and then restarted 2 times before it gave up
           probe.expectMessage(StartFailed)
           probe.expectMessage(StartFailed)
           probe.expectNoMessage(100.millis)

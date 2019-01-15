@@ -239,7 +239,6 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
             // don't log here as it'll be logged as ActorInitializationException
             throw t
           } else {
-            increaseRestartCount()
             prepareRestart(ctx, t)
           }
         case _: Backoff ⇒
@@ -277,7 +276,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     log(ctx, reason)
 
     val currentRestartCount = restartCount
-    increaseRestartCount()
+    updateRestartCount()
 
     val childrenToStop = if (strategy.stopChildren) ctx.asScala.children.toSet else Set.empty[ActorRef[Nothing]]
     stopChildren(ctx, childrenToStop)
@@ -330,7 +329,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
   }
 
-  private def increaseRestartCount(): Unit = {
+  private def updateRestartCount(): Unit = {
     strategy match {
       case restart: Restart ⇒
         val timeLeft = deadlineHasTimeLeft

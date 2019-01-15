@@ -234,6 +234,7 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
 
   /**
    * Stop or keep child actors when the parent actor is restarted.
+   * By default child actors are stopped when parent is restarted.
    * @param enabled if `true` then child actors are stopped, otherwise they are kept
    */
   def withStopChildren(enabled: Boolean): RestartSupervisorStrategy
@@ -243,6 +244,8 @@ sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
    * stashed, and delivered later to the newly restarted behavior. This property defines
    * the capacity in number of messages of the stash buffer. If the capacity is exceed
    * then additional incoming messages are dropped.
+   *
+   * By default the capacity is defined by config property `akka.actor.typed.restart-stash-capacity`.
    */
   def withStashCapacity(capacity: Int): RestartSupervisorStrategy
 
@@ -277,6 +280,7 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
 
   /**
    * Stop or keep child actors when the parent actor is restarted.
+   * By default child actors are stopped when parent is restarted.
    * @param enabled if `true` then child actors are stopped, otherwise they are kept
    */
   def withStopChildren(enabled: Boolean): BackoffSupervisorStrategy
@@ -286,6 +290,8 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
    * messages and signals are stashed, and delivered later to the newly restarted
    * behavior. This property defines the capacity in number of messages of the stash
    * buffer. If the capacity is exceed then additional incoming messages are dropped.
+   *
+   * By default the capacity is defined by config property `akka.actor.typed.restart-stash-capacity`.
    */
   def withStashCapacity(capacity: Int): BackoffSupervisorStrategy
 
