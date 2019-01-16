@@ -103,14 +103,19 @@ import scala.util.Success
  */
 @InternalApi private[typed] object ActorContextAdapter {
 
+  // just to get access to the class context
+  private final class TrickySecurityManager extends SecurityManager {
+    def getClassStack: Array[Class[_]] = getClassContext
+  }
+
   private def getLoggerClass(system: ExtendedActorSystem): Class[_] = {
     // FIXME use stack walker API when we no longer need to support Java 8
-    val trace = Thread.currentThread().getStackTrace
+    val trace = new TrickySecurityManager().getClassStack
     var suitableClass: OptionVal[Class[_]] = OptionVal.None
     var idx = 2 // skip this method and ctx.log right away
     while (suitableClass.isEmpty && idx < trace.length) {
-      val entry = trace(idx)
-      val name = entry.getClassName
+      val clazz = trace(idx)
+      val name = clazz.getName
       if (!name.startsWith("scala.runtime") && !name.startsWith("akka.actor.typed.internal"))
         system.dynamicAccess.getClassFor[AnyRef](name) match {
           case Success(clazz) ⇒ suitableClass = OptionVal.Some(clazz)

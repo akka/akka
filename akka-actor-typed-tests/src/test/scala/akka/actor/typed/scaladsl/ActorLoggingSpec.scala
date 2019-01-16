@@ -17,6 +17,25 @@ import org.scalatest.WordSpecLike
 
 class SomeClass
 
+object WhereTheBehaviorIsDefined {
+
+  def behavior: Behavior[String] = Behaviors.setup { context ⇒
+    context.log.info("Starting up")
+    Behaviors.stopped
+  }
+
+}
+
+object BehaviorWhereTheLoggerIsUsed {
+  def behavior: Behavior[String] = Behaviors.setup(ctx ⇒ new BehaviorWhereTheLoggerIsUsed(ctx))
+}
+class BehaviorWhereTheLoggerIsUsed(context: ActorContext[String]) extends AbstractBehavior[String] {
+  context.log.info("Starting up")
+  override def onMessage(msg: String): Behavior[String] = {
+    Behaviors.same
+  }
+}
+
 class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -61,6 +80,28 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
           }
         }, "the-actor-with-class")
+      }
+    }
+
+    "contain the object class name where the first log was called" in {
+      val eventFilter = EventFilter.custom({
+        case l: LogEvent ⇒
+          l.logClass == WhereTheBehaviorIsDefined.getClass
+      }, occurrences = 1)
+
+      eventFilter.intercept {
+        spawn(WhereTheBehaviorIsDefined.behavior, "the-actor-with-object")
+      }
+    }
+
+    "contain the abstract behavior class name where the first log was called" in {
+      val eventFilter = EventFilter.custom({
+        case l: LogEvent ⇒
+          l.logClass == classOf[BehaviorWhereTheLoggerIsUsed]
+      }, occurrences = 1)
+
+      eventFilter.intercept {
+        spawn(BehaviorWhereTheLoggerIsUsed.behavior, "the-actor-with-behavior")
       }
     }
 
