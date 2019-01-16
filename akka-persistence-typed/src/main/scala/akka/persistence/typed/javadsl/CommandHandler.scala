@@ -254,11 +254,12 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   }
 
   /**
-   * Builds a Command Handler and resets this builder
+   * Builds and returns a handler from the appended states. The returned [[CommandHandler]] will throw a [[scala.MatchError]]
+   * if applied to a command that has no defined case.
    */
   def build(): CommandHandler[Command, Event, State] = {
     val builtCases = cases.reverse.toArray
-    cases = Nil
+
     new CommandHandler[Command, Event, State] {
       override def apply(state: State, command: Command): Effect[Event, State] = {
         var idx = 0

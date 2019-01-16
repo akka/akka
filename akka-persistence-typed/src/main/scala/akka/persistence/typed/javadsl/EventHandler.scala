@@ -245,8 +245,6 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
   /**
    * Builds and returns a handler from the appended states. The returned [[EventHandler]] will throw a [[scala.MatchError]]
    * if applied to an event that has no defined case.
-   *
-   * The builder is reset to empty after build has been called.
    */
   def build(): EventHandler[State, Event] = {
     val builtCases = cases.reverse.toArray
