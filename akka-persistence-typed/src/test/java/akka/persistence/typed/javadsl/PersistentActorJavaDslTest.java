@@ -23,6 +23,8 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.testkit.ErrorFilter;
+import akka.testkit.javadsl.EventFilter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
@@ -42,7 +44,9 @@ import static org.junit.Assert.assertEquals;
 
 public class PersistentActorJavaDslTest extends JUnitSuite {
 
-  public static final Config config = conf().withFallback(ConfigFactory.load());
+  public static final Config config =
+      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
+          .withFallback(conf().withFallback(ConfigFactory.load()));
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -559,4 +563,53 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
   // event-wrapper
 
+  static class IncorrectExpectedStateForThenRun
+      extends EventSourcedBehavior<String, String, Object> {
+
+    public IncorrectExpectedStateForThenRun(PersistenceId persistenceId) {
+      super(persistenceId);
+    }
+
+    @Override
+    public Object emptyState() {
+      return 1;
+    }
+
+    @Override
+    public CommandHandler<String, String, Object> commandHandler() {
+      return commandHandlerBuilder(Object.class)
+          .matchCommand(
+              msg -> msg.equals("expect wrong type"),
+              (context) ->
+                  Effect()
+                      .none()
+                      .thenRun(
+                          (String wrongType) -> {
+                            // wont happen
+                          }))
+          .build();
+    }
+
+    @Override
+    public EventHandler<Object, String> eventHandler() {
+      return eventHandlerBuilder().matchAny((event, state) -> state); // keep Integer state
+    }
+  }
+
+  @Test
+  public void failOnIncorrectExpectedStateForThenRun() {
+    ActorRef<String> c =
+        testKit.spawn(new IncorrectExpectedStateForThenRun(new PersistenceId("foiesftr")));
+    TestProbe<Done> probe = testKit.createTestProbe();
+
+    // FIXME this is a not a good Java API
+    new ErrorFilter(ClassCastException.class, null, null, false, false, 1)
+        .intercept(
+            () -> {
+              c.tell("expect wrong type");
+              return null;
+            },
+            Adapter.toUntyped(testKit.system()));
+    probe.expectTerminated(c);
+  }
 }
