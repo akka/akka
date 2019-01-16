@@ -159,7 +159,7 @@ object EventHandlerBuilderByState {
     handler:        BiFunction[State, Event, State])
 }
 
-final class EventHandlerBuilderByState[S <: State, State >: Null, Event](val stateClass: Class[S], val statePredicate: Predicate[S]) {
+final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private val stateClass: Class[S], private val statePredicate: Predicate[S]) {
 
   import EventHandlerBuilderByState.EventHandlerCase
 

@@ -160,7 +160,7 @@ object CommandHandlerBuilderByState {
 }
 
 final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @InternalApi private[persistence] (
-  val stateClass: Class[S], val statePredicate: Predicate[S]) {
+  private val stateClass: Class[S], private val statePredicate: Predicate[S]) {
 
   import CommandHandlerBuilderByState.CommandHandlerCase
 
