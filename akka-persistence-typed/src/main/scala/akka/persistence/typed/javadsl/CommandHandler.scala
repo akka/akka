@@ -233,12 +233,13 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this to declare a command handler that will match any command. This is particular useful when encoding
    * a finite state machine in which the final state is not supposed to handle any new command.
    *
+   * Builds and returns the handler since this will not let through any states to subsequent match statements
    */
-  def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandler[Command, Event, State] = {
     addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
       override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
     })
-    this
+    build()
   }
 
   /**

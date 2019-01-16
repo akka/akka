@@ -135,7 +135,7 @@ public class AccountExampleOneLinersWithNull
       closedHandler() {
     return newCommandHandlerBuilder()
         .forStateType(ClosedAccount.class)
-        .matchAny(() -> Effect().unhandled());
+        .matchCommand(AccountCommand.class, __ -> Effect().unhandled());
   }
 
   @Override
