@@ -251,6 +251,8 @@ private[akka] final class FunctionRef[-T](
 
   override def log: Logger = loggingAdapter
 
+  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we dont track logger class
+
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.

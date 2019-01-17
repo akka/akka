@@ -21,6 +21,11 @@ import akka.util.TypedMultiMap
 
 import scala.concurrent.duration._
 
+// just to provide a log class
+/** INTERNAL API */
+@InternalApi
+private[typed] final class ClusterReceptionist
+
 /** INTERNAL API */
 @InternalApi
 private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
@@ -68,6 +73,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   override def behavior: Behavior[Command] =
     Behaviors.setup { ctx ⇒
+      ctx.setLoggerClass(classOf[ClusterReceptionist])
       Behaviors.withTimers { timers ⇒
 
         val setup = new Setup(ctx)

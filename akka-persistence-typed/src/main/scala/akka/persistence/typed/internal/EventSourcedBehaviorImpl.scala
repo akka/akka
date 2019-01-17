@@ -62,6 +62,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   emptyState:          State,
   commandHandler:      EventSourcedBehavior.CommandHandler[Command, Event, State],
   eventHandler:        EventSourcedBehavior.EventHandler[State, Event],
+  loggerClass:         Class[_],
   journalPluginId:     Option[String]                                             = None,
   snapshotPluginId:    Option[String]                                             = None,
   recoveryCompleted:   State ⇒ Unit                                               = ConstantFun.scalaAnyToUnit,
@@ -78,6 +79,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
+    ctx.setLoggerClass(loggerClass)
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures

@@ -13,7 +13,6 @@ import akka.{ ConfigurationException, actor ⇒ untyped }
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
-import scala.util.Success
 
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
@@ -84,17 +83,25 @@ import scala.util.Success
     ActorRefAdapter[U](ref)
   }
 
+  private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
+    val logSource = self.path.toString
+    val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
+    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+    actorLogger = OptionVal.Some(logger)
+    logger
+  }
+
   override def log: Logger = {
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        val logSource = self.path.toString
-        val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-        val logClass = ActorContextAdapter.getLoggerClass(system)
-        val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
-        actorLogger = OptionVal.Some(logger)
-        logger
+        val logClass = LoggerClass.getLoggerClass(classOf[Behavior[_]])
+        initLoggerWithClass(logClass)
     }
+  }
+
+  override def setLoggerClass(clazz: Class[_]): Unit = {
+    initLoggerWithClass(clazz)
   }
 }
 
@@ -102,30 +109,6 @@ import scala.util.Success
  * INTERNAL API
  */
 @InternalApi private[typed] object ActorContextAdapter {
-
-  // just to get access to the class context
-  private final class TrickySecurityManager extends SecurityManager {
-    def getClassStack: Array[Class[_]] = getClassContext
-  }
-
-  private def getLoggerClass(system: ExtendedActorSystem): Class[_] = {
-    // FIXME use stack walker API when we no longer need to support Java 8
-    val trace = new TrickySecurityManager().getClassStack
-    var suitableClass: OptionVal[Class[_]] = OptionVal.None
-    var idx = 2 // skip this method and ctx.log right away
-    while (suitableClass.isEmpty && idx < trace.length) {
-      val clazz = trace(idx)
-      val name = clazz.getName
-      if (!name.startsWith("scala.runtime") && !name.startsWith("akka.actor.typed.internal"))
-        system.dynamicAccess.getClassFor[AnyRef](name) match {
-          case Success(clazz) ⇒ suitableClass = OptionVal.Some(clazz)
-          case _              ⇒ // just ignore, we'll hopefully find a class we can load further down
-        }
-      idx += 1
-    }
-
-    suitableClass.getOrElse(classOf[Behavior[_]])
-  }
 
   private def toUntypedImp[U](context: TypedActorContext[_]): untyped.ActorContext =
     context match {
