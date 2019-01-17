@@ -21,7 +21,7 @@ import akka.util.OptionVal
  * cluster events published on the event bus.
  */
 private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
 
   /**
    * Current state
