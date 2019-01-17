@@ -67,8 +67,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "contain the class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
+        case l: LogEvent if l.logClass == classOf[ActorLoggingSpec] ⇒ true
         case l: LogEvent ⇒
-          l.logClass == classOf[ActorLoggingSpec]
+          println(l.logClass)
+          false
       }, occurrences = 1)
 
       eventFilter.intercept {
@@ -85,8 +87,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "contain the object class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
+        case l: LogEvent if l.logClass == WhereTheBehaviorIsDefined.getClass ⇒ true
         case l: LogEvent ⇒
-          l.logClass == WhereTheBehaviorIsDefined.getClass
+          println(l.logClass)
+          false
       }, occurrences = 1)
 
       eventFilter.intercept {
@@ -96,8 +100,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "contain the abstract behavior class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
+        case l: LogEvent if l.logClass == classOf[BehaviorWhereTheLoggerIsUsed] ⇒ true
         case l: LogEvent ⇒
-          l.logClass == classOf[BehaviorWhereTheLoggerIsUsed]
+          println(l.logClass)
+          false
       }, occurrences = 1)
 
       eventFilter.intercept {

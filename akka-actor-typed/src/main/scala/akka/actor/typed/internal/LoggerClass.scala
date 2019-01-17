@@ -4,7 +4,6 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
@@ -29,11 +28,11 @@ private[akka] object LoggerClass {
     try {
       val trace = new TrickySecurityManager().getClassStack
       var suitableClass: OptionVal[Class[_]] = OptionVal.None
-      var idx = 3 // skip this method and ctx.log right away
+      var idx = 1 // skip this method/class and right away
       while (suitableClass.isEmpty && idx < trace.length) {
         val clazz = trace(idx)
         val name = clazz.getName
-        if (!name.startsWith("scala.runtime") && !name.startsWith("akka.actor.typed"))
+        if (!name.startsWith("scala.runtime") && !name.startsWith("akka.actor.typed.internal"))
           suitableClass = OptionVal.Some(clazz)
         idx += 1
       }
