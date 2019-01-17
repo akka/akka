@@ -6,6 +6,8 @@ package akka.cluster
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 import akka.Done
 import akka.actor.Actor
@@ -60,7 +62,7 @@ object StreamRefSpec extends MultiNodeConfig {
       case RequestLogs(streamId) ⇒
         // materialize the SourceRef:
         val (done: Future[Done], ref: Future[SourceRef[String]]) =
-          Source(1 to 1000)
+          Source.fromIterator(() ⇒ Iterator.from(1))
             .map(n ⇒ s"elem-$n")
             .watchTermination()(Keep.right)
             .toMat(StreamRefs.sourceRef())(Keep.both)
@@ -70,7 +72,10 @@ object StreamRefSpec extends MultiNodeConfig {
             }
             .run()
 
-        done.onComplete(_ ⇒ streamLifecycleProbe ! s"ended-$streamId")
+        done.onComplete {
+          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$streamId"
+          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$streamId"
+        }
 
         // wrap the SourceRef in some domain message, such that the sender knows what source it is
         val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
@@ -108,7 +113,10 @@ object StreamRefSpec extends MultiNodeConfig {
             }
             .run()
 
-        done.onComplete(_ ⇒ streamLifecycleProbe ! s"ended-$nodeId")
+        done.onComplete {
+          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$nodeId"
+          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$nodeId"
+        }
 
         // wrap the SinkRef in some domain message, such that the sender knows what source it is
         val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
@@ -185,7 +193,8 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
         destinationForSource.expectError().getClass should ===(classOf[RemoteStreamRefActorTerminatedException])
       }
       runOn(second) {
-        dataSourceLifecycle.expectMsg("ended-1337")
+        // it will be cancelled, i.e. competed
+        dataSourceLifecycle.expectMsg("completed-1337")
       }
 
       enterBarrier("after-2")
@@ -206,12 +215,15 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
         ref ! PrepareUpload("system-42-tmp")
         val ready = expectMsgType[MeasurementsSinkReady]
 
-        Source(1 to 1000)
+        Source.fromIterator(() ⇒ Iterator.from(1))
           .map(n ⇒ s"elem-$n")
           .watchTermination()(Keep.right)
           .to(ready.sinkRef)
           .run()
-          .onComplete(_ ⇒ streamLifecycle1.ref ! "ended-system-42-tmp")
+          .onComplete {
+            case Success(_) ⇒ streamLifecycle1.ref ! s"completed-system-42-tmp"
+            case Failure(_) ⇒ streamLifecycle1.ref ! s"failed-system-42-tmp"
+          }
       }
       runOn(third) {
         streamLifecycle3.expectMsg("started-system-42-tmp")
@@ -233,10 +245,10 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
       enterBarrier("members-removed")
 
       runOn(first) {
-        streamLifecycle1.expectMsg("ended-system-42-tmp")
+        streamLifecycle1.expectMsg("completed-system-42-tmp")
       }
       runOn(third) {
-        streamLifecycle3.expectMsg("ended-system-42-tmp")
+        streamLifecycle3.expectMsg("failed-system-42-tmp")
       }
 
       enterBarrier("after-3")

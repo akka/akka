@@ -704,8 +704,10 @@ private[akka] class VirtualPathContainer(
  * and do not prevent the parent from terminating. FunctionRef is properly
  * registered for remote lookup and ActorSelection.
  *
- * It can be watched, and also `watch` other actors. Upon receiving the Terminated message,
- * `unwatch` must be called, which is different from an ordinary actor.
+ * It can both be watched by other actors and also [[FunctionRef#watch]] other actors.
+ * When watching other actors and upon receiving the Terminated message,
+ * [[FunctionRef#unwatch]] must be called to avoid a resource leak, which is different
+ * from an ordinary actor.
  */
 private[akka] final class FunctionRef(
   override val path:     ActorPath,
@@ -832,7 +834,8 @@ private[akka] final class FunctionRef(
   /**
    * Have this FunctionRef watch the given Actor.
    *
-   * Upon receiving the Terminated message, `unwatch` must be called, which is different from an ordinary actor.
+   * Upon receiving the Terminated message, `unwatch` must be called to avoid resource leak,
+   * which is different from an ordinary actor.
    */
   def watch(actorRef: ActorRef): Unit = synchronized {
     maintainAddressTerminatedSubscription(OptionVal.Some(actorRef)) {
@@ -844,7 +847,8 @@ private[akka] final class FunctionRef(
   /**
    * Have this FunctionRef unwatch the given Actor.
    *
-   * Upon receiving the Terminated message, `unwatch` must be called, which is different from an ordinary actor.
+   * Upon receiving the Terminated message, `unwatch` must be called to avoid resource leak,
+   * which is different from an ordinary actor.
    */
   def unwatch(actorRef: ActorRef): Unit = synchronized {
     maintainAddressTerminatedSubscription(OptionVal.Some(actorRef)) {
