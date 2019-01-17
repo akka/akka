@@ -68,7 +68,7 @@ public class SupervisionCompileOnlyTest {
     Behaviors.supervise(behavior)
         .onFailure(
             IllegalStateException.class,
-            SupervisorStrategy.restartWithLimit(10, FiniteDuration.apply(10, TimeUnit.SECONDS)));
+            SupervisorStrategy.restart().withLimit(10, FiniteDuration.apply(10, TimeUnit.SECONDS)));
     // #restart-limit
 
     // #multiple
@@ -81,5 +81,54 @@ public class SupervisionCompileOnlyTest {
     // #top-level
     Behaviors.supervise(counter(1));
     // #top-level
+
   }
+
+  // #restart-stop-children
+  static Behavior<String> child(long size) {
+    return Behaviors.receiveMessage(msg -> child(size + msg.length()));
+  }
+
+  static Behavior<String> parent() {
+    return Behaviors.<String>supervise(
+            Behaviors.setup(
+                ctx -> {
+                  final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+                  final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+                  return Behaviors.receiveMessage(
+                      msg -> {
+                        // there might be bugs here...
+                        String[] parts = msg.split(" ");
+                        child1.tell(parts[0]);
+                        child2.tell(parts[1]);
+                        return Behaviors.same();
+                      });
+                }))
+        .onFailure(SupervisorStrategy.restart());
+  }
+  // #restart-stop-children
+
+  // #restart-keep-children
+  static Behavior<String> parent2() {
+    return Behaviors.setup(
+        ctx -> {
+          final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+          final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+          // supervision strategy inside the setup to not recreate children on restart
+          return Behaviors.<String>supervise(
+                  Behaviors.receiveMessage(
+                      msg -> {
+                        // there might be bugs here...
+                        String[] parts = msg.split(" ");
+                        child1.tell(parts[0]);
+                        child2.tell(parts[1]);
+                        return Behaviors.same();
+                      }))
+              .onFailure(SupervisorStrategy.restart().withStopChildren(false));
+        });
+  }
+  // #restart-keep-children
+
 }

@@ -22,49 +22,19 @@ object SupervisorStrategy {
   val resume: SupervisorStrategy = Resume(loggingEnabled = true)
 
   /**
-   * Restart immediately without any limit on number of restart retries.
+   * Restart immediately without any limit on number of restart retries. A limit can be
+   * added with [[RestartSupervisorStrategy.withLimit]].
    *
    * If the actor behavior is deferred and throws an exception on startup the actor is stopped
    * (restarting would be dangerous as it could lead to an infinite restart-loop)
    */
-  val restart: SupervisorStrategy = Restart(-1, Duration.Zero, loggingEnabled = true)
+  val restart: RestartSupervisorStrategy =
+    Restart(maxRestarts = -1, withinTimeRange = Duration.Zero)
 
   /**
    * Stop the actor
    */
   val stop: SupervisorStrategy = Stop(loggingEnabled = true)
-
-  /**
-   * Scala API: Restart with a limit of number of restart retries.
-   * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
-   * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
-   * `maxNrOfRetries` the restart count is reset.
-   *
-   * The strategy is applied also if the actor behavior is deferred and throws an exception during
-   * startup.
-   *
-   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted,
-   *   if the limit is exceeded the child actor is stopped
-   * @param withinTimeRange duration of the time window for maxNrOfRetries
-   */
-  def restartWithLimit(maxNrOfRetries: Int, withinTimeRange: FiniteDuration): SupervisorStrategy =
-    Restart(maxNrOfRetries, withinTimeRange, loggingEnabled = true)
-
-  /**
-   * Java API: Restart with a limit of number of restart retries.
-   * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
-   * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
-   * `maxNrOfRetries` the restart count is reset.
-   *
-   * The strategy is applied also if the actor behavior is deferred and throws an exception during
-   * startup.
-   *
-   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted,
-   *   if the limit is exceeded the child actor is stopped
-   * @param withinTimeRange duration of the time window for maxNrOfRetries
-   */
-  def restartWithLimit(maxNrOfRetries: Int, withinTimeRange: java.time.Duration): SupervisorStrategy =
-    restartWithLimit(maxNrOfRetries, withinTimeRange.asScala)
 
   /**
    * Scala API: It supports exponential back-off between the given `minBackoff` and
@@ -99,7 +69,7 @@ object SupervisorStrategy {
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
     randomFactor: Double): BackoffSupervisorStrategy =
-    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff, loggingEnabled = true, maxRestarts = -1)
+    Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff)
 
   /**
    * Java API: It supports exponential back-off between the given `minBackoff` and
@@ -153,15 +123,40 @@ object SupervisorStrategy {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final case class Restart(
-    maxNrOfRetries:  Int,
-    withinTimeRange: FiniteDuration,
-    loggingEnabled:  Boolean) extends SupervisorStrategy {
+  @InternalApi private[akka] sealed trait RestartOrBackoff extends SupervisorStrategy {
+    def maxRestarts: Int
+    def stopChildren: Boolean
+    def stashCapacity: Int
+    def loggingEnabled: Boolean
 
-    override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
+    def unlimitedRestarts(): Boolean = maxRestarts == -1
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final case class Restart(
+    maxRestarts:     Int,
+    withinTimeRange: FiniteDuration,
+    loggingEnabled:  Boolean        = true,
+    stopChildren:    Boolean        = true,
+    stashCapacity:   Int            = -1) extends RestartSupervisorStrategy with RestartOrBackoff {
+
+    override def withLimit(maxNrOfRetries: Int, withinTimeRange: FiniteDuration): RestartSupervisorStrategy =
+      copy(maxNrOfRetries, withinTimeRange)
+
+    override def withLimit(maxNrOfRetries: Int, withinTimeRange: java.time.Duration): RestartSupervisorStrategy =
+      copy(maxNrOfRetries, withinTimeRange.asScala)
+
+    override def withStopChildren(enabled: Boolean): RestartSupervisorStrategy =
+      copy(stopChildren = enabled)
+
+    override def withStashCapacity(capacity: Int): RestartSupervisorStrategy =
+      copy(stashCapacity = capacity)
+
+    override def withLoggingEnabled(enabled: Boolean): RestartSupervisorStrategy =
       copy(loggingEnabled = enabled)
 
-    def unlimitedRestarts(): Boolean = maxNrOfRetries == -1
   }
 
   /**
@@ -172,10 +167,12 @@ object SupervisorStrategy {
     maxBackoff:        FiniteDuration,
     randomFactor:      Double,
     resetBackoffAfter: FiniteDuration,
-    loggingEnabled:    Boolean,
-    maxRestarts:       Int) extends BackoffSupervisorStrategy {
+    loggingEnabled:    Boolean        = true,
+    maxRestarts:       Int            = -1,
+    stopChildren:      Boolean        = true,
+    stashCapacity:     Int            = -1) extends BackoffSupervisorStrategy with RestartOrBackoff {
 
-    override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
+    override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
       copy(loggingEnabled = enabled)
 
     override def withResetBackoffAfter(timeout: FiniteDuration): BackoffSupervisorStrategy =
@@ -188,6 +185,12 @@ object SupervisorStrategy {
 
     override def withMaxRestarts(maxRestarts: Int): BackoffSupervisorStrategy =
       copy(maxRestarts = maxRestarts)
+
+    override def withStopChildren(enabled: Boolean): BackoffSupervisorStrategy =
+      copy(stopChildren = enabled)
+
+    override def withStashCapacity(capacity: Int): BackoffSupervisorStrategy =
+      copy(stashCapacity = capacity)
   }
 }
 
@@ -195,6 +198,59 @@ sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
 
   def withLoggingEnabled(on: Boolean): SupervisorStrategy
+}
+
+sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {
+
+  /**
+   * Scala API: Restart with a limit of number of restart retries.
+   * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
+   * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
+   * `maxNrOfRetries` the restart count is reset.
+   *
+   * The strategy is applied also if the actor behavior is deferred and throws an exception during
+   * startup.
+   *
+   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted,
+   *   if the limit is exceeded the child actor is stopped
+   * @param withinTimeRange duration of the time window for maxNrOfRetries
+   */
+  def withLimit(maxNrOfRetries: Int, withinTimeRange: FiniteDuration): RestartSupervisorStrategy
+
+  /**
+   * Java API: Restart with a limit of number of restart retries.
+   * The number of restarts are limited to a number of restart attempts (`maxNrOfRetries`)
+   * within a time range (`withinTimeRange`). When the time window has elapsed without reaching
+   * `maxNrOfRetries` the restart count is reset.
+   *
+   * The strategy is applied also if the actor behavior is deferred and throws an exception during
+   * startup.
+   *
+   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted,
+   *   if the limit is exceeded the child actor is stopped
+   * @param withinTimeRange duration of the time window for maxNrOfRetries
+   */
+  def withLimit(maxNrOfRetries: Int, withinTimeRange: java.time.Duration): RestartSupervisorStrategy
+
+  /**
+   * Stop or keep child actors when the parent actor is restarted.
+   * By default child actors are stopped when parent is restarted.
+   * @param enabled if `true` then child actors are stopped, otherwise they are kept
+   */
+  def withStopChildren(enabled: Boolean): RestartSupervisorStrategy
+
+  /**
+   * While restarting (waiting for children to stop) incoming messages and signals are
+   * stashed, and delivered later to the newly restarted behavior. This property defines
+   * the capacity in number of messages of the stash buffer. If the capacity is exceed
+   * then additional incoming messages are dropped.
+   *
+   * By default the capacity is defined by config property `akka.actor.typed.restart-stash-capacity`.
+   */
+  def withStashCapacity(capacity: Int): RestartSupervisorStrategy
+
+  override def withLoggingEnabled(enabled: Boolean): RestartSupervisorStrategy
+
 }
 
 sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
@@ -221,4 +277,24 @@ sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
    * the upper limit on restarts (and is the default)
    */
   def withMaxRestarts(maxRestarts: Int): BackoffSupervisorStrategy
+
+  /**
+   * Stop or keep child actors when the parent actor is restarted.
+   * By default child actors are stopped when parent is restarted.
+   * @param enabled if `true` then child actors are stopped, otherwise they are kept
+   */
+  def withStopChildren(enabled: Boolean): BackoffSupervisorStrategy
+
+  /**
+   * While restarting (waiting for backoff to expire and children to stop) incoming
+   * messages and signals are stashed, and delivered later to the newly restarted
+   * behavior. This property defines the capacity in number of messages of the stash
+   * buffer. If the capacity is exceed then additional incoming messages are dropped.
+   *
+   * By default the capacity is defined by config property `akka.actor.typed.restart-stash-capacity`.
+   */
+  def withStashCapacity(capacity: Int): BackoffSupervisorStrategy
+
+  override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy
+
 }
