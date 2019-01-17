@@ -3,22 +3,24 @@
  */
 
 package sbt
+import Keys.baseDirectory
 
 import akka.ProjectFileIgnoreSupport
 import sbt.Keys.unmanagedSources
 
-trait ScalafixSupport extends ProjectFileIgnoreSupport {
-
-  final override protected val ignoreConfigFileName: String = ".scalafix.conf"
-
-  final override protected val descriptor: String = "scalafix"
+trait ScalafixSupport {
+  private val ignoreConfigFileName: String = ".scalafix.conf"
+  private val descriptor: String = "scalafix"
 
   protected def ignore(configKey: ConfigKey): Def.Setting[Task[Seq[File]]] = {
     import scalafix.sbt.ScalafixPlugin.autoImport._
-    
-    unmanagedSources.in(configKey, scalafix) :=
+
+    unmanagedSources.in(configKey, scalafix) := {
+      val ignoreSupport = new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
+
       unmanagedSources.in(configKey, scalafix).value
-        .filterNot(file => isIgnoredByFileOrPackages(file))
+        .filterNot(file => ignoreSupport.isIgnoredByFileOrPackages(file))
+    }
   }
 
 
