@@ -566,8 +566,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   static class IncorrectExpectedStateForThenRun
       extends EventSourcedBehavior<String, String, Object> {
 
-    public IncorrectExpectedStateForThenRun(PersistenceId persistenceId) {
+    private final ActorRef<String> startedProbe;
+
+    public IncorrectExpectedStateForThenRun(
+        ActorRef<String> startedProbe, PersistenceId persistenceId) {
       super(persistenceId);
+      this.startedProbe = startedProbe;
     }
 
     @Override
@@ -591,6 +595,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
+    public void onRecoveryCompleted(Object o) {
+      startedProbe.tell("started!");
+    }
+
+    @Override
     public EventHandler<Object, String> eventHandler() {
       return eventHandlerBuilder().matchAny((event, state) -> state); // keep Integer state
     }
@@ -598,9 +607,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void failOnIncorrectExpectedStateForThenRun() {
+    TestProbe<String> probe = testKit.createTestProbe();
     ActorRef<String> c =
-        testKit.spawn(new IncorrectExpectedStateForThenRun(new PersistenceId("foiesftr")));
-    TestProbe<Done> probe = testKit.createTestProbe();
+        testKit.spawn(
+            new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
+
+    probe.expectMessage("started!"); // workaround for #26256
 
     // FIXME this is a not a good Java API
     new ErrorFilter(ClassCastException.class, null, null, false, false, 1)
