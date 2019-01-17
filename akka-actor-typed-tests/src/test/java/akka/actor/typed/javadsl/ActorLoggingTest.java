@@ -46,16 +46,21 @@ public class ActorLoggingTest extends JUnitSuite {
 
   @Test
   public void loggingProvidesClassWhereLogWasCalled() {
-    CustomEventFilter eventFilter = new CustomEventFilter(new PFBuilder<Logging.LogEvent, Object>()
-        .match(Logging.LogEvent.class, (event) -> event.logClass() == ActorLoggingTest.class)
-        .build(),
-        1);
+    CustomEventFilter eventFilter =
+        new CustomEventFilter(
+            new PFBuilder<Logging.LogEvent, Object>()
+                .match(
+                    Logging.LogEvent.class, (event) -> event.logClass() == ActorLoggingTest.class)
+                .build(),
+            1);
 
-    Behavior<String> behavior = Behaviors.setup((context) -> {
-      context.getLog().info("Starting up");
+    Behavior<String> behavior =
+        Behaviors.setup(
+            (context) -> {
+              context.getLog().info("Starting up");
 
-      return Behaviors.empty();
-    });
+              return Behaviors.empty();
+            });
 
     testKit.spawn(behavior);
     eventFilter.awaitDone(FiniteDuration.create(3, TimeUnit.SECONDS));
