@@ -6,6 +6,10 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.AsyncD
 ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv6Type$")
 ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv4Type$")
 
+# #25960 AddressTerminated in FunctionRef
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FunctionRef.eventStream")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.FunctionRef.this")
+
 # Changes related to adding Scala 2.13.0-M5 support
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildrenIterable.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildRestartsIterable.this")
