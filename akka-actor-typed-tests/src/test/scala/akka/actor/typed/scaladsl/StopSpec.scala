@@ -5,8 +5,9 @@
 package akka.actor.typed.scaladsl
 
 import scala.concurrent.Promise
+
 import akka.Done
-import akka.actor.testkit.typed.TE
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed
 import akka.actor.typed.Behavior
@@ -76,7 +77,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.stopped(
           // illegal:
           Behaviors.setup[String] { _ ⇒
-            throw TE("boom!")
+            throw TestException("boom!")
           }
         )
       }

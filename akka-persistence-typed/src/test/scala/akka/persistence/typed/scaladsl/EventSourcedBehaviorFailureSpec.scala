@@ -8,17 +8,17 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, SupervisorStrategy }
-import akka.actor.testkit.typed.TE
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
+
+import akka.actor.testkit.typed.TestException
 import akka.persistence.typed.PersistenceId
 
 class ChaosJournal extends InmemJournal {
@@ -30,11 +30,11 @@ class ChaosJournal extends InmemJournal {
     val pid = messages.head.persistenceId
     if (pid == "fail-first-2" && count < 2) {
       count += 1
-      Future.failed(TE("database says no"))
+      Future.failed(TestException("database says no"))
     } else if (pid == "reject-first" && reject) {
       reject = false
       Future.successful(messages.map(aw ⇒ Try {
-        throw TE("I don't like it")
+        throw TestException("I don't like it")
       }))
     } else {
       super.asyncWriteMessages(messages)
@@ -44,9 +44,9 @@ class ChaosJournal extends InmemJournal {
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
     if (persistenceId == "fail-recovery-once" && failRecovery) {
       failRecovery = false
-      Future.failed(TE("Nah"))
+      Future.failed(TestException("Nah"))
     } else if (persistenceId == "fail-recovery") {
-      Future.failed(TE("Nope"))
+      Future.failed(TestException("Nope"))
     } else {
       super.asyncReadHighestSequenceNr(persistenceId, fromSequenceNr)
     }
@@ -93,13 +93,13 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       spawn(failingPersistentActor(PersistenceId("fail-recovery"))
         .onRecoveryFailure(t ⇒ probe.ref ! t))
 
-      probe.expectMessageType[TE].message shouldEqual "Nope"
+      probe.expectMessageType[TestException].message shouldEqual "Nope"
     }
 
     "handle exceptions in onRecoveryFailure" in {
       val probe = TestProbe[String]()
       val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref)
-        .onRecoveryFailure(t ⇒ throw TE("recovery call back failure")))
+        .onRecoveryFailure(t ⇒ throw TestException("recovery call back failure")))
       pa ! "one"
       probe.expectMessage("starting")
       probe.expectMessage("persisting")

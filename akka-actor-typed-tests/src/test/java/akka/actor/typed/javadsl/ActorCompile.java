@@ -115,7 +115,7 @@ public class ActorCompile {
     SupervisorStrategy strategy1 = SupervisorStrategy.restart();
     SupervisorStrategy strategy2 = SupervisorStrategy.restart().withLoggingEnabled(false);
     SupervisorStrategy strategy3 = SupervisorStrategy.resume();
-    SupervisorStrategy strategy4 = SupervisorStrategy.restartWithLimit(3, Duration.ofSeconds(1));
+    SupervisorStrategy strategy4 = SupervisorStrategy.restart().withLimit(3, Duration.ofSeconds(1));
 
     SupervisorStrategy strategy5 =
         SupervisorStrategy.restartWithBackoff(Duration.ofMillis(200), Duration.ofSeconds(10), 0.1);

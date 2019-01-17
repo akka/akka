@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.javadsl;
 
-import akka.actor.testkit.typed.TE;
+import akka.actor.testkit.typed.TestException;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -92,7 +92,7 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
     Behavior<String> p1 =
         fail(new PersistenceId("fail-recovery-once"), probe.ref(), recoveryFailureProbe.ref());
     testKit.spawn(p1);
-    recoveryFailureProbe.expectMessageClass(TE.class);
+    recoveryFailureProbe.expectMessageClass(TestException.class);
   }
 
   @Test

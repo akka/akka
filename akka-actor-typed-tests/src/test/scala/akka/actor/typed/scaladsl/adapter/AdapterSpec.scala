@@ -6,12 +6,18 @@ package akka.actor.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
+
 import akka.actor.InvalidMessageException
-import akka.actor.testkit.typed.TE
+import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.{ Done, NotUsed, actor ⇒ untyped }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Terminated
 import akka.testkit._
+import akka.Done
+import akka.NotUsed
+import akka.{ actor ⇒ untyped }
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -69,7 +75,7 @@ object AdapterSpec {
 
   def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx ⇒
     val child = ctx.spawnAnonymous(Behaviors.receiveMessage[String] { _ ⇒
-      throw TE(msg)
+      throw TestException(msg)
     })
     child ! "throw please"
     Behaviors.empty
