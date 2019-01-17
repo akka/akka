@@ -18,8 +18,8 @@ another. We have found it tedious and error-prone to implement all the proper
 measures in order to achieve stable streaming between actors, since in addition
 to sending and receiving we also need to take care to not overflow any buffers
 or mailboxes in the process. Another pitfall is that Actor messages can be lost
-and must be retransmitted in that case lest the stream have holes on the
-receiving side. When dealing with streams of elements of a fixed given type,
+and must be retransmitted in that case. Failure to do so would lead to holes at
+the receiving side. When dealing with streams of elements of a fixed given type,
 Actors also do not currently offer good static guarantees that no wiring errors
 are made: type-safety could be improved in this case.
 

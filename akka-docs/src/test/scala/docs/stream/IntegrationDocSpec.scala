@@ -475,8 +475,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
   "illustrate use of source queue" in {
     //#source-queue
-    val bufferSize = 5
-    val elementsToProcess = 3
+    val bufferSize = 10
+    val elementsToProcess = 5
 
     val queue = Source
       .queue[Int](bufferSize, OverflowStrategy.backpressure)
