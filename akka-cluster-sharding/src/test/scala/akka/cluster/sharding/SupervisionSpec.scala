@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ShardRegion.Passivate
-import akka.pattern.{ Backoff, BackoffSupervisor }
+import akka.pattern.{ Backoff, BackoffOpts, BackoffSupervisor }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 
@@ -64,7 +64,7 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
 
   import SupervisionSpec._
 
-  "Supervision for a sharded actor" must {
+  "Supervision for a sharded actor (deprecated)" must {
 
     "allow passivation" in {
 
@@ -75,6 +75,40 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
         maxBackoff = 30.seconds,
         randomFactor = 0.2,
         maxNrOfRetries = -1
+      ).withFinalStopMessage(_ == StopMessage))
+
+      Cluster(system).join(Cluster(system).selfAddress)
+      val region = ClusterSharding(system).start(
+        "passy",
+        supervisedProps,
+        ClusterShardingSettings(system),
+        idExtractor,
+        shardResolver
+      )
+
+      region ! Msg(10, "hello")
+      val response = expectMsgType[Response](5.seconds)
+      watch(response.self)
+
+      region ! Msg(10, "passivate")
+      expectTerminated(response.self)
+
+      // This would fail before as sharded actor would be stuck passivating
+      region ! Msg(10, "hello")
+      expectMsgType[Response](20.seconds)
+    }
+  }
+
+  "Supervision for a sharded actor" must {
+
+    "allow passivation" in {
+
+      val supervisedProps = BackoffSupervisor.props(BackoffOpts.onStop(
+        Props(new PassivatingActor()),
+        childName = "child",
+        minBackoff = 1.seconds,
+        maxBackoff = 30.seconds,
+        randomFactor = 0.2
       ).withFinalStopMessage(_ == StopMessage))
 
       Cluster(system).join(Cluster(system).selfAddress)

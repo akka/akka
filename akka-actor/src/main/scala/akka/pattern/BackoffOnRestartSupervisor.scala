@@ -15,7 +15,7 @@ import scala.concurrent.duration._
  *
  * Back-off supervisor that stops and starts a child actor when the child actor restarts.
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
- * with ``akka.pattern.Backoff.onFailure``.
+ * with ``akka.pattern.BackoffOpts.onFailure``.
  */
 @InternalApi private class BackoffOnRestartSupervisor(
   val childProps:    Props,

@@ -15,7 +15,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * Back-off supervisor that stops and starts a child actor using a back-off algorithm when the child actor stops.
  * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
- * with `Backoff.onStop`.
+ * with `BackoffOpts.onStop`.
  */
 @InternalApi private[akka] class BackoffOnStopSupervisor(
   val childProps:    Props,

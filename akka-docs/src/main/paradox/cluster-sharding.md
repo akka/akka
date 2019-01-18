@@ -413,6 +413,8 @@ Java
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see #ref:[Supervision](general/supervision.md#Sharding)
+
 ## Graceful Shutdown
 
 You can send the @scala[`ShardRegion.GracefulShutdown`] @java[`ShardRegion.gracefulShutdownInstance`] message
