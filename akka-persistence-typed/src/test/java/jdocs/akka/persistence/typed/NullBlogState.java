@@ -7,12 +7,7 @@ package jdocs.akka.persistence.typed;
 import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.EventSourcedBehavior;
-
-import java.util.Objects;
+import akka.persistence.typed.javadsl.*;
 
 public class NullBlogState {
 
@@ -124,9 +119,10 @@ public class NullBlogState {
 
   public static class BlogBehavior extends EventSourcedBehavior<BlogCommand, BlogEvent, BlogState> {
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, BlogState, BlogState>
         initialCommandHandler() {
-      return commandHandlerBuilder(Objects::isNull)
+      return newCommandHandlerBuilder()
+          .forNullState()
           .matchCommand(
               AddPost.class,
               cmd -> {
@@ -137,9 +133,10 @@ public class NullBlogState {
               });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, BlogState, BlogState>
         postCommandHandler() {
-      return commandHandlerBuilder(Objects::nonNull)
+      return newCommandHandlerBuilder()
+          .forNonNullState()
           .matchCommand(
               ChangeBody.class,
               (state, cmd) -> {
@@ -181,15 +178,23 @@ public class NullBlogState {
 
     @Override
     public EventHandler<BlogState, BlogEvent> eventHandler() {
-      return eventHandlerBuilder()
-          .matchEvent(PostAdded.class, event -> new BlogState(event.content, false))
+
+      EventHandlerBuilder<BlogState, BlogEvent> builder = newEventHandlerBuilder();
+
+      builder
+          .forNullState()
+          .matchEvent(PostAdded.class, event -> new BlogState(event.content, false));
+
+      builder
+          .forNonNullState()
           .matchEvent(
               BodyChanged.class,
               (state, chg) ->
                   state.withContent(
                       new PostContent(state.postId(), state.postContent.title, chg.newBody)))
-          .matchEvent(Published.class, (state, event) -> new BlogState(state.postContent, true))
-          .build();
+          .matchEvent(Published.class, (state, event) -> new BlogState(state.postContent, true));
+
+      return builder.build();
     }
   }
 }

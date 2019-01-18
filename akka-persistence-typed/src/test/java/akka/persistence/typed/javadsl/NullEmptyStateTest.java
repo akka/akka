@@ -16,8 +16,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import java.util.Objects;
-
 public class NullEmptyStateTest extends JUnitSuite {
 
   private static final Config config =
@@ -47,17 +45,12 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public CommandHandler<String, String, String> commandHandler() {
-      CommandHandlerBuilder<String, String, String, String> b1 =
-          commandHandlerBuilder(Objects::isNull)
-              .matchCommand("stop"::equals, command -> Effect().stop())
-              .matchCommand(String.class, this::persistCommand);
 
-      CommandHandlerBuilder<String, String, String, String> b2 =
-          commandHandlerBuilder(String.class)
-              .matchCommand("stop"::equals, command -> Effect().stop())
-              .matchCommand(String.class, this::persistCommand);
-
-      return b1.orElse(b2).build();
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .matchCommand("stop"::equals, command -> Effect().stop())
+          .matchCommand(String.class, this::persistCommand)
+          .build();
     }
 
     private Effect<String, String> persistCommand(String command) {
@@ -66,7 +59,10 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return eventHandlerBuilder().matchEvent(String.class, this::applyEvent).build();
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .matchEvent(String.class, this::applyEvent)
+          .build();
     }
 
     private String applyEvent(String state, String event) {

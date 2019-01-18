@@ -198,7 +198,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public CommandHandler<Command, Incremented, State> commandHandler() {
-      return commandHandlerBuilder(State.class)
+      return newCommandHandlerBuilder()
+          .forAnyState()
           .matchCommand(Increment.class, this::increment)
           .matchCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
           .matchCommand(GetValue.class, this::getValue)
@@ -269,7 +270,10 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public EventHandler<State, Incremented> eventHandler() {
-      return eventHandlerBuilder().matchEvent(Incremented.class, this::applyIncremented).build();
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .matchEvent(Incremented.class, this::applyIncremented)
+          .build();
     }
 
     @Override
@@ -454,12 +458,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
         new BehaviorInterceptor<Command, Command>() {
-
-          @Override
-          public Class<Command> interceptMessageType() {
-            return Command.class;
-          }
-
           @Override
           public Behavior<Command> aroundReceive(
               TypedActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
