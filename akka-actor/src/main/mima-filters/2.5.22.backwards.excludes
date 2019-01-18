@@ -5,5 +5,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestar
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.handleMessageToChild")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.pattern.Backoff.onFailure")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.pattern.Backoff.onStop")

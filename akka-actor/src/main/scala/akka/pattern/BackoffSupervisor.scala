@@ -32,6 +32,7 @@ object BackoffSupervisor {
    *                     random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *                     In order to skip this additional delay pass in `0`.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def props(
     childProps:   Props,
     childName:    String,
@@ -61,6 +62,7 @@ object BackoffSupervisor {
    *                       The supervisor will terminate itself after the maxNoOfRetries is reached.
    *                       In order to restart infinitely pass in `-1`.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def props(
     childProps:     Props,
     childName:      String,
@@ -92,6 +94,7 @@ object BackoffSupervisor {
    *                     random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *                     In order to skip this additional delay pass in `0`.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def props(
     childProps:   Props,
     childName:    String,
@@ -121,6 +124,7 @@ object BackoffSupervisor {
    *                       The supervisor will terminate itself after the maxNoOfRetries is reached.
    *                       In order to restart infinitely pass in `-1`.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def props(
     childProps:     Props,
     childName:      String,
@@ -152,6 +156,7 @@ object BackoffSupervisor {
    *                     in the child. As the BackoffSupervisor creates a separate actor to handle the
    *                     backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def propsWithSupervisorStrategy(
     childProps:   Props,
     childName:    String,
@@ -186,6 +191,7 @@ object BackoffSupervisor {
    *                     in the child. As the BackoffSupervisor creates a separate actor to handle the
    *                     backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
+  @deprecated("Use props with BackoffOptions instead", since = "2.5.20")
   def propsWithSupervisorStrategy(
     childProps:   Props,
     childName:    String,
@@ -201,7 +207,22 @@ object BackoffSupervisor {
    *
    * @param options the [[BackoffOptions]] that specify how to construct a backoff-supervisor.
    */
+  @deprecated("Use new API from BackoffOptions object instead", since = "2.5.20")
   def props(options: BackoffOptions): Props = options.props
+
+  /**
+   * Props for creating a `BackoffSupervisor` actor from [[BackoffOnStopOptions]].
+   *
+   * @param options the [[BackoffOnStopOptions]] that specify how to construct a backoff-supervisor.
+   */
+  def props(options: BackoffOnStopOptions): Props = options.props
+
+  /**
+   * Props for creating a `BackoffSupervisor` actor from [[BackoffOnFailureOptions]].
+   *
+   * @param options the [[BackoffOnFailureOptions]] that specify how to construct a backoff-supervisor.
+   */
+  def props(options: BackoffOnFailureOptions): Props = options.props
 
   /**
    * Send this message to the `BackoffSupervisor` and it will reply with
