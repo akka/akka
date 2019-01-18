@@ -172,9 +172,6 @@ object SupervisorStrategy {
     stopChildren:      Boolean        = true,
     stashCapacity:     Int            = -1) extends BackoffSupervisorStrategy with RestartOrBackoff {
 
-    override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
-      copy(loggingEnabled = enabled)
-
     override def withResetBackoffAfter(timeout: FiniteDuration): BackoffSupervisorStrategy =
       copy(resetBackoffAfter = timeout)
 
@@ -191,6 +188,9 @@ object SupervisorStrategy {
 
     override def withStashCapacity(capacity: Int): BackoffSupervisorStrategy =
       copy(stashCapacity = capacity)
+
+    override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
+      copy(loggingEnabled = enabled)
   }
 }
 
