@@ -276,7 +276,7 @@ private[cluster] class Reachability private (
     }
   }
 
-  def allObservers: Set[UniqueAddress] = versions.keySet
+  def allObservers: Set[UniqueAddress] = records.iterator.map(_.observer).toSet
 
   def recordsFrom(observer: UniqueAddress): immutable.IndexedSeq[Record] = {
     observerRows(observer) match {
