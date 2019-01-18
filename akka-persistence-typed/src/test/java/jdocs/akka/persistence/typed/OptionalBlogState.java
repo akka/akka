@@ -7,10 +7,7 @@ package jdocs.akka.persistence.typed;
 import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.*;
 
 import java.util.Optional;
 
@@ -125,9 +122,11 @@ public class OptionalBlogState {
   public static class BlogBehavior
       extends EventSourcedBehavior<BlogCommand, BlogEvent, Optional<BlogState>> {
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
+    private CommandHandlerBuilderByState<
+            BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
         initialCommandHandler() {
-      return commandHandlerBuilder(state -> !state.isPresent())
+      return newCommandHandlerBuilder()
+          .forState(state -> !state.isPresent())
           .matchCommand(
               AddPost.class,
               (state, cmd) -> {
@@ -138,9 +137,11 @@ public class OptionalBlogState {
               });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
+    private CommandHandlerBuilderByState<
+            BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>>
         postCommandHandler() {
-      return commandHandlerBuilder(state -> state.isPresent())
+      return newCommandHandlerBuilder()
+          .forState(Optional::isPresent)
           .matchCommand(
               ChangeBody.class,
               (state, cmd) -> {
@@ -182,9 +183,16 @@ public class OptionalBlogState {
 
     @Override
     public EventHandler<Optional<BlogState>, BlogEvent> eventHandler() {
-      return eventHandlerBuilder()
+
+      EventHandlerBuilder<Optional<BlogState>, BlogEvent> builder = newEventHandlerBuilder();
+
+      builder
+          .forState(state -> !state.isPresent())
           .matchEvent(
-              PostAdded.class, (state, event) -> Optional.of(new BlogState(event.content, false)))
+              PostAdded.class, (state, event) -> Optional.of(new BlogState(event.content, false)));
+
+      builder
+          .forState(Optional::isPresent)
           .matchEvent(
               BodyChanged.class,
               (state, chg) ->
@@ -195,8 +203,9 @@ public class OptionalBlogState {
                                   blogState.postId(), blogState.postContent.title, chg.newBody))))
           .matchEvent(
               Published.class,
-              (state, event) -> state.map(blogState -> new BlogState(blogState.postContent, true)))
-          .build();
+              (state, event) -> state.map(blogState -> new BlogState(blogState.postContent, true)));
+
+      return builder.build();
     }
   }
 }

@@ -4,11 +4,13 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.function.BiFunction
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.Objects
+import java.util.function.{ BiFunction, Predicate, Supplier, Function ⇒ JFunction }
 
 import akka.annotation.InternalApi
 import akka.util.OptionVal
+
+import scala.compat.java8.FunctionConverters._
 
 /**
  * FunctionalInterface for reacting on events having been persisted
@@ -24,6 +26,155 @@ object EventHandlerBuilder {
   def builder[State >: Null, Event](): EventHandlerBuilder[State, Event] =
     new EventHandlerBuilder[State, Event]()
 
+}
+
+final class EventHandlerBuilder[State >: Null, Event]() {
+
+  private var builders: List[EventHandlerBuilderByState[State, State, Event]] = Nil
+
+  /**
+   * Use this method to define event handlers that are selected when the passed predicate holds true.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forState(statePredicate: Predicate[State]): EventHandlerBuilderByState[State, State, Event] = {
+    val builder = EventHandlerBuilderByState.builder[State, Event](statePredicate)
+    builders = builder :: builders
+    builder
+  }
+
+  /**
+   * Use this method to define event handlers that are selected when the passed predicate holds true
+   * for a given subtype of your model. Useful when the model is defined as class hierarchy.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forState[S <: State](stateClass: Class[S], statePredicate: Predicate[S]): EventHandlerBuilderByState[S, State, Event] = {
+    val builder = new EventHandlerBuilderByState[S, State, Event](stateClass, statePredicate)
+    builders = builder.asInstanceOf[EventHandlerBuilderByState[State, State, Event]] :: builders
+    builder
+  }
+
+  /**
+   * Use this method to define command handlers for a given subtype of your model. Useful when the model is defined as class hierarchy.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forStateType[S <: State](stateClass: Class[S]): EventHandlerBuilderByState[S, State, Event] = {
+    val builder = EventHandlerBuilderByState.builder[S, State, Event](stateClass)
+    builders = builder.asInstanceOf[EventHandlerBuilderByState[State, State, Event]] :: builders
+    builder
+  }
+
+  /**
+   * The handlers defined by this builder are used when the state is `null`.
+   * This variant is particular useful when the empty state of your model is defined as `null`.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forNullState(): EventHandlerBuilderByState[State, State, Event] = {
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.isNull(s))
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
+    builders = builder :: builders
+    builder
+  }
+
+  /**
+   * The handlers defined by this builder are used for any not `null` state.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forNonNullState(): EventHandlerBuilderByState[State, State, Event] = {
+    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.nonNull(s))
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
+    builders = builder :: builders
+    builder
+  }
+
+  /**
+   * The handlers defined by this builder are used for any state.
+   * This variant is particular useful for models that have a single type (ie: no class hierarchy).
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   * Extra care should be taken when using [[forAnyState]] as it will match any state. Any event handler define after it will never be reached.
+   *
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def forAnyState(): EventHandlerBuilderByState[State, State, Event] = {
+    val predicate: Predicate[State] = asJavaPredicate(_ ⇒ true)
+    val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
+    builders = builder :: builders
+    builder
+  }
+
+  def build(): EventHandler[State, Event] = {
+
+    val combined =
+      builders.reverse match {
+        case head :: Nil ⇒ head
+        case head :: tail ⇒ tail.foldLeft(head) { (acc, builder) ⇒
+          acc.orElse(builder)
+        }
+        case Nil ⇒ throw new IllegalStateException("No matchers defined")
+      }
+
+    combined.build()
+  }
+
+}
+
+object EventHandlerBuilderByState {
+
+  private val _trueStatePredicate: Predicate[Any] = new Predicate[Any] {
+    override def test(t: Any): Boolean = true
+  }
+
+  private def trueStatePredicate[S]: Predicate[S] = _trueStatePredicate.asInstanceOf[Predicate[S]]
+
+  /**
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def builder[S <: State, State >: Null, Event](stateClass: Class[S]): EventHandlerBuilderByState[S, State, Event] =
+    new EventHandlerBuilderByState(stateClass, statePredicate = trueStatePredicate)
+
+  /**
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
+   *                       useful for example when state type is an Optional
+   * @return A new, mutable, EventHandlerBuilderByState
+   */
+  def builder[State >: Null, Event](statePredicate: Predicate[State]): EventHandlerBuilderByState[State, State, Event] =
+    new EventHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
+
   /**
    * INTERNAL API
    */
@@ -33,20 +184,30 @@ object EventHandlerBuilder {
     handler:        BiFunction[State, Event, State])
 }
 
-final class EventHandlerBuilder[State >: Null, Event]() {
-  import EventHandlerBuilder.EventHandlerCase
+final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private val stateClass: Class[S], private val statePredicate: Predicate[S]) {
+
+  import EventHandlerBuilderByState.EventHandlerCase
 
   private var cases: List[EventHandlerCase[State, Event]] = Nil
 
   private def addCase(eventPredicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State]): Unit = {
-    cases = EventHandlerCase[State, Event](_ ⇒ true, eventPredicate, handler) :: cases
+    cases = EventHandlerCase[State, Event](
+      statePredicate = state ⇒
+        if (state == null) statePredicate.test(state.asInstanceOf[S])
+        else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+      eventPredicate = eventPredicate,
+      handler) :: cases
   }
 
   /**
-   * Match any event which is an instance of `E` or a subtype of `E`
+   * Match any event which is an instance of `E` or a subtype of `E`.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
    */
-  def matchEvent[E <: Event](eventClass: Class[E], biFunction: BiFunction[State, E, State]): EventHandlerBuilder[State, Event] = {
-    addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), biFunction.asInstanceOf[BiFunction[State, Event, State]])
+  def matchEvent[E <: Event](eventClass: Class[E], handler: BiFunction[S, E, State]): EventHandlerBuilderByState[S, State, Event] = {
+    addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), handler.asInstanceOf[BiFunction[State, Event, State]])
     this
   }
 
@@ -55,30 +216,49 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    *
    * Use this when then `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
    */
-  def matchEvent[E <: Event](eventClass: Class[E], f: JFunction[E, State]): EventHandlerBuilder[State, Event] = {
-    matchEvent[E](eventClass, new BiFunction[State, E, State] {
-      override def apply(state: State, event: E): State = f(event)
+  def matchEvent[E <: Event](eventClass: Class[E], handler: JFunction[E, State]): EventHandlerBuilderByState[S, State, Event] = {
+    matchEvent[E](eventClass, new BiFunction[S, E, State] {
+      override def apply(state: S, event: E): State = handler(event)
     })
   }
 
-  def matchEvent[E <: Event, S <: State](eventClass: Class[E], stateClass: Class[S],
-                                         biFunction: BiFunction[S, E, State]): EventHandlerBuilder[State, Event] = {
+  /**
+   * Match any event which is an instance of `E` or a subtype of `E`.
+   *
+   * Use this when then `State` and the `Event` are not needed in the `handler`.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   */
+  def matchEvent[E <: Event](eventClass: Class[E], handler: Supplier[State]): EventHandlerBuilderByState[S, State, Event] = {
 
-    cases = EventHandlerCase[State, Event](
-      statePredicate = s ⇒ s != null && stateClass.isAssignableFrom(s.getClass),
-      eventPredicate = e ⇒ eventClass.isAssignableFrom(e.getClass),
-      biFunction.asInstanceOf[BiFunction[State, Event, State]]) :: cases
-    this
+    val supplierBiFunction = new BiFunction[S, E, State] {
+      def apply(t: S, u: E): State = handler.get()
+    }
+
+    matchEvent(eventClass, supplierBiFunction)
   }
 
   /**
-   * Match any event
+   * Match any event.
    *
-   * Builds and returns the handler since this will not let through any states to subsequent match statements
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * Extra care should be taken when using [[matchAny]] as it will match any event.
+   * This method builds and returns the event handler since this will not let through any states to subsequent match statements.
+   *
+   * @return An EventHandler from the appended states.
    */
-  def matchAny(biFunction: BiFunction[State, Event, State]): EventHandler[State, Event] = {
-    addCase(_ ⇒ true, biFunction.asInstanceOf[BiFunction[State, Event, State]])
+  def matchAny(handler: BiFunction[State, Event, State]): EventHandler[State, Event] = {
+    addCase(_ ⇒ true, handler.asInstanceOf[BiFunction[State, Event, State]])
     build()
   }
 
@@ -87,10 +267,19 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    *
    * Use this when then `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
+   *
+   * Note: event handlers are matched in the order they are added. Once a matching is found, it's selected for handling the event
+   * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
+   * otherwise you risk to 'shadow' part of your event handlers.
+   *
+   * Extra care should be taken when using [[matchAny]] as it will match any event.
+   * This method builds and returns the event handler since this will not let through any states to subsequent match statements.
+   *
+   * @return An EventHandler from the appended states.
    */
-  def matchAny(f: JFunction[Event, State]): EventHandler[State, Event] = {
+  def matchAny(handler: JFunction[Event, State]): EventHandler[State, Event] = {
     matchAny(new BiFunction[State, Event, State] {
-      override def apply(state: State, event: Event): State = f(event)
+      override def apply(state: State, event: Event): State = handler(event)
     })
     build()
   }
@@ -99,8 +288,8 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * Compose this builder with another builder. The handlers in this builder will be tried first followed
    * by the handlers in `other`.
    */
-  def orElse(other: EventHandlerBuilder[State, Event]): EventHandlerBuilder[State, Event] = {
-    val newBuilder = new EventHandlerBuilder[State, Event]
+  def orElse[S2 <: State](other: EventHandlerBuilderByState[S2, State, Event]): EventHandlerBuilderByState[S2, State, Event] = {
+    val newBuilder = new EventHandlerBuilderByState[S2, State, Event](other.stateClass, other.statePredicate)
     // problem with overloaded constructor with `cases` as parameter
     newBuilder.cases = other.cases ::: cases
     newBuilder
@@ -109,8 +298,6 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   /**
    * Builds and returns a handler from the appended states. The returned [[EventHandler]] will throw a [[scala.MatchError]]
    * if applied to an event that has no defined case.
-   *
-   * The builder is reset to empty after build has been called.
    */
   def build(): EventHandler[State, Event] = {
     val builtCases = cases.reverse.toArray

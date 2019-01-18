@@ -10,10 +10,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.*;
 
 public class BlogPostExample {
 
@@ -161,9 +158,10 @@ public class BlogPostExample {
     }
 
     // #initial-command-handler
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, BlankState, BlogState>
         initialCommandHandler() {
-      return commandHandlerBuilder(BlankState.class)
+      return newCommandHandlerBuilder()
+          .forStateType(BlankState.class)
           .matchCommand(
               AddPost.class,
               (state, cmd) -> {
@@ -178,9 +176,10 @@ public class BlogPostExample {
     // #initial-command-handler
 
     // #post-added-command-handler
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, DraftState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, DraftState, BlogState>
         draftCommandHandler() {
-      return commandHandlerBuilder(DraftState.class)
+      return newCommandHandlerBuilder()
+          .forStateType(DraftState.class)
           .matchCommand(
               ChangeBody.class,
               (state, cmd) -> {
@@ -205,9 +204,10 @@ public class BlogPostExample {
               });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, PublishedState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, PublishedState, BlogState>
         publishedCommandHandler() {
-      return commandHandlerBuilder(PublishedState.class)
+      return newCommandHandlerBuilder()
+          .forStateType(PublishedState.class)
           .matchCommand(
               ChangeBody.class,
               (state, cmd) -> {
@@ -222,9 +222,10 @@ public class BlogPostExample {
               });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState>
+    private CommandHandlerBuilderByState<BlogCommand, BlogEvent, BlogState, BlogState>
         commonCommandHandler() {
-      return commandHandlerBuilder(BlogState.class)
+      return newCommandHandlerBuilder()
+          .forStateType(BlogState.class)
           .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
     // #post-added-command-handler
@@ -243,25 +244,31 @@ public class BlogPostExample {
     // #event-handler
     @Override
     public EventHandler<BlogState, BlogEvent> eventHandler() {
-      return eventHandlerBuilder()
-          .matchEvent(PostAdded.class, (state, event) -> new DraftState(event.content))
+
+      EventHandlerBuilder<BlogState, BlogEvent> builder = newEventHandlerBuilder();
+
+      builder
+          .forStateType(BlankState.class)
+          .matchEvent(PostAdded.class, event -> new DraftState(event.content));
+
+      builder
+          .forStateType(DraftState.class)
           .matchEvent(
               BodyChanged.class,
-              DraftState.class,
               (state, chg) ->
                   state.withContent(
                       new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+          .matchEvent(Published.class, (state, event) -> new PublishedState(state.postContent));
+
+      builder
+          .forStateType(PublishedState.class)
           .matchEvent(
               BodyChanged.class,
-              PublishedState.class,
               (state, chg) ->
                   state.withContent(
-                      new PostContent(state.postId(), state.postContent.title, chg.newBody)))
-          .matchEvent(
-              Published.class,
-              DraftState.class,
-              (state, event) -> new PublishedState(state.postContent))
-          .build();
+                      new PostContent(state.postId(), state.postContent.title, chg.newBody)));
+
+      return builder.build();
     }
     // #event-handler
 

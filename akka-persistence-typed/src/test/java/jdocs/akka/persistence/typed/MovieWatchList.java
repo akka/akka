@@ -98,7 +98,8 @@ public class MovieWatchList
 
   @Override
   public CommandHandler<Command, Event, MovieList> commandHandler() {
-    return commandHandlerBuilder(MovieList.class)
+    return newCommandHandlerBuilder()
+        .forAnyState()
         .matchCommand(
             AddMovie.class,
             (state, cmd) -> {
@@ -120,7 +121,8 @@ public class MovieWatchList
 
   @Override
   public EventHandler<MovieList, Event> eventHandler() {
-    return eventHandlerBuilder()
+    return newEventHandlerBuilder()
+        .forAnyState()
         .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
         .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
         .build();

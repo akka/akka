@@ -173,7 +173,8 @@ public class PersistentActorCompileOnlyTest {
           public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
 
             // #commonChainedEffects
-            return commandHandlerBuilder(ExampleState.class)
+            return newCommandHandlerBuilder()
+                .forStateType(ExampleState.class)
                 .matchCommand(
                     Cmd.class,
                     (state, cmd) ->
@@ -187,7 +188,8 @@ public class PersistentActorCompileOnlyTest {
 
           @Override
           public EventHandler<ExampleState, MyEvent> eventHandler() {
-            return eventHandlerBuilder()
+            return newEventHandlerBuilder()
+                .forStateType(ExampleState.class)
                 .matchEvent(
                     Evt.class,
                     (state, event) -> {
@@ -312,7 +314,8 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder(EventsInFlight.class)
+        return newCommandHandlerBuilder()
+            .forAnyState()
             .matchCommand(
                 DoSideEffect.class,
                 (state, cmd) ->
@@ -334,7 +337,8 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public EventHandler<EventsInFlight, Event> eventHandler() {
-        return eventHandlerBuilder()
+        return newEventHandlerBuilder()
+            .forAnyState()
             .matchEvent(
                 IntentRecord.class,
                 (state, event) -> {
