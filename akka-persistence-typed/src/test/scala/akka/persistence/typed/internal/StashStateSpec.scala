@@ -4,29 +4,21 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ Behavior, Signal }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.Behavior
+import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.internal.InternalProtocol.IncomingCommand
+import akka.persistence.typed.internal.InternalProtocol.RecoveryPermitGranted
 import org.scalatest.WordSpecLike
 
-class StashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSpecLike {
-  import InternalProtocol._
+class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
-  case class Impl() extends StashReferenceManagement
+  "StashState" should {
 
-  "EventsourcedStashReferenceManagement instance" should {
-    "initialize stash only once" in {
-      val ref = Impl()
-      assert(ref.stashBuffer(dummySettings()).eq(ref.stashBuffer(dummySettings())))
-    }
-    // or should we?
-    "not reinitialize when capacity changes" in {
-      val ref = Impl()
-      assert(ref.stashBuffer(dummySettings()).eq(ref.stashBuffer(dummySettings(21))))
-    }
     "clear buffer on PostStop" in {
       val probe = TestProbe[Int]()
       val behavior = TestBehavior(probe)
@@ -43,23 +35,24 @@ class StashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSp
     }
   }
 
-  object TestBehavior extends StashReferenceManagement {
+  object TestBehavior {
 
     def apply(probe: TestProbe[Int]): Behavior[InternalProtocol] = {
       val settings = dummySettings()
-      Behaviors.setup[InternalProtocol](ctx ⇒
+      Behaviors.setup[InternalProtocol] { _ ⇒
+        val stashState = new StashState(settings)
         Behaviors.receiveMessagePartial[InternalProtocol] {
           case RecoveryPermitGranted ⇒
-            stashBuffer(settings).stash(RecoveryPermitGranted)
-            probe.ref ! stashBuffer(settings).size
+            stashState.internalStashBuffer.stash(RecoveryPermitGranted)
+            probe.ref ! stashState.internalStashBuffer.size
             Behaviors.same[InternalProtocol]
           case _: IncomingCommand[_] ⇒ Behaviors.stopped
         }.receiveSignal {
-          case (_, signal: Signal) ⇒
-            clearStashBuffer()
+          case (_, _) ⇒
+            stashState.clearStashBuffers()
             Behaviors.stopped[InternalProtocol]
         }
-      )
+      }
     }
   }
 

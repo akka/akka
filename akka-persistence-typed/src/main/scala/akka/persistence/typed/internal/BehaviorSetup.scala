@@ -9,14 +9,15 @@ import scala.util.Try
 
 import akka.Done
 import akka.actor.Cancellable
-import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.actor.typed.Logger
-import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
 
@@ -24,7 +25,7 @@ import akka.util.OptionVal
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
  */
 @InternalApi
-private[persistence] final class BehaviorSetup[C, E, S](
+private[akka] final class BehaviorSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
   val persistenceId:         PersistenceId,
   val emptyState:            S,
@@ -40,17 +41,17 @@ private[persistence] final class BehaviorSetup[C, E, S](
   val recovery:              Recovery,
   var holdingRecoveryPermit: Boolean,
   val settings:              EventSourcedSettings,
-  val internalStash:         StashBuffer[InternalProtocol]
+  val stashState:            StashState
 ) {
-  import akka.actor.typed.scaladsl.adapter._
   import InternalProtocol.RecoveryTickEvent
+  import akka.actor.typed.scaladsl.adapter._
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  val internalStashOverflowStrategy: StashOverflowStrategy = {
+  val stashOverflowStrategy: StashOverflowStrategy = {
     val system = context.system.toUntyped.asInstanceOf[ExtendedActorSystem]
     system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](settings.stashOverflowStrategyConfigurator, EmptyImmutableSeq)
       .map(_.create(system.settings.config)).get
@@ -108,7 +109,11 @@ private[persistence] final class BehaviorSetup[C, E, S](
 
 }
 
-object MDC {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object MDC {
   // format: OFF
   val AwaitingPermit    = "get-permit"
   val ReplayingSnapshot = "replay-snap"
