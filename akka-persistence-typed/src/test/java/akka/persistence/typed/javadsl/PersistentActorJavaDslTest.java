@@ -9,6 +9,7 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.event.Logging;
 import akka.japi.Pair;
 import akka.persistence.SnapshotMetadata;
 import akka.persistence.query.EventEnvelope;
@@ -32,6 +33,7 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import scala.Function0;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -614,14 +616,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     probe.expectMessage("started!"); // workaround for #26256
 
-    // FIXME this is a not a good Java API
-    new ErrorFilter(ClassCastException.class, null, null, false, false, 1)
+    new EventFilter(Logging.Error.class, Adapter.toUntyped(testKit.system()))
+        .occurrences(1)
         .intercept(
             () -> {
               c.tell("expect wrong type");
               return null;
-            },
-            Adapter.toUntyped(testKit.system()));
+            });
+
     probe.expectTerminated(c);
   }
 }
