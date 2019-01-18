@@ -333,7 +333,7 @@ private final case class BackoffOnStopOptionsImpl[T](
   finalStopMessage:   Option[Any ⇒ Boolean] = None
 ) extends BackoffOnStopOptions {
 
-  val backoffReset = reset.getOrElse(AutoReset(minBackoff))
+  private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
@@ -343,7 +343,7 @@ private final case class BackoffOnStopOptionsImpl[T](
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
   def withFinalStopMessage(action: Any ⇒ Boolean) = copy(finalStopMessage = Some(action))
 
-  def props = {
+  def props: Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
@@ -368,7 +368,7 @@ private final case class BackoffOnFailureOptionsImpl[T](
   replyWhileStopped:  Option[Any]          = None
 ) extends BackoffOnFailureOptions {
 
-  val backoffReset = reset.getOrElse(AutoReset(minBackoff))
+  private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
@@ -377,7 +377,7 @@ private final case class BackoffOnFailureOptionsImpl[T](
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 
-  def props = {
+  def props: Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")

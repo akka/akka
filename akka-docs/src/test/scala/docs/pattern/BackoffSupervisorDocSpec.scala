@@ -4,7 +4,8 @@
 
 package docs.pattern
 
-import akka.actor.{ ActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.actor.{ ActorContext, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.cluster.sharding.ShardRegion.Passivate
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 import akka.testkit.TestActors.EchoActor
 
@@ -99,4 +100,27 @@ class BackoffSupervisorDocSpec {
 
   case class MyException(msg: String) extends Exception(msg)
 
+  case object StopMessage
+
+  class BackoffSupervisorDocSpecExampleSharding {
+    val system: ActorSystem = ???
+    val context: ActorContext = ???
+    import scala.concurrent.duration._
+
+    val childProps = Props(classOf[EchoActor])
+
+    //#backoff-sharded
+    val supervisor = BackoffSupervisor.props(BackoffOpts.onStop(
+      childProps,
+      childName = "myEcho",
+      minBackoff = 3.seconds,
+      maxBackoff = 30.seconds,
+      randomFactor = 0.2
+    ).withFinalStopMessage(_ == StopMessage))
+    //#backoff-sharded
+
+    //#backoff-sharded-passivation
+    context.parent ! Passivate(StopMessage)
+    //#backoff-sharded-passivation
+  }
 }
