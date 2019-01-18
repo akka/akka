@@ -276,10 +276,9 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       probe.sendError(error)
       val buffer = Array.ofDim[Byte](5)
       val thrown = intercept[IOException] {
-        while (true)
-          inputStream.read(buffer)
+        inputStream.read(buffer) should !==(-1)
       }
-      awaitCond(thrown.getCause == error, readTimeout)
+      thrown.getCause should ===(error)
     }
   }
 
