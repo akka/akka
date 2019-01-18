@@ -4,15 +4,19 @@
 
 package akka.persistence.typed.internal
 
+import scala.collection.immutable
+
 import akka.actor.ActorRef
-import akka.actor.typed.{ Behavior, PostStop, PreRestart, Signal }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
+import akka.actor.typed.PreRestart
+import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
-
-import scala.collection.immutable
 
 /** INTERNAL API */
 @InternalApi
@@ -25,8 +29,8 @@ private[akka] trait JournalInteractions[C, E, S] {
   // ---------- journal interactions ---------
 
   protected def internalPersist(
-    state: Running.EventsourcedState[S],
-    event: EventOrTagged): Running.EventsourcedState[S] = {
+    state: Running.RunningState[S],
+    event: EventOrTagged): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
 
@@ -47,7 +51,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def internalPersistAll(
     events: immutable.Seq[EventOrTagged],
-    state:  Running.EventsourcedState[S]): Running.EventsourcedState[S] = {
+    state:  Running.RunningState[S]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
@@ -106,7 +110,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfUntyped)
   }
 
-  protected def internalSaveSnapshot(state: Running.EventsourcedState[S]): Unit = {
+  protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
     // don't store null state
     if (state.state != null)
       setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(

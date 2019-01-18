@@ -147,8 +147,8 @@ private object RestartSupervisor {
       }
   }
 
-  case object ScheduledRestart
-  final case class ResetRestartCount(current: Int) extends DeadLetterSuppression
+  final case class ScheduledRestart(owner: RestartSupervisor[_, _, _ <: Throwable]) extends DeadLetterSuppression
+  final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _, _ <: Throwable]) extends DeadLetterSuppression
 }
 
 private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: RestartOrBackoff)
@@ -192,25 +192,35 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
 
   override def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[T]): Behavior[T] = {
     msg.asInstanceOf[Any] match {
-      case ScheduledRestart ⇒
-        restartingInProgress match {
-          case OptionVal.Some((_, children)) ⇒
-            if (strategy.stopChildren && children.nonEmpty) {
-              // still waiting for children to stop
-              gotScheduledRestart = true
-              Behaviors.same
-            } else
-              restartCompleted(ctx)
+      case ScheduledRestart(owner) ⇒
+        if (owner eq this) {
+          restartingInProgress match {
+            case OptionVal.Some((_, children)) ⇒
+              if (strategy.stopChildren && children.nonEmpty) {
+                // still waiting for children to stop
+                gotScheduledRestart = true
+                Behaviors.same
+              } else
+                restartCompleted(ctx)
 
-          case OptionVal.None ⇒
-            throw new IllegalStateException("Unexpected ScheduledRestart when restart not in progress")
+            case OptionVal.None ⇒
+              throw new IllegalStateException("Unexpected ScheduledRestart when restart not in progress")
+          }
+        } else {
+          // ScheduledRestart from nested Backoff strategy
+          target(ctx, msg.asInstanceOf[T])
         }
 
-      case ResetRestartCount(current) ⇒
-        if (current == restartCount) {
-          restartCount = 0
+      case ResetRestartCount(current, owner) ⇒
+        if (owner eq this) {
+          if (current == restartCount) {
+            restartCount = 0
+          }
+          Behavior.same
+        } else {
+          // ResetRestartCount from nested Backoff strategy
+          target(ctx, msg.asInstanceOf[T])
         }
-        Behavior.same
 
       case m: T @unchecked ⇒
         restartingInProgress match {
@@ -288,7 +298,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       case backoff: Backoff ⇒
         val restartDelay = calculateDelay(currentRestartCount, backoff.minBackoff, backoff.maxBackoff, backoff.randomFactor)
         gotScheduledRestart = false
-        ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self.unsafeUpcast[Any], ScheduledRestart)
+        ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self.unsafeUpcast[Any], ScheduledRestart(this))
         Behaviors.empty
       case _: Restart ⇒
         if (childrenToStop.isEmpty)
@@ -302,7 +312,8 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     strategy match {
       case backoff: Backoff ⇒
         gotScheduledRestart = false
-        ctx.asScala.scheduleOnce(backoff.resetBackoffAfter, ctx.asScala.self.unsafeUpcast[Any], ResetRestartCount(restartCount))
+        ctx.asScala.scheduleOnce(backoff.resetBackoffAfter, ctx.asScala.self.unsafeUpcast[Any],
+          ResetRestartCount(restartCount, this))
       case _: Restart ⇒
     }
 

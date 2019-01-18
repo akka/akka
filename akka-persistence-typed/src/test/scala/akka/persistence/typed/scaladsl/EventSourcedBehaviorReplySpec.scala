@@ -9,11 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.Config
@@ -24,7 +23,7 @@ object EventSourcedBehaviorReplySpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = INFO
+    # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
@@ -42,7 +41,7 @@ object EventSourcedBehaviorReplySpec {
 
   final case class State(value: Int, history: Vector[Int])
 
-  def counter(persistenceId: PersistenceId)(implicit system: ActorSystem[_]): Behavior[Command[_]] =
+  def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
     Behaviors.setup(ctx ⇒ counter(ctx, persistenceId))
 
   def counter(
@@ -51,7 +50,7 @@ object EventSourcedBehaviorReplySpec {
     EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
-      commandHandler = (state, cmd) ⇒ cmd match {
+      commandHandler = (state, command) ⇒ command match {
 
         case cmd: IncrementWithConfirmation ⇒
           Effect.persist(Incremented(1))
@@ -76,7 +75,7 @@ object EventSourcedBehaviorReplySpec {
   }
 }
 
-class EventSourcedBehaviorReplySpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorReplySpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorReplySpec.conf) with WordSpecLike {
 
   import EventSourcedBehaviorReplySpec._
 

@@ -4,27 +4,32 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.{ Collections, Optional }
+import java.util.Collections
+import java.util.Optional
+
+import scala.util.Failure
+import scala.util.Success
 
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior }
+import akka.actor.typed.BackoffSupervisorStrategy
+import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.persistence.SnapshotMetadata
-import akka.persistence.typed.{ EventAdapter, _ }
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
-import scala.util.{ Failure, Success }
-
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, onPersistFailure: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
 
-  def this(persistenceId: PersistenceId, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
-    this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
+  def this(persistenceId: PersistenceId, onPersistFailure: BackoffSupervisorStrategy) = {
+    this(persistenceId, Optional.ofNullable(onPersistFailure))
   }
 
   /**
@@ -166,8 +171,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       .eventAdapter(eventAdapter())
       .onRecoveryFailure(onRecoveryFailure)
 
-    if (supervisorStrategy.isPresent)
-      behavior.onPersistFailure(supervisorStrategy.get)
+    if (onPersistFailure.isPresent)
+      behavior.onPersistFailure(onPersistFailure.get)
     else
       behavior
   }

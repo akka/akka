@@ -116,8 +116,8 @@ object SupervisorStrategy {
    * INTERNAL API
    */
   @InternalApi private[akka] case class Stop(loggingEnabled: Boolean) extends SupervisorStrategy {
-    override def withLoggingEnabled(on: Boolean) =
-      copy(loggingEnabled = on)
+    override def withLoggingEnabled(enabled: Boolean) =
+      copy(loggingEnabled = enabled)
   }
 
   /**
@@ -172,9 +172,6 @@ object SupervisorStrategy {
     stopChildren:      Boolean        = true,
     stashCapacity:     Int            = -1) extends BackoffSupervisorStrategy with RestartOrBackoff {
 
-    override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
-      copy(loggingEnabled = enabled)
-
     override def withResetBackoffAfter(timeout: FiniteDuration): BackoffSupervisorStrategy =
       copy(resetBackoffAfter = timeout)
 
@@ -191,13 +188,16 @@ object SupervisorStrategy {
 
     override def withStashCapacity(capacity: Int): BackoffSupervisorStrategy =
       copy(stashCapacity = capacity)
+
+    override def withLoggingEnabled(enabled: Boolean): BackoffSupervisorStrategy =
+      copy(loggingEnabled = enabled)
   }
 }
 
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
 
-  def withLoggingEnabled(on: Boolean): SupervisorStrategy
+  def withLoggingEnabled(enabled: Boolean): SupervisorStrategy
 }
 
 sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {

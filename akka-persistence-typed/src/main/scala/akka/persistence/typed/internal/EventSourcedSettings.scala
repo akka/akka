@@ -6,12 +6,12 @@ package akka.persistence.typed.internal
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
 import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API

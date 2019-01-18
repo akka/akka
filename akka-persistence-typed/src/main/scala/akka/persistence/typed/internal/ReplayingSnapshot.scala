@@ -4,17 +4,18 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
+import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
+import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence._
 
 /**
  * INTERNAL API
  *
- * Second (of four) behavior of an PersistentBehavior.
+ * Second (of four) behavior of an EventSourcedBehavior.
  *
  * In this behavior the recovery process is initiated.
  * We try to obtain a snapshot from the configured snapshot store,
@@ -92,7 +93,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
-    setup.internalStash.stash(cmd)
+    stashInternal(cmd)
     Behavior.same
   }
 

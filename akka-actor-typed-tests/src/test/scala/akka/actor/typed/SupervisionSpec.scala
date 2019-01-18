@@ -354,6 +354,62 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       }
     }
 
+    "support nesting exceptions with outer restart and inner backoff strategies" in {
+      val probe = TestProbe[Event]("evt")
+      val behv =
+        supervise(
+          supervise(targetBehavior(probe.ref))
+            .onFailure[IllegalArgumentException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0))
+        ).onFailure[IOException](SupervisorStrategy.restart)
+
+      val ref = spawn(behv)
+
+      EventFilter[Exception](occurrences = 1).intercept {
+        ref ! Throw(new IOException())
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+      // verify that it's still alive and not stopped, IllegalStateException would stop it
+      ref ! Ping(1)
+      probe.expectMessage(Pong(1))
+
+      EventFilter[IllegalArgumentException](occurrences = 1).intercept {
+        ref ! Throw(new IllegalArgumentException("cat"))
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+
+      // verify that it's still alive and not stopped, IllegalStateException would stop it
+      ref ! Ping(2)
+      probe.expectMessage(Pong(2))
+    }
+
+    "support nesting exceptions with inner restart and outer backoff strategies" in {
+      val probe = TestProbe[Event]("evt")
+      val behv =
+        supervise(
+          supervise(targetBehavior(probe.ref))
+            .onFailure[IllegalArgumentException](SupervisorStrategy.restart)
+        ).onFailure[IOException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0))
+
+      val ref = spawn(behv)
+
+      EventFilter[Exception](occurrences = 1).intercept {
+        ref ! Throw(new IOException())
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+      // verify that it's still alive and not stopped, IllegalStateException would stop it
+      ref ! Ping(1)
+      probe.expectMessage(Pong(1))
+
+      EventFilter[IllegalArgumentException](occurrences = 1).intercept {
+        ref ! Throw(new IllegalArgumentException("cat"))
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+
+      // verify that it's still alive and not stopped, IllegalStateException would stop it
+      ref ! Ping(2)
+      probe.expectMessage(Pong(2))
+    }
+
     "stop when not supervised" in {
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)

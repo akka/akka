@@ -6,10 +6,13 @@ package akka.persistence.typed.internal
 
 import scala.collection.immutable
 
-import akka.persistence.typed.{ SideEffect, javadsl, scaladsl }
 import akka.annotation.InternalApi
 import akka.persistence.typed.NoReplyEffectImpl
+import akka.persistence.typed.SideEffect
 import akka.persistence.typed.Stop
+import akka.persistence.typed.UnstashAll
+import akka.persistence.typed.javadsl
+import akka.persistence.typed.scaladsl
 
 /** INTERNAL API */
 @InternalApi
@@ -19,6 +22,9 @@ private[akka] abstract class EffectImpl[+Event, State] extends javadsl.ReplyEffe
 
   override def andThen(chainedEffect: SideEffect[State]): EffectImpl[Event, State] =
     CompositeEffect(this, chainedEffect)
+
+  override def thenUnstashAll(): EffectImpl[Event, State] =
+    CompositeEffect(this, UnstashAll.asInstanceOf[SideEffect[State]])
 
   override def thenNoReply(): EffectImpl[Event, State] =
     CompositeEffect(this, new NoReplyEffectImpl[State])
@@ -64,4 +70,8 @@ private[akka] case class PersistAll[Event, State](override val events: immutable
 /** INTERNAL API */
 @InternalApi
 private[akka] case object Unhandled extends EffectImpl[Nothing, Nothing]
+
+/** INTERNAL API */
+@InternalApi
+private[akka] case object Stash extends EffectImpl[Nothing, Nothing]
 

@@ -36,7 +36,7 @@ import org.scalatest.WordSpecLike
 object ClusterShardingPersistenceSpec {
   val config = ConfigFactory.parseString(
     """
-      akka.loglevel = DEBUG
+      akka.loglevel = INFO
       #akka.persistence.typed.log-stashing = on
 
       akka.actor.provider = cluster
@@ -55,6 +55,9 @@ object ClusterShardingPersistenceSpec {
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case class Echo(msg: String, replyTo: ActorRef[String]) extends Command
   final case class Block(latch: CountDownLatch) extends Command
+  case object BeginStashingAddCommands extends Command
+  case object UnstashAll extends Command
+  case object UnstashAllAndPassivate extends Command
 
   val typeKey = EntityTypeKey[Command]("test")
 
@@ -72,17 +75,26 @@ object ClusterShardingPersistenceSpec {
         case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
+      // transient state (testing purpose)
+      var stashing = false
+
       EventSourcedEntity[Command, String, String](
         entityTypeKey = typeKey,
         entityId = entityId,
         emptyState = "",
         commandHandler = (state, cmd) ⇒ cmd match {
           case Add(s) ⇒
-            Effect.persist(s)
+            if (stashing)
+              Effect.stash()
+            else
+              Effect.persist(s)
 
           case cmd @ AddWithConfirmation(s) ⇒
-            Effect.persist(s)
-              .thenReply(cmd)(_ ⇒ Done)
+            if (stashing)
+              Effect.stash()
+            else
+              Effect.persist(s)
+                .thenReply(cmd)(_ ⇒ Done)
 
           case Get(replyTo) ⇒
             replyTo ! s"$entityId:$state"
@@ -99,6 +111,19 @@ object ClusterShardingPersistenceSpec {
           case Block(latch) ⇒
             latch.await(5, TimeUnit.SECONDS)
             Effect.none
+
+          case BeginStashingAddCommands ⇒
+            stashing = true
+            Effect.none
+
+          case UnstashAll ⇒
+            stashing = false
+            Effect.unstashAll()
+
+          case UnstashAllAndPassivate ⇒
+            stashing = false
+            shard ! Passivate(ctx.self)
+            Effect.unstashAll()
         },
         eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
         .onRecoveryCompleted { state ⇒
@@ -408,6 +433,51 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       entityRef ! Echo("echo-5", echoProbe.ref)
       echoProbe.expectMessage("echo-5")
       recoveryProbe.expectMessage("recoveryCompleted:a|b")
+    }
+
+    "handle PoisonPill before UnstashAll from user stash" in {
+      val entityId = nextEntityId()
+
+      val p1 = TestProbe[Done]()
+      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      ref ! Add("1")
+      ref ! Add("2")
+      ref ! BeginStashingAddCommands
+      ref ! Add("3")
+      ref ! Add("4")
+
+      ref ! PassivateAndPersist("5")(p1.ref)
+      p1.receiveMessage()
+
+      ref ! Add("6")
+      // user was stash discarded, i.e. 3 and 4 not handled
+      ref ! UnstashAll
+
+      val probe = TestProbe[String]()
+      ref ! Get(probe.ref)
+      probe.expectMessage(entityId + ":" + List(1, 2, 5, 6).map(_.toString).mkString("|"))
+    }
+
+    "handle PoisonPill after UnstashAll from user stash" in {
+      val entityId = nextEntityId()
+      val recoveryProbe = TestProbe[String]()
+      recoveryCompletedProbes.put(entityId, recoveryProbe.ref)
+
+      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      ref ! Add("1")
+      recoveryProbe.expectMessage(max = 10.seconds, "recoveryCompleted:")
+      ref ! BeginStashingAddCommands
+      ref ! Add("2")
+      ref ! Add("3")
+      ref ! Add("4")
+      ref ! UnstashAllAndPassivate
+
+      val probe = TestProbe[String]()
+      recoveryProbe.awaitAssert {
+        ref ! Get(probe.ref)
+        recoveryProbe.expectMessage(max = 1.second, "recoveryCompleted:" + (1 to 4).map(_.toString).mkString("|"))
+        probe.expectMessage(entityId + ":" + (1 to 4).map(_.toString).mkString("|"))
+      }
     }
 
   }
