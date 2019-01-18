@@ -17,9 +17,11 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
-@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext, adapter: ActorAdapter[T]) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
+
+  private[akka] def currentBehavior: Behavior[T] = adapter.getBehavior
 
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
