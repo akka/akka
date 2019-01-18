@@ -16,7 +16,6 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
@@ -65,11 +64,10 @@ object EventSourcedBehaviorStashSpec {
 
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
     Behaviors.supervise[Command[_]] {
-      Behaviors.setup(ctx ⇒ counter(ctx, persistenceId))
+      Behaviors.setup(_ ⇒ eventSourcedCounter(persistenceId))
     }.onFailure(SupervisorStrategy.restart.withLoggingEnabled(enabled = false))
 
-  def counter(
-    ctx:           ActorContext[Command[_]],
+  def eventSourcedCounter(
     persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
     EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
       persistenceId,
@@ -128,7 +126,7 @@ object EventSourcedBehaviorStashSpec {
 
   private def inactive(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case cmd: Increment ⇒
+      case _: Increment ⇒
         Effect.stash()
       case cmd @ UpdateValue(_, value, _) ⇒
         Effect.persist(ValueUpdated(value))
