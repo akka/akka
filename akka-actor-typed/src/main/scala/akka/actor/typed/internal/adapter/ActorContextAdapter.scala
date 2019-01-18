@@ -95,7 +95,7 @@ import scala.concurrent.duration._
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        val logClass = LoggerClass.getLoggerClass(classOf[Behavior[_]])
+        val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         initLoggerWithClass(logClass)
     }
   }

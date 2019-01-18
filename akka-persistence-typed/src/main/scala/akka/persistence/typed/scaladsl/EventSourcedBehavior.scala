@@ -45,7 +45,7 @@ object EventSourcedBehavior {
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.getLoggerClass(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 
@@ -59,7 +59,7 @@ object EventSourcedBehavior {
     emptyState:     State,
     commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
     eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.getLoggerClass(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 

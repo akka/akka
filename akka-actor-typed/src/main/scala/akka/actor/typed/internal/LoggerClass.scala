@@ -23,7 +23,7 @@ private[akka] object LoggerClass {
   /**
    * Try to extract a logger class from the call stack, if not possible the provided default is used
    */
-  def getLoggerClass(default: Class[_]): Class[_] = {
+  def detectLoggerClassFromStack(default: Class[_]): Class[_] = {
     // TODO use stack walker API when we no longer need to support Java 8
     try {
       val trace = new TrickySecurityManager().getClassStack
