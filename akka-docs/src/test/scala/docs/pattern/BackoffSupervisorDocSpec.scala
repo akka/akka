@@ -4,8 +4,8 @@
 
 package docs.pattern
 
-import akka.actor.{ ActorSystem, Props, OneForOneStrategy, SupervisorStrategy }
-import akka.pattern.{ Backoff, BackoffSupervisor }
+import akka.actor.{ ActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.pattern.{ BackoffOpts, BackoffSupervisor }
 import akka.testkit.TestActors.EchoActor
 
 class BackoffSupervisorDocSpec {
@@ -18,13 +18,12 @@ class BackoffSupervisorDocSpec {
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
-      Backoff.onStop(
+      BackoffOpts.onStop(
         childProps,
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxNrOfRetries = -1
+        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -39,13 +38,12 @@ class BackoffSupervisorDocSpec {
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
-      Backoff.onFailure(
+      BackoffOpts.onFailure(
         childProps,
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxNrOfRetries = -1
+        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -60,13 +58,12 @@ class BackoffSupervisorDocSpec {
 
     //#backoff-custom-stop
     val supervisor = BackoffSupervisor.props(
-      Backoff.onStop(
+      BackoffOpts.onStop(
         childProps,
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxNrOfRetries = -1
+        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ).withManualReset // the child must send BackoffSupervisor.Reset to its parent
         .withDefaultStoppingStrategy // Stop at any Exception thrown
     )
@@ -83,13 +80,12 @@ class BackoffSupervisorDocSpec {
 
     //#backoff-custom-fail
     val supervisor = BackoffSupervisor.props(
-      Backoff.onFailure(
+      BackoffOpts.onFailure(
         childProps,
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxNrOfRetries = -1
+        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ).withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
         .withSupervisorStrategy(
           OneForOneStrategy() {
