@@ -274,12 +274,6 @@ private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy): T
 
   /**
-   * Returns a new BackoffOptions with a default `SupervisorStrategy.stoppingStrategy`.
-   * The default supervisor strategy is used as fallback for throwables not handled by `SupervisorStrategy.stoppingStrategy`.
-   */
-  def withDefaultStoppingStrategy: T
-
-  /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
    * By default, the supervisor will retry infinitely.
    * With this option, the supervisor will terminate itself after the maxNoOfRetries is reached.
@@ -310,6 +304,12 @@ private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]
 sealed trait BackoffOnStopOptions extends ExtendedBackoffOptions[BackoffOnStopOptions] {
 
   /**
+   * Returns a new BackoffOptions with a default `SupervisorStrategy.stoppingStrategy`.
+   * The default supervisor strategy is used as fallback for throwables not handled by `SupervisorStrategy.stoppingStrategy`.
+   */
+  def withDefaultStoppingStrategy: BackoffOnStopOptions
+
+  /**
    * Predicate evaluated for each message, if it returns true and the supervised actor is
    * stopped then the supervisor will stop its self. If it returns true while
    * the supervised actor is running then it will be forwarded to the supervised actor and
@@ -335,12 +335,15 @@ private final case class BackoffOnStopOptionsImpl[T](
 
   private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
+  // default
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
-  def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
+
+  // additional
+  def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withFinalStopMessage(action: Any ⇒ Boolean) = copy(finalStopMessage = Some(action))
 
   def props: Props = {
@@ -370,10 +373,10 @@ private final case class BackoffOnFailureOptionsImpl[T](
 
   private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
+  // default
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
-  def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 
