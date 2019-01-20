@@ -319,6 +319,9 @@ TODO include corresponding example in Java
 When using the reply effect the commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
 in a standardized way.
 
+@java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
+`EventSourcedBehaviorWithEnforcedReplies`], as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
+
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
 

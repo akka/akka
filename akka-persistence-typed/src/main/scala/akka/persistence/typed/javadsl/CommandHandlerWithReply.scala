@@ -13,24 +13,32 @@ import akka.util.OptionVal
 
 import scala.compat.java8.FunctionConverters._
 
+/* Note that this is a copy of CommandHandler.scala to support ReplyEffect
+ * s/Effect/ReplyEffect/
+ * s/CommandHandler/CommandHandlerWithReply/
+ * s/CommandHandlerBuilder/CommandHandlerWithReplyBuilder/
+ * s/CommandHandlerBuilderByState/CommandHandlerWithReplyBuilderByState/
+ * s/EventSourcedBehavior/EventSourcedBehaviorWithEnforcedReplies/
+ */
+
 /**
  * FunctionalInterface for reacting on commands
  *
- * Used with [[CommandHandlerBuilder]] to setup the behavior of a [[EventSourcedBehavior]]
+ * Used with [[CommandHandlerWithReplyBuilder]] to setup the behavior of a [[EventSourcedBehaviorWithEnforcedReplies]]
  */
 @FunctionalInterface
-trait CommandHandler[Command, Event, State] {
-  def apply(state: State, command: Command): Effect[Event, State]
+trait CommandHandlerWithReply[Command, Event, State] extends CommandHandler[Command, Event, State] {
+  def apply(state: State, command: Command): ReplyEffect[Event, State]
 }
 
-object CommandHandlerBuilder {
-  def builder[Command, Event, State](): CommandHandlerBuilder[Command, Event, State] =
-    new CommandHandlerBuilder[Command, Event, State]
+object CommandHandlerWithReplyBuilder {
+  def builder[Command, Event, State](): CommandHandlerWithReplyBuilder[Command, Event, State] =
+    new CommandHandlerWithReplyBuilder[Command, Event, State]
 }
 
-final class CommandHandlerBuilder[Command, Event, State]() {
+final class CommandHandlerWithReplyBuilder[Command, Event, State]() {
 
-  private var builders: List[CommandHandlerBuilderByState[Command, Event, State, State]] = Nil
+  private var builders: List[CommandHandlerWithReplyBuilderByState[Command, Event, State, State]] = Nil
 
   /**
    * Use this method to define command handlers that are selected when the passed predicate holds true.
@@ -41,10 +49,10 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    *
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forState(statePredicate: Predicate[State]): CommandHandlerBuilderByState[Command, Event, State, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](statePredicate)
+  def forState(statePredicate: Predicate[State]): CommandHandlerWithReplyBuilderByState[Command, Event, State, State] = {
+    val builder = CommandHandlerWithReplyBuilderByState.builder[Command, Event, State](statePredicate)
     builders = builder :: builders
     builder
   }
@@ -60,11 +68,11 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`
    *
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forState[S <: State](stateClass: Class[S], statePredicate: Predicate[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    val builder = new CommandHandlerBuilderByState[Command, Event, S, State](stateClass, statePredicate)
-    builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
+  def forState[S <: State](stateClass: Class[S], statePredicate: Predicate[S]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    val builder = new CommandHandlerWithReplyBuilderByState[Command, Event, S, State](stateClass, statePredicate)
+    builders = builder.asInstanceOf[CommandHandlerWithReplyBuilderByState[Command, Event, State, State]] :: builders
     builder
   }
 
@@ -76,11 +84,11 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * otherwise you risk to 'shadow' part of your command handlers.
    *
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`.
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forStateType[S <: State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, S, State](stateClass)
-    builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
+  def forStateType[S <: State](stateClass: Class[S]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    val builder = CommandHandlerWithReplyBuilderByState.builder[Command, Event, S, State](stateClass)
+    builders = builder.asInstanceOf[CommandHandlerWithReplyBuilderByState[Command, Event, State, State]] :: builders
     builder
   }
 
@@ -92,11 +100,11 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
+  def forNullState(): CommandHandlerWithReplyBuilderByState[Command, Event, State, State] = {
     val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.isNull(s))
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
+    val builder = CommandHandlerWithReplyBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
@@ -108,11 +116,11 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forNonNullState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
+  def forNonNullState(): CommandHandlerWithReplyBuilderByState[Command, Event, State, State] = {
     val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.nonNull(s))
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
+    val builder = CommandHandlerWithReplyBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
@@ -126,16 +134,16 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * otherwise you risk to 'shadow' part of your command handlers.
    * Extra care should be taken when using [[forAnyState]] as it will match any state. Any command handler define after it will never be reached.
    *
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def forAnyState(): CommandHandlerBuilderByState[Command, Event, State, State] = {
+  def forAnyState(): CommandHandlerWithReplyBuilderByState[Command, Event, State, State] = {
     val predicate: Predicate[State] = asJavaPredicate(_ ⇒ true)
-    val builder = CommandHandlerBuilderByState.builder[Command, Event, State](predicate)
+    val builder = CommandHandlerWithReplyBuilderByState.builder[Command, Event, State](predicate)
     builders = builder :: builders
     builder
   }
 
-  def build(): CommandHandler[Command, Event, State] = {
+  def build(): CommandHandlerWithReply[Command, Event, State] = {
 
     val combined =
       builders.reverse match {
@@ -151,7 +159,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
 
 }
 
-object CommandHandlerBuilderByState {
+object CommandHandlerWithReplyBuilderByState {
 
   private val _trueStatePredicate: Predicate[Any] = new Predicate[Any] {
     override def test(t: Any): Boolean = true
@@ -161,18 +169,18 @@ object CommandHandlerBuilderByState {
 
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def builder[Command, Event, S <: State, State](stateClass: Class[S]): CommandHandlerBuilderByState[Command, Event, S, State] =
-    new CommandHandlerBuilderByState(stateClass, statePredicate = trueStatePredicate)
+  def builder[Command, Event, S <: State, State](stateClass: Class[S]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] =
+    new CommandHandlerWithReplyBuilderByState(stateClass, statePredicate = trueStatePredicate)
 
   /**
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
    *                       useful for example when state type is an Optional
-   * @return A new, mutable, CommandHandlerBuilderByState
+   * @return A new, mutable, CommandHandlerWithReplyBuilderByState
    */
-  def builder[Command, Event, State](statePredicate: Predicate[State]): CommandHandlerBuilderByState[Command, Event, State, State] =
-    new CommandHandlerBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
+  def builder[Command, Event, State](statePredicate: Predicate[State]): CommandHandlerWithReplyBuilderByState[Command, Event, State, State] =
+    new CommandHandlerWithReplyBuilderByState(classOf[Any].asInstanceOf[Class[State]], statePredicate)
 
   /**
    * INTERNAL API
@@ -180,23 +188,23 @@ object CommandHandlerBuilderByState {
   @InternalApi private final case class CommandHandlerCase[Command, Event, State](
     commandPredicate: Command ⇒ Boolean,
     statePredicate:   State ⇒ Boolean,
-    handler:          BiFunction[State, Command, Effect[Event, State]])
+    handler:          BiFunction[State, Command, ReplyEffect[Event, State]])
 }
 
-final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @InternalApi private[persistence] (
+final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, State] @InternalApi private[persistence] (
   private val stateClass: Class[S], private val statePredicate: Predicate[S]) {
 
-  import CommandHandlerBuilderByState.CommandHandlerCase
+  import CommandHandlerWithReplyBuilderByState.CommandHandlerCase
 
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
 
-  private def addCase(predicate: Command ⇒ Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
+  private def addCase(predicate: Command ⇒ Boolean, handler: BiFunction[S, Command, ReplyEffect[Event, State]]): Unit = {
     cases = CommandHandlerCase[Command, Event, State](
       commandPredicate = predicate,
       statePredicate = state ⇒
         if (state == null) statePredicate.test(state.asInstanceOf[S])
         else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-      handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
+      handler.asInstanceOf[BiFunction[State, Command, ReplyEffect[Event, State]]]) :: cases
   }
 
   /**
@@ -206,7 +214,7 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), handler)
     this
   }
@@ -221,9 +229,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, ReplyEffect[Event, State]] {
+      override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
     })
     this
   }
@@ -235,8 +243,8 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
+  def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, ReplyEffect[Event, State]]])
     this
   }
 
@@ -250,9 +258,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
-      override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
+  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    matchCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
+      override def apply(state: S, cmd: C): ReplyEffect[Event, State] = handler(cmd)
     })
   }
 
@@ -265,9 +273,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
-      override def apply(state: S, cmd: C): Effect[Event, State] = handler.get()
+  def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    matchCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
+      override def apply(state: S, cmd: C): ReplyEffect[Event, State] = handler.get()
     })
   }
 
@@ -284,9 +292,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Extra care should be taken when using [[matchAny]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
-   * @return A CommandHandler from the appended states.
+   * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
+  def matchAny(handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
     addCase(_ ⇒ true, handler)
     build()
   }
@@ -297,7 +305,7 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this to declare a command handler that will match any command. This is particular useful when encoding
    * a finite state machine in which the final state is not supposed to handle any new command.
    *
-   * Use this when you just need to return an [[Effect]] without using any data from the state.
+   * Use this when you just need to return an [[ReplyEffect]] without using any data from the state.
    *
    * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
@@ -306,11 +314,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Extra care should be taken when using [[matchAny]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
-   * @return A CommandHandler from the appended states.
+   * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: JFunction[Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
-    addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+  def matchAny(handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
+    addCase(_ ⇒ true, new BiFunction[S, Command, ReplyEffect[Event, State]] {
+      override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
     })
     build()
   }
@@ -320,7 +328,7 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this to declare a command handler that will match any command. This is particular useful when encoding
    * a finite state machine in which the final state is not supposed to handle any new command.
    *
-   * Use this when you just need to return an [[Effect]] without using any data from the command or from the state.
+   * Use this when you just need to return an [[ReplyEffect]] without using any data from the command or from the state.
    *
    * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
@@ -329,11 +337,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Extra care should be taken when using [[matchAny]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
-   * @return A CommandHandler from the appended states.
+   * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandler[Command, Event, State] = {
-    addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
-      override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
+  def matchAny(handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
+    addCase(_ ⇒ true, new BiFunction[S, Command, ReplyEffect[Event, State]] {
+      override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler.get()
     })
     build()
   }
@@ -342,29 +350,29 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Compose this builder with another builder. The handlers in this builder will be tried first followed
    * by the handlers in `other`.
    */
-  def orElse[S2 <: State](other: CommandHandlerBuilderByState[Command, Event, S2, State]): CommandHandlerBuilderByState[Command, Event, S2, State] = {
-    val newBuilder = new CommandHandlerBuilderByState[Command, Event, S2, State](other.stateClass, other.statePredicate)
+  def orElse[S2 <: State](other: CommandHandlerWithReplyBuilderByState[Command, Event, S2, State]): CommandHandlerWithReplyBuilderByState[Command, Event, S2, State] = {
+    val newBuilder = new CommandHandlerWithReplyBuilderByState[Command, Event, S2, State](other.stateClass, other.statePredicate)
     // problem with overloaded constructor with `cases` as parameter
     newBuilder.cases = other.cases ::: cases
     newBuilder
   }
 
   /**
-   * Builds and returns a handler from the appended states. The returned [[CommandHandler]] will throw a [[scala.MatchError]]
+   * Builds and returns a handler from the appended states. The returned [[CommandHandlerWithReply]] will throw a [[scala.MatchError]]
    * if applied to a command that has no defined case.
    */
-  def build(): CommandHandler[Command, Event, State] = {
+  def build(): CommandHandlerWithReply[Command, Event, State] = {
     val builtCases = cases.reverse.toArray
 
-    new CommandHandler[Command, Event, State] {
-      override def apply(state: State, command: Command): Effect[Event, State] = {
+    new CommandHandlerWithReply[Command, Event, State] {
+      override def apply(state: State, command: Command): ReplyEffect[Event, State] = {
         var idx = 0
-        var effect: OptionVal[Effect[Event, State]] = OptionVal.None
+        var effect: OptionVal[ReplyEffect[Event, State]] = OptionVal.None
 
         while (idx < builtCases.length && effect.isEmpty) {
           val curr = builtCases(idx)
           if (curr.statePredicate(state) && curr.commandPredicate(command)) {
-            val x: Effect[Event, State] = curr.handler.apply(state, command)
+            val x: ReplyEffect[Event, State] = curr.handler.apply(state, command)
             effect = OptionVal.Some(x)
           }
           idx += 1
