@@ -235,7 +235,8 @@ private[stream] object InputStreamSinkStage {
           case Finished ⇒
             isStageAlive = false
             None
-          case _ ⇒ None
+          case Failed(e) ⇒ throw new IOException(e)
+          case _         ⇒ None
         }
       case Some(_) ⇒ detachedChunk
     }
