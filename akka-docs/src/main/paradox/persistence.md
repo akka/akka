@@ -131,7 +131,7 @@ The easiest way to run this example yourself is to download the ready to run
 @scala[@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)]
 @java[@extref[Akka Persistence Sample with Java](ecs:akka-samples-persistence-java)]
 together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-sample-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-persistence-java)].
+The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-samples-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-persistence-java)].
 
 @@@ note
 
