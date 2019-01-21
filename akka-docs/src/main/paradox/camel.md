@@ -386,9 +386,7 @@ to do other work) and resume processing when the response is ready. This is
 currently the case for a [subset of components](http://camel.apache.org/asynchronous-routing-engine.html) 
 such as the Jetty component.
 All other Camel components can still be used, but they will cause
-allocation of a thread for the duration of an in-out message exchange. There's
-also [Examples](#camel-examples) that implements both, an asynchronous
-consumer and an asynchronous producer, with the jetty component.
+allocation of a thread for the duration of an in-out message exchange.
 
 If the used Camel component is blocking it might be necessary to use a separate
 @ref:[dispatcher](dispatchers.md) for the producer. The Camel processor is
@@ -509,19 +507,6 @@ If the actor cannot be found, a `ActorNotRegisteredException` is thrown.
 
 *) Before passing the RouteDefinition instance to the route definition handler,
 akka-camel may make some further modifications to it.
-
-<a id="camel-examples"></a>
-## Examples
-
-The sample named @scala[@extref[Akka Camel Samples with Scala](ecs:akka-samples-camel-scala)(@extref[source code](samples:akka-sample-camel-scala))]@java[@extref[Akka Camel Samples with Java](ecs:akka-samples-camel-java)(@extref[source code](samples:akka-sample-camel-java))]
-contains 3 samples:
-
- * Asynchronous routing and transformation - This example demonstrates how to implement consumer and
-producer actors that support [Asynchronous routing](#camel-asynchronous-routing) with their Camel endpoints.
- * Custom Camel route - Demonstrates the combined usage of a `Producer` and a
-`Consumer` actor as well as the inclusion of a custom Camel route.
- * Quartz Scheduler Example - Showing how simple is to implement a cron-style scheduler by
-using the Camel Quartz component
 
 ## Configuration
 
