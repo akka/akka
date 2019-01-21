@@ -20,11 +20,13 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
+
 import akka.persistence.typed.Callback
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
 import akka.persistence.typed.Stop
 import akka.persistence.typed.UnstashAll
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
 /**
@@ -48,6 +50,10 @@ import akka.persistence.typed.scaladsl.Effect
 @InternalApi
 private[akka] object Running {
 
+  trait WithSeqNrAccessible {
+    def currentSequenceNumber: Long
+  }
+
   final case class RunningState[State](
     seqNr:              Long,
     state:              State,
@@ -66,14 +72,16 @@ private[akka] object Running {
     }
   }
 
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] =
-    new Running(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
+    val running = new Running(setup.setMdc(MDC.RunningCmds))
+    new running.HandlingCommands(state)
+  }
 }
 
 // ===============================================
 
 /** INTERNAL API */
-@InternalApi private[akka] class Running[C, E, S](
+@InternalApi private[akka] final class Running[C, E, S](
   override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
   import InternalProtocol._
@@ -83,7 +91,22 @@ private[akka] object Running {
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
   private val storingSnapshotMdc = MDC.create(setup.persistenceId, MDC.StoringSnapshot)
 
-  def handlingCommands(state: RunningState[S]): Behavior[InternalProtocol] = {
+  final class HandlingCommands(state: RunningState[S]) extends AbstractBehavior[InternalProtocol] with WithSeqNrAccessible {
+
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r) ⇒
+        setup.log.warning("Unexpected SnapshotterResponse {}", r)
+        Behaviors.unhandled
+      case _ ⇒ Behaviors.unhandled
+    }
+
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill ⇒
+        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
+        else new HandlingCommands(state.copy(receivedPoisonPill = true))
+    }
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
@@ -170,18 +193,7 @@ private[akka] object Running {
 
     setup.setMdc(runningCmdsMdc)
 
-    Behaviors.receiveMessage[InternalProtocol] {
-      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-      case SnapshotterResponse(r) ⇒
-        setup.log.warning("Unexpected SnapshotterResponse {}", r)
-        Behaviors.unhandled
-      case _ ⇒ Behaviors.unhandled
-    }.receiveSignal {
-      case (_, PoisonPill) ⇒
-        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
-        else handlingCommands(state.copy(receivedPoisonPill = true))
-    }
-
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
   // ===============================================
@@ -202,7 +214,7 @@ private[akka] object Running {
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     var sideEffects:            immutable.Seq[SideEffect[S]])
-    extends AbstractBehavior[InternalProtocol] {
+    extends AbstractBehavior[InternalProtocol] with WithSeqNrAccessible {
 
     private var eventCounter = 0
 
@@ -285,6 +297,7 @@ private[akka] object Running {
         this
     }
 
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
   // ===============================================
@@ -343,7 +356,7 @@ private[akka] object Running {
   // --------------------------
 
   def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: RunningState[S]): Behavior[InternalProtocol] = {
-    var behavior: Behavior[InternalProtocol] = handlingCommands(state)
+    var behavior: Behavior[InternalProtocol] = new HandlingCommands(state)
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop

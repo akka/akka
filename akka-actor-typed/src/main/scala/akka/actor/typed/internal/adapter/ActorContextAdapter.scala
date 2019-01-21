@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 
   import ActorRefAdapter.toUntyped
 
-  private[akka] def currentBehavior: Behavior[T] = adapter.getBehavior
+  private[akka] def currentBehavior: Behavior[T] = adapter.currentBehavior
 
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None

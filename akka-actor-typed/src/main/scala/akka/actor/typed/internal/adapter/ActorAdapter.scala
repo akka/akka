@@ -40,7 +40,7 @@ import akka.util.OptionVal
   import Behavior._
 
   protected var behavior: Behavior[T] = _initialBehavior
-  def getBehavior: Behavior[T] = behavior
+  final def currentBehavior: Behavior[T] = behavior
 
   private var _ctx: ActorContextAdapter[T] = _
   def ctx: ActorContextAdapter[T] =
