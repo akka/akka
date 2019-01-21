@@ -115,7 +115,7 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none", "--ignore-source-errors"))).getOrElse(Nil)
+    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none", "--frames", "--ignore-source-errors"))).getOrElse(Nil)
 
   override lazy val projectSettings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter = 
