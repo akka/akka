@@ -111,8 +111,9 @@ private[akka] trait JournalInteractions[C, E, S] {
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
-    // don't store null state
-    if (state.state != null)
+    if (state.state == null)
+      throw new IllegalStateException("null state is not allowed as snapshot")
+    else
       setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(
         SnapshotMetadata(setup.persistenceId.id, state.seqNr),
         state.state), setup.selfUntyped)

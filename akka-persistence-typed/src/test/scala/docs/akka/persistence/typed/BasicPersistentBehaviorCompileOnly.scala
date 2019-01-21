@@ -166,4 +166,49 @@ object BasicPersistentBehaviorCompileOnly {
     }
   // #actor-context
 
+  //#snapshottingEveryN
+  val snapshottingEveryN = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler =
+      (state, cmd) ⇒
+        throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler =
+      (state, evt) ⇒
+        throw new RuntimeException("TODO: process the event return the next state")
+  ).snapshotEvery(100)
+  //#snapshottingEveryN
+
+  final case class BookingCompleted(orderNr: String) extends Event
+  //#snapshottingPredicate
+  val snapshottingPredicate = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler =
+      (state, cmd) ⇒
+        throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler =
+      (state, evt) ⇒
+        throw new RuntimeException("TODO: process the event return the next state")
+  ).snapshotWhen {
+      case (state, BookingCompleted(_), sequenceNumber) ⇒ true
+      case (state, event, sequenceNumber)               ⇒ false
+    }
+  //#snapshottingPredicate
+
+  //#snapshotSelection
+  import akka.persistence.SnapshotSelectionCriteria
+
+  val snapshotSelection = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler =
+      (state, cmd) ⇒
+        throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler =
+      (state, evt) ⇒
+        throw new RuntimeException("TODO: process the event return the next state")
+  ).withSnapshotSelectionCriteria(SnapshotSelectionCriteria.None)
+  //#snapshotSelection
+
 }
