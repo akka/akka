@@ -1301,4 +1301,11 @@ public class FlowTest extends StreamTest {
 
     assertEquals((Object) 1, result);
   }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Flow<Integer, Integer, NotUsed> scalaFlow =
+        akka.stream.scaladsl.Flow.apply();
+    Flow<Integer, Integer, NotUsed> javaFlow = scalaFlow.asJava();
+  }
 }

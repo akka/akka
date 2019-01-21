@@ -146,4 +146,11 @@ public class SinkTest extends StreamTest {
             .addAttributes(Attributes.asyncBoundary())
             .named("");
   }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Sink<Integer, NotUsed> scalaSink =
+        akka.stream.scaladsl.Sink.onComplete(r -> null);
+    Sink<Integer, NotUsed> javaSink = scalaSink.asJava();
+  }
 }

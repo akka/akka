@@ -1112,4 +1112,11 @@ public class SourceTest extends StreamTest {
     final Pair<NotUsed, Source<Integer, NotUsed>> p =
         Source.<Integer>empty().preMaterialize(materializer);
   }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Source<Integer, NotUsed> scalaSource =
+        akka.stream.scaladsl.Source.empty();
+    Source<Integer, NotUsed> javaSource = scalaSource.asJava();
+  }
 }
