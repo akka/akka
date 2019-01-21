@@ -7,9 +7,8 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, Signal, SupervisorStrategy }
+import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
-import akka.actor.typed.scaladsl
 import akka.annotation.ApiMayChange
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
@@ -184,6 +183,22 @@ object Behaviors {
    */
   def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
     scaladsl.Behaviors.monitor(monitor, behavior)
+
+  /**
+   * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
+   * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
+   * To include an MDC context then first wrap `logMessages` with `withMDC`.
+   */
+  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(behavior)
+
+  /**
+   * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
+   * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
+   * To include an MDC context then first wrap `logMessages` with `withMDC`.
+   */
+  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.logMessages(logOptions, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
