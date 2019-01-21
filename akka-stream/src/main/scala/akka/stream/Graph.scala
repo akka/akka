@@ -6,6 +6,7 @@ package akka.stream
 
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
+import akka.stream.scaladsl.GenericGraph
 
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -59,6 +60,15 @@ trait Graph[+S <: Shape, +M] {
     addAttributes(
       Attributes.asyncBoundary and ActorAttributes.dispatcher(dispatcher)
       and Attributes.inputBuffer(inputBufferSize, inputBufferSize))
+
+  /**
+   * Maps the materialized value
+   * @param f Transformation function
+   * @tparam M2 The new type of the materialized value
+   * @return a new GenericGraph with the transformed mat value
+   */
+  def mapMaterializedValue[M2](f: M => M2): Graph[S, M2] =
+    new GenericGraph(shape, traversalBuilder.transformMat(f))
 
   /**
    * Add the given attributes to this [[Graph]]. If the specific attribute was already present

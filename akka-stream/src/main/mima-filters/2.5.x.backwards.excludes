@@ -240,3 +240,5 @@ ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.
 # #26187 Remove ActorPublisher, ActorSubscriber
 ProblemFilters.exclude[Problem]("akka.stream.actor.*")
 
+# #26275 Graph
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Graph.mapMaterializedValue")

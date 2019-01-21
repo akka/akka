@@ -62,7 +62,7 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   /**
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat => Mat2): Sink[In, Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat => Mat2): Sink[In, Mat2] =
     new Sink(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
   /**

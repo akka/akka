@@ -630,7 +630,7 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   /**
    * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat => Mat2): RunnableGraph[Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat => Mat2): RunnableGraph[Mat2] =
     copy(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]))
 
   /**

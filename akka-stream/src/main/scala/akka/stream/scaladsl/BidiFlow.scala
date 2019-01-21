@@ -144,7 +144,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   /**
    * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat => Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat => Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
   /**
