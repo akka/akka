@@ -94,7 +94,7 @@ object EventSourcedBehavior {
   /**
    * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
    */
-  def currentSequenceNumber(context: ActorContext[_]): Long = {
+  def lastSequenceNumber(context: ActorContext[_]): Long = {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
       beh match {

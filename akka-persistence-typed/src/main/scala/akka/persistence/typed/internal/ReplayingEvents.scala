@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.Signal
-import akka.actor.typed.scaladsl.{AbstractBehavior, Behaviors}
+import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
@@ -62,7 +62,7 @@ private[akka] object ReplayingEvents {
 @InternalApi
 private[akka] final class ReplayingEvents[C, E, S](
   override val setup: BehaviorSetup[C, E, S],
-  state:          ReplayingState[S])
+  state:              ReplayingState[S])
   extends AbstractBehavior[InternalProtocol] with JournalInteractions[C, E, S] with StashManagement[C, E, S] with WithSeqNrAccessible {
 
   import InternalProtocol._

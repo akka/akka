@@ -28,17 +28,17 @@ class EventSourcedSequenceNumberSpec extends ScalaTestWithActorTestKit(EventSour
         pid,
         "",
         { (_, command) ⇒
-          probe ! (EventSourcedBehavior.currentSequenceNumber(ctx) + " onCommand")
+          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
           Effect.persist(command).thenRun(_ ⇒
-            probe ! (EventSourcedBehavior.currentSequenceNumber(ctx) + " thenRun")
+            probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun")
           )
         },
         { (state, evt) ⇒
-          probe ! (EventSourcedBehavior.currentSequenceNumber(ctx) + " eventHandler")
+          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
           state + evt
         }
       ).onRecoveryCompleted(_ ⇒
-          probe ! (EventSourcedBehavior.currentSequenceNumber(ctx) + " onRecoveryComplete")
+          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
         )
     )
 
