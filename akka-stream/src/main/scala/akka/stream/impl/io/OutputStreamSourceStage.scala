@@ -24,11 +24,6 @@ private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
   case class Send(data: ByteString) extends AdapterToStageMessage
   case object Close extends AdapterToStageMessage
-
-  sealed trait DownstreamStatus
-  case object Ok extends DownstreamStatus
-  case object Canceled extends DownstreamStatus
-
 }
 
 final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
