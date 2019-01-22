@@ -5,10 +5,8 @@
 package akka.stream.impl.io
 
 import java.io.{ IOException, OutputStream }
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
-import akka.dispatch.ExecutionContexts
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
