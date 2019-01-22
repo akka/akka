@@ -49,7 +49,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       private def onAsyncMessage(event: AdapterToStageMessage): Unit = {
         event match {
           case Send(data) ⇒
-            emit(out, data, () => semaphore.release())
+            emit(out, data, () ⇒ semaphore.release())
           case Close ⇒
             completeStage()
         }
