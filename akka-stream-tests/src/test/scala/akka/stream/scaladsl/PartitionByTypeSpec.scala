@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
-class PartitionOnTypeSpec extends StreamSpec(
+class PartitionByTypeSpec extends StreamSpec(
   """akka.loggers = ["akka.testkit.TestEventListener"]""") with DefaultTimeout with ScalaFutures {
 
   implicit val mat = ActorMaterializer()
@@ -29,7 +29,7 @@ class PartitionOnTypeSpec extends StreamSpec(
     "partition on arbitrary type" in {
 
       val mySink =
-        PartitionOnType[MyType]()
+        PartitionByType[MyType]()
           .addSink[Num](Sink.seq)
           .addSink[Txt](Sink.seq)
           .build()
@@ -43,7 +43,7 @@ class PartitionOnTypeSpec extends StreamSpec(
 
     "fail on unknown subtype" in {
       val mySink =
-        PartitionOnType[MyType]()
+        PartitionByType[MyType]()
           .addSink[Num](Sink.seq)
           .addSink[Txt](Sink.seq)
           .build()
@@ -64,7 +64,8 @@ class PartitionOnTypeSpec extends StreamSpec(
     "provide prebuilt partition on try" in {
       val fail = TE("oh noes")
       val (successFuture, failureFuture) = Source[Try[Int]](Success(42) :: Failure(fail) :: Nil)
-        .runWith(PartitionOnType.forTryMat(Sink.head[Int], Sink.head[Throwable])(Keep.both))
+        .runWith(
+          PartitionByType.forTryMat(Sink.head[Int], Sink.head[Throwable])(Keep.both))
 
       successFuture.futureValue should ===(42)
       failureFuture.futureValue shouldBe theSameInstanceAs(fail)
@@ -72,7 +73,8 @@ class PartitionOnTypeSpec extends StreamSpec(
 
     "provide prebuilt partition on either" in {
       val (leftFuture, rightFuture) = Source[Either[String, Int]](Left("blue") :: Right(42) :: Nil)
-        .runWith(PartitionOnType.forEitherMat(Sink.head[String], Sink.head[Int])(Keep.both))
+        .runWith(
+          PartitionByType.forEitherMat(Sink.head[String], Sink.head[Int])(Keep.both))
 
       leftFuture.futureValue should ===("blue")
       rightFuture.futureValue should ===(42)

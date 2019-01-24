@@ -13,12 +13,12 @@ import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
 
-object PartitionOnType {
+object PartitionByType {
 
   /**
    * @return An immutable factory to build a sink that sends the elements to specific sinks based on the message type.
    */
-  def apply[T](): PartitionOnType[T] = new PartitionOnTypeImpl(Nil)
+  def apply[T](): PartitionByType[T] = new PartitionByTypeImpl(Nil)
 
   /**
    * A prebuilt partition on `scala.util.Try` that will divert successful values to one sink and
@@ -75,7 +75,7 @@ object PartitionOnType {
  * Not for user extension
  */
 @DoNotInherit
-trait PartitionOnType[T] {
+trait PartitionByType[T] {
 
   /**
    * Add a sink that will receive elements for the type `B` (including subtypes of `B`). The last added sink that
@@ -87,7 +87,7 @@ trait PartitionOnType[T] {
    *
    * @param sink A sink that will receive elements of type `B`
    */
-  def addSink[B <: T](sink: Sink[B, Any])(implicit ct: ClassTag[B]): PartitionOnTypeImpl[T]
+  def addSink[B <: T](sink: Sink[B, Any])(implicit ct: ClassTag[B]): PartitionByTypeImpl[T]
 
   /**
    * Create a sink out of the current set. If an element with a subtype of `T` not covered by the added sink the stream
@@ -101,12 +101,12 @@ trait PartitionOnType[T] {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class PartitionOnTypeImpl[T](val typesAndSinks: List[(Class[Any], Sink[Any, Any])]) extends PartitionOnType[T] {
+private[akka] final class PartitionByTypeImpl[T](val typesAndSinks: List[(Class[Any], Sink[Any, Any])]) extends PartitionByType[T] {
   // FIXME support eager cancelation?
 
-  def addSink[B <: T](sink: Sink[B, Any])(implicit ct: ClassTag[B]): PartitionOnTypeImpl[T] = {
+  def addSink[B <: T](sink: Sink[B, Any])(implicit ct: ClassTag[B]): PartitionByTypeImpl[T] = {
     val clazz = ct.runtimeClass.asInstanceOf[Class[Any]]
-    new PartitionOnTypeImpl[T]((clazz, sink.asInstanceOf[Sink[Any, Any]]) :: typesAndSinks)
+    new PartitionByTypeImpl[T]((clazz, sink.asInstanceOf[Sink[Any, Any]]) :: typesAndSinks)
   }
 
   def build(): Sink[T, immutable.Seq[Any]] =

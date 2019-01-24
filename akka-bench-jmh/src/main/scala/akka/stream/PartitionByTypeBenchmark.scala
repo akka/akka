@@ -8,25 +8,36 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Broadcast, Flow, GraphDSL, PartitionOnType, Sink, Source }
+import akka.stream.scaladsl.{ Broadcast, Flow, GraphDSL, PartitionByType, Sink, Source }
 import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-object PartitionOnTypeBenchmark {
-  final val OperationsPerInvocation = 10000
+object PartitionByTypeBenchmark {
+  final val OperationsPerInvocation = 100000
 }
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
-class PartitionOnTypeBenchmark {
+class PartitionByTypeBenchmark {
 
-  import PartitionOnTypeBenchmark.OperationsPerInvocation
+  /*
 
-  implicit val system = ActorSystem("PartitionOnTypeBenchmark")
+akka-bench-jmh/jmh:run -t1 -f 1 -wi 5 -i 5 .*PartitionByTypeBenchmark.*
+
+[info] Benchmark                                         (NumberOfPartitions)   Mode  Cnt        Score       Error  Units
+[info] PartitionByTypeBenchmark.broadcastFilterBaseline                     2  thrpt    5  3748470.045 ± 38086.284  ops/s
+[info] PartitionByTypeBenchmark.broadcastFilterBaseline                     5  thrpt    5  2519512.319 ± 42124.134  ops/s
+[info] PartitionByTypeBenchmark.partition                                   2  thrpt    5  5496478.579 ± 41537.906  ops/s
+[info] PartitionByTypeBenchmark.partition                                   5  thrpt    5  4453023.235 ± 71571.861  ops/s
+*/
+
+  import PartitionByTypeBenchmark.OperationsPerInvocation
+
+  implicit val system = ActorSystem("PartitionByTypeBenchmark")
 
   var materializer: ActorMaterializer = _
 
@@ -58,12 +69,12 @@ class PartitionOnTypeBenchmark {
 
     testSink = (NumberOfPartitions match {
       case 2 ⇒
-        PartitionOnType[SuperType]()
+        PartitionByType[SuperType]()
           .addSink(Sink.last[Type1.type])
           .addSink(Sink.last[Type2.type])
           .build()
       case 5 ⇒
-        PartitionOnType[SuperType]()
+        PartitionByType[SuperType]()
           .addSink(Sink.last[Type1.type])
           .addSink(Sink.last[Type2.type])
           .addSink(Sink.last[Type3.type])
@@ -77,7 +88,7 @@ class PartitionOnTypeBenchmark {
 
       NumberOfPartitions match {
         case 2 ⇒
-          val sinks = Sink.head[SuperType] :: Sink.head[SuperType] :: Nil
+          val sinks = Sink.last[SuperType] :: Sink.last[SuperType] :: Nil
           Sink.fromGraph(GraphDSL.create(sinks) { implicit b ⇒ sinks ⇒
             import GraphDSL.Implicits._
 
@@ -90,7 +101,7 @@ class PartitionOnTypeBenchmark {
           }).mapMaterializedValue(_.toList)
 
         case 5 ⇒
-          val sinks = Sink.head[SuperType] :: Sink.head[SuperType] :: Sink.head[SuperType] :: Sink.head[SuperType] :: Sink.head[SuperType] :: Nil
+          val sinks = Sink.last[SuperType] :: Sink.last[SuperType] :: Sink.last[SuperType] :: Sink.last[SuperType] :: Sink.last[SuperType] :: Nil
           Sink.fromGraph(GraphDSL.create(sinks) { implicit b ⇒ sinks ⇒
             import GraphDSL.Implicits._
 
@@ -117,28 +128,18 @@ class PartitionOnTypeBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OperationsPerInvocation)
-  def partition(): Unit = {
+  def partition(): Seq[Any] = {
     import system.dispatcher
     val matVals = testSource.runWith(testSink)(materializer)
     Await.result(Future.sequence(matVals), 2.minutes)
   }
 
-  /*
-akka-bench-jmh/jmh:run -wi 3 -i 5 -f 1 .*PartitionOnTypeBenchmark.*
-
-   [info] Benchmark                                         (NumberOfPartitions)   Mode  Cnt          Score         Error  Units
-[info] PartitionOnTypeBenchmark.broadcastFilterBaseline                     2  thrpt    5  331174964.692 ± 6652987.726  ops/s
-[info] PartitionOnTypeBenchmark.broadcastFilterBaseline                     5  thrpt    5  249203038.004 ±  786789.223  ops/s
-[info] PartitionOnTypeBenchmark.partition                                   2  thrpt    5    4232221.992 ±   71334.024  ops/s
-[info] PartitionOnTypeBenchmark.partition                                   5  thrpt    5    3984340.563 ± 2093098.121  ops/s
-
   @Benchmark
   @OperationsPerInvocation(OperationsPerInvocation)
-  def broadcastFilterBaseline(): Unit = {
+  def broadcastFilterBaseline(): Seq[Any] = {
     import system.dispatcher
     val matVals = testSource.runWith(testReferenceSink)(materializer)
     Await.result(Future.sequence(matVals), 2.minutes)
   }
-  */
 
 }
