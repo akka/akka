@@ -110,7 +110,6 @@ public class PersistentActorCompileOnlyTest {
           }
           // #install-event-adapter
         };
-
   }
 
   abstract static class WithAck {
@@ -275,14 +274,10 @@ public class PersistentActorCompileOnlyTest {
       what.thenApply(r -> new AcknowledgeSideEffect(r.correlationId)).thenAccept(sender::tell);
     }
 
-    // #actor-context
     public Behavior<Command> behavior(PersistenceId persistenceId) {
       return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
     }
 
-    // #actor-context
-
-    // #actor-context
     class MyPersistentBehavior
         extends EventSourcedBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
 
@@ -293,7 +288,6 @@ public class PersistentActorCompileOnlyTest {
         super(persistenceId);
         this.ctx = ctx;
       }
-      // #actor-context
 
       @Override
       public EventsInFlight emptyState() {

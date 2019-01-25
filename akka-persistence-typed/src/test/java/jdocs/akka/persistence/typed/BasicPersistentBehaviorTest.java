@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
@@ -21,20 +22,18 @@ public class BasicPersistentBehaviorTest {
 
   interface Structure {
     // #structure
-    public class MyPersistentBehavior extends EventSourcedBehavior<
-      MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
 
       static EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
-        new MyPersistentBehavior(new PersistenceId("pid"));
+          new MyPersistentBehavior(new PersistenceId("pid"));
 
-      interface Command {
-      }
+      interface Command {}
 
-      interface Event {
-      }
+      interface Event {}
 
-      public static class State {
-      }
+      public static class State {}
 
       public MyPersistentBehavior(PersistenceId persistenceId) {
         super(persistenceId);
@@ -64,14 +63,14 @@ public class BasicPersistentBehaviorTest {
 
   interface FirstExample {
     // #behavior
-    public class MyPersistentBehavior extends EventSourcedBehavior<
-      MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
 
       // #behavior
 
       // #command
-      interface Command {
-      }
+      interface Command {}
 
       public static class Add implements Command {
         public final String data;
@@ -85,8 +84,8 @@ public class BasicPersistentBehaviorTest {
         INSTANCE
       }
 
-      interface Event {
-      }
+      interface Event {}
+
       public static class Added implements Event {
         public final String data;
 
@@ -132,47 +131,46 @@ public class BasicPersistentBehaviorTest {
         return new State();
       }
 
-      //#command-handler
+      // #command-handler
       @Override
       public CommandHandler<Command, Event, State> commandHandler() {
-        return newCommandHandlerBuilder().forAnyState()
-          .matchCommand(Add.class, command -> Effect().persist(new Added(command.data)))
-          .matchCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
-          .build();
+        return newCommandHandlerBuilder()
+            .forAnyState()
+            .matchCommand(Add.class, command -> Effect().persist(new Added(command.data)))
+            .matchCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
+            .build();
       }
-      //#command-handler
+      // #command-handler
 
-      //#event-handler
+      // #event-handler
       @Override
       public EventHandler<State, Event> eventHandler() {
-        return newEventHandlerBuilder().forAnyState()
-          .matchEvent(Added.class, (state, event) -> state.addItem(event.data))
-          .matchEvent(Cleared.class, () -> new State())
-          .build();
+        return newEventHandlerBuilder()
+            .forAnyState()
+            .matchEvent(Added.class, (state, event) -> state.addItem(event.data))
+            .matchEvent(Cleared.class, () -> new State())
+            .build();
       }
-      //#event-handler
+      // #event-handler
     }
     // #behavior
 
   }
 
   interface More {
-    interface Command {
-    }
+    interface Command {}
 
-    interface Event {
-    }
+    interface Event {}
 
-    public static class State {
-    }
+    public static class State {}
 
     // #supervision
     public class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
       public MyPersistentBehavior(PersistenceId persistenceId) {
         super(
-          persistenceId,
-          SupervisorStrategy.restartWithBackoff(
-            Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+            persistenceId,
+            SupervisorStrategy.restartWithBackoff(
+                Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
       }
       // #supervision
 
@@ -211,22 +209,65 @@ public class BasicPersistentBehaviorTest {
     }
 
     EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
-      new MyPersistentBehavior(new PersistenceId("pid"));
+        new MyPersistentBehavior(new PersistenceId("pid"));
 
     // #wrapPersistentBehavior
     Behavior<Command> debugAlwaysSnapshot =
-      Behaviors.setup(
-        (context) -> {
-          return new MyPersistentBehavior(new PersistenceId("pid")) {
-            @Override
-            public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
-              context
-                .getLog()
-                .info("Snapshot actor {} => state: {}", context.getSelf().path().name(), state);
-              return true;
-            }
-          };
-        });
+        Behaviors.setup(
+            (context) -> {
+              return new MyPersistentBehavior(new PersistenceId("pid")) {
+                @Override
+                public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+                  context
+                      .getLog()
+                      .info(
+                          "Snapshot actor {} => state: {}", context.getSelf().path().name(), state);
+                  return true;
+                }
+              };
+            });
     // #wrapPersistentBehavior
+  }
+
+  interface WithActorContext {
+    interface Command {}
+
+    interface Event {}
+
+    public static class State {}
+
+    // #actor-context
+    public class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
+
+      public static Behavior<Command> behavior(PersistenceId persistenceId) {
+        return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
+      }
+
+      // this makes the context available to the command handler etc.
+      private final ActorContext<Command> ctx;
+
+      public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
+        super(persistenceId);
+        this.ctx = ctx;
+      }
+
+      // #actor-context
+      @Override
+      public State emptyState() {
+        return null;
+      }
+
+      @Override
+      public CommandHandler<Command, Event, State> commandHandler() {
+        return null;
+      }
+
+      @Override
+      public EventHandler<State, Event> eventHandler() {
+        return null;
+      }
+      // #actor-context
+    }
+    // #actor-context
   }
 }

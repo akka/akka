@@ -5,7 +5,7 @@
 package docs.akka.persistence.typed
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.{Behavior, SupervisorStrategy}
+import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import scala.concurrent.duration._
@@ -33,20 +33,21 @@ object BasicPersistentBehaviorCompileOnly {
     import akka.persistence.typed.scaladsl.Effect
 
     val commandHandler: (State, Command) ⇒ Effect[Event, State] = {
-      (state, command) =>
+      (state, command) ⇒
         command match {
           case Add(data) ⇒ Effect.persist(Added(data))
-          case Clear ⇒ Effect.persist(Cleared)
+          case Clear     ⇒ Effect.persist(Cleared)
         }
     }
     //#command-handler
 
     //#event-handler
     val eventHandler: (State, Event) ⇒ State = {
-      (state, event) => event match {
-        case Added(data) ⇒ state.copy((data :: state.history).take(5))
-        case Cleared ⇒ State(Nil)
-      }
+      (state, event) ⇒
+        event match {
+          case Added(data) ⇒ state.copy((data :: state.history).take(5))
+          case Cleared     ⇒ State(Nil)
+        }
     }
     //#event-handler
 
@@ -142,5 +143,27 @@ object BasicPersistentBehaviorCompileOnly {
       randomFactor = 0.1
     ))
   //#supervision
+
+  // #actor-context
+  import akka.persistence.typed.scaladsl.Effect
+  import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+
+  val behaviorWithContext: Behavior[String] =
+    Behaviors.setup { context ⇒
+      EventSourcedBehavior[String, String, State](
+        persistenceId = PersistenceId("myPersistenceId"),
+        emptyState = new State,
+        commandHandler = CommandHandler.command {
+          cmd ⇒
+            context.log.info("Got command {}", cmd)
+            Effect.persist(cmd).thenRun { state ⇒
+              context.log.info("event persisted, new state {}", state)
+            }
+        },
+        eventHandler = {
+          case (state, _) ⇒ state
+        })
+    }
+  // #actor-context
 
 }
