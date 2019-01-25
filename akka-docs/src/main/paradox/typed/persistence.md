@@ -305,29 +305,35 @@ there will be compilation errors if the returned effect isn't a `ReplyEffect`, w
 created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
 
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
+
+Java
+:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #withEnforcedReplies }
+
+The commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
+in a standardized way.
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
+
+Java
+:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
+
+The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
+@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
+
+Java
+:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #reply }
+
 These effects will send the reply message even when @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 is not used, but then there will be no compilation errors if the reply decision is left out.
 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
 command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
-
-Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
-
-TODO include corresponding example in Java
-
-When using the reply effect the commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
-in a standardized way.
-
-Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
-
-TODO include corresponding example in Java
-
-Scala
-:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
-
-TODO include corresponding example in Java
 
 
 ## Serialization
