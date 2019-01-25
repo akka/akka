@@ -51,7 +51,6 @@ public class PersistentActorCompileOnlyTest {
     }
     // #event-wrapper
 
-    // #command
     public static class SimpleCommand {
       public final String data;
 
@@ -59,9 +58,7 @@ public class PersistentActorCompileOnlyTest {
         this.data = data;
       }
     }
-    // #command
 
-    // #event
     static class SimpleEvent {
       private final String data;
 
@@ -69,9 +66,7 @@ public class PersistentActorCompileOnlyTest {
         this.data = data;
       }
     }
-    // #event
 
-    // #state
     static class SimpleState {
       private final List<String> events;
 
@@ -89,9 +84,7 @@ public class PersistentActorCompileOnlyTest {
         return new SimpleState(newEvents);
       }
     }
-    // #state
 
-    // #behavior
     public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
         new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
 
@@ -100,19 +93,15 @@ public class PersistentActorCompileOnlyTest {
             return new SimpleState();
           }
 
-          // #command-handler
           @Override
           public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
             return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
           }
-          // #command-handler
 
-          // #event-handler
           @Override
           public EventHandler<SimpleState, SimpleEvent> eventHandler() {
             return (state, event) -> state.addEvent(event);
           }
-          // #event-handler
 
           // #install-event-adapter
           @Override
@@ -122,7 +111,6 @@ public class PersistentActorCompileOnlyTest {
           // #install-event-adapter
         };
 
-    // #behavior
   }
 
   abstract static class WithAck {
