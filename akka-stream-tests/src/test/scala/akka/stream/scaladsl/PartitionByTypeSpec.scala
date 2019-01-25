@@ -48,7 +48,7 @@ class PartitionByTypeSpec extends StreamSpec(
           .addSink[Txt](Sink.seq)
           .build()
 
-      val expectedErrorText = "Element of type [akka.stream.scaladsl.PartitionOnTypeSpec$Surprise$] not covered by this PartitionOnType"
+      val expectedErrorText = "Element of type [akka.stream.scaladsl.PartitionByTypeSpec$Surprise$] not covered by this PartitionOnType"
       EventFilter.error(expectedErrorText, occurrences = 1).intercept {
         val mats = Source(Txt("a") :: Num(1) :: Txt("b") :: Num(2) :: Surprise :: Nil)
           .runWith(mySink)
