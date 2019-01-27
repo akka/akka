@@ -264,8 +264,8 @@ object ByteIterator {
 
     final override def takeWhile(p: Byte ⇒ Boolean): this.type = {
       var stop = false
-      var builder = new ListBuffer[ByteArrayIterator]
-      while (!stop && !iterators.isEmpty) {
+      val builder = new ListBuffer[ByteArrayIterator]
+      while (!stop && iterators.nonEmpty) {
         val lastLen = current.len
         current.takeWhile(p)
         if (current.hasNext) builder += current

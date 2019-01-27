@@ -76,7 +76,7 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
-
+    val aeronArchive = "io.aeron" % "aeron-archive" % aeronVersion // ApacheV2
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
@@ -149,6 +149,8 @@ object Dependencies {
   val actor = l ++= Seq(config, java8Compat.value)
 
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
+
+  val akkaAeron = l ++= Seq(aeronClient, aeronDriver, aeronArchive)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 

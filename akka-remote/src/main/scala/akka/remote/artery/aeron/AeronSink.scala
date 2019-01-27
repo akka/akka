@@ -6,6 +6,7 @@ package akka.remote.artery
 package aeron
 
 import akka.util.PrettyDuration.PrettyPrintableDuration
+
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -15,16 +16,15 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import akka.Done
+import akka.aeron.internal.{ OfferTask, TaskRunner }
 import akka.stream.Attributes
 import akka.stream.Inlet
 import akka.stream.SinkShape
-import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import io.aeron.Aeron
 import io.aeron.Publication
-import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.hints.ThreadHints
 
 /**
@@ -36,43 +36,6 @@ private[remote] object AeronSink {
 
   final class PublicationClosedException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  private val TimerCheckPeriod = 1 << 13 // 8192
-  private val TimerCheckMask = TimerCheckPeriod - 1
-
-  private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
-                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
-    extends (() ⇒ Boolean) {
-    val giveUpAfterNanos = giveUpAfter match {
-      case f: FiniteDuration ⇒ f.toNanos
-      case _                 ⇒ -1L
-    }
-    var n = 0L
-    var startTime = 0L
-
-    override def apply(): Boolean = {
-      if (n == 0L) {
-        // first invocation for this message
-        startTime = if (giveUpAfterNanos >= 0) System.nanoTime() else 0L
-      }
-      n += 1
-      val result = pub.offer(buffer, 0, msgSize)
-      if (result >= 0) {
-        n = 0L
-        onOfferSuccess.invoke(())
-        true
-      } else if (result == Publication.CLOSED) {
-        onPublicationClosed.invoke(())
-        true
-      } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System.nanoTime() - startTime) > giveUpAfterNanos) {
-        // the task is invoked by the spinning thread, only check nanoTime each 8192th invocation
-        n = 0L
-        onGiveUp.invoke(())
-        true
-      } else {
-        false
-      }
-    }
-  }
 }
 
 /**
@@ -208,7 +171,7 @@ private[remote] class AeronSink(
       private def onPublicationClosed(): Unit = {
         offerTaskInProgress = false
         val cause = new PublicationClosedException(s"Aeron Publication to [${channel}] was closed.")
-        // this is not exepected, since we didn't close the publication ourselves
+        // this is not expected, since we didn't close the publication ourselves
         flightRecorder.alert(AeronSink_PublicationClosed, channelMetadata)
         completedValue = Failure(cause)
         failStage(cause)

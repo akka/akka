@@ -1,9 +1,8 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.remote.artery
-package aeron
+package akka.aeron.internal
 
 import java.util.concurrent.TimeUnit.{ MICROSECONDS, MILLISECONDS }
 
@@ -124,6 +123,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
   private val idleStrategy = createIdleStrategy(idleCpuLevel)
   private var reset = false
 
+  // TODO make idempotent
   def start(): Unit = {
     val tf = system.threadFactory match {
       case m: MonitorableThreadFactory ⇒

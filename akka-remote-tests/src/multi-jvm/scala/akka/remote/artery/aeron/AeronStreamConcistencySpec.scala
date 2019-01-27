@@ -10,11 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
-
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
+import akka.aeron.internal.TaskRunner
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -100,7 +99,7 @@ abstract class AeronStreamConsistencySpec
   "Message consistency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

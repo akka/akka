@@ -5,14 +5,16 @@
 package akka.remote.artery
 package aeron
 
+import akka.aeron.internal.PollTask.MessageHandler
+import akka.aeron.internal.{ PollTask, TaskRunner }
+
 import scala.annotation.tailrec
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
-import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
-import io.aeron.{ Aeron, FragmentAssembler, Subscription }
+import io.aeron.{ Aeron, FragmentAssembler }
 import io.aeron.logbuffer.FragmentHandler
 import io.aeron.logbuffer.Header
 import org.agrona.DirectBuffer
@@ -30,48 +32,30 @@ import scala.concurrent.{ Future, Promise }
  */
 private[remote] object AeronSource {
 
-  private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[EnvelopeBuffer]): () ⇒ Boolean = {
-    () ⇒
-      {
-        handler.reset
-        sub.poll(handler.fragmentsHandler, 1)
-        val msg = handler.messageReceived
-        handler.reset() // for GC
-        if (msg ne null) {
-          onMessage.invoke(msg)
-          true
-        } else
-          false
+  class EnvelopeBufferMessageHandler(pool: EnvelopeBufferPool) extends MessageHandler[EnvelopeBuffer] {
+    override val fragmentsHandler: FragmentAssembler = new FragmentAssembler(new FragmentHandler {
+      override def onFragment(buffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
+        val envelope = pool.acquire()
+        buffer.getBytes(offset, envelope.byteBuffer, length)
+        envelope.byteBuffer.flip()
+        messageReceived = envelope
       }
+    })
   }
-
-  class MessageHandler(pool: EnvelopeBufferPool) {
-    def reset(): Unit = messageReceived = null
-
-    private[remote] var messageReceived: EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
-
-    val fragmentsHandler = new Fragments(data ⇒ messageReceived = data, pool)
-  }
-
-  class Fragments(onMessage: EnvelopeBuffer ⇒ Unit, pool: EnvelopeBufferPool) extends FragmentAssembler(new FragmentHandler {
-    override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
-      val envelope = pool.acquire()
-      aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
-      envelope.byteBuffer.flip()
-      onMessage(envelope)
-    }
-  })
 
   trait AeronLifecycle {
     def onUnavailableImage(sessionId: Int): Unit
+
     // See  [io.aeron.status.ChannelEndpointStatus]
     def channelEndpointStatus(): Future[Long]
   }
+
 }
 
 /**
  * INTERNAL API
- * @param channel eg. "aeron:udp?endpoint=localhost:40123"
+ *
+ * @param channel  eg. "aeron:udp?endpoint=localhost:40123"
  * @param spinning the amount of busy spinning to be done synchronously before deferring to the TaskRunner
  *                 when waiting for data
  */
@@ -101,8 +85,8 @@ private[remote] class AeronSource(
       private var countBeforeDelegate = 0L
 
       // the fragmentHandler is called from `poll` in same thread, i.e. no async callback is needed
-      private val messageHandler = new MessageHandler(pool)
-      private val addPollTask: Add = Add(pollTask(subscription, messageHandler, getAsyncCallback(taskOnMessage)))
+      private val messageHandler = new EnvelopeBufferMessageHandler(pool)
+      private val addPollTask: Add = Add(PollTask.pollTask(subscription, messageHandler, getAsyncCallback(taskOnMessage)))
 
       private val channelMetadata = channel.getBytes("US-ASCII")
 

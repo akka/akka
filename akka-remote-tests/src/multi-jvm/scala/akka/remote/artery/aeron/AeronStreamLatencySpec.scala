@@ -15,9 +15,9 @@ import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
-
 import akka.Done
 import akka.actor._
+import akka.aeron.internal.TaskRunner
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -142,7 +142,7 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
+  def printTotal(testName: String, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
     def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
@@ -230,7 +230,7 @@ abstract class AeronStreamLatencySpec
             histogram.recordValue(d)
             if (c == totalMessages) {
               val totalDurationNanos = System.nanoTime() - startTime.get
-              printTotal(testName, bytes.length, histogram, totalDurationNanos, lastRepeat.get)
+              printTotal(testName, histogram, totalDurationNanos, lastRepeat.get)
               barrier.await() // this is always the last party
             }
           }
@@ -311,7 +311,7 @@ abstract class AeronStreamLatencySpec
   "Latency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

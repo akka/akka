@@ -10,8 +10,8 @@ import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.ExtendedActorSystem
+import akka.aeron.internal.TaskRunner
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings

@@ -20,6 +20,8 @@ import akka.Done
 import akka.actor.Address
 import akka.actor.Cancellable
 import akka.actor.ExtendedActorSystem
+import akka.aeron.TaskRunnerExtension
+import akka.aeron.internal.TaskRunner
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
@@ -65,7 +67,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
   @volatile private[this] var aeronErrorLog: AeronErrorLog = _
 
-  private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
+  // TODO move configuration for idle CPU level to akka aeron
+  private val taskRunner = TaskRunnerExtension(_system).taskRunner
 
   private def inboundChannel = s"aeron:udp?endpoint=${bindAddress.address.host.get}:${bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -83,6 +86,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   private def startMediaDriver(): Unit = {
+    // TODO use embedded media driver from akka.aeron in 2.6 and move
+    // configuration to there
     if (settings.Advanced.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
       if (settings.Advanced.AeronDirectoryName.nonEmpty) {
@@ -205,6 +210,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
               Logging.simpleName(cause),
               if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
               cause)
+            // FIXME what should drop the shared task runner? Coordinated shutdown instead?
             taskRunner.stop()
             aeronErrorLogTask.cancel()
             if (settings.LogAeronCounters) aeronCounterTask.cancel()
@@ -389,6 +395,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   override protected def shutdownTransport(): Future[Done] = {
     import system.dispatcher
+    // FIXME this shouldn't stop it, extension via coordinated shut down to happen after transport?
     taskRunner.stop().map { _ ⇒
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       if (aeronErrorLogTask != null) {

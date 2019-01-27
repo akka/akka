@@ -10,8 +10,6 @@ import java.util.concurrent.Executors
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
-
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -26,6 +24,7 @@ import io.aeron.driver.MediaDriver
 import akka.stream.KillSwitches
 import java.io.File
 
+import akka.aeron.internal.TaskRunner
 import akka.util.ByteString
 import io.aeron.CncFileDescriptor
 import org.agrona.IoUtil
@@ -211,7 +210,7 @@ abstract class AeronStreamMaxThroughputSpec
       val payload = ("0" * payloadSize).getBytes("utf-8")
       val t0 = System.nanoTime()
       Source.fromIterator(() ⇒ iterate(1, totalMessages))
-        .map { n ⇒
+        .map { _ ⇒
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()
@@ -230,7 +229,7 @@ abstract class AeronStreamMaxThroughputSpec
   "Max throughput of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

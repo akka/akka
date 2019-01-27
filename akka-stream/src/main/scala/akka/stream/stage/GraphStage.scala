@@ -27,7 +27,7 @@ import scala.concurrent.{ Future, Promise }
  *
  * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ * value you can instead extend [[GraphStage]] which materializes a [[NotUsed]] value.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.

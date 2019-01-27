@@ -321,7 +321,7 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .disablePlugins(MimaPlugin)
 
 lazy val remote = akkaModule("akka-remote")
-  .dependsOn(actor, stream, actorTests % "test->test", testkit % "test->test", streamTestkit % "test", protobuf)
+  .dependsOn(actor, stream, actorTests % "test->test", testkit % "test->test", streamTestkit % "test", protobuf, akkaAeron)
   .settings(Dependencies.remote)
   .settings(AutomaticModuleName.settings("akka.remote"))
   .settings(OSGi.remote)
@@ -496,6 +496,17 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.discovery"))
   .settings(OSGi.discovery)
+
+lazy val akkaAeron = akkaModule("akka-aeron")
+  .dependsOn(
+    stream,
+    testkit % "test->test",
+    actorTests % "test->test",
+    streamTestkit
+  )
+  .settings(Dependencies.akkaAeron)
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.aeron"))
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
