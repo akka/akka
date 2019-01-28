@@ -13,7 +13,8 @@ import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.Try
 import akka.Done
-import akka.actor.testkit.typed.{TestException, TestKitSettings}
+import akka.testkit.EventFilter
+import akka.actor.testkit.typed.{ TestException, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
