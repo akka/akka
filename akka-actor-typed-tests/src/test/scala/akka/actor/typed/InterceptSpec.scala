@@ -79,7 +79,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val beh: Behavior[String] =
         intercept(
           intercept(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(_ ⇒
               Behaviors.same
             )
           )
@@ -100,7 +100,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       def next(count: Int): Behavior[String] =
         Behaviors.intercept(
           interceptor)(
-          Behaviors.receiveMessage(m ⇒
+          Behaviors.receiveMessage(_ ⇒
             next(count + 1)
           )
         )
@@ -132,7 +132,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val beh: Behavior[String] =
         intercept(
           intercept(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(_ ⇒
               Behaviors.same
             )
           )
@@ -155,7 +155,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
         Behaviors.intercept(
           // a new instance every "recursion"
           snitchingInterceptor(probe.ref))(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(_ ⇒
               next(count + 1)
             )
           )
@@ -188,7 +188,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       }
 
       val innerBehaviorStarted = new AtomicBoolean(false)
-      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { context ⇒
+      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { _ ⇒
         innerBehaviorStarted.set(true)
         Behaviors.unhandled[String]
       }))
@@ -339,6 +339,39 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       probe.expectMessageType[A]
       interceptProbe.expectMessageType[B]
       probe.expectMessageType[B]
+    }
+
+    "intercept PostStop" in {
+      @volatile var interceptorSawPostStop = false
+      @volatile var behaviorSawPostStop = false
+      val postStopInterceptor = new BehaviorInterceptor[String, String] {
+        def aroundReceive(ctx: TypedActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
+          target(ctx, msg)
+        }
+        def aroundSignal(ctx: TypedActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] = {
+          signal match {
+            case PostStop ⇒
+              interceptorSawPostStop = true
+          }
+          target(ctx, signal)
+        }
+      }
+
+      val ref = spawn(Behaviors.intercept(postStopInterceptor)(Behaviors.receiveMessage[String] { _ ⇒
+        Behaviors.stopped(
+          Behaviors.receiveSignal[String] {
+            case (_, PostStop) ⇒
+              behaviorSawPostStop = true
+              Behaviors.same
+          })
+      }))
+
+      ref ! "stop"
+      val probe = createTestProbe()
+      probe.awaitAssert {
+        behaviorSawPostStop should ===(true)
+        interceptorSawPostStop should ===(true)
+      }
     }
 
   }

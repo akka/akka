@@ -8,6 +8,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.DeadLetter
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.testkit.typed.scaladsl._
@@ -310,6 +312,28 @@ class TimerSpec extends ScalaTestWithActorTestKit(
       val elements = probe.receiveMessage()
       if (elements.count(_.getClassName == "TimerInterceptor") > 1)
         fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
+    }
+
+    "not leak timers when PostStop is used" in {
+      val probe = TestProbe[Any]()
+      val ref = spawn(Behaviors.withTimers[String] { timers ⇒
+        Behaviors.setup { _ ⇒
+          timers.startPeriodicTimer("test", "test", 250.millis)
+          Behaviors.receive { (context, message) ⇒
+            Behaviors.stopped(Behaviors.receiveSignal[String] {
+              case (_, PostStop) ⇒
+                context.log.info(s"stopping")
+                Behaviors.same
+            })
+          }
+        }
+      })
+      EventFilter.info("stopping").intercept {
+        ref ! "stop"
+      }
+      probe.expectTerminated(ref)
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      probe.expectNoMessage(1.second)
     }
   }
 }

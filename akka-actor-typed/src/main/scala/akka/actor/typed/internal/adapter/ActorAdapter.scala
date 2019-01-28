@@ -96,7 +96,14 @@ import akka.util.OptionVal
               behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
             case OptionVal.Some(postStop) ⇒
               // use the given postStop behavior, but canonicalize it
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+              val stopped = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+              val nextBehavior = behavior match {
+                case intercepted: InterceptorImpl[T, T] ⇒
+                  // with an intercept we still expect to intercept that poststop
+                  intercepted.replaceNested(stopped)
+                case _ ⇒ stopped
+              }
+              behavior = nextBehavior
           }
           context.stop(self)
         case f: FailedBehavior ⇒

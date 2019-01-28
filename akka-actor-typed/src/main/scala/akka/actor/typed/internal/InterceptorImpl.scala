@@ -5,12 +5,11 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed
-import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
-import akka.actor.typed.LogOptions.LogOptionsImpl
+import akka.actor.typed.Behavior.{ SameBehavior, StoppedBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
-import akka.util.LineNumbers
+import akka.util.{ LineNumbers, OptionVal }
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -78,8 +77,31 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   }
 
   override def receiveSignal(ctx: typed.TypedActorContext[O], signal: Signal): Behavior[O] = {
-    val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
-    deduplicate(interceptedResult, ctx)
+    if (signal == PostStop) {
+      nestedBehavior match {
+        case s: StoppedBehavior[O] ⇒
+          s.postStop match {
+            case OptionVal.Some(callback) ⇒
+              interceptor.aroundSignal(ctx, PostStop, new SignalTarget[I] {
+                def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] = {
+                  callback match {
+                    case x: ExtensibleBehavior[I] ⇒
+                      x.receiveSignal(ctx.asInstanceOf[TypedActorContext[I]], PostStop)
+                  }
+                }
+              })
+            case OptionVal.None ⇒
+              interceptor.aroundSignal(ctx, PostStop, new SignalTarget[I] {
+                def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] = Behavior.same
+              })
+          }
+      }
+      Behavior.same
+
+    } else {
+      val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
+      deduplicate(interceptedResult, ctx)
+    }
   }
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
