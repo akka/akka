@@ -24,11 +24,9 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "execute the post stop" in {
       val sawSignal = Promise[Done]()
       spawn(Behaviors.setup[AnyRef] { _ ⇒
-        Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-          case (context, PostStop) ⇒
-            sawSignal.success(Done)
-            Behaviors.empty
-        })
+        Behaviors.stopped { () ⇒
+          sawSignal.success(Done)
+        }
       })
       sawSignal.future.futureValue should ===(Done)
     }
@@ -47,11 +45,9 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
               target(context, signal)
             }
           }
-        )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-            case (context, PostStop) ⇒
-              sawSignal.success(Done)
-              Behaviors.empty
-          }))
+        )(Behaviors.stopped { () ⇒
+            sawSignal.success(Done)
+          })
       })
       ref ! "stopit"
       sawSignal.future.futureValue should ===(Done)
@@ -60,30 +56,12 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     // #25096
     "execute the post stop early" in {
       val sawSignal = Promise[Done]()
-      spawn(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-        case (context, PostStop) ⇒
-          sawSignal.success(Done)
-          Behaviors.empty
-      }))
+      spawn(Behaviors.stopped { () ⇒
+        sawSignal.success(Done)
+      })
 
       sawSignal.future.futureValue should ===(Done)
     }
 
   }
-
-  "PostStop" should {
-    "immediately throw when a deferred behavior (setup) is passed in as postStop" in {
-      val ex = intercept[IllegalArgumentException] {
-        Behaviors.stopped(
-          // illegal:
-          Behaviors.setup[String] { _ ⇒
-            throw TestException("boom!")
-          }
-        )
-      }
-
-      ex.getMessage should include("Behavior used as `postStop` behavior in Stopped(...) was a deferred one ")
-    }
-  }
-
 }

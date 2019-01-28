@@ -62,6 +62,21 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
+   * The when the PostStop signal that results from stopping this actor is received
+   * the given `postStop` callback will be invoked. All other messages and signals will effectively be
+   * ignored.
+   */
+  def stopped[T](postStop: () ⇒ Unit): Behavior[T] = Behavior.stopped(receiveSignal {
+    case (_, PostStop) ⇒
+      postStop()
+      Behaviors.same
+  })
+
+  /**
+   * Return this behavior from message processing to signal that this actor
+   * shall terminate voluntarily. If this actor has created child actors then
+   * these will be stopped as part of the shutdown procedure.
+   *
    * The PostStop signal that results from stopping this actor will be passed to the
    * given `postStop` behavior. All other messages and signals will effectively be
    * ignored.

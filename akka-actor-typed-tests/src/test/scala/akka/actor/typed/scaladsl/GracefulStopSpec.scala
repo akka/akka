@@ -32,13 +32,9 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
               Behaviors.stopped
           }, "child2")
 
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! "parent-done"
-                Behaviors.same
-            }
+          Behaviors.stopped { () ⇒
+            // cleanup function body
+            probe.ref ! "parent-done"
           }
         }
 
@@ -54,13 +50,9 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val behavior =
         Behaviors.setup[akka.NotUsed] { _ ⇒
           // do not spawn any children
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! Done
-                Behaviors.same
-            }
+          Behaviors.stopped { () ⇒
+            // cleanup function body
+            probe.ref ! Done
           }
         }
 
