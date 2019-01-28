@@ -106,9 +106,9 @@ object EventSourcedBehavior {
       case impl: ActorContextAdapter[_] ⇒
         extractConcreteBehavior(impl.currentBehavior) match {
           case w: Running.WithSeqNrAccessible ⇒ w.currentSequenceNumber
-          case s                              ⇒ throw new IllegalStateException(s"Cannot extract the PersistentActorContext in state ${s.getClass.getName}")
+          case s                              ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
         }
-      case c ⇒ throw new IllegalStateException(s"Cannot extract the PersistentActorContext from context ${c.getClass.getName}")
+      case c ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
     }
   }
 

@@ -62,7 +62,7 @@ private[akka] object ReplayingEvents {
 @InternalApi
 private[akka] final class ReplayingEvents[C, E, S](
   override val setup: BehaviorSetup[C, E, S],
-  state:              ReplayingState[S])
+  var state:              ReplayingState[S])
   extends AbstractBehavior[InternalProtocol] with JournalInteractions[C, E, S] with StashManagement[C, E, S] with WithSeqNrAccessible {
 
   import InternalProtocol._
@@ -82,7 +82,8 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
     case PoisonPill ⇒
-      new ReplayingEvents(setup, state.copy(receivedPoisonPill = true))
+      state = state.copy(receivedPoisonPill = true)
+      this
   }
 
   private def onJournalResponse(
@@ -93,11 +94,11 @@ private[akka] final class ReplayingEvents[C, E, S](
           val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
 
           try {
-            val newState = state.copy(
+            state = state.copy(
               seqNr = repr.sequenceNr,
               state = setup.eventHandler(state.state, event),
               eventSeenInInterval = true)
-            new ReplayingEvents(setup, newState)
+            this
           } catch {
             case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
           }
@@ -133,7 +134,8 @@ private[akka] final class ReplayingEvents[C, E, S](
   protected def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (!snapshot) {
       if (state.eventSeenInInterval) {
-        new ReplayingEvents(setup, state.copy(eventSeenInInterval = false))
+        state = state.copy(eventSeenInInterval = false)
+        this
       } else {
         val msg = s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
         onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
