@@ -95,6 +95,8 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
                 def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] = Behavior.same
               })
           }
+        case _ ⇒
+          interceptor.aroundSignal(ctx, signal, signalTarget)
       }
       Behavior.same
 
