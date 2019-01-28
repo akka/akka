@@ -4,20 +4,16 @@
 
 package akka.io.dns
 
-import akka.annotation.ApiMayChange
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
 object CachePolicy {
 
-  @ApiMayChange
   sealed trait CachePolicy
-  @ApiMayChange
   case object Never extends CachePolicy
-  @ApiMayChange
   case object Forever extends CachePolicy
-  @ApiMayChange
+
   final class Ttl private (val value: FiniteDuration) extends CachePolicy {
     if (value <= Duration.Zero) throw new IllegalArgumentException(s"TTL values must be a positive value.")
     import akka.util.JavaDurationConverters._
@@ -32,7 +28,7 @@ object CachePolicy {
 
     override def toString = s"Ttl($value)"
   }
-  @ApiMayChange
+
   object Ttl {
     def unapply(ttl: Ttl): Option[FiniteDuration] = Some(ttl.value)
     def fromPositive(value: FiniteDuration): Ttl = {
@@ -45,7 +41,7 @@ object CachePolicy {
     val effectivelyForever: Ttl = fromPositive(Int.MaxValue.seconds)
 
     implicit object TtlIsOrdered extends Ordering[Ttl] {
-      def compare(a: Ttl, b: Ttl) = a.value.compare(b.value)
+      def compare(a: Ttl, b: Ttl): Int = a.value.compare(b.value)
     }
   }
 
