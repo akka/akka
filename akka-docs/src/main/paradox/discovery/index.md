@@ -1,12 +1,5 @@
 # Discovery
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md)
-This means that API or semantics can change without warning or deprecation period.
-
-@@@
-
 Akka Discovery provides an interface around various ways of locating services. The built in methods are:
 
 * Configuration

@@ -10,14 +10,13 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 
 import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.DeadLetterSuppression
-import akka.annotation.ApiMayChange
 import akka.util.HashCode
 
-@ApiMayChange
 object ServiceDiscovery {
 
   object Resolved {
@@ -90,18 +89,14 @@ object ServiceDiscovery {
     /**
      * Java API
      */
-    def getPort: Optional[Int] = {
-      import scala.compat.java8.OptionConverters._
+    def getPort: Optional[Int] =
       port.asJava
-    }
 
     /**
      * Java API
      */
-    def getAddress: Optional[InetAddress] = {
-      import scala.compat.java8.OptionConverters._
+    def getAddress: Optional[InetAddress] =
       address.asJava
-    }
 
     override def toString: String = s"ResolvedTarget($host,$port,$address)"
 
@@ -130,7 +125,6 @@ object ServiceDiscovery {
  *
  * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
  */
-@ApiMayChange
 final class Lookup(
   val serviceName: String,
   val portName:    Option[String],
@@ -150,6 +144,18 @@ final class Lookup(
    * Maps to "protocol" for SRV records.
    */
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
+
+  /**
+   * Java API
+   */
+  def getPortName: Optional[String] =
+    portName.asJava
+
+  /**
+   * Java API
+   */
+  def getProtocol: Optional[String] =
+    protocol.asJava
 
   private def copy(
     serviceName: String         = serviceName,
@@ -174,7 +180,6 @@ final class Lookup(
 
 }
 
-@ApiMayChange
 case object Lookup {
 
   /**
@@ -245,7 +250,6 @@ case object Lookup {
  * Implement to provide a service discovery method
  *
  */
-@ApiMayChange
 abstract class ServiceDiscovery {
 
   import ServiceDiscovery._
