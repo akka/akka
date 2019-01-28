@@ -238,7 +238,7 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none"))
+    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
