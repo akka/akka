@@ -10,10 +10,8 @@ import akka.util.OptionVal
 /**
  * DNS Record Type
  */
-@ApiMayChange
 final case class RecordType(code: Short, name: String)
 
-@ApiMayChange
 object RecordType {
   /**
    * array for fast lookups by id
