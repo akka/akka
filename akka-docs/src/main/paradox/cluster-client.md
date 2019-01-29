@@ -21,17 +21,23 @@ connection if the link goes down. When looking for a new receptionist it uses fr
 contact points retrieved from previous establishment, or periodically refreshed contacts,
 i.e. not necessarily the initial contact points.
 
-@@@ note
+Using the @unidoc[ClusterClient] for communicating with a cluster from the outside requires that the system with the client
+can both connect and be connected to with Akka Remoting from all the nodes in the cluster with a receptionist.
+This creates a tight coupling in that the client and cluster systems may need to have the same version of 
+both Akka, libraries, message classes, serializers and potentially even the JVM. In many cases it is a better solution 
+to use a more explicit and decoupling protocol such as [HTTP](https://doc.akka.io/docs/akka-http/current/index.html) or 
+[gRPC](https://developer.lightbend.com/docs/akka-grpc/current/).
+
+Additionally since Akka Remoting is primarily designed as a protocol for Akka Cluster there is no explicit resource
+management, when a @unidoc[ClusterClient] has been used it will cause connections with the cluster until the ActorSystem is 
+stopped (unlike other kinds of network clients). 
 
 @unidoc[ClusterClient] should not be used when sending messages to actors that run
 within the same cluster. Similar functionality as the @unidoc[ClusterClient] is
 provided in a more efficient way by @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md) for actors that
 belong to the same cluster.
 
-@@@
-
-Also, note it's necessary to change `akka.actor.provider` from `local`
-to `remote` or `cluster` when using
+It is necessary that the connecting system has its `akka.actor.provider` set  to `remote` or `cluster` when using
 the cluster client.
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,
