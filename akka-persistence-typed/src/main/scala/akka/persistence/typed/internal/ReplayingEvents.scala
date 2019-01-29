@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.util.control.NonFatal
+import scala.util.control.NoStackTrace
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
@@ -13,6 +14,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
+import akka.persistence.typed.internal.ReplayingEvents.FailureWhileUnstashing
 
 /***
  * INTERNAL API
@@ -45,6 +47,8 @@ private[akka] object ReplayingEvents {
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
     new ReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
+
+  private final case class FailureWhileUnstashing(cause: Throwable) extends Exception(cause) with NoStackTrace
 
 }
 
@@ -104,6 +108,7 @@ private[akka] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C
           Behaviors.unhandled
       }
     } catch {
+      case FailureWhileUnstashing(ex) ⇒ throw ex
       case NonFatal(cause) ⇒
         onRecoveryFailure(cause, state.seqNr, None)
     }
@@ -179,7 +184,11 @@ private[akka] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C
         Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill)
       )
 
-      tryUnstashOne(running)
+      try {
+        tryUnstashOne(running)
+      } catch {
+        case NonFatal(t) ⇒ throw FailureWhileUnstashing(t)
+      }
     }
   } finally {
     setup.cancelRecoveryTimer()
