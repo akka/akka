@@ -602,6 +602,17 @@ object TestSubscriber {
     /**
      * Fluent DSL
      *
+     * Same as `expectNoMessage(remaining)`, but correctly treating the timeFactor.
+     * NOTE! Timeout value is automatically multiplied by timeFactor.
+     */
+    def expectNoMessage(): Self = {
+      probe.expectNoMessage()
+      self
+    }
+
+    /**
+     * Fluent DSL
+     *
      * Assert that no message is received for the specified time.
      */
     def expectNoMessage(remaining: FiniteDuration): Self = {
