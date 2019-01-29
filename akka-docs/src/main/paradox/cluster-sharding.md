@@ -235,7 +235,7 @@ A higher threshold means that more shards can be rebalanced at the same time ins
 That has the advantage that the rebalance process can be quicker but has the drawback that the
 the number of shards (and therefore load) between different nodes may be significantly different.
 
-### Shard Coordinator State
+### ShardCoordinator State
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
 @ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. When a crashed or
