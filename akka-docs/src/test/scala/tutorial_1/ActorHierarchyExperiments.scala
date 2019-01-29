@@ -27,12 +27,12 @@ class PrintMyActorRefActor extends Actor {
 
 import akka.testkit.AkkaSpec
 
+//#start-stop
 object StartStopActor1 {
   def props: Props =
     Props(new StartStopActor1)
 }
 
-//#start-stop
 class StartStopActor1 extends Actor {
   override def preStart(): Unit = {
     println("first started")
