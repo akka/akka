@@ -23,14 +23,14 @@ import akka.persistence.journal.leveldb.SharedLeveldbStore
 
 /**
  * Utility program that removes the internal data stored with Akka Persistence
- * by the Cluster Sharding coordinator. The data contains the locations of the
+ * by the Cluster `ShardCoordinator`. The data contains the locations of the
  * shards using Akka Persistence and it can safely be removed when restarting
  * the whole Akka Cluster. Note that this is not application data.
  *
  * <b>Never use this program while there are running Akka Cluster that is
  * using Cluster Sharding. Stop all Cluster nodes before using this program.</b>
  *
- * It can be needed to remove the data if the Cluster Sharding coordinator
+ * It can be needed to remove the data if the Cluster `ShardCoordinator`
  * cannot startup because of corrupt data, which may happen if accidentally
  * two clusters were running at the same time, e.g. caused by using auto-down
  * and there was a network partition.
