@@ -57,8 +57,8 @@ object PartitionByType {
    */
   def forEitherMat[L, R, Mat1, Mat2, Mat3](left: Sink[L, Mat1], right: Sink[R, Mat2])(combine: (Mat1, Mat2) ⇒ Mat3): Sink[Either[L, R], Mat3] =
     apply[Either[L, R]]()
-      .addSink(left.contramap((l: Left[L, R]) ⇒ l.value))
-      .addSink(right.contramap((r: Right[L, R]) ⇒ r.value))
+      .addSink(left.contramap((l: Left[L, R]) ⇒ l.a))
+      .addSink(right.contramap((r: Right[L, R]) ⇒ r.b))
       .build()
       .mapMaterializedValue(matVals ⇒
         combine(matVals(0).asInstanceOf[Mat1], matVals(1).asInstanceOf[Mat2])
