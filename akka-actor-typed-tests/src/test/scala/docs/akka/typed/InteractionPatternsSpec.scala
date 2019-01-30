@@ -368,7 +368,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     implicit val timeout: Timeout = 3.seconds
     implicit val scheduler = system.scheduler
 
-    val result: Future[Cookies] = cookieActorRef ? (ref ⇒ GiveMeCookies(ref))
+    val result: Future[Cookies] = cookieActorRef.ask(ref ⇒ GiveMeCookies(ref))
 
     // the response callback will be executed on this execution context
     implicit val ec = system.executionContext
