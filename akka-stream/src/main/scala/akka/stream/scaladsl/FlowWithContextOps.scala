@@ -164,29 +164,42 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    * Example:
    *
    * ```
-   * def dup(element: String) = Seq(element, element)
+   * val statefulRepeat: () ⇒ String ⇒ collection.immutable.Iterable[String] = () ⇒ {
+   *   var counter = 0
+   *   str ⇒ {
+   *     counter = counter + 1
+   *     (1 to counter).map(_ ⇒ str)
+   *   }
+   * }
+   * ```
    *
    * Input:
    *
-   * ("a", 1)
-   * ("b", 2)
+   * ("a", 4)
+   * ("b", 5)
+   * ("c", 6)
    *
-   * inputElements.statefulMapConcat(() => dup)
+   * inputElements.statefulMapConcat(statefulRepeat)
    *
    * Output:
    *
-   * ("a", 1)
-   * ("a", 1)
-   * ("b", 2)
-   * ("b", 2)
+   * ("a", 4)
+   * ("b", 5)
+   * ("b", 5)
+   * ("c", 6)
+   * ("c", 6)
+   * ("c", 6)
    * ```
    *
    * @see [[akka.stream.scaladsl.FlowOps.statefulMapConcat]]
    */
   def statefulMapConcat[Out2](f: () ⇒ Out ⇒ immutable.Iterable[Out2]): Repr[Ctx, Out2] = {
-    val fCtx: () ⇒ ((Out, Ctx)) ⇒ immutable.Iterable[(Out2, Ctx)] = { () ⇒ elWithContext ⇒
-      val (el, ctx) = elWithContext
-      f()(el).map(o ⇒ (o, ctx))
+    val fCtx: () ⇒ ((Out, Ctx)) ⇒ immutable.Iterable[(Out2, Ctx)] = () ⇒ {
+      val plainFun = f()
+      elWithContext ⇒ {
+        val (el, ctx) = elWithContext
+        plainFun(el).map(o ⇒ (o, ctx))
+      }
     }
     via(flow.statefulMapConcat(fCtx))
   }
