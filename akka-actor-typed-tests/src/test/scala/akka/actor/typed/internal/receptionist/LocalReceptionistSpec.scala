@@ -110,7 +110,7 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
     "work with ask" in {
       val receptionist = spawn(LocalReceptionist.behavior)
       val serviceA = spawn(behaviorA)
-      val f: Future[Registered] = receptionist ? (Register(ServiceKeyA, serviceA, _))
+      val f: Future[Registered] = receptionist.ask(Register(ServiceKeyA, serviceA, _))
       f.futureValue should be(Registered(ServiceKeyA, serviceA))
     }
 

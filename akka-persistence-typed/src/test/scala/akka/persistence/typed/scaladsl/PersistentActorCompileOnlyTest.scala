@@ -57,7 +57,7 @@ object PersistentActorCompileOnlyTest {
 
     case class EventsInFlight(nextCorrelationId: Int, dataByCorrelationId: Map[Int, String])
 
-    case class Request(correlationId: Int, data: String)(sender: ActorRef[Response])
+    case class Request(correlationId: Int, data: String, sender: ActorRef[Response])
     case class Response(correlationId: Int)
     val sideEffectProcessor: ActorRef[Request] = ???
 
@@ -67,7 +67,7 @@ object PersistentActorCompileOnlyTest {
       implicit val scheduler: akka.actor.Scheduler = ???
       implicit val ec: ExecutionContext = ???
 
-      (sideEffectProcessor ? Request(correlationId, data))
+      sideEffectProcessor.ask(Request(correlationId, data, _))
         .map(response ⇒ AcknowledgeSideEffect(response.correlationId))
         .foreach(sender ! _)
     }

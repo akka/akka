@@ -19,7 +19,6 @@ import akka.actor.typed.internal.InternalRecipientRef
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
- * The `?` operator is pronounced as "ask".
  *
  * See [[AskPattern.Askable.ask]] for details
  */

@@ -63,15 +63,15 @@ class DispatchersDocSpec extends ScalaTestWithActorTestKit(DispatchersDocSpec.co
       val probe = TestProbe[Dispatcher]()
       val actor: ActorRef[SpawnProtocol] = spawn(SpawnProtocol.behavior)
 
-      val withDefault = (actor ? Spawn(giveMeYourDispatcher, "default", Props.empty)).futureValue
+      val withDefault = actor.ask(Spawn(giveMeYourDispatcher, "default", Props.empty)).futureValue
       withDefault ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "akka.actor.default-dispatcher"
 
-      val withBlocking = (actor ? Spawn(giveMeYourDispatcher, "default", DispatcherSelector.blocking())).futureValue
+      val withBlocking = actor.ask(Spawn(giveMeYourDispatcher, "default", DispatcherSelector.blocking())).futureValue
       withBlocking ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "akka.actor.default-blocking-io-dispatcher"
 
-      val withCustom = (actor ? Spawn(giveMeYourDispatcher, "default", DispatcherSelector.fromConfig("your-dispatcher"))).futureValue
+      val withCustom = actor.ask(Spawn(giveMeYourDispatcher, "default", DispatcherSelector.fromConfig("your-dispatcher"))).futureValue
       withCustom ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "your-dispatcher"
     }
