@@ -36,12 +36,13 @@ object Release extends ParadoxKeys {
 
   def buildDocsCommand = Command.command("buildDocs") { state =>
     if (!sys.props.contains("akka.genjavadoc.enabled"))
-      throw new RuntimeException("Make sure you start sbt with \"-J-Dakka.genjavadoc.enabled=true\" otherwise no japi will be generated")
+      throw new RuntimeException("Make sure you start sbt with \"-Dakka.genjavadoc.enabled=true\" otherwise no japi will be generated")
     val extracted = Project.extract(state)
-    // we want to build the api-docs and docs with 2.12.x
-    val scalaV = extracted.get(scalaVersion) 
-    if (!scalaV.startsWith("2.12"))
-      throw new RuntimeException(s"The docs should be built with Scala 2.12 (was $scalaV)")
+    // we want to build the api-docs and docs with the current "default" version of scala
+    val scalaV = extracted.get(scalaVersion)
+    val expectedScalaV = extracted.get(crossScalaVersions).head
+    if (scalaV != expectedScalaV)
+      throw new RuntimeException(s"The docs should be built with Scala $expectedScalaV (was $scalaV)")
     val release = extracted.get(releaseDirectory)
     val releaseVersion = extracted.get(version)
     val projectRef = extracted.get(thisProjectRef)
