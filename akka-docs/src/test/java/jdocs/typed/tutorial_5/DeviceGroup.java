@@ -113,7 +113,7 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroupMessage> {
 
   @Override
   public Receive<DeviceGroupMessage> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         // #query-added
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         .onMessage(RequestDeviceList.class, r -> r.groupId.equals(groupId), this::onDeviceList)

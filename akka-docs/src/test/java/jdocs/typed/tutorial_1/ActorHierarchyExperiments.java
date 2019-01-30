@@ -36,7 +36,7 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder().onMessageEquals("printit", this::printIt).build();
+    return newReceiveBuilder().onMessageEquals("printit", this::printIt).build();
   }
 
   private Behavior<String> printIt() {
@@ -60,7 +60,7 @@ class StartStopActor1 extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessageEquals("stop", Behaviors::stopped)
         .onSignal(PostStop.class, signal -> postStop())
         .build();
@@ -84,7 +84,7 @@ class StartStopActor2 extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
+    return newReceiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
   }
 
   private Behavior<String> postStop() {
@@ -113,7 +113,7 @@ class SupervisingActor extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder().onMessageEquals("failChild", this::failChild).build();
+    return newReceiveBuilder().onMessageEquals("failChild", this::failChild).build();
   }
 
   private Behavior<String> failChild() {
@@ -134,7 +134,7 @@ class SupervisedActor extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessageEquals("fail", this::fail)
         .onSignal(PreRestart.class, signal -> preRestart())
         .onSignal(PostStop.class, signal -> postStop())
@@ -174,7 +174,7 @@ class Main extends AbstractBehavior<String> {
 
   @Override
   public Receive<String> createReceive() {
-    return receiveBuilder().onMessageEquals("start", this::start).build();
+    return newReceiveBuilder().onMessageEquals("start", this::start).build();
   }
 
   private Behavior<String> start() {

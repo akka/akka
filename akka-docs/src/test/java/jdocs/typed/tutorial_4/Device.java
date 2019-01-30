@@ -46,7 +46,7 @@ public class Device extends AbstractBehavior<DeviceMessage> {
 
   @Override
   public Receive<DeviceMessage> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessage(RecordTemperature.class, this::recordTemperature)
         .onMessage(ReadTemperature.class, this::readTemperature)
         .onMessage(Passivate.class, m -> Behaviors.stopped())

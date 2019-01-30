@@ -134,7 +134,7 @@ public class ReplicatorTest extends JUnitSuite {
 
     @Override
     public Receive<ClientCommand> createReceive() {
-      return receiveBuilder()
+      return newReceiveBuilder()
           .onMessage(Increment.class, this::onIncrement)
           .onMessage(InternalUpdateResponse.class, msg -> Behaviors.same())
           .onMessage(GetValue.class, this::onGetValue)

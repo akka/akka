@@ -16,7 +16,7 @@ import akka.actor.typed.Behavior.unhandled
 import BehaviorBuilder._
 
 /**
- * Used for creating a [[Behavior]] by 'chaining' message and signal handlers.
+ * Immutable builder used for creating a [[Behavior]] by 'chaining' message and signal handlers.
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.

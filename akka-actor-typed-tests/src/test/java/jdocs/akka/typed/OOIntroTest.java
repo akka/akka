@@ -5,7 +5,6 @@
 package jdocs.akka.typed;
 
 // #imports
-import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -112,7 +111,7 @@ public class OOIntroTest {
 
       @Override
       public Receive<RoomCommand> createReceive() {
-        return receiveBuilder()
+        return newReceiveBuilder()
             .onMessage(
                 GetSession.class,
                 getSession -> {

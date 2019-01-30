@@ -36,7 +36,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
                   @Override
                   public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
-                    return receiveBuilder()
+                    return newReceiveBuilder()
                         .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
                         .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
                         .build();
@@ -56,7 +56,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
     @Override
     public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
       assertEquals(42, value);
-      return receiveBuilder().build();
+      return newReceiveBuilder().build();
     }
   }
 
