@@ -299,6 +299,7 @@ else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
 try sbt $RELEASE_OPT +buildRelease
+try sbt $RELEASE_OPT buildDocs
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
