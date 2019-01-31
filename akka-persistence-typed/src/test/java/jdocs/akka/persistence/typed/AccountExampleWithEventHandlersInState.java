@@ -213,9 +213,7 @@ public interface AccountExampleWithEventHandlersInState {
       CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder =
           newCommandHandlerBuilder();
 
-      builder
-          .forStateType(EmptyAccount.class)
-          .onCommand(CreateAccount.class, this::createAccount);
+      builder.forStateType(EmptyAccount.class).onCommand(CreateAccount.class, this::createAccount);
 
       builder
           .forStateType(OpenedAccount.class)
@@ -281,10 +279,8 @@ public interface AccountExampleWithEventHandlersInState {
 
       builder
           .forStateType(OpenedAccount.class)
-          .onEvent(
-              Deposited.class, (account, deposited) -> account.makeDeposit(deposited.amount))
-          .onEvent(
-              Withdrawn.class, (account, withdrawn) -> account.makeWithdraw(withdrawn.amount))
+          .onEvent(Deposited.class, (account, deposited) -> account.makeDeposit(deposited.amount))
+          .onEvent(Withdrawn.class, (account, withdrawn) -> account.makeWithdraw(withdrawn.amount))
           .onEvent(AccountClosed.class, (account, closed) -> account.closedAccount());
 
       return builder.build();

@@ -207,9 +207,7 @@ public interface AccountExampleWithMutableState {
       CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder =
           newCommandHandlerBuilder();
 
-      builder
-          .forStateType(EmptyAccount.class)
-          .onCommand(CreateAccount.class, this::createAccount);
+      builder.forStateType(EmptyAccount.class).onCommand(CreateAccount.class, this::createAccount);
 
       builder
           .forStateType(OpenedAccount.class)

@@ -269,8 +269,7 @@ public class AuctionEntity
         .forState(auction -> auction.getStatus() == AuctionStatus.UNDER_AUCTION)
         .onEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
         .onEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
-        .onEvent(
-            AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
+        .onEvent(AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
 
     return builder.build();
   }

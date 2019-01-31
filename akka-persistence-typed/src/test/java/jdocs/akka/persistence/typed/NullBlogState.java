@@ -181,9 +181,7 @@ public class NullBlogState {
 
       EventHandlerBuilder<BlogState, BlogEvent> builder = newEventHandlerBuilder();
 
-      builder
-          .forNullState()
-          .onEvent(PostAdded.class, event -> new BlogState(event.content, false));
+      builder.forNullState().onEvent(PostAdded.class, event -> new BlogState(event.content, false));
 
       builder
           .forNonNullState()

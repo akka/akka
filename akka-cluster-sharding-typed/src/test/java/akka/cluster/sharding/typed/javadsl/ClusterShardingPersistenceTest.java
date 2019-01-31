@@ -111,10 +111,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return newEventHandlerBuilder()
-          .forAnyState()
-          .onEvent(String.class, this::applyEvent)
-          .build();
+      return newEventHandlerBuilder().forAnyState().onEvent(String.class, this::applyEvent).build();
     }
 
     private String applyEvent(String state, String evt) {
