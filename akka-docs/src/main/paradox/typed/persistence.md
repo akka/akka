@@ -197,36 +197,17 @@ Java
 :  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #commands }
 
 @java[The commandler handler to process each command is decided by the state class (or state predicate) that is
-given to the `commandHandlerBuilder` and the match cases in the builders. Several builders can be composed with `orElse`:]
+given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
-It typically becomes two levels of pattern matching, first on the state and then on the command. Delegating to methods
-is a good practise because the one-line cases give a nice overview of the message dispatch.]
-
-@@@ div { .group-scala }
+It typically becomes two levels of pattern matching, first on the state and then on the command.]
+Delegating to methods is a good practise because the one-line cases give a nice overview of the message dispatch.
 
 Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
 
-@@@
-
-@@@ div { .group-java }
-
-TODO rewrite this example to be more like the Scala example
-
 Java
 :  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #command-handler }
 
-The `CommandHandlerBuilder` for a post that hasn't been initialized with content:
-
-Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #initial-command-handler }
-
-And a different `CommandHandlerBuilder` for after the post content has been added:
-
-Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #post-added-command-handler }
-
-@@@
 
 The event handler:
 
