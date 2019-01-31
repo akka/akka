@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.{ ClosedShape, OverflowStrategy, ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.{ ClosedShape, OverflowStrategy, ActorMaterializerSettings, ActorMaterializer, Attributes }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
@@ -187,6 +187,44 @@ class GraphUnzipSpec extends StreamSpec {
       c1.expectNext(2 → "b")
       c1.expectNext(3 → "c")
       c1.expectComplete()
+    }
+
+    "on failure in one of the sub-streams, by default complete processing or with 'resumingDecider' drop both in the entry and resume" in {
+      val ex = new RuntimeException()
+      val source = Source(List(1 → "a", 2 -> "b", 3 -> "c")).map { case (n, s) ⇒ if (n == 2) throw ex else (n, s) }
+
+      def graphProbe(resume: Boolean): TestSubscriber.ManualProbe[(Int, String)] = {
+        import akka.stream.ActorAttributes.supervisionStrategy
+        import akka.stream.Supervision.resumingDecider
+
+        val c = TestSubscriber.manualProbe[(Int, String)]()
+
+        val g = RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+          val zip = b.add(Zip[Int, String]())
+          val unzip = b.add(Unzip[Int, String]())
+          source ~> unzip.in
+          unzip.out0 ~> zip.in0
+          unzip.out1 ~> zip.in1
+          zip.out ~> Sink.fromSubscriber(c)
+          ClosedShape
+        }).withAttributes(if (resume) supervisionStrategy(resumingDecider) else Attributes.none).run()
+
+        c
+      }
+
+      val c1 = graphProbe(resume = false)
+      val sub1 = c1.expectSubscription()
+      sub1.request(5)
+      c1.expectNext(1 → "a")
+      c1.expectError(ex)
+
+      val c2 = graphProbe(resume = true)
+      val sub2 = c2.expectSubscription()
+      sub2.request(5)
+      c2.expectNext(1 → "a")
+      // with resumingDecider, both are dropped
+      c2.expectNext(3 -> "c")
+      c2.expectComplete()
     }
 
   }
