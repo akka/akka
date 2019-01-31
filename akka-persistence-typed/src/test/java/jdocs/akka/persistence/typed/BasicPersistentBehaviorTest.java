@@ -136,8 +136,8 @@ public class BasicPersistentBehaviorTest {
       public CommandHandler<Command, Event, State> commandHandler() {
         return newCommandHandlerBuilder()
             .forAnyState()
-            .matchCommand(Add.class, command -> Effect().persist(new Added(command.data)))
-            .matchCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
+            .onCommand(Add.class, command -> Effect().persist(new Added(command.data)))
+            .onCommand(Clear.class, command -> Effect().persist(Cleared.INSTANCE))
             .build();
       }
       // #command-handler
@@ -147,8 +147,8 @@ public class BasicPersistentBehaviorTest {
       public EventHandler<State, Event> eventHandler() {
         return newEventHandlerBuilder()
             .forAnyState()
-            .matchEvent(Added.class, (state, event) -> state.addItem(event.data))
-            .matchEvent(Cleared.class, () -> new State())
+            .onEvent(Added.class, (state, event) -> state.addItem(event.data))
+            .onEvent(Cleared.class, () -> new State())
             .build();
       }
       // #event-handler

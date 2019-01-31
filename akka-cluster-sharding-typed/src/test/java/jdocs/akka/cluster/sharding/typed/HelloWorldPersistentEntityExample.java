@@ -134,7 +134,7 @@ public class HelloWorldPersistentEntityExample {
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
-          .matchCommand(Greet.class, this::greet)
+          .onCommand(Greet.class, this::greet)
           .build();
     }
 

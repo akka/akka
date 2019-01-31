@@ -209,16 +209,16 @@ public interface AccountExampleWithMutableState {
 
       builder
           .forStateType(EmptyAccount.class)
-          .matchCommand(CreateAccount.class, this::createAccount);
+          .onCommand(CreateAccount.class, this::createAccount);
 
       builder
           .forStateType(OpenedAccount.class)
-          .matchCommand(Deposit.class, this::deposit)
-          .matchCommand(Withdraw.class, this::withdraw)
-          .matchCommand(GetBalance.class, this::getBalance)
-          .matchCommand(CloseAccount.class, this::closeAccount);
+          .onCommand(Deposit.class, this::deposit)
+          .onCommand(Withdraw.class, this::withdraw)
+          .onCommand(GetBalance.class, this::getBalance)
+          .onCommand(CloseAccount.class, this::closeAccount);
 
-      builder.forStateType(ClosedAccount.class).matchAny(() -> Effect().unhandled());
+      builder.forStateType(ClosedAccount.class).onAnyCommand(() -> Effect().unhandled());
 
       return builder.build();
     }
@@ -269,23 +269,23 @@ public interface AccountExampleWithMutableState {
 
       builder
           .forStateType(EmptyAccount.class)
-          .matchEvent(AccountCreated.class, (account, event) -> account.openedAccount());
+          .onEvent(AccountCreated.class, (account, event) -> account.openedAccount());
 
       builder
           .forStateType(OpenedAccount.class)
-          .matchEvent(
+          .onEvent(
               Deposited.class,
               (account, deposited) -> {
                 account.makeDeposit(deposited.amount);
                 return account;
               })
-          .matchEvent(
+          .onEvent(
               Withdrawn.class,
               (account, withdrawn) -> {
                 account.makeWithdraw(withdrawn.amount);
                 return account;
               })
-          .matchEvent(AccountClosed.class, (account, closed) -> account.closedAccount());
+          .onEvent(AccountClosed.class, (account, closed) -> account.closedAccount());
 
       return builder.build();
     }

@@ -246,16 +246,16 @@ public interface AccountExampleWithCommandHandlersInState {
 
       builder
           .forStateType(EmptyAccount.class)
-          .matchCommand(CreateAccount.class, EmptyAccount::createAccount);
+          .onCommand(CreateAccount.class, EmptyAccount::createAccount);
 
       builder
           .forStateType(OpenedAccount.class)
-          .matchCommand(Deposit.class, OpenedAccount::deposit)
-          .matchCommand(Withdraw.class, OpenedAccount::withdraw)
-          .matchCommand(GetBalance.class, OpenedAccount::getBalance)
-          .matchCommand(CloseAccount.class, OpenedAccount::closeAccount);
+          .onCommand(Deposit.class, OpenedAccount::deposit)
+          .onCommand(Withdraw.class, OpenedAccount::withdraw)
+          .onCommand(GetBalance.class, OpenedAccount::getBalance)
+          .onCommand(CloseAccount.class, OpenedAccount::closeAccount);
 
-      builder.forStateType(ClosedAccount.class).matchAny(() -> Effect().unhandled());
+      builder.forStateType(ClosedAccount.class).onAnyCommand(() -> Effect().unhandled());
 
       return builder.build();
     }
@@ -266,23 +266,23 @@ public interface AccountExampleWithCommandHandlersInState {
 
       builder
           .forStateType(EmptyAccount.class)
-          .matchEvent(AccountCreated.class, (account, event) -> account.openedAccount());
+          .onEvent(AccountCreated.class, (account, event) -> account.openedAccount());
 
       builder
           .forStateType(OpenedAccount.class)
-          .matchEvent(
+          .onEvent(
               Deposited.class,
               (account, deposited) -> {
                 account.makeDeposit(deposited.amount);
                 return account;
               })
-          .matchEvent(
+          .onEvent(
               Withdrawn.class,
               (account, withdrawn) -> {
                 account.makeWithdraw(withdrawn.amount);
                 return account;
               })
-          .matchEvent(AccountClosed.class, (account, closed) -> account.closedAccount());
+          .onEvent(AccountClosed.class, (account, closed) -> account.closedAccount());
 
       return builder.build();
     }
