@@ -9,10 +9,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.*;
 // #imports
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -111,8 +108,9 @@ public class OOIntroTest {
 
       @Override
       public Receive<RoomCommand> createReceive() {
-        return newReceiveBuilder()
-            .onMessage(
+        ReceiveBuilder<RoomCommand> builder = newReceiveBuilder();
+
+        builder.onMessage(
                 GetSession.class,
                 getSession -> {
                   ActorRef<SessionEvent> client = getSession.replyTo;
@@ -124,16 +122,18 @@ public class OOIntroTest {
                   client.tell(new SessionGranted(ses.narrow()));
                   sessions.add(ses);
                   return this;
-                })
-            .onMessage(
+                });
+
+        builder.onMessage(
                 PublishSessionMessage.class,
                 pub -> {
                   NotifyClient notification =
                       new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
                   sessions.forEach(s -> s.tell(notification));
                   return this;
-                })
-            .build();
+                });
+
+        return builder.build();
       }
     }
 
