@@ -274,7 +274,7 @@ If you'd like to check if your links and formatting look good in JavaDoc (and no
 sbt -Dakka.genjavadoc.enabled=true javaunidoc:doc
 ```
 
-Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`.
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`. This requires a jdk version 9 or later.
 
 ## External dependencies
 
