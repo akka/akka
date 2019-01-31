@@ -46,7 +46,7 @@ public final class Unsafe {
     public static void copyUSAsciiStrToBytes(String str, byte[] bytes) {
         if (isJavaVersion9Plus) {
             final byte[] chars = (byte[]) instance.getObject(str, stringValueFieldOffset);
-            System.arraycopy(chars, 0, bytes, 0, chars.length);
+            System.arraycopy(chars, 0, bytes, 0, str.length());
         } else {
             final char[] chars = (char[]) instance.getObject(str, stringValueFieldOffset);
             int i = 0;
