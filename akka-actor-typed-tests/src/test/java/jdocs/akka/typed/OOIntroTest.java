@@ -111,27 +111,27 @@ public class OOIntroTest {
         ReceiveBuilder<RoomCommand> builder = newReceiveBuilder();
 
         builder.onMessage(
-                GetSession.class,
-                getSession -> {
-                  ActorRef<SessionEvent> client = getSession.replyTo;
-                  ActorRef<SessionCommand> ses =
-                      context.spawn(
-                          session(context.getSelf(), getSession.screenName, client),
-                          URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
-                  // narrow to only expose PostMessage
-                  client.tell(new SessionGranted(ses.narrow()));
-                  sessions.add(ses);
-                  return this;
-                });
+            GetSession.class,
+            getSession -> {
+              ActorRef<SessionEvent> client = getSession.replyTo;
+              ActorRef<SessionCommand> ses =
+                  context.spawn(
+                      session(context.getSelf(), getSession.screenName, client),
+                      URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
+              // narrow to only expose PostMessage
+              client.tell(new SessionGranted(ses.narrow()));
+              sessions.add(ses);
+              return this;
+            });
 
         builder.onMessage(
-                PublishSessionMessage.class,
-                pub -> {
-                  NotifyClient notification =
-                      new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
-                  sessions.forEach(s -> s.tell(notification));
-                  return this;
-                });
+            PublishSessionMessage.class,
+            pub -> {
+              NotifyClient notification =
+                  new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
+              sessions.forEach(s -> s.tell(notification));
+              return this;
+            });
 
         return builder.build();
       }
