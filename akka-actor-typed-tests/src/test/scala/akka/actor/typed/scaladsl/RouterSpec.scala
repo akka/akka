@@ -33,9 +33,9 @@ class RouterSpec extends ScalaTestWithActorTestKit("""
         }
       }))
 
-      (0 to 3).foreach { n ⇒
-        probe.expectMessage(s"started $n")
-      }
+      // ordering of these msgs is not guaranteed
+      val expectedStarted = (0 to 3).map { n ⇒ s"started $n" }.toSet
+      probe.receiveMessages(4).toSet should ===(expectedStarted)
 
       (0 to 8).foreach { n ⇒
         pool ! s"message-$n"
