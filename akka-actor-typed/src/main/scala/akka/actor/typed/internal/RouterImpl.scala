@@ -5,7 +5,9 @@
 package akka.actor.typed.internal
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext }
 import akka.actor.typed._
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.annotation.InternalApi
+import akka.dispatch.forkjoin.ThreadLocalRandom
 
 /**
  * INTERNAL API
@@ -41,6 +43,31 @@ private[akka] final class RouterPoolImpl[T](ctx: ActorContext[T], poolSize: Int,
         nextChildIdx = 0
       if (children.isEmpty) Behavior.stopped
       else Behavior.same
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final class RouterGroupImpl[T](ctx: ActorContext[T], serviceKey: ServiceKey[T]) extends AbstractBehavior[T] {
+  private var routees: Array[ActorRef[T]] = Array.empty[ActorRef[T]]
+
+  // casting trix to avoid having to wrap incoming messages
+  ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
+  def onMessage(msg: T): Behavior[T] = msg match {
+    case serviceKey.Listing(newRoutees) ⇒
+      // we don't need to watch, because receptionist already does that
+      routees = newRoutees.toArray
+      Behavior.same
+    case msg: T @unchecked ⇒
+      if (routees.isEmpty) ctx.system.deadLetters ! msg
+      else {
+        val selectedIdx = ThreadLocalRandom.current().nextInt(routees.length)
+        routees(selectedIdx) ! msg
+      }
+      Behavior.same
   }
 
 }

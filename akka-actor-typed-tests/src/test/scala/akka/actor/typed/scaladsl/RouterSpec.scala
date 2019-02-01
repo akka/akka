@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.Behavior
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
@@ -80,6 +82,102 @@ class RouterSpec extends ScalaTestWithActorTestKit("""
         }
       }
       probe.expectTerminated(pool)
+    }
+
+  }
+
+  "The router group" must {
+
+    val receptionistDelayMs = 250
+
+    "route messages across routees registered to the receptionist" in {
+      val serviceKey = ServiceKey[String]("group-routing-1")
+      val probe = createTestProbe[String]()
+      val routeeBehavior: Behavior[String] = Behaviors.receiveMessage { msg ⇒
+        probe.ref ! msg
+        Behaviors.same
+      }
+
+      (0 to 3).foreach { n ⇒
+        val ref = spawn(routeeBehavior, s"group-1-routee-$n")
+        system.receptionist ! Receptionist.register(serviceKey, ref)
+      }
+
+      val group = spawn(Routers.group(serviceKey), "group-router-1")
+
+      // give the group a little time to get a listing from the receptionist
+      Thread.sleep(receptionistDelayMs)
+
+      (0 to 3).foreach { n ⇒
+        val msg = s"message-$n"
+        group ! msg
+        probe.expectMessage(msg)
+      }
+
+      testKit.stop(group)
+    }
+
+    "pass messages to dead letters when there are no routees available" in {
+      val serviceKey = ServiceKey[String]("group-routing-2")
+      val group = spawn(Routers.group(serviceKey), "group-router-2")
+
+      (0 to 3).foreach { n ⇒
+        val msg = s"message-$n"
+        EventFilter.warning(s"received dead letter without sender: $msg", occurrences = 1).intercept {
+          // FIXME why are there two log entries per dead letter?
+          EventFilter.info(start = "Message [java.lang.String] without sender to Actor[akka://RouterSpec/deadLetters] was not delivered.", occurrences = 1).intercept {
+            group ! msg
+          }
+        }
+      }
+
+      testKit.stop(group)
+    }
+
+    "handle a changing set of routees" in {
+      val serviceKey = ServiceKey[String]("group-routing-3")
+      val probe = createTestProbe[String]()
+      val routeeBehavior: Behavior[String] = Behaviors.receiveMessage {
+        case "stop" ⇒
+          Behaviors.stopped
+        case msg ⇒
+          probe.ref ! msg
+          Behaviors.same
+      }
+
+      val ref1 = spawn(routeeBehavior, s"group-3-routee-1")
+      system.receptionist ! Receptionist.register(serviceKey, ref1)
+
+      val ref2 = spawn(routeeBehavior, s"group-3-routee-2")
+      system.receptionist ! Receptionist.register(serviceKey, ref2)
+
+      val ref3 = spawn(routeeBehavior, s"group-3-routee-3")
+      system.receptionist ! Receptionist.register(serviceKey, ref3)
+
+      val group = spawn(Routers.group(serviceKey), "group-router-3")
+
+      // give the group a little time to get a listing from the receptionist
+      Thread.sleep(receptionistDelayMs)
+
+      (0 to 3).foreach { n ⇒
+        val msg = s"message-$n"
+        group ! msg
+        probe.expectMessage(msg)
+      }
+
+      ref2 ! "stop"
+
+      // give the group a little time to get an updated listing from the receptionist
+      Thread.sleep(receptionistDelayMs)
+
+      (0 to 3).foreach { n ⇒
+        val msg = s"message-$n"
+        group ! msg
+        probe.expectMessage(msg)
+      }
+
+      testKit.stop(group)
+
     }
 
   }
