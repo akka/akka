@@ -1112,6 +1112,24 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToMapErrorSuperClass() {
+    final String head = "foo";
+    final Source<Optional<String>, NotUsed> source =
+        Source.from(Arrays.asList(Optional.of(head), Optional.empty()));
+    final IllegalArgumentException boom = new IllegalArgumentException("boom");
+    final Flow<Optional<String>, String, NotUsed> flow =
+        Flow.<Optional<String>, String>fromFunction(Optional::get)
+            .mapError(RuntimeException.class, (RuntimeException e) -> boom);
+
+    source
+        .via(flow)
+        .runWith(TestSink.probe(system), materializer)
+        .request(2)
+        .expectNext(head)
+        .expectError(boom);
+  }
+
+  @Test
   public void mustBeAbleToMaterializeIdentityWithJavaFlow() throws Exception {
     final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
