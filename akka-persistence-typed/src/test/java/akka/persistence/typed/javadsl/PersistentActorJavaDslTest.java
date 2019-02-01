@@ -583,7 +583,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public CommandHandler<String, String, Object> commandHandler() {
-      return commandHandlerBuilder(Object.class)
+      return newCommandHandlerBuilder()
+          .forAnyState()
           .matchCommand(
               msg -> msg.equals("expect wrong type"),
               (context) ->
@@ -603,7 +604,9 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     @Override
     public EventHandler<Object, String> eventHandler() {
-      return eventHandlerBuilder().matchAny((event, state) -> state); // keep Integer state
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .matchAny((event, state) -> state); // keep Integer state
     }
   }
 
