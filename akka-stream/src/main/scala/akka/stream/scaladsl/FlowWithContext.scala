@@ -16,7 +16,7 @@ object FlowWithContext {
   /**
    * Creates an "empty" FlowWithContext that passes elements through with their context unchanged.
    */
-  def apply[Ctx, In]: FlowWithContext[Ctx, In, Ctx, In, akka.NotUsed] = {
+  def apply[Ctx, In](): FlowWithContext[Ctx, In, Ctx, In, akka.NotUsed] = {
     val under = Flow[(In, Ctx)]
     new FlowWithContext[Ctx, In, Ctx, In, akka.NotUsed](under)
   }
