@@ -125,6 +125,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   // TODO make idempotent
   def start(): Unit = {
+    println("Starting task runner")
     val tf = system.threadFactory match {
       case m: MonitorableThreadFactory ⇒
         m.withName(m.name + "-taskrunner")

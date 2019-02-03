@@ -17,7 +17,7 @@ object RemoteActorForSpec {
   final case class ActorForReq(s: String) extends JavaSerializable
 }
 
-class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with ImplicitSender with DefaultTimeout {
+class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=DEBUG") with ImplicitSender with DefaultTimeout {
 
   val remoteSystem = newRemoteSystem()
   val remotePort = port(remoteSystem)

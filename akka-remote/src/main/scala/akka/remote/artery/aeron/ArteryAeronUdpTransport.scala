@@ -68,7 +68,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   @volatile private[this] var aeronErrorLog: AeronErrorLog = _
 
   // TODO move configuration for idle CPU level to akka aeron
-  private val taskRunner = TaskRunnerExtension(_system).taskRunner
+ private val taskRunner = TaskRunnerExtension(_system).taskRunner
 
   private def inboundChannel = s"aeron:udp?endpoint=${bindAddress.address.host.get}:${bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -211,7 +211,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
               if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
               cause)
             // FIXME what should drop the shared task runner? Coordinated shutdown instead?
-            taskRunner.stop()
+            //taskRunner.stop()
             aeronErrorLogTask.cancel()
             if (settings.LogAeronCounters) aeronCounterTask.cancel()
             system.terminate()
@@ -396,7 +396,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   override protected def shutdownTransport(): Future[Done] = {
     import system.dispatcher
     // FIXME this shouldn't stop it, extension via coordinated shut down to happen after transport?
-    taskRunner.stop().map { _ ⇒
+    //taskRunner.stop().map { _ ⇒
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       if (aeronErrorLogTask != null) {
         aeronErrorLogTask.cancel()
@@ -406,8 +406,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       if (aeronErrorLog != null) aeronErrorLog.close()
       if (mediaDriver.get.isDefined) stopMediaDriver()
 
-      Done
-    }
+      Future.successful(Done)
+    //}
   }
 
 }
