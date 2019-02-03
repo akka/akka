@@ -10,8 +10,7 @@ import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.ExtendedActorSystem
-import akka.aeron.internal.TaskRunner
+import akka.aeron.TaskRunnerExtension
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -35,19 +34,15 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
   }
 
   val idleCpuLevel = 5
-  val taskRunner = {
-    val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
-    r.start()
-    r
-  }
+  val taskRunner = TaskRunnerExtension(system).taskRunner
 
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
+
   implicit val mat = ActorMaterializer(matSettings)(system)
 
   override def afterTermination(): Unit = {
-    taskRunner.stop()
     aeron.close()
     driver.close()
     IoUtil.delete(new File(driver.aeronDirectoryName), true)
