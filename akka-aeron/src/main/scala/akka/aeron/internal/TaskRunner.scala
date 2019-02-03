@@ -124,8 +124,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
   private var reset = false
 
   // TODO make idempotent
-  def start(): Unit = {
-    println("Starting task runner")
+  private[aeron] def start(): Unit = {
     val tf = system.threadFactory match {
       case m: MonitorableThreadFactory ⇒
         m.withName(m.name + "-taskrunner")
@@ -135,7 +134,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
     thread.start()
   }
 
-  def stop(): Future[Done] = {
+  private[aeron] def stop(): Future[Done] = {
     command(Shutdown)
     shutdown.future
   }

@@ -81,7 +81,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     if (settings.LogAeronCounters) {
       startAeronCounterLog()
     }
-    taskRunner.start()
+    // FIXME, make sure this has happened before starting
+    //taskRunner.start()
     topLevelFlightRecorder.loFreq(Transport_TaskRunnerStarted, NoMetaData)
   }
 
