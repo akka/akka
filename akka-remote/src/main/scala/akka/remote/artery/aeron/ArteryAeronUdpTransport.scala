@@ -68,7 +68,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   @volatile private[this] var aeronErrorLog: AeronErrorLog = _
 
   // TODO move configuration for idle CPU level to akka aeron
- private val taskRunner = TaskRunnerExtension(_system).taskRunner
+  private val taskRunner = TaskRunnerExtension(_system).taskRunner
 
   private def inboundChannel = s"aeron:udp?endpoint=${bindAddress.address.host.get}:${bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
@@ -398,16 +398,16 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     import system.dispatcher
     // FIXME this shouldn't stop it, extension via coordinated shut down to happen after transport?
     //taskRunner.stop().map { _ ⇒
-      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
-      if (aeronErrorLogTask != null) {
-        aeronErrorLogTask.cancel()
-        topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
-      }
-      if (aeron != null) aeron.close()
-      if (aeronErrorLog != null) aeronErrorLog.close()
-      if (mediaDriver.get.isDefined) stopMediaDriver()
+    topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
+    if (aeronErrorLogTask != null) {
+      aeronErrorLogTask.cancel()
+      topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+    }
+    if (aeron != null) aeron.close()
+    if (aeronErrorLog != null) aeronErrorLog.close()
+    if (mediaDriver.get.isDefined) stopMediaDriver()
 
-      Future.successful(Done)
+    Future.successful(Done)
     //}
   }
 
