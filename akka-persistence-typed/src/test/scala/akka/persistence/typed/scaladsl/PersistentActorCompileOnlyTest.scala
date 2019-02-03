@@ -17,43 +17,6 @@ object PersistentActorCompileOnlyTest {
 
   import akka.persistence.typed.scaladsl.EventSourcedBehavior._
 
-  object Simple {
-    //#command
-    sealed trait SimpleCommand
-    case class Cmd(data: String) extends SimpleCommand
-
-    sealed trait SimpleEvent
-    case class Evt(data: String) extends SimpleEvent
-    //#command
-
-    //#state
-    case class ExampleState(events: List[String] = Nil)
-    //#state
-
-    //#command-handler
-    val commandHandler: CommandHandler[SimpleCommand, SimpleEvent, ExampleState] =
-      CommandHandler.command {
-        case Cmd(data) ⇒ Effect.persist(Evt(data))
-      }
-    //#command-handler
-
-    //#event-handler
-    val eventHandler: (ExampleState, SimpleEvent) ⇒ ExampleState = {
-      case (state, Evt(data)) ⇒ state.copy(data :: state.events)
-    }
-    //#event-handler
-
-    //#behavior
-    val simpleBehavior: EventSourcedBehavior[SimpleCommand, SimpleEvent, ExampleState] =
-      EventSourcedBehavior[SimpleCommand, SimpleEvent, ExampleState](
-        persistenceId = PersistenceId("sample-id-1"),
-        emptyState = ExampleState(Nil),
-        commandHandler = commandHandler,
-        eventHandler = eventHandler)
-    //#behavior
-
-  }
-
   object WithAck {
     case object Ack
 
@@ -431,32 +394,6 @@ object PersistentActorCompileOnlyTest {
         case (_: First, _) ⇒ new Second
         case (state, _)    ⇒ state
       })
-
-  }
-
-  object WithContext {
-    sealed trait Command
-    sealed trait Event
-    class State
-
-    // #actor-context
-    val behavior: Behavior[String] =
-      Behaviors.setup { ctx ⇒
-        EventSourcedBehavior[String, String, State](
-          persistenceId = PersistenceId("myPersistenceId"),
-          emptyState = new State,
-          commandHandler = CommandHandler.command {
-            cmd ⇒
-              ctx.log.info("Got command {}", cmd)
-              Effect.persist(cmd).thenRun { state ⇒
-                ctx.log.info("event persisted, new state {}", state)
-              }
-          },
-          eventHandler = {
-            case (state, _) ⇒ state
-          })
-      }
-    // #actor-context
 
   }
 

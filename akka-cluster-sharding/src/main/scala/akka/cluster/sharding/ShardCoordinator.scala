@@ -1087,7 +1087,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
   def activate() = {
     context.become(active)
-    log.info("Sharding Coordinator was moved to the active state {}", state)
+    log.info("ShardCoordinator was moved to the active state {}", state)
   }
 
   override def active: Receive =

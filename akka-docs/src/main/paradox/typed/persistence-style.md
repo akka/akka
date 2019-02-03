@@ -16,10 +16,13 @@ of the account; `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #account-entity }
 
-TODO include corresponding example in Java
+Java
+:  @@snip [AccountExampleWithEventHandlersInState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithEventHandlersInState.java) { #account-entity }
 
-Notice how the `eventHandler` delegates to the `applyEvent` in the `Account` (state), which is implemented
-in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.
+@scala[Notice how the `eventHandler` delegates to the `applyEvent` in the `Account` (state), which is implemented
+in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
+@java[Notice how the `eventHandler` delegates to methods in the concrete `Account` (state) classes;
+`EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
 
 ## Command handlers in the state
 
@@ -28,10 +31,13 @@ We can take the previous bank account example one step further by handling the c
 Scala
 :  @@snip [AccountExampleWithCommandHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithCommandHandlersInState.scala) { #account-entity }
 
-TODO include corresponding example in Java
+Java
+:  @@snip [AccountExampleWithCommandHandlersInState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithCommandHandlersInState.java) { #account-entity }
 
-Notice how the command handler is delegating to `applyCommand` in the `Account` (state), which is implemented
-in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.
+@scala[Notice how the command handler is delegating to `applyCommand` in the `Account` (state), which is implemented
+in the concrete `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
+@java[Notice how the command handler delegates to methods in the concrete `Account` (state) classes;
+`EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.]
 
 ## Optional initial state
 
@@ -48,4 +54,21 @@ is then used in command and event handlers at the outer layer before delegating 
 Scala
 :  @@snip [AccountExampleWithOptionState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithOptionState.scala) { #account-entity }
 
-TODO include corresponding example in Java
+Java
+:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithNullState.java) { #account-entity }
+
+@@@ div { .group-java }
+## Mutable state
+
+The state can be mutable or immutable. When it is immutable the event handler returns a new instance of the state
+for each change.
+
+When using mutable state it's important to not send the full state instance as a message to another actor,
+e.g. as a reply to a command. Messages must be immutable to avoid concurrency problems.
+
+The above examples are using immutable state classes and below is corresponding example with mutable state.
+
+Java
+:  @@snip [AccountExampleWithNullState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/AccountExampleWithMutableState.java) { #account-entity }
+
+@@@

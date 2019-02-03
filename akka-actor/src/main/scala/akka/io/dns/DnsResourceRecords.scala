@@ -7,7 +7,7 @@ package akka.io.dns
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import CachePolicy._
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ ByteIterator, ByteString, unused }
@@ -15,12 +15,10 @@ import akka.util.{ ByteIterator, ByteString, unused }
 import scala.annotation.switch
 import scala.concurrent.duration._
 
-@ApiMayChange
 sealed abstract class ResourceRecord(val name: String, val ttl: Ttl, val recType: Short, val recClass: Short)
   extends NoSerializationVerificationNeeded {
 }
 
-@ApiMayChange
 final case class ARecord(override val name: String, override val ttl: Ttl,
                          ip: InetAddress) extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {
 }
@@ -37,7 +35,6 @@ private[dns] object ARecord {
   }
 }
 
-@ApiMayChange
 final case class AAAARecord(override val name: String, override val ttl: Ttl,
                             ip: Inet6Address) extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {
 }
@@ -59,7 +56,6 @@ private[dns] object AAAARecord {
   }
 }
 
-@ApiMayChange
 final case class CNameRecord(override val name: String, override val ttl: Ttl,
                              canonicalName: String) extends ResourceRecord(name, ttl, RecordType.CNAME.code, RecordClass.IN.code) {
 }
@@ -75,7 +71,6 @@ private[dns] object CNameRecord {
   }
 }
 
-@ApiMayChange
 final case class SRVRecord(override val name: String, override val ttl: Ttl,
                            priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {
 }
@@ -97,7 +92,6 @@ private[dns] object SRVRecord {
   }
 }
 
-@ApiMayChange
 final case class UnknownRecord(override val name: String, override val ttl: Ttl,
                                override val recType: Short, override val recClass: Short,
                                data: ByteString) extends ResourceRecord(name, ttl, recType, recClass) {
