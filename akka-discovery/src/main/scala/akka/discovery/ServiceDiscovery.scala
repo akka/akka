@@ -206,7 +206,27 @@ case object Lookup {
 
   private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
 
-  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
+  /**
+   * Validates domain name:
+   * - a node name has 1 to 63 chars
+   * - valid chars for a node name are: a-z, A-Z, 0-9 and -
+   * - a node name can't start with - character
+   * - a node name can't end with - character
+   * - nodes are separated by a . character
+   *
+   * Starts with a node:
+   * Node Pattern: (?!-)[A-Za-z0-9-]{1,63}(?<!-)
+   *      (?!-) => negative look ahead, first char can't be -
+   *      [A-Za-z0-9-]{1,63} => digits and letters, from 1 to 63
+   *      (?<!-) => negative look behind, last char can't be -
+   *
+   * A node can be followed by another nodes:
+   *    Pattern: (\.(?!-)[A-Za-z0-9-]{1,63}(?<!-)))*
+   *      . => starts with a . (dot)
+   *      node pattern => (?!-)[A-Za-z0-9-]{1,63}(?<!-)
+   *      * => match zero or more times
+   */
+  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-))((\\.(?!-)[A-Za-z0-9-]{1,63}(?<!-)))*$".r
 
   /**
    * Create a service Lookup from a string with format:
@@ -218,7 +238,6 @@ case object Lookup {
    *
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
-   *
    *
    * @throws NullPointerException If the passed string is null
    * @throws IllegalArgumentException If the string doesn't not conform with the SRV format

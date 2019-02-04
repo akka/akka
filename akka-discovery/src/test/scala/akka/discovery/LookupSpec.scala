@@ -10,11 +10,16 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
 
   // SRV strings with invalid domain names
   // should fail to build lookups
-  val srvWithInvalidDomainNames = List(
+  val srvWithInvalidServiceNames = List(
     "_portName._protocol.service_name.local",
     "_portName._protocol.servicename,local",
     "_portName._protocol.servicename.local-",
     "_portName._protocol.-servicename.local")
+
+  val srvWithValidServiceNames = List(
+    "_portName._protocol.service-name",
+    "_portName._protocol.service-name.local",
+    "_portName._protocol.service-name.svc.cluster.local")
 
   // No SRV that should result in simple A/AAAA lookups
   val noSrvLookups = List(
@@ -27,6 +32,16 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     "serviceName.local-")
 
   "Lookup.parseSrv" should {
+
+    "generate a SRV Lookup from a valid SRV String" in {
+      srvWithValidServiceNames.foreach { str ⇒
+        withClue(s"parsing '$str'") {
+          val lookup = Lookup.parseSrv(str)
+          lookup.portName.value shouldBe "portName"
+          lookup.protocol.value shouldBe "protocol"
+        }
+      }
+    }
 
     "generate a SRV Lookup from a SRV String" in {
       val name = "_portName._protocol.serviceName.local"
@@ -59,7 +74,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any SRV with invalid domain names" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+      srvWithInvalidServiceNames.foreach { str ⇒
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -84,8 +99,8 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
       }
     }
 
-    "return false if domain part in SRV String is an invalid domain name" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+    "return false if domain name part in SRV String is an invalid domain name" in {
+      srvWithInvalidServiceNames.foreach { str ⇒
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }
@@ -101,8 +116,13 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return true for a SRV with valid domain name" in {
-      Lookup.isValidSrv("_portName._protocol.serviceName.local") shouldBe true
+      srvWithValidServiceNames.foreach { str ⇒
+        withClue(s"parsing '$str'") {
+          Lookup.isValidSrv(str) shouldBe true
+        }
+      }
     }
 
   }
+
 }
