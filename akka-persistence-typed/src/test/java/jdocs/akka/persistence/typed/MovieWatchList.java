@@ -100,17 +100,17 @@ public class MovieWatchList
   public CommandHandler<Command, Event, MovieList> commandHandler() {
     return newCommandHandlerBuilder()
         .forAnyState()
-        .matchCommand(
+        .onCommand(
             AddMovie.class,
             (state, cmd) -> {
               return Effect().persist(new MovieAdded(cmd.movieId));
             })
-        .matchCommand(
+        .onCommand(
             RemoveMovie.class,
             (state, cmd) -> {
               return Effect().persist(new MovieRemoved(cmd.movieId));
             })
-        .matchCommand(
+        .onCommand(
             GetMovieList.class,
             (state, cmd) -> {
               cmd.replyTo.tell(state);
@@ -123,8 +123,8 @@ public class MovieWatchList
   public EventHandler<MovieList, Event> eventHandler() {
     return newEventHandlerBuilder()
         .forAnyState()
-        .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
-        .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
+        .onEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
+        .onEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
         .build();
   }
 }

@@ -37,8 +37,8 @@ public class AuctionEntity
       notStartedHandler =
           newCommandHandlerBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.NOT_STARTED)
-              .matchCommand(StartAuction.class, this::startAuction)
-              .matchCommand(
+              .onCommand(StartAuction.class, this::startAuction)
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.NOT_STARTED)));
@@ -48,18 +48,18 @@ public class AuctionEntity
       underAuctionHandler =
           newCommandHandlerBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.UNDER_AUCTION)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(PlaceBid.class, this::placeBid)
-              .matchCommand(FinishBidding.class, this::finishBidding);
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(PlaceBid.class, this::placeBid)
+              .onCommand(FinishBidding.class, this::finishBidding);
 
   // Command handler for the completed state.
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       completedHandler =
           newCommandHandlerBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.COMPLETE)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.FINISHED)));
@@ -69,10 +69,10 @@ public class AuctionEntity
       cancelledHandler =
           newCommandHandlerBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.CANCELLED)
-              .matchCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .matchCommand(
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
                       Effect().reply(cmd, createResult(state, PlaceBidStatus.CANCELLED)));
@@ -81,13 +81,13 @@ public class AuctionEntity
       getAuctionHandler =
           newCommandHandlerBuilder()
               .forStateType(AuctionState.class)
-              .matchCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
+              .onCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
 
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       cancelHandler =
           newCommandHandlerBuilder()
               .forStateType(AuctionState.class)
-              .matchCommand(CancelAuction.class, this::cancelAuction);
+              .onCommand(CancelAuction.class, this::cancelAuction);
   // Note, an item can go from completed to cancelled, since it is the item service that controls
   // whether an auction is cancelled or not. If it cancels before it receives a bidding finished
   // event from us, it will ignore the bidding finished event, so we need to update our state
@@ -263,14 +263,13 @@ public class AuctionEntity
 
     builder
         .forState(auction -> auction.getStatus() == AuctionStatus.NOT_STARTED)
-        .matchEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));
+        .onEvent(AuctionStarted.class, (state, evt) -> AuctionState.start(evt.getAuction()));
 
     builder
         .forState(auction -> auction.getStatus() == AuctionStatus.UNDER_AUCTION)
-        .matchEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
-        .matchEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
-        .matchEvent(
-            AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
+        .onEvent(BidPlaced.class, (state, evt) -> state.bid(evt.getBid()))
+        .onEvent(BiddingFinished.class, (state, evt) -> state.withStatus(AuctionStatus.COMPLETE))
+        .onEvent(AuctionCancelled.class, (state, evt) -> state.withStatus(AuctionStatus.CANCELLED));
 
     return builder.build();
   }

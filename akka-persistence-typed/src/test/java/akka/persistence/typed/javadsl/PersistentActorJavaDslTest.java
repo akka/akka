@@ -200,16 +200,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     public CommandHandler<Command, Incremented, State> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
-          .matchCommand(Increment.class, this::increment)
-          .matchCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
-          .matchCommand(GetValue.class, this::getValue)
-          .matchCommand(IncrementLater.class, this::incrementLater)
-          .matchCommand(DelayFinished.class, this::delayFinished)
-          .matchCommand(Increment100OnTimeout.class, this::increment100OnTimeout)
-          .matchCommand(Timeout.class, this::timeout)
-          .matchCommand(EmptyEventsListAndThenLog.class, this::emptyEventsListAndThenLog)
-          .matchCommand(StopThenLog.class, this::stopThenLog)
-          .matchCommand(IncrementTwiceAndLog.class, this::incrementTwiceAndLog)
+          .onCommand(Increment.class, this::increment)
+          .onCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
+          .onCommand(GetValue.class, this::getValue)
+          .onCommand(IncrementLater.class, this::incrementLater)
+          .onCommand(DelayFinished.class, this::delayFinished)
+          .onCommand(Increment100OnTimeout.class, this::increment100OnTimeout)
+          .onCommand(Timeout.class, this::timeout)
+          .onCommand(EmptyEventsListAndThenLog.class, this::emptyEventsListAndThenLog)
+          .onCommand(StopThenLog.class, this::stopThenLog)
+          .onCommand(IncrementTwiceAndLog.class, this::incrementTwiceAndLog)
           .build();
     }
 
@@ -272,7 +272,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     public EventHandler<State, Incremented> eventHandler() {
       return newEventHandlerBuilder()
           .forAnyState()
-          .matchEvent(Incremented.class, this::applyIncremented)
+          .onEvent(Incremented.class, this::applyIncremented)
           .build();
     }
 

@@ -105,9 +105,9 @@ public class StashingExample {
     public CommandHandler<Command, Event, State> commandHandler() {
       return newCommandHandlerBuilder()
           .forAnyState()
-          .matchCommand(StartTask.class, this::onStartTask)
-          .matchCommand(NextStep.class, this::onNextStep)
-          .matchCommand(EndTask.class, this::onEndTask)
+          .onCommand(StartTask.class, this::onStartTask)
+          .onCommand(NextStep.class, this::onNextStep)
+          .onCommand(EndTask.class, this::onEndTask)
           .build();
     }
 
@@ -145,9 +145,9 @@ public class StashingExample {
     public EventHandler<State, Event> eventHandler() {
       return newEventHandlerBuilder()
           .forAnyState()
-          .matchEvent(TaskStarted.class, (state, event) -> new State(Optional.of(event.taskId)))
-          .matchEvent(TaskStep.class, (state, event) -> state)
-          .matchEvent(TaskCompleted.class, (state, event) -> new State(Optional.empty()))
+          .onEvent(TaskStarted.class, (state, event) -> new State(Optional.of(event.taskId)))
+          .onEvent(TaskStep.class, (state, event) -> state)
+          .onEvent(TaskCompleted.class, (state, event) -> new State(Optional.empty()))
           .build();
     }
   }
