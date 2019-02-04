@@ -113,33 +113,32 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
               target(ctx, msg)
             }
 
-            def aroundSignal(ctx: typed.TypedActorContext[Any],
-                             signal: Signal,
-                             target: SignalTarget[Any]): Behavior[Any] = {
-              if (signal == PostStop) {
-                eventSourcedSetup.cancelRecoveryTimer()
-                // clear stash to be GC friendly
-                stashState.clearStashBuffers()
-              }
-              val nextBehavior = target(ctx, signal)
-              try {
-                eventSourcedSetup.onSignal(signal)
-              } catch {
-                case NonFatal(ex) ⇒
-                  ctx.asScala.log.error(ex, s"Error while processing signal [{}]", signal)
-              }
-              nextBehavior
+          def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
+            if (signal == PostStop) {
+              eventSourcedSetup.cancelRecoveryTimer()
+              // clear stash to be GC friendly
+              stashState.clearStashBuffers()
             }
+            val nextBehavior = target(ctx, signal)
+            try {
+              eventSourcedSetup.onSignal(signal)
+            } catch {
+              case NonFatal(ex) =>
+                ctx.asScala.log.error(ex, s"Error while processing signal [{}]", signal)
+            }
+            nextBehavior
           }
-          val widened = RequestingRecoveryPermit(eventSourcedSetup).widen[Any] {
-            case res: JournalProtocol.Response ⇒ InternalProtocol.JournalResponse(res)
-            case res: SnapshotProtocol.Response ⇒ InternalProtocol.SnapshotterResponse(res)
-            case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
-            case internal: InternalProtocol ⇒ internal // such as RecoveryTickEvent
-            case cmd: Command @unchecked ⇒ InternalProtocol.IncomingCommand(cmd)
-          }
-          Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+          override def toString: String = "onStopInterceptor"
         }
+        val widened = RequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
+          case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
+          case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
+          case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
+          case internal: InternalProtocol              ⇒ internal // such as RecoveryTickEvent
+          case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
+        }
+        Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+      }
 
       }
       .onFailure[JournalFailureException](supervisionStrategy)

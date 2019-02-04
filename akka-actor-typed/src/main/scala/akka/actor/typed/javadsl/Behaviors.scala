@@ -10,7 +10,7 @@ import java.util.function.{ Function => JFunction }
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.annotation.ApiMayChange
-import akka.japi.function.{ Function2 => JapiFunction2 }
+import akka.japi.function.{ Effect, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 
@@ -63,7 +63,7 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
+   * The `PostStop` signal that results from stopping this actor will be passed to the
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
@@ -74,11 +74,11 @@ object Behaviors {
    * shall terminate voluntarily. If this actor has created child actors then
    * these will be stopped as part of the shutdown procedure.
    *
-   * The PostStop signal that results from stopping this actor will be passed to the
-   * given `postStop` behavior. All other messages and signals will effectively be
-   * ignored.
+   * The `PostStop` signal that results from stopping this actor will first be passed to the
+   * current behavior and then the provided `postStop` callback will be invoked.
+   * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: Behavior[T]): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: Effect): Behavior[T] = Behavior.stopped(postStop.apply _)
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -282,6 +282,7 @@ object Behaviors {
    * Support for scheduled `self` messages in an actor.
    * It takes care of the lifecycle of the timers such as cancelling them when the actor
    * is restarted or stopped.
+   *
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =

@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
@@ -50,38 +52,36 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       target(monitor, timer, nextCount)
     }
 
-    Behaviors
-      .receive[Command] { (context, cmd) =>
-        cmd match {
-          case Tick(n) =>
-            monitor ! Tock(n)
-            Behaviors.same
-          case Bump =>
-            bump()
-          case SlowThenBump(latch) =>
-            latch.await(10, TimeUnit.SECONDS)
-            bump()
-          case End =>
-            Behaviors.stopped
-          case Cancel =>
-            timer.cancel("T")
-            monitor ! Cancelled
-            Behaviors.same
-          case Throw(e) =>
-            throw e
-          case SlowThenThrow(latch, e) =>
-            latch.await(10, TimeUnit.SECONDS)
-            throw e
-        }
-      }
-      .receiveSignal {
-        case (context, PreRestart) =>
-          monitor ! GotPreRestart(timer.isTimerActive("T"))
+    Behaviors.receive[Command] { (context, cmd) =>
+      cmd match {
+        case Tick(n) =>
+          monitor ! Tock(n)
           Behaviors.same
-        case (context, PostStop) =>
-          monitor ! GotPostStop(timer.isTimerActive("T"))
+        case Bump =>
+          bump()
+        case SlowThenBump(latch) =>
+          latch.await(10, TimeUnit.SECONDS)
+          bump()
+        case End =>
+          Behaviors.stopped
+        case Cancel =>
+          timer.cancel("T")
+          monitor ! Cancelled
           Behaviors.same
+        case Throw(e) =>
+          throw e
+        case SlowThenThrow(latch, e) =>
+          latch.await(10, TimeUnit.SECONDS)
+          throw e
       }
+    } receiveSignal {
+      case (_, PreRestart) =>
+        monitor ! GotPreRestart(timer.isTimerActive("T"))
+        Behaviors.same
+      case (_, PostStop) =>
+        monitor ! GotPostStop(timer.isTimerActive("T"))
+        Behaviors.same
+    }
   }
 
   "A timer" must {
@@ -150,7 +150,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       ref ! Cancel
       probe.fishForMessage(3.seconds) {
         // we don't know that we will see exactly one tock
-        case _: Tock => FishingOutcomes.continue
+        case _: Tock   => FishingOutcomes.continue
         // but we know that after we saw Cancelled we won't see any more
         case Cancelled => FishingOutcomes.complete
         case message   => FishingOutcomes.fail(s"unexpected message: $message")
@@ -164,12 +164,10 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     "discard timers from old incarnation after restart, alt 1" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
-      val behv = Behaviors
-        .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
-          target(probe.ref, timer, 1)
-        })
-        .onFailure[Exception](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer =>
+        timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
+        target(probe.ref, timer, 1)
+      }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
       probe.expectMessage(Tock(1))
@@ -191,12 +189,10 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
 
     "discard timers from old incarnation after restart, alt 2" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors
-        .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startPeriodicTimer("T", Tick(1), interval)
-          target(probe.ref, timer, 1)
-        })
-        .onFailure[Exception](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer =>
+        timer.startPeriodicTimer("T", Tick(1), interval)
+        target(probe.ref, timer, 1)
+      }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
       probe.expectMessage(Tock(1))
@@ -315,6 +311,26 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val elements = probe.receiveMessage()
       if (elements.count(_.getClassName == "TimerInterceptor") > 1)
         fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
+    }
+
+    "not leak timers when PostStop is used" in {
+      val probe = TestProbe[Any]()
+      val ref = spawn(Behaviors.withTimers[String] { timers =>
+        Behaviors.setup { _ =>
+          timers.startPeriodicTimer("test", "test", 250.millis)
+          Behaviors.receive { (context, message) =>
+            Behaviors.stopped(() =>
+              context.log.info(s"stopping")
+            )
+          }
+        }
+      })
+      EventFilter.info("stopping").intercept {
+        ref ! "stop"
+      }
+      probe.expectTerminated(ref)
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      probe.expectNoMessage(1.second)
     }
   }
 }

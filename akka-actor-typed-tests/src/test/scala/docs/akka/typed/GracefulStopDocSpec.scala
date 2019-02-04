@@ -28,25 +28,19 @@ object GracefulStopDocSpec {
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
-    val mcpa = Behaviors
-      .receive[JobControlLanguage] { (context, message) =>
-        message match {
-          case SpawnJob(jobName) =>
-            context.log.info("Spawning job {}!", jobName)
-            context.spawn(Job.job(jobName), name = jobName)
-            Behaviors.same
-          case GracefulShutdown =>
-            context.log.info("Initiating graceful shutdown...")
-            // perform graceful stop, executing cleanup before final system termination
-            // behavior executing cleanup is passed as a parameter to Actor.stopped
-            Behaviors.stopped {
-              Behaviors.receiveSignal {
-                case (context, PostStop) =>
-                  cleanup(context.system.log)
-                  Behaviors.same
-              }
-            }
-        }
+    val mcpa = Behaviors.receive[JobControlLanguage] { (context, message) ⇒
+      message match {
+        case SpawnJob(jobName) =>
+          context.log.info("Spawning job {}!", jobName)
+          context.spawn(Job.job(jobName), name = jobName)
+          Behaviors.same
+        case GracefulShutdown =>
+          context.log.info("Initiating graceful shutdown...")
+          // perform graceful stop, executing cleanup before final system termination
+          // behavior executing cleanup is passed as a parameter to Actor.stopped
+          Behaviors.stopped { () =>
+            cleanup(context.system.log)
+          }
       }
       .receiveSignal {
         case (context, PostStop) =>

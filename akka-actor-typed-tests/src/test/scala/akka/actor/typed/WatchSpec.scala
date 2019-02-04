@@ -119,7 +119,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val ex = new TestException("boom")
       val behavior = Behaviors.setup[Any] { context =>
         val child = context.spawn(Behaviors
-                                    .supervise(Behaviors.receive[Any]((context, message) => {
+                                    .supervise(Behaviors.receive[Any]((_, _) => {
                                       throw ex
                                     }))
                                     .onFailure[Throwable](SupervisorStrategy.stop),
@@ -127,7 +127,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
         context.watch(child)
 
         Behaviors
-          .receive[Any] { (context, message) =>
+          .receive[Any] { (_, message) =>
             child ! message
             Behaviors.same
           }

@@ -272,7 +272,7 @@ object BehaviorSpec {
       "must stop" in {
         val Setup(testkit, _, aux) = mkCtx()
         testkit.run(Stop)
-        testkit.currentBehavior should be(Behavior.StoppedBehavior)
+        Behavior.isAlive(testkit.currentBehavior) should be(false)
         checkAux(Stop, aux)
       }
     }

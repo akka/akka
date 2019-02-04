@@ -8,8 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.testkit._
 import scala.concurrent.Await
+
+import akka.testkit._
 
 object TimerSpec {
   sealed trait Command

@@ -12,6 +12,9 @@ import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
+ *
+ * Note that this is a `Signal` poison pill, not a universal poison pill like the untyped actor one.
+ * This requires special handling on the receiving side where it is used (for example with the interceptor below).
  */
 @InternalApi private[akka] sealed abstract class PoisonPill extends Signal
 
