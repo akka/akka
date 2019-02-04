@@ -36,7 +36,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   /**
    * Use this method to define command handlers that are selected when the passed predicate holds true.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
@@ -54,7 +54,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * Use this method to define command handlers that are selected when the passed predicate holds true
    * for a given subtype of your model. Useful when the model is defined as class hierarchy.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
@@ -72,7 +72,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   /**
    * Use this method to define command handlers for a given subtype of your model. Useful when the model is defined as class hierarchy.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
@@ -89,7 +89,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * The handlers defined by this builder are used when the state is `null`.
    * This variant is particular useful when the empty state of your model is defined as `null`.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
@@ -105,7 +105,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
   /**
    * The handlers defined by this builder are used for any not `null` state.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
@@ -122,7 +122,7 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    * The handlers defined by this builder are used for any state.
    * This variant is particular useful for models that have a single type (ie: no class hierarchy).
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    * Extra care should be taken when using [[forAnyState]] as it will match any state. Any command handler define after it will never be reached.
@@ -203,11 +203,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   /**
    * Matches any command which the given `predicate` returns true for.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def onCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), handler)
     this
   }
@@ -218,11 +218,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def onCommand(predicate: Predicate[Command], handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, Effect[Event, State]] {
       override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
     })
@@ -232,11 +232,11 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   /**
    * Matches commands that are of the given `commandClass` or subclass thereof
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def onCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
     this
   }
@@ -247,12 +247,12 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
+  def onCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    onCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
       override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
     })
   }
@@ -262,12 +262,12 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    *
    * Use this when you just need to initialize the `State` without using any data from the command.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
+  def onCommand[C <: Command](commandClass: Class[C], handler: Supplier[Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+    onCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
       override def apply(state: S, cmd: C): Effect[Event, State] = handler.get()
     })
   }
@@ -278,16 +278,16 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    * Use this to declare a command handler that will match any command. This is particular useful when encoding
    * a finite state machine in which the final state is not supposed to handle any new command.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandler from the appended states.
    */
-  def matchAny(handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
+  def onAnyCommand(handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
     addCase(_ ⇒ true, handler)
     build()
   }
@@ -300,16 +300,16 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    *
    * Use this when you just need to return an [[Effect]] without using any data from the state.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandler from the appended states.
    */
-  def matchAny(handler: JFunction[Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
+  def onAnyCommand(handler: JFunction[Command, Effect[Event, State]]): CommandHandler[Command, Event, State] = {
     addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
       override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
     })
@@ -323,16 +323,16 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
    *
    * Use this when you just need to return an [[Effect]] without using any data from the command or from the state.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandler from the appended states.
    */
-  def matchAny(handler: Supplier[Effect[Event, State]]): CommandHandler[Command, Event, State] = {
+  def onAnyCommand(handler: Supplier[Effect[Event, State]]): CommandHandler[Command, Event, State] = {
     addCase(_ ⇒ true, new BiFunction[S, Command, Effect[Event, State]] {
       override def apply(state: S, cmd: Command): Effect[Event, State] = handler.get()
     })

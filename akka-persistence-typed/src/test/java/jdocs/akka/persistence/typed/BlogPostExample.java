@@ -7,7 +7,6 @@ package jdocs.akka.persistence.typed;
 import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
@@ -168,20 +167,20 @@ public interface BlogPostExample {
     public CommandHandler<BlogCommand, BlogEvent, BlogState> commandHandler() {
       CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState> builder = newCommandHandlerBuilder();
 
-      builder.forStateType(BlankState.class).matchCommand(AddPost.class, this::addPost);
+      builder.forStateType(BlankState.class).onCommand(AddPost.class, this::addPost);
 
       builder
           .forStateType(DraftState.class)
-          .matchCommand(ChangeBody.class, this::changeBody)
-          .matchCommand(Publish.class, this::publish)
-          .matchCommand(GetPost.class, this::getPost);
+          .onCommand(ChangeBody.class, this::changeBody)
+          .onCommand(Publish.class, this::publish)
+          .onCommand(GetPost.class, this::getPost);
 
       builder
           .forStateType(PublishedState.class)
-          .matchCommand(ChangeBody.class, this::changeBody)
-          .matchCommand(GetPost.class, this::getPost);
+          .onCommand(ChangeBody.class, this::changeBody)
+          .onCommand(GetPost.class, this::getPost);
 
-      builder.forAnyState().matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
+      builder.forAnyState().onCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
 
       return builder.build();
     }
@@ -234,16 +233,16 @@ public interface BlogPostExample {
 
       builder
           .forStateType(BlankState.class)
-          .matchEvent(PostAdded.class, event -> new DraftState(event.content));
+          .onEvent(PostAdded.class, event -> new DraftState(event.content));
 
       builder
           .forStateType(DraftState.class)
-          .matchEvent(BodyChanged.class, (state, chg) -> state.withBody(chg.newBody))
-          .matchEvent(Published.class, (state, event) -> new PublishedState(state.content));
+          .onEvent(BodyChanged.class, (state, chg) -> state.withBody(chg.newBody))
+          .onEvent(Published.class, (state, event) -> new PublishedState(state.content));
 
       builder
           .forStateType(PublishedState.class)
-          .matchEvent(BodyChanged.class, (state, chg) -> state.withBody(chg.newBody));
+          .onEvent(BodyChanged.class, (state, chg) -> state.withBody(chg.newBody));
 
       return builder.build();
     }
