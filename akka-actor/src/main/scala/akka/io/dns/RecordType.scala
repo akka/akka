@@ -4,7 +4,6 @@
 
 package akka.io.dns
 
-import akka.annotation.ApiMayChange
 import akka.util.OptionVal
 
 /**

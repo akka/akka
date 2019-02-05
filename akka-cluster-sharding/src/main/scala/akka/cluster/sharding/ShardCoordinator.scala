@@ -690,7 +690,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
 
     // Optimization:
     // Consider regions that don't belong to the current cluster to be terminated.
-    // This is an optimization that makes it operational faster and reduces the
+    // This is an optimization that makes it operationally faster and reduces the
     // amount of lost messages during startup.
     val nodes = cluster.state.members.map(_.address)
     state.regions.foreach {
