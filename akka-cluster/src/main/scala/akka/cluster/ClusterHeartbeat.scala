@@ -33,7 +33,7 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
 
   def receive = {
     case Heartbeat(from) ⇒
-      if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat from [{}]", cluster.selfAddress, from)
+      if (verboseHeartbeat) cluster.ClusterLogger.logDebug("Heartbeat from [{}]", from)
       sender() ! selfHeartbeatRsp
   }
 
@@ -79,6 +79,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   import ClusterHeartbeatSender._
 
   val cluster = Cluster(context.system)
+  import cluster.ClusterLogger._
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.{ selfAddress, selfUniqueAddress, scheduler }
   import cluster.settings._
@@ -174,9 +175,9 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def heartbeat(): Unit = {
     state.activeReceivers foreach { to ⇒
       if (failureDetector.isMonitoring(to.address)) {
-        if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, to.address)
+        if (verboseHeartbeat) logDebug("Heartbeat to [{}]", to.address)
       } else {
-        if (verboseHeartbeat) log.debug("Cluster Node [{}] - First Heartbeat to [{}]", selfAddress, to.address)
+        if (verboseHeartbeat) logDebug("First Heartbeat to [{}]", to.address)
         // schedule the expected first heartbeat for later, which will give the
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(to))
@@ -190,24 +191,23 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   private def checkTickInterval(): Unit = {
     val now = System.nanoTime()
     if ((now - tickTimestamp) >= (HeartbeatInterval.toNanos * 2))
-      log.warning(
-        "Cluster Node [{}] - Scheduled sending of heartbeat was delayed. " +
+      logWarning(
+        "Scheduled sending of heartbeat was delayed. " +
           "Previous heartbeat was sent [{}] ms ago, expected interval is [{}] ms. This may cause failure detection " +
           "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +
-          "default dispatcher, CPU overload, or GC.",
-        selfAddress, TimeUnit.NANOSECONDS.toMillis(now - tickTimestamp), HeartbeatInterval.toMillis)
+          "default dispatcher, CPU overload, or GC.", TimeUnit.NANOSECONDS.toMillis(now - tickTimestamp), HeartbeatInterval.toMillis)
     tickTimestamp = now
 
   }
 
   def heartbeatRsp(from: UniqueAddress): Unit = {
-    if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat response from [{}]", selfAddress, from.address)
+    if (verboseHeartbeat) logDebug("Heartbeat response from [{}]", from.address)
     state = state.heartbeatRsp(from)
   }
 
   def triggerFirstHeartbeat(from: UniqueAddress): Unit =
     if (state.activeReceivers(from) && !failureDetector.isMonitoring(from.address)) {
-      if (verboseHeartbeat) log.debug("Cluster Node [{}] - Trigger extra expected heartbeat from [{}]", selfAddress, from.address)
+      if (verboseHeartbeat) logDebug("Trigger extra expected heartbeat from [{}]", from.address)
       failureDetector.heartbeat(from.address)
     }
 
