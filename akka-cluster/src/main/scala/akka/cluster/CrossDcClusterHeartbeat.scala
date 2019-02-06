@@ -30,13 +30,15 @@ import scala.collection.immutable
  * This monitoring mode is both simple and predictable, and also uses the assumption that
  * "nodes which stay around for a long time, become old", and those rarely change. In a way,
  * they are the "core" of a cluster, while other nodes may be very dynamically changing worked
- * nodes which aggresively come and go as the traffic in the service changes.
+ * nodes which aggressively come and go as the traffic in the service changes.
  */
 @InternalApi
 private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogging {
   import CrossDcHeartbeatSender._
 
   val cluster = Cluster(context.system)
+  import cluster.ClusterLogger._
+
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.settings._
   import cluster.{ scheduler, selfAddress, selfDataCenter, selfUniqueAddress }
@@ -150,9 +152,9 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   def heartbeat(): Unit = {
     dataCentersState.activeReceivers foreach { to ⇒
       if (crossDcFailureDetector.isMonitoring(to.address)) {
-        if (verboseHeartbeat) log.debug("Cluster Node [{}][{}] - (Cross) Heartbeat to [{}]", selfDataCenter, selfAddress, to.address)
+        if (verboseHeartbeat) logDebug("(Cross) Heartbeat to [{}]", to.address)
       } else {
-        if (verboseHeartbeat) log.debug("Cluster Node [{}][{}] - First (Cross) Heartbeat to [{}]", selfDataCenter, selfAddress, to.address)
+        if (verboseHeartbeat) logDebug("First (Cross) Heartbeat to [{}]", to.address)
         // schedule the expected first heartbeat for later, which will give the
         // other side a chance to reply, and also trigger some resends if needed
         scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
@@ -162,13 +164,13 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   }
 
   def heartbeatRsp(from: UniqueAddress): Unit = {
-    if (verboseHeartbeat) log.debug("Cluster Node [{}][{}] - (Cross) Heartbeat response from [{}]", selfDataCenter, selfAddress, from.address)
+    if (verboseHeartbeat) logDebug("(Cross) Heartbeat response from [{}]", from.address)
     dataCentersState = dataCentersState.heartbeatRsp(from)
   }
 
   def triggerFirstHeartbeat(from: UniqueAddress): Unit =
     if (dataCentersState.activeReceivers.contains(from) && !crossDcFailureDetector.isMonitoring(from.address)) {
-      if (verboseHeartbeat) log.debug("Cluster Node [{}][{}] - Trigger extra expected (cross) heartbeat from [{}]", selfAddress, from.address)
+      if (verboseHeartbeat) logDebug("Trigger extra expected (cross) heartbeat from [{}]", from.address)
       crossDcFailureDetector.heartbeat(from.address)
     }
 
@@ -276,7 +278,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
         .map(_.uniqueAddress).to(immutable.IndexedSeq)).toSet
   }
 
-  /** Lists addresses in diven DataCenter that this node should send heartbeats to */
+  /** Lists addresses in given DataCenter that this node should send heartbeats to */
   private def activeReceiversIn(dc: DataCenter): Set[UniqueAddress] =
     if (dc == selfDataCenter) Set.empty // CrossDcHeartbeatSender is not supposed to send within its own Dc
     else {
