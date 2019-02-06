@@ -100,7 +100,7 @@ object CrossJava {
   }
 
   object JavaDiscoverConfig {
-    private val JavaHomeDir = """(java-|jdk-?)(1\.)?([0-9]+).*""".r
+    private val JavaHomeDir = """(java-|jdk-?|adoptopenjdk-)(1\.)?([0-9]+).*""".r
 
     class LinuxDiscoverConfig(base: File) extends JavaDiscoverConf {
       def javaHomes: Vector[(String, File)] =
