@@ -805,7 +805,7 @@ class ClusterSingletonManager(
   }
 
   def gotoStopping(singleton: ActorRef): State = {
-    logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
+    logInfo("Singleton manager stopping singleton actor [{}]", singleton.path)
     singleton ! terminationMessage
     goto(Stopping) using StoppingData(singleton)
   }
