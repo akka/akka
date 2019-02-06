@@ -182,7 +182,7 @@ private[akka] class RemoteWatcher(
 
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
-    log.debug("Watching: [{} -> {}]", watcher.path, watchee.path)
+    log.debug("Watching: [{} -> {}]", watcher, watchee)
     watching.addBinding(watchee, watcher)
     watchNode(watchee)
 
@@ -202,7 +202,7 @@ private[akka] class RemoteWatcher(
 
   def removeWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
-    log.debug("Unwatching: [{} -> {}]", watcher.path, watchee.path)
+    log.debug("Unwatching: [{} -> {}]", watcher, watchee)
 
     // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
     watching.get(watchee) match {
