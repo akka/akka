@@ -300,9 +300,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   import MembershipState._
 
   val cluster = Cluster(context.system)
+  import cluster.ClusterLogger._
   import cluster.{ selfAddress, selfRoles, scheduler, failureDetector, crossDcFailureDetector }
   import cluster.settings._
-  import cluster.ClusterLogger._
 
   val selfDc = cluster.selfDataCenter
 
@@ -981,7 +981,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           }
       }
 
-      logDebug("Receiving gossip from [{}]", selfAddress, from)
+      logDebug("Receiving gossip from [{}]", from)
 
       if (comparison == VectorClock.Concurrent && cluster.settings.Debug.VerboseGossipLogging) {
         logDebug(
