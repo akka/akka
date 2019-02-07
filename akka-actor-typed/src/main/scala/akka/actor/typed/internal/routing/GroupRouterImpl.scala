@@ -44,7 +44,7 @@ private final class GroupRouterImpl[T](ctx: ActorContext[T], serviceKey: Service
         routingLogic.routeesUpdated(routees, newRoutees)
       }
       routees = newRoutees
-      Behavior.same
+      this
     case msg: T @unchecked ⇒
       if (routees.nonEmpty) {
         val selectedIdx = ThreadLocalRandom.current().nextInt(routees.length)
@@ -52,7 +52,7 @@ private final class GroupRouterImpl[T](ctx: ActorContext[T], serviceKey: Service
       } else {
         ctx.system.deadLetters ! msg
       }
-      Behavior.same
+      this
   }
 
 }

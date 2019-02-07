@@ -35,7 +35,7 @@ private final class PoolRouterImpl[T](ctx: ActorContext[T], poolSize: Int, behav
   def onMessage(msg: T): Behavior[T] = {
     val recipient = logic.selectRoutee(routees)
     recipient.tell(msg)
-    Behavior.same
+    this
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[T]] = {
@@ -48,7 +48,7 @@ private final class PoolRouterImpl[T](ctx: ActorContext[T], poolSize: Int, behav
       routees = routees.filterNot(_ == child)
       if (routees.nonEmpty) {
         logic.routeesUpdated(originalRoutees, routees)
-        Behavior.same
+        this
       } else Behavior.stopped
   }
 
