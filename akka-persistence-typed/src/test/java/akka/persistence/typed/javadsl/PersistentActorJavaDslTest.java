@@ -9,6 +9,7 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.event.Logging;
 import akka.japi.Pair;
 import akka.persistence.SnapshotMetadata;
 import akka.persistence.query.EventEnvelope;
@@ -23,6 +24,8 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.testkit.ErrorFilter;
+import akka.testkit.javadsl.EventFilter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
@@ -30,6 +33,7 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import scala.Function0;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -42,7 +46,9 @@ import static org.junit.Assert.assertEquals;
 
 public class PersistentActorJavaDslTest extends JUnitSuite {
 
-  public static final Config config = conf().withFallback(ConfigFactory.load());
+  public static final Config config =
+      ConfigFactory.parseString("akka.loggers = [akka.testkit.TestEventListener]")
+          .withFallback(conf().withFallback(ConfigFactory.load()));
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
@@ -458,6 +464,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
         new BehaviorInterceptor<Command, Command>() {
+
+          @Override
+          public Class<? extends Command> interceptMessageType() {
+            return Command.class;
+          }
+
           @Override
           public Behavior<Command> aroundReceive(
               TypedActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
@@ -559,4 +571,69 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
   // event-wrapper
 
+  static class IncorrectExpectedStateForThenRun
+      extends EventSourcedBehavior<String, String, Object> {
+
+    private final ActorRef<String> startedProbe;
+
+    public IncorrectExpectedStateForThenRun(
+        ActorRef<String> startedProbe, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.startedProbe = startedProbe;
+    }
+
+    @Override
+    public Object emptyState() {
+      return 1;
+    }
+
+    @Override
+    public CommandHandler<String, String, Object> commandHandler() {
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onCommand(
+              msg -> msg.equals("expect wrong type"),
+              (context) ->
+                  Effect()
+                      .none()
+                      .thenRun(
+                          (String wrongType) -> {
+                            // wont happen
+                          }))
+          .build();
+    }
+
+    @Override
+    public void onRecoveryCompleted(Object o) {
+      startedProbe.tell("started!");
+    }
+
+    @Override
+    public EventHandler<Object, String> eventHandler() {
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .onAnyEvent((event, state) -> state); // keep Integer state
+    }
+  }
+
+  @Test
+  public void failOnIncorrectExpectedStateForThenRun() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    ActorRef<String> c =
+        testKit.spawn(
+            new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
+
+    probe.expectMessage("started!"); // workaround for #26256
+
+    new EventFilter(Logging.Error.class, Adapter.toUntyped(testKit.system()))
+        .occurrences(1)
+        .message("java.lang.Integer cannot be cast to java.lang.String")
+        .intercept(
+            () -> {
+              c.tell("expect wrong type");
+              return null;
+            });
+
+    probe.expectTerminated(c);
+  }
 }
