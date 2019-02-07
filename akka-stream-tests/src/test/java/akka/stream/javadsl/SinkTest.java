@@ -34,7 +34,7 @@ public class SinkTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("SinkTest", AkkaSpec.testConf());
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
@@ -145,5 +145,12 @@ public class SinkTest extends StreamTest {
             .withAttributes(Attributes.name(""))
             .addAttributes(Attributes.asyncBoundary())
             .named("");
+  }
+
+  @Test
+  public void mustBeAbleToConvertToJavaInJava() {
+    final akka.stream.scaladsl.Sink<Integer, NotUsed> scalaSink =
+        akka.stream.scaladsl.Sink.cancelled();
+    Sink<Integer, NotUsed> javaSink = scalaSink.asJava();
   }
 }

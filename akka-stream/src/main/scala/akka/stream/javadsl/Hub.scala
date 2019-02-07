@@ -35,7 +35,7 @@ object MergeHub {
    */
   def of[T](clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] = {
     akka.stream.scaladsl.MergeHub.source[T](perProducerBufferSize)
-      .mapMaterializedValue(_.asJava[T, NotUsed])
+      .mapMaterializedValue(_.asJava[T])
       .asJava
   }
 

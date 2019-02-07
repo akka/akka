@@ -27,7 +27,7 @@ public class StageTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("StageTest", AkkaSpec.testConf());
 
   @Test
   public void javaStageUsage() throws Exception {

@@ -30,7 +30,7 @@ public class OutputStreamSourceTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("OutputStreamSourceTest2", Utils.UnboundedMailboxConfig());
+      new AkkaJUnitActorSystemResource("OutputStreamSourceTest", Utils.UnboundedMailboxConfig());
 
   @Test
   public void mustSendEventsViaOutputStream() throws Exception {

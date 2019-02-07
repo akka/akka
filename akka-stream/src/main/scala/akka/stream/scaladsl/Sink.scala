@@ -23,6 +23,8 @@ import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
 import akka.util.ccompat._
 
+import scala.annotation.unchecked.uncheckedVariance
+
 /**
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
@@ -120,7 +122,7 @@ final class Sink[-In, +Mat](
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava[JIn <: In, JMat >: Mat]: javadsl.Sink[JIn, JMat] = new javadsl.Sink(this)
+  def asJava[JIn <: In]: javadsl.Sink[JIn, Mat @uncheckedVariance] = new javadsl.Sink(this)
 }
 
 object Sink {

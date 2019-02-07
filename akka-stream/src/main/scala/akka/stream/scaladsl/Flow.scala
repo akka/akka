@@ -309,7 +309,7 @@ final class Flow[-In, +Out, +Mat](
       }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
-  def asJava[JIn <: In, JOut >: Out, JMat >: Mat]: javadsl.Flow[JIn, JOut, JMat] =
+  def asJava[JIn <: In]: javadsl.Flow[JIn, Out @uncheckedVariance, Mat @uncheckedVariance] =
     new javadsl.Flow(this)
 }
 
@@ -613,6 +613,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
    */
   override def async(dispatcher: String, inputBufferSize: Int): RunnableGraph[Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[RunnableGraph[Mat]]
+
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  def asJava: javadsl.RunnableGraph[Mat] = javadsl.RunnableGraph.fromGraph(this)
 }
 
 /**
