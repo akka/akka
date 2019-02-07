@@ -5,3 +5,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.OutputSt
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSourceStage$DownstreamStatus")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSourceStage$Ok$")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSourceStage$Canceled$")
+
+# AST for stream layout dump
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.StreamSupervisor$PrintDebugDump$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.dumpWaits")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.dumpWaits")
