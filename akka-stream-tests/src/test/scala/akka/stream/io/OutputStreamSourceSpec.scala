@@ -68,22 +68,17 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       probe.expectComplete()
     }
 
-    "block flush call until send all buffer to downstream" in assertAllStagesStopped {
-      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
-      val s = probe.expectSubscription()
-
-      outputStream.write(bytesArray)
-      val f = Future(outputStream.flush())
-
-      expectTimeout(f, timeout)
-      probe.expectNoMsg(Zero)
-
-      s.request(1)
-      expectSuccess(f, ())
-      probe.expectNext(byteString)
-
-      outputStream.close()
-      probe.expectComplete()
+    // https://github.com/akka/akka/issues/25983
+    "not truncate the stream on close" in assertAllStagesStopped {
+      for (_ ← 1 to 10) {
+        val (outputStream, result) =
+          StreamConverters.asOutputStream()
+            .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
+            .run
+        outputStream.write(bytesArray)
+        outputStream.close()
+        result.futureValue should be(ByteString(bytesArray))
+      }
     }
 
     "not block flushes when buffer is empty" in assertAllStagesStopped {
@@ -134,34 +129,17 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
     }
 
-    "use dedicated default-blocking-io-dispatcher by default" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-
-      try {
-        StreamConverters.asOutputStream().runWith(TestSink.probe[ByteString])(materializer)
-        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "outputStreamSource").get
-        assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
-      } finally shutdown(sys)
-
-    }
-
     "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
-      val sourceProbe = TestProbe()
-      val (outputStream, probe) = TestSourceStage(new OutputStreamSourceStage(timeout), sourceProbe)
+      val (outputStream, sink) = StreamConverters.asOutputStream()
         .toMat(TestSink.probe[ByteString])(Keep.both).run
 
-      val s = probe.expectSubscription()
+      val s = sink.expectSubscription()
 
       outputStream.write(bytesArray)
       s.request(1)
-      sourceProbe.expectMsg(GraphStageMessages.Pull)
 
-      probe.expectNext(byteString)
-
+      sink.expectNext(byteString)
       s.cancel()
-      sourceProbe.expectMsg(GraphStageMessages.DownstreamFinish)
 
       awaitAssert {
         the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
