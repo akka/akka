@@ -3313,6 +3313,8 @@ object RunnableGraph {
       if (newRunnable eq runnable) this
       else new RunnableGraphAdapter(newRunnable)
     }
+
+    override def asScala: scaladsl.RunnableGraph[Mat] = runnable
   }
 }
 /**
@@ -3338,4 +3340,9 @@ abstract class RunnableGraph[+Mat] extends Graph[ClosedShape, Mat] {
 
   override def named(name: String): RunnableGraph[Mat] =
     withAttributes(Attributes.name(name))
+
+  /**
+   * Converts this Java DSL element to its Scala DSL counterpart.
+   */
+  def asScala: scaladsl.RunnableGraph[Mat]
 }

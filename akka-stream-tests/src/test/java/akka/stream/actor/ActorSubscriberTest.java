@@ -28,7 +28,7 @@ public class ActorSubscriberTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("ActorSubscriberTest", AkkaSpec.testConf());
 
   public static class TestSubscriber extends UntypedActorSubscriber {
 

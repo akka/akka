@@ -27,7 +27,7 @@ public class KillSwitchTest extends StreamTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
-      new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+      new AkkaJUnitActorSystemResource("KillSwitchTest", AkkaSpec.testConf());
 
   @Test
   public void beAbleToUseKillSwitch() throws Exception {

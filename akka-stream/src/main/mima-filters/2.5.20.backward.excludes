@@ -1,0 +1,2 @@
+# #26246 Add asJava/asScala to RunnableGraph, not to be extended by users
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.RunnableGraph.asScala")
