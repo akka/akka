@@ -464,6 +464,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     BehaviorInterceptor<Command, Command> tap =
         new BehaviorInterceptor<Command, Command>() {
+
+          @Override
+          public Class<? extends Command> interceptMessageType() {
+            return Command.class;
+          }
+
           @Override
           public Behavior<Command> aroundReceive(
               TypedActorContext<Command> ctx, Command msg, ReceiveTarget<Command> target) {
@@ -621,6 +627,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     new EventFilter(Logging.Error.class, Adapter.toUntyped(testKit.system()))
         .occurrences(1)
+        .message("java.lang.Integer cannot be cast to java.lang.String")
         .intercept(
             () -> {
               c.tell("expect wrong type");
