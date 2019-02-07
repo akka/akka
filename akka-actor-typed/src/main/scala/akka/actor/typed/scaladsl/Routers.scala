@@ -4,8 +4,14 @@
 
 package akka.actor.typed.scaladsl
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.{ RouterGroupImpl, RouterPoolImpl }
+import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.TypedActorContext
+import akka.actor.typed.internal.routing.GroupRouterImpl
+import akka.actor.typed.internal.routing.PoolRouterImpl
+import akka.actor.typed.internal.routing.RoutingLogic
+import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.ServiceKey
+import akka.annotation.DoNotInherit
 
 object Routers {
 
@@ -20,9 +26,9 @@ object Routers {
    * before the group detects this, therefore it is best to unregister routees from the receptionist and not stop
    * until the deregistration is complete to minimize the risk of lost messages.
    */
-  def group[T](key: ServiceKey[T]): Behavior[T] =
+  def group[T](key: ServiceKey[T]): GroupRouter[T] =
     // fixme: potential detection of cluster and selecting a different impl
-    Behaviors.setup(ctx ⇒ new RouterGroupImpl[T](ctx, key))
+    new GroupRouter[T](key, () ⇒ RoutingLogics.randomLogic)
 
   /**
    * Spawn `poolSize` children with the given `behavior` and forward messages to them using round robin.
@@ -33,7 +39,54 @@ object Routers {
    * Note that if a child stops there is a slight chance that messages still get delivered to it, and get lost,
    * before the pool sees that the child stopped. Therefore it is best to _not_ stop children arbitrarily.
    */
-  def pool[T](poolSize: Int)(behavior: Behavior[T]): Behavior[T] =
-    Behaviors.setup(ctx ⇒ new RouterPoolImpl[T](ctx, poolSize, behavior))
+  def pool[T](poolSize: Int)(behavior: Behavior[T]): PoolRouter[T] =
+    new PoolRouter[T](poolSize, behavior, () ⇒ new RoutingLogics.RoundRobinLogic[T])
 
+}
+
+/**
+ * Provides builder style configuration options for group routers
+ *
+ * Not for user instantiation. Use [[Routers#group]] to create
+ */
+final class GroupRouter[T] private[akka] (key: ServiceKey[T], logicFactory: () ⇒ RoutingLogic[T]) extends DeferredBehavior[T] {
+
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = GroupRouterImpl[T](key, logicFactory)
+
+  /**
+   * Route messages by randomly selecting the routee from the available routees. This is the default for group routers.
+   * FIXME motivate when to use it
+   */
+  def withRandomRouting(): GroupRouter[T] = new GroupRouter[T](key, () ⇒ RoutingLogics.randomLogic)
+
+  /**
+   * Route messages by using round robin.
+   * FIXME motivate when to use it
+   */
+  def withRoundRobinRouting(): GroupRouter[T] = new GroupRouter[T](key, () ⇒ new RoutingLogics.RoundRobinLogic[T])
+
+}
+
+/**
+ * Provides builder style configuration options for pool routers
+ *
+ * Not for user instantiation. Use [[Routers#group]] to create
+ */
+@DoNotInherit
+final class PoolRouter[T](poolSize: Int, behavior: Behavior[T], logicFactory: () ⇒ RoutingLogic[T]) extends DeferredBehavior[T] {
+
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = PoolRouterImpl[T](poolSize, behavior, logicFactory)
+
+  /**
+   * Route messages by randomly selecting the routee from the available routees.
+   * FIXME motivate when to use it
+   */
+  def withRandomRouting(): PoolRouter[T] = new PoolRouter[T](poolSize, behavior, () ⇒ RoutingLogics.randomLogic)
+
+  /**
+   * Route messages through round robin, providing a fair distribution of messages across the routees.
+   * This is the default for pool routers.
+   * FIXME motivate when to use it
+   */
+  def withRoundRobinRouting(): PoolRouter[T] = new PoolRouter[T](poolSize, behavior, () ⇒ new RoutingLogics.RoundRobinLogic[T])
 }
