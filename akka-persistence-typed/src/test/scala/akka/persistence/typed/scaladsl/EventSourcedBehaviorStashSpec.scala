@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
@@ -17,8 +16,11 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.StashOverflowException
+import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.testkit.EventFilter
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -27,9 +29,12 @@ object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     #akka.loglevel = DEBUG
+    akka.loggers = [akka.testkit.TestEventListener]
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.plugin = "failure-journal"
+    # tune it down a bit so we can hit limit
+    akka.persistence.typed.stash-capacity = 500
     failure-journal = $${akka.persistence.journal.inmem}
     failure-journal {
       class = "akka.persistence.typed.scaladsl.ChaosJournal"
@@ -126,7 +131,8 @@ object EventSourcedBehaviorStashSpec {
 
   private def inactive(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case _: Increment ⇒
+      case i: Increment ⇒
+        println(s"stashing ${i.id}")
         Effect.stash()
       case cmd @ UpdateValue(_, value, _) ⇒
         Effect.persist(ValueUpdated(value))
@@ -159,6 +165,9 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+
+  // Needed for the untyped event filter
+  implicit val untyped = system.toUntyped
 
   "A typed persistent actor that is stashing commands" must {
 
@@ -477,6 +486,29 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       c ! GetValue(stateProbe.ref)
       stateProbe.expectMessage(State(5, active = true))
+    }
+
+    "fail when stash has reached limit" in {
+      val probe = TestProbe()
+      val behavior = EventSourcedBehavior[String, String, String](
+        PersistenceId("stash-is-ful"),
+        "",
+        commandHandler = {
+          case (_, _) ⇒
+            Effect.stash()
+        },
+        (state, _) ⇒ state
+      )
+
+      val c = spawn(behavior)
+      val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+      (0 to limit).foreach { n ⇒
+        c ! s"cmd-$n"
+      }
+      EventFilter[StashOverflowException](occurrences = 1).intercept {
+        c ! s"cmd-${limit + 1}"
+        probe.expectTerminated(c, 10.seconds)
+      }
     }
   }
 
