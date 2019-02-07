@@ -3,6 +3,8 @@
  */
 
 package akka.util
+import java.nio.charset.StandardCharsets
+
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
@@ -14,7 +16,7 @@ class AsciiStringCopySpec extends WordSpec with Matchers {
       val ascii = "abcdefghijklmnopqrstuvxyz"
       val byteArray = new Array[Byte](ascii.length)
       Unsafe.copyUSAsciiStrToBytes(ascii, byteArray)
-      new String(byteArray) should ===(ascii)
+      new String(byteArray, StandardCharsets.US_ASCII) should ===(ascii)
     }
   }
 
