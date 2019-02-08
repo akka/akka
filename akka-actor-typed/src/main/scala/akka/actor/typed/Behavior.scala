@@ -4,15 +4,16 @@
 
 package akka.actor.typed
 
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
-
-import scala.annotation.tailrec
 import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.WrappingBehavior
-import akka.util.{ LineNumbers, OptionVal }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.util.{ LineNumbers, OptionVal }
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -435,16 +436,30 @@ object Behavior {
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
-        val nextB = messages.next() match {
+        val next = messages.next()
+        val nextB = try next match {
           case sig: Signal ⇒ Behavior.interpretSignal(b2, ctx, sig)
           case msg         ⇒ Behavior.interpretMessage(b2, ctx, msg)
+        } catch {
+          case NonFatal(e) ⇒
+            Behavior.failed[T](InterpretBehaviorException[T](e, b2, next))
         }
+
         interpretOne(Behavior.canonicalize(nextB, b, ctx)) // recursive
       }
     }
 
     interpretOne(Behavior.start(behavior, ctx))
   }
+
+  /**
+   * Thrown if an exception is raised while a message or signal is being
+   * interpreted. This allows the passing of the particular error context
+   * (the failing behavior, the message associated with it) to be returned
+   * to the behavior.
+   */
+  @InternalApi
+  private[akka] final case class InterpretBehaviorException[T](cause: Throwable, failed: Behavior[T], msg: T) extends RuntimeException
 
 }
 

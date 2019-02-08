@@ -571,6 +571,44 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       childProbe.expectNoMessage()
     }
 
+    "update failed behavior if exception from unstashAll" in {
+      testPreRestartSignalOnExceptionFromUnstashAll(strategy = SupervisorStrategy.restart)
+    }
+
+    def testPreRestartSignalOnExceptionFromUnstashAll(strategy: SupervisorStrategy): Unit = {
+
+      val probe = TestProbe[Event]("evt")
+
+      val ref = spawn(Behaviors.supervise(targetBehavior(probe.ref))
+        .onFailure[Exc1](strategy))
+
+      val childProbe = TestProbe[Event]("childEvt")
+      val slowStop = new CountDownLatch(1)
+      val child1Name = nextName()
+      ref ! CreateChild(targetBehavior(childProbe.ref, slowStop = Some(slowStop)), child1Name)
+      ref ! GetState
+      probe.expectMessageType[State].children.keySet should ===(Set(child1Name))
+
+      val child2Name = nextName()
+
+      EventFilter[Exc1](occurrences = 1).intercept {
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! GetState
+        ref ! CreateChild(targetBehavior(childProbe.ref), child2Name)
+        ref ! GetState
+        ref ! Throw(new Exc1)
+      }
+
+      slowStop.countDown()
+      childProbe.expectMessage(GotSignal(PostStop)) // child1
+      probe.expectMessageType[State].children.keySet should ===(Set.empty)
+      probe.expectMessageType[State].children.keySet should ===(Set(child2Name))
+      childProbe.expectMessage(GotSignal(PostStop)) // child2
+
+      probe.expectMessage(GotSignal(PostStop))
+    }
+
     "stop children when restarting second time during unstash" in {
       testStopChildrenWhenExceptionFromUnstash(SupervisorStrategy.restart)
     }

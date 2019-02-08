@@ -100,8 +100,14 @@ import akka.util.OptionVal
           }
           context.stop(self)
         case f: FailedBehavior ⇒
+          f.cause match {
+            case e: InterpretBehaviorException[T] ⇒
+              behavior = Behavior.canonicalize(e.failed, behavior, ctx)
+            // could throw e and handle differently in supervisorStrategy
+            case _ ⇒
+          }
           // For the parent untyped supervisor to pick up the exception
-          throw new TypedActorFailedException(f.cause)
+          throw TypedActorFailedException(f.cause)
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }

@@ -309,6 +309,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   }
 
   private def restartCompleted(ctx: TypedActorContext[O]): Behavior[T] = {
+
     strategy match {
       case backoff: Backoff ⇒
         gotScheduledRestart = false
@@ -317,18 +318,28 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       case _: Restart ⇒
     }
 
-    try {
-      val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
-      val nextBehavior = restartingInProgress match {
-        case OptionVal.None ⇒ newBehavior
-        case OptionVal.Some((stashBuffer, _)) ⇒
-          restartingInProgress = OptionVal.None
-          stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], newBehavior.unsafeCast)
+    // can throw, unrelated to unstashAll, keep separate
+    val newBehavior =
+      try Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]])) catch {
+        case NonFatal(e) ⇒ Behavior.failed[T](e)
       }
-      nextBehavior.narrow
-    } catch handleException(ctx, signalRestart = () ⇒ ())
-    // FIXME signal Restart is not done if unstashAll throws, unstash of each message may return a new behavior and
-    //      it's the failing one that should receive the signal
+
+    newBehavior match {
+      case nb: Behavior.FailedBehavior ⇒
+        nb
+      case nb ⇒
+        try {
+          val nextBehavior = restartingInProgress match {
+            case OptionVal.None ⇒ nb
+            case OptionVal.Some((stashBuffer, _)) ⇒
+              restartingInProgress = OptionVal.None
+              stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], nb.unsafeCast)
+          }
+          nextBehavior.narrow
+        } catch handleException(ctx, signalRestart = () ⇒ ())
+      // FIXME signal Restart is not done if unstashAll throws, unstash of each message may return a new behavior and
+      //      it's the failing one that should receive the signal
+    }
   }
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {
