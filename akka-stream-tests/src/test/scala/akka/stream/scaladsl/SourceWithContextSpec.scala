@@ -20,8 +20,8 @@ class SourceWithContextSpec extends StreamSpec {
     "get created from Source.startContextPropagation" in {
       val msg = Message("a", 1L)
       Source(Vector(msg))
-        .startContextPropagation(_.offset)
-        .endContextPropagation
+        .asSourceWithContext(_.offset)
+        .asSource
         .runWith(TestSink.probe[(Message, Long)])
         .request(1)
         .expectNext((msg, 1L))
@@ -31,9 +31,9 @@ class SourceWithContextSpec extends StreamSpec {
     "be able to get turned back into a normal Source" in {
       val msg = Message("a", 1L)
       Source(Vector(msg))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data)
-        .endContextPropagation.map { case (e, _) ⇒ e }
+        .asSource.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[String])
         .request(1)
         .expectNext("a")
@@ -44,11 +44,11 @@ class SourceWithContextSpec extends StreamSpec {
       Source(
         Vector(Message("A", 1L), Message("B", 2L), Message("D", 3L), Message("C", 4L))
       )
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data.toLowerCase)
         .filter(_ != "b")
         .filterNot(_ == "d")
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(String, Long)])
         .request(2)
         .expectNext(("a", 1L))
@@ -61,10 +61,10 @@ class SourceWithContextSpec extends StreamSpec {
       def flowWithContext[T] = FlowWithContext[T, Long]
 
       Source(Vector(Message("a", 1L)))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data)
         .via(flowWithContext.map(s ⇒ s + "b"))
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(String, Long)])
         .request(1)
         .expectNext(("ab", 1L))
@@ -73,12 +73,12 @@ class SourceWithContextSpec extends StreamSpec {
 
     "pass through contexts via mapConcat" in {
       Source(Vector(Message("a", 1L)))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data)
         .mapConcat { str ⇒
           List(1, 2, 3).map(i ⇒ s"$str-$i")
         }
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a-1", 1L), ("a-2", 1L), ("a-3", 1L))
@@ -87,13 +87,13 @@ class SourceWithContextSpec extends StreamSpec {
 
     "pass through a sequence of contexts per element via grouped" in {
       Source(Vector(Message("a", 1L)))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data)
         .mapConcat { str ⇒
           List(1, 2, 3, 4).map(i ⇒ s"$str-$i")
         }
         .grouped(2)
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(Seq[String], Seq[Long])])
         .request(2)
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
@@ -109,10 +109,10 @@ class SourceWithContextSpec extends StreamSpec {
         }
       }
       Source(Vector(Message("a", 1L), Message("z", 2L)))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .map(_.data)
         .statefulMapConcat(statefulFunction)
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a", 1L), ("z", 2L), ("z", 2L))

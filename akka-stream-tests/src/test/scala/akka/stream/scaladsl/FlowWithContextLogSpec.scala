@@ -34,9 +34,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
       "log each element" in {
         val logging = FlowWithContext[Message, Long].log("my-log")
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m ⇒ m.offset)
           .via(logging)
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log] Element: Message(a,1)"))
@@ -47,9 +47,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
       "allow extracting value to be logged" in {
         val logging = FlowWithContext[Message, Long].log("my-log2", m ⇒ m.data)
         Source(List(Message("a", 1L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m ⇒ m.offset)
           .via(logging)
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log2] Element: a"))
@@ -64,9 +64,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
         val logging = FlowWithContext[Message, Long].log("my-log3")
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m ⇒ m.offset)
           .via(logging)
-          .endContextPropagation
+          .asSource
           .withAttributes(disableElementLogging)
           .runWith(Sink.ignore)
 
@@ -79,9 +79,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
       "log each element" in {
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m ⇒ m.offset)
           .log("my-log4")
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log4] Element: Message(a,1)"))
@@ -91,9 +91,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
       "allow extracting value to be logged" in {
         Source(List(Message("a", 1L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m ⇒ m.offset)
           .log("my-log5", m ⇒ m.data)
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log5] Element: a"))
