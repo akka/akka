@@ -654,7 +654,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     probe.expectTerminated(c);
   }
 
-
   class SequenceNumberBehavior extends EventSourcedBehavior<String, String, String> {
     private final ActorRef<String> probe;
     private final ActorContext<String> context;
