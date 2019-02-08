@@ -4,11 +4,32 @@
 
 package akka.actor.typed.internal.routing
 
+import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class PoolRouterBuilder[T](
+  poolSize:     Int,
+  behavior:     Behavior[T],
+  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RoundRobinLogic[T]
+) extends DeferredBehavior[T]
+  with scaladsl.PoolRouter[T]
+  with javadsl.PoolRouter[T] {
+
+  // deferred creation of the actual router
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = PoolRouterImpl[T](poolSize, behavior, logicFactory)
+
+  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
+
+  def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+}
 
 /**
  * INTERNAL API
@@ -23,7 +44,13 @@ private[akka] object PoolRouterImpl {
  * INTERNAL API
  */
 @InternalApi
-private final class PoolRouterImpl[T](ctx: ActorContext[T], poolSize: Int, behavior: Behavior[T], logic: RoutingLogic[T]) extends AbstractBehavior[T] {
+private final class PoolRouterImpl[T](
+  ctx:      ActorContext[T],
+  poolSize: Int,
+  behavior: Behavior[T],
+  logic:    RoutingLogic[T]
+) extends AbstractBehavior[T] {
+
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   private var routees = (1 to poolSize).map { _ ⇒

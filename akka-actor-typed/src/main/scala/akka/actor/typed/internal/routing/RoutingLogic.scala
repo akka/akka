@@ -68,5 +68,5 @@ object RoutingLogics {
     }
   }
 
-  def randomLogic[T]: RoutingLogic[T] = RandomLogic.asInstanceOf[RoutingLogic[T]]
+  def randomLogic[T](): RoutingLogic[T] = RandomLogic.asInstanceOf[RoutingLogic[T]]
 }

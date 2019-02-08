@@ -3,8 +3,8 @@
  */
 
 package akka.actor.typed.internal.routing
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AbstractBehavior
@@ -12,6 +12,28 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.dispatch.forkjoin.ThreadLocalRandom
+
+/**
+ * Provides builder style configuration options for group routers while still being a behavior that can be spawned
+ *
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class GroupRouterBuilder[T] private[akka] (
+  key:          ServiceKey[T],
+  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ RoutingLogics.randomLogic[T]()
+) extends DeferredBehavior[T]
+  with scaladsl.GroupRouter[T]
+  with javadsl.GroupRouter[T] {
+
+  // deferred creation of the actual router
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = GroupRouterImpl[T](key, logicFactory)
+
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
+
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+
+}
 
 /**
  * INTERNAL API
@@ -26,7 +48,11 @@ private[akka] object GroupRouterImpl {
  * INTERNAL API
  */
 @InternalApi
-private final class GroupRouterImpl[T](ctx: ActorContext[T], serviceKey: ServiceKey[T], routingLogic: RoutingLogic[T]) extends AbstractBehavior[T] {
+private final class GroupRouterImpl[T](
+  ctx:          ActorContext[T],
+  serviceKey:   ServiceKey[T],
+  routingLogic: RoutingLogic[T]
+) extends AbstractBehavior[T] {
 
   private var routees: Array[ActorRef[T]] = Array.empty[ActorRef[T]]
 
