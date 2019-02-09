@@ -54,20 +54,20 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       override def postStop(): Unit = cluster.unsubscribe(self)
 
       def receive = {
-        case e: ClusterDomainEvent ⇒
+        case e: ClusterDomainEvent =>
           e match {
-            case SeenChanged(_, seenBy) ⇒
+            case SeenChanged(_, seenBy) =>
               _state = _state.copy(seenBy = seenBy)
-            case ReachabilityChanged(reachability) ⇒
+            case ReachabilityChanged(reachability) =>
               _reachability = reachability
-            case MemberRemoved(member, _) ⇒
+            case MemberRemoved(member, _) =>
               _state = _state.copy(members = _state.members - member, unreachable = _state.unreachable - member)
-            case UnreachableMember(member) ⇒
+            case UnreachableMember(member) =>
               // replace current member with new member (might have different status, only address is used in equals)
               _state = _state.copy(unreachable = _state.unreachable - member + member)
-            case ReachableMember(member) ⇒
+            case ReachableMember(member) =>
               _state = _state.copy(unreachable = _state.unreachable - member)
-            case event: MemberEvent ⇒
+            case event: MemberEvent =>
               // replace current member with new member (might have different status, only address is used in equals)
               val newUnreachable =
                 if (_state.unreachable.contains(event.member)) _state.unreachable - event.member + event.member
@@ -75,40 +75,40 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
               _state = _state.copy(
                 members = _state.members - event.member + event.member,
                 unreachable = newUnreachable)
-            case LeaderChanged(leader) ⇒
+            case LeaderChanged(leader) =>
               _state = _state.copy(leader = leader)
-            case RoleLeaderChanged(role, leader) ⇒
-              _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
-            case stats: CurrentInternalStats ⇒ _latestStats = stats
-            case ClusterShuttingDown         ⇒
+            case RoleLeaderChanged(role, leader) =>
+              _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role -> leader))
+            case stats: CurrentInternalStats => _latestStats = stats
+            case ClusterShuttingDown         =>
 
-            case r: ReachableDataCenter ⇒
+            case r: ReachableDataCenter =>
               _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)
-            case r: UnreachableDataCenter ⇒
+            case r: UnreachableDataCenter =>
               _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
 
           }
 
           e match {
-            case e: MemberEvent if e.member.address == selfAddress ⇒
+            case e: MemberEvent if e.member.address == selfAddress =>
               _cachedSelf match {
-                case OptionVal.Some(s) if s.status == MemberStatus.Removed && _closed ⇒
+                case OptionVal.Some(s) if s.status == MemberStatus.Removed && _closed =>
                 // ignore as Cluster.close has been called
-                case _ ⇒
+                case _ =>
                   _cachedSelf = OptionVal.Some(e.member)
               }
-            case _ ⇒
+            case _ =>
           }
 
           // once captured, optional verbose logging of event
           e match {
-            case _: SeenChanged ⇒ // ignore
-            case event ⇒
+            case _: SeenChanged => // ignore
+            case event =>
               if (cluster.settings.LogInfoVerbose)
                 logInfo("event {}", event)
           }
 
-        case s: CurrentClusterState ⇒ _state = s
+        case s: CurrentClusterState => _state = s
       }
     }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
@@ -117,11 +117,11 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   def self: Member = {
     _cachedSelf match {
-      case OptionVal.None ⇒
+      case OptionVal.None =>
         // lazy initialization here, later updated from elsewhere
         _cachedSelf = OptionVal.Some(selfFromStateOrPlaceholder)
         _cachedSelf.get
-      case OptionVal.Some(member) ⇒ member
+      case OptionVal.Some(member) => member
     }
   }
 

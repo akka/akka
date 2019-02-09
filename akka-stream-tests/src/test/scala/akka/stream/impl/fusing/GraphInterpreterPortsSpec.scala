@@ -13,7 +13,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
     // FIXME test failure scenarios
 
-    for (chasing ← List(false, true)) {
+    for (chasing <- List(false, true)) {
 
       s"properly transition on push and pull (chasing = $chasing)" in new PortTestSetup(chasing) {
         lastEvents() should be(Set.empty)

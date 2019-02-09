@@ -17,7 +17,7 @@ import akka.actor.ExtendedActorSystem
 object LogSourceSpec {
   class Reporter extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.info(s)
     }
   }
@@ -36,8 +36,8 @@ class LogSourceSpec extends AkkaSpec(
   val logProbe = TestProbe()
   system.eventStream.subscribe(system.actorOf(Props(new Actor {
     def receive = {
-      case i @ Info(_, _, msg: String) if msg contains "hello" ⇒ logProbe.ref ! i
-      case _ ⇒
+      case i @ Info(_, _, msg: String) if msg contains "hello" => logProbe.ref ! i
+      case _ =>
     }
   }).withDeploy(Deploy.local), "logSniffer"), classOf[Logging.Info])
 

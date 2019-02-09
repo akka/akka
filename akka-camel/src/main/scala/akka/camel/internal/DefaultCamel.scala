@@ -52,7 +52,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    */
   def start(): this.type = {
     context.start()
-    try template.start() catch { case NonFatal(e) ⇒ context.stop(); throw e }
+    try template.start() catch { case NonFatal(e) => context.stop(); throw e }
     log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }
@@ -66,7 +66,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    */
   def shutdown(): Unit = {
     try context.stop() finally {
-      try template.stop() catch { case NonFatal(e) ⇒ log.debug("Swallowing non-fatal exception [{}] on stopping Camel producer template", e) }
+      try template.stop() catch { case NonFatal(e) => log.debug("Swallowing non-fatal exception [{}] on stopping Camel producer template", e) }
     }
     log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
@@ -81,8 +81,8 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
   def activationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
 
     (supervisor.ask(AwaitActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointActivated(`endpoint`)               ⇒ endpoint
-      case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
+      case EndpointActivated(`endpoint`)               => endpoint
+      case EndpointFailedToActivate(`endpoint`, cause) => throw cause
     })
 
   /**
@@ -94,7 +94,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    */
   def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
     (supervisor.ask(AwaitDeActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointDeActivated(`endpoint`)               ⇒ endpoint
-      case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
+      case EndpointDeActivated(`endpoint`)               => endpoint
+      case EndpointFailedToDeActivate(`endpoint`, cause) => throw cause
     })
 }

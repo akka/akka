@@ -26,7 +26,7 @@ object ShardingMessageExtractor {
   def noEnvelope[M](
     numberOfShards: Int,
     stopMessage:    M)(
-    extractEntityId: M ⇒ String): ShardingMessageExtractor[M, M] =
+    extractEntityId: M => String): ShardingMessageExtractor[M, M] =
     new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
       def entityId(message: M) = extractEntityId(message)
     }

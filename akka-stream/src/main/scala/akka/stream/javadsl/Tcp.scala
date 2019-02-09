@@ -4,7 +4,7 @@
 
 package akka.stream.javadsl
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.util.Optional
 
 import akka.{ Done, NotUsed }
@@ -111,7 +111,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
 class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => ec }
 
   private lazy val delegate: scaladsl.Tcp = scaladsl.Tcp(system)
 

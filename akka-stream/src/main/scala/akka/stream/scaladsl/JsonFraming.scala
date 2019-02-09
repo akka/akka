@@ -60,17 +60,17 @@ object JsonFraming {
 
         override def onUpstreamFinish(): Unit = {
           buffer.poll() match {
-            case Some(json) ⇒ emit(out, json)
-            case _          ⇒ completeStage()
+            case Some(json) => emit(out, json)
+            case _          => completeStage()
           }
         }
 
         def tryPopBuffer() = {
           try buffer.poll() match {
-            case Some(json) ⇒ push(out, json)
-            case _          ⇒ if (isClosed(in)) completeStage() else pull(in)
+            case Some(json) => push(out, json)
+            case _          => if (isClosed(in)) completeStage() else pull(in)
           } catch {
-            case NonFatal(ex) ⇒ failStage(ex)
+            case NonFatal(ex) => failStage(ex)
           }
         }
       }

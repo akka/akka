@@ -24,11 +24,11 @@ class WidenSpec extends ScalaTestWithActorTestKit(
   implicit val untypedSystem = system.toUntyped
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
-    Behaviors.receiveMessage[String] { message ⇒
+    Behaviors.receiveMessage[String] { message =>
       probe ! message
       Behaviors.same
     }.widen[Int] {
-      case n if n != 13 ⇒ n.toString
+      case n if n != 13 => n.toString
     }
   }
 
@@ -62,7 +62,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
 
       // sadly the only "same" we can know is if it is the same PF
       val transform: PartialFunction[String, String] = {
-        case s ⇒
+        case s =>
           transformCount.incrementAndGet()
           s
       }
@@ -72,7 +72,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
       val beh =
         widen(
           widen(
-            Behaviors.receiveMessage[String] { message ⇒
+            Behaviors.receiveMessage[String] { message =>
               probe.ref ! message
               Behaviors.same
             }
@@ -92,7 +92,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
 
       // sadly the only "same" we can know is if it is the same PF
       val transform: PartialFunction[String, String] = {
-        case s ⇒
+        case s =>
           transformCount.incrementAndGet()
           s
       }
@@ -101,7 +101,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
 
       def next: Behavior[String] =
         widen(
-          Behaviors.receiveMessage[String] { message ⇒
+          Behaviors.receiveMessage[String] { message =>
             probe.ref ! message
             next
           }
@@ -124,14 +124,14 @@ class WidenSpec extends ScalaTestWithActorTestKit(
 
       def widen(behavior: Behavior[String]): Behavior[String] =
         behavior.widen[String] {
-          case s ⇒ s.toLowerCase
+          case s => s.toLowerCase
         }
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(
           widen(
             widen(
-              Behaviors.receiveMessage[String] { message ⇒
+              Behaviors.receiveMessage[String] { message =>
                 Behaviors.same
               }
             )

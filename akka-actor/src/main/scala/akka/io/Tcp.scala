@@ -17,7 +17,7 @@ import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 import akka.actor._
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.nio.file.Path
 
 import akka.annotation.InternalApi
@@ -261,8 +261,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      */
     def ++:(writes: Iterable[WriteCommand]): WriteCommand =
       writes.foldRight(this) {
-        case (a: SimpleWriteCommand, b) ⇒ a +: b
-        case (a: CompoundWrite, b)      ⇒ a ++: b
+        case (a: SimpleWriteCommand, b) => a +: b
+        case (a: CompoundWrite, b)      => a ++: b
       }
 
     /**
@@ -382,9 +382,9 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
         def hasNext: Boolean = current ne null
         def next(): SimpleWriteCommand =
           current match {
-            case null                  ⇒ Iterator.empty.next()
-            case CompoundWrite(h, t)   ⇒ { current = t; h }
-            case x: SimpleWriteCommand ⇒ { current = null; x }
+            case null                  => Iterator.empty.next()
+            case CompoundWrite(h, t)   => { current = t; h }
+            case x: SimpleWriteCommand => { current = null; x }
           }
       }
   }
@@ -462,7 +462,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     }
 
     @InternalApi
-    private[akka] def causedByString = _cause.map(t ⇒ {
+    private[akka] def causedByString = _cause.map(t => {
       val msg =
         if (t.getCause == null)
           t.getMessage
@@ -576,18 +576,18 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val DirectBufferSize: Int = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
     val RegisterTimeout: Duration = getString("register-timeout") match {
-      case "infinite" ⇒ Duration.Undefined
-      case _          ⇒ _config.getMillisDuration("register-timeout")
+      case "infinite" => Duration.Undefined
+      case _          => _config.getMillisDuration("register-timeout")
     }
     val ReceivedMessageSizeLimit: Int = getString("max-received-message-size") match {
-      case "unlimited" ⇒ Int.MaxValue
-      case _           ⇒ getIntBytes("max-received-message-size")
+      case "unlimited" => Int.MaxValue
+      case _           => getIntBytes("max-received-message-size")
     }
     val ManagementDispatcher: String = getString("management-dispatcher")
     val FileIODispatcher: String = getString("file-io-dispatcher")
     val TransferToLimit: Int = getString("file-io-transferTo-limit") match {
-      case "unlimited" ⇒ Int.MaxValue
-      case _           ⇒ getIntBytes("file-io-transferTo-limit")
+      case "unlimited" => Int.MaxValue
+      case _           => getIntBytes("file-io-transferTo-limit")
     }
 
     val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
@@ -595,8 +595,8 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
       "finish-connect-retries must be > 0")
 
     val WindowsConnectionAbortWorkaroundEnabled: Boolean = getString("windows-connection-abort-workaround-enabled") match {
-      case "auto" ⇒ Helpers.isWindows
-      case _      ⇒ getBoolean("windows-connection-abort-workaround-enabled")
+      case "auto" => Helpers.isWindows
+      case _      => getBoolean("windows-connection-abort-workaround-enabled")
     }
 
     private[this] def getIntBytes(path: String): Int = {

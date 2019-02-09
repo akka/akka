@@ -229,16 +229,16 @@ object DispatcherDocSpec {
       // Create a new PriorityGenerator, lower prio means more important
       PriorityGenerator {
         // 'highpriority messages should be treated first if possible
-        case 'highpriority ⇒ 0
+        case 'highpriority => 0
 
         // 'lowpriority messages should be treated last if possible
-        case 'lowpriority  ⇒ 2
+        case 'lowpriority  => 2
 
         // PoisonPill when no other left
-        case PoisonPill    ⇒ 3
+        case PoisonPill    => 3
 
         // We default to 1, which is in between high and low
-        case otherwise     ⇒ 1
+        case otherwise     => 1
       })
   //#prio-mailbox
 
@@ -250,7 +250,7 @@ object DispatcherDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case x ⇒
+      case x =>
     }
   }
 
@@ -267,7 +267,7 @@ object DispatcherDocSpec {
     with RequiresMessageQueue[MyUnboundedMessageQueueSemantics] {
     //#require-mailbox-on-actor
     def receive = {
-      case _ ⇒
+      case _ =>
     }
     //#require-mailbox-on-actor
     // ...
@@ -370,7 +370,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         self ! PoisonPill
 
         def receive = {
-          case x ⇒ log.info(x.toString)
+          case x => log.info(x.toString)
         }
       }
       val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
@@ -389,7 +389,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       //#prio-dispatcher
 
       watch(a)
-      expectMsgPF() { case Terminated(`a`) ⇒ () }
+      expectMsgPF() { case Terminated(`a`) => () }
     }
   }
 
@@ -407,7 +407,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
         self ! PoisonPill
 
         def receive = {
-          case x ⇒ log.info(x.toString)
+          case x => log.info(x.toString)
         }
       }
       val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
@@ -422,7 +422,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
       //#control-aware-dispatcher
 
       watch(a)
-      expectMsgPF() { case Terminated(`a`) ⇒ () }
+      expectMsgPF() { case Terminated(`a`) => () }
     }
   }
 

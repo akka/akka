@@ -68,17 +68,17 @@ class GraphStageTimersSpec extends StreamSpec {
       }
 
       private def onTestEvent(event: Any): Unit = event match {
-        case TestSingleTimer ⇒
+        case TestSingleTimer =>
           scheduleOnce("TestSingleTimer", 500.millis.dilated)
-        case TestSingleTimerResubmit ⇒
+        case TestSingleTimerResubmit =>
           scheduleOnce("TestSingleTimerResubmit", 500.millis.dilated)
-        case TestCancelTimer ⇒
+        case TestCancelTimer =>
           scheduleOnce("TestCancelTimer", 1.milli.dilated)
           // Likely in mailbox but we cannot guarantee
           cancelTimer("TestCancelTimer")
           probe ! TestCancelTimerAck
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
-        case TestRepeatedTimer ⇒
+        case TestRepeatedTimer =>
           schedulePeriodically("TestRepeatedTimer", 100.millis.dilated)
       }
     }
@@ -144,7 +144,7 @@ class GraphStageTimersSpec extends StreamSpec {
 
       driver ! TestRepeatedTimer
       val seq = receiveWhile(2.seconds) {
-        case t: Tick ⇒ t
+        case t: Tick => t
       }
       seq should have length 5
       expectNoMsg(1.second)

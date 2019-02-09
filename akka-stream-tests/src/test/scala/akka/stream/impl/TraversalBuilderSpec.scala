@@ -237,7 +237,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     "keep mapped materialized value of empty builder" in {
       val builder =
         TraversalBuilder.empty()
-          .transformMat((_: Any) ⇒ "NOTUSED")
+          .transformMat((_: Any) => "NOTUSED")
           .add(source.traversalBuilder, source.shape, Keep.left)
           .add(sink.traversalBuilder, sink.shape, Keep.left)
           .wire(source.out, sink.in)
@@ -368,8 +368,8 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        source → (Attributes.name("test") and Attributes.name("testSource")),
-        sink → (Attributes.name("test") and Attributes.name("testSink"))
+        source -> (Attributes.name("test") and Attributes.name("testSource")),
+        sink -> (Attributes.name("test") and Attributes.name("testSink"))
       ))
     }
 
@@ -389,8 +389,8 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        source → (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
-        sink → (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))
+        source -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
+        sink -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))
       ))
     }
 
@@ -409,9 +409,9 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        source → (Attributes.name("test") and Attributes.name("testSource")),
-        flow1 → (Attributes.name("test") and Attributes.name("flow")),
-        sink → (Attributes.name("test") and Attributes.name("testSink"))
+        source -> (Attributes.name("test") and Attributes.name("testSource")),
+        flow1 -> (Attributes.name("test") and Attributes.name("flow")),
+        sink -> (Attributes.name("test") and Attributes.name("testSink"))
       ))
     }
 
@@ -532,8 +532,8 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "bidiflow1" in {
       implicit val mat = PhasedFusingActorMaterializer()
-      val flow1 = Flow.fromGraph(fusing.Map((x: Int) ⇒ x + 1))
-      val flow2 = Flow.fromGraph(fusing.Map((x: Int) ⇒ x + 1))
+      val flow1 = Flow.fromGraph(fusing.Map((x: Int) => x + 1))
+      val flow2 = Flow.fromGraph(fusing.Map((x: Int) => x + 1))
 
       val bidi = BidiFlow.fromFlowsMat(flow1, flow2)(Keep.none)
 
@@ -544,8 +544,8 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "bidiflow reverse" in {
       implicit val mat = PhasedFusingActorMaterializer()
-      val flow1 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
-      val flow2 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
+      val flow1 = Flow.fromGraph(new fusing.Map((x: Int) => x + 1))
+      val flow2 = Flow.fromGraph(new fusing.Map((x: Int) => x + 1))
 
       val bidi = BidiFlow.fromFlowsMat(flow1, flow2)(Keep.none)
 

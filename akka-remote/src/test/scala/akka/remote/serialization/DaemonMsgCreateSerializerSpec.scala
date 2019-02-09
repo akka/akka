@@ -28,7 +28,7 @@ object DaemonMsgCreateSerializerSpec {
 
 case class DummyParameter(val inner: String) extends Serializable
 
-trait SerializationVerification { self: AkkaSpec ⇒
+trait SerializationVerification { self: AkkaSpec =>
 
   def ser: Serialization
 
@@ -41,7 +41,7 @@ trait SerializationVerification { self: AkkaSpec ⇒
     got.props.clazz should ===(expected.props.clazz)
     got.props.args.length should ===(expected.props.args.length)
     got.props.args zip expected.props.args foreach {
-      case (g, e) ⇒
+      case (g, e) =>
         if (e.isInstanceOf[Function0[_]]) ()
         else if (e.isInstanceOf[Function1[_, _]]) ()
         else g should ===(e)
@@ -98,7 +98,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with function parameters for Props" in {
       verifySerialization {
         DaemonMsgCreate(
-          props = Props(classOf[MyActorWithFunParam], (i: Int) ⇒ i + 1),
+          props = Props(classOf[MyActorWithFunParam], (i: Int) => i + 1),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
@@ -141,7 +141,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
         val result = serializer.fromBinary(oldBytes, classOf[DaemonMsgCreate])
 
         result match {
-          case dmc: DaemonMsgCreate ⇒
+          case dmc: DaemonMsgCreate =>
             dmc.props.args should ===(Seq("a string": Any))
         }
       } finally {
@@ -204,7 +204,7 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec(
     verifySerialization {
       // Duration.Inf doesn't equal Duration.Inf, so we use another for test
       val supervisorStrategy = OneForOneStrategy(3, 10 seconds) {
-        case _ ⇒ SupervisorStrategy.Escalate
+        case _ => SupervisorStrategy.Escalate
       }
 
       val deploy1 = Deploy(

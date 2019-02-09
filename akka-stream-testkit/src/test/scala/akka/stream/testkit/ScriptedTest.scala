@@ -21,8 +21,8 @@ trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
-  def toPublisher[In, Out]: (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out] =
-    (f, m) ⇒ f.runWith(Sink.asPublisher(false))(m)
+  def toPublisher[In, Out]: (Source[Out, _], ActorMaterializer) => Publisher[Out] =
+    (f, m) => f.runWith(Sink.asPublisher(false))(m)
 
   object Script {
     def apply[In, Out](phases: (Seq[In], Seq[Out])*): Script[In, Out] = {
@@ -30,7 +30,7 @@ trait ScriptedTest extends Matchers {
       var expectedOutputs = Vector[Out]()
       var jumps = Vector[Int]()
 
-      for ((ins, outs) ← phases) {
+      for ((ins, outs) <- phases) {
         providedInputs ++= ins
         expectedOutputs ++= outs
         jumps ++= Vector.fill(ins.size - 1)(0) ++ Vector(outs.size)
@@ -89,7 +89,7 @@ trait ScriptedTest extends Matchers {
   }
 
   class ScriptRunner[In, Out, M](
-    op:             Flow[In, In, NotUsed] ⇒ Flow[In, Out, M],
+    op:             Flow[In, In, NotUsed] => Flow[In, Out, M],
     settings:       ActorMaterializerSettings,
     script:         Script[In, Out],
     maximumOverrun: Int,
@@ -130,28 +130,28 @@ trait ScriptedTest extends Matchers {
 
     def shakeIt(): Boolean = {
       val u = upstream.receiveWhile(1.milliseconds) {
-        case RequestMore(_, n) ⇒
+        case RequestMore(_, n) =>
           debugLog(s"operation requests $n")
           pendingRequests += n
           true
-        case _ ⇒ false // Ignore
+        case _ => false // Ignore
       }
       val d = downstream.receiveWhile(1.milliseconds) {
-        case OnNext(elem: Out @unchecked) ⇒
+        case OnNext(elem: Out @unchecked) =>
           debugLog(s"operation produces [$elem]")
           if (outstandingDemand == 0) fail("operation produced while there was no demand")
           outstandingDemand -= 1
           currentScript = currentScript.consumeOutput(elem)
           true
-        case OnComplete ⇒
+        case OnComplete =>
           currentScript = currentScript.complete()
           true
-        case OnError(e) ⇒
+        case OnError(e) =>
           currentScript = currentScript.error(e)
           true
-        case _ ⇒ false // Ignore
+        case _ => false // Ignore
       }
-      (u ++ d) exists (x ⇒ x)
+      (u ++ d) exists (x => x)
     }
 
     def run(): Unit = {
@@ -189,7 +189,7 @@ trait ScriptedTest extends Matchers {
         request(getNextDemand())
         doRun(0)
       } catch {
-        case e: Throwable ⇒
+        case e: Throwable =>
           println(_debugLog.mkString("Steps leading to failure:\n", "\n", "\nCurrentScript: " + currentScript.debug))
           throw e
       }
@@ -199,7 +199,7 @@ trait ScriptedTest extends Matchers {
   }
 
   def runScript[In, Out, M](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Flow[In, In, NotUsed] ⇒ Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
+    op: Flow[In, In, NotUsed] => Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

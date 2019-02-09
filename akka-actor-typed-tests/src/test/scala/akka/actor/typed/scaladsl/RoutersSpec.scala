@@ -25,13 +25,9 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   implicit val untypedSystem = system.toUntyped
 
   def compileOnlyApiCoverage(): Unit = {
-    Routers.group(ServiceKey[String]("key"))
-      .withRandomRouting()
-      .withRoundRobinRouting()
+    Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
-    Routers.pool(10)(Behavior.empty[Any])
-      .withRandomRouting()
-      .withRoundRobinRouting()
+    Routers.pool(10)(Behavior.empty[Any]).withRandomRouting().withRoundRobinRouting()
   }
 
   "The router pool" must {
@@ -40,30 +36,32 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val childCounter = new AtomicInteger(0)
       case class Ack(msg: String, recipient: Int)
       val probe = createTestProbe[AnyRef]()
-      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ ⇒
+      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ =>
         val id = childCounter.getAndIncrement()
         probe.ref ! s"started $id"
-        Behaviors.receiveMessage { msg ⇒
+        Behaviors.receiveMessage { msg =>
           probe.ref ! Ack(msg, id)
           Behaviors.same
         }
       }))
 
       // ordering of these msgs is not guaranteed
-      val expectedStarted = (0 to 3).map { n ⇒ s"started $n" }.toSet
+      val expectedStarted = (0 to 3).map { n =>
+        s"started $n"
+      }.toSet
       probe.receiveMessages(4).toSet should ===(expectedStarted)
 
       // send one message at a time and see we rotate over all children, note that we don't necessarily
       // know what order the logic is rotating over the children, so we just check we reach all of them
-      val sent = (0 to 8).map { n ⇒
+      val sent = (0 to 8).map { n =>
         val msg = s"message-$n"
         pool ! msg
         msg
       }
 
-      val acks = (0 to 8).map(_ ⇒ probe.expectMessageType[Ack])
+      val acks = (0 to 8).map(_ => probe.expectMessageType[Ack])
       val (recipients, messages) = acks.foldLeft[(Set[Int], Set[String])]((Set.empty, Set.empty)) {
-        case ((recipients, messages), ack) ⇒
+        case ((recipients, messages), ack) =>
           (recipients + ack.recipient, messages + ack.msg)
       }
       recipients should ===(Set(0, 1, 2, 3))
@@ -72,11 +70,11 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "keep routing to the rest of the children if some children stops" in {
       val probe = createTestProbe[String]()
-      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ ⇒
+      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ =>
         Behaviors.receiveMessage {
-          case "stop" ⇒
+          case "stop" =>
             Behaviors.stopped
-          case msg ⇒
+          case msg =>
             probe.ref ! msg
             Behaviors.same
         }
@@ -91,25 +89,25 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       // deliver messages to it, which will end up in dead letters.
       // this test protects against that by waiting for the log entry to show up
 
-      val responses = (0 to 4).map { n ⇒
+      val responses = (0 to 4).map { n =>
         val msg = s"message-$n"
         pool ! msg
         probe.expectMessageType[String]
       }
 
-      responses should contain allOf ("message-0", "message-1", "message-2", "message-3", "message-4")
+      (responses should contain).allOf("message-0", "message-1", "message-2", "message-3", "message-4")
     }
 
     "stops if all children stops" in {
       val probe = createTestProbe()
-      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ ⇒
-        Behaviors.receiveMessage { _ ⇒
+      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ =>
+        Behaviors.receiveMessage { _ =>
           Behaviors.stopped
         }
       }))
 
       EventFilter.info(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
-        (0 to 3).foreach { _ ⇒
+        (0 to 3).foreach { _ =>
           pool ! "stop"
         }
         probe.expectTerminated(pool)
@@ -125,12 +123,12 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "route messages across routees registered to the receptionist" in {
       val serviceKey = ServiceKey[String]("group-routing-1")
       val probe = createTestProbe[String]()
-      val routeeBehavior: Behavior[String] = Behaviors.receiveMessage { msg ⇒
+      val routeeBehavior: Behavior[String] = Behaviors.receiveMessage { msg =>
         probe.ref ! msg
         Behaviors.same
       }
 
-      (0 to 3).foreach { n ⇒
+      (0 to 3).foreach { n =>
         val ref = spawn(routeeBehavior, s"group-1-routee-$n")
         system.receptionist ! Receptionist.register(serviceKey, ref)
       }
@@ -140,7 +138,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       // give the group a little time to get a listing from the receptionist
       Thread.sleep(receptionistDelayMs)
 
-      (0 to 3).foreach { n ⇒
+      (0 to 3).foreach { n =>
         val msg = s"message-$n"
         group ! msg
         probe.expectMessage(msg)
@@ -155,13 +153,13 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[DeadLetter]()
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
 
-      (0 to 3).foreach { n ⇒
+      (0 to 3).foreach { n =>
         val msg = s"message-$n"
         /* FIXME cant watch log events until #26432 is fixed
          EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
         group ! msg
         probe.expectMessageType[DeadLetter]
-        /* } */
+      /* } */
       }
 
       testKit.stop(group)
@@ -171,9 +169,9 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val serviceKey = ServiceKey[String]("group-routing-3")
       val probe = createTestProbe[String]()
       val routeeBehavior: Behavior[String] = Behaviors.receiveMessage {
-        case "stop" ⇒
+        case "stop" =>
           Behaviors.stopped
-        case msg ⇒
+        case msg =>
           probe.ref ! msg
           Behaviors.same
       }
@@ -192,7 +190,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       // give the group a little time to get a listing from the receptionist
       Thread.sleep(receptionistDelayMs)
 
-      (0 to 3).foreach { n ⇒
+      (0 to 3).foreach { n =>
         val msg = s"message-$n"
         group ! msg
         probe.expectMessage(msg)
@@ -203,7 +201,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       // give the group a little time to get an updated listing from the receptionist
       Thread.sleep(receptionistDelayMs)
 
-      (0 to 3).foreach { n ⇒
+      (0 to 3).foreach { n =>
         val msg = s"message-$n"
         group ! msg
         probe.expectMessage(msg)

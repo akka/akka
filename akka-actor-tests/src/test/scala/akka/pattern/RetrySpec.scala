@@ -19,7 +19,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
   "pattern.retry" must {
     "run a successful Future immediately" in {
       val retried = retry(
-        () ⇒ Future.successful(5),
+        () => Future.successful(5),
         5,
         1 second
       )
@@ -32,7 +32,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
     "run a successful Future only once" in {
       @volatile var counter = 0
       val retried = retry(
-        () ⇒ Future.successful({
+        () => Future.successful({
           counter += 1
           counter
         }),
@@ -47,7 +47,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
 
     "eventually return a failure for a Future that will never succeed" in {
       val retried = retry(
-        () ⇒ Future.failed(new IllegalStateException("Mexico")),
+        () => Future.failed(new IllegalStateException("Mexico")),
         5,
         100 milliseconds
       )
@@ -68,7 +68,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        () ⇒ attempt,
+        () => attempt,
         10,
         100 milliseconds
       )
@@ -89,7 +89,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        () ⇒ attempt,
+        () => attempt,
         5,
         100 milliseconds
       )

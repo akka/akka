@@ -76,13 +76,13 @@ abstract class ClusterDeathWatchSpec
           context.actorSelection(path3) ! Identify(path3)
 
           def receive = {
-            case ActorIdentity(`path2`, Some(ref)) ⇒
+            case ActorIdentity(`path2`, Some(ref)) =>
               context.watch(ref)
               watchEstablished.countDown
-            case ActorIdentity(`path3`, Some(ref)) ⇒
+            case ActorIdentity(`path3`, Some(ref)) =>
               context.watch(ref)
               watchEstablished.countDown
-            case Terminated(actor) ⇒ testActor ! actor.path
+            case Terminated(actor) => testActor ! actor.path
           }
         }).withDeploy(Deploy.local), name = "observer1")
 
@@ -142,7 +142,7 @@ abstract class ClusterDeathWatchSpec
         system.actorOf(Props(new Actor {
           context.watch(context.actorFor(path))
           def receive = {
-            case t: Terminated ⇒ testActor ! t.actor.path
+            case t: Terminated => testActor ! t.actor.path
           }
         }).withDeploy(Deploy.local), name = "observer3")
 
@@ -167,7 +167,7 @@ abstract class ClusterDeathWatchSpec
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
           val stats = expectMsgType[RemoteWatcher.Stats]
-          stats.watchingRefs should contain(subject5 → testActor)
+          stats.watchingRefs should contain(subject5 -> testActor)
           stats.watchingAddresses should contain(address(fifth))
         }
       }
@@ -235,7 +235,7 @@ abstract class ClusterDeathWatchSpec
 
         val timeout = remainingOrDefault
         try Await.ready(system.whenTerminated, timeout) catch {
-          case _: TimeoutException ⇒
+          case _: TimeoutException =>
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
               system.asInstanceOf[ActorSystemImpl].printTree))
         }

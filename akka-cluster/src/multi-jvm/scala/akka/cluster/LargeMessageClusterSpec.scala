@@ -66,7 +66,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
     override def identifier = 999
     override def manifest(o: AnyRef) = "a"
     override def toBinary(o: AnyRef) = o match {
-      case Slow(payload) ⇒
+      case Slow(payload) =>
         // simulate slow serialization to not completely overload the machine/network, see issue #24576
         Thread.sleep(100)
         payload
@@ -125,9 +125,9 @@ abstract class LargeMessageClusterSpec extends MultiNodeSpec(LargeMessageCluster
         val largeMsg = ("0" * largeMsgSize).getBytes("utf-8")
         val largeMsgBurst = 3
         val repeat = 15
-        for (n ← 1 to repeat) {
+        for (n <- 1 to repeat) {
           val startTime = System.nanoTime()
-          for (_ ← 1 to largeMsgBurst) {
+          for (_ <- 1 to largeMsgBurst) {
             largeEcho3.tell(largeMsg, largeEchoProbe.ref)
           }
 
@@ -161,7 +161,7 @@ abstract class LargeMessageClusterSpec extends MultiNodeSpec(LargeMessageCluster
         val largeMsgSize = 1 * 1000 * 1000
         val payload = ("0" * largeMsgSize).getBytes("utf-8")
         val largeMsg = if (aeronUdpEnabled) payload else Slow(payload)
-        (1 to 3).foreach { _ ⇒
+        (1 to 3).foreach { _ =>
           // this will ping-pong between second and third
           largeEcho2.tell(largeMsg, largeEcho3)
         }

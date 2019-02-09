@@ -37,12 +37,12 @@ final class ActorContextPipeToSelfSpec extends ScalaTestWithActorTestKit(ActorCo
     final case class Msg(response: String, selfName: String, threadName: String)
 
     val probe = TestProbe[Msg]()
-    val behavior = Behaviors.setup[Msg] { context ⇒
+    val behavior = Behaviors.setup[Msg] { context =>
       context.pipeToSelf(future) {
-        case Success(s) ⇒ Msg(s"ok: $s", context.self.path.name, Thread.currentThread().getName)
-        case Failure(e) ⇒ Msg(s"ko: $e", context.self.path.name, Thread.currentThread().getName)
+        case Success(s) => Msg(s"ok: $s", context.self.path.name, Thread.currentThread().getName)
+        case Failure(e) => Msg(s"ko: $e", context.self.path.name, Thread.currentThread().getName)
       }
-      Behaviors.receiveMessage { msg ⇒
+      Behaviors.receiveMessage { msg =>
         probe.ref ! msg
         Behaviors.stopped
       }

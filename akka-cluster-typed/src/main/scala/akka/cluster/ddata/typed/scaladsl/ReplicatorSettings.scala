@@ -4,7 +4,7 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi

@@ -6,8 +6,8 @@ package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 import akka.japi.function.Creator
-import akka.japi.function.{ Function ⇒ JFunction }
-import akka.japi.function.{ Predicate ⇒ JPredicate }
+import akka.japi.function.{ Function => JFunction }
+import akka.japi.function.{ Predicate => JPredicate }
 import akka.actor.typed.{ Behavior, Signal }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -167,10 +167,10 @@ private final class BuiltReceive[T](
   @tailrec
   private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =
     handlers match {
-      case Case(cls, predicate, handler) :: tail ⇒
+      case Case(cls, predicate, handler) :: tail =>
         if ((cls.isEmpty || cls.get.isAssignableFrom(msg.getClass)) && (predicate.isEmpty || predicate.get.test(msg))) handler(msg)
         else receive[M](msg, tail)
-      case _ ⇒
+      case _ =>
         Behaviors.unhandled
     }
 

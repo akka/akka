@@ -49,7 +49,7 @@ private[akka] object ReplayingEvents {
     setup: BehaviorSetup[C, E, S],
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    Behaviors.setup { ctx ⇒
+    Behaviors.setup { ctx =>
       // protect against event recovery stalling forever because of journal overloaded and such
       setup.startRecoveryTimer(snapshot = false)
       new ReplayingEvents[C, E, S](setup.setMdc(MDC.ReplayingEvents), state)
@@ -70,16 +70,16 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)      ⇒ onJournalResponse(r)
-      case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap) ⇒ onRecoveryTick(snap)
-      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
-      case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)      => onJournalResponse(r)
+      case SnapshotterResponse(r)  => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap) => onRecoveryTick(snap)
+      case cmd: IncomingCommand[C] => onCommand(cmd)
+      case RecoveryPermitGranted   => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
-    case PoisonPill ⇒
+    case PoisonPill =>
       state = state.copy(receivedPoisonPill = true)
       this
   }
@@ -88,7 +88,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     response: JournalProtocol.Response): Behavior[InternalProtocol] = {
     try {
       response match {
-        case ReplayedMessage(repr) ⇒
+        case ReplayedMessage(repr) =>
           val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
 
           try {
@@ -98,23 +98,23 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventSeenInInterval = true)
             this
           } catch {
-            case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
+            case NonFatal(ex) => onRecoveryFailure(ex, repr.sequenceNr, Some(event))
           }
-        case RecoverySuccess(highestSeqNr) ⇒
+        case RecoverySuccess(highestSeqNr) =>
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
-        case ReplayMessagesFailure(cause) ⇒
+        case ReplayMessagesFailure(cause) =>
           onRecoveryFailure(cause, state.seqNr, Some(response))
 
-        case _ ⇒
+        case _ =>
           Behaviors.unhandled
       }
     } catch {
-      case ex: UnstashException[_] ⇒
+      case ex: UnstashException[_] =>
         // let supervisor handle it, don't treat it as recovery failure
         throw ex
-      case NonFatal(cause) ⇒
+      case NonFatal(cause) =>
         onRecoveryFailure(cause, state.seqNr, None)
     }
   }
@@ -162,16 +162,16 @@ private[akka] final class ReplayingEvents[C, E, S](
     try {
       setup.onRecoveryFailure(cause)
     } catch {
-      case NonFatal(t) ⇒ setup.log.error(t, "onRecoveryFailure threw exception")
+      case NonFatal(t) => setup.log.error(t, "onRecoveryFailure threw exception")
     }
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
     val msg = message match {
-      case Some(evt) ⇒
+      case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
           s"PersistenceId [${setup.persistenceId.id}]"
-      case None ⇒
+      case None =>
         s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId [${setup.persistenceId.id}]"
     }
 

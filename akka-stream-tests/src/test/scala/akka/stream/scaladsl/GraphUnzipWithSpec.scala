@@ -33,7 +33,7 @@ class GraphUnzipWithSpec extends StreamSpec {
     def right: Outlet[RightOutput]
   }
 
-  val f: (Int ⇒ (Int, String)) = b ⇒ (b + b, b + "+" + b)
+  val f: (Int => (Int, String)) = b => (b + b, b + "+" + b)
 
   def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
     val unzip = b.add(UnzipWith[Int, Int, String](f))
@@ -49,7 +49,7 @@ class GraphUnzipWithSpec extends StreamSpec {
     val leftSubscriber = TestSubscriber.probe[LeftOutput]()
     val rightSubscriber = TestSubscriber.probe[RightOutput]()
 
-    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
       val f = fixture(b)
 
       Source.fromPublisher(p) ~> f.in
@@ -98,7 +98,7 @@ class GraphUnzipWithSpec extends StreamSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val unzip = b.add(UnzipWith(f))
         Source(1 to 4) ~> unzip.in
 
@@ -148,8 +148,8 @@ class GraphUnzipWithSpec extends StreamSpec {
       val leftProbe = TestSubscriber.manualProbe[LeftOutput]()
       val rightProbe = TestSubscriber.manualProbe[RightOutput]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) ⇒ (1 / b, 1 + "/" + b)))
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        val unzip = b.add(UnzipWith[Int, Int, String]((b: Int) => (1 / b, 1 + "/" + b)))
 
         Source(-2 to 2) ~> unzip.in
 
@@ -180,7 +180,7 @@ class GraphUnzipWithSpec extends StreamSpec {
       }
 
       leftProbe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
+        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
       rightProbe.expectError()
 
@@ -195,8 +195,8 @@ class GraphUnzipWithSpec extends StreamSpec {
 
       case class Person(name: String, surname: String, int: Int)
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val unzip = b.add(UnzipWith((a: Person) ⇒ Person.unapply(a).get))
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
+        val unzip = b.add(UnzipWith((a: Person) => Person.unapply(a).get))
 
         Source.single(Person("Caplin", "Capybara", 3)) ~> unzip.in
 
@@ -231,9 +231,9 @@ class GraphUnzipWithSpec extends StreamSpec {
       val probe15 = TestSubscriber.manualProbe[String]()
       val probe21 = TestSubscriber.manualProbe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
 
-        val split22 = (a: (List[Int])) ⇒
+        val split22 = (a: (List[Int])) =>
           (a(0), a(0).toString,
             a(1), a(1).toString,
             a(2), a(2).toString,

@@ -37,13 +37,13 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
 
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
       Behaviors.receiveMessage[InternalProtocol] {
-        case InternalProtocol.RecoveryPermitGranted ⇒
+        case InternalProtocol.RecoveryPermitGranted =>
           becomeReplaying(receivedPoisonPill)
 
-        case _ if receivedPoisonPill ⇒
+        case _ if receivedPoisonPill =>
           Behaviors.unhandled
 
-        case other ⇒
+        case other =>
           if (receivedPoisonPill) {
             if (setup.settings.logOnStashing) setup.log.debug(
               "Discarding message [{}], because actor is to be stopped", other)
@@ -54,7 +54,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
           }
 
       }.receiveSignal {
-        case (_, PoisonPill) ⇒ stay(receivedPoisonPill = true)
+        case (_, PoisonPill) => stay(receivedPoisonPill = true)
       }
     }
     stay(receivedPoisonPill = false)

@@ -44,20 +44,20 @@ object DurableDataSpec {
   class TestDurableStore(failLoad: Boolean, failStore: Boolean) extends Actor {
     import DurableStore._
     def receive = {
-      case LoadAll ⇒
+      case LoadAll =>
         if (failLoad)
           throw new LoadFailed("failed to load durable distributed-data") with NoStackTrace
         else
           sender() ! LoadAllCompleted
 
-      case Store(_, _, reply) ⇒
+      case Store(_, _, reply) =>
         if (failStore) reply match {
-          case Some(StoreReply(_, failureMsg, replyTo)) ⇒ replyTo ! failureMsg
-          case None                                     ⇒
+          case Some(StoreReply(_, failureMsg, replyTo)) => replyTo ! failureMsg
+          case None                                     =>
         }
         else reply match {
-          case Some(StoreReply(successMsg, _, replyTo)) ⇒ replyTo ! successMsg
-          case None                                     ⇒
+          case Some(StoreReply(successMsg, _, replyTo)) => replyTo ! successMsg
+          case None                                     =>
         }
     }
 

@@ -45,7 +45,7 @@ class InvokeWithFeedbackBenchmark {
   @OperationsPerInvocation(100000)
   @Benchmark
   def pass_through_100k_elements(): Unit = {
-    (0 to 100000).foreach { n ⇒
+    (0 to 100000).foreach { n =>
       val f = sinkQueue.pull()
       Await.result(sourceQueue.offer(n), waitForResult)
       Await.result(f, waitForResult)

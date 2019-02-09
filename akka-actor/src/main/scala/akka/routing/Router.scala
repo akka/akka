@@ -113,8 +113,8 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
    */
   def route(message: Any, sender: ActorRef): Unit =
     message match {
-      case akka.routing.Broadcast(msg) ⇒ SeveralRoutees(routees).send(msg, sender)
-      case msg                         ⇒ send(logic.select(msg, routees), message, sender)
+      case akka.routing.Broadcast(msg) => SeveralRoutees(routees).send(msg, sender)
+      case msg                         => send(logic.select(msg, routees), message, sender)
     }
 
   private def send(routee: Routee, msg: Any, sender: ActorRef): Unit = {
@@ -125,8 +125,8 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
   }
 
   private def unwrap(msg: Any): Any = msg match {
-    case env: RouterEnvelope ⇒ env.message
-    case _                   ⇒ msg
+    case env: RouterEnvelope => env.message
+    case _                   => msg
   }
 
   /**

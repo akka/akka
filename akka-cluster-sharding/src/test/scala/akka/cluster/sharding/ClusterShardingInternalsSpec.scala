@@ -19,7 +19,7 @@ object ClusterShardingInternalsSpec {
   case class HandOffStopMessage() extends NoSerializationVerificationNeeded
   class EmptyHandlerActor extends Actor {
     override def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
 
     override def postStop(): Unit = {

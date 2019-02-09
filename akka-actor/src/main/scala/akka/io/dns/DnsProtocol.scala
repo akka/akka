@@ -8,7 +8,7 @@ import java.util
 
 import akka.actor.NoSerializationVerificationNeeded
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.collection.JavaConverters._
 
 /**

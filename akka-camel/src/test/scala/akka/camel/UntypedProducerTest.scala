@@ -34,13 +34,13 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
     "produce a message and receive a normal response" in {
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer")
 
-      val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId → "123"))
+      val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
 
-      val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId → "123"))
+      val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
-        case result: CamelMessage ⇒ result should ===(expected)
-        case unexpected           ⇒ fail("Actor responded with unexpected message:" + unexpected)
+        case result: CamelMessage => result should ===(expected)
+        case unexpected           => fail("Actor responded with unexpected message:" + unexpected)
       }
 
     }
@@ -48,15 +48,15 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
     "produce a message and receive a failure response" in {
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer-failure")
 
-      val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId → "123"))
+      val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
         val future = producer.ask(message)(timeout).failed
 
         Await.result(future, timeout) match {
-          case e: AkkaCamelException ⇒
+          case e: AkkaCamelException =>
             e.getMessage should ===("failure")
-            e.headers should ===(Map(CamelMessage.MessageExchangeId → "123"))
-          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
+            e.headers should ===(Map(CamelMessage.MessageExchangeId -> "123"))
+          case unexpected => fail("Actor responded with unexpected message:" + unexpected)
         }
       }
     }
@@ -84,8 +84,8 @@ object UntypedProducerTest {
       from("direct:producer-test-1").process(new Processor() {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
-            case "fail" ⇒ throw new Exception("failure")
-            case body   ⇒ exchange.getOut.setBody("received %s" format body)
+            case "fail" => throw new Exception("failure")
+            case body   => exchange.getOut.setBody("received %s" format body)
           }
         }
       })

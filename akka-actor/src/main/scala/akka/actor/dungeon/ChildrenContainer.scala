@@ -112,8 +112,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
-      case _ ⇒ None
+      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
+      case _ => None
     }
 
     override def children: immutable.Iterable[ActorRef] =
@@ -130,8 +130,8 @@ private[akka] object ChildrenContainer {
       else new NormalChildrenContainer(c.updated(name, ChildNameReserved))
 
     override def unreserve(name: String): ChildrenContainer = c.get(name) match {
-      case Some(ChildNameReserved) ⇒ NormalChildrenContainer(c - name)
-      case _                       ⇒ this
+      case Some(ChildNameReserved) => NormalChildrenContainer(c - name)
+      case _                       => this
     }
 
     override def toString =
@@ -163,8 +163,8 @@ private[akka] object ChildrenContainer {
     override def remove(child: ActorRef): ChildrenContainer = {
       val t = toDie - child
       if (t.isEmpty) reason match {
-        case Termination ⇒ TerminatedChildrenContainer
-        case _           ⇒ NormalChildrenContainer(c - child.path.name)
+        case Termination => TerminatedChildrenContainer
+        case _           => NormalChildrenContainer(c - child.path.name)
       }
       else copy(c - child.path.name, t)
     }
@@ -172,8 +172,8 @@ private[akka] object ChildrenContainer {
     override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
-      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
-      case _ ⇒ None
+      case c @ Some(crs: ChildRestartStats) if (crs.child == actor) => c.asInstanceOf[Option[ChildRestartStats]]
+      case _ => None
     }
 
     override def children: immutable.Iterable[ActorRef] =
@@ -185,16 +185,16 @@ private[akka] object ChildrenContainer {
     override def shallDie(actor: ActorRef): ChildrenContainer = copy(toDie = toDie + actor)
 
     override def reserve(name: String): ChildrenContainer = reason match {
-      case Termination ⇒ throw new IllegalStateException("cannot reserve actor name '" + name + "': terminating")
-      case _ ⇒
+      case Termination => throw new IllegalStateException("cannot reserve actor name '" + name + "': terminating")
+      case _ =>
         if (c contains name)
           throw InvalidActorNameException(s"actor name [$name] is not unique!")
         else copy(c = c.updated(name, ChildNameReserved))
     }
 
     override def unreserve(name: String): ChildrenContainer = c.get(name) match {
-      case Some(ChildNameReserved) ⇒ copy(c = c - name)
-      case _                       ⇒ this
+      case Some(ChildNameReserved) => copy(c = c - name)
+      case _                       => this
     }
 
     override def isTerminating: Boolean = reason == Termination

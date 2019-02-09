@@ -180,13 +180,13 @@ trait ActorSubscriber extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
-    case _: OnNext ⇒
+    case _: OnNext =>
       requested -= 1
       if (!_canceled) {
         super.aroundReceive(receive, msg)
         request(requestStrategy.requestDemand(remainingRequested))
       }
-    case OnSubscribe(sub) ⇒
+    case OnSubscribe(sub) =>
       if (subscription.isEmpty) {
         subscription = Some(sub)
         if (_canceled) {
@@ -196,12 +196,12 @@ trait ActorSubscriber extends Actor {
           sub.request(remainingRequested)
       } else
         sub.cancel()
-    case OnComplete | OnError(_) ⇒
+    case OnComplete | OnError(_) =>
       if (!_canceled) {
         _canceled = true
         super.aroundReceive(receive, msg)
       }
-    case _ ⇒
+    case _ =>
       super.aroundReceive(receive, msg)
       request(requestStrategy.requestDemand(remainingRequested))
   }
@@ -218,7 +218,7 @@ trait ActorSubscriber extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
-    state.get(self) foreach { s ⇒
+    state.get(self) foreach { s =>
       // restore previous state
       subscription = s.subscription
       requested = s.requested
@@ -268,10 +268,10 @@ trait ActorSubscriber extends Actor {
   protected def cancel(): Unit =
     if (!_canceled) {
       subscription match {
-        case Some(s) ⇒
+        case Some(s) =>
           context.stop(self)
           s.cancel()
-        case _ ⇒
+        case _ =>
           _canceled = true // cancel will be signaled once a subscription arrives
       }
     }

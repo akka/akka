@@ -36,27 +36,27 @@ private[dns] object ResolvConfParser {
     var ndots = 1
 
     lines.map(_.trim)
-      .filter { line ⇒
+      .filter { line =>
         // Ignore blank lines and comments
         line.nonEmpty && line(0) != ';' && line(0) != '#'
       }
-      .foreach { line ⇒
+      .foreach { line =>
         val (label, args) = line.span(!_.isWhitespace)
         def trimmedArgs = args.trim
         label match {
-          case `DomainLabel` ⇒
+          case `DomainLabel` =>
             search = List(trimmedArgs)
-          case `SearchLabel` ⇒
+          case `SearchLabel` =>
             search = trimmedArgs.split("\\s+").toList
-          case `OptionsLabel` ⇒
-            args.split("\\s+").foreach { option ⇒
+          case `OptionsLabel` =>
+            args.split("\\s+").foreach { option =>
               // We're only interested in ndots
               if (option.startsWith(NdotsOption)) {
                 // Allow exception to fall through to Try
                 ndots = option.drop(NdotsOption.length).toInt
               }
             }
-          case _ ⇒ // Ignore everything else
+          case _ => // Ignore everything else
         }
       }
 

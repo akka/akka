@@ -14,13 +14,13 @@ object TypedBenchmarkActors {
   // we pass the respondTo actor ref into the behavior
   final case object Message
 
-  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive { (ctx, msg) ⇒
+  private def echoBehavior(respondTo: ActorRef[Message.type]): Behavior[Message.type] = Behaviors.receive { (ctx, msg) =>
     respondTo ! Message
     Behaviors.same
   }
 
   private def echoSender(messagesPerPair: Int, onDone: ActorRef[Done], batchSize: Int, childProps: Props): Behavior[Message.type] =
-    Behaviors.setup { ctx ⇒
+    Behaviors.setup { ctx =>
       val echo = ctx.spawn(echoBehavior(ctx.self), "echo", childProps)
       var left = messagesPerPair / 2
       var batch = 0
@@ -39,7 +39,7 @@ object TypedBenchmarkActors {
           false
       }
 
-      Behaviors.receiveMessage { msg ⇒
+      Behaviors.receiveMessage { msg =>
         batch -= 1
         if (batch <= 0 && !sendBatch()) {
           onDone ! Done
@@ -55,9 +55,9 @@ object TypedBenchmarkActors {
 
   def echoActorsSupervisor(numMessagesPerActorPair: Int, numActors: Int, dispatcher: String, batchSize: Int,
                            shutdownTimeout: FiniteDuration): Behavior[Start] =
-    Behaviors.receive { (ctx, msg) ⇒
+    Behaviors.receive { (ctx, msg) =>
       msg match {
-        case Start(respondTo) ⇒
+        case Start(respondTo) =>
           // note: no protection against accidentally running bench sessions in parallel
           val sessionBehavior = startEchoBenchSession(numMessagesPerActorPair, numActors, dispatcher, batchSize, respondTo)
           ctx.spawnAnonymous(sessionBehavior)
@@ -70,16 +70,16 @@ object TypedBenchmarkActors {
 
     val numPairs = numActors / 2
 
-    Behaviors.setup[Any] { ctx ⇒
+    Behaviors.setup[Any] { ctx =>
       val props = Props.empty.withDispatcherFromConfig("akka.actor." + dispatcher)
-      val pairs = (1 to numPairs).map { _ ⇒
+      val pairs = (1 to numPairs).map { _ =>
         ctx.spawnAnonymous(echoSender(messagesPerPair, ctx.self.narrow[Done], batchSize, props), props)
       }
       val startNanoTime = System.nanoTime()
       pairs.foreach(_ ! Message)
       var interactionsLeft = numPairs
       Behaviors.receiveMessage {
-        case Done ⇒
+        case Done =>
           interactionsLeft -= 1
           if (interactionsLeft == 0) {
             val totalNumMessages = numPairs * messagesPerPair

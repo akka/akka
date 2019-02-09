@@ -47,19 +47,19 @@ class FlowFoldSpec extends StreamSpec {
 
     "propagate an error" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFold[NotUsed](NotUsed)(Keep.none)
+      val future = inputSource.map(x => if (x > 50) throw error else x).runFold[NotUsed](NotUsed)(Keep.none)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "complete future with failure when the folding function throws and the supervisor strategy decides to stop" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = inputSource.runFold(0)((x, y) ⇒ if (x > 50) throw error else x + y)
+      val future = inputSource.runFold(0)((x, y) => if (x > 50) throw error else x + y)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "resume with the accumulated state when the folding function throws and the supervisor strategy decides to resume" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val fold = Sink.fold[Int, Int](0)((x, y) ⇒ if (y == 50) throw error else x + y)
+      val fold = Sink.fold[Int, Int](0)((x, y) => if (y == 50) throw error else x + y)
       val future = inputSource.runWith(fold.withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider)))
 
       Await.result(future, 3.seconds) should be(expected - 50)
@@ -67,7 +67,7 @@ class FlowFoldSpec extends StreamSpec {
 
     "resume and reset the state when the folding function throws when the supervisor strategy decides to restart" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val fold = Sink.fold[Int, Int](0)((x, y) ⇒ if (y == 50) throw error else x + y)
+      val fold = Sink.fold[Int, Int](0)((x, y) => if (y == 50) throw error else x + y)
       val future = inputSource.runWith(fold.withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider)))
 
       Await.result(future, 3.seconds) should be((51 to 100).sum)
@@ -75,7 +75,7 @@ class FlowFoldSpec extends StreamSpec {
 
     "complete future and return zero given an empty stream" in assertAllStagesStopped {
       val futureValue =
-        Source.fromIterator[Int](() ⇒ Iterator.empty)
+        Source.fromIterator[Int](() => Iterator.empty)
           .runFold(0)(_ + _)
 
       Await.result(futureValue, 3.seconds) should be(0)

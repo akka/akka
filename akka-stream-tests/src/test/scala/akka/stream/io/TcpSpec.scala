@@ -77,10 +77,10 @@ class TcpSpec extends StreamSpec("""
       val resultFuture =
         Source.fromPublisher(idle.publisherProbe)
           .via(Tcp().outgoingConnection(server.address))
-          .runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+          .runFold(ByteString.empty)((acc, in) => acc ++ in)
       val serverConnection = server.waitAccept()
 
-      for (in ← testInput) {
+      for (in <- testInput) {
         serverConnection.write(in)
       }
 
@@ -370,7 +370,7 @@ class TcpSpec extends StreamSpec("""
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
-        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn =>
           conn.flow.join(writeButIgnoreRead).run()
         })(Keep.left)
           .run()
@@ -391,7 +391,7 @@ class TcpSpec extends StreamSpec("""
       val serverAddress = temporaryServerAddress()
 
       val binding =
-        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn =>
           conn.flow.join(Flow[ByteString]).run()
         })(Keep.left)
           .run()
@@ -425,7 +425,7 @@ class TcpSpec extends StreamSpec("""
           Source.single(testMsg)
             .concat(Source.maybe[ByteString])
             .via(Tcp(system2).outgoingConnection(serverAddress))
-            .runForeach { msg ⇒ probe.ref ! msg }(mat2)
+            .runForeach { msg => probe.ref ! msg }(mat2)
 
         // Ensure first that the actor is there
         probe.expectMsg(testMsg)
@@ -438,7 +438,7 @@ class TcpSpec extends StreamSpec("""
         try {
           probe.expectMsgType[ActorIdentity].ref.get
         } catch {
-          case _: AssertionError | _: NoSuchElementException ⇒
+          case _: AssertionError | _: NoSuchElementException =>
             val tree = system2.asInstanceOf[ExtendedActorSystem].printTree
             fail(s"No TCP selector actor running at [$path], actor tree: $tree")
         }
@@ -486,7 +486,7 @@ class TcpSpec extends StreamSpec("""
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
-        Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+        Source(testInput).via(Tcp().outgoingConnection(serverAddress)).runFold(ByteString.empty)((acc, in) => acc ++ in)
 
       binding.whenUnbound.value should be(None)
       resultFuture.futureValue should be(expectedOutput)
@@ -518,7 +518,7 @@ class TcpSpec extends StreamSpec("""
           .via(echoConnection)
           .via(echoConnection)
           .via(echoConnection)
-          .runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+          .runFold(ByteString.empty)((acc, in) => acc ++ in)
 
       resultFuture.futureValue should be(expectedOutput)
       binding.unbind().futureValue
@@ -589,8 +589,8 @@ class TcpSpec extends StreamSpec("""
             serverSystem.log.info("port open")
             false
           } catch {
-            case _: SocketTimeoutException ⇒ true
-            case _: SocketException        ⇒ true
+            case _: SocketTimeoutException => true
+            case _: SocketException        => true
           }
 
         import serverSystem.dispatcher
@@ -599,7 +599,7 @@ class TcpSpec extends StreamSpec("""
             // accept one connection, then cancel
             .take(1)
             // keep the accepted request hanging
-            .map { connection ⇒
+            .map { connection =>
               serverGotRequest.success(Done)
               Future {
                 Await.ready(completeRequest, remainingOrDefault) // wait for the port close below
@@ -637,7 +637,7 @@ class TcpSpec extends StreamSpec("""
 
       val (bindingFuture, connection) = Tcp(system).bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
 
-      val proxy = connection.map { c ⇒
+      val proxy = connection.map { c =>
         c.handleWith(Flow[ByteString])
       }
 
@@ -658,12 +658,12 @@ class TcpSpec extends StreamSpec("""
 
       val accept2ConnectionSink: Sink[IncomingConnection, NotUsed] =
         Flow[IncomingConnection].take(2)
-          .mapAsync(2) { incoming ⇒
+          .mapAsync(2) { incoming =>
             val connectionNr = connectionCounter.incrementAndGet()
             if (connectionNr == 1) {
               // echo
               incoming.flow.joinMat(
-                Flow[ByteString].mapMaterializedValue { mat ⇒
+                Flow[ByteString].mapMaterializedValue { mat =>
                   firstClientConnected.trySuccess(())
                   mat
                 }.watchTermination()(Keep.right)
@@ -742,7 +742,7 @@ class TcpSpec extends StreamSpec("""
         // also - byte is our framing
         Flow[ByteString].mapConcat(_.utf8String.toList)
           .takeWhile(_ != '\n')
-          .map(c ⇒ ByteString(c)),
+          .map(c => ByteString(c)),
         address.getHostName,
         address.getPort,
         sslContext,
@@ -754,7 +754,7 @@ class TcpSpec extends StreamSpec("""
 
       val chars = "hello\n".toList.map(_.toString)
       val (connectionF, result) =
-        Source(chars).map(c ⇒ ByteString(c))
+        Source(chars).map(c => ByteString(c))
           .concat(Source.maybe) // do not complete it from our side
           .viaMat(connectionFlow)(Keep.right)
           .map(_.utf8String)

@@ -23,7 +23,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
   "Future source" must {
 
     val underlying: Source[Int, String] =
-      Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")
+      Source(List(1, 2, 3)).mapMaterializedValue(_ => "foo")
 
     "emit the elements of the already successful future source" in assertAllStagesStopped {
       val (sourceMatVal, sinkMatVal) =
@@ -117,7 +117,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
       val materializationLatch = TestLatch(1)
       val (sourceMatVal, sinkMatVal) =
         Source.fromFutureSource(sourcePromise.future)
-          .mapMaterializedValue { value ⇒
+          .mapMaterializedValue { value =>
             materializationLatch.countDown()
             value
           }
@@ -160,7 +160,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
 
       subscriber.ensureSubscription()
 
-      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ ⇒ "woho"))
+      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ => "woho"))
 
       // materialized value completes but still no demand
       matVal.futureValue should ===("woho")
@@ -187,7 +187,7 @@ class FutureFlattenSourceSpec extends StreamSpec {
 
       subscriber.ensureSubscription()
 
-      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ ⇒ "woho"))
+      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ => "woho"))
 
       // materialized value completes but still no demand
       matVal.futureValue should ===("woho")

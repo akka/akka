@@ -13,7 +13,7 @@ import javax.net.ssl.SSLSession
 import akka.actor._
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.io.Inet.SocketOption
-import akka.io.{ IO, Tcp ⇒ IoTcp }
+import akka.io.{ IO, Tcp => IoTcp }
 import akka.stream.TLSProtocol.NegotiateNewSession
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
@@ -39,7 +39,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    * @param whenUnbound A future that is completed when the server is unbound, or failed if the server binding fails
    */
   final case class ServerBinding @InternalApi private[akka] (localAddress: InetSocketAddress)(
-    private val unbindAction: () ⇒ Future[Unit],
+    private val unbindAction: () => Future[Unit],
     val whenUnbound:          Future[Done]
   ) {
     def unbind(): Future[Unit] = unbindAction()
@@ -81,7 +81,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   private val tlsWrapping: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] = BidiFlow.fromFlows(
     Flow[ByteString].map(TLSProtocol.SendBytes),
     Flow[TLSProtocol.SslTlsInbound].collect {
-      case sb: TLSProtocol.SessionBytes ⇒ sb.bytes
+      case sb: TLSProtocol.SessionBytes => sb.bytes
       // ignore other kinds of inbounds (currently only Truncated)
     }
   )
@@ -164,7 +164,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     options:     immutable.Traversable[SocketOption] = Nil,
     halfClose:   Boolean                             = false,
     idleTimeout: Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
-    bind(interface, port, backlog, options, halfClose, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
+    bind(interface, port, backlog, options, halfClose, idleTimeout).to(Sink.foreach { conn: IncomingConnection =>
       conn.flow.join(handler).run()
     }).run()
   }
@@ -207,8 +207,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       settings.ioSettings)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
-      case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
-      case _                 ⇒ tcpFlow
+      case d: FiniteDuration => tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
+      case _                 => tcpFlow
     }
 
   }
@@ -274,12 +274,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   @InternalApi private[akka] def outgoingTlsConnectionWithSSLEngine(
     remoteAddress:   InetSocketAddress,
-    createSSLEngine: () ⇒ SSLEngine,
+    createSSLEngine: () => SSLEngine,
     localAddress:    Option[InetSocketAddress]           = None,
     options:         immutable.Traversable[SocketOption] = Nil,
     connectTimeout:  Duration                            = Duration.Inf,
     idleTimeout:     Duration                            = Duration.Inf,
-    verifySession:   SSLSession ⇒ Try[Unit],
+    verifySession:   SSLSession => Try[Unit],
     closing:         TLSClosing                          = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
@@ -309,7 +309,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
     val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
-    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection ⇒
+    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(
         flow = incomingConnection.flow.join(tls)
       )
@@ -322,16 +322,16 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   @InternalApi private[akka] def bindTlsWithSSLEngine(
     interface:       String,
     port:            Int,
-    createSSLEngine: () ⇒ SSLEngine,
+    createSSLEngine: () => SSLEngine,
     backlog:         Int                                 = 100,
     options:         immutable.Traversable[SocketOption] = Nil,
     idleTimeout:     Duration                            = Duration.Inf,
-    verifySession:   SSLSession ⇒ Try[Unit],
+    verifySession:   SSLSession => Try[Unit],
     closing:         TLSClosing                          = IgnoreComplete): Source[IncomingConnection, Future[ServerBinding]] = {
 
     val tls = tlsWrapping.atop(TLS(createSSLEngine, verifySession, closing)).reversed
 
-    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection ⇒
+    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(
         flow = incomingConnection.flow.join(tls)
       )
@@ -359,7 +359,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     options:             immutable.Traversable[SocketOption] = Nil,
     idleTimeout:         Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
     bindTls(interface, port, sslContext, negotiateNewSession, backlog, options, idleTimeout)
-      .to(Sink.foreach { conn: IncomingConnection ⇒
+      .to(Sink.foreach { conn: IncomingConnection =>
         conn.handleWith(handler)
       }).run()
   }

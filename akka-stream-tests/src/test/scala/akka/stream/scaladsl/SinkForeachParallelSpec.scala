@@ -26,8 +26,8 @@ class SinkForeachParallelSpec extends StreamSpec {
       import system.dispatcher
 
       val probe = TestProbe()
-      val latch = (1 to 4).map(_ → TestLatch(1)).toMap
-      val p = Source(1 to 4).runWith(Sink.foreachParallel(4)((n: Int) ⇒ {
+      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
+      val p = Source(1 to 4).runWith(Sink.foreachParallel(4)((n: Int) => {
         Await.ready(latch(n), 5.seconds)
         probe.ref ! n
       }))
@@ -51,9 +51,9 @@ class SinkForeachParallelSpec extends StreamSpec {
       import system.dispatcher
 
       val probe = TestProbe()
-      val latch = (1 to 5).map(_ → TestLatch()).toMap
+      val latch = (1 to 5).map(_ -> TestLatch()).toMap
 
-      val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) ⇒ {
+      val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) => {
         probe.ref ! n
         Await.ready(latch(n), 5.seconds)
       }))
@@ -62,7 +62,7 @@ class SinkForeachParallelSpec extends StreamSpec {
 
       assert(!p.isCompleted)
 
-      for (i ← 1 to 4) latch(i).countDown()
+      for (i <- 1 to 4) latch(i).countDown()
 
       latch(5).countDown()
       probe.expectMsg(5)
@@ -78,7 +78,7 @@ class SinkForeachParallelSpec extends StreamSpec {
       val probe = TestProbe()
       val latch = TestLatch(1)
 
-      val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) ⇒ {
+      val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) => {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
         else {
           probe.ref ! n
@@ -99,7 +99,7 @@ class SinkForeachParallelSpec extends StreamSpec {
       val element4Latch = new CountDownLatch(1)
       val errorLatch = new CountDownLatch(2)
 
-      val p = Source.fromIterator(() ⇒ Iterator.from(1)).runWith(Sink.foreachParallel(3)((n: Int) ⇒ {
+      val p = Source.fromIterator(() => Iterator.from(1)).runWith(Sink.foreachParallel(3)((n: Int) => {
         if (n == 3) {
           // Error will happen only after elements 1, 2 has been processed
           errorLatch.await(5, TimeUnit.SECONDS)
@@ -122,7 +122,7 @@ class SinkForeachParallelSpec extends StreamSpec {
     "handle empty source" in assertAllStagesStopped {
       import system.dispatcher
 
-      val p = Source(List.empty[Int]).runWith(Sink.foreachParallel(3)(a ⇒ ()))
+      val p = Source(List.empty[Int]).runWith(Sink.foreachParallel(3)(a => ()))
 
       Await.result(p, 200.seconds)
     }

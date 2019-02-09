@@ -19,11 +19,11 @@ object GetShardTypeNamesSpec {
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int ⇒ (msg.toString, msg)
+    case msg: Int => (msg.toString, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg: Int ⇒ (msg % 10).toString
+    case msg: Int => (msg % 10).toString
   }
 }
 

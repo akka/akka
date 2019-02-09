@@ -37,9 +37,9 @@ class TakeLastSinkSpec extends StreamSpec {
 
       val result: Future[Seq[Student]] = sourceOfStudents.runWith(Sink.takeLast(3))
 
-      result.foreach { topThree ⇒
+      result.foreach { topThree =>
         println("#### Top students ####")
-        topThree.reverse foreach { s ⇒
+        topThree.reverse foreach { s =>
           println(s"Name: ${s.name}, GPA: ${s.gpa}")
         }
       }

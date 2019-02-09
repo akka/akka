@@ -23,8 +23,8 @@ class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
   override def identifier = 99999
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: TwoPhaseSet ⇒ twoPhaseSetToProto(m).toByteArray
-    case _ ⇒ throw new IllegalArgumentException(
+    case m: TwoPhaseSet => twoPhaseSetToProto(m).toByteArray
+    case _ => throw new IllegalArgumentException(
       s"Can't serialize object of type ${obj.getClass}")
   }
 
@@ -54,8 +54,8 @@ class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
     val msg = TwoPhaseSetMessages.TwoPhaseSet.parseFrom(bytes)
     val addsSet = msg.getAddsList.iterator.asScala.toSet
     val removalsSet = msg.getRemovalsList.iterator.asScala.toSet
-    val adds = addsSet.foldLeft(GSet.empty[String])((acc, el) ⇒ acc.add(el))
-    val removals = removalsSet.foldLeft(GSet.empty[String])((acc, el) ⇒ acc.add(el))
+    val adds = addsSet.foldLeft(GSet.empty[String])((acc, el) => acc.add(el))
+    val removals = removalsSet.foldLeft(GSet.empty[String])((acc, el) => acc.add(el))
     // GSet will accumulate deltas when adding elements,
     // but those are not of interest in the result of the deserialization
     TwoPhaseSet(adds.resetDelta, removals.resetDelta)
@@ -67,8 +67,8 @@ class TwoPhaseSetSerializerWithCompression(system: ExtendedActorSystem)
   extends TwoPhaseSetSerializer(system) {
   //#compression
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: TwoPhaseSet ⇒ compress(twoPhaseSetToProto(m))
-    case _ ⇒ throw new IllegalArgumentException(
+    case m: TwoPhaseSet => compress(twoPhaseSetToProto(m))
+    case _ => throw new IllegalArgumentException(
       s"Can't serialize object of type ${obj.getClass}")
   }
 

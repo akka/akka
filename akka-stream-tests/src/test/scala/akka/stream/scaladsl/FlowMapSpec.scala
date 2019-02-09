@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
@@ -19,8 +19,8 @@ class FlowMapSpec extends StreamSpec with ScriptedTest {
   "A Map" must {
 
     "map" in {
-      def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x = random.nextInt(); Seq(x) → Seq(x.toString) }: _*)
-      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.map(_.toString)))
+      def script = Script(TestConfig.RandomTestRange map { _ => val x = random.nextInt(); Seq(x) -> Seq(x.toString) }: _*)
+      TestConfig.RandomTestRange foreach (_ => runScript(script, settings)(_.map(_.toString)))
     }
 
     "not blow up with high request counts" in {
@@ -30,7 +30,7 @@ class FlowMapSpec extends StreamSpec with ScriptedTest {
         runWith(Sink.asPublisher(false)).subscribe(probe)
 
       val subscription = probe.expectSubscription()
-      for (_ ← 1 to 10000) {
+      for (_ <- 1 to 10000) {
         subscription.request(Int.MaxValue)
       }
 

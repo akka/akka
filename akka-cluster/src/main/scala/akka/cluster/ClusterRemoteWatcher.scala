@@ -81,16 +81,16 @@ private[cluster] class ClusterRemoteWatcher(
   override def receive = receiveClusterEvent orElse super.receive
 
   def receiveClusterEvent: Actor.Receive = {
-    case state: CurrentClusterState ⇒
-      clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
+    case state: CurrentClusterState =>
+      clusterNodes = state.members.collect { case m if m.address != selfAddress => m.address }
       clusterNodes foreach takeOverResponsibility
       unreachable = unreachable diff clusterNodes
-    case MemberJoined(m)                      ⇒ memberJoined(m)
-    case MemberUp(m)                          ⇒ memberUp(m)
-    case MemberWeaklyUp(m)                    ⇒ memberUp(m)
-    case MemberRemoved(m, previousStatus)     ⇒ memberRemoved(m, previousStatus)
-    case _: MemberEvent                       ⇒ // not interesting
-    case DelayedQuarantine(m, previousStatus) ⇒ delayedQuarantine(m, previousStatus)
+    case MemberJoined(m)                      => memberJoined(m)
+    case MemberUp(m)                          => memberUp(m)
+    case MemberWeaklyUp(m)                    => memberUp(m)
+    case MemberRemoved(m, previousStatus)     => memberRemoved(m, previousStatus)
+    case _: MemberEvent                       => // not interesting
+    case DelayedQuarantine(m, previousStatus) => delayedQuarantine(m, previousStatus)
   }
 
   private def memberJoined(m: Member): Unit = {
@@ -129,7 +129,7 @@ private[cluster] class ClusterRemoteWatcher(
   def quarantineOldIncarnation(newIncarnation: Member): Unit = {
     // If new incarnation of same host:port is seen then quarantine previous incarnation
     if (pendingDelayedQuarantine.nonEmpty)
-      pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation ⇒
+      pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation =>
         pendingDelayedQuarantine -= oldIncarnation
         quarantine(oldIncarnation.address, Some(oldIncarnation.longUid),
           s"Cluster member removed, new incarnation joined", harmless = true)

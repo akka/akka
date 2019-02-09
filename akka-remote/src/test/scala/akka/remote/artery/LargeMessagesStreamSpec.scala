@@ -19,7 +19,7 @@ object LargeMessagesStreamSpec {
 
   class EchoSize extends Actor {
     def receive = {
-      case Ping(bytes) ⇒ sender() ! Pong(bytes.size)
+      case Ping(bytes) => sender() ! Pong(bytes.size)
     }
   }
 }

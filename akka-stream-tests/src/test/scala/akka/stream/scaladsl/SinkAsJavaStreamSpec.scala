@@ -28,7 +28,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail if parent stream is failed" in {
-      val javaSource = Source(1 to 100).map(_ ⇒ throw TE("")).runWith(StreamConverters.asJavaStream())
+      val javaSource = Source(1 to 100).map(_ => throw TE("")).runWith(StreamConverters.asJavaStream())
       a[TE] shouldBe thrownBy {
         javaSource.findFirst()
       }

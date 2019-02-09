@@ -31,11 +31,11 @@ object RemotingSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case (p: Props, n: String) ⇒ sender() ! context.actorOf(Props[Echo1], n)
-      case ex: Exception         ⇒ throw ex
-      case ActorForReq(s)        ⇒ sender() ! context.actorFor(s)
-      case ActorSelReq(s)        ⇒ sender() ! context.actorSelection(s)
-      case x                     ⇒ target = sender(); sender() ! x
+      case (p: Props, n: String) => sender() ! context.actorOf(Props[Echo1], n)
+      case ex: Exception         => throw ex
+      case ActorForReq(s)        => sender() ! context.actorFor(s)
+      case ActorSelReq(s)        => sender() ! context.actorSelection(s)
+      case x                     => target = sender(); sender() ! x
     }
 
     override def preStart(): Unit = {}
@@ -50,17 +50,17 @@ object RemotingSpec {
 
   class Echo2 extends Actor {
     def receive = {
-      case "ping"                ⇒ sender() ! (("pong", sender()))
-      case a: ActorRef           ⇒ a ! (("ping", sender()))
-      case ("ping", a: ActorRef) ⇒ sender() ! (("pong", a))
-      case ("pong", a: ActorRef) ⇒ a ! (("pong", sender().path.toSerializationFormat))
+      case "ping"                => sender() ! (("pong", sender()))
+      case a: ActorRef           => a ! (("ping", sender()))
+      case ("ping", a: ActorRef) => sender() ! (("pong", a))
+      case ("pong", a: ActorRef) => a ! (("pong", sender().path.toSerializationFormat))
     }
   }
 
   class Proxy(val one: ActorRef, val another: ActorRef) extends Actor {
     def receive = {
-      case s if sender().path == one.path     ⇒ another ! s
-      case s if sender().path == another.path ⇒ one ! s
+      case s if sender().path == one.path     => another ! s
+      case s if sender().path == another.path => one ! s
     }
   }
 
@@ -142,10 +142,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   val remoteSystem = ActorSystem("remote-sys", conf)
 
   for (
-    (name, proto) ← Seq(
-      "/gonk" → "tcp",
-      "/zagzag" → "udp",
-      "/roghtaar" → "ssl.tcp")
+    (name, proto) <- Seq(
+      "/gonk" -> "tcp",
+      "/zagzag" -> "udp",
+      "/roghtaar" -> "ssl.tcp")
   ) deploy(system, Deploy(name, scope = RemoteScope(getOtherAddress(remoteSystem, proto))))
 
   def getOtherAddress(sys: ActorSystem, proto: String) =
@@ -159,19 +159,19 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val here = system.actorFor("akka.test://remote-sys@localhost:12346/user/echo")
 
-  private def verifySend(msg: Any)(afterSend: ⇒ Unit): Unit = {
+  private def verifySend(msg: Any)(afterSend: => Unit): Unit = {
     val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {
-        case x: Int ⇒ sender() ! byteStringOfSize(x)
-        case x      ⇒ sender() ! x
+        case x: Int => sender() ! byteStringOfSize(x)
+        case x      => sender() ! x
       }
     }).withDeploy(Deploy.local), bigBounceId)
     val bigBounceHere = system.actorFor(s"akka.test://remote-sys@localhost:12346/user/$bigBounceId")
 
     val eventForwarder = system.actorOf(Props(new Actor {
       def receive = {
-        case x ⇒ testActor ! x
+        case x => testActor ! x
       }
     }).withDeploy(Deploy.local))
     system.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])
@@ -220,8 +220,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
-        case ("pong", s: akka.pattern.PromiseActorRef) ⇒ // good
-        case m                                         ⇒ fail(m + " was not (pong, AskActorRef)")
+        case ("pong", s: akka.pattern.PromiseActorRef) => // good
+        case m                                         => fail(m + " was not (pong, AskActorRef)")
       }
     }
 
@@ -235,39 +235,39 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val tcpOnlyConfig = ConfigFactory.parseString("""akka.remote.enabled-transports = ["akka.remote.netty.tcp"]""").
         withFallback(remoteSystem.settings.config)
       val moreSystems = Vector.fill(5)(ActorSystem(remoteSystem.name, tcpOnlyConfig))
-      moreSystems foreach { sys ⇒
+      moreSystems foreach { sys =>
         sys.eventStream.publish(TestEvent.Mute(
           EventFilter[EndpointDisassociatedException](),
           EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(Props[Echo2], name = "echo")
       }
-      val moreRefs = moreSystems map (sys ⇒ system.actorSelection(RootActorPath(getOtherAddress(sys, "tcp")) / "user" / "echo"))
+      val moreRefs = moreSystems map (sys => system.actorSelection(RootActorPath(getOtherAddress(sys, "tcp")) / "user" / "echo"))
       val aliveEcho = system.actorSelection(RootActorPath(getOtherAddress(remoteSystem, "tcp")) / "user" / "echo")
       val n = 100
 
       // first everything is up and running
-      1 to n foreach { x ⇒
+      1 to n foreach { x =>
         aliveEcho ! "ping"
         moreRefs(x % moreSystems.size) ! "ping"
       }
 
       within(5.seconds) {
-        receiveN(n * 2) foreach { reply ⇒ reply should ===(("pong", testActor)) }
+        receiveN(n * 2) foreach { reply => reply should ===(("pong", testActor)) }
       }
 
       // then we shutdown all but one system to simulate broken connections
-      moreSystems foreach { sys ⇒
+      moreSystems foreach { sys =>
         shutdown(sys)
       }
 
-      1 to n foreach { x ⇒
+      1 to n foreach { x =>
         aliveEcho ! "ping"
         moreRefs(x % moreSystems.size) ! "ping"
       }
 
       // ping messages to aliveEcho should go through even though we use many different broken connections
       within(5.seconds) {
-        receiveN(n) foreach { reply ⇒ reply should ===(("pong", testActor)) }
+        receiveN(n) foreach { reply => reply should ===(("pong", testActor)) }
       }
     }
 
@@ -319,8 +319,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "look-up actors across node boundaries" in {
       val l = system.actorOf(Props(new Actor {
         def receive = {
-          case (p: Props, n: String) ⇒ sender() ! context.actorOf(p, n)
-          case ActorForReq(s)        ⇒ sender() ! context.actorFor(s)
+          case (p: Props, n: String) => sender() ! context.actorOf(p, n)
+          case ActorForReq(s)        => sender() ! context.actorFor(s)
         }
       }), "looker1")
       // child is configured to be deployed on remote-sys (remoteSystem)
@@ -362,8 +362,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "select actors across node boundaries" in {
       val l = system.actorOf(Props(new Actor {
         def receive = {
-          case (p: Props, n: String) ⇒ sender() ! context.actorOf(p, n)
-          case ActorSelReq(s)        ⇒ sender() ! context.actorSelection(s)
+          case (p: Props, n: String) => sender() ! context.actorOf(p, n)
+          case ActorSelReq(s)        => sender() ! context.actorSelection(s)
         }
       }), "looker2")
       // child is configured to be deployed on remoteSystem
@@ -455,7 +455,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "not fail ask across node boundaries" in within(5.seconds) {
       import system.dispatcher
-      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
+      val f = for (_ <- 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
       Await.result(Future.sequence(f), timeout.duration).map(_._1).toSet should ===(Set("pong"))
     }
 
@@ -606,8 +606,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         awaitCond(registry.transportsReady(rawLocalAddress))
         awaitCond {
           registry.transportFor(rawLocalAddress) match {
-            case None ⇒ false
-            case Some((testTransport, _)) ⇒
+            case None => false
+            case Some((testTransport, _)) =>
               testTransport.associateBehavior.pushError(new InvalidAssociationException("Test connection error"))
               true
           }

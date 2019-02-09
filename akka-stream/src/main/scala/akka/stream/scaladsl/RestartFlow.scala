@@ -48,7 +48,7 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, Int.MaxValue))
   }
 
@@ -77,7 +77,7 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts))
   }
 
@@ -107,19 +107,19 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
   }
 
 }
 
 private final class RestartWithBackoffFlow[In, Out](
-  flowFactory:    () ⇒ Flow[In, Out, _],
+  flowFactory:    () => Flow[In, Out, _],
   minBackoff:     FiniteDuration,
   maxBackoff:     FiniteDuration,
   randomFactor:   Double,
   onlyOnFailures: Boolean,
-  maxRestarts:    Int) extends GraphStage[FlowShape[In, Out]] { self ⇒
+  maxRestarts:    Int) extends GraphStage[FlowShape[In, Out]] { self =>
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
@@ -161,7 +161,7 @@ private final class RestartWithBackoffFlow[In, Out](
       // We need to ensure that the other end of the sub flow is also completed, so that we don't
       // receive any callbacks from it.
       activeOutIn.foreach {
-        case (sourceOut, sinkIn) ⇒
+        case (sourceOut, sinkIn) =>
           if (!sourceOut.isClosed) {
             sourceOut.complete()
           }

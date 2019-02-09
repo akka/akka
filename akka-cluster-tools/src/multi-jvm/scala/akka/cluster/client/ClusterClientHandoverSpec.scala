@@ -50,7 +50,7 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
     enterBarrier(from.name + "-joined")
   }
 
-  def initialContacts: Set[ActorPath] = Set(first, second).map { r ⇒
+  def initialContacts: Set[ActorPath] = Set(first, second).map { r =>
     node(r) / "system" / "receptionist"
   }
 

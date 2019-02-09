@@ -17,7 +17,7 @@ import akka.util.ByteString
   /**
    * Creates a flow from a compressor constructor.
    */
-  def compressorFlow(newCompressor: () ⇒ Compressor): Flow[ByteString, ByteString, NotUsed] =
+  def compressorFlow(newCompressor: () => Compressor): Flow[ByteString, ByteString, NotUsed] =
     Flow.fromGraph {
       new SimpleLinearGraphStage[ByteString] {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {

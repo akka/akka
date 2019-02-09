@@ -25,7 +25,7 @@ object FlowSpec {
   class Fruit
   class Apple extends Fruit
   class Orange extends Fruit
-  val fruits = () ⇒ new Iterator[Fruit] {
+  val fruits = () => new Iterator[Fruit] {
     override def hasNext: Boolean = true
     override def next(): Fruit = if (ThreadLocalRandom.current().nextBoolean()) new Apple else new Orange
   }
@@ -40,14 +40,14 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
   implicit val materializer = ActorMaterializer(settings)
 
-  val identity: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.map(e ⇒ e)
-  val identity2: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ identity(in)
+  val identity: Flow[Any, Any, NotUsed] => Flow[Any, Any, NotUsed] = in => in.map(e => e)
+  val identity2: Flow[Any, Any, NotUsed] => Flow[Any, Any, NotUsed] = in => identity(in)
 
-  val toPublisher: (Source[Any, _], ActorMaterializer) ⇒ Publisher[Any] =
-    (f, m) ⇒ f.runWith(Sink.asPublisher(false))(m)
+  val toPublisher: (Source[Any, _], ActorMaterializer) => Publisher[Any] =
+    (f, m) => f.runWith(Sink.asPublisher(false))(m)
 
-  def toFanoutPublisher[In, Out](elasticity: Int): (Source[Out, _], ActorMaterializer) ⇒ Publisher[Out] =
-    (f, m) ⇒ f.runWith(Sink.asPublisher(true).withAttributes(Attributes.inputBuffer(elasticity, elasticity)))(m)
+  def toFanoutPublisher[In, Out](elasticity: Int): (Source[Out, _], ActorMaterializer) => Publisher[Out] =
+    (f, m) => f.runWith(Sink.asPublisher(true).withAttributes(Attributes.inputBuffer(elasticity, elasticity)))(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](flow: Flow[In, Out, _]): (Subscriber[In], Publisher[Out]) = {
     flow.runWith(Source.asSubscriber[In], Sink.asPublisher[Out](false))
@@ -55,7 +55,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
 
   "A Flow" must {
 
-    for ((name, op) ← List("identity" → identity, "identity2" → identity2); n ← List(1, 2, 4)) {
+    for ((name, op) <- List("identity" -> identity, "identity2" -> identity2); n <- List(1, 2, 4)) {
       s"request initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.withInputBuffer(initialSize = n, maxSize = n), toPublisher) {
           upstream.expectRequest(upstreamSubscription, settings.maxInputBufferSize)
@@ -143,7 +143,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "materialize into Publisher/Subscriber and transformation processor" in {
-      val flow = Flow[Int].map((i: Int) ⇒ i.toString)
+      val flow = Flow[Int].map((i: Int) => i.toString)
       val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = materializeIntoSubscriberAndPublisher(flow)
 
       val c1 = TestSubscriber.manualProbe[String]()
@@ -196,7 +196,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "perform transformation operation" in {
-      val flow = Flow[Int].map(i ⇒ { testActor ! i.toString; i.toString })
+      val flow = Flow[Int].map(i => { testActor ! i.toString; i.toString })
 
       val publisher = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
       Source.fromPublisher(publisher).via(flow).to(Sink.ignore).run()
@@ -257,17 +257,17 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     "be covariant" in {
       val f1: Source[Fruit, _] = Source.fromIterator[Fruit](fruits)
       val p1: Publisher[Fruit] = Source.fromIterator[Fruit](fruits).runWith(Sink.asPublisher(false))
-      val f2: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).splitWhen(_ ⇒ true)
-      val f3: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).groupBy(2, _ ⇒ true)
+      val f2: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).splitWhen(_ => true)
+      val f3: SubFlow[Fruit, _, Source[Fruit, NotUsed]#Repr, _] = Source.fromIterator[Fruit](fruits).groupBy(2, _ => true)
       val f4: Source[(immutable.Seq[Fruit], Source[Fruit, _]), _] = Source.fromIterator[Fruit](fruits).prefixAndTail(1)
-      val d1: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
-      val d2: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ ⇒ new Apple).groupBy(2, _ ⇒ true)
-      val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)
+      val d1: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ => new Apple).splitWhen(_ => true)
+      val d2: SubFlow[Fruit, _, Flow[String, Fruit, NotUsed]#Repr, _] = Flow[String].map(_ => new Apple).groupBy(2, _ => true)
+      val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit, _]), _] = Flow[String].map(_ => new Apple).prefixAndTail(1)
     }
 
     "be possible to convert to a processor, and should be able to take a Processor" in {
       val identity1 = Flow[Int].toProcessor
-      val identity2 = Flow.fromProcessor(() ⇒ identity1.run())
+      val identity2 = Flow.fromProcessor(() => identity1.run())
       Await.result(
         Source(1 to 10).via(identity2).limit(100).runWith(Sink.seq),
         3.seconds) should ===(1 to 10)
@@ -279,25 +279,25 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "eliminate passed in when matval from passed in not used" in {
-      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val map = Flow.fromFunction((n: Int) => n + 1)
       val result = map.viaMat(Flow[Int])(Keep.left)
       result shouldBe theSameInstanceAs(map)
     }
 
     "not eliminate passed in when matval from passed in is used" in {
-      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val map = Flow.fromFunction((n: Int) => n + 1)
       val result = map.viaMat(Flow[Int])(Keep.right)
       result shouldNot be theSameInstanceAs (map)
     }
 
     "eliminate itself if identity" in {
-      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val map = Flow.fromFunction((n: Int) => n + 1)
       val result = Flow[Int].viaMat(map)(Keep.right)
       result shouldBe theSameInstanceAs(map)
     }
 
     "not eliminate itself if identity but matval is used" in {
-      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val map = Flow.fromFunction((n: Int) => n + 1)
       val result = Flow[Int].viaMat(map)(Keep.left)
       result shouldNot be theSameInstanceAs (map)
     }
@@ -487,7 +487,7 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "call future subscribers' onError should be called instead of onSubscribed after initial upstream reported an error" in {
-      new ChainSetup[Int, String, NotUsed](_.map(_ ⇒ throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
+      new ChainSetup[Int, String, NotUsed](_.map(_ => throw TestException), settings.withInputBuffer(initialSize = 1, maxSize = 1),
         toFanoutPublisher(1)) {
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)

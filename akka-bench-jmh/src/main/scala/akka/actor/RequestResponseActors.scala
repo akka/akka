@@ -21,7 +21,7 @@ object RequestResponseActors {
     private val randGenerator = new Random()
 
     override def receive: Receive = {
-      case u: User ⇒ {
+      case u: User => {
         receivedUsers.put(u.userId, u)
         if (left == 0) {
           latch.countDown()
@@ -43,10 +43,10 @@ object RequestResponseActors {
   class UserServiceActor(userDb: Map[Int, User], latch: CountDownLatch, numQueries: Int) extends Actor {
     private var left = numQueries
     def receive = {
-      case Request(id) ⇒
+      case Request(id) =>
         userDb.get(id) match {
-          case Some(u) ⇒ sender() ! u
-          case None    ⇒
+          case Some(u) => sender() ! u
+          case None    =>
         }
         if (left == 0) {
           latch.countDown()
@@ -61,11 +61,11 @@ object RequestResponseActors {
     def props(latch: CountDownLatch, numQueries: Int, numUsersInDB: Int) = {
       val r = new Random()
       val users = for {
-        id ← 0 until numUsersInDB
+        id <- 0 until numUsersInDB
         firstName = r.nextString(5)
         lastName = r.nextString(7)
         ssn = r.nextInt()
-        friendIds = for { _ ← 0 until 5 } yield r.nextInt(numUsersInDB)
+        friendIds = for { _ <- 0 until 5 } yield r.nextInt(numUsersInDB)
       } yield id -> User(id, firstName, lastName, ssn, friendIds)
       Props(new UserServiceActor(users.toMap, latch, numQueries))
     }
@@ -75,7 +75,7 @@ object RequestResponseActors {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numActors)
     val actorsPairs = for {
-      i ← (1 to (numActors / 2)).toVector
+      i <- (1 to (numActors / 2)).toVector
       userQueryActor = system.actorOf(UserQueryActor.props(latch, numQueriesPerActor, numUsersInDBPerActor).withDispatcher(fullPathToDispatcher))
       userServiceActor = system.actorOf(UserServiceActor.props(latch, numQueriesPerActor, numUsersInDBPerActor).withDispatcher(fullPathToDispatcher))
     } yield (userQueryActor, userServiceActor)
@@ -84,8 +84,8 @@ object RequestResponseActors {
 
   def initiateQuerySimulation(requestResponseActorPairs: Seq[(ActorRef, ActorRef)], inFlight: Int) = {
     for {
-      (queryActor, serviceActor) ← requestResponseActorPairs
-      i ← 1 to inFlight
+      (queryActor, serviceActor) <- requestResponseActorPairs
+      i <- 1 to inFlight
     } {
       serviceActor.tell(Request(i), queryActor)
     }

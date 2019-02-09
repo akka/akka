@@ -11,9 +11,9 @@ class CompactionSegmentManagementSpec extends WordSpec {
   "A CompactionSegmentManagement compatible object" must {
     "ignore persistence ids without declared compaction intervals" in {
       val intervals = Map(
-        "persistence_id-1" → 1L,
-        "persistence_id-2" → 1L,
-        "persistence_id-3" → 1L
+        "persistence_id-1" -> 1L,
+        "persistence_id-2" -> 1L,
+        "persistence_id-3" -> 1L
       )
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
@@ -26,9 +26,9 @@ class CompactionSegmentManagementSpec extends WordSpec {
 
     "ignore persistence ids whose compaction intervals are less or equal to zero" in {
       val intervals = Map(
-        "persistence_id-1" → 1L,
-        "persistence_id-2" → 0L,
-        "persistence_id-3" → -1L
+        "persistence_id-1" -> 1L,
+        "persistence_id-2" -> 0L,
+        "persistence_id-3" -> -1L
       )
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
@@ -40,9 +40,9 @@ class CompactionSegmentManagementSpec extends WordSpec {
 
     "allow for wildcard configuration" in {
       val intervals = Map(
-        "persistence_id-1" → 1L,
-        "persistence_id-2" → 1L,
-        "*" → 1L
+        "persistence_id-1" -> 1L,
+        "persistence_id-2" -> 1L,
+        "*" -> 1L
       )
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
@@ -53,17 +53,17 @@ class CompactionSegmentManagementSpec extends WordSpec {
     }
 
     "not permit compaction before thresholds are exceeded" in {
-      val namedIntervals = Map("persistence_id-1" → 5L, "persistence_id-2" → 4L)
-      val intervals = namedIntervals + ("*" → 3L)
+      val namedIntervals = Map("persistence_id-1" -> 5L, "persistence_id-2" -> 4L)
+      val intervals = namedIntervals + ("*" -> 3L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
-      val expectedIntervals = namedIntervals + "persistence_id-3" → 3L + "persistence_id-4" → 3L
+      val expectedIntervals = namedIntervals + ("persistence_id-3" -> 3L) + ("persistence_id-4" -> 3L)
 
-      for ((id, interval) ← expectedIntervals) {
+      for ((id, interval) <- expectedIntervals) {
         var segment = 0
 
-        for (i ← 0L.until(4 * interval)) {
+        for (i <- 0L.until(4 * interval)) {
           if ((i + 1) % interval == 0) {
             assert(compactionStub.mustCompact(id, i), s"must compact for [$id] when toSeqNr is [$i]")
             segment += 1
@@ -81,7 +81,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val id = "persistence_id-1"
       val interval = 5L
       val compactionStub = new CompactionSegmentManagement {
-        override def compactionIntervals: Map[String, Long] = Map(id → interval)
+        override def compactionIntervals: Map[String, Long] = Map(id -> interval)
       }
       val smallJump = interval / 2
       val midJump = interval

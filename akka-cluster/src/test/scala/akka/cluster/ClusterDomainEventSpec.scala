@@ -37,7 +37,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
   val selfDummyAddress = UniqueAddress(Address("akka.tcp", "sys", "selfDummy", 2552), 17L)
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
-    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
+    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) { case ((gs, as), m) => (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
 
   private def state(g: Gossip): MembershipState =
     state(g, selfDummyAddress)
@@ -105,7 +105,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
         .unreachable(dc2BMemberUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability2))
 
-      Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member ⇒
+      Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member =>
         val otherDc =
           if (member.dataCenter == ClusterSettings.DefaultDataCenter) Seq("dc2")
           else Seq()

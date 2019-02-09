@@ -22,7 +22,7 @@ import akka.actor.Props
 import akka.testkit.AkkaSpec
 
 abstract class PersistenceSpec(config: Config) extends AkkaSpec(config) with BeforeAndAfterEach with Cleanup
-  with PersistenceMatchers { this: AkkaSpec ⇒
+  with PersistenceMatchers { this: AkkaSpec =>
   private var _name: String = _
 
   lazy val extension = Persistence(system)
@@ -72,11 +72,11 @@ object PersistenceSpec {
     """))
 }
 
-trait Cleanup { this: AkkaSpec ⇒
+trait Cleanup { this: AkkaSpec =>
   val storageLocations = List(
     "akka.persistence.journal.leveldb.dir",
     "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+    "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   override protected def atStartup(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
@@ -91,7 +91,7 @@ abstract class NamedPersistentActor(name: String) extends PersistentActor {
   override def persistenceId: String = name
 }
 
-trait TurnOffRecoverOnStart { this: Eventsourced ⇒
+trait TurnOffRecoverOnStart { this: Eventsourced =>
   override def recovery = Recovery.none
 }
 
@@ -105,9 +105,9 @@ trait PersistenceMatchers {
   final class IndependentlyOrdered(prefixes: immutable.Seq[String]) extends Matcher[immutable.Seq[Any]] {
     override def apply(_left: immutable.Seq[Any]) = {
       val left = _left.map(_.toString)
-      val mapped = left.groupBy(l ⇒ prefixes.indexWhere(p ⇒ l.startsWith(p))) - (-1) // ignore other messages
+      val mapped = left.groupBy(l => prefixes.indexWhere(p => l.startsWith(p))) - (-1) // ignore other messages
       val results = for {
-        (pos, seq) ← mapped
+        (pos, seq) <- mapped
         nrs = seq.map(_.replaceFirst(prefixes(pos), "").toInt)
         sortedNrs = nrs.sorted
         if nrs != sortedNrs
@@ -117,7 +117,7 @@ trait PersistenceMatchers {
         s"""Messages sequence with prefix ${prefixes(pos)} was sorted! Was: $seq"""")
 
       if (results.forall(_.matches)) MatchResult(true, "", "")
-      else results.find(r ⇒ !r.matches).get
+      else results.find(r => !r.matches).get
     }
   }
 

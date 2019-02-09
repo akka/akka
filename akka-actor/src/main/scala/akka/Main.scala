@@ -33,7 +33,7 @@ object Main {
         val app = system.actorOf(Props(appClass), "app")
         system.actorOf(Props(classOf[Terminator], app), "app-terminator")
       } catch {
-        case NonFatal(e) ⇒ system.terminate(); throw e
+        case NonFatal(e) => system.terminate(); throw e
       }
     }
   }
@@ -41,7 +41,7 @@ object Main {
   class Terminator(app: ActorRef) extends Actor with ActorLogging {
     context watch app
     def receive = {
-      case Terminated(_) ⇒
+      case Terminated(_) =>
         log.info("application supervisor has terminated, shutting down")
         context.system.terminate()
     }

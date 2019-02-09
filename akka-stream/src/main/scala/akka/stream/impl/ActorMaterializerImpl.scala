@@ -45,12 +45,12 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
-      case Dispatchers.DefaultDispatcherId ⇒
+      case Dispatchers.DefaultDispatcherId =>
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      case ActorAttributes.IODispatcher.dispatcher ⇒
+      case ActorAttributes.IODispatcher.dispatcher =>
         // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
         props.withDispatcher(settings.blockingIoDispatcher)
-      case _ ⇒ props
+      case _ => props
     }
 
     actorOf(effectiveProps, context.islandName)
@@ -61,9 +61,9 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    */
   @InternalApi private[akka] def actorOf(props: Props, name: String): ActorRef = {
     supervisor match {
-      case ref: LocalActorRef ⇒
+      case ref: LocalActorRef =>
         ref.underlying.attachChild(props, name, systemService = false)
-      case ref: RepointableActorRef ⇒
+      case ref: RepointableActorRef =>
         if (ref.isStarted)
           ref.underlying.asInstanceOf[ActorCell].attachChild(props, name, systemService = false)
         else {
@@ -71,7 +71,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
           val f = (supervisor ? StreamSupervisor.Materialize(props, name)).mapTo[ActorRef]
           Await.result(f, timeout.duration)
         }
-      case unknown ⇒
+      case unknown =>
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
     }
   }
@@ -94,7 +94,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
  *
  * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.
  */
-private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
+private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell => ActorRef) extends Materializer {
   val subFusingPhase = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, attributes: Attributes,
                        materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
@@ -106,10 +106,10 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     delegate match {
-      case am: PhasedFusingActorMaterializer ⇒
+      case am: PhasedFusingActorMaterializer =>
         materialize(runnable, am.defaultAttributes)
 
-      case other ⇒
+      case other =>
         throw new IllegalStateException(s"SubFusing only supported by [PhasedFusingActorMaterializer], " +
           s"yet was used with [${other.getClass.getName}]!")
     }
@@ -179,11 +179,11 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
-    case Materialize(props, name) ⇒
+    case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case GetChildren ⇒ sender() ! Children(context.children.toSet)
-    case StopChildren ⇒
+    case GetChildren => sender() ! Children(context.children.toSet)
+    case StopChildren =>
       context.children.foreach(context.stop)
       sender() ! StoppedChildren
   }

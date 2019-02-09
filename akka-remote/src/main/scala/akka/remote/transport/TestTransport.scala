@@ -51,31 +51,31 @@ class TestTransport(
   private def defaultAssociate(remoteAddress: Address): Future[AssociationHandle] = {
     registry.transportFor(remoteAddress) match {
 
-      case Some((remoteTransport, remoteListenerFuture)) ⇒
+      case Some((remoteTransport, remoteListenerFuture)) =>
         val (localHandle, remoteHandle) = createHandlePair(remoteTransport, remoteAddress)
         localHandle.writable = false
         remoteHandle.writable = false
 
         // Pass a non-writable handle to remote first
         remoteListenerFuture flatMap {
-          case listener ⇒
+          case listener =>
             listener notify InboundAssociation(remoteHandle)
             val remoteHandlerFuture = remoteHandle.readHandlerPromise.future
 
             // Registration of reader at local finishes the registration and enables communication
             for {
-              remoteListener ← remoteHandlerFuture
-              localListener ← localHandle.readHandlerPromise.future
+              remoteListener <- remoteHandlerFuture
+              localListener <- localHandle.readHandlerPromise.future
             } {
               registry.registerListenerPair(localHandle.key, (localListener, remoteListener))
               localHandle.writable = true
               remoteHandle.writable = true
             }
 
-            remoteHandlerFuture.map { _ ⇒ localHandle }
+            remoteHandlerFuture.map { _ => localHandle }
         }
 
-      case None ⇒
+      case None =>
         Future.failed(new InvalidAssociationException(s"No registered transport: $remoteAddress", null))
     }
   }
@@ -93,22 +93,22 @@ class TestTransport(
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the listen() method.
    */
   val listenBehavior = new SwitchableLoggedBehavior[Unit, (Address, Promise[AssociationEventListener])](
-    (_) ⇒ defaultListen,
-    (_) ⇒ registry.logActivity(ListenAttempt(localAddress)))
+    (_) => defaultListen,
+    (_) => registry.logActivity(ListenAttempt(localAddress)))
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the associate() method.
    */
   val associateBehavior = new SwitchableLoggedBehavior[Address, AssociationHandle](
     defaultAssociate _,
-    (remoteAddress) ⇒ registry.logActivity(AssociateAttempt(localAddress, remoteAddress)))
+    (remoteAddress) => registry.logActivity(AssociateAttempt(localAddress, remoteAddress)))
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the shutdown() method.
    */
   val shutdownBehavior = new SwitchableLoggedBehavior[Unit, Boolean](
-    (_) ⇒ defaultShutdown,
-    (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
+    (_) => defaultShutdown,
+    (_) => registry.logActivity(ShutdownAttempt(localAddress)))
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior(())
   // Need to do like this for binary compatibility reasons
@@ -118,10 +118,10 @@ class TestTransport(
 
   private def defaultWrite(params: (TestAssociationHandle, ByteString)): Future[Boolean] = {
     registry.getRemoteReadHandlerFor(params._1) match {
-      case Some(listener) ⇒
+      case Some(listener) =>
         listener notify InboundPayload(params._2)
         Future.successful(true)
-      case None ⇒
+      case None =>
         Future.failed(new IllegalStateException("No association present"))
     }
   }
@@ -144,7 +144,7 @@ class TestTransport(
       defaultWrite _
     },
     logCallback = {
-      case (handle, payload) ⇒
+      case (handle, payload) =>
         registry.logActivity(WriteAttempt(handle.localAddress, handle.remoteAddress, payload))
     })
 
@@ -157,7 +157,7 @@ class TestTransport(
       defaultDisassociate _
     },
     logCallback = {
-      (handle) ⇒
+      (handle) =>
         registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
     })
 
@@ -172,7 +172,7 @@ class TestTransport(
 
 object TestTransport {
 
-  type Behavior[A, B] = (A) ⇒ Future[B]
+  type Behavior[A, B] = (A) => Future[B]
 
   /**
    * Test utility to make behavior of functions that return some Future[B] controllable from tests. This tool is able
@@ -195,7 +195,7 @@ object TestTransport {
    * type parameter B:
    *  - Type parameter of the future that the original function returns.
    */
-  class SwitchableLoggedBehavior[A, B](defaultBehavior: Behavior[A, B], logCallback: (A) ⇒ Unit) extends Behavior[A, B] {
+  class SwitchableLoggedBehavior[A, B](defaultBehavior: Behavior[A, B], logCallback: (A) => Unit) extends Behavior[A, B] {
 
     private val behaviorStack = new CopyOnWriteArrayList[Behavior[A, B]]()
     behaviorStack.add(0, defaultBehavior)
@@ -217,7 +217,7 @@ object TestTransport {
      *   The constant the future will be completed with.
      */
     def pushConstant(c: B): Unit = push {
-      _ ⇒ Future.successful(c)
+      _ => Future.successful(c)
     }
 
     /**
@@ -227,7 +227,7 @@ object TestTransport {
      *   The throwable the failed future will contain.
      */
     def pushError(e: Throwable): Unit = push {
-      _ ⇒ Future.failed(e)
+      _ => Future.failed(e)
     }
 
     /**
@@ -242,7 +242,7 @@ object TestTransport {
       val originalBehavior = currentBehavior
 
       push(
-        (params: A) ⇒ controlPromise.future.flatMap(_ ⇒ originalBehavior(params)))
+        (params: A) => controlPromise.future.flatMap(_ => originalBehavior(params)))
 
       controlPromise
     }
@@ -303,7 +303,7 @@ object TestTransport {
       handle:       TestAssociationHandle,
       listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
       listenerPair match {
-        case (initiator, receiver) ⇒ if (handle.inbound) initiator else receiver
+        case (initiator, receiver) => if (handle.inbound) initiator else receiver
       }
     }
 

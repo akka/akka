@@ -81,7 +81,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         override def toString = "IdentityBidi"
       }
 
-      val identity = BidiFlow.fromGraph(identityBidi).join(Flow[Int].map { x ⇒ x })
+      val identity = BidiFlow.fromGraph(identityBidi).join(Flow[Int].map { x => x })
 
       Await.result(
         Source(1 to 10).via(identity).grouped(100).runWith(Sink.head),
@@ -127,7 +127,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       }
 
       val identityBidiF = BidiFlow.fromGraph(identityBidi)
-      val identity = (identityBidiF atop identityBidiF atop identityBidiF).join(Flow[Int].map { x ⇒ x })
+      val identity = (identityBidiF atop identityBidiF atop identityBidiF).join(Flow[Int].map { x => x })
 
       Await.result(
         Source(1 to 10).via(identity).grouped(100).runWith(Sink.head),
@@ -173,7 +173,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       }
 
       val identityBidiF = BidiFlow.fromGraph(identityBidi)
-      val identity = (identityBidiF atop identityBidiF atop identityBidiF).join(Flow[Int].map { x ⇒ x })
+      val identity = (identityBidiF atop identityBidiF atop identityBidiF).join(Flow[Int].map { x => x })
 
       Await.result(
         Source(1 to 10).via(identity).grouped(100).runWith(Sink.head),
@@ -223,7 +223,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       val takeAll = Flow[Int].grouped(200).toMat(Sink.head)(Keep.right)
 
-      val (f1, f2) = RunnableGraph.fromGraph(GraphDSL.create(takeAll, takeAll)(Keep.both) { implicit b ⇒ (out1, out2) ⇒
+      val (f1, f2) = RunnableGraph.fromGraph(GraphDSL.create(takeAll, takeAll)(Keep.both) { implicit b => (out1, out2) =>
         import GraphDSL.Implicits._
         val bidi = b.add(rotatedBidi)
 
@@ -311,7 +311,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       val upstream = TestPublisher.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val faily = b.add(failyStage)
 
@@ -351,7 +351,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       Source.combine(
         Source.fromPublisher(filthyPublisher),
-        Source.fromPublisher(upstream))(count ⇒ Merge(count))
+        Source.fromPublisher(upstream))(count => Merge(count))
         .runWith(Sink.fromSubscriber(downstream))
 
       upstream.ensureSubscription()

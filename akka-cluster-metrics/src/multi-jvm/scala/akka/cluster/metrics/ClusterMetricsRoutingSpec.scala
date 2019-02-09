@@ -27,14 +27,14 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender() ! Reply(Cluster(context.system).selfAddress)
+      case _ => sender() ! Reply(Cluster(context.system).selfAddress)
     }
   }
 
   class Memory extends Actor with ActorLogging {
     var usedMemory: Array[Array[Int]] = _
     def receive = {
-      case AllocateMemory ⇒
+      case AllocateMemory =>
         val heap = ManagementFactory.getMemoryMXBean.getHeapMemoryUsage
         // getMax can be undefined (-1)
         val max = math.max(heap.getMax, heap.getCommitted)
@@ -59,7 +59,7 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
   def nodeList = Seq(node1, node2, node3)
 
   // Extract individual sigar library for every node.
-  nodeList foreach { role ⇒
+  nodeList foreach { role =>
     nodeConfig(role) {
       ConfigFactory.parseString(s"akka.cluster.metrics.native-library-extract-folder=$${user.dir}/target/native/" + role.name)
     }
@@ -118,11 +118,11 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
-    val zero = Map.empty[Address, Int] ++ roles.map(address(_) → 0)
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(address) ⇒ address
+      case Reply(address) => address
     }).foldLeft(zero) {
-      case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
@@ -130,8 +130,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
    * Fills in self address for local ActorRef
    */
   def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
+    case Address(_, _, None, None) => cluster.selfAddress
+    case a                         => a
   }
 
   def startRouter(name: String): ActorRef = {
@@ -144,7 +144,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
     // it may take some time until router receives cluster member events
     awaitAssert { currentRoutees(router).size should ===(roles.size) }
     val routees = currentRoutees(router)
-    routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(roles.map(address).toSet)
+    routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet should ===(roles.map(address).toSet)
     router
   }
 
@@ -166,7 +166,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         metricsAwait()
 
         val iterationCount = 100
-        1 to iterationCount foreach { _ ⇒
+        1 to iterationCount foreach { _ =>
           router1 ! "hit"
           // wait a while between each message, since metrics is collected periodically
           Thread.sleep(10)
@@ -203,7 +203,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         metricsAwait()
 
         val iterationCount = 3000
-        1 to iterationCount foreach { _ ⇒
+        1 to iterationCount foreach { _ =>
           router2 ! "hit"
         }
 
@@ -223,7 +223,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router3).size should ===(9) }
         val routees = currentRoutees(router3)
-        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(Set(address(node1)))
+        routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet should ===(Set(address(node1)))
       }
       enterBarrier("after-4")
     }
@@ -234,7 +234,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router4).size should ===(6) }
         val routees = currentRoutees(router4)
-        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(Set(
+        routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet should ===(Set(
           address(node1), address(node2), address(node3)))
       }
       enterBarrier("after-5")

@@ -28,17 +28,17 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
     EventSourcedBehavior[Int, Int, Int](
       persistenceId,
       emptyState = 0,
-      commandHandler = (_, command) ⇒ {
+      commandHandler = (_, command) => {
         if (command < 0)
           Effect.stop()
         else
           Effect.persist(command)
       },
-      eventHandler = (state, event) ⇒ {
+      eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         state + event
       }
-    ).onRecoveryCompleted { n ⇒
+    ).onRecoveryCompleted { n =>
         probe.tell("onRecoveryCompleted:" + n)
       }
 

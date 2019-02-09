@@ -27,10 +27,10 @@ private[akka] object ClusterReceptionistSettings {
     val writeConsistency = {
       val key = "write-consistency"
       toRootLowerCase(config.getString(key)) match {
-        case "local"    ⇒ Replicator.WriteLocal
-        case "majority" ⇒ Replicator.WriteMajority(writeTimeout)
-        case "all"      ⇒ Replicator.WriteAll(writeTimeout)
-        case _          ⇒ Replicator.WriteTo(config.getInt(key), writeTimeout)
+        case "local"    => Replicator.WriteLocal
+        case "majority" => Replicator.WriteMajority(writeTimeout)
+        case "all"      => Replicator.WriteAll(writeTimeout)
+        case _          => Replicator.WriteTo(config.getInt(key), writeTimeout)
       }
     }
     ClusterReceptionistSettings(

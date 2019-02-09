@@ -96,7 +96,7 @@ class FlowSplitWhenSpec extends StreamSpec {
 
       Await.result(
         Source.empty[Int]
-          .splitWhen(_ ⇒ true).lift
+          .splitWhen(_ => true).lift
           .mapAsync(1)(_.runWith(Sink.headOption)).grouped(10).runWith(Sink.headOption),
         3.seconds) should ===(None) // rather tricky way of saying that no empty substream should be emitted (vs.  Some(None))
 
@@ -223,7 +223,7 @@ class FlowSplitWhenSpec extends StreamSpec {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source.fromPublisher(publisherProbeProbe)
-        .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+        .splitWhen(elem => if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
@@ -254,7 +254,7 @@ class FlowSplitWhenSpec extends StreamSpec {
 
     "work with single elem splits" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 100).splitWhen(_ ⇒ true).lift
+        Source(1 to 100).splitWhen(_ => true).lift
           .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
           .grouped(200).runWith(Sink.head),
         3.second) should ===(1 to 100)
@@ -265,8 +265,8 @@ class FlowSplitWhenSpec extends StreamSpec {
         .withInputBuffer(initialSize = 1, maxSize = 1))
 
       import system.dispatcher
-      val probe = Source(1 to 5).splitWhen(_ ⇒ true).lift
-        .map { src ⇒ src.runWith(Sink.ignore)(mat).flatMap(_ ⇒ src.runWith(Sink.ignore)(mat)) }
+      val probe = Source(1 to 5).splitWhen(_ => true).lift
+        .map { src => src.runWith(Sink.ignore)(mat).flatMap(_ => src.runWith(Sink.ignore)(mat)) }
         .runWith(TestSink.probe[Future[Done]])(mat)
       probe.request(1)
       val future = probe.requestNext()
@@ -282,7 +282,7 @@ class FlowSplitWhenSpec extends StreamSpec {
           .withSubscriptionTimeoutSettings(
             StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
 
-      val testSource = Source.single(1).concat(Source.maybe).splitWhen(_ ⇒ true)
+      val testSource = Source.single(1).concat(Source.maybe).splitWhen(_ => true)
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
         Await.result(
@@ -301,7 +301,7 @@ class FlowSplitWhenSpec extends StreamSpec {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source.fromPublisher(publisherProbeProbe)
-        .splitWhen(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+        .splitWhen(elem => if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))

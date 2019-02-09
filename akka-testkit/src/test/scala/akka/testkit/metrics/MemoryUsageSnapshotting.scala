@@ -8,7 +8,7 @@ import com.codahale.metrics._
 import com.codahale.metrics.jvm
 
 private[akka] trait MemoryUsageSnapshotting extends MetricsPrefix {
-  this: jvm.MemoryUsageGaugeSet ⇒
+  this: jvm.MemoryUsageGaugeSet =>
 
   // accessing metrics in order to not to duplicate mxBean access too much
 

@@ -184,7 +184,7 @@ abstract class AeronStreamMaxThroughputSpec
       val killSwitch = KillSwitches.shared(testName)
       Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
-        .runForeach { envelope ⇒
+        .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           rep.onMessage(1, bytes.length)
           count += 1
@@ -210,8 +210,8 @@ abstract class AeronStreamMaxThroughputSpec
 
       val payload = ("0" * payloadSize).getBytes("utf-8")
       val t0 = System.nanoTime()
-      Source.fromIterator(() ⇒ iterate(1, totalMessages))
-        .map { n ⇒
+      Source.fromIterator(() => iterate(1, totalMessages))
+        .map { n =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()
@@ -234,7 +234,7 @@ abstract class AeronStreamMaxThroughputSpec
       enterBarrier("udp-port-started")
     }
 
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be great for ${s.testName}, payloadSize = ${s.payloadSize}" in test(s)
     }
 

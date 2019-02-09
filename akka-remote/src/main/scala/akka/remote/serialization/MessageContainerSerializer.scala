@@ -23,8 +23,8 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
   def includeManifest: Boolean = false
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case sel: ActorSelectionMessage ⇒ serializeSelection(sel)
-    case _                          ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case sel: ActorSelectionMessage => serializeSelection(sel)
+    case _                          => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   import ContainerFormats.PatternType._
@@ -42,11 +42,11 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
     if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
     sel.elements.foreach {
-      case SelectChildName(name) ⇒
+      case SelectChildName(name) =>
         builder.addPattern(buildPattern(Some(name), CHILD_NAME))
-      case SelectChildPattern(patternStr) ⇒
+      case SelectChildPattern(patternStr) =>
         builder.addPattern(buildPattern(Some(patternStr), CHILD_PATTERN))
-      case SelectParent ⇒
+      case SelectParent =>
         builder.addPattern(buildPattern(None, PARENT))
     }
 
@@ -68,11 +68,11 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
       manifest).get
 
     import scala.collection.JavaConverters._
-    val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.iterator.map { x ⇒
+    val elements: immutable.Iterable[SelectionPathElement] = selectionEnvelope.getPatternList.asScala.iterator.map { x =>
       x.getType match {
-        case CHILD_NAME    ⇒ SelectChildName(x.getMatcher)
-        case CHILD_PATTERN ⇒ SelectChildPattern(x.getMatcher)
-        case PARENT        ⇒ SelectParent
+        case CHILD_NAME    => SelectChildName(x.getMatcher)
+        case CHILD_PATTERN => SelectChildPattern(x.getMatcher)
+        case PARENT        => SelectParent
       }
 
     }.to(immutable.IndexedSeq)

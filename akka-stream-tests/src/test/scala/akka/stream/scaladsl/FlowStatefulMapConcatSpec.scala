@@ -20,17 +20,17 @@ class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
 
     "work in happy case" in {
       val script = Script(
-        Seq(2) → Seq(),
-        Seq(1) → Seq(1, 1),
-        Seq(3) → Seq(3),
-        Seq(6) → Seq(6, 6, 6))
-      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.statefulMapConcat(() ⇒ {
+        Seq(2) -> Seq(),
+        Seq(1) -> Seq(1, 1),
+        Seq(3) -> Seq(3),
+        Seq(6) -> Seq(6, 6, 6))
+      TestConfig.RandomTestRange foreach (_ => runScript(script, settings)(_.statefulMapConcat(() => {
         var prev: Option[Int] = None
-        x ⇒ prev match {
-          case Some(e) ⇒
+        x => prev match {
+          case Some(e) =>
             prev = Some(x)
-            (1 to e) map (_ ⇒ x)
-          case None ⇒
+            (1 to e) map (_ => x)
+          case None =>
             prev = Some(x)
             List.empty[Int]
         }
@@ -38,15 +38,15 @@ class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
     }
 
     "be able to restart" in {
-      Source(List(2, 1, 3, 4, 1)).statefulMapConcat(() ⇒ {
+      Source(List(2, 1, 3, 4, 1)).statefulMapConcat(() => {
         var prev: Option[Int] = None
-        x ⇒ {
+        x => {
           if (x % 3 == 0) throw ex
           prev match {
-            case Some(e) ⇒
+            case Some(e) =>
               prev = Some(x)
-              (1 to e) map (_ ⇒ x)
-            case None ⇒
+              (1 to e) map (_ => x)
+            case None =>
               prev = Some(x)
               List.empty[Int]
           }
@@ -59,15 +59,15 @@ class FlowStatefulMapConcatSpec extends StreamSpec with ScriptedTest {
     }
 
     "be able to resume" in {
-      Source(List(2, 1, 3, 4, 1)).statefulMapConcat(() ⇒ {
+      Source(List(2, 1, 3, 4, 1)).statefulMapConcat(() => {
         var prev: Option[Int] = None
-        x ⇒ {
+        x => {
           if (x % 3 == 0) throw ex
           prev match {
-            case Some(e) ⇒
+            case Some(e) =>
               prev = Some(x)
-              (1 to e) map (_ ⇒ x)
-            case None ⇒
+              (1 to e) map (_ => x)
+            case None =>
               prev = Some(x)
               List.empty[Int]
           }

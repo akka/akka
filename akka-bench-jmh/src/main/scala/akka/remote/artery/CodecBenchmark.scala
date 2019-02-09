@@ -92,11 +92,11 @@ class CodecBenchmark {
     """
     )
     val config = configType match {
-      case RemoteInstrument ⇒
+      case RemoteInstrument =>
         ConfigFactory.parseString(
           s"""akka.remote.artery.advanced.instruments = [ "${classOf[DummyRemoteInstrument].getName}" ]"""
         ).withFallback(commonConfig)
-      case _ ⇒
+      case _ =>
         commonConfig
     }
 
@@ -142,7 +142,7 @@ class CodecBenchmark {
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool,
         envelopePool, streamId = 1, debugLogSend = false, version = ArteryTransport.HighestVersion))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
-      Flow[String].map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
+      Flow[String].map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
@@ -150,7 +150,7 @@ class CodecBenchmark {
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]
-      .map { _ ⇒
+      .map { _ =>
         val envelope = envelopePool.acquire()
         envelopeTemplateBuffer.rewind()
         envelope.byteBuffer.put(envelopeTemplateBuffer)
@@ -160,14 +160,14 @@ class CodecBenchmark {
 
     encodeGraph = encoderInput
       .via(encoder)
-      .map(envelope ⇒ envelopePool.release(envelope))
+      .map(envelope => envelopePool.release(envelope))
 
     decodeGraph = decoderInput
       .via(decoder)
       .via(deserializer)
       .map {
-        case env: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(env)
-        case _                            ⇒
+        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
+        case _                            =>
       }
 
     encodeDecodeGraph = encoderInput
@@ -175,8 +175,8 @@ class CodecBenchmark {
       .via(decoder)
       .via(deserializer)
       .map {
-        case env: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(env)
-        case _                            ⇒
+        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
+        case _                            =>
       }
   }
 

@@ -42,11 +42,11 @@ private[akka] object Inbox {
 
 }
 
-trait Inbox { this: ActorDSL.type ⇒
+trait Inbox { this: ActorDSL.type =>
 
   import Inbox._
 
-  protected trait InboxExtension { this: Extension ⇒
+  protected trait InboxExtension { this: Extension =>
     val DSLInboxQueueSize = config.getInt("inbox-size")
 
     val inboxNr = new AtomicInteger
@@ -82,35 +82,35 @@ trait Inbox { this: ActorDSL.type ⇒
     }
 
     var currentMsg: Any = _
-    val clientPredicate: (Query) ⇒ Boolean = {
-      case _: Get          ⇒ true
-      case Select(_, p, _) ⇒ p isDefinedAt currentMsg
-      case _               ⇒ false
+    val clientPredicate: (Query) => Boolean = {
+      case _: Get          => true
+      case Select(_, p, _) => p isDefinedAt currentMsg
+      case _               => false
     }
 
     var currentSelect: Select = _
-    val messagePredicate: (Any ⇒ Boolean) = (msg) ⇒ currentSelect.predicate.isDefinedAt(msg)
+    val messagePredicate: (Any => Boolean) = (msg) => currentSelect.predicate.isDefinedAt(msg)
 
     var currentDeadline: Option[(Deadline, Cancellable)] = None
 
     def receive = ({
-      case g: Get ⇒
+      case g: Get =>
         if (messages.isEmpty) enqueueQuery(g)
         else sender() ! messages.dequeue()
-      case s: Select ⇒
+      case s: Select =>
         if (messages.isEmpty) enqueueQuery(s)
         else {
           currentSelect = s
           messages.dequeueFirst(messagePredicate) match {
-            case Some(msg) ⇒ sender() ! msg
-            case None      ⇒ enqueueQuery(s)
+            case Some(msg) => sender() ! msg
+            case None      => enqueueQuery(s)
           }
           currentSelect = null
         }
-      case StartWatch(target) ⇒ context watch target
-      case Kick ⇒
+      case StartWatch(target) => context watch target
+      case Kick =>
         val now = Deadline.now
-        val pred = (q: Query) ⇒ q.deadline.time < now.time
+        val pred = (q: Query) => q.deadline.time < now.time
         val overdue = clientsByTimeout.iterator.takeWhile(pred)
         while (overdue.hasNext) {
           val toKick = overdue.next()
@@ -118,17 +118,17 @@ trait Inbox { this: ActorDSL.type ⇒
         }
         clients = clients.filterNot(pred)
         clientsByTimeout = clientsByTimeout.from(Get(now))
-      case msg ⇒
+      case msg =>
         if (clients.isEmpty) enqueueMessage(msg)
         else {
           currentMsg = msg
           clients.dequeueFirst(clientPredicate) match {
-            case Some(q) ⇒ { clientsByTimeout -= q; q.client ! msg }
-            case None    ⇒ enqueueMessage(msg)
+            case Some(q) => { clientsByTimeout -= q; q.client ! msg }
+            case None    => enqueueMessage(msg)
           }
           currentMsg = null
         }
-    }: Receive) andThen { _ ⇒
+    }: Receive) andThen { _ =>
       if (clients.isEmpty) {
         if (currentDeadline.isDefined) {
           currentDeadline.get._2.cancel()

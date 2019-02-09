@@ -5,7 +5,7 @@
 package akka.testkit.metrics
 
 import com.codahale.metrics.Metric
-import org.{ HdrHistogram ⇒ hdr }
+import org.{ HdrHistogram => hdr }
 
 /**
  * Adapts Gil Tene's HdrHistogram to Metric's Metric interface.
@@ -28,7 +28,7 @@ private[akka] class HdrHistogram(
     try
       hist.recordValue(value)
     catch {
-      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+      case ex: ArrayIndexOutOfBoundsException => throw wrapHistogramOutOfBoundsException(value, ex)
     }
   }
 
@@ -36,7 +36,7 @@ private[akka] class HdrHistogram(
     try
       hist.recordValueWithCount(value, count)
     catch {
-      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+      case ex: ArrayIndexOutOfBoundsException => throw wrapHistogramOutOfBoundsException(value, ex)
     }
   }
 

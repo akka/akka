@@ -46,7 +46,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
   abstract class InputBunch(inputCount: Int, bufferSize: Int, pump: Pump) {
     private var allCancelled = false
 
-    private val inputs: Array[BatchingInputBuffer] = Array.tabulate(inputCount) { i ⇒
+    private val inputs: Array[BatchingInputBuffer] = Array.tabulate(inputCount) { i =>
       new BatchingInputBuffer(bufferSize, pump) {
         override protected def onError(e: Throwable): Unit = InputBunch.this.onError(i, e)
       }
@@ -227,14 +227,14 @@ import org.reactivestreams.{ Subscriber, Subscription }
 
     // FIXME: Eliminate re-wraps
     def subreceive: SubReceive = new SubReceive({
-      case OnSubscribe(id, subscription) ⇒
+      case OnSubscribe(id, subscription) =>
         inputs(id).subreceive(ActorSubscriber.OnSubscribe(subscription))
-      case OnNext(id, elem) ⇒
+      case OnNext(id, elem) =>
         if (marked(id) && !pending(id)) markedPending += 1
         pending(id, on = true)
         receivedInput = true
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
-      case OnComplete(id) ⇒
+      case OnComplete(id) =>
         if (!pending(id)) {
           if (marked(id) && !depleted(id)) markedDepleted += 1
           depleted(id, on = true)
@@ -243,7 +243,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
         registerCompleted(id)
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
         if (!receivedInput && isAllCompleted) onCompleteWhenNoInput()
-      case OnError(id, e) ⇒
+      case OnError(id, e) =>
         onError(id, e)
     })
 

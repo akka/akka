@@ -14,7 +14,7 @@ import org.scalatest.Matchers
  * Hooks up MultiNodeSpec with ScalaTest
  */
 trait STMultiNodeSpec extends MultiNodeSpecCallbacks
-  with WordSpecLike with Matchers with BeforeAndAfterAll { self: MultiNodeSpec ⇒
+  with WordSpecLike with Matchers with BeforeAndAfterAll { self: MultiNodeSpec =>
 
   override def beforeAll() = multiNodeSpecBeforeAll()
 

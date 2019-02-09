@@ -41,7 +41,7 @@ abstract class Receptionist extends Extension {
         system.dynamicAccess
           .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {
-            case e ⇒
+            case e =>
               throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have " +
                 "'akka-cluster-typed' in the classpath.", e)
           }.get
@@ -76,7 +76,7 @@ object ServiceKey {
  * Not for user extension, see factories in companion object: [[ServiceKey#create]] and [[ServiceKey#apply]]
  */
 @DoNotInherit
-abstract class ServiceKey[T] extends AbstractServiceKey { key ⇒
+abstract class ServiceKey[T] extends AbstractServiceKey { key =>
   type Protocol = T
   def id: String
   def asServiceKey: ServiceKey[T] = this
@@ -231,7 +231,7 @@ object Receptionist extends ExtensionId[Receptionist] {
     /**
      * Special factory to make using Find with ask easier
      */
-    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new ReceptionistMessages.Find(key, ref)
+    def apply[T](key: ServiceKey[T]): ActorRef[Listing] => Command = ref => new ReceptionistMessages.Find(key, ref)
   }
 
   /**
@@ -288,7 +288,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 }
 
 object ReceptionistSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Receptionist): ReceptionistSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => Receptionist): ReceptionistSetup =
     new ReceptionistSetup(new java.util.function.Function[ActorSystem[_], Receptionist] {
       override def apply(sys: ActorSystem[_]): Receptionist = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12

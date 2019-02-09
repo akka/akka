@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.adapter._
 //#adapter-import
 import akka.testkit.TestProbe
 //#import-alias
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 //#import-alias
 import org.scalatest.WordSpec
 
@@ -40,11 +40,11 @@ object UntypedWatchingTypedSpec {
     second ! Typed.Ping(self)
 
     override def receive = {
-      case Typed.Pong ⇒
+      case Typed.Pong =>
         log.info(s"$self got Pong from ${sender()}")
         // context.stop is an implicit extension method
         context.stop(second)
-      case untyped.Terminated(ref) ⇒
+      case untyped.Terminated(ref) =>
         log.info(s"$self observed termination of $ref")
         context.stop(self)
     }
@@ -58,9 +58,9 @@ object UntypedWatchingTypedSpec {
     case object Pong
 
     val behavior: Behavior[Command] =
-      Behaviors.receive { (context, message) ⇒
+      Behaviors.receive { (context, message) =>
         message match {
-          case Ping(replyTo) ⇒
+          case Ping(replyTo) =>
             context.log.info(s"${context.self} got Ping from $replyTo")
             // replyTo is an untyped actor that has been converted for coexistence
             replyTo ! Pong

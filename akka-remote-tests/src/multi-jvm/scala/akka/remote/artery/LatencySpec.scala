@@ -74,10 +74,10 @@ object LatencySpec extends MultiNodeConfig {
     var cachedSender: ActorRef = null
 
     def receive = {
-      case Reset ⇒
+      case Reset =>
         cachedSender = null
         sender() ! Reset
-      case msg ⇒
+      case msg =>
         if (cachedSender == null) cachedSender = sender()
         cachedSender ! msg
     }
@@ -97,12 +97,12 @@ object LatencySpec extends MultiNodeConfig {
     var reportedArrayOOB = false
 
     def receive = {
-      case bytes: Array[Byte] ⇒
+      case bytes: Array[Byte] =>
         if (bytes.length != 0) {
           if (bytes.length != payloadSize) throw new IllegalArgumentException("Invalid message")
           receiveMessage(bytes.length)
         }
-      case _: TestMessage ⇒
+      case _: TestMessage =>
         receiveMessage(payloadSize)
     }
 
@@ -115,7 +115,7 @@ object LatencySpec extends MultiNodeConfig {
       try {
         histogram.recordValue(d)
       } catch {
-        case e: ArrayIndexOutOfBoundsException ⇒
+        case e: ArrayIndexOutOfBoundsException =>
           // Report it only once instead of flooding the console
           if (!reportedArrayOOB) {
             e.printStackTrace()
@@ -261,7 +261,7 @@ abstract class LatencySpec
         else if (messageRate <= 20000) 1.3
         else 1.4
 
-      for (n ← 1 to repeat) {
+      for (n <- 1 to repeat) {
         echo ! Reset
         expectMsg(Reset)
         histogram.reset()
@@ -270,11 +270,11 @@ abstract class LatencySpec
         // warmup for 3 seconds to init compression
         val warmup = Source(1 to 30)
           .throttle(10, 1.second, 10, ThrottleMode.Shaping)
-          .runForeach { n ⇒
+          .runForeach { n =>
             echo.tell(Array.emptyByteArray, receiver)
           }
 
-        warmup.foreach { _ ⇒
+        warmup.foreach { _ =>
           var i = 0
           var adjust = 0L
           val targetDelay = (SECONDS.toNanos(1) / (messageRate * adjustRateFactor)).toLong
@@ -339,7 +339,7 @@ abstract class LatencySpec
       enterBarrier("echo-started")
     }
 
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be low for ${s.testName}, at ${s.messageRate} msg/s, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
 

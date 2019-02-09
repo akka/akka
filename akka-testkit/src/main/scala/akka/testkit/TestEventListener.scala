@@ -14,7 +14,7 @@ import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, De
 import akka.event.Logging
 import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import akka.util.BoxedType
 import akka.util.ccompat._
 
@@ -105,7 +105,7 @@ abstract class EventFilter(occurrences: Int) {
    * Apply this filter while executing the given code block. Care is taken to
    * remove the filter when the block is finished or aborted.
    */
-  def intercept[T](code: ⇒ T)(implicit system: ActorSystem): T = {
+  def intercept[T](code: => T)(implicit system: ActorSystem): T = {
     system.eventStream publish TestEvent.Mute(this)
     val leeway = TestKitExtension(system).TestEventFilterLeeway.dilated
     try {
@@ -132,8 +132,8 @@ abstract class EventFilter(occurrences: Int) {
     val msgstr = if (msg != null) msg.toString else "null"
     (source.isDefined && source.get == src || source.isEmpty) &&
       (message match {
-        case Left(s)  ⇒ if (complete) msgstr == s else msgstr.startsWith(s)
-        case Right(p) ⇒ p.findFirstIn(msgstr).isDefined
+        case Left(s)  => if (complete) msgstr == s else msgstr.startsWith(s)
+        case Right(p) => p.findFirstIn(msgstr).isDefined
       })
   }
 }
@@ -282,10 +282,10 @@ final case class ErrorFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Error(cause, src, _, msg) if (throwable eq Error.NoCause.getClass) || (throwable isInstance cause) ⇒
+      case Error(cause, src, _, msg) if (throwable eq Error.NoCause.getClass) || (throwable isInstance cause) =>
         (msg == null && cause.getMessage == null && cause.getStackTrace.length == 0) ||
           doMatch(src, msg) || doMatch(src, cause.getMessage)
-      case _ ⇒ false
+      case _ => false
     }
   }
 
@@ -333,8 +333,8 @@ final case class WarningFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Warning(src, _, msg) ⇒ doMatch(src, msg)
-      case _                    ⇒ false
+      case Warning(src, _, msg) => doMatch(src, msg)
+      case _                    => false
     }
   }
 
@@ -377,8 +377,8 @@ final case class InfoFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Info(src, _, msg) ⇒ doMatch(src, msg)
-      case _                 ⇒ false
+      case Info(src, _, msg) => doMatch(src, msg)
+      case _                 => false
     }
   }
 
@@ -421,8 +421,8 @@ final case class DebugFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Debug(src, _, msg) ⇒ doMatch(src, msg)
-      case _                  ⇒ false
+      case Debug(src, _, msg) => doMatch(src, msg)
+      case _                  => false
     }
   }
 
@@ -473,8 +473,8 @@ final case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int)
 
   def matches(event: LogEvent) = {
     event match {
-      case Warning(_, _, msg) ⇒ BoxedType(messageClass) isInstance msg
-      case _                  ⇒ false
+      case Warning(_, _, msg) => BoxedType(messageClass) isInstance msg
+      case _                  => false
     }
   }
 
@@ -498,13 +498,13 @@ class TestEventListener extends Logging.DefaultLogger {
   var filters: List[EventFilter] = Nil
 
   override def receive = {
-    case InitializeLogger(bus) ⇒
+    case InitializeLogger(bus) =>
       Seq(classOf[Mute], classOf[UnMute], classOf[DeadLetter], classOf[UnhandledMessage]) foreach (bus.subscribe(context.self, _))
       sender() ! LoggerInitialized
-    case Mute(filters)   ⇒ filters foreach addFilter
-    case UnMute(filters) ⇒ filters foreach removeFilter
-    case event: LogEvent ⇒ if (!filter(event)) print(event)
-    case DeadLetter(msg, snd, rcp) ⇒
+    case Mute(filters)   => filters foreach addFilter
+    case UnMute(filters) => filters foreach removeFilter
+    case event: LogEvent => if (!filter(event)) print(event)
+    case DeadLetter(msg, snd, rcp) =>
       if (!msg.isInstanceOf[Terminate]) {
         val event = Warning(rcp.path.toString, rcp.getClass, msg)
         if (!filter(event)) {
@@ -516,22 +516,22 @@ class TestEventListener extends Logging.DefaultLogger {
           if (!filter(event2)) print(event2)
         }
       }
-    case UnhandledMessage(msg, sender, rcp) ⇒
+    case UnhandledMessage(msg, sender, rcp) =>
       val event = Warning(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg)
       if (!filter(event)) print(event)
-    case m ⇒ print(Debug(context.system.name, this.getClass, m))
+    case m => print(Debug(context.system.name, this.getClass, m))
   }
 
-  def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case _: Exception ⇒ false })
+  def filter(event: LogEvent): Boolean = filters exists (f => try { f(event) } catch { case _: Exception => false })
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 
   def removeFilter(filter: EventFilter): Unit = {
     @scala.annotation.tailrec
     def removeFirst(list: List[EventFilter], zipped: List[EventFilter] = Nil): List[EventFilter] = list match {
-      case head :: tail if head == filter ⇒ tail.reverse_:::(zipped)
-      case head :: tail                   ⇒ removeFirst(tail, head :: zipped)
-      case Nil                            ⇒ filters // filter not found, just return original list
+      case head :: tail if head == filter => tail.reverse_:::(zipped)
+      case head :: tail                   => removeFirst(tail, head :: zipped)
+      case Nil                            => filters // filter not found, just return original list
     }
     filters = removeFirst(filters)
   }

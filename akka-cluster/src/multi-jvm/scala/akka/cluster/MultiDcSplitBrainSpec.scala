@@ -83,7 +83,7 @@ abstract class MultiDcSplitBrainSpec
     enterBarrier(s"split-$splits")
 
     runOn(first) {
-      for (dc1Node ← dc1; dc2Node ← dc2) {
+      for (dc1Node <- dc1; dc2Node <- dc2) {
         testConductor.blackhole(dc1Node, dc2Node, Direction.Both).await
       }
     }
@@ -119,7 +119,7 @@ abstract class MultiDcSplitBrainSpec
     enterBarrier(s"unsplit-$unsplits")
 
     runOn(first) {
-      for (dc1Node ← dc1; dc2Node ← dc2) {
+      for (dc1Node <- dc1; dc2Node <- dc2) {
         testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
       }
     }
@@ -156,7 +156,7 @@ abstract class MultiDcSplitBrainSpec
       // split is between dc1 and dc2
       runOn(third, fourth) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fourth))))
       }
       enterBarrier("dc2-join-completed")
@@ -165,7 +165,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(dc1: _*) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fourth))))
       }
 
@@ -210,9 +210,9 @@ abstract class MultiDcSplitBrainSpec
       var fifthOriginalUniqueAddress: Option[UniqueAddress] = None
       runOn(first, second, third, fifth) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up ⇒ m.address
+          case m if m.dataCenter == "dc2" && m.status == MemberStatus.Up => m.address
         } should ===(Set(address(third), address(fifth))))
-        fifthOriginalUniqueAddress = clusterView.members.collectFirst { case m if m.address == address(fifth) ⇒ m.uniqueAddress }
+        fifthOriginalUniqueAddress = clusterView.members.collectFirst { case m if m.address == address(fifth) => m.uniqueAddress }
       }
       enterBarrier("fifth-joined")
 
@@ -224,7 +224,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(third) {
         awaitAssert(clusterView.members.collect {
-          case m if m.dataCenter == "dc2" ⇒ m.address
+          case m if m.dataCenter == "dc2" => m.address
         } should ===(Set(address(third))))
       }
 
@@ -258,7 +258,7 @@ abstract class MultiDcSplitBrainSpec
       }
 
       runOn(first) {
-        for (dc1Node ← dc1; dc2Node ← dc2) {
+        for (dc1Node <- dc1; dc2Node <- dc2) {
           testConductor.passThrough(dc1Node, dc2Node, Direction.Both).await
         }
         testConductor.shutdown(fifth)
@@ -270,7 +270,7 @@ abstract class MultiDcSplitBrainSpec
 
       runOn(first, second, third) {
         awaitAssert(clusterView.members.collectFirst {
-          case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address ⇒ m.uniqueAddress
+          case m if m.dataCenter == "dc2" && m.address == fifthOriginalUniqueAddress.get.address => m.uniqueAddress
         } should not be fifthOriginalUniqueAddress) // different uid
 
         subscribeProbe.expectMsgType[MemberUp].member.uniqueAddress should ===(fifthOriginalUniqueAddress.get)

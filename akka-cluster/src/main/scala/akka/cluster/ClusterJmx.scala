@@ -151,7 +151,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       // JMX attributes (bean-style)
 
       def getClusterStatus: String = {
-        val members = clusterView.members.toSeq.sorted(Member.ordering).map { m ⇒
+        val members = clusterView.members.toSeq.sorted(Member.ordering).map { m =>
           s"""{
               |      "address": "${m.address}",
               |      "roles": [${if (m.roles.isEmpty) "" else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
@@ -160,7 +160,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         } mkString (",\n    ")
 
         val unreachable = clusterView.reachability.observersGroupedByUnreachable.toSeq.sortBy(_._1).map {
-          case (subject, observers) ⇒ {
+          case (subject, observers) => {
             val observerAddresses = observers.toSeq.sorted.map("\"" + _.address + "\"")
             s"""{
               |      "node": "${subject.address}",
@@ -204,7 +204,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       mBeanServer.registerMBean(mbean, clusterMBeanName)
       logInfo("Registered cluster JMX MBean [{}]", clusterMBeanName)
     } catch {
-      case e: InstanceAlreadyExistsException ⇒ {
+      case e: InstanceAlreadyExistsException => {
         if (cluster.settings.JmxMultiMbeansInSameEnabled) {
           log.error(e, s"Failed to register Cluster JMX MBean with name=$clusterMBeanName")
         } else {
@@ -223,7 +223,7 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
     try {
       mBeanServer.unregisterMBean(clusterMBeanName)
     } catch {
-      case e: InstanceNotFoundException ⇒ {
+      case e: InstanceNotFoundException => {
         if (cluster.settings.JmxMultiMbeansInSameEnabled) {
           log.error(e, s"Failed to unregister Cluster JMX MBean with name=$clusterMBeanName")
         } else {

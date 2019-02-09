@@ -85,8 +85,8 @@ sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
   override def hashCode(): Int = ref.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case Terminated(`ref`) ⇒ true
-    case _                 ⇒ false
+    case Terminated(`ref`) => true
+    case _                 => false
   }
 }
 
@@ -110,7 +110,7 @@ final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Te
   override def hashCode(): Int = ref.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case ChildFailed(`ref`, `cause`) ⇒ true
-    case _                           ⇒ false
+    case ChildFailed(`ref`, `cause`) => true
+    case _                           => false
   }
 }

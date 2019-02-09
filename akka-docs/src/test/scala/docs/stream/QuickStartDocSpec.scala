@@ -43,15 +43,15 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#create-source
 
     //#run-source
-    source.runForeach(i ⇒ println(i))(materializer)
+    source.runForeach(i => println(i))(materializer)
     //#run-source
 
     //#transform-source
-    val factorials = source.scan(BigInt(1))((acc, next) ⇒ acc * next)
+    val factorials = source.scan(BigInt(1))((acc, next) => acc * next)
 
     val result: Future[IOResult] =
       factorials
-        .map(num ⇒ ByteString(s"$num\n"))
+        .map(num => ByteString(s"$num\n"))
         .runWith(FileIO.toPath(Paths.get("factorials.txt")))
     //#transform-source
 
@@ -61,7 +61,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
 
     //#add-streams
     factorials
-      .zipWith(Source(0 to 100))((num, idx) ⇒ s"$idx! = $num")
+      .zipWith(Source(0 to 100))((num, idx) => s"$idx! = $num")
       .throttle(1, 1.second)
       //#add-streams
       .take(3)
@@ -70,10 +70,10 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#add-streams
 
     //#run-source-and-terminate
-    val done: Future[Done] = source.runForeach(i ⇒ println(i))(materializer)
+    val done: Future[Done] = source.runForeach(i => println(i))(materializer)
 
     implicit val ec = system.dispatcher
-    done.onComplete(_ ⇒ system.terminate())
+    done.onComplete(_ => system.terminate())
     //#run-source-and-terminate
 
     done.futureValue
@@ -82,7 +82,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
   //#transform-sink
   def lineSink(filename: String): Sink[String, Future[IOResult]] =
     Flow[String]
-      .map(s ⇒ ByteString(s + "\n"))
+      .map(s => ByteString(s + "\n"))
       .toMat(FileIO.toPath(Paths.get(filename)))(Keep.right)
   //#transform-sink
 

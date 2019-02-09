@@ -24,7 +24,7 @@ class MessageSerializerSpec extends AkkaSpec(
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     obj match {
-      case _ ⇒
+      case _ =>
         ref should ===(obj)
     }
 

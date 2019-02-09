@@ -6,8 +6,8 @@ package akka.serialization
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.{ BitSet ⇒ ProgrammaticJavaDummy }
-import java.util.{ Date ⇒ SerializableDummy }
+import java.util.{ BitSet => ProgrammaticJavaDummy }
+import java.util.{ Date => SerializableDummy }
 
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
@@ -49,7 +49,7 @@ object SerializationSetupSpec {
   val programmaticDummySerializer = new FakeSerializer
   val testSerializer = new NoopSerializer
 
-  val serializationSettings = SerializationSetup { _ ⇒
+  val serializationSettings = SerializationSetup { _ =>
     List(
       SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])))
   }
@@ -121,7 +121,7 @@ class SerializationSetupSpec extends AkkaSpec(
   // that they'd need a different actor system to be able to create it... someone MAY pick a system with
   // allow-java-serialization=on to create the SerializationSetup and use that SerializationSetup
   // in another system with allow-java-serialization=off
-  val addedJavaSerializationSettings = SerializationSetup { _ ⇒
+  val addedJavaSerializationSettings = SerializationSetup { _ =>
     List(
       SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])),
       SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))

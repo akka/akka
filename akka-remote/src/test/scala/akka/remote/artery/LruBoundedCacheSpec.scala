@@ -66,7 +66,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "evict oldest when full" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         val cache = new TestCache(4, 4, seed.toString)
@@ -146,7 +146,7 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "work with a lower age threshold" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         val cache = new TestCache(4, 2, seed.toString)
@@ -203,14 +203,14 @@ class LruBoundedCacheSpec extends AkkaSpec {
     }
 
     "maintain a good average probe distance" in {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val seed = Random.nextInt(1024)
         info(s"Variant $seed")
         // Cache emulating 60% fill rate
         val cache = new TestCache(1024, 600, seed.toString)
 
         // Fill up cache
-        for (_ ← 1 to 10000) cache.getOrCompute(Random.nextString(32))
+        for (_ <- 1 to 10000) cache.getOrCompute(Random.nextString(32))
 
         val stats = cache.stats
         // Have not seen lower than 890

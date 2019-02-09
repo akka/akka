@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-import java.util.function.{ BiFunction, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange

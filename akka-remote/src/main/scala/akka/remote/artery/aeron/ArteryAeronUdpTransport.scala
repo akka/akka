@@ -129,17 +129,17 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   private def aeronDir: String = mediaDriver.get match {
-    case Some(driver) ⇒ driver.aeronDirectoryName
-    case None         ⇒ settings.Advanced.AeronDirectoryName
+    case Some(driver) => driver.aeronDirectoryName
+    case None         => settings.Advanced.AeronDirectoryName
   }
 
   private def stopMediaDriver(): Unit = {
     // make sure we only close the driver once or we will crash the JVM
     val maybeDriver = mediaDriver.getAndSet(None)
-    maybeDriver.foreach { driver ⇒
+    maybeDriver.foreach { driver =>
       // this is only for embedded media driver
       try driver.close() catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           // don't think driver.close will ever throw, but just in case
           log.warning("Couldn't close Aeron embedded media driver due to [{}]", e)
       }
@@ -150,7 +150,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
           topLevelFlightRecorder.loFreq(Transport_MediaFileDeleted, NoMetaData)
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.warning(
             "Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
             driver.aeronDirectoryName, e)
@@ -177,7 +177,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
         // freeSessionBuffer in AeronSource FragmentAssembler
         streamMatValues.get.valuesIterator.foreach {
-          case InboundStreamMatValues(resourceLife, _) ⇒
+          case InboundStreamMatValues(resourceLife, _) =>
             resourceLife.onUnavailableImage(img.sessionId)
         }
       }
@@ -188,10 +188,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
       override def onError(cause: Throwable): Unit = {
         cause match {
-          case e: ConductorServiceTimeoutException ⇒ handleFatalError(e)
-          case e: DriverTimeoutException           ⇒ handleFatalError(e)
-          case _: AeronTerminated                  ⇒ // already handled, via handleFatalError
-          case _ ⇒
+          case e: ConductorServiceTimeoutException => handleFatalError(e)
+          case e: DriverTimeoutException           => handleFatalError(e)
+          case _: AeronTerminated                  => // already handled, via handleFatalError
+          case _ =>
             log.error(cause, s"Aeron error, $cause")
         }
       }
@@ -313,13 +313,13 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     val (resourceLife, ctrl, completed) =
       aeronSource(ControlStreamId, envelopeBufferPool)
         .via(inboundFlow(settings, NoInboundCompressions))
-        .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
+        .toMat(inboundControlSink)({ case (a, (c, d)) => (a, c, d) })
         .run()(controlMaterializer)
 
     attachControlMessageObserver(ctrl)
 
     updateStreamMatValues(ControlStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
+    attachInboundStreamRestart("Inbound control stream", completed, () => runInboundControlStream())
   }
 
   private def runInboundOrdinaryMessagesStream(): Unit = {
@@ -329,7 +329,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       if (inboundLanes == 1) {
         aeronSource(OrdinaryStreamId, envelopeBufferPool)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
+          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) => (a, b, c) })
           .run()(materializer)
 
       } else {
@@ -343,12 +343,12 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         val (resourceLife, compressionAccess, laneHub) =
           laneSource
             .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
-              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
+              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) => (a, b, c) })
             .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).iterator.map { _ ⇒
+          (0 until inboundLanes).iterator.map { _ =>
             laneHub.toMat(lane)(Keep.right).run()(materializer)
           }.to(immutable.Vector)
 
@@ -356,8 +356,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ laneKillSwitch.abort(reason) }
-        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+        Future.firstCompletedOf(completedValues).failed.foreach { reason => laneKillSwitch.abort(reason) }
+        val allCompleted = Future.sequence(completedValues).map(_ => Done)
 
         (resourceLife, compressionAccess, allCompleted)
       }
@@ -365,7 +365,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     setInboundCompressionAccess(inboundCompressionAccess)
 
     updateStreamMatValues(OrdinaryStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
+    attachInboundStreamRestart("Inbound message stream", completed, () => runInboundOrdinaryMessagesStream())
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
@@ -377,19 +377,19 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       .run()(materializer)
 
     updateStreamMatValues(LargeStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
+    attachInboundStreamRestart("Inbound large message stream", completed, () => runInboundLargeMessagesStream())
   }
 
   private def updateStreamMatValues(streamId: Int, aeronSourceLifecycle: AeronSource.AeronLifecycle, completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
     updateStreamMatValues(streamId, InboundStreamMatValues[AeronLifecycle](
       aeronSourceLifecycle,
-      completed.recover { case _ ⇒ Done }))
+      completed.recover { case _ => Done }))
   }
 
   override protected def shutdownTransport(): Future[Done] = {
     import system.dispatcher
-    taskRunner.stop().map { _ ⇒
+    taskRunner.stop().map { _ =>
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       if (aeronErrorLogTask != null) {
         aeronErrorLogTask.cancel()

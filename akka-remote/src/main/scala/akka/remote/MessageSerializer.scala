@@ -58,7 +58,7 @@ private[akka] object MessageSerializer {
 
       builder.build
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         throw new SerializationException(s"Failed to serialize remote message [${message.getClass}] " +
           s"using serializer [${serializer.getClass}].", e)
     } finally Serialization.currentTransportInformation.value = oldInfo
@@ -77,8 +77,8 @@ private[akka] object MessageSerializer {
       envelope.writeHeader(headerBuilder, outboundEnvelope)
 
       serializer match {
-        case ser: ByteBufferSerializer ⇒ ser.toBinary(message, envelope.byteBuffer)
-        case _                         ⇒ envelope.byteBuffer.put(serializer.toBinary(message))
+        case ser: ByteBufferSerializer => ser.toBinary(message, envelope.byteBuffer)
+        case _                         => envelope.byteBuffer.put(serializer.toBinary(message))
       }
 
     } finally Serialization.currentTransportInformation.value = oldInfo

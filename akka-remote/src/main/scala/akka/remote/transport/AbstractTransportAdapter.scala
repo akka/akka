@@ -27,15 +27,15 @@ trait TransportAdapterProvider {
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
   val settings = RARP(system).provider.remoteSettings
 
-  private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
-    name → system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
-      case e ⇒ throw new IllegalArgumentException(s"Cannot instantiate transport adapter [${fqn}]", e)
+  private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) <- settings.Adapters) yield {
+    name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({
+      case e => throw new IllegalArgumentException(s"Cannot instantiate transport adapter [${fqn}]", e)
     }).get
   }
 
   def getAdapterProvider(name: String): TransportAdapterProvider = adaptersTable.get(name) match {
-    case Some(provider) ⇒ provider
-    case None           ⇒ throw new IllegalArgumentException(s"There is no registered transport adapter provider with name: [${name}]")
+    case Some(provider) => provider
+    case None           => throw new IllegalArgumentException(s"There is no registered transport adapter provider with name: [${name}]")
   }
 }
 
@@ -85,10 +85,10 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
     val upstreamListenerPromise: Promise[AssociationEventListener] = Promise()
 
     for {
-      (listenAddress, listenerPromise) ← wrappedTransport.listen
+      (listenAddress, listenerPromise) <- wrappedTransport.listen
       // Enforce ordering between the signalling of "listen ready" to upstream
       // and initialization happening in interceptListen
-      _ ← listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
+      _ <- listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future)).future
     } yield (augmentScheme(listenAddress), upstreamListenerPromise)
   }
 
@@ -99,10 +99,10 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
    */
   private[akka] def boundAddress: Address = wrappedTransport match {
     // Need to do like this in the backport of #15007 to 2.3.x for binary compatibility reasons
-    case t: AbstractTransportAdapter ⇒ t.boundAddress
-    case t: netty.NettyTransport     ⇒ t.boundAddress
-    case t: TestTransport            ⇒ t.boundAddress
-    case _                           ⇒ null
+    case t: AbstractTransportAdapter => t.boundAddress
+    case t: netty.NettyTransport     => t.boundAddress
+    case t: TestTransport            => t.boundAddress
+    case _                           => null
   }
 
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
@@ -167,7 +167,7 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   override def interceptListen(
     listenAddress:   Address,
     listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
-    registerManager().map { mgr ⇒
+    registerManager().map { mgr =>
       // Side effecting: storing the manager instance in volatile var
       // This is done only once: during the initialization of the protocol stack. The variable manager is not read
       // before listen is called.
@@ -182,8 +182,8 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 
   override def shutdown(): Future[Boolean] =
     for {
-      stopResult ← gracefulStop(manager, RARP(system).provider.remoteSettings.FlushWait)
-      wrappedStopResult ← wrappedTransport.shutdown()
+      stopResult <- gracefulStop(manager, RARP(system).provider.remoteSettings.FlushWait)
+      wrappedStopResult <- wrappedTransport.shutdown()
     } yield stopResult && wrappedStopResult
 }
 
@@ -205,11 +205,11 @@ abstract class ActorTransportAdapterManager extends Actor
   import context.dispatcher
 
   def receive: Receive = {
-    case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
+    case ListenUnderlying(listenAddress, upstreamListenerFuture) =>
       localAddress = listenAddress
       upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
 
-    case ListenerRegistered(listener) ⇒
+    case ListenerRegistered(listener) =>
       associationListener = listener
       delayedEvents foreach { self.tell(_, Actor.noSender) }
       delayedEvents = immutable.Queue.empty[Any]
@@ -219,7 +219,7 @@ abstract class ActorTransportAdapterManager extends Actor
      * queue. The difference is that these messages will not survive a restart -- which is not needed here.
      * These messages will be processed in the ready state.
      */
-    case otherEvent ⇒ delayedEvents = delayedEvents enqueue otherEvent
+    case otherEvent => delayedEvents = delayedEvents enqueue otherEvent
 
   }
 

@@ -51,7 +51,7 @@ class TransportFailMultiJvmNode2 extends TransportFailSpec
 object TransportFailSpec {
   class Subject extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 

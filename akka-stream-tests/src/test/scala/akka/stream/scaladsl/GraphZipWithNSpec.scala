@@ -27,7 +27,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work in the happy case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(2))
         Source(1 to 4) ~> zip.in(0)
         Source(10 to 40 by 10) ~> zip.in(1)
@@ -54,7 +54,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work in the sad case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zip = b.add(ZipWithN((_: immutable.Seq[Int]).foldLeft(1)(_ / _))(2))
 
         Source(1 to 4) ~> zip.in(0)
@@ -75,7 +75,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
         subscription.request(2)
       }
       probe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
+        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
       probe.expectNoMsg(200.millis)
     }
@@ -117,7 +117,7 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work with 3 inputs" in {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(3))
 
         Source.single(1) ~> zip.in(0)
@@ -140,11 +140,11 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work with 30 inputs" in {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(30))
 
         (0 to 29).foreach {
-          n ⇒ Source.single(n) ~> zip.in(n)
+          n => Source.single(n) ~> zip.in(n)
         }
 
         zip.out ~> Sink.fromSubscriber(probe)

@@ -28,10 +28,10 @@ object ClusterMetricsStrategy {
    * [[akka.actor.SupervisorStrategy]] `Decider` which allows to survive intermittent Sigar native method calls failures.
    */
   val metricsDecider: SupervisorStrategy.Decider = {
-    case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: DeathPactException           ⇒ Stop
-    case _: Throwable                    ⇒ Restart
+    case _: ActorInitializationException => Stop
+    case _: ActorKilledException         => Stop
+    case _: DeathPactException           => Stop
+    case _: Throwable                    => Restart
   }
 
 }

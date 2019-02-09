@@ -36,7 +36,7 @@ object ClusterSingletonManagerStartupSpec extends MultiNodeConfig {
    */
   class Echo(testActor: ActorRef) extends Actor {
     def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }

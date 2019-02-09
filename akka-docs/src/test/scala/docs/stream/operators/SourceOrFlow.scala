@@ -30,9 +30,9 @@ object SourceOrFlow {
     //#conflate
     import scala.concurrent.duration._
 
-    Source.cycle(() ⇒ List(1, 10, 100, 1000).iterator)
+    Source.cycle(() => List(1, 10, 100, 1000).iterator)
       .throttle(10, per = 1.second) // faster upstream
-      .conflate((acc, el) ⇒ acc + el) // acc: Int, el: Int
+      .conflate((acc, el) => acc + el) // acc: Int, el: Int
       .throttle(1, per = 1.second) // slow downstream
     //#conflate
   }
@@ -45,9 +45,9 @@ object SourceOrFlow {
       def sum(other: Summed) = Summed(this.i + other.i)
     }
 
-    Source.cycle(() ⇒ List(1, 10, 100, 1000).iterator)
+    Source.cycle(() => List(1, 10, 100, 1000).iterator)
       .throttle(10, per = 1.second) // faster upstream
-      .conflateWithSeed(el ⇒ Summed(el))((acc, el) ⇒ acc sum Summed(el)) // (Summed, Int) => Summed
+      .conflateWithSeed(el => Summed(el))((acc, el) => acc sum Summed(el)) // (Summed, Int) => Summed
       .throttle(1, per = 1.second) // slow downstream
     //#conflateWithSeed
   }
@@ -61,7 +61,7 @@ object SourceOrFlow {
 
     //#scan
     val source = Source(1 to 5)
-    source.scan(0)((acc, x) ⇒ acc + x).runForeach(println)
+    source.scan(0)((acc, x) => acc + x).runForeach(println)
     // 0  (= 0)
     // 1  (= 0 + 1)
     // 3  (= 0 + 1 + 2)

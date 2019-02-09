@@ -32,21 +32,21 @@ object BasicPersistentBehaviorCompileOnly {
     //#command-handler
     import akka.persistence.typed.scaladsl.Effect
 
-    val commandHandler: (State, Command) ⇒ Effect[Event, State] = {
-      (state, command) ⇒
+    val commandHandler: (State, Command) => Effect[Event, State] = {
+      (state, command) =>
         command match {
-          case Add(data) ⇒ Effect.persist(Added(data))
-          case Clear     ⇒ Effect.persist(Cleared)
+          case Add(data) => Effect.persist(Added(data))
+          case Clear     => Effect.persist(Cleared)
         }
     }
     //#command-handler
 
     //#event-handler
-    val eventHandler: (State, Event) ⇒ State = {
-      (state, event) ⇒
+    val eventHandler: (State, Event) => State = {
+      (state, event) =>
         event match {
-          case Added(data) ⇒ state.copy((data :: state.history).take(5))
-          case Cleared     ⇒ State(Nil)
+          case Added(data) => state.copy((data :: state.history).take(5))
+          case Cleared     => State(Nil)
         }
     }
     //#event-handler
@@ -72,10 +72,10 @@ object BasicPersistentBehaviorCompileOnly {
       persistenceId = PersistenceId("abc"),
       emptyState = State(),
       commandHandler =
-        (state, cmd) ⇒
+        (state, cmd) =>
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
-        (state, evt) ⇒
+        (state, evt) =>
           throw new RuntimeException("TODO: process the event return the next state")
     )
   //#structure
@@ -86,12 +86,12 @@ object BasicPersistentBehaviorCompileOnly {
       persistenceId = PersistenceId("abc"),
       emptyState = State(),
       commandHandler =
-        (state, cmd) ⇒
+        (state, cmd) =>
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
-        (state, evt) ⇒
+        (state, evt) =>
           throw new RuntimeException("TODO: process the event return the next state")
-    ).onRecoveryCompleted { state ⇒
+    ).onRecoveryCompleted { state =>
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -102,12 +102,12 @@ object BasicPersistentBehaviorCompileOnly {
       persistenceId = PersistenceId("abc"),
       emptyState = State(),
       commandHandler =
-        (state, cmd) ⇒
+        (state, cmd) =>
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
-        (state, evt) ⇒
+        (state, evt) =>
           throw new RuntimeException("TODO: process the event return the next state")
-    ).withTagger(_ ⇒ Set("tag1", "tag2"))
+    ).withTagger(_ => Set("tag1", "tag2"))
   //#tagging
 
   //#wrapPersistentBehavior
@@ -115,18 +115,18 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler =
-      (state, cmd) ⇒
+      (state, cmd) =>
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
-      (state, evt) ⇒
+      (state, evt) =>
         throw new RuntimeException("TODO: process the event return the next state")
-  ).onRecoveryCompleted { state ⇒
+  ).onRecoveryCompleted { state =>
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup {
-    context ⇒
-      samplePersistentBehavior.snapshotWhen((state, _, _) ⇒ {
+    context =>
+      samplePersistentBehavior.snapshotWhen((state, _, _) => {
         context.log.info(
           "Snapshot actor {} => state: {}",
           context.self.path.name, state)
@@ -149,19 +149,19 @@ object BasicPersistentBehaviorCompileOnly {
   import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 
   val behaviorWithContext: Behavior[String] =
-    Behaviors.setup { context ⇒
+    Behaviors.setup { context =>
       EventSourcedBehavior[String, String, State](
         persistenceId = PersistenceId("myPersistenceId"),
         emptyState = new State,
         commandHandler = CommandHandler.command {
-          cmd ⇒
+          cmd =>
             context.log.info("Got command {}", cmd)
-            Effect.persist(cmd).thenRun { state ⇒
+            Effect.persist(cmd).thenRun { state =>
               context.log.info("event persisted, new state {}", state)
             }
         },
         eventHandler = {
-          case (state, _) ⇒ state
+          case (state, _) => state
         })
     }
   // #actor-context
@@ -171,10 +171,10 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler =
-      (state, cmd) ⇒
+      (state, cmd) =>
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
-      (state, evt) ⇒
+      (state, evt) =>
         throw new RuntimeException("TODO: process the event return the next state")
   ).snapshotEvery(100)
   //#snapshottingEveryN
@@ -185,14 +185,14 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler =
-      (state, cmd) ⇒
+      (state, cmd) =>
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
-      (state, evt) ⇒
+      (state, evt) =>
         throw new RuntimeException("TODO: process the event return the next state")
   ).snapshotWhen {
-      case (state, BookingCompleted(_), sequenceNumber) ⇒ true
-      case (state, event, sequenceNumber)               ⇒ false
+      case (state, BookingCompleted(_), sequenceNumber) => true
+      case (state, event, sequenceNumber)               => false
     }
   //#snapshottingPredicate
 
@@ -203,10 +203,10 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler =
-      (state, cmd) ⇒
+      (state, cmd) =>
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
-      (state, evt) ⇒
+      (state, evt) =>
         throw new RuntimeException("TODO: process the event return the next state")
   ).withSnapshotSelectionCriteria(SnapshotSelectionCriteria.None)
   //#snapshotSelection

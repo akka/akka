@@ -17,8 +17,8 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
 
   def compress(value: T): Int =
     dictionary.get(value) match {
-      case Some(id) ⇒ id
-      case None     ⇒ NotCompressedId
+      case Some(id) => id
+      case None     => NotCompressedId
     }
 
   def invert: DecompressionTable[T] =

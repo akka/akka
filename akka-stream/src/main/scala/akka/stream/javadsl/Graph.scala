@@ -415,7 +415,7 @@ object ZipN {
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
     import scala.collection.JavaConverters._
-    scaladsl.ZipWithN[A, O](seq ⇒ zipper.apply(seq.asJava))(n)
+    scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
   }
 }
 
@@ -498,14 +498,14 @@ object GraphDSL extends GraphCreate {
     buildBlock: function.Function2[GraphDSL.Builder[java.util.List[M]], java.util.List[IS], S]): Graph[S, java.util.List[M]] = {
     require(!graphs.isEmpty, "The input list must have one or more Graph elements")
     val gbuilder = builder[java.util.List[M]]()
-    val toList = (m1: M) ⇒ new util.ArrayList(util.Arrays.asList(m1))
-    val combine = (s: java.util.List[M], m2: M) ⇒ {
+    val toList = (m1: M) => new util.ArrayList(util.Arrays.asList(m1))
+    val combine = (s: java.util.List[M], m2: M) => {
       val newList = new util.ArrayList(s)
       newList.add(m2)
       newList
     }
     val sListH = gbuilder.delegate.add(graphs.get(0), toList)
-    val sListT = graphs.subList(1, graphs.size()).asScala.map(g ⇒ gbuilder.delegate.add(g, combine)).asJava
+    val sListT = graphs.subList(1, graphs.size()).asScala.map(g => gbuilder.delegate.add(g, combine)).asJava
     val s = buildBlock(gbuilder, {
       val newList = new util.ArrayList[IS]
       newList.add(sListH)
@@ -515,7 +515,7 @@ object GraphDSL extends GraphCreate {
     new GenericGraph(s, gbuilder.delegate.result(s))
   }
 
-  final class Builder[+Mat]()(private[stream] implicit val delegate: scaladsl.GraphDSL.Builder[Mat]) { self ⇒
+  final class Builder[+Mat]()(private[stream] implicit val delegate: scaladsl.GraphDSL.Builder[Mat]) { self =>
     import akka.stream.scaladsl.GraphDSL.Implicits._
 
     /**

@@ -25,15 +25,15 @@ private object ConfigServicesParser {
       .root()
       .entrySet()
       .asScala
-      .map { en ⇒
+      .map { en =>
         (en.getKey, config.getConfig(en.getKey))
       }
       .toMap
 
     byService.map {
-      case (serviceName, full) ⇒
+      case (serviceName, full) =>
         val endpoints = full.getConfigList("endpoints").asScala.toList
-        val resolvedTargets = endpoints.map { c ⇒
+        val resolvedTargets = endpoints.map { c =>
           val host = c.getString("host")
           val port = if (c.hasPath("port")) Some(c.getInt("port")) else None
           ResolvedTarget(host = host, port = port, address = None)

@@ -44,9 +44,9 @@ object SupervisionCompileOnly {
   case class GetCount(replyTo: ActorRef[Int]) extends Command
 
   def counter(count: Int): Behavior[Command] = Behaviors.receiveMessage[Command] {
-    case Increment(nr: Int) ⇒
+    case Increment(nr: Int) =>
       counter(count + nr)
-    case GetCount(replyTo) ⇒
+    case GetCount(replyTo) =>
       replyTo ! count
       Behaviors.same
   }
@@ -58,15 +58,15 @@ object SupervisionCompileOnly {
 
   //#restart-stop-children
   def child(size: Long): Behavior[String] =
-    Behaviors.receiveMessage(msg ⇒ child(size + msg.length))
+    Behaviors.receiveMessage(msg => child(size + msg.length))
 
   def parent: Behavior[String] = {
     Behaviors.supervise[String] {
-      Behaviors.setup { ctx ⇒
+      Behaviors.setup { ctx =>
         val child1 = ctx.spawn(child(0), "child1")
         val child2 = ctx.spawn(child(0), "child2")
 
-        Behaviors.receiveMessage[String] { msg ⇒
+        Behaviors.receiveMessage[String] { msg =>
           // there might be bugs here...
           val parts = msg.split(" ")
           child1 ! parts(0)
@@ -80,13 +80,13 @@ object SupervisionCompileOnly {
 
   //#restart-keep-children
   def parent2: Behavior[String] = {
-    Behaviors.setup { ctx ⇒
+    Behaviors.setup { ctx =>
       val child1 = ctx.spawn(child(0), "child1")
       val child2 = ctx.spawn(child(0), "child2")
 
       // supervision strategy inside the setup to not recreate children on restart
       Behaviors.supervise {
-        Behaviors.receiveMessage[String] { msg ⇒
+        Behaviors.receiveMessage[String] { msg =>
           // there might be bugs here...
           val parts = msg.split(" ")
           child1 ! parts(0)

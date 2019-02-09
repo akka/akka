@@ -26,7 +26,7 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
   extends AkkaException(s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
     "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message", cause)
 
-private[akka] trait Dispatch { this: ActorCell ⇒
+private[akka] trait Dispatch { this: ActorCell =>
 
   @volatile private var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
@@ -65,7 +65,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     // it properly in the normal way
     val actorClass = props.actorClass
     val createMessage = mailboxType match {
-      case _: ProducesMessageQueue[_] if system.mailboxes.hasRequiredType(actorClass) ⇒
+      case _: ProducesMessageQueue[_] if system.mailboxes.hasRequiredType(actorClass) =>
         val req = system.mailboxes.getRequiredType(actorClass)
         if (req isInstance mbox.messageQueue) Create(None)
         else {
@@ -74,7 +74,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
             self,
             s"Actor [$self] requires mailbox type [$req] got [$gotType]")))
         }
-      case _ ⇒ Create(None)
+      case _ => Create(None)
     }
 
     swapMailbox(mbox)
@@ -110,13 +110,13 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   }
 
   private def handleException: Catcher[Unit] = {
-    case e: InterruptedException ⇒
+    case e: InterruptedException =>
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
       Thread.currentThread.interrupt()
-    case NonFatal(e) ⇒
+    case NonFatal(e) =>
       val message = e match {
-        case n: NoStackTrace ⇒ "swallowing exception during message send: " + n.getMessage
-        case _               ⇒ "swallowing exception during message send" // stack trace includes message
+        case n: NoStackTrace => "swallowing exception during message send: " + n.getMessage
+        case _               => "swallowing exception during message send" // stack trace includes message
       }
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), message))
   }
@@ -146,21 +146,21 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
     val unwrappedMessage =
       (envelope.message match {
-        case DeadLetter(wrapped, _, _) ⇒ wrapped
-        case other                     ⇒ other
+        case DeadLetter(wrapped, _, _) => wrapped
+        case other                     => other
       }).asInstanceOf[AnyRef]
 
     unwrappedMessage match {
-      case _: NoSerializationVerificationNeeded ⇒ envelope
-      case msg ⇒
+      case _: NoSerializationVerificationNeeded => envelope
+      case msg =>
         val deserializedMsg = try {
           serializeAndDeserializePayload(msg)
         } catch {
-          case NonFatal(e) ⇒ throw SerializationCheckFailedException(msg, e)
+          case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
         }
         envelope.message match {
-          case dl: DeadLetter ⇒ envelope.copy(message = dl.copy(message = deserializedMsg))
-          case _              ⇒ envelope.copy(message = deserializedMsg)
+          case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg))
+          case _              => envelope.copy(message = deserializedMsg)
         }
     }
   }

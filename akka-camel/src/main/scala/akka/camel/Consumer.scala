@@ -63,7 +63,7 @@ trait Consumer extends Actor with CamelSupport {
    * return a custom route definition handler. The returned function is not allowed to close over 'this', meaning it is
    * not allowed to refer to the actor instance itself, since that can easily cause concurrent shared state issues.
    */
-  def onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_] = {
+  def onRouteDefinition: RouteDefinition => ProcessorDefinition[_] = {
     val mapper = getRouteDefinitionHandler
     if (mapper != identityRouteMapper) mapper.apply _
     else identityRouteMapper
@@ -93,10 +93,10 @@ private[camel] object Consumer {
  *
  * Was a case class but has been split up as a workaround for SI-8283
  */
-private[camel] class ConsumerConfig(val activationTimeout: FiniteDuration, val replyTimeout: FiniteDuration, val autoAck: Boolean, val onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded
+private[camel] class ConsumerConfig(val activationTimeout: FiniteDuration, val replyTimeout: FiniteDuration, val autoAck: Boolean, val onRouteDefinition: RouteDefinition => ProcessorDefinition[_]) extends NoSerializationVerificationNeeded
   with scala.Serializable
 
 private[camel] object ConsumerConfig {
-  def apply(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]): ConsumerConfig =
+  def apply(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition => ProcessorDefinition[_]): ConsumerConfig =
     new ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)
 }

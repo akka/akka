@@ -62,7 +62,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   override def persistenceIds(): Source[String, NotUsed] = {
     // no polling for this query, the write journal will push all changes, i.e. no refreshInterval
     Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
-      .mapMaterializedValue(_ ⇒ NotUsed)
+      .mapMaterializedValue(_ => NotUsed)
       .named("allPersistenceIds")
   }
 
@@ -73,7 +73,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    */
   override def currentPersistenceIds(): Source[String, NotUsed] = {
     Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = false, maxBufSize, writeJournalPluginId))
-      .mapMaterializedValue(_ ⇒ NotUsed)
+      .mapMaterializedValue(_ => NotUsed)
       .named("currentPersistenceIds")
   }
 
@@ -106,7 +106,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
                                      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr,
-      refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+      refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ => NotUsed)
       .named("eventsByPersistenceId-" + persistenceId)
   }
 
@@ -118,7 +118,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
                                             toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr,
-      None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+      None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ => NotUsed)
       .named("currentEventsByPersistenceId-" + persistenceId)
   }
 
@@ -163,13 +163,13 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    */
   override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
     offset match {
-      case seq: Sequence ⇒
+      case seq: Sequence =>
         Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, seq.value, Long.MaxValue,
           refreshInterval, maxBufSize, writeJournalPluginId))
-          .mapMaterializedValue(_ ⇒ NotUsed)
+          .mapMaterializedValue(_ => NotUsed)
           .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-      case NoOffset ⇒ eventsByTag(tag, Sequence(0L)) //recursive
-      case _ ⇒
+      case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
+      case _ =>
         throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
     }
 
@@ -180,12 +180,12 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    */
   override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
     offset match {
-      case seq: Sequence ⇒
+      case seq: Sequence =>
         Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, seq.value, Long.MaxValue,
-          None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ => NotUsed)
           .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-      case NoOffset ⇒ currentEventsByTag(tag, Sequence(0L)) //recursive
-      case _ ⇒
+      case NoOffset => currentEventsByTag(tag, Sequence(0L)) //recursive
+      case _ =>
         throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
     }
 

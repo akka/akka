@@ -173,7 +173,7 @@ class GCounterSpec extends WordSpec with Matchers {
       val GCounter(value1) = c1
       val value2: BigInt = value1
       Changed(GCounterKey("key"))(c1) match {
-        case c @ Changed(GCounterKey("key")) ⇒
+        case c @ Changed(GCounterKey("key")) =>
           val GCounter(value3) = c.dataValue
           val value4: BigInt = value3
           value4 should be(2L)

@@ -50,7 +50,7 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
       val m = ActorMaterializer.create(system)
 
       the[IllegalStateException] thrownBy {
-        Source(1 to 5).mapMaterializedValue { _ ⇒
+        Source(1 to 5).mapMaterializedValue { _ =>
           // shutdown while materializing
           m.shutdown()
           Thread.sleep(100)
@@ -107,7 +107,7 @@ object ActorMaterializerSpec {
       .take(1)
       .concat(Source.maybe)
       .map(p.ref ! _)
-      .runWith(Sink.onComplete(signal ⇒ {
+      .runWith(Sink.onComplete(signal => {
         p.ref ! signal
       }))
 

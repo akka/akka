@@ -15,7 +15,7 @@ import akka.actor.ExtendedActorSystem
  */
 class DummyReadJournal(val dummyValue: String) extends scaladsl.ReadJournal with scaladsl.PersistenceIdsQuery {
   override def persistenceIds(): Source[String, NotUsed] =
-    Source.fromIterator(() ⇒ Iterator.from(0)).map(_.toString)
+    Source.fromIterator(() => Iterator.from(0)).map(_.toString)
 }
 
 object DummyReadJournal {

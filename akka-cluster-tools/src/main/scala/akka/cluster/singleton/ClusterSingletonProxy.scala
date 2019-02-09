@@ -180,8 +180,8 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   }
 
   private val targetDcRole = settings.dataCenter match {
-    case Some(t) ⇒ ClusterSettings.DcRolePrefix + t
-    case None    ⇒ ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
+    case Some(t) => ClusterSettings.DcRolePrefix + t
+    case None    => ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter
   }
 
   def matchingRole(member: Member): Boolean =
@@ -189,9 +189,9 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
 
   def handleInitial(state: CurrentClusterState): Unit = {
     trackChange {
-      () ⇒
+      () =>
         membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.collect {
-          case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
+          case m if m.status == MemberStatus.Up && matchingRole(m) => m
         }
     }
   }
@@ -209,7 +209,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     identifyTimer = Some(context.system.scheduler.schedule(0 milliseconds, singletonIdentificationInterval, self, ClusterSingletonProxy.TryToIdentifySingleton))
   }
 
-  def trackChange(block: () ⇒ Unit): Unit = {
+  def trackChange(block: () => Unit): Unit = {
     val before = membersByAge.headOption
     block()
     val after = membersByAge.headOption
@@ -223,7 +223,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    */
   def add(m: Member): Unit = {
     if (matchingRole(m))
-      trackChange { () ⇒
+      trackChange { () =>
         // replace, it's possible that the upNumber is changed
         membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
         membersByAge += m
@@ -236,7 +236,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    */
   def remove(m: Member): Unit = {
     if (matchingRole(m))
-      trackChange { () ⇒
+      trackChange { () =>
         // filter, it's possible that the upNumber is changed
         membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
       }
@@ -244,52 +244,52 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
 
   def receive = {
     // cluster logic
-    case state: CurrentClusterState ⇒ handleInitial(state)
-    case MemberUp(m)                ⇒ add(m)
-    case MemberExited(m)            ⇒ remove(m)
-    case MemberRemoved(m, _) ⇒
+    case state: CurrentClusterState => handleInitial(state)
+    case MemberUp(m)                => add(m)
+    case MemberExited(m)            => remove(m)
+    case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)
       else
         remove(m)
-    case _: MemberEvent ⇒ // do nothing
+    case _: MemberEvent => // do nothing
 
     // singleton identification logic
-    case ActorIdentity(identifyId, Some(s)) ⇒
+    case ActorIdentity(identifyId, Some(s)) =>
       // if the new singleton is defined, deliver all buffered messages
       log.info("Singleton identified at [{}]", s.path)
       singleton = Some(s)
       context.watch(s)
       cancelTimer()
       sendBuffered()
-    case _: ActorIdentity ⇒ // do nothing
-    case ClusterSingletonProxy.TryToIdentifySingleton ⇒
+    case _: ActorIdentity => // do nothing
+    case ClusterSingletonProxy.TryToIdentifySingleton =>
       identifyTimer match {
-        case Some(_) ⇒
-          membersByAge.headOption foreach { oldest ⇒
+        case Some(_) =>
+          membersByAge.headOption foreach { oldest =>
             val singletonAddress = RootActorPath(oldest.address) / singletonPath
             log.debug("Trying to identify singleton at [{}]", singletonAddress)
             context.actorSelection(singletonAddress) ! Identify(identifyId)
           }
-        case _ ⇒
+        case _ =>
         // ignore, if the timer is not present it means we have successfully identified
       }
-    case Terminated(ref) ⇒
+    case Terminated(ref) =>
       if (singleton.contains(ref)) {
         // buffering mode, identification of new will start when old node is removed
         singleton = None
       }
 
     // forwarding/stashing logic
-    case msg: Any ⇒
+    case msg: Any =>
       singleton match {
-        case Some(s) ⇒
+        case Some(s) =>
           if (log.isDebugEnabled)
             log.debug(
               "Forwarding message of type [{}] to current singleton instance at [{}]",
               Logging.simpleName(msg.getClass), s.path)
           s forward msg
-        case None ⇒
+        case None =>
           buffer(msg)
       }
   }
@@ -310,7 +310,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   def sendBuffered(): Unit = {
     log.debug("Sending buffered messages to current singleton instance")
     val target = singleton.get
-    buffer.foreach((msg, snd) ⇒ target.tell(msg, snd))
+    buffer.foreach((msg, snd) => target.tell(msg, snd))
     buffer = MessageBuffer.empty
   }
 }

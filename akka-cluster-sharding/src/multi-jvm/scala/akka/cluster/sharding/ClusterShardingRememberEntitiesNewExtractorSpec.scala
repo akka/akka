@@ -29,25 +29,25 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
     probe.foreach(_ ! Started(self))
 
     def receive = {
-      case m ⇒ sender() ! m
+      case m => sender() ! m
     }
   }
 
   val shardCount = 5
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
-    case id: Int                     ⇒ (id % shardCount).toString
-    case ShardRegion.StartEntity(id) ⇒ extractShardId1(id.toInt)
+    case id: Int                     => (id % shardCount).toString
+    case ShardRegion.StartEntity(id) => extractShardId1(id.toInt)
   }
 
   val extractShardId2: ShardRegion.ExtractShardId = {
     // always bump it one shard id
-    case id: Int                     ⇒ ((id + 1) % shardCount).toString
-    case ShardRegion.StartEntity(id) ⇒ extractShardId2(id.toInt)
+    case id: Int                     => ((id + 1) % shardCount).toString
+    case ShardRegion.StartEntity(id) => extractShardId2(id.toInt)
   }
 
 }
@@ -134,12 +134,12 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
@@ -213,7 +213,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
       runOn(second, third) {
         // one entity for each shard id
-        (1 to 10).foreach { n ⇒
+        (1 to 10).foreach { n =>
           region() ! n
           expectMsg(n)
         }
@@ -277,8 +277,8 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
         }
 
         for {
-          shardState ← stats.shards
-          entityId ← shardState.entityIds
+          shardState <- stats.shards
+          entityId <- shardState.entityIds
         } {
           val calculatedShardId = extractShardId2(entityId.toInt)
           calculatedShardId should ===(shardState.shardId)

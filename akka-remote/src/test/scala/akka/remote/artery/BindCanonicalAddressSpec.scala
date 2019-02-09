@@ -17,7 +17,7 @@ import akka.testkit.SocketUtil
 import java.net.InetAddress
 
 trait BindCanonicalAddressBehaviors {
-  this: WordSpec with Matchers ⇒
+  this: WordSpec with Matchers =>
   def arteryConnectionTest(transport: String, isUDP: Boolean): Unit = {
 
     val commonConfig = BindCanonicalAddressSpec.commonConfig(transport)
@@ -47,7 +47,7 @@ trait BindCanonicalAddressBehaviors {
 
       getExternal should ===(address.toAkkaAddress("akka"))
       // May have selected the same random port - bind another in that case while the other still has the canonical port
-      val internals = if (getInternal.collect { case Address(_, _, _, Some(port)) ⇒ port }.toSeq.contains(address.getPort)) {
+      val internals = if (getInternal.collect { case Address(_, _, _, Some(port)) => port }.toSeq.contains(address.getPort)) {
         val sys2 = ActorSystem("sys", config.withFallback(commonConfig))
         val secondInternals = getInternal()(sys2)
         Await.result(sys2.terminate(), Duration.Inf)

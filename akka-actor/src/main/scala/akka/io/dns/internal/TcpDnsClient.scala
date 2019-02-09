@@ -22,7 +22,7 @@ import akka.util.ByteString
   override def receive: Receive = idle
 
   val idle: Receive = {
-    case _: Message ⇒
+    case _: Message =>
       stash()
       log.debug("Connecting to [{}]", ns)
       tcp ! Tcp.Connect(ns)
@@ -30,25 +30,25 @@ import akka.util.ByteString
   }
 
   val connecting: Receive = {
-    case failure @ Tcp.CommandFailed(_: Tcp.Connect) ⇒
+    case failure @ Tcp.CommandFailed(_: Tcp.Connect) =>
       throwFailure(s"Failed to connect to TCP DNS server at [$ns]", failure.cause)
-    case _: Tcp.Connected ⇒
+    case _: Tcp.Connected =>
       log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
       context.become(ready(connection))
       connection ! Tcp.Register(self)
       unstashAll()
-    case _: Message ⇒
+    case _: Message =>
       stash()
   }
 
   def ready(connection: ActorRef, buffer: ByteString = ByteString.empty): Receive = {
-    case msg: Message ⇒
+    case msg: Message =>
       val bytes = msg.write()
       connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes)
-    case failure @ Tcp.CommandFailed(_: Tcp.Write) ⇒
+    case failure @ Tcp.CommandFailed(_: Tcp.Write) =>
       throwFailure("Write failed", failure.cause)
-    case Tcp.Received(newData) ⇒
+    case Tcp.Received(newData) =>
       val data = buffer ++ newData
       // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
       val prefixSize = 2
@@ -66,7 +66,7 @@ import akka.util.ByteString
           }
         }
       }
-    case Tcp.PeerClosed ⇒
+    case Tcp.PeerClosed =>
       context.become(idle)
   }
 
@@ -89,9 +89,9 @@ private[internal] object TcpDnsClient {
 
   def throwFailure(message: String, cause: Option[Throwable]): Unit =
     cause match {
-      case None ⇒
+      case None =>
         throw new AkkaException(message)
-      case Some(throwable) ⇒
+      case Some(throwable) =>
         throw new AkkaException(message, throwable)
     }
 }

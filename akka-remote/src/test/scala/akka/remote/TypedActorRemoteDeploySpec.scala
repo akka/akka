@@ -35,7 +35,7 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
   val remoteSystem = ActorSystem(remoteName, conf)
   val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
-  def verify[T](f: RemoteNameService ⇒ Future[T], expected: T) = {
+  def verify[T](f: RemoteNameService => Future[T], expected: T) = {
     val ts = TypedActor(system)
     val echoService: RemoteNameService = ts.typedActorOf(
       TypedProps[RemoteNameServiceImpl].withDeploy(Deploy(scope = RemoteScope(remoteAddress))))

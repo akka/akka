@@ -26,7 +26,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -50,7 +50,7 @@ class GraphBalanceSpec extends StreamSpec {
 
     "support waiting for demand from all downstream subscriptions" in {
       val s1 = TestSubscriber.manualProbe[Int]()
-      val p2 = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false)) { implicit b ⇒ p2Sink ⇒
+      val p2 = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false)) { implicit b => p2Sink =>
         val balance = b.add(Balance[Int](2, waitForAllDownstreams = true))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(s1)
@@ -80,7 +80,7 @@ class GraphBalanceSpec extends StreamSpec {
     "support waiting for demand from all non-cancelled downstream subscriptions" in assertAllStagesStopped {
       val s1 = TestSubscriber.manualProbe[Int]()
 
-      val (p2, p3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) { implicit b ⇒ (p2Sink, p3Sink) ⇒
+      val (p2, p3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) { implicit b => (p2Sink, p3Sink) =>
         val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(s1)
@@ -112,7 +112,7 @@ class GraphBalanceSpec extends StreamSpec {
     }
 
     "work with one-way merge" in {
-      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      val result = Source.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](1))
         val source = b.add(Source(1 to 3))
 
@@ -126,7 +126,7 @@ class GraphBalanceSpec extends StreamSpec {
     "work with 5-way balance" in {
 
       val sink = Sink.head[Seq[Int]]
-      val (s1, s2, s3, s4, s5) = RunnableGraph.fromGraph(GraphDSL.create(sink, sink, sink, sink, sink)(Tuple5.apply) { implicit b ⇒ (f1, f2, f3, f4, f5) ⇒
+      val (s1, s2, s3, s4, s5) = RunnableGraph.fromGraph(GraphDSL.create(sink, sink, sink, sink, sink)(Tuple5.apply) { implicit b => (f1, f2, f3, f4, f5) =>
         val balance = b.add(Balance[Int](5, waitForAllDownstreams = true))
         Source(0 to 14) ~> balance.in
         balance.out(0).grouped(15) ~> f1
@@ -144,7 +144,7 @@ class GraphBalanceSpec extends StreamSpec {
       val numElementsForSink = 10000
       val outputs = Sink.fold[Int, Int](0)(_ + _)
 
-      val results = RunnableGraph.fromGraph(GraphDSL.create(outputs, outputs, outputs)(List(_, _, _)) { implicit b ⇒ (o1, o2, o3) ⇒
+      val results = RunnableGraph.fromGraph(GraphDSL.create(outputs, outputs, outputs)(List(_, _, _)) { implicit b => (o1, o2, o3) =>
         val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
         Source.repeat(1).take(numElementsForSink * 3) ~> balance.in
         balance.out(0) ~> o1
@@ -154,7 +154,7 @@ class GraphBalanceSpec extends StreamSpec {
       }).run()
 
       import system.dispatcher
-      val sum = Future.sequence(results).map { res ⇒
+      val sum = Future.sequence(results).map { res =>
         res should not contain 0
         res.sum
       }
@@ -163,7 +163,7 @@ class GraphBalanceSpec extends StreamSpec {
 
     "fairly balance between three outputs" in {
       val probe = TestSink.probe[Int]
-      val (p1, p2, p3) = RunnableGraph.fromGraph(GraphDSL.create(probe, probe, probe)(Tuple3.apply) { implicit b ⇒ (o1, o2, o3) ⇒
+      val (p1, p2, p3) = RunnableGraph.fromGraph(GraphDSL.create(probe, probe, probe)(Tuple3.apply) { implicit b => (o1, o2, o3) =>
         val balance = b.add(Balance[Int](3))
         Source(1 to 7) ~> balance.in
         balance.out(0) ~> o1
@@ -189,7 +189,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -211,7 +211,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](2))
         Source(List(1, 2, 3)) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -234,7 +234,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](2))
         Source.fromPublisher(p1.getPublisher) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -265,7 +265,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(new Balance[Int](2, waitForAllDownstreams = false, eagerCancel = true))
         Source.fromPublisher(p1.getPublisher) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -296,7 +296,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](2))
         Source.fromPublisher(p1.getPublisher) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)
@@ -328,7 +328,7 @@ class GraphBalanceSpec extends StreamSpec {
       val c2 = TestSubscriber.manualProbe[Int]()
       val c3 = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[Int](3))
         Source.fromPublisher(p1.getPublisher) ~> balance.in
         balance.out(0) ~> Sink.fromSubscriber(c1)

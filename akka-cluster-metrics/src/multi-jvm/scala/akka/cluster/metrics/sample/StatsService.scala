@@ -20,13 +20,13 @@ class StatsService extends Actor {
     name = "workerRouter")
 
   def receive = {
-    case StatsJob(text) if text != "" ⇒
+    case StatsJob(text) if text != "" =>
       val words = text.split(" ")
       val replyTo = sender() // important to not close over sender()
       // create actor that collects replies from workers
       val aggregator = context.actorOf(Props(
         classOf[StatsAggregator], words.size, replyTo))
-      words foreach { word ⇒
+      words foreach { word =>
         workerRouter.tell(
           ConsistentHashableEnvelope(word, word), aggregator)
       }
@@ -38,14 +38,14 @@ class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
   context.setReceiveTimeout(3.seconds)
 
   def receive = {
-    case wordCount: Int ⇒
+    case wordCount: Int =>
       results = results :+ wordCount
       if (results.size == expectedResults) {
         val meanWordLength = results.sum.toDouble / results.size
         replyTo ! StatsResult(meanWordLength)
         context.stop(self)
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       replyTo ! JobFailed("Service unavailable, try again later")
       context.stop(self)
   }

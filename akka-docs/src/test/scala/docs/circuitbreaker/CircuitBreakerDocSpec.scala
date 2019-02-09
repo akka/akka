@@ -36,9 +36,9 @@ class DangerousActor extends Actor with ActorLogging {
   def dangerousCall: String = "This really isn't that dangerous of a call after all"
 
   def receive = {
-    case "is my middle name" ⇒
+    case "is my middle name" =>
       breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender()
-    case "block for me" ⇒
+    case "block for me" =>
       sender() ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
   //#circuit-breaker-usage
@@ -62,16 +62,16 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
   import akka.actor.ReceiveTimeout
 
   def receive = {
-    case "call" if breaker.isClosed ⇒ {
+    case "call" if breaker.isClosed => {
       recipient ! "message"
     }
-    case "response" ⇒ {
+    case "response" => {
       breaker.succeed()
     }
-    case err: Throwable ⇒ {
+    case err: Throwable => {
       breaker.fail()
     }
-    case ReceiveTimeout ⇒ {
+    case ReceiveTimeout => {
       breaker.fail()
     }
   }
@@ -82,9 +82,9 @@ class EvenNoFailureActor extends Actor {
   import context.dispatcher
   //#even-no-as-failure
   def luckyNumber(): Future[Int] = {
-    val evenNumberAsFailure: Try[Int] ⇒ Boolean = {
-      case Success(n) ⇒ n % 2 == 0
-      case Failure(_) ⇒ true
+    val evenNumberAsFailure: Try[Int] => Boolean = {
+      case Success(n) => n % 2 == 0
+      case Failure(_) => true
     }
 
     val breaker =
@@ -100,6 +100,6 @@ class EvenNoFailureActor extends Actor {
   //#even-no-as-failure
 
   override def receive = {
-    case x: Int ⇒
+    case x: Int =>
   }
 }

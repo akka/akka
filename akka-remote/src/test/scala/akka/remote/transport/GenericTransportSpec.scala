@@ -52,8 +52,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       result._2 should not be null
 
       registry.logSnapshot.exists {
-        case ListenAttempt(address) ⇒ address == addressATest
-        case _                      ⇒ false
+        case ListenAttempt(address) => address == addressATest
+        case _                      => false
       } should ===(true)
     }
 
@@ -70,7 +70,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       transportA.associate(addressB)
       expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
-        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒
+        case InboundAssociation(handle) if handle.remoteAddress == addressA =>
       }
 
       registry.logSnapshot.contains(AssociateAttempt(addressATest, addressBTest)) should ===(true)
@@ -100,7 +100,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
-        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
+        case InboundAssociation(handle) if handle.remoteAddress == addressA => handle
       }
 
       val handleA = Await.result(associate, timeout.duration)
@@ -116,12 +116,12 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       handleA.write(payload)
       expectMsgPF(timeout.duration, "Expect InboundPayload from A") {
-        case InboundPayload(p) if payload == p ⇒
+        case InboundPayload(p) if payload == p =>
       }
 
       registry.logSnapshot.exists {
-        case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) ⇒ sentPdu == pdu
-        case _ ⇒ false
+        case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) => sentPdu == pdu
+        case _ => false
       } should ===(true)
     }
 
@@ -137,7 +137,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB: AssociationHandle = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
-        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
+        case InboundAssociation(handle) if handle.remoteAddress == addressA => handle
       }
 
       val handleA = Await.result(associate, timeout.duration)
@@ -151,15 +151,15 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       handleA.disassociate()
 
       expectMsgPF(timeout.duration) {
-        case Disassociated(_) ⇒
+        case Disassociated(_) =>
       }
 
       awaitCond(!registry.existsAssociation(addressATest, addressBTest))
 
       awaitCond {
         registry.logSnapshot exists {
-          case DisassociateAttempt(`addressATest`, `addressBTest`) ⇒ true
-          case _ ⇒ false
+          case DisassociateAttempt(`addressATest`, `addressBTest`) => true
+          case _ => false
         }
       }
     }

@@ -188,7 +188,7 @@ abstract class Cluster extends Extension {
 }
 
 object ClusterSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Cluster): ClusterSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => Cluster): ClusterSetup =
     new ClusterSetup(new java.util.function.Function[ActorSystem[_], Cluster] {
       override def apply(sys: ActorSystem[_]): Cluster = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12

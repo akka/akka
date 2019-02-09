@@ -30,8 +30,8 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def freePort(): Int = {
     val udp = ArteryMultiNodeSpec.arteryUdpEnabled(system.settings.config)
     (address(system).host match {
-      case Some(host) ⇒ SocketUtil.temporaryServerAddress(host, udp)
-      case None       ⇒ SocketUtil.temporaryServerAddress(udp = udp)
+      case Some(host) => SocketUtil.temporaryServerAddress(host, udp)
+      case None       => SocketUtil.temporaryServerAddress(udp = udp)
     }).getPort
   }
 
@@ -49,13 +49,13 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
       ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(
         localSystem.settings.config
       )(
-          str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
+          str => ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
         ))
     val sysName = name.getOrElse(nextGeneratedSystemName)
 
     val remoteSystem = setup match {
-      case None    ⇒ ActorSystem(sysName, config)
-      case Some(s) ⇒ ActorSystem(sysName, s.and(BootstrapSetup.apply(config)))
+      case None    => ActorSystem(sysName, config)
+      case Some(s) => ActorSystem(sysName, s.and(BootstrapSetup.apply(config)))
     }
 
     remoteSystems = remoteSystems :+ remoteSystem
@@ -64,7 +64,7 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   }
 
   override def afterTermination(): Unit = {
-    remoteSystems.foreach(sys ⇒ shutdown(sys))
+    remoteSystems.foreach(sys => shutdown(sys))
     (system +: remoteSystems).foreach(handleFlightRecorderFile)
     remoteSystems = Vector.empty
     super.afterTermination()

@@ -32,11 +32,11 @@ object Effect {
     extends Effect with Product3[Behavior[T], String, Props] with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: Spawned[_] ⇒
+      case o: Spawned[_] =>
         this.behavior == o.behavior &&
           this.childName == o.childName &&
           this.props == o.props
-      case _ ⇒ false
+      case _ => false
     }
     override def hashCode: Int = (behavior.## * 31 + childName.##) * 31 + props.##
     override def toString: String = s"Spawned($behavior, $childName, $props)"
@@ -60,8 +60,8 @@ object Effect {
     extends Effect with Product2[Behavior[T], Props] with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: SpawnedAnonymous[_] ⇒ this.behavior == o.behavior && this.props == o.props
-      case _                      ⇒ false
+      case o: SpawnedAnonymous[_] => this.behavior == o.behavior && this.props == o.props
+      case _                      => false
     }
     override def hashCode: Int = behavior.## * 31 + props.##
     override def toString: String = s"SpawnedAnonymous($behavior, $props)"
@@ -86,8 +86,8 @@ object Effect {
     extends Effect with Product1[String] with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: SpawnedAdapter[_] ⇒ this.name == o.name
-      case _                    ⇒ false
+      case o: SpawnedAdapter[_] => this.name == o.name
+      case _                    => false
     }
     override def hashCode: Int = name.##
     override def toString: String = s"SpawnedAdapter($name)"
@@ -116,8 +116,8 @@ object Effect {
     extends Effect with Product with Serializable {
 
     override def equals(other: Any): Boolean = other match {
-      case _: SpawnedAnonymousAdapter[_] ⇒ true
-      case _                             ⇒ false
+      case _: SpawnedAnonymousAdapter[_] => true
+      case _                             => false
     }
     override def hashCode: Int = Nil.##
     override def toString: String = "SpawnedAnonymousAdapter"
@@ -141,7 +141,7 @@ object Effect {
   /**
    * The behavior create a message adapter for the messages of type clazz
    */
-  final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A ⇒ T) extends Effect {
+  final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A => T) extends Effect {
     /**
      * JAVA API
      */

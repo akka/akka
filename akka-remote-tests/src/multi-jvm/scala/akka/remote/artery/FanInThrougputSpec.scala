@@ -19,12 +19,12 @@ import akka.remote.artery.MaxThroughputSpec._
 object FanInThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("akka.test.FanInThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 4
-      case value ⇒ value.toInt
+      case null  => 4
+      case value => value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
 
-  for (n ← 1 to totalNumberOfNodes) role("node-" + n)
+  for (n <- 1 to totalNumberOfNodes) role("node-" + n)
 
   val barrierTimeout = 5.minutes
 
@@ -130,7 +130,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
     runOn(roles.head) {
       val rep = reporter(testName)
-      val receivers = (1 to sendingNodes.size).map { n ⇒
+      val receivers = (1 to sendingNodes.size).map { n =>
         system.actorOf(
           receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
           receiverName + "-" + n)
@@ -144,7 +144,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     runOn(sendingNodes: _*) {
       enterBarrier(receiverName + "-started")
       val ignore = TestProbe()
-      val receivers = (1 to sendingNodes.size).map { n ⇒
+      val receivers = (1 to sendingNodes.size).map { n =>
         identifyReceiver(receiverName + "-" + n, roles.head)
       }.toArray[Target]
 
@@ -172,7 +172,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
   "Max throughput of fan-in" must {
     val reporter = BenchmarkFileReporter("FanInThroughputSpec", system)
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
   }

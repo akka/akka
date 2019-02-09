@@ -39,13 +39,13 @@ object SupervisorSpec {
 
   class PingPongActor(sendTo: ActorRef) extends Actor {
     def receive = {
-      case Ping ⇒
+      case Ping =>
         sendTo ! PingMessage
         if (sender() != sendTo)
           sender() ! PongMessage
-      case Die ⇒
+      case Die =>
         throw new RuntimeException(ExceptionMessage)
-      case DieReply ⇒
+      case DieReply =>
         val e = new RuntimeException(ExceptionMessage)
         sender() ! Status.Failure(e)
         throw e
@@ -64,20 +64,20 @@ object SupervisorSpec {
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception]))
 
     def receive = {
-      case Die                ⇒ temp forward Die
-      case Terminated(`temp`) ⇒ sendTo ! "terminated"
-      case Status.Failure(_)  ⇒ /*Ignore*/
+      case Die                => temp forward Die
+      case Terminated(`temp`) => sendTo ! "terminated"
+      case Status.Failure(_)  => /*Ignore*/
     }
   }
 
   class Creator(target: ActorRef) extends Actor {
     override val supervisorStrategy = OneForOneStrategy() {
-      case ex ⇒
+      case ex =>
         target ! ((self, sender(), ex))
         SupervisorStrategy.Stop
     }
     def receive = {
-      case p: Props ⇒ sender() ! context.actorOf(p)
+      case p: Props => sender() ! context.actorOf(p)
     }
   }
 
@@ -211,15 +211,15 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         override def preStart(): Unit = { preStarts += 1; testActor ! ("preStart" + preStarts) }
         override def postStop(): Unit = { postStops += 1; testActor ! ("postStop" + postStops) }
         def receive = {
-          case "crash" ⇒ { testActor ! "crashed"; throw new RuntimeException("Expected") }
-          case "ping"  ⇒ sender() ! "pong"
+          case "crash" => { testActor ! "crashed"; throw new RuntimeException("Expected") }
+          case "ping"  => sender() ! "pong"
         }
       }
       val master = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = restarts)(List(classOf[Exception]))
         val child = context.actorOf(Props(childInstance))
         def receive = {
-          case msg ⇒ child forward msg
+          case msg => child forward msg
         }
       }))
 
@@ -230,7 +230,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
 
       filterEvents(EventFilter[RuntimeException]("Expected", occurrences = restarts + 1)) {
         (1 to restarts) foreach {
-          i ⇒
+          i =>
             master ! "crash"
             expectMsg("crashed")
 
@@ -389,8 +389,8 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         }
 
         def receive = {
-          case Ping ⇒ sender() ! PongMessage
-          case DieReply ⇒
+          case Ping => sender() ! PongMessage
+          case DieReply =>
             val e = new RuntimeException("Expected")
             sender() ! Status.Failure(e)
             throw e
@@ -419,14 +419,14 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
     "not lose system messages when a NonFatal exception occurs when processing a system message" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy()({
-          case e: IllegalStateException if e.getMessage == "OHNOES" ⇒ throw e
-          case _ ⇒ SupervisorStrategy.Restart
+          case e: IllegalStateException if e.getMessage == "OHNOES" => throw e
+          case _ => SupervisorStrategy.Restart
         })
         val child = context.watch(context.actorOf(Props(new Actor {
           override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
           def receive = {
-            case l: TestLatch ⇒ { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
-            case "test"       ⇒ sender() ! "child green"
+            case l: TestLatch => { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
+            case "test"       => sender() ! "child green"
           }
         }), "child"))
 
@@ -439,11 +439,11 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         }
 
         def receive = {
-          case Terminated(a) if a.path == child.path ⇒ testActor ! "child terminated"
-          case l: TestLatch                          ⇒ child ! l
-          case "test"                                ⇒ sender() ! "green"
-          case "testchild"                           ⇒ child forward "test"
-          case "testchildAndAck"                     ⇒ child forward "test"; sender() ! "ack"
+          case Terminated(a) if a.path == child.path => testActor ! "child terminated"
+          case l: TestLatch                          => child ! l
+          case "test"                                => sender() ! "green"
+          case "testchild"                           => child forward "test"
+          case "testchildAndAck"                     => child forward "test"; sender() ! "ack"
         }
       }))
 
@@ -478,7 +478,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true)
         expectMsgPF(hint = "ConfigurationException") {
-          case (top, middle, ex: ConfigurationException) ⇒
+          case (top, middle, ex: ConfigurationException) =>
             ex.getCause should ===(failure)
         }
       }
@@ -495,7 +495,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         val middle = expectMsgType[ActorRef]
         middle ! creator(testActor, fail = true).withRouter(RoundRobinPool(1))
         expectMsgPF(hint = "ConfigurationException") {
-          case (top, middle, ex: ConfigurationException) ⇒
+          case (top, middle, ex: ConfigurationException) =>
             ex.getCause should ===(failure)
         }
       }

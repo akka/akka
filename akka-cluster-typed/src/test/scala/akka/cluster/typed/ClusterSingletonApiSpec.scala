@@ -50,14 +50,14 @@ object ClusterSingletonApiSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) ⇒
+  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) =>
 
     msg match {
-      case Ping(respondTo) ⇒
+      case Ping(respondTo) =>
         respondTo ! Pong
         Behaviors.same
 
-      case Perish ⇒
+      case Perish =>
         Behaviors.stopped
     }
 
@@ -69,21 +69,21 @@ object ClusterSingletonApiSpec {
 
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
-      case _: Ping ⇒ "a"
-      case Pong    ⇒ "b"
-      case Perish  ⇒ "c"
+      case _: Ping => "a"
+      case Pong    => "b"
+      case Perish  => "c"
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case p: Ping ⇒ actorRefResolver.toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong    ⇒ Array.emptyByteArray
-      case Perish  ⇒ Array.emptyByteArray
+      case p: Ping => actorRefResolver.toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
+      case Pong    => Array.emptyByteArray
+      case Perish  => Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "a" ⇒ Ping(actorRefResolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
-      case "b" ⇒ Pong
-      case "c" ⇒ Perish
+      case "a" => Ping(actorRefResolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
+      case "b" => Pong
+      case "c" => Perish
     }
   }
 }

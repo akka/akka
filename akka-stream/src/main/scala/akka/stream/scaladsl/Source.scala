@@ -47,7 +47,7 @@ final class Source[+Out, +Mat](
 
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
-  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
+  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) => Mat3): Source[T, Mat3] = {
     if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
       if (combine == Keep.left)
         //optimization by returning this
@@ -77,15 +77,15 @@ final class Source[+Out, +Mat](
    * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) => Mat3): RunnableGraph[Mat3] = {
     RunnableGraph(traversalBuilder.append(sink.traversalBuilder, sink.shape, combine))
   }
 
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
-  override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
-    new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
+  override def mapMaterializedValue[Mat2](f: Mat => Mat2): ReprMat[Out, Mat2] =
+    new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
   /**
    * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
@@ -110,7 +110,7 @@ final class Source[+Out, +Mat](
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: Materializer): Future[U] = runWith(Sink.fold(zero)(f))
+  def runFold[U](zero: U)(f: (U, Out) => U)(implicit materializer: Materializer): Future[U] = runWith(Sink.fold(zero)(f))
 
   /**
    * Shortcut for running this `Source` with a foldAsync function.
@@ -120,7 +120,7 @@ final class Source[+Out, +Mat](
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure signaled in the stream.
    */
-  def runFoldAsync[U](zero: U)(f: (U, Out) ⇒ Future[U])(implicit materializer: Materializer): Future[U] = runWith(Sink.foldAsync(zero)(f))
+  def runFoldAsync[U](zero: U)(f: (U, Out) => Future[U])(implicit materializer: Materializer): Future[U] = runWith(Sink.foldAsync(zero)(f))
 
   /**
    * Shortcut for running this `Source` with a reduce function.
@@ -135,7 +135,7 @@ final class Source[+Out, +Mat](
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    */
-  def runReduce[U >: Out](f: (U, U) ⇒ U)(implicit materializer: Materializer): Future[U] =
+  def runReduce[U >: Out](f: (U, U) => U)(implicit materializer: Materializer): Future[U] =
     runWith(Sink.reduce(f))
 
   /**
@@ -146,7 +146,7 @@ final class Source[+Out, +Mat](
    * the stream.
    */
   // FIXME: Out => Unit should stay, right??
-  def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
+  def runForeach(f: Out => Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
    * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
@@ -200,8 +200,8 @@ final class Source[+Out, +Mat](
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   @deprecated("Use `Source.combine` on companion object instead", "2.5.5")
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
-    Source.fromGraph(GraphDSL.create() { implicit b ⇒
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
+    Source.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
@@ -220,7 +220,7 @@ final class Source[+Out, +Mat](
    * API MAY CHANGE
    */
   @ApiMayChange
-  def asSourceWithContext[Ctx](f: Out ⇒ Ctx): SourceWithContext[Out, Ctx, Mat] = new SourceWithContext(this.map(e ⇒ (e, f(e))))
+  def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] = new SourceWithContext(this.map(e => (e, f(e))))
 }
 
 object Source {
@@ -248,7 +248,7 @@ object Source {
    * Elements are pulled out of the iterator in accordance with the demand coming
    * from the downstream transformation steps.
    */
-  def fromIterator[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] =
+  def fromIterator[T](f: () => Iterator[T]): Source[T, NotUsed] =
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
@@ -260,9 +260,9 @@ object Source {
    * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
    * will continue infinitely by repeating the sequence of elements provided by function parameter.
    */
-  def cycle[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] = {
+  def cycle[T](f: () => Iterator[T]): Source[T, NotUsed] = {
     val iterator = Iterator.continually { val i = f(); if (i.isEmpty) throw new IllegalArgumentException("empty iterator") else i }.flatten
-    fromIterator(() ⇒ iterator).withAttributes(DefaultAttributes.cycledSource)
+    fromIterator(() => iterator).withAttributes(DefaultAttributes.cycledSource)
   }
 
   /**
@@ -270,9 +270,9 @@ object Source {
    * it so also in type.
    */
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
-    case s: Source[T, M]         ⇒ s
-    case s: javadsl.Source[T, M] ⇒ s.asScala
-    case g: GraphStageWithMaterializedValue[SourceShape[T], M] ⇒
+    case s: Source[T, M]         => s
+    case s: javadsl.Source[T, M] => s.asScala
+    case g: GraphStageWithMaterializedValue[SourceShape[T], M] =>
       // move these from the stage itself to make the returned source
       // behave as it is the stage with regards to attributes
       val attrs = g.traversalBuilder.attributes
@@ -281,7 +281,7 @@ object Source {
         LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
         noAttrStage.shape
       ).withAttributes(attrs)
-    case other ⇒
+    case other =>
       // composite source shaped graph
       new Source(
         LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
@@ -355,7 +355,7 @@ object Source {
    */
   def repeat[T](element: T): Source[T, NotUsed] = {
     val next = Some((element, element))
-    unfold(element)(_ ⇒ next).withAttributes(DefaultAttributes.repeat)
+    unfold(element)(_ => next).withAttributes(DefaultAttributes.repeat)
   }
 
   /**
@@ -365,13 +365,13 @@ object Source {
    * For example, all the Fibonacci numbers under 10M:
    *
    * {{{
-   *   Source.unfold(0 → 1) {
-   *    case (a, _) if a > 10000000 ⇒ None
-   *    case (a, b) ⇒ Some((b → (a + b)) → a)
+   *   Source.unfold(0 -> 1) {
+   *    case (a, _) if a > 10000000 => None
+   *    case (a, b) => Some((b -> (a + b)) -> a)
    *   }
    * }}}
    */
-  def unfold[S, E](s: S)(f: S ⇒ Option[(S, E)]): Source[E, NotUsed] =
+  def unfold[S, E](s: S)(f: S => Option[(S, E)]): Source[E, NotUsed] =
     Source.fromGraph(new Unfold(s, f))
 
   /**
@@ -380,16 +380,16 @@ object Source {
    * async fibonacci example:
    *
    * {{{
-   *   Source.unfoldAsync(0 → 1) {
-   *    case (a, _) if a > 10000000 ⇒ Future.successful(None)
-   *    case (a, b) ⇒ Future{
+   *   Source.unfoldAsync(0 -> 1) {
+   *    case (a, _) if a > 10000000 => Future.successful(None)
+   *    case (a, b) => Future{
    *      Thread.sleep(1000)
-   *      Some((b → (a + b)) → a)
+   *      Some((b -> (a + b)) -> a)
    *    }
    *   }
    * }}}
    */
-  def unfoldAsync[S, E](s: S)(f: S ⇒ Future[Option[(S, E)]]): Source[E, NotUsed] =
+  def unfoldAsync[S, E](s: S)(f: S => Future[Option[(S, E)]]): Source[E, NotUsed] =
     Source.fromGraph(new UnfoldAsync(s, f))
 
   /**
@@ -424,7 +424,7 @@ object Source {
    * the materialized future is completed with its value, if downstream cancels or fails without any demand the
    * create factory is never called and the materialized `Future` is failed.
    */
-  def lazily[T, M](create: () ⇒ Source[T, M]): Source[T, Future[M]] =
+  def lazily[T, M](create: () => Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new LazySource[T, M](create))
 
   /**
@@ -434,8 +434,8 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
-  def lazilyAsync[T](create: () ⇒ Future[T]): Source[T, Future[NotUsed]] =
-    lazily(() ⇒ fromFuture(create()))
+  def lazilyAsync[T](create: () => Future[T]): Source[T, Future[NotUsed]] =
+    lazily(() => fromFuture(create()))
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
@@ -540,17 +540,17 @@ object Source {
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef(
       {
-        case akka.actor.Status.Success    ⇒
-        case akka.actor.Status.Success(_) ⇒
+        case akka.actor.Status.Success    =>
+        case akka.actor.Status.Success(_) =>
       },
-      { case akka.actor.Status.Failure(cause) ⇒ cause },
+      { case akka.actor.Status.Failure(cause) => cause },
       bufferSize, overflowStrategy)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
-  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
-    Source.fromGraph(GraphDSL.create() { implicit b ⇒
+  def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
+    Source.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
       val c = b.add(strategy(rest.size + 2))
       first ~> c.in(0)
@@ -568,8 +568,8 @@ object Source {
   /**
    * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
    */
-  def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) ⇒ M): Source[U, M] = {
-    val secondPartiallyCombined = GraphDSL.create(second) { implicit b ⇒ secondShape ⇒
+  def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(strategy: Int => Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) => M): Source[U, M] = {
+    val secondPartiallyCombined = GraphDSL.create(second) { implicit b => secondShape =>
       import GraphDSL.Implicits._
       val c = b.add(strategy(2))
       secondShape ~> c.in(1)
@@ -586,11 +586,11 @@ object Source {
   /*
    * Combine the elements of multiple streams into a stream of sequences using a combiner function.
    */
-  def zipWithN[T, O](zipper: immutable.Seq[T] ⇒ O)(sources: immutable.Seq[Source[T, _]]): Source[O, NotUsed] = {
+  def zipWithN[T, O](zipper: immutable.Seq[T] => O)(sources: immutable.Seq[Source[T, _]]): Source[O, NotUsed] = {
     val source = sources match {
-      case immutable.Seq()       ⇒ empty[O]
-      case immutable.Seq(source) ⇒ source.map(t ⇒ zipper(immutable.Seq(t))).mapMaterializedValue(_ ⇒ NotUsed)
-      case s1 +: s2 +: ss        ⇒ combine(s1, s2, ss: _*)(ZipWithN(zipper))
+      case immutable.Seq()       => empty[O]
+      case immutable.Seq(source) => source.map(t => zipper(immutable.Seq(t))).mapMaterializedValue(_ => NotUsed)
+      case s1 +: s2 +: ss        => combine(s1, s2, ss: _*)(ZipWithN(zipper))
     }
 
     source.addAttributes(DefaultAttributes.zipWithN)
@@ -655,7 +655,7 @@ object Source {
    *             is received. Stream calls close and completes when `read` returns None.
    * @param close - function that closes resource
    */
-  def unfoldResource[T, S](create: () ⇒ S, read: (S) ⇒ Option[T], close: (S) ⇒ Unit): Source[T, NotUsed] =
+  def unfoldResource[T, S](create: () => S, read: (S) => Option[T], close: (S) => Unit): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSource(create, read, close))
 
   /**
@@ -678,7 +678,7 @@ object Source {
    *             is received. Stream calls close and completes when `Future` from read function returns None.
    * @param close - function that closes resource
    */
-  def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
+  def unfoldResourceAsync[T, S](create: () => Future[S], read: (S) => Future[Option[T]], close: (S) => Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
 }

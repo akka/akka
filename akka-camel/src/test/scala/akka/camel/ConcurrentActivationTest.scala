@@ -42,7 +42,7 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         ref ! CreateRegistrars(number)
         // send a broadcast to all registrars, so that number * number messages are sent
         // every Register registers a consumer and a producer
-        (1 to number).map(i ⇒ ref ! RegisterConsumersAndProducers("direct:concurrent-"))
+        (1 to number).map(i => ref ! RegisterConsumersAndProducers("direct:concurrent-"))
         // de-register all consumers and producers
         ref ! DeRegisterConsumersAndProducers()
 
@@ -50,9 +50,9 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         val allRefsFuture = promiseAllRefs.future
         // map over all futures, put all futures in one list of activated and deactivated actor refs.
         futureRegistrarLists.map {
-          case (futureActivations, futureDeactivations) ⇒
+          case (futureActivations, futureDeactivations) =>
             futureActivations zip futureDeactivations map {
-              case (activations, deactivations) ⇒
+              case (activations, deactivations) =>
                 promiseAllRefs.success((activations.flatten, deactivations.flatten))
             }
         }
@@ -68,8 +68,8 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         }
         val (activatedConsumerNames, activatedProducerNames) = partitionNames(activations)
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)
-        assertContainsSameElements(activatedConsumerNames → deactivatedConsumerNames)
-        assertContainsSameElements(activatedProducerNames → deactivatedProducerNames)
+        assertContainsSameElements(activatedConsumerNames -> deactivatedConsumerNames)
+        assertContainsSameElements(activatedProducerNames -> deactivatedProducerNames)
       } finally {
         system.eventStream.publish(TestEvent.UnMute(eventFilter))
       }
@@ -81,11 +81,11 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
   private var broadcaster: Option[ActorRef] = None
   private implicit val ec = context.dispatcher
   def receive = {
-    case CreateRegistrars(number) ⇒
+    case CreateRegistrars(number) =>
       var allActivationFutures = List[Future[List[ActorRef]]]()
       var allDeactivationFutures = List[Future[List[ActorRef]]]()
 
-      val routeePaths = (1 to number).map { i ⇒
+      val routeePaths = (1 to number).map { i =>
         val activationListPromise = Promise[List[ActorRef]]()
         val deactivationListPromise = Promise[List[ActorRef]]()
         val activationListFuture = activationListPromise.future
@@ -96,10 +96,10 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
         val routee = context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise), "registrar-" + i)
         routee.path.toString
       }
-      promise.success(Future.sequence(allActivationFutures) → Future.sequence(allDeactivationFutures))
+      promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
 
       broadcaster = Some(context.actorOf(BroadcastGroup(routeePaths).props(), "registrarRouter"))
-    case reg: Any ⇒
+    case reg: Any =>
       broadcaster.foreach(_.forward(reg))
   }
 }
@@ -121,7 +121,7 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
   private implicit val timeout = Timeout(10.seconds.dilated(context.system))
 
   def receive = {
-    case reg: RegisterConsumersAndProducers ⇒
+    case reg: RegisterConsumersAndProducers =>
       val i = index
       val endpoint = reg.endpointUri + start + "-" + i
       add(new EchoConsumer(endpoint), "concurrent-test-echo-consumer-" + start + "-" + i)
@@ -130,12 +130,12 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       if (activations.size == number * 2) {
         Future.sequence(activations.toList) map activationsPromise.success
       }
-    case reg: DeRegisterConsumersAndProducers ⇒
-      actorRefs.foreach { aref ⇒
+    case reg: DeRegisterConsumersAndProducers =>
+      actorRefs.foreach { aref =>
         context.stop(aref)
         val result = camel.deactivationFutureFor(aref)
         result.failed.foreach {
-          e ⇒ log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
+          e => log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
         }
         deActivations += result
         if (deActivations.size == number * 2) {
@@ -144,12 +144,12 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       }
   }
 
-  def add(actor: ⇒ Actor, name: String): Unit = {
+  def add(actor: => Actor, name: String): Unit = {
     val ref = context.actorOf(Props(actor), name)
     actorRefs = actorRefs + ref
     val result = camel.activationFutureFor(ref)
     result.failed.foreach {
-      e ⇒ log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
+      e => log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
     }
     activations += result
   }
@@ -160,7 +160,7 @@ class EchoConsumer(endpoint: String) extends Actor with Consumer {
   def endpointUri = endpoint
 
   def receive = {
-    case msg: CamelMessage ⇒ sender() ! msg
+    case msg: CamelMessage => sender() ! msg
   }
 
   /**
@@ -168,7 +168,7 @@ class EchoConsumer(endpoint: String) extends Actor with Consumer {
    * By default it returns an identity function, override this method to
    * return a custom route definition handler.
    */
-  override def onRouteDefinition = (rd: RouteDefinition) ⇒ rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+  override def onRouteDefinition = (rd: RouteDefinition) => rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
 }
 
 class TestProducer(uri: String) extends Actor with Producer {

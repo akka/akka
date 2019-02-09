@@ -90,12 +90,12 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name)
       answer.name shouldEqual name
 
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.23"),
         InetAddress.getByName("192.168.1.24")
       )
 
-      answer.records.collect { case r: AAAARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: AAAARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:4"),
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:5")
       )
@@ -105,10 +105,10 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "cname-ext.foo.test"
       val answer = (IO(Dns) ? DnsProtocol.Resolve(name)).mapTo[DnsProtocol.Resolved].futureValue
       answer.name shouldEqual name
-      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
+      answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set(
         "a-single.bar.example"
       )
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.2.20")
       )
     }
@@ -117,10 +117,10 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "cname-in.foo.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
+      answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set(
         "a-double.foo.test"
       )
-      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
         InetAddress.getByName("192.168.1.22")
       )
@@ -131,7 +131,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name, Srv)
 
       answer.name shouldEqual name
-      answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
+      answer.records.collect { case r: SRVRecord => r }.toSet shouldEqual Set(
         SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
         SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
       )

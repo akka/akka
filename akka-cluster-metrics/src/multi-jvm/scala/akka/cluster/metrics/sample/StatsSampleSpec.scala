@@ -24,7 +24,7 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
   def nodeList = Seq(first, second, third)
 
   // Extract individual sigar library for every node.
-  nodeList foreach { role ⇒
+  nodeList foreach { role =>
     nodeConfig(role) {
       ConfigFactory.parseString(s"""
       # Enable metrics extension in akka-cluster-metrics.
@@ -105,7 +105,7 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet should be(
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet should be(
         Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)

@@ -49,9 +49,9 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
     val configPath = pluginId
     val extensionIdMap = plugins.get
     extensionIdMap.get(configPath) match {
-      case Some(extensionId) ⇒
+      case Some(extensionId) =>
         extensionId(system)
-      case None ⇒
+      case None =>
         val extensionId = new ExtensionId[PluginHolder[ScalaDsl, JavaDsl]] {
           override def createExtension(system: ExtendedActorSystem): PluginHolder[ScalaDsl, JavaDsl] = {
             val provider = createPlugin(configPath, readJournalPluginConfig)
@@ -82,13 +82,13 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
     instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
       (classOf[String], configPath) :: Nil)
       .recoverWith {
-        case x: NoSuchMethodException ⇒ instantiate(
+        case x: NoSuchMethodException => instantiate(
           (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
       }
-      .recoverWith { case x: NoSuchMethodException ⇒ instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
-      .recoverWith { case x: NoSuchMethodException ⇒ instantiate(Nil) }
+      .recoverWith { case x: NoSuchMethodException => instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
+      .recoverWith { case x: NoSuchMethodException => instantiate(Nil) }
       .recoverWith {
-        case ex: Exception ⇒ Failure.apply(
+        case ex: Exception => Failure.apply(
           new IllegalArgumentException("Unable to create read journal plugin instance for path " +
             s"[$configPath], class [$pluginClassName]!", ex))
       }.get

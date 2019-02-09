@@ -32,7 +32,7 @@ abstract class RemotingMultiNodeSpec(config: MultiNodeConfig) extends MultiNodeS
   with STMultiNodeSpec
   with FlightRecordingSupport
   with ImplicitSender
-  with DefaultTimeout { self: MultiNodeSpec ⇒
+  with DefaultTimeout { self: MultiNodeSpec =>
 
   // Keep track of failure so we can print artery flight recording on failure
   private var failed = false

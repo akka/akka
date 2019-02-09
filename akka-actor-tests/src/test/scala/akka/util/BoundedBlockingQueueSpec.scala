@@ -617,10 +617,10 @@ trait CustomContainsMatcher {
 
       def attemptMatch(remainingTruth: List[A], remainingSequence: List[A]): MatchResult =
         (remainingTruth, remainingSequence) match {
-          case (_, Nil)                          ⇒ matchResult(true)
-          case (Nil, _)                          ⇒ matchResult(false)
-          case (x :: xs, y :: ys) if x.equals(y) ⇒ attemptMatch(xs, ys)
-          case (x :: xs, ys)                     ⇒ attemptMatch(xs, ys)
+          case (_, Nil)                          => matchResult(true)
+          case (Nil, _)                          => matchResult(false)
+          case (x :: xs, y :: ys) if x.equals(y) => attemptMatch(xs, ys)
+          case (x :: xs, ys)                     => attemptMatch(xs, ys)
         }
 
       def matchResult(success: Boolean): MatchResult =
@@ -651,7 +651,7 @@ trait BlockingHelpers {
    * Delay execution of some code until the timespan has passed.
    * The action is wrapped in a Future that initially calls `Thread.sleep()`
    */
-  def after(timespan: Span)(action: ⇒ Unit): Future[Unit] = Future {
+  def after(timespan: Span)(action: => Unit): Future[Unit] = Future {
     LockSupport.parkNanos(timespan.toNanos)
     action
   }
@@ -659,7 +659,7 @@ trait BlockingHelpers {
   /**
    * Check that a call does not return within a set timespan.
    */
-  def mustBlockFor(timeout: Span)(action: ⇒ Unit)(implicit pos: Position): Unit =
+  def mustBlockFor(timeout: Span)(action: => Unit)(implicit pos: Position): Unit =
     Exception.ignoring(classOf[TestFailedDueToTimeoutException]) {
       failAfter(timeout)(action)
       fail("Expected action to block for at least " + timeout.prettyString + " but it completed.")
@@ -742,7 +742,7 @@ trait QueueSetupHelper {
 
     def advanceTime(timespan: Span): Unit = {
       waiting match {
-        case Some(manual) ⇒
+        case Some(manual) =>
           val newWaitTime = manual.waitTime - timespan.toNanos
           waiting =
             if (newWaitTime <= 0 && manual.waitingThread.isDefined) {
@@ -752,7 +752,7 @@ trait QueueSetupHelper {
               Some(manual.copy(waitTime = newWaitTime))
             }
 
-        case None ⇒
+        case None =>
           sys.error("Called advance time but hasn't enabled manualTimeControl")
       }
     }
@@ -774,7 +774,7 @@ trait QueueSetupHelper {
         try {
           this.await()
         } catch {
-          case _: InterruptedException ⇒
+          case _: InterruptedException =>
         }
         waitTime
       }

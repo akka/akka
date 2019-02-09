@@ -85,7 +85,7 @@ object Configuration {
 
       CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {
-      case _: IllegalArgumentException | _: NoSuchAlgorithmException ⇒
+      case _: IllegalArgumentException | _: NoSuchAlgorithmException =>
         CipherConfig(false, AkkaSpec.testConf, cipher, localPort, remotePort, None) // Cannot match against the message since the message might be localized :S
     }
   }
@@ -117,7 +117,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   ("-") must {
     if (cipherConfig.runTest && preCondition) {
-      val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender() ! ((("pong", x), sender())) } }), "echo")
+      val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) => sender() ! ((("pong", x), sender())) } }), "echo")
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
       "generate random" in {
@@ -125,7 +125,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
         val bytes = Array.ofDim[Byte](16)
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n ⇒
+          val randomBytes = (1 to 10).map { n =>
             rng.nextBytes(bytes)
             bytes.toVector
           }.toSet
@@ -158,8 +158,8 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
           expectMsgType[ActorIdentity].ref.get
         }
 
-        for (i ← 1 to 1000) here ! (("ping", i))
-        for (i ← 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) ⇒ true }
+        for (i <- 1 to 1000) here ! (("ping", i))
+        for (i <- 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) => true }
       }
 
       "support ask" in within(timeout.duration) {
@@ -169,7 +169,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
           expectMsgType[ActorIdentity].ref.get
         }
 
-        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
+        val f = for (i <- 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
         Await.result(Future.sequence(f), remaining).map(_._1._1).toSet should ===(Set("pong"))
       }
 

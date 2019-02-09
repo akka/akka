@@ -14,9 +14,9 @@ private[io] class UdpConnectedManager(udpConn: UdpConnectedExt)
   extends SelectionHandler.SelectorBasedManager(udpConn.settings, udpConn.settings.NrOfSelectors) {
 
   def receive = workerForCommandHandler {
-    case c: Connect ⇒
+    case c: Connect =>
       val commander = sender() // cache because we create a function that will run asynchly
-      registry ⇒ Props(classOf[UdpConnection], udpConn, registry, commander, c)
+      registry => Props(classOf[UdpConnection], udpConn, registry, commander, c)
   }
 
 }

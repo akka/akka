@@ -5,7 +5,7 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.util.Try
 
 import akka.actor.ActorSystem
@@ -47,13 +47,13 @@ abstract class JoinConfigCompatCheckerClusterShardingSpec extends AkkaSpec(
   protected def join(sys: ActorSystem): Cluster = {
     nodes :+= sys
     sys match {
-      case seed if seed eq system ⇒
+      case seed if seed eq system =>
         configured(system) should ===(JoinConfig.Shards)
         val seedNode = Cluster(seed)
         seedNode.join(seedNode.selfAddress)
         awaitCond(seedNode.readView.isSingletonCluster, duration)
         seedNode
-      case joining ⇒
+      case joining =>
         val cluster = Cluster(joining)
         cluster.joinSeedNodes(im.Seq(Cluster(system).readView.selfAddress))
         cluster
@@ -91,7 +91,7 @@ class JoinConfigCompatibilitySpec extends JoinConfigCompatCheckerClusterSharding
 
       val cluster = join(joining)
       for {
-        node ← Set(seedNode, cluster)
+        node <- Set(seedNode, cluster)
       } awaitCond(node.readView.members.size == joinConfig, duration)
     }
   }

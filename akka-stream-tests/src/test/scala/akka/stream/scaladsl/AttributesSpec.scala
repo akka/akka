@@ -83,7 +83,7 @@ object AttributesSpec {
     val out = Outlet[String]("out")
     override val shape = SourceShape.of(out)
     override protected def initialAttributes: Attributes =
-      initialDispatcher.fold(Attributes.none)(name ⇒ ActorAttributes.dispatcher(name))
+      initialDispatcher.fold(Attributes.none)(name => ActorAttributes.dispatcher(name))
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         def onPull(): Unit = {

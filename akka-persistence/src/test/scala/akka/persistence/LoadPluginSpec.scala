@@ -15,7 +15,7 @@ object LoadJournalSpec {
 
   class JournalWithConfig(val config: Config) extends InmemJournal {
     override def receivePluginInternal: Actor.Receive = {
-      case GetConfig ⇒ sender() ! config
+      case GetConfig => sender() ! config
     }
   }
 }

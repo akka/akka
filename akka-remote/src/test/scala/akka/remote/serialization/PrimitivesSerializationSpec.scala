@@ -57,7 +57,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
   "LongSerializer" must {
     Seq(0L, 1L, -1L, Long.MinValue, Long.MinValue + 1L, Long.MaxValue, Long.MaxValue - 1L).map(_.asInstanceOf[AnyRef]).foreach {
-      item ⇒
+      item =>
         s"resolve serializer for value $item" in {
           val serializer = SerializationExtension(system)
           serializer.serializerFor(item.getClass).getClass should ===(classOf[LongSerializer])
@@ -76,7 +76,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
   "IntSerializer" must {
     Seq(0, 1, -1, Int.MinValue, Int.MinValue + 1, Int.MaxValue, Int.MaxValue - 1).map(_.asInstanceOf[AnyRef]).foreach {
-      item ⇒
+      item =>
         s"resolve serializer for value $item" in {
           val serializer = SerializationExtension(system)
           serializer.serializerFor(item.getClass).getClass should ===(classOf[IntSerializer])
@@ -95,11 +95,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
   "StringSerializer" must {
     val random = Random.nextString(256)
     Seq(
-      "empty string" → "",
-      "hello" → "hello",
-      "árvíztűrőütvefúrógép" → "árvíztűrőütvefúrógép",
-      "random" → random).foreach {
-        case (scenario, item) ⇒
+      "empty string" -> "",
+      "hello" -> "hello",
+      "árvíztűrőütvefúrógép" -> "árvíztűrőütvefúrógép",
+      "random" -> random).foreach {
+        case (scenario, item) =>
           s"resolve serializer for [$scenario]" in {
             val serializer = SerializationExtension(system)
             serializer.serializerFor(item.getClass).getClass should ===(classOf[StringSerializer])
@@ -118,11 +118,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
   "ByteStringSerializer" must {
     Seq(
-      "empty string" → ByteString.empty,
-      "simple content" → ByteString("hello"),
-      "concatenated content" → (ByteString("hello") ++ ByteString("world")),
-      "sliced content" → ByteString("helloabc").take(5)).foreach {
-        case (scenario, item) ⇒
+      "empty string" -> ByteString.empty,
+      "simple content" -> ByteString("hello"),
+      "concatenated content" -> (ByteString("hello") ++ ByteString("world")),
+      "sliced content" -> ByteString("helloabc").take(5)).foreach {
+        case (scenario, item) =>
           s"resolve serializer for [$scenario]" in {
             val serializer = SerializationExtension(system)
             serializer.serializerFor(item.getClass).getClass should ===(classOf[ByteStringSerializer])

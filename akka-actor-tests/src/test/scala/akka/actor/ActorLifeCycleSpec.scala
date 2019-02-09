@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.atomic._
 import scala.concurrent.Await
 import akka.pattern.ask
-import java.util.UUID.{ randomUUID ⇒ newUuid }
+import java.util.UUID.{ randomUUID => newUuid }
 
 object ActorLifeCycleSpec {
 
@@ -24,7 +24,7 @@ object ActorLifeCycleSpec {
     val currentGen = generationProvider.getAndIncrement()
     override def preStart(): Unit = { report("preStart") }
     override def postStop(): Unit = { report("postStop") }
-    def receive = { case "status" ⇒ sender() ! message("OK") }
+    def receive = { case "status" => sender() ! message("OK") }
   }
 
 }
@@ -127,18 +127,18 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
     }
 
     "clear the behavior stack upon restart" in {
-      final case class Become(recv: ActorContext ⇒ Receive)
+      final case class Become(recv: ActorContext => Receive)
       val a = system.actorOf(Props(new Actor {
         def receive = {
-          case Become(beh) ⇒ { context.become(beh(context), discardOld = false); sender() ! "ok" }
-          case x           ⇒ sender() ! 42
+          case Become(beh) => { context.become(beh(context), discardOld = false); sender() ! "ok" }
+          case x           => sender() ! 42
         }
       }))
       a ! "hello"
       expectMsg(42)
-      a ! Become(ctx ⇒ {
-        case "fail" ⇒ throw new RuntimeException("buh")
-        case x      ⇒ ctx.sender() ! 43
+      a ! Become(ctx => {
+        case "fail" => throw new RuntimeException("buh")
+        case x      => ctx.sender() ! 43
       })
       expectMsg("ok")
       a ! "hello"

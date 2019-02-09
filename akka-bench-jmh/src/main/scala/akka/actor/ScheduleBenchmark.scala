@@ -78,7 +78,7 @@ class ScheduleBenchmark {
       if (idx <= to) op(idx)
     }
     promise.future.onComplete {
-      case _ ⇒
+      case _ =>
         tryWithNext.cancel()
     }
     Await.result(promise.future, within)
@@ -87,13 +87,13 @@ class ScheduleBenchmark {
   @Benchmark
   def multipleScheduleOnce(): Unit = {
     val tryWithNext = (1 to to).foldLeft(0.millis -> List[Cancellable]()) {
-      case ((interv, c), idx) ⇒
+      case ((interv, c), idx) =>
         (interv + interval, scheduler.scheduleOnce(interv) {
           op(idx)
         } :: c)
     }._2
     promise.future.onComplete {
-      case _ ⇒
+      case _ =>
         tryWithNext.foreach(_.cancel())
     }
     Await.result(promise.future, within)

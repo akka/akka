@@ -61,8 +61,8 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[String, NotUsed] = runnableGraph.run()
 
       // Print out messages from the producer in two independent consumers
-      fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.runForeach(msg ⇒ println("consumer2: " + msg))
+      fromProducer.runForeach(msg => println("consumer1: " + msg))
+      fromProducer.runForeach(msg => println("consumer2: " + msg))
       //#broadcast-hub
     }
 
@@ -110,7 +110,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       //#partition-hub
       // A simple producer that publishes a new "message-" every second
       val producer = Source.tick(1.second, 1.second, "message")
-        .zipWith(Source(1 to 100))((a, b) ⇒ s"$a-$b")
+        .zipWith(Source(1 to 100))((a, b) => s"$a-$b")
 
       // Attach a PartitionHub Sink to the producer. This will materialize to a
       // corresponding Source.
@@ -118,7 +118,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // value to the left is used)
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
         producer.toMat(PartitionHub.sink(
-          (size, elem) ⇒ math.abs(elem.hashCode % size),
+          (size, elem) => math.abs(elem.hashCode % size),
           startAfterNrOfConsumers = 2, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
@@ -126,8 +126,8 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[String, NotUsed] = runnableGraph.run()
 
       // Print out messages from the producer in two independent consumers
-      fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.runForeach(msg ⇒ println("consumer2: " + msg))
+      fromProducer.runForeach(msg => println("consumer1: " + msg))
+      fromProducer.runForeach(msg => println("consumer2: " + msg))
       //#partition-hub
     }
 
@@ -135,14 +135,14 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       //#partition-hub-stateful
       // A simple producer that publishes a new "message-" every second
       val producer = Source.tick(1.second, 1.second, "message")
-        .zipWith(Source(1 to 100))((a, b) ⇒ s"$a-$b")
+        .zipWith(Source(1 to 100))((a, b) => s"$a-$b")
 
       // New instance of the partitioner function and its state is created
       // for each materialization of the PartitionHub.
-      def roundRobin(): (PartitionHub.ConsumerInfo, String) ⇒ Long = {
+      def roundRobin(): (PartitionHub.ConsumerInfo, String) => Long = {
         var i = -1L
 
-        (info, elem) ⇒ {
+        (info, elem) => {
           i += 1
           info.consumerIdByIdx((i % info.size).toInt)
         }
@@ -154,7 +154,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // value to the left is used)
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
         producer.toMat(PartitionHub.statefulSink(
-          () ⇒ roundRobin(),
+          () => roundRobin(),
           startAfterNrOfConsumers = 2, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
@@ -162,8 +162,8 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[String, NotUsed] = runnableGraph.run()
 
       // Print out messages from the producer in two independent consumers
-      fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.runForeach(msg ⇒ println("consumer2: " + msg))
+      fromProducer.runForeach(msg => println("consumer1: " + msg))
+      fromProducer.runForeach(msg => println("consumer2: " + msg))
       //#partition-hub-stateful
     }
 
@@ -175,14 +175,14 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // Note that this is a moving target since the elements are consumed concurrently.
       val runnableGraph: RunnableGraph[Source[Int, NotUsed]] =
         producer.toMat(PartitionHub.statefulSink(
-          () ⇒ (info, elem) ⇒ info.consumerIds.minBy(id ⇒ info.queueSize(id)),
+          () => (info, elem) => info.consumerIds.minBy(id => info.queueSize(id)),
           startAfterNrOfConsumers = 2, bufferSize = 16))(Keep.right)
 
       val fromProducer: Source[Int, NotUsed] = runnableGraph.run()
 
-      fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
+      fromProducer.runForeach(msg => println("consumer1: " + msg))
       fromProducer.throttle(10, 100.millis)
-        .runForeach(msg ⇒ println("consumer2: " + msg))
+        .runForeach(msg => println("consumer2: " + msg))
       //#partition-hub-fastest
     }
 

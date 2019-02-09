@@ -19,11 +19,11 @@ object Patterns {
   import akka.actor.ActorRef
   import akka.japi
   import akka.pattern.{
-    after ⇒ scalaAfter,
-    ask ⇒ scalaAsk,
-    gracefulStop ⇒ scalaGracefulStop,
-    pipe ⇒ scalaPipe,
-    retry ⇒ scalaRetry
+    after => scalaAfter,
+    ask => scalaAsk,
+    gracefulStop => scalaGracefulStop,
+    pipe => scalaPipe,
+    retry => scalaRetry
   }
   import akka.util.Timeout
 
@@ -433,7 +433,7 @@ object Patterns {
    */
   def retry[T](attempt: Callable[Future[T]], attempts: Int, delay: FiniteDuration, scheduler: Scheduler,
                context: ExecutionContext): Future[T] =
-    scalaRetry(() ⇒ attempt.call, attempts, delay)(context, scheduler)
+    scalaRetry(() => attempt.call, attempts, delay)(context, scheduler)
 
   /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
@@ -444,7 +444,7 @@ object Patterns {
    * and therefore must be thread safe (not touch unsafe mutable state).
    */
   def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+    scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
 }
 
 /**
@@ -456,7 +456,7 @@ object Patterns {
 object PatternsCS {
   import akka.actor.ActorRef
   import akka.japi
-  import akka.pattern.{ ask ⇒ scalaAsk, gracefulStop ⇒ scalaGracefulStop, retry ⇒ scalaRetry }
+  import akka.pattern.{ ask => scalaAsk, gracefulStop => scalaGracefulStop, retry => scalaRetry }
   import akka.util.Timeout
 
   import scala.concurrent.duration._
@@ -843,5 +843,5 @@ object PatternsCS {
    */
   @deprecated("Use Patterns.retry instead.", since = "2.5.19")
   def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+    scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
 }

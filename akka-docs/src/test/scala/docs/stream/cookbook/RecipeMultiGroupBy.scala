@@ -20,15 +20,15 @@ class RecipeMultiGroupBy extends RecipeSpec {
       case class Topic(name: String)
 
       val elems = Source(List("1: a", "1: b", "all: c", "all: d", "1: e"))
-      val extractTopics = { msg: Message ⇒
+      val extractTopics = { msg: Message =>
         if (msg.startsWith("1")) List(Topic("1"))
         else List(Topic("1"), Topic("2"))
       }
 
       //#multi-groupby
-      val topicMapper: (Message) ⇒ immutable.Seq[Topic] = extractTopics
+      val topicMapper: (Message) => immutable.Seq[Topic] = extractTopics
 
-      val messageAndTopic: Source[(Message, Topic), NotUsed] = elems.mapConcat { msg: Message ⇒
+      val messageAndTopic: Source[(Message, Topic), NotUsed] = elems.mapConcat { msg: Message =>
         val topicsForMessage = topicMapper(msg)
         // Create a (Msg, Topic) pair for each of the topics
         // the message belongs to
@@ -37,7 +37,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
 
       val multiGroups = messageAndTopic
         .groupBy(2, _._2).map {
-          case (msg, topic) ⇒
+          case (msg, topic) =>
             // do what needs to be done
             //#multi-groupby
             (msg, topic)
@@ -48,7 +48,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
       val result = multiGroups
         .grouped(10)
         .mergeSubstreams
-        .map(g ⇒ g.head._2.name + g.map(_._1).mkString("[", ", ", "]"))
+        .map(g => g.head._2.name + g.map(_._1).mkString("[", ", ", "]"))
         .limit(10)
         .runWith(Sink.seq)
 

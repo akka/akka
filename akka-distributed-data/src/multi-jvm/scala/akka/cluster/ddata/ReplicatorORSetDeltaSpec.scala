@@ -64,8 +64,8 @@ class ReplicatorORSetDeltaSpec extends MultiNodeSpec(ReplicatorORSetDeltaSpec) w
       awaitAssert {
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) ⇒ g.dataValue match {
-            case c: ORSet[_] ⇒ c.elements
+          case g @ GetSuccess(`key`, _) => g.dataValue match {
+            case c: ORSet[_] => c.elements
           }
         }
         value should be(expected)

@@ -127,17 +127,17 @@ class LogRoleReplace {
     }
 
     line match {
-      case RoleStarted(jvm, role, host, port) ⇒
-        replacements += (jvm → role)
-        replacements += ((host + ":" + port) → role)
+      case RoleStarted(jvm, role, host, port) =>
+        replacements += (jvm -> role)
+        replacements += ((host + ":" + port) -> role)
         false
-      case _ ⇒ true
+      case _ => true
     }
   }
 
   private def replaceLine(line: String): String = {
     var result = line
-    for ((from, to) ← replacements) {
+    for ((from, to) <- replacements) {
       result = result.replaceAll(from, to)
     }
     result

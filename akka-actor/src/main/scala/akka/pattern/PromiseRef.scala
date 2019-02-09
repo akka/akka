@@ -29,7 +29,7 @@ trait FutureRef[T] {
  * A combination of a Promise and an ActorRef associated with it, which points
  * to an actor performing a task which will eventually resolve the Promise.
  */
-trait PromiseRef[T] { this: FutureRef[T] ⇒
+trait PromiseRef[T] { this: FutureRef[T] =>
   /**
    * ActorRef associated with this PromiseRef.
    */

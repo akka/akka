@@ -121,7 +121,7 @@ private[remote] final class RemoteInstruments(
           try {
             serializeInstrument(instrument, oe, buffer)
           } catch {
-            case NonFatal(t) ⇒
+            case NonFatal(t) =>
               log.debug(
                 "Skipping serialization of RemoteInstrument {} since it failed with {}",
                 instrument.identifier, t.getMessage)
@@ -138,7 +138,7 @@ private[remote] final class RemoteInstruments(
           buffer.putInt(startPos, endPos - dataPos)
         }
       } catch {
-        case NonFatal(t) ⇒
+        case NonFatal(t) =>
           log.debug("Skipping serialization of all RemoteInstruments due to unhandled failure {}", t)
           buffer.position(startPos)
       }
@@ -187,7 +187,7 @@ private[remote] final class RemoteInstruments(
             try {
               deserializeInstrument(instrument, inboundEnvelope, buffer)
             } catch {
-              case NonFatal(t) ⇒
+              case NonFatal(t) =>
                 log.debug(
                   "Skipping deserialization of RemoteInstrument {} since it failed with {}",
                   instrument.identifier, t.getMessage)
@@ -210,7 +210,7 @@ private[remote] final class RemoteInstruments(
           remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
       }
     } catch {
-      case NonFatal(t) ⇒
+      case NonFatal(t) =>
         log.debug("Skipping further deserialization of remaining RemoteInstruments due to unhandled failure {}", t)
     } finally {
       buffer.position(endPos)
@@ -228,7 +228,7 @@ private[remote] final class RemoteInstruments(
         try {
           messageSentInstrument(instrument, outboundEnvelope, size, time)
         } catch {
-          case NonFatal(t) ⇒
+          case NonFatal(t) =>
             log.debug("Message sent in RemoteInstrument {} failed with {}", instrument.identifier, t.getMessage)
         }
         messageSent(pos + 1)
@@ -248,7 +248,7 @@ private[remote] final class RemoteInstruments(
         try {
           messageReceivedInstrument(instrument, inboundEnvelope, size, time)
         } catch {
-          case NonFatal(t) ⇒
+          case NonFatal(t) =>
             log.debug("Message received in RemoteInstrument {} failed with {}", instrument.identifier, t.getMessage)
         }
         messageRecieved(pos + 1)
@@ -294,10 +294,10 @@ private[remote] object RemoteInstruments {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import scala.collection.JavaConverters._
-    c.getStringList(path).asScala.iterator.map { fqcn ⇒
+    c.getStringList(path).asScala.iterator.map { fqcn =>
       system
         .dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, Nil)
-        .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] → system)))
+        .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] -> system)))
         .get
     }.to(immutable.Vector)
   }

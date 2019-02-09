@@ -5,12 +5,12 @@
 package akka.cluster.typed.internal
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed.internal.{ PoisonPill, PoisonPillInterceptor }
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
 import akka.annotation.InternalApi
-import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager ⇒ OldSingletonManager }
+import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager => OldSingletonManager }
 import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
@@ -35,13 +35,13 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
 
   override def init[M](singleton: typed.SingletonActor[M]): ActorRef[M] = {
     val settings = singleton.settings match {
-      case None    ⇒ ClusterSingletonSettings(system)
-      case Some(s) ⇒ s
+      case None    => ClusterSingletonSettings(system)
+      case Some(s) => s
     }
     def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
       singleton.stopMessage match {
-        case Some(_) ⇒ behv
-        case None    ⇒ Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+        case Some(_) => behv
+        case None    => Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
       }
     }
 
@@ -54,7 +54,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
           OldSingletonManager.props(untypedProps, singleton.stopMessage.getOrElse(PoisonPill), settings.toManagerSettings(singleton.name)),
           managerName)
       } catch {
-        case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") ⇒
+        case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") =>
         // This is fine. We just wanted to make sure it is running and it already is
       }
     }

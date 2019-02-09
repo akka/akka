@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 import akka.actor.ActorSystem
-import akka.pattern.{ after ⇒ later }
+import akka.pattern.{ after => later }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
@@ -107,10 +107,10 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
     val sslContext = initSslContext()
 
-    val debug = Flow[SslTlsInbound].map { x ⇒
+    val debug = Flow[SslTlsInbound].map { x =>
       x match {
-        case SessionTruncated   ⇒ system.log.debug(s" ----------- truncated ")
-        case SessionBytes(_, b) ⇒ system.log.debug(s" ----------- (${b.size}) ${b.take(32).utf8String}")
+        case SessionTruncated   => system.log.debug(s" ----------- truncated ")
+        case SessionBytes(_, b) => system.log.debug(s" ----------- (${b.size}) ${b.take(32).utf8String}")
       }
       x
     }
@@ -124,7 +124,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       def name: String =
         getClass.getName
           .reverse
-          .dropWhile(c ⇒ "$0123456789".indexOf(c) != -1)
+          .dropWhile(c => "$0123456789".indexOf(c) != -1)
           .takeWhile(_ != '$')
           .reverse
     }
@@ -150,7 +150,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
     def server(flow: Flow[ByteString, ByteString, Any]) = {
       val server = Tcp()
         .bind("localhost", 0)
-        .to(Sink.foreach(c ⇒ c.flow.join(flow).run()))
+        .to(Sink.foreach(c => c.flow.join(flow).run()))
         .run()
       Await.result(server, 2.seconds)
     }
@@ -193,14 +193,14 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             }
 
             {
-              case SessionTruncated ⇒ SendBytes(ByteString("TRUNCATED"))
-              case SessionBytes(s, b) if session == null ⇒
+              case SessionTruncated => SendBytes(ByteString("TRUNCATED"))
+              case SessionBytes(s, b) if session == null =>
                 setSession(s)
                 SendBytes(b)
-              case SessionBytes(s, b) if s != session ⇒
+              case SessionBytes(s, b) if s != session =>
                 setSession(s)
                 SendBytes(ByteString("NEWSESSION") ++ b)
-              case SessionBytes(s, b) ⇒ SendBytes(b)
+              case SessionBytes(s, b) => SendBytes(b)
             }
           }
       def leftClosing: TLSClosing = IgnoreComplete
@@ -215,20 +215,20 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
     object SingleBytes extends PayloadScenario {
       val str = "0123456789"
-      def inputs = str.map(ch ⇒ SendBytes(ByteString(ch.toByte)))
+      def inputs = str.map(ch => SendBytes(ByteString(ch.toByte)))
       def output = ByteString(str)
     }
 
     object MediumMessages extends PayloadScenario {
-      val strs = "0123456789" map (d ⇒ d.toString * (rnd.nextInt(9000) + 1000))
-      def inputs = strs map (s ⇒ SendBytes(ByteString(s)))
+      val strs = "0123456789" map (d => d.toString * (rnd.nextInt(9000) + 1000))
+      def inputs = strs map (s => SendBytes(ByteString(s)))
       def output = ByteString(strs.foldRight("")(_ ++ _))
     }
 
     object LargeMessages extends PayloadScenario {
       // TLS max packet size is 16384 bytes
-      val strs = "0123456789" map (d ⇒ d.toString * (rnd.nextInt(9000) + 17000))
-      def inputs = strs map (s ⇒ SendBytes(ByteString(s)))
+      val strs = "0123456789" map (d => d.toString * (rnd.nextInt(9000) + 17000))
+      def inputs = strs map (s => SendBytes(ByteString(s)))
       def output = ByteString(strs.foldRight("")(_ ++ _))
     }
 
@@ -252,11 +252,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       override def flow =
         Flow[SslTlsInbound]
           .mapConcat {
-            case SessionTruncated       ⇒ SessionTruncated :: Nil
-            case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
+            case SessionTruncated       => SessionTruncated :: Nil
+            case SessionBytes(s, bytes) => bytes.map(b => SessionBytes(s, ByteString(b)))
           }
           .take(5)
-          .mapAsync(5)(x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
+          .mapAsync(5)(x => later(500.millis, system.scheduler)(Future.successful(x)))
           .via(super.flow)
       override def rightClosing = IgnoreCancel
 
@@ -269,11 +269,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       override def flow =
         Flow[SslTlsInbound]
           .mapConcat {
-            case SessionTruncated       ⇒ SessionTruncated :: Nil
-            case SessionBytes(s, bytes) ⇒ bytes.map(b ⇒ SessionBytes(s, ByteString(b)))
+            case SessionTruncated       => SessionTruncated :: Nil
+            case SessionBytes(s, bytes) => bytes.map(b => SessionBytes(s, ByteString(b)))
           }
           .take(5)
-          .mapAsync(5)(x ⇒ later(500.millis, system.scheduler)(Future.successful(x)))
+          .mapAsync(5)(x => later(500.millis, system.scheduler)(Future.successful(x)))
           .via(super.flow)
       override def rightClosing = IgnoreBoth
 
@@ -285,7 +285,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
     object LHSIgnoresBoth extends PayloadScenario {
       override def leftClosing = IgnoreBoth
       val str = "0123456789"
-      def inputs = str.map(ch ⇒ SendBytes(ByteString(ch.toByte)))
+      def inputs = str.map(ch => SendBytes(ByteString(ch.toByte)))
       def output = ByteString(str)
     }
 
@@ -293,7 +293,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       override def leftClosing = IgnoreBoth
       override def rightClosing = IgnoreBoth
       val str = "0123456789"
-      def inputs = str.map(ch ⇒ SendBytes(ByteString(ch.toByte)))
+      def inputs = str.map(ch => SendBytes(ByteString(ch.toByte)))
       def output = ByteString(str)
     }
 
@@ -318,11 +318,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         }
 
         {
-          case SessionTruncated ⇒ SendBytes(ByteString("TRUNCATED"))
-          case SessionBytes(s, b) if s != session ⇒
+          case SessionTruncated => SendBytes(ByteString("TRUNCATED"))
+          case SessionBytes(s, b) if s != session =>
             setSession(s)
             SendBytes(ByteString(s.getCipherSuite) ++ b)
-          case SessionBytes(s, b) ⇒ SendBytes(b)
+          case SessionBytes(s, b) => SendBytes(b)
         }
       }
 
@@ -353,8 +353,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         SessionRenegotiationFirstTwo)
 
     for {
-      commPattern ← communicationPatterns
-      scenario ← scenarios
+      commPattern <- communicationPatterns
+      scenario <- scenarios
     } {
       s"work in mode ${commPattern.name} while sending ${scenario.name}" in assertAllStagesStopped {
         val onRHS = debug.via(scenario.flow)
@@ -375,7 +375,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
               }
             })
             .via(debug)
-            .collect { case SessionBytes(_, b) ⇒ b }
+            .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .via(new Timeout(6.seconds))
             .dropWhile(_.size < scenario.output.size)
@@ -389,9 +389,9 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
     "emit an error if the TLS handshake fails certificate checks" in assertAllStagesStopped {
       val getError = Flow[SslTlsInbound]
-        .map[Either[SslTlsInbound, SSLException]](i ⇒ Left(i))
-        .recover { case e: SSLException ⇒ Right(e) }
-        .collect { case Right(e) ⇒ e }.toMat(Sink.head)(Keep.right)
+        .map[Either[SslTlsInbound, SSLException]](i => Left(i))
+        .recover { case e: SSLException => Right(e) }
+        .collect { case Right(e) => e }.toMat(Sink.head)(Keep.right)
 
       val simple = Flow.fromSinkAndSourceMat(getError, Source.maybe[SslTlsOutbound])(Keep.left)
 
@@ -399,7 +399,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       // under error conditions, and has the bonus of matching most actual SSL deployments.
       val (server, serverErr) = Tcp()
         .bind("localhost", 0)
-        .mapAsync(1)(c ⇒
+        .mapAsync(1)(c =>
           c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run()
         )
         .toMat(Sink.head)(Keep.both).run()
@@ -418,7 +418,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[SslTlsOutbound], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b => (s, o1, o2) =>
           val tls = b.add(clientTls(EagerClose))
           s ~> tls.in1; tls.out1 ~> o1
           o2 <~ tls.out2; tls.in2 <~ Source.failed(ex)
@@ -435,7 +435,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
     "reliably cancel subscriptions when UserIn fails early" in assertAllStagesStopped {
       val ex = new Exception("hello")
       val (sub, out1, out2) =
-        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b ⇒ (s, o1, o2) ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(Source.asSubscriber[ByteString], Sink.head[ByteString], Sink.head[SslTlsInbound])((_, _, _)) { implicit b => (s, o1, o2) =>
           val tls = b.add(clientTls(EagerClose))
           Source.failed[SslTlsOutbound](ex) ~> tls.in1; tls.out1 ~> o1
           o2 <~ tls.out2; tls.in2 <~ s
@@ -461,7 +461,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       }
 
       val inFlow = Flow[SslTlsInbound]
-        .collect { case SessionBytes(_, b) ⇒ b }
+        .collect { case SessionBytes(_, b) => b }
         .scan(ByteString.empty)(_ ++ _)
         .via(new Timeout(6.seconds))
         .dropWhile(_.size < scenario.output.size)
@@ -470,7 +470,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         Source(scenario.inputs)
           .via(outFlow)
           .via(inFlow)
-          .map(result ⇒ {
+          .map(result => {
             ks.shutdown(); result
           })
           .runWith(Sink.last)
@@ -482,8 +482,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       def run(hostName: String): Future[akka.Done] = {
         val rhs = Flow[SslTlsInbound]
           .map {
-            case SessionTruncated   ⇒ SendBytes(ByteString.empty)
-            case SessionBytes(_, b) ⇒ SendBytes(b)
+            case SessionTruncated   => SendBytes(ByteString.empty)
+            case SessionBytes(_, b) => SendBytes(b)
           }
         val clientTls = TLS(sslContext, None, cipherSuites, Client, EagerClose, Some((hostName, 80)))
         val flow = clientTls atop serverTls(EagerClose).reversed join rhs
@@ -503,13 +503,13 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
 
     "pass through data" in {
       val f = Source(1 to 3)
-        .map(b ⇒ SendBytes(ByteString(b.toByte)))
+        .map(b => SendBytes(ByteString(b.toByte)))
         .via(TLSPlacebo() join Flow.apply)
         .grouped(10)
         .runWith(Sink.head)
       val result = Await.result(f, 3.seconds)
-      result.map(_.bytes) should be((1 to 3).map(b ⇒ ByteString(b.toByte)))
-      result.map(_.session).foreach(s ⇒ s.getCipherSuite should be("SSL_NULL_WITH_NULL_NULL"))
+      result.map(_.bytes) should be((1 to 3).map(b => ByteString(b.toByte)))
+      result.map(_.session).foreach(s => s.getCipherSuite should be("SSL_NULL_WITH_NULL_NULL"))
     }
 
   }

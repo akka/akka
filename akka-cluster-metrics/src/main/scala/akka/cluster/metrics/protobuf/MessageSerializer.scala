@@ -6,10 +6,10 @@ package akka.cluster.metrics.protobuf
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
-import java.{ lang ⇒ jl }
+import java.{ lang => jl }
 
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
+import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.cluster.metrics._
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers, SerializerWithStringManifest }
 import akka.util.ClassLoaderObjectInputStream
@@ -40,24 +40,24 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
   private lazy val serialization = SerializationExtension(system)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: MetricsGossipEnvelope         ⇒ MetricsGossipEnvelopeManifest
-    case _: AdaptiveLoadBalancingPool     ⇒ AdaptiveLoadBalancingPoolManifest
-    case _: MixMetricsSelector            ⇒ MixMetricsSelectorManifest
-    case CpuMetricsSelector               ⇒ CpuMetricsSelectorManifest
-    case HeapMetricsSelector              ⇒ HeapMetricsSelectorManifest
-    case SystemLoadAverageMetricsSelector ⇒ SystemLoadAverageMetricsSelectorManifest
-    case _ ⇒
+    case _: MetricsGossipEnvelope         => MetricsGossipEnvelopeManifest
+    case _: AdaptiveLoadBalancingPool     => AdaptiveLoadBalancingPoolManifest
+    case _: MixMetricsSelector            => MixMetricsSelectorManifest
+    case CpuMetricsSelector               => CpuMetricsSelectorManifest
+    case HeapMetricsSelector              => HeapMetricsSelectorManifest
+    case SystemLoadAverageMetricsSelector => SystemLoadAverageMetricsSelectorManifest
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: MetricsGossipEnvelope         ⇒ compress(metricsGossipEnvelopeToProto(m))
-    case alb: AdaptiveLoadBalancingPool   ⇒ adaptiveLoadBalancingPoolToBinary(alb)
-    case mms: MixMetricsSelector          ⇒ mixMetricSelectorToBinary(mms)
-    case CpuMetricsSelector               ⇒ Array.emptyByteArray
-    case HeapMetricsSelector              ⇒ Array.emptyByteArray
-    case SystemLoadAverageMetricsSelector ⇒ Array.emptyByteArray
-    case _ ⇒
+    case m: MetricsGossipEnvelope         => compress(metricsGossipEnvelopeToProto(m))
+    case alb: AdaptiveLoadBalancingPool   => adaptiveLoadBalancingPoolToBinary(alb)
+    case mms: MixMetricsSelector          => mixMetricSelectorToBinary(mms)
+    case CpuMetricsSelector               => Array.emptyByteArray
+    case HeapMetricsSelector              => Array.emptyByteArray
+    case SystemLoadAverageMetricsSelector => Array.emptyByteArray
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
@@ -75,8 +75,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }
@@ -87,20 +87,20 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case MetricsGossipEnvelopeManifest            ⇒ metricsGossipEnvelopeFromBinary(bytes)
-    case AdaptiveLoadBalancingPoolManifest        ⇒ adaptiveLoadBalancingPoolFromBinary(bytes)
-    case MixMetricsSelectorManifest               ⇒ mixMetricSelectorFromBinary(bytes)
-    case CpuMetricsSelectorManifest               ⇒ CpuMetricsSelector
-    case HeapMetricsSelectorManifest              ⇒ HeapMetricsSelector
-    case SystemLoadAverageMetricsSelectorManifest ⇒ SystemLoadAverageMetricsSelector
-    case _ ⇒ throw new NotSerializableException(
+    case MetricsGossipEnvelopeManifest            => metricsGossipEnvelopeFromBinary(bytes)
+    case AdaptiveLoadBalancingPoolManifest        => adaptiveLoadBalancingPoolFromBinary(bytes)
+    case MixMetricsSelectorManifest               => mixMetricSelectorFromBinary(bytes)
+    case CpuMetricsSelectorManifest               => CpuMetricsSelector
+    case HeapMetricsSelectorManifest              => HeapMetricsSelector
+    case SystemLoadAverageMetricsSelectorManifest => SystemLoadAverageMetricsSelector
+    case _ => throw new NotSerializableException(
       s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
   }
 
   private def addressToProto(address: Address): cm.Address.Builder = address match {
-    case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+    case Address(protocol, actorSystem, Some(host), Some(port)) =>
       cm.Address.newBuilder().setSystem(actorSystem).setHostname(host).setPort(port).setProtocol(protocol)
-    case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
   }
 
   def adaptiveLoadBalancingPoolToBinary(alb: AdaptiveLoadBalancingPool): Array[Byte] = {
@@ -132,7 +132,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
   private def mixMetricSelectorToBinary(mms: MixMetricsSelector): Array[Byte] = {
     val builder = cm.MixMetricsSelector.newBuilder()
-    mms.selectors.foreach { selector ⇒
+    mms.selectors.foreach { selector =>
       builder.addSelectors(metricsSelectorToProto(selector))
     }
     builder.build().toByteArray
@@ -167,32 +167,32 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     Address(getProtocol(address), getSystem(address), address.getHostname, address.getPort)
 
   private def mapWithErrorMessage[T](map: Map[T, Int], value: T, unknown: String): Int = map.get(value) match {
-    case Some(x) ⇒ x
-    case _       ⇒ throw new IllegalArgumentException(s"Unknown $unknown [$value] in cluster message")
+    case Some(x) => x
+    case _       => throw new IllegalArgumentException(s"Unknown $unknown [$value] in cluster message")
   }
 
   private def metricsGossipEnvelopeToProto(envelope: MetricsGossipEnvelope): cm.MetricsGossipEnvelope = {
     val allNodeMetrics = envelope.gossip.nodes
     val allAddresses: Vector[Address] = allNodeMetrics.iterator.map(_.address).to(immutable.Vector)
     val addressMapping = allAddresses.zipWithIndex.toMap
-    val allMetricNames: Vector[String] = allNodeMetrics.foldLeft(Set.empty[String])((s, n) ⇒ s ++ n.metrics.iterator.map(_.name)).toVector
+    val allMetricNames: Vector[String] = allNodeMetrics.foldLeft(Set.empty[String])((s, n) => s ++ n.metrics.iterator.map(_.name)).toVector
     val metricNamesMapping = allMetricNames.zipWithIndex.toMap
     def mapAddress(address: Address) = mapWithErrorMessage(addressMapping, address, "address")
     def mapName(name: String) = mapWithErrorMessage(metricNamesMapping, name, "address")
 
     def ewmaToProto(ewma: Option[EWMA]): Option[cm.NodeMetrics.EWMA.Builder] = ewma.map {
-      x ⇒ cm.NodeMetrics.EWMA.newBuilder().setValue(x.value).setAlpha(x.alpha)
+      x => cm.NodeMetrics.EWMA.newBuilder().setValue(x.value).setAlpha(x.alpha)
     }
 
     def numberToProto(number: Number): cm.NodeMetrics.Number.Builder = {
       import cm.NodeMetrics.Number
       import cm.NodeMetrics.NumberType
       number match {
-        case n: jl.Double  ⇒ Number.newBuilder().setType(NumberType.Double).setValue64(jl.Double.doubleToLongBits(n))
-        case n: jl.Long    ⇒ Number.newBuilder().setType(NumberType.Long).setValue64(n)
-        case n: jl.Float   ⇒ Number.newBuilder().setType(NumberType.Float).setValue32(jl.Float.floatToIntBits(n))
-        case n: jl.Integer ⇒ Number.newBuilder().setType(NumberType.Integer).setValue32(n)
-        case _ ⇒
+        case n: jl.Double  => Number.newBuilder().setType(NumberType.Double).setValue64(jl.Double.doubleToLongBits(n))
+        case n: jl.Long    => Number.newBuilder().setType(NumberType.Long).setValue64(n)
+        case n: jl.Float   => Number.newBuilder().setType(NumberType.Float).setValue32(jl.Float.floatToIntBits(n))
+        case n: jl.Integer => Number.newBuilder().setType(NumberType.Integer).setValue32(n)
+        case _ =>
           val bos = new ByteArrayOutputStream
           val out = new ObjectOutputStream(bos)
           out.writeObject(number)
@@ -232,11 +232,11 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     def numberFromProto(number: cm.NodeMetrics.Number): Number = {
       import cm.NodeMetrics.NumberType
       number.getType.getNumber match {
-        case NumberType.Double_VALUE  ⇒ jl.Double.longBitsToDouble(number.getValue64)
-        case NumberType.Long_VALUE    ⇒ number.getValue64
-        case NumberType.Float_VALUE   ⇒ jl.Float.intBitsToFloat(number.getValue32)
-        case NumberType.Integer_VALUE ⇒ number.getValue32
-        case NumberType.Serialized_VALUE ⇒
+        case NumberType.Double_VALUE  => jl.Double.longBitsToDouble(number.getValue64)
+        case NumberType.Long_VALUE    => number.getValue64
+        case NumberType.Float_VALUE   => jl.Float.intBitsToFloat(number.getValue32)
+        case NumberType.Integer_VALUE => number.getValue32
+        case NumberType.Serialized_VALUE =>
           val in = new ClassLoaderObjectInputStream(
             system.dynamicAccess.classLoader,
             new ByteArrayInputStream(number.getSerialized.toByteArray))
@@ -284,7 +284,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val mm = cm.MixMetricsSelector.parseFrom(bytes)
     MixMetricsSelector(mm.getSelectorsList.asScala
       // should be safe because we serialized only the right subtypes of MetricsSelector
-      .map(s ⇒ metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector]).toIndexedSeq)
+      .map(s => metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector]).toIndexedSeq)
   }
 
   def metricSelectorFromProto(selector: cm.MetricsSelector): MetricsSelector =

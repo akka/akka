@@ -52,7 +52,7 @@ object ActorSource {
     failureMatcher:    PartialFunction[T, Throwable],
     bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] = {
     akka.stream.typed.scaladsl.ActorSource.actorRef(
-      { case m if completionMatcher.test(m) ⇒ }: PartialFunction[T, Unit],
+      { case m if completionMatcher.test(m) => }: PartialFunction[T, Unit],
       failureMatcher, bufferSize, overflowStrategy).asJava
   }
 }

@@ -38,16 +38,16 @@ class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     def apply(probe: TestProbe[Int]): Behavior[InternalProtocol] = {
       val settings = dummySettings()
-      Behaviors.setup[InternalProtocol] { _ ⇒
+      Behaviors.setup[InternalProtocol] { _ =>
         val stashState = new StashState(settings)
         Behaviors.receiveMessagePartial[InternalProtocol] {
-          case RecoveryPermitGranted ⇒
+          case RecoveryPermitGranted =>
             stashState.internalStashBuffer.stash(RecoveryPermitGranted)
             probe.ref ! stashState.internalStashBuffer.size
             Behaviors.same[InternalProtocol]
-          case _: IncomingCommand[_] ⇒ Behaviors.stopped
+          case _: IncomingCommand[_] => Behaviors.stopped
         }.receiveSignal {
-          case (_, _) ⇒
+          case (_, _) =>
             stashState.clearStashBuffers()
             Behaviors.stopped[InternalProtocol]
         }

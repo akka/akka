@@ -33,16 +33,16 @@ private[remote] class SharedTestState {
 
   def isBlackhole(from: Address, to: Address): Boolean =
     state.get.blackholes.get(from) match {
-      case Some(destinations) ⇒ destinations(to)
-      case None               ⇒ false
+      case Some(destinations) => destinations(to)
+      case None               => false
     }
 
   /** Enable blackholing between given address in given direction */
   def blackhole(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ addBlackhole(a, b)
-      case Direction.Receive ⇒ addBlackhole(b, a)
-      case Direction.Both ⇒
+      case Direction.Send    => addBlackhole(a, b)
+      case Direction.Receive => addBlackhole(b, a)
+      case Direction.Both =>
         addBlackhole(a, b)
         addBlackhole(b, a)
     }
@@ -69,8 +69,8 @@ private[remote] class SharedTestState {
   @tailrec private def addBlackhole(from: Address, to: Address): Unit = {
     val current = state.get
     val newState = current.blackholes.get(from) match {
-      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations + to))
-      case None               ⇒ current.copy(blackholes = current.blackholes.updated(from, Set(to)))
+      case Some(destinations) => current.copy(blackholes = current.blackholes.updated(from, destinations + to))
+      case None               => current.copy(blackholes = current.blackholes.updated(from, Set(to)))
     }
     if (!state.compareAndSet(current, newState))
       addBlackhole(from, to)
@@ -78,9 +78,9 @@ private[remote] class SharedTestState {
 
   def passThrough(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ removeBlackhole(a, b)
-      case Direction.Receive ⇒ removeBlackhole(b, a)
-      case Direction.Both ⇒
+      case Direction.Send    => removeBlackhole(a, b)
+      case Direction.Receive => removeBlackhole(b, a)
+      case Direction.Both =>
         removeBlackhole(a, b)
         removeBlackhole(b, a)
     }
@@ -88,8 +88,8 @@ private[remote] class SharedTestState {
   @tailrec private def removeBlackhole(from: Address, to: Address): Unit = {
     val current = state.get
     val newState = current.blackholes.get(from) match {
-      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations - to))
-      case None               ⇒ current
+      case Some(destinations) => current.copy(blackholes = current.blackholes.updated(from, destinations - to))
+      case None               => current
     }
     if (!state.compareAndSet(current, newState))
       removeBlackhole(from, to)
@@ -151,16 +151,16 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
       // InHandler
       override def onPush(): Unit = {
         state.getInboundFailureOnce match {
-          case Some(shouldFailEx) ⇒
+          case Some(shouldFailEx) =>
             log.info("Fail inbound stream from [{}]: {}", classOf[InboundTestStage].getName, shouldFailEx.getMessage)
             failStage(shouldFailEx)
-          case _ ⇒
+          case _ =>
             val env = grab(in)
             env.association match {
-              case OptionVal.None ⇒
+              case OptionVal.None =>
                 // unknown, handshake not completed
                 push(out, env)
-              case OptionVal.Some(association) ⇒
+              case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
                   log.debug(
                     "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",

@@ -51,8 +51,8 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     val metadata = snapshotMetadatas(persistenceId, criteria).sorted.takeRight(maxLoadAttempts)
     Future {
       load(metadata) match {
-        case Success(s) ⇒ s
-        case Failure(e) ⇒ throw e // all attempts failed, fail the future
+        case Success(s) => s
+        case Failure(e) => throw e // all attempts failed, fail the future
       }
     }(streamDispatcher)
   }
@@ -70,21 +70,21 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
       // usually snapshot-stores would keep one snapshot per sequenceNr however here in the file-based one we timestamp
       // snapshots and allow multiple to be kept around (for the same seqNr) if desired
       snapshotFiles(metadata).map(_.delete())
-    }(streamDispatcher).map(_ ⇒ ())(streamDispatcher)
+    }(streamDispatcher).map(_ => ())(streamDispatcher)
   }
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
     val metadatas = snapshotMetadatas(persistenceId, criteria)
     Future.sequence {
       metadatas.map(deleteAsync)
-    }(scala.collection.immutable.IndexedSeq, streamDispatcher).map(_ ⇒ ())(streamDispatcher)
+    }(scala.collection.immutable.IndexedSeq, streamDispatcher).map(_ => ())(streamDispatcher)
   }
 
   override def receivePluginInternal: Receive = {
-    case SaveSnapshotSuccess(metadata) ⇒ saving -= metadata
-    case _: SaveSnapshotFailure        ⇒ // ignore
-    case _: DeleteSnapshotsSuccess     ⇒ // ignore
-    case _: DeleteSnapshotsFailure     ⇒ // ignore
+    case SaveSnapshotSuccess(metadata) => saving -= metadata
+    case _: SaveSnapshotFailure        => // ignore
+    case _: DeleteSnapshotsSuccess     => // ignore
+    case _: DeleteSnapshotsFailure     => // ignore
   }
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
@@ -93,12 +93,12 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
 
   @scala.annotation.tailrec
   private def load(metadata: immutable.Seq[SnapshotMetadata]): Try[Option[SelectedSnapshot]] = metadata.lastOption match {
-    case None ⇒ Success(None) // no snapshots stored
-    case Some(md) ⇒
+    case None => Success(None) // no snapshots stored
+    case Some(md) =>
       Try(withInputStream(md)(deserialize)) match {
-        case Success(s) ⇒
+        case Success(s) =>
           Success(Some(SelectedSnapshot(md, s.data)))
-        case Failure(e) ⇒
+        case Failure(e) =>
           val remaining = metadata.init
           log.error(e, s"Error loading snapshot [{}], remaining attempts: [{}]", md, remaining.size)
           if (remaining.isEmpty)
@@ -120,16 +120,16 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     outputStream.write(serializationExtension.serialize(snapshot).get)
   }
 
-  protected def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit): File = {
+  protected def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) => Unit): File = {
     val tmpFile = snapshotFileForWrite(metadata, extension = "tmp")
     withStream(new BufferedOutputStream(Files.newOutputStream(tmpFile.toPath())), p)
     tmpFile
   }
 
-  private def withInputStream[T](metadata: SnapshotMetadata)(p: (InputStream) ⇒ T): T =
+  private def withInputStream[T](metadata: SnapshotMetadata)(p: (InputStream) => T): T =
     withStream(new BufferedInputStream(Files.newInputStream(snapshotFileForWrite(metadata).toPath())), p)
 
-  private def withStream[A <: Closeable, B](stream: A, p: A ⇒ B): B =
+  private def withStream[A <: Closeable, B](stream: A, p: A => B): B =
     try { p(stream) } finally { stream.close() }
 
   /** Only by persistenceId and sequenceNr, timestamp is informational - accommodates for 2.13.x series files */
@@ -140,11 +140,11 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else {
-      files.map(_.getName).flatMap { filename ⇒
+      files.map(_.getName).flatMap { filename =>
         extractMetadata(filename).map {
-          case (pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
+          case (pid, snr, tms) => SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
         }
-      }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
+      }.filter(md => criteria.matches(md) && !saving.contains(md)).toVector
     }
   }
 
@@ -181,8 +181,8 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
 
     def accept(dir: File, name: String): Boolean =
       name match {
-        case FilenamePattern(pid, snr, tms) ⇒ matches(pid, snr, tms)
-        case _                              ⇒ false
+        case FilenamePattern(pid, snr, tms) => matches(pid, snr, tms)
+        case _                              => false
       }
 
   }

@@ -55,7 +55,7 @@ abstract class QuickRestartSpec
     "join and restart" taggedAs LongRunningTest in {
       val totalNumberOfNodes = roles.size + 1
       var restartingSystem: ActorSystem = null // only used on second
-      for (n ← 1 to rounds) {
+      for (n <- 1 to rounds) {
         log.info("round-" + n)
         runOn(second) {
           restartingSystem =

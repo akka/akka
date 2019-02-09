@@ -23,7 +23,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions: Seq[String] = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = (0 to latestPatchOf25).map(patch ⇒ s"2.5.$patch")
+      val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12).map("2.4." + _)
       val akka25DiscoveryVersions = (19 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka24WithScala212 =
@@ -41,7 +41,7 @@ object MiMa extends AutoPlugin {
       )
 
       scalaBinaryVersion match {
-        case "2.11" ⇒
+        case "2.11" =>
           if (akka2519NewArtifacts.contains(projectName))
             akka25DiscoveryVersions
           else if (akka250NewArtifacts.contains(projectName)) akka25Versions
@@ -50,7 +50,7 @@ object MiMa extends AutoPlugin {
             else Seq.empty
           } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
 
-        case "2.12" ⇒
+        case "2.12" =>
           if (akka2519NewArtifacts.contains(projectName))
             akka25DiscoveryVersions
           else if (akka250NewArtifacts.contains(projectName))
@@ -69,7 +69,7 @@ object MiMa extends AutoPlugin {
       "akka-distributed-data")
 
     // check against all binary compatible artifacts
-    versions.map { v ⇒
+    versions.map { v =>
       val adjustedProjectName =
         if (akka25PromotedArtifacts(projectName) && v.startsWith("2.4"))
           projectName + "-experimental"

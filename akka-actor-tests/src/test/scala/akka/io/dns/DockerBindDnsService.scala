@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
 
-trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
+trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
   val client = DefaultDockerClient.fromEnv().build()
 
   val hostPort: Int
@@ -33,7 +33,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
     try {
       client.pull(image)
     } catch {
-      case NonFatal(_) ⇒
+      case NonFatal(_) =>
         log.warning(s"Failed to pull docker image [$image], is docker running?")
         return
     }
@@ -56,7 +56,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
     val containerName = "akka-test-dns-" + getClass.getCanonicalName
 
     client.listContainers(ListContainersParam.allContainers()).asScala
-      .find(_.names().asScala.exists(_.contains(containerName))).foreach(c ⇒ {
+      .find(_.names().asScala.exists(_.contains(containerName))).foreach(c => {
         if ("running" == c.state()) {
           client.killContainer(c.id)
         }

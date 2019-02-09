@@ -83,7 +83,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
         Source(1 to 3)
-          .flatMapMerge(10, i ⇒ if (i == 3) throw ex else blocked)
+          .flatMapMerge(10, i => if (i == 3) throw ex else blocked)
           .runWith(Sink.head)
           .futureValue
       }.cause.get should ===(ex)
@@ -109,7 +109,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
         }
       }
 
-      val result = Source.single(()).flatMapMerge(4, _ ⇒ Source.fromGraph(FailingInnerMat)).runWith(Sink.ignore)
+      val result = Source.single(()).flatMapMerge(4, _ => Source.fromGraph(FailingInnerMat)).runWith(Sink.ignore)
 
       result.failed.futureValue should ===(matFail)
 
@@ -151,8 +151,8 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val latch = TestLatch()
       Source(1 to 3)
         .flatMapMerge(10, {
-          case 1 ⇒ Source.fromPublisher(p)
-          case 2 ⇒
+          case 1 => Source.fromPublisher(p)
+          case 2 =>
             Await.ready(latch, 3.seconds)
             throw ex
         })
@@ -177,14 +177,14 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "work with many concurrently queued events" in assertAllStagesStopped {
-      val p = Source((0 until 100).map(i ⇒ src10(10 * i)))
+      val p = Source((0 until 100).map(i => src10(10 * i)))
         .flatMapMerge(Int.MaxValue, identity)
         .runWith(TestSink.probe)
       p.within(1.second) {
         p.ensureSubscription()
         p.expectNoMsg()
       }
-      val elems = p.within(1.second)((1 to 1000).map(i ⇒ p.requestNext()).toSet)
+      val elems = p.within(1.second)((1 to 1000).map(i => p.requestNext()).toSet)
       p.expectComplete()
       elems should ===((0 until 1000).toSet)
     }
@@ -291,7 +291,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       TraversalBuilder.getSingleSource(singleSourceA) should be(OptionVal.Some(singleSourceA))
 
       TraversalBuilder.getSingleSource(Source.single("c").async) should be(OptionVal.None)
-      TraversalBuilder.getSingleSource(Source.single("d").mapMaterializedValue(_ ⇒ "Mat")) should be(OptionVal.None)
+      TraversalBuilder.getSingleSource(Source.single("d").mapMaterializedValue(_ => "Mat")) should be(OptionVal.None)
     }
 
   }

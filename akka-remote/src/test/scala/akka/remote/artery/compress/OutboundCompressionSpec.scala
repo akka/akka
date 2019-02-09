@@ -20,7 +20,7 @@ class OutboundCompressionSpec extends AkkaSpec {
     }
 
     "compress previously registered actor ref" in {
-      val table = CompressionTable(17L, 1, Map(system.deadLetters → 0, alice → 1))
+      val table = CompressionTable(17L, 1, Map(system.deadLetters -> 0, alice -> 1))
       table.compress(alice) should ===(1) // compressed
       table.compress(bob) should ===(-1) // not compressed
 

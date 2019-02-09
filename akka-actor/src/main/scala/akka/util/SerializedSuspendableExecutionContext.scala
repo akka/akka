@@ -17,8 +17,8 @@ private[akka] object SerializedSuspendableExecutionContext {
 
   def apply(throughput: Int)(implicit context: ExecutionContext): SerializedSuspendableExecutionContext =
     new SerializedSuspendableExecutionContext(throughput)(context match {
-      case s: SerializedSuspendableExecutionContext ⇒ s.context
-      case other                                    ⇒ other
+      case s: SerializedSuspendableExecutionContext => s.context
+      case other                                    => other
     })
 }
 
@@ -63,9 +63,9 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
     @tailrec def run(done: Int): Unit =
       if (done < throughput && state.get == On) {
         poll() match {
-          case null ⇒ ()
-          case some ⇒
-            try some.run() catch { case NonFatal(t) ⇒ context reportFailure t }
+          case null => ()
+          case some =>
+            try some.run() catch { case NonFatal(t) => context reportFailure t }
             run(done + 1)
         }
       }
@@ -83,9 +83,9 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
   final def size(): Int = count()
 
   override final def toString: String = (state.get: @switch) match {
-    case 0 ⇒ "Off"
-    case 1 ⇒ "On"
-    case 2 ⇒ "Off & Suspended"
-    case 3 ⇒ "On & Suspended"
+    case 0 => "Off"
+    case 1 => "On"
+    case 2 => "Off & Suspended"
+    case 3 => "On & Suspended"
   }
 }

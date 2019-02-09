@@ -37,10 +37,10 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
     livenessProbeInterval:   Duration       = Duration.Undefined): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
 
     TestSource.probe[String]
-      .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
+      .map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, timeout, retryInterval,
         injectHandshakeInterval, livenessProbeInterval))
-      .map(env ⇒ env.message)
+      .map(env => env.message)
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

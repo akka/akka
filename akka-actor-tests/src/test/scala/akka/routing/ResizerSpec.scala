@@ -31,7 +31,7 @@ object ResizerSpec {
 
   class TestActor extends Actor {
     def receive = {
-      case latch: TestLatch ⇒ latch.countDown()
+      case latch: TestLatch => latch.countDown()
     }
   }
 
@@ -185,9 +185,9 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(
         Props(new Actor {
           def receive = {
-            case d: FiniteDuration ⇒
+            case d: FiniteDuration =>
               Thread.sleep(d.dilated.toMillis); sender() ! "done"
-            case "echo" ⇒ sender() ! "reply"
+            case "echo" => sender() ! "reply"
           }
         })))
 
@@ -198,13 +198,13 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       routeeSize(router) should ===(resizer.lowerBound)
 
       def loop(loops: Int, d: FiniteDuration) = {
-        for (_ ← 0 until loops) {
+        for (_ <- 0 until loops) {
           router ! d
           // sending in too quickly will result in skipped resize due to many resizeInProgress conflicts
           Thread.sleep(20.millis.dilated.toMillis)
         }
         within((d * loops / resizer.lowerBound) + 2.seconds.dilated) {
-          for (_ ← 0 until loops) expectMsg("done")
+          for (_ <- 0 until loops) expectMsg("done")
         }
       }
 
@@ -230,13 +230,13 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(
         Props(new Actor {
           def receive = {
-            case n: Int if n <= 0 ⇒ // done
-            case n: Int           ⇒ Thread.sleep((n millis).dilated.toMillis)
+            case n: Int if n <= 0 => // done
+            case n: Int           => Thread.sleep((n millis).dilated.toMillis)
           }
         })))
 
       // put some pressure on the router
-      for (_ ← 0 until 15) {
+      for (_ <- 0 until 15) {
         router ! 150
         Thread.sleep((20 millis).dilated.toMillis)
       }

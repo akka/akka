@@ -509,9 +509,9 @@ private[akka] class ActorCell(
 
     def shouldStash(m: SystemMessage, state: Int): Boolean =
       (state: @switch) match {
-        case DefaultState                  ⇒ false
-        case SuspendedState                ⇒ m.isInstanceOf[StashWhenFailed]
-        case SuspendedWaitForChildrenState ⇒ m.isInstanceOf[StashWhenWaitingForChildren]
+        case DefaultState                  => false
+        case SuspendedState                => m.isInstanceOf[StashWhenFailed]
+        case SuspendedWaitForChildrenState => m.isInstanceOf[StashWhenWaitingForChildren]
       }
 
     @tailrec
@@ -521,20 +521,20 @@ private[akka] class ActorCell(
       message.unlink()
       try {
         message match {
-          case message: SystemMessage if shouldStash(message, currentState) ⇒ stash(message)
-          case f: Failed ⇒ handleFailure(f)
-          case DeathWatchNotification(a, ec, at) ⇒ watchedActorTerminated(a, ec, at)
-          case Create(failure) ⇒ create(failure)
-          case Watch(watchee, watcher) ⇒ addWatcher(watchee, watcher)
-          case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-          case Recreate(cause) ⇒ faultRecreate(cause)
-          case Suspend() ⇒ faultSuspend()
-          case Resume(inRespToFailure) ⇒ faultResume(inRespToFailure)
-          case Terminate() ⇒ terminate()
-          case Supervise(child, async) ⇒ supervise(child, async)
-          case NoMessage ⇒ // only here to suppress warning
+          case message: SystemMessage if shouldStash(message, currentState) => stash(message)
+          case f: Failed => handleFailure(f)
+          case DeathWatchNotification(a, ec, at) => watchedActorTerminated(a, ec, at)
+          case Create(failure) => create(failure)
+          case Watch(watchee, watcher) => addWatcher(watchee, watcher)
+          case Unwatch(watchee, watcher) => remWatcher(watchee, watcher)
+          case Recreate(cause) => faultRecreate(cause)
+          case Suspend() => faultSuspend()
+          case Resume(inRespToFailure) => faultResume(inRespToFailure)
+          case Terminate() => terminate()
+          case Supervise(child, async) => supervise(child, async)
+          case NoMessage => // only here to suppress warning
         }
-      } catch handleNonFatalOrInterruptedException { e ⇒
+      } catch handleNonFatalOrInterruptedException { e =>
         handleInvokeFailure(Nil, e)
       }
       val newState = calculateState
@@ -557,11 +557,11 @@ private[akka] class ActorCell(
       if (influenceReceiveTimeout)
         cancelReceiveTimeout()
       messageHandle.message match {
-        case _: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-        case msg                    ⇒ receiveMessage(msg)
+        case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
+        case msg                    => receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
-    } catch handleNonFatalOrInterruptedException { e ⇒
+    } catch handleNonFatalOrInterruptedException { e =>
       handleInvokeFailure(Nil, e)
     } finally {
       // Schedule or reschedule receive timeout
@@ -574,12 +574,12 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case t: Terminated              ⇒ receivedTerminated(t)
-      case AddressTerminated(address) ⇒ addressTerminated(address)
-      case Kill                       ⇒ throw ActorKilledException("Kill")
-      case PoisonPill                 ⇒ self.stop()
-      case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
-      case Identify(messageId)        ⇒ sender() ! ActorIdentity(messageId, Some(self))
+      case t: Terminated              => receivedTerminated(t)
+      case AddressTerminated(address) => addressTerminated(address)
+      case Kill                       => throw ActorKilledException("Kill")
+      case PoisonPill                 => self.stop()
+      case sel: ActorSelectionMessage => receiveSelection(sel)
+      case Identify(messageId)        => sender() ! ActorIdentity(messageId, Some(self))
     }
   }
 
@@ -596,9 +596,9 @@ private[akka] class ActorCell(
    */
 
   final def sender(): ActorRef = currentMessage match {
-    case null                      ⇒ system.deadLetters
-    case msg if msg.sender ne null ⇒ msg.sender
-    case _                         ⇒ system.deadLetters
+    case null                      => system.deadLetters
+    case msg if msg.sender ne null => msg.sender
+    case _                         => system.deadLetters
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
@@ -607,7 +607,7 @@ private[akka] class ActorCell(
   def become(behavior: Procedure[Any]): Unit = become(behavior, discardOld = true)
 
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
-    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
+    become({ case msg => behavior.apply(msg) }: Actor.Receive, discardOld)
 
   def unbecome(): Unit = {
     val original = behaviorStack
@@ -657,20 +657,20 @@ private[akka] class ActorCell(
       checkReceiveTimeout()
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
-      case e: InterruptedException ⇒
+      case e: InterruptedException =>
         clearOutActorIfNonNull()
         Thread.currentThread().interrupt()
         throw ActorInitializationException(self, "interruption during creation", e)
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         clearOutActorIfNonNull()
         e match {
-          case i: InstantiationException ⇒ throw ActorInitializationException(
+          case i: InstantiationException => throw ActorInitializationException(
             self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new Creator ... )
                or is missing an appropriate, reachable no-args constructor.
               """, i.getCause)
-          case x ⇒ throw ActorInitializationException(self, "exception during creation", x)
+          case x => throw ActorInitializationException(self, "exception during creation", x)
         }
     }
   }
@@ -679,17 +679,17 @@ private[akka] class ActorCell(
     if (!isTerminating) {
       // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
       initChild(child) match {
-        case Some(_) ⇒
+        case Some(_) =>
           handleSupervise(child, async)
           if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
-        case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+        case None => publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
       }
     }
 
   // future extension point
   protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {
-    case r: RepointableActorRef if async ⇒ r.point(catchFailures = true)
-    case _                               ⇒
+    case r: RepointableActorRef if async => r.point(catchFailures = true)
+    case _                               =>
   }
 
   final protected def clearActorCellFields(cell: ActorCell): Unit = {
@@ -712,7 +712,7 @@ private[akka] class ActorCell(
     }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
-  protected final def publish(e: LogEvent): Unit = try system.eventStream.publish(e) catch { case NonFatal(_) ⇒ }
+  protected final def publish(e: LogEvent): Unit = try system.eventStream.publish(e) catch { case NonFatal(_) => }
 
   protected final def clazz(o: AnyRef): Class[_] = if (o eq null) this.getClass else o.getClass
 }

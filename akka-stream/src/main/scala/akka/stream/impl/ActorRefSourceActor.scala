@@ -37,7 +37,7 @@ import akka.stream.ActorMaterializerSettings
   protected val buffer = if (bufferSize == 0) null else Buffer[Any](bufferSize, maxFixedBufferSize)
 
   def receive = ({
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }: Receive)
     .orElse(requestElem)
@@ -45,18 +45,18 @@ import akka.stream.ActorMaterializerSettings
     .orElse(receiveComplete)
     .orElse(receiveElem)
 
-  def receiveComplete: Receive = completionMatcher.andThen { _ ⇒
+  def receiveComplete: Receive = completionMatcher.andThen { _ =>
     if (bufferSize == 0 || buffer.isEmpty) onCompleteThenStop() // will complete the stream successfully
     else context.become(drainBufferThenComplete)
   }
 
-  def receiveFailure: Receive = failureMatcher.andThen { cause ⇒
+  def receiveFailure: Receive = failureMatcher.andThen { cause =>
     if (isActive)
       onErrorThenStop(cause)
   }
 
   def requestElem: Receive = {
-    case _: Request ⇒
+    case _: Request =>
       // totalDemand is tracked by super
       if (bufferSize != 0)
         while (totalDemand > 0L && !buffer.isEmpty)
@@ -64,7 +64,7 @@ import akka.stream.ActorMaterializerSettings
   }
 
   def receiveElem: Receive = {
-    case elem if isActive ⇒
+    case elem if isActive =>
       if (totalDemand > 0L)
         onNext(elem)
       else if (bufferSize == 0)
@@ -72,47 +72,47 @@ import akka.stream.ActorMaterializerSettings
       else if (!buffer.isFull)
         buffer.enqueue(elem)
       else overflowStrategy match {
-        case s: DropHead ⇒
+        case s: DropHead =>
           log.log(s.logLevel, "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
           buffer.dropHead()
           buffer.enqueue(elem)
-        case s: DropTail ⇒
+        case s: DropTail =>
           log.log(s.logLevel, "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
           buffer.dropTail()
           buffer.enqueue(elem)
-        case s: DropBuffer ⇒
+        case s: DropBuffer =>
           log.log(s.logLevel, "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
           buffer.clear()
           buffer.enqueue(elem)
-        case s: DropNew ⇒
+        case s: DropNew =>
           // do not enqueue new element if the buffer is full
           log.log(s.logLevel, "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
-        case s: Fail ⇒
+        case s: Fail =>
           log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
           onErrorThenStop(BufferOverflowException(s"Buffer overflow (max capacity was: $bufferSize)!"))
-        case s: Backpressure ⇒
+        case s: Backpressure =>
           // there is a precondition check in Source.actorRefSource factory method
           log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
       }
   }
 
   def drainBufferThenComplete: Receive = {
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
 
-    case Status.Failure(cause) if isActive ⇒
+    case Status.Failure(cause) if isActive =>
       // errors must be signaled as soon as possible,
       // even if previously valid completion was requested via Status.Success
       onErrorThenStop(cause)
 
-    case _: Request ⇒
+    case _: Request =>
       // totalDemand is tracked by super
       while (totalDemand > 0L && !buffer.isEmpty)
         onNext(buffer.dequeue())
 
       if (buffer.isEmpty) onCompleteThenStop() // will complete the stream successfully
 
-    case elem if isActive ⇒
+    case elem if isActive =>
       log.debug("Dropping element because Status.Success received already, " +
         "only draining already buffered elements: [{}] (pending: [{}])", elem, buffer.used)
   }

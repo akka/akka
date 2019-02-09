@@ -76,7 +76,7 @@ object ArterySpecSupport {
  * afterTermination and call handleFlightRecorderFile manually in the spec or else it will not be dumped
  * on failure but also leak the afr file
  */
-trait FlightRecorderSpecIntegration { self: AkkaSpec ⇒
+trait FlightRecorderSpecIntegration { self: AkkaSpec =>
 
   def system: ActorSystem
 

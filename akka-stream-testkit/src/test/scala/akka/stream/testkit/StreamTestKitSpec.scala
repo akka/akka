@@ -30,7 +30,7 @@ class StreamTestKitSpec extends AkkaSpec {
       system.eventStream.publish(Mute(EventFilter[Exception]()))
       try {
         val error = intercept[AssertionError] {
-          Source.fromIterator(() ⇒ new Iterator[Int] {
+          Source.fromIterator(() => new Iterator[Int] {
             var i = 0
 
             override def hasNext: Boolean = true
@@ -38,8 +38,8 @@ class StreamTestKitSpec extends AkkaSpec {
             override def next(): Int = {
               i += 1
               i match {
-                case 3 ⇒ throw ex
-                case n ⇒ n
+                case 3 => throw ex
+                case n => n
               }
             }
           }).runWith(TestSink.probe)
@@ -127,7 +127,7 @@ class StreamTestKitSpec extends AkkaSpec {
       val result = Source.single(1).runWith(TestSink.probe)
         .request(1)
         .expectNextPF {
-          case 1 ⇒ "success"
+          case 1 => "success"
         }
       result should be("success")
     }
@@ -137,7 +137,7 @@ class StreamTestKitSpec extends AkkaSpec {
         Source.single(1).runWith(TestSink.probe)
           .request(1)
           .expectNextPF {
-            case 2 ⇒
+            case 2 =>
           }
       }.getMessage should include("message matching partial function")
     }
@@ -149,7 +149,7 @@ class StreamTestKitSpec extends AkkaSpec {
         Source.tick(overTimeout, 1.millis, 1).runWith(TestSink.probe)
           .request(1)
           .expectNextWithTimeoutPF(timeout, {
-            case 1 ⇒
+            case 1 =>
           })
 
       }.getMessage should include("timeout")
@@ -159,7 +159,7 @@ class StreamTestKitSpec extends AkkaSpec {
       Source.single(1).runWith(TestSink.probe)
         .request(1)
         .expectNextChainingPF {
-          case 1 ⇒
+          case 1 =>
         }
     }
 
@@ -167,7 +167,7 @@ class StreamTestKitSpec extends AkkaSpec {
       Source(1 to 2).runWith(TestSink.probe)
         .request(2)
         .expectNextChainingPF {
-          case 1 ⇒
+          case 1 =>
         }.expectNext(2)
     }
 
@@ -176,7 +176,7 @@ class StreamTestKitSpec extends AkkaSpec {
         Source.single(1).runWith(TestSink.probe)
           .request(1)
           .expectNextChainingPF {
-            case 2 ⇒
+            case 2 =>
           }
       }.getMessage should include("message matching partial function")
     }
@@ -188,7 +188,7 @@ class StreamTestKitSpec extends AkkaSpec {
         Source.tick(overTimeout, 1.millis, 1).runWith(TestSink.probe)
           .request(1)
           .expectNextChainingPF(timeout, {
-            case 1 ⇒
+            case 1 =>
               system.log.info("Message received :(")
           })
       }.getMessage should include("timeout")

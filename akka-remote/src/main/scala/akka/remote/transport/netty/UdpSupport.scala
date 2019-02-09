@@ -29,15 +29,15 @@ private[remote] trait UdpHandlers extends CommonHandlers {
     msg:                 ChannelBuffer,
     remoteSocketAddress: InetSocketAddress): Unit = {
     transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, listener) match {
-      case null ⇒ listener notify InboundPayload(ByteString(msg.array()))
-      case oldReader ⇒
+      case null => listener notify InboundPayload(ByteString(msg.array()))
+      case oldReader =>
         throw new NettyTransportException(
           s"Listener $listener attempted to register for remote address $remoteSocketAddress but $oldReader was already registered.")
     }
   }
 
   override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = e.getRemoteAddress match {
-    case inetSocketAddress: InetSocketAddress ⇒
+    case inetSocketAddress: InetSocketAddress =>
       if (!transport.udpConnectionTable.containsKey(inetSocketAddress)) {
         e.getChannel.setReadable(false)
         initUdp(e.getChannel, e.getRemoteAddress, e.getMessage.asInstanceOf[ChannelBuffer])
@@ -46,7 +46,7 @@ private[remote] trait UdpHandlers extends CommonHandlers {
         val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
         if (bytes.length > 0) listener notify InboundPayload(ByteString(bytes))
       }
-    case _ ⇒
+    case _ =>
   }
 
   def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit

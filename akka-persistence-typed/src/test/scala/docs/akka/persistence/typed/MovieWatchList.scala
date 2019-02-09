@@ -24,20 +24,20 @@ object MovieWatchList {
   final case class MovieList(movieIds: Set[String]) {
     def applyEvent(event: Event): MovieList = {
       event match {
-        case MovieAdded(movieId)   ⇒ copy(movieIds = movieIds + movieId)
-        case MovieRemoved(movieId) ⇒ copy(movieIds = movieIds + movieId)
+        case MovieAdded(movieId)   => copy(movieIds = movieIds + movieId)
+        case MovieRemoved(movieId) => copy(movieIds = movieIds + movieId)
       }
     }
   }
 
   private val commandHandler: CommandHandler[Command, Event, MovieList] = {
-    (state, cmd) ⇒
+    (state, cmd) =>
       cmd match {
-        case AddMovie(movieId) ⇒
+        case AddMovie(movieId) =>
           Effect.persist(MovieAdded(movieId))
-        case RemoveMovie(movieId) ⇒
+        case RemoveMovie(movieId) =>
           Effect.persist(MovieRemoved(movieId))
-        case GetMovieList(replyTo) ⇒
+        case GetMovieList(replyTo) =>
           replyTo ! state
           Effect.none
       }
@@ -48,7 +48,7 @@ object MovieWatchList {
       persistenceId = PersistenceId(s"movies-$userId"),
       emptyState = MovieList(Set.empty),
       commandHandler,
-      eventHandler = (state, event) ⇒ state.applyEvent(event)
+      eventHandler = (state, event) => state.applyEvent(event)
     )
   }
 

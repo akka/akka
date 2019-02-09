@@ -93,12 +93,12 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
       }
 
       def memberStatus(address: Address): Option[MemberStatus] =
-        clusterView.members.collectFirst { case m if m.address == address ⇒ m.status }
+        clusterView.members.collectFirst { case m if m.address == address => m.status }
 
       enterBarrier("after-join")
 
       runOn(first, second, fourth) {
-        for (n ← 1 to 5) {
+        for (n <- 1 to 5) {
           awaitAssert(clusterView.members.size should ===(4))
           awaitSeenSameState(first, second, fourth)
           memberStatus(first) should ===(Some(MemberStatus.Up))

@@ -42,7 +42,7 @@ object EventSourcedBehaviorReplySpec {
   final case class State(value: Int, history: Vector[Int])
 
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
-    Behaviors.setup(ctx ⇒ counter(ctx, persistenceId))
+    Behaviors.setup(ctx => counter(ctx, persistenceId))
 
   def counter(
     ctx:           ActorContext[Command[_]],
@@ -50,26 +50,26 @@ object EventSourcedBehaviorReplySpec {
     EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
-      commandHandler = (state, command) ⇒ command match {
+      commandHandler = (state, command) => command match {
 
-        case cmd: IncrementWithConfirmation ⇒
+        case cmd: IncrementWithConfirmation =>
           Effect.persist(Incremented(1))
-            .thenReply(cmd)(_ ⇒ Done)
+            .thenReply(cmd)(_ => Done)
 
-        case cmd: IncrementReplyLater ⇒
+        case cmd: IncrementReplyLater =>
           Effect.persist(Incremented(1))
-            .thenRun((_: State) ⇒ ctx.self ! ReplyNow(cmd.replyTo))
+            .thenRun((_: State) => ctx.self ! ReplyNow(cmd.replyTo))
             .thenNoReply()
 
-        case cmd: ReplyNow ⇒
+        case cmd: ReplyNow =>
           Effect.reply(cmd)(Done)
 
-        case query: GetValue ⇒
+        case query: GetValue =>
           Effect.reply(query)(state)
 
       },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented(delta) ⇒
+      eventHandler = (state, evt) => evt match {
+        case Incremented(delta) =>
           State(state.value + delta, state.history :+ state.value)
       })
   }

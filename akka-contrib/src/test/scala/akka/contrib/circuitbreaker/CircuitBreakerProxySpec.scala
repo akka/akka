@@ -161,7 +161,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       val circuitBreaker = defaultCircuitBreaker
 
       When("A number of consecutive request equal to the maxFailures configuration of the circuit breaker is failing")
-      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index ⇒
+      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index =>
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
@@ -177,7 +177,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       val circuitBreaker = defaultCircuitBreaker
 
       When("A number of consecutive request equal to the maxFailures configuration of the circuit breaker is failing")
-      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index ⇒
+      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index =>
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
@@ -192,11 +192,11 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       Given("A circuit breaker proxy pointing to a target actor built with a function to convert CircuitOpenFailure response into a String response")
       val circuitBreaker = system.actorOf(
         baseCircuitBreakerPropsBuilder
-          .copy(openCircuitFailureConverter = { failureMsg ⇒ s"NOT SENT: ${failureMsg.failedMsg}" })
+          .copy(openCircuitFailureConverter = { failureMsg => s"NOT SENT: ${failureMsg.failedMsg}" })
           .props(receiver.ref))
 
       When("A number of consecutive request equal to the maxFailures configuration of the circuit breaker is failing")
-      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index ⇒
+      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index =>
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
@@ -339,7 +339,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       val suicidalActor = actor(
         new Act {
           become {
-            case anyMessage ⇒
+            case anyMessage =>
               sender() ! "dying now"
               context stop self
           }
@@ -405,7 +405,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       val circuitBreaker = defaultCircuitBreaker
 
       When("Circuit enters OPEN state")
-      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index ⇒
+      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index =>
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
@@ -421,7 +421,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       val circuitBreaker = defaultCircuitBreaker
 
       When("Circuit enters OPEN state")
-      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index ⇒
+      (1 to baseCircuitBreakerPropsBuilder.maxFailures) foreach { index =>
         receiverRespondsWithFailureToRequest(s"request$index")
       }
 
@@ -457,7 +457,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       receiver.reply("response")
 
       Then("The response is available as result of the future returned by the askWithCircuitBreaker method")
-      whenReady(responseFuture) { response ⇒
+      whenReady(responseFuture) { response =>
         response should be("response")
       }
     }
@@ -479,7 +479,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       receiver.expectNoMsg()
 
       And("The response is converted into a failure")
-      whenReady(responseFuture.failed) { failure ⇒
+      whenReady(responseFuture.failed) { failure =>
         failure shouldBe a[OpenCircuitException]
       }
     }
@@ -506,7 +506,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       receiver.reply("response")
 
       Then("The response is available as result of the future returned by the askWithCircuitBreaker method")
-      whenReady(responseFuture) { response ⇒
+      whenReady(responseFuture) { response =>
         response should be("response")
       }
     }
@@ -528,7 +528,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       receiver.expectNoMsg()
 
       And("The response is converted into a failure")
-      whenReady(responseFuture.failed) { failure ⇒
+      whenReady(responseFuture.failed) { failure =>
         failure shouldBe a[OpenCircuitException]
       }
     }
@@ -552,7 +552,7 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       receiver.expectNoMsg()
 
       And("The response is converted into a failure")
-      whenReady(responseFuture.failed) { failure ⇒
+      whenReady(responseFuture.failed) { failure =>
         failure shouldBe a[MyException]
         failure.getMessage() should be("Circuit is open")
       }

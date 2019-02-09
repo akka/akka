@@ -64,7 +64,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   val manyLines = {
     val f = Files.createTempFile(fs.getPath("/"), s"file-source-spec-lines_$LinesCount", "tmp")
     val w = Files.newBufferedWriter(f, UTF_8)
-    (1 to LinesCount).foreach { l ⇒
+    (1 to LinesCount).foreach { l =>
       w.append("a" * l).append("\n")
     }
     w.close()
@@ -140,7 +140,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       sub.request(5000)
 
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         c.expectNext().utf8String should ===(nextChunk().toString)
       }
       c.expectComplete()
@@ -178,7 +178,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
 
       sub.request(demandAllButOneChunks)
-      for (i ← 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
+      for (i <- 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
       c.expectNoMessage(300.millis)
 
       sub.request(1)
@@ -220,14 +220,14 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       Settings(chunkSize = 512, readAhead = 2),
       Settings(chunkSize = 512, readAhead = 4),
       Settings(chunkSize = 2048, readAhead = 2),
-      Settings(chunkSize = 2048, readAhead = 4)) foreach { settings ⇒
+      Settings(chunkSize = 2048, readAhead = 4)) foreach { settings =>
         import settings._
 
         s"count lines in real file (chunkSize = $chunkSize, readAhead = $readAhead)" in {
           val s = FileIO.fromPath(manyLines, chunkSize = chunkSize)
             .withAttributes(Attributes.inputBuffer(readAhead, readAhead))
 
-          val f = s.runWith(Sink.fold(0) { case (acc, l) ⇒ acc + l.utf8String.count(_ == '\n') })
+          val f = s.runWith(Sink.fold(0) { case (acc, l) => acc + l.utf8String.count(_ == '\n') })
 
           f.futureValue should ===(LinesCount)
         }

@@ -4,8 +4,8 @@
 
 package akka.testkit.javadsl
 
-import java.util.function.{ Supplier, Function ⇒ JFunction }
-import java.util.{ List ⇒ JList }
+import java.util.function.{ Supplier, Function => JFunction }
+import java.util.{ List => JList }
 
 import akka.actor._
 import akka.testkit.{ TestActor, TestDuration, TestProbe }
@@ -59,8 +59,8 @@ class TestKit(system: ActorSystem) {
 
   def duration(s: String): FiniteDuration = {
     Duration.apply(s) match {
-      case fd: FiniteDuration ⇒ fd
-      case _                  ⇒ throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
+      case fd: FiniteDuration => fd
+      case _                  => throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends")
     }
   }
 
@@ -900,6 +900,6 @@ private abstract class CachingPartialFunction[A, B] extends scala.runtime.Abstra
   def `match`(x: A): B
 
   var cache: B = _
-  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
+  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch => cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
 }

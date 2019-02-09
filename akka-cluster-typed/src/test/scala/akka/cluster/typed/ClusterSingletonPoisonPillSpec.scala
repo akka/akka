@@ -19,7 +19,7 @@ object ClusterSingletonPoisonPillSpec {
 
   final case class GetSelf(replyTo: ActorRef[ActorRef[Any]])
   val sneakyBehavior: Behavior[GetSelf] = Behaviors.receive {
-    case (ctx, GetSelf(replyTo)) ⇒
+    case (ctx, GetSelf(replyTo)) =>
       replyTo ! ctx.self.unsafeUpcast[Any]
       Behaviors.same
   }

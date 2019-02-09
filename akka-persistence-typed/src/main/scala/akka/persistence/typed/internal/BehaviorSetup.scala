@@ -30,12 +30,12 @@ private[akka] final class BehaviorSetup[C, E, S](
   val commandHandler:        EventSourcedBehavior.CommandHandler[C, E, S],
   val eventHandler:          EventSourcedBehavior.EventHandler[S, E],
   val writerIdentity:        EventSourcedBehaviorImpl.WriterIdentity,
-  val recoveryCompleted:     S ⇒ Unit,
-  val onRecoveryFailure:     Throwable ⇒ Unit,
-  val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
-  val tagger:                E ⇒ Set[String],
+  val recoveryCompleted:     S => Unit,
+  val onRecoveryFailure:     Throwable => Unit,
+  val onSnapshot:            (SnapshotMetadata, Try[Done]) => Unit,
+  val tagger:                E => Set[String],
   val eventAdapter:          EventAdapter[E, _],
-  val snapshotWhen:          (S, E, Long) ⇒ Boolean,
+  val snapshotWhen:          (S, E, Long) => Boolean,
   val recovery:              Recovery,
   var holdingRecoveryPermit: Boolean,
   val settings:              EventSourcedSettings,
@@ -55,8 +55,8 @@ private[akka] final class BehaviorSetup[C, E, S](
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
   def log: Logger = {
     _log match {
-      case OptionVal.Some(l) ⇒ l
-      case OptionVal.None ⇒
+      case OptionVal.Some(l) => l
+      case OptionVal.None =>
         // lazy init if mdc changed
         val l = context.log.withMdc(mdc)
         _log = OptionVal.Some(l)
@@ -93,8 +93,8 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   def cancelRecoveryTimer(): Unit = {
     recoveryTimer match {
-      case OptionVal.Some(t) ⇒ t.cancel()
-      case OptionVal.None    ⇒
+      case OptionVal.Some(t) => t.cancel()
+      case OptionVal.None    =>
     }
     recoveryTimer = OptionVal.None
   }
@@ -117,8 +117,8 @@ private[akka] object MDC {
 
   def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
     Map(
-      "persistenceId" → persistenceId.id,
-      "phase" → phaseName
+      "persistenceId" -> persistenceId.id,
+      "phase" -> phaseName
     )
   }
 }

@@ -47,7 +47,7 @@ abstract class TransitionSpec
 
   def memberStatus(address: Address): MemberStatus = {
     val statusOption = (clusterView.members union clusterView.unreachableMembers).collectFirst {
-      case m if m.address == address ⇒ m.status
+      case m if m.address == address => m.status
     }
     statusOption.getOrElse(Removed)
   }
@@ -102,7 +102,7 @@ abstract class TransitionSpec
         awaitCond((Set(fromRole, toRole) diff seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
-      runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
+      runOn(roles.filterNot(r => r == fromRole || r == toRole): _*) {
         enterBarrier("before-gossip-" + gossipBarrierCounter)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }

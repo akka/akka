@@ -32,7 +32,7 @@ object MaterializerState {
   @ApiMayChange
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         import impl.system.dispatcher
         requestFromSupervisor(impl.supervisor)
     }
@@ -45,7 +45,7 @@ object MaterializerState {
     implicit val timeout: Timeout = 10.seconds
     (supervisor ? StreamSupervisor.GetChildren)
       .mapTo[StreamSupervisor.Children]
-      .flatMap(msg ⇒
+      .flatMap(msg =>
         Future.sequence(msg.children.toVector.map(requestFromChild))
       )
   }

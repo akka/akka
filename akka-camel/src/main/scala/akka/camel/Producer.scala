@@ -57,31 +57,31 @@ trait ProducerSupport extends Actor with CamelSupport {
    * @see Producer#produce
    */
   protected def produce: Receive = {
-    case CamelProducerObjects(endpoint, processor) ⇒
+    case CamelProducerObjects(endpoint, processor) =>
       if (producerChild.isEmpty) {
         val disp = camel.settings.ProducerChildDispatcher match {
-          case "" ⇒ context.props.dispatcher
-          case d  ⇒ d
+          case "" => context.props.dispatcher
+          case d  => d
         }
         producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor)).withDispatcher(disp)))
         messages = {
           for (
-            child ← producerChild;
-            (snd, msg) ← messages
+            child <- producerChild;
+            (snd, msg) <- messages
           ) child.tell(transformOutgoingMessage(msg), snd)
           Vector.empty
         }
       }
-    case res: MessageResult ⇒ routeResponse(res.message)
-    case res: FailureResult ⇒
+    case res: MessageResult => routeResponse(res.message)
+    case res: FailureResult =>
       val e = new AkkaCamelException(res.cause, res.headers)
       routeResponse(Failure(e))
       throw e
 
-    case msg ⇒
+    case msg =>
       producerChild match {
-        case Some(child) ⇒ child forward transformOutgoingMessage(msg)
-        case None        ⇒ messages :+= ((sender(), msg))
+        case Some(child) => child forward transformOutgoingMessage(msg)
+        case None        => messages :+= ((sender(), msg))
       }
   }
 
@@ -111,8 +111,8 @@ trait ProducerSupport extends Actor with CamelSupport {
 
   private class ProducerChild(endpoint: Endpoint, processor: SendProcessor) extends Actor {
     def receive = {
-      case msg @ (_: FailureResult | _: MessageResult) ⇒ context.parent forward msg
-      case msg                                         ⇒ produce(endpoint, processor, msg, if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+      case msg @ (_: FailureResult | _: MessageResult) => context.parent forward msg
+      case msg                                         => produce(endpoint, processor, msg, if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
     }
     /**
      * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
@@ -151,7 +151,7 @@ trait ProducerSupport extends Actor with CamelSupport {
  * Mixed in by Actor implementations to produce messages to Camel endpoints.
  */
 @deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
-trait Producer extends ProducerSupport { this: Actor ⇒
+trait Producer extends ProducerSupport { this: Actor =>
 
   /**
    * Implementation of Actor.receive. Any messages received by this actor
@@ -176,7 +176,7 @@ private final case class FailureResult(cause: Throwable, headers: Map[String, An
  *
  */
 @deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
-trait Oneway extends Producer { this: Actor ⇒
+trait Oneway extends Producer { this: Actor =>
   override def oneway: Boolean = true
 }
 

@@ -23,7 +23,7 @@ object EventSourcedEntity {
     entityTypeKey:  EntityTypeKey[Command],
     entityId:       String,
     emptyState:     State,
-    commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+    commandHandler: (State, Command) => Effect[Event, State],
+    eventHandler:   (State, Event) => State): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior(entityTypeKey.persistenceIdFrom(entityId), emptyState, commandHandler, eventHandler)
 }

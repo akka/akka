@@ -84,7 +84,7 @@ object TestPublisher {
 
     //this is a way to pause receiving message from probe until subscription is done
     private val subscribed = new CountDownLatch(1)
-    probe.ignoreMsg { case SubscriptionDone ⇒ true }
+    probe.ignoreMsg { case SubscriptionDone => true }
     probe.setAutoPilot(new TestActor.AutoPilot() {
       override def run(sender: ActorRef, msg: Any): AutoPilot = {
         if (msg == SubscriptionDone) subscribed.countDown()
@@ -103,7 +103,7 @@ object TestPublisher {
       probe.ref ! SubscriptionDone
     }
 
-    def executeAfterSubscription[T](f: ⇒ T): T = {
+    def executeAfterSubscription[T](f: => T): T = {
       subscribed.await(
         probe.testKitSettings.DefaultTimeout.duration.length,
         probe.testKitSettings.DefaultTimeout.duration.unit)
@@ -187,12 +187,12 @@ object TestPublisher {
      * }
      * }}}
      */
-    def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = executeAfterSubscription { probe.within(min, max)(f) }
+    def within[T](min: FiniteDuration, max: FiniteDuration)(f: => T): T = executeAfterSubscription { probe.within(min, max)(f) }
 
     /**
      * Same as calling `within(0 seconds, max)(f)`.
      */
-    def within[T](max: FiniteDuration)(f: ⇒ T): T = executeAfterSubscription { probe.within(max)(f) }
+    def within[T](max: FiniteDuration)(f: => T): T = executeAfterSubscription { probe.within(max)(f) }
   }
 
   /**
@@ -332,9 +332,9 @@ object TestSubscriber {
     def expectNext(d: FiniteDuration): I = {
       val t = probe.remainingOr(d)
       probe.receiveOne(t) match {
-        case null         ⇒ throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
-        case OnNext(elem) ⇒ elem.asInstanceOf[I]
-        case other        ⇒ throw new AssertionError("expected OnNext, found " + other)
+        case null         => throw new AssertionError(s"Expected OnNext(_), yet no element signaled during $t")
+        case OnNext(elem) => elem.asInstanceOf[I]
+        case other        => throw new AssertionError("expected OnNext, found " + other)
       }
     }
 
@@ -394,7 +394,7 @@ object TestSubscriber {
      * Expect the given elements to be signalled in order.
      */
     def expectNextN(all: immutable.Seq[I]): Self = {
-      all.foreach(e ⇒ probe.expectMsg(OnNext(e)))
+      all.foreach(e => probe.expectMsg(OnNext(e)))
       self
     }
 
@@ -404,8 +404,8 @@ object TestSubscriber {
      */
     def expectNextUnorderedN(all: immutable.Seq[I]): Self = {
       @annotation.tailrec def expectOneOf(all: immutable.Seq[I]): Unit = all match {
-        case Nil ⇒
-        case list ⇒
+        case Nil =>
+        case list =>
           val next = expectNext()
           assert(all.contains(next), s"expected one of $all, but received $next")
           expectOneOf(all.diff(Seq(next)))
@@ -527,11 +527,11 @@ object TestSubscriber {
      */
     def expectNextOrError(): Either[Throwable, I] = {
       probe.fishForMessage(hint = s"OnNext(_) or error") {
-        case OnNext(element) ⇒ true
-        case OnError(cause)  ⇒ true
+        case OnNext(element) => true
+        case OnError(cause)  => true
       } match {
-        case OnNext(n: I @unchecked) ⇒ Right(n)
-        case OnError(err)            ⇒ Left(err)
+        case OnNext(n: I @unchecked) => Right(n)
+        case OnError(err)            => Left(err)
       }
     }
 
@@ -541,11 +541,11 @@ object TestSubscriber {
      */
     def expectNextOrError(element: I, cause: Throwable): Either[Throwable, I] = {
       probe.fishForMessage(hint = s"OnNext($element) or ${cause.getClass.getName}") {
-        case OnNext(`element`) ⇒ true
-        case OnError(`cause`)  ⇒ true
+        case OnNext(`element`) => true
+        case OnError(`cause`)  => true
       } match {
-        case OnNext(n: I @unchecked) ⇒ Right(n)
-        case OnError(err)            ⇒ Left(err)
+        case OnNext(n: I @unchecked) => Right(n)
+        case OnError(err)            => Left(err)
       }
     }
 
@@ -554,11 +554,11 @@ object TestSubscriber {
      */
     def expectNextOrComplete(): Either[OnComplete.type, I] = {
       probe.fishForMessage(hint = s"OnNext(_) or OnComplete") {
-        case OnNext(n)  ⇒ true
-        case OnComplete ⇒ true
+        case OnNext(n)  => true
+        case OnComplete => true
       } match {
-        case OnComplete              ⇒ Left(OnComplete)
-        case OnNext(n: I @unchecked) ⇒ Right(n)
+        case OnComplete              => Left(OnComplete)
+        case OnNext(n: I @unchecked) => Right(n)
       }
     }
 
@@ -569,8 +569,8 @@ object TestSubscriber {
      */
     def expectNextOrComplete(element: I): Self = {
       probe.fishForMessage(hint = s"OnNext($element) or OnComplete") {
-        case OnNext(`element`) ⇒ true
-        case OnComplete        ⇒ true
+        case OnNext(`element`) => true
+        case OnComplete        => true
       }
       self
     }
@@ -632,7 +632,7 @@ object TestSubscriber {
      */
     def expectNextWithTimeoutPF[T](max: Duration, f: PartialFunction[Any, T]): T =
       expectEventWithTimeoutPF(max, {
-        case OnNext(n) if f.isDefinedAt(n) ⇒ f(n)
+        case OnNext(n) if f.isDefinedAt(n) => f(n)
       })
 
     /**
@@ -643,7 +643,7 @@ object TestSubscriber {
      * @param max wait no more than max time, otherwise throw AssertionError
      */
     def expectNextChainingPF(max: Duration, f: PartialFunction[Any, Any]): Self =
-      expectNextWithTimeoutPF(max, f.andThen(_ ⇒ self))
+      expectNextWithTimeoutPF(max, f.andThen(_ => self))
 
     /**
      * Expect a stream element during specified time or timeout and test it with partial function.
@@ -670,8 +670,8 @@ object TestSubscriber {
      */
     def receiveWithin(max: FiniteDuration, messages: Int = Int.MaxValue): immutable.Seq[I] =
       probe.receiveWhile(max, max, messages) {
-        case OnNext(i) ⇒ Some(i.asInstanceOf[I])
-        case _         ⇒ None
+        case OnNext(i) => Some(i.asInstanceOf[I])
+        case _         => None
       }.flatten
 
     /**
@@ -685,11 +685,11 @@ object TestSubscriber {
 
       @tailrec def drain(): immutable.Seq[I] =
         self.expectEvent(deadline.timeLeft) match {
-          case OnError(ex) ⇒
+          case OnError(ex) =>
             throw new AssertionError(s"toStrict received OnError while draining stream! Accumulated elements: ${b.result()}", ex)
-          case OnComplete ⇒
+          case OnComplete =>
             b.result()
-          case OnNext(i: I @unchecked) ⇒
+          case OnNext(i: I @unchecked) =>
             b += i
             drain()
         }
@@ -717,12 +717,12 @@ object TestSubscriber {
      * }
      * }}}
      */
-    def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = probe.within(min, max)(f)
+    def within[T](min: FiniteDuration, max: FiniteDuration)(f: => T): T = probe.within(min, max)(f)
 
     /**
      * Same as calling `within(0 seconds, max)(f)`.
      */
-    def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(max)(f)
+    def within[T](max: FiniteDuration)(f: => T): T = probe.within(max)(f)
 
     def onSubscribe(subscription: Subscription): Unit = probe.ref ! OnSubscribe(subscription)
     def onNext(element: I): Unit = probe.ref ! OnNext(element)
@@ -804,12 +804,12 @@ private[testkit] object StreamTestKit {
 
     def expectRequest(n: Long): Unit = publisherProbe.expectMsg(RequestMore(this, n))
     def expectRequest(): Long = publisherProbe.expectMsgPF(hint = "expecting request() signal") {
-      case RequestMore(sub, n) if sub eq this ⇒ n
+      case RequestMore(sub, n) if sub eq this => n
     }
 
     def expectCancellation(): Unit = publisherProbe.fishForMessage(hint = "Expecting cancellation") {
-      case CancelSubscription(sub) if sub eq this ⇒ true
-      case RequestMore(sub, _) if sub eq this     ⇒ false
+      case CancelSubscription(sub) if sub eq this => true
+      case RequestMore(sub, _) if sub eq this     => false
     }
 
     def sendNext(element: I): Unit = subscriber.onNext(element)

@@ -35,7 +35,7 @@ object EventSourcedActorFailureSpec {
     }
 
     override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
-      recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit] = {
+      recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
       val highest = highestSequenceNr(persistenceId)
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
@@ -50,30 +50,30 @@ object EventSourcedActorFailureSpec {
 
     def isWrong(messages: immutable.Seq[AtomicWrite]): Boolean =
       messages.exists {
-        case a: AtomicWrite ⇒
-          a.payload.exists { case PersistentRepr(Evt(s: String), _) ⇒ s.contains("wrong") }
-        case _ ⇒ false
+        case a: AtomicWrite =>
+          a.payload.exists { case PersistentRepr(Evt(s: String), _) => s.contains("wrong") }
+        case _ => false
       }
 
     def checkSerializable(messages: immutable.Seq[AtomicWrite]): immutable.Seq[Try[Unit]] =
       messages.collect {
-        case a: AtomicWrite ⇒
+        case a: AtomicWrite =>
           a.payload.collectFirst {
-            case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") ⇒ s
+            case PersistentRepr(Evt(s: String), _: Long) if s.contains("not serializable") => s
           } match {
-            case Some(s) ⇒ Failure(new SimulatedSerializationException(s))
-            case None    ⇒ AsyncWriteJournal.successUnit
+            case Some(s) => Failure(new SimulatedSerializationException(s))
+            case None    => AsyncWriteJournal.successUnit
           }
       }
 
     def isCorrupt(events: Seq[PersistentRepr]): Boolean =
-      events.exists { case PersistentRepr(Evt(s: String), _) ⇒ s.contains("corrupt") }
+      events.exists { case PersistentRepr(Evt(s: String), _) => s.contains("corrupt") }
 
   }
 
   class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
-      case c @ Cmd(txt) ⇒ persist(Evt(txt))(updateState)
+      case c @ Cmd(txt) => persist(Evt(txt))(updateState)
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
@@ -82,20 +82,20 @@ object EventSourcedActorFailureSpec {
 
   class Supervisor(testActor: ActorRef) extends Actor {
     override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-      case e ⇒
+      case e =>
         testActor ! e
         SupervisorStrategy.Restart
     }
 
     def receive = {
-      case props: Props ⇒ sender() ! context.actorOf(props)
-      case m            ⇒ sender() ! m
+      case props: Props => sender() ! context.actorOf(props)
+      case m            => sender() ! m
     }
   }
 
   class ResumingSupervisor(testActor: ActorRef) extends Supervisor(testActor) {
     override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-      case e ⇒
+      case e =>
         testActor ! e
         SupervisorStrategy.Resume
     }
@@ -106,11 +106,11 @@ object EventSourcedActorFailureSpec {
     def this(name: String) = this(name, None)
 
     override val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒ persist(Evt(s"${data}"))(updateState)
+      case Cmd(data) => persist(Evt(s"${data}"))(updateState)
     }
 
     val failingRecover: Receive = {
-      case Evt(data) if data == "bad" ⇒
+      case Evt(data) if data == "bad" =>
         throw new SimulatedException("Simulated exception from receiveRecover")
     }
 
@@ -120,7 +120,7 @@ object EventSourcedActorFailureSpec {
 
   class ThrowingActor1(name: String) extends ExamplePersistentActor(name) {
     override val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒
+      case Cmd(data) =>
         persist(Evt(s"${data}"))(updateState)
         if (data == "err")
           throw new SimulatedException("Simulated exception 1")
@@ -129,8 +129,8 @@ object EventSourcedActorFailureSpec {
 
   class ThrowingActor2(name: String) extends ExamplePersistentActor(name) {
     override val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒
-        persist(Evt(s"${data}")) { evt ⇒
+      case Cmd(data) =>
+        persist(Evt(s"${data}")) { evt =>
           if (data == "err")
             throw new SimulatedException("Simulated exception 1")
           updateState(evt)

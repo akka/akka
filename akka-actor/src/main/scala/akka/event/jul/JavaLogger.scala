@@ -23,11 +23,11 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
   import Logger.mapLevel
 
   def receive = {
-    case event @ Error(cause, _, _, _) ⇒ log(mapLevel(event.level), cause, event)
-    case event: Warning                ⇒ log(mapLevel(event.level), null, event)
-    case event: Info                   ⇒ log(mapLevel(event.level), null, event)
-    case event: Debug                  ⇒ log(mapLevel(event.level), null, event)
-    case InitializeLogger(_)           ⇒ sender() ! LoggerInitialized
+    case event @ Error(cause, _, _, _) => log(mapLevel(event.level), cause, event)
+    case event: Warning                => log(mapLevel(event.level), null, event)
+    case event: Info                   => log(mapLevel(event.level), null, event)
+    case event: Debug                  => log(mapLevel(event.level), null, event)
+    case InitializeLogger(_)           => sender() ! LoggerInitialized
   }
 
   def log(level: logging.Level, cause: Throwable, event: LogEvent): Unit = {
@@ -66,8 +66,8 @@ object Logger {
    * @return a Logger for the specified parameters
    */
   def apply(logClass: Class[_], logSource: String): logging.Logger = logClass match {
-    case c if c == classOf[DummyClassForStringSources] ⇒ apply(logSource)
-    case _ ⇒ logging.Logger.getLogger(logClass.getName)
+    case c if c == classOf[DummyClassForStringSources] => apply(logSource)
+    case _ => logging.Logger.getLogger(logClass.getName)
   }
 
   /**
@@ -76,11 +76,11 @@ object Logger {
   def root: logging.Logger = logging.Logger.getGlobal()
 
   def mapLevel(level: LogLevel): logging.Level = level.asInt match {
-    case InfoLevel.asInt    ⇒ logging.Level.INFO
-    case DebugLevel.asInt   ⇒ logging.Level.CONFIG
-    case WarningLevel.asInt ⇒ logging.Level.WARNING
-    case ErrorLevel.asInt   ⇒ logging.Level.SEVERE
-    case _                  ⇒ logging.Level.FINE
+    case InfoLevel.asInt    => logging.Level.INFO
+    case DebugLevel.asInt   => logging.Level.CONFIG
+    case WarningLevel.asInt => logging.Level.WARNING
+    case ErrorLevel.asInt   => logging.Level.SEVERE
+    case _                  => logging.Level.FINE
   }
 }
 

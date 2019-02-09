@@ -115,10 +115,10 @@ object EventSourcedBehaviorSpec {
   val secondLogging = "second logging"
 
   def counter(persistenceId: PersistenceId)(implicit system: ActorSystem[_]): Behavior[Command] =
-    Behaviors.setup(ctx ⇒ counter(ctx, persistenceId))
+    Behaviors.setup(ctx => counter(ctx, persistenceId))
 
   def counter(persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): Behavior[Command] =
-    Behaviors.setup(ctx ⇒ counter(ctx, persistenceId, logging))
+    Behaviors.setup(ctx => counter(ctx, persistenceId, logging))
 
   def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
@@ -144,102 +144,102 @@ object EventSourcedBehaviorSpec {
     EventSourcedBehavior[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
-      commandHandler = (state, cmd) ⇒ cmd match {
-        case Increment ⇒
+      commandHandler = (state, cmd) => cmd match {
+        case Increment =>
           Effect.persist(Incremented(1))
 
-        case IncrementThenLogThenStop ⇒
+        case IncrementThenLogThenStop =>
           Effect.persist(Incremented(1))
-            .thenRun { (_: State) ⇒
+            .thenRun { (_: State) =>
               loggingActor ! firstLogging
             }
             .thenStop
 
-        case IncrementTwiceThenLogThenStop ⇒
+        case IncrementTwiceThenLogThenStop =>
           Effect.persist(Incremented(1), Incremented(2))
-            .thenRun { (_: State) ⇒
+            .thenRun { (_: State) =>
               loggingActor ! firstLogging
             }
             .thenStop
 
-        case IncrementWithPersistAll(n) ⇒
-          Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
+        case IncrementWithPersistAll(n) =>
+          Effect.persist((0 until n).map(_ => Incremented(1)))
 
-        case cmd: IncrementWithConfirmation ⇒
+        case cmd: IncrementWithConfirmation =>
           Effect.persist(Incremented(1))
-            .thenReply(cmd)(_ ⇒ Done)
+            .thenReply(cmd)(_ => Done)
 
-        case GetValue(replyTo) ⇒
+        case GetValue(replyTo) =>
           replyTo ! state
           Effect.none
 
-        case IncrementLater ⇒
+        case IncrementLater =>
           // purpose is to test signals
-          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
+          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers =>
             timers.startSingleTimer(Tick, Tick, 10.millis)
-            Behaviors.receive((_, msg) ⇒ msg match {
-              case Tick ⇒ Behaviors.stopped
+            Behaviors.receive((_, msg) => msg match {
+              case Tick => Behaviors.stopped
             })
           })
           ctx.watchWith(delay, DelayFinished)
           Effect.none
 
-        case DelayFinished ⇒
+        case DelayFinished =>
           Effect.persist(Incremented(10))
 
-        case IncrementAfterReceiveTimeout ⇒
+        case IncrementAfterReceiveTimeout =>
           ctx.setReceiveTimeout(10.millis, Timeout)
           Effect.none
 
-        case Timeout ⇒
+        case Timeout =>
           ctx.cancelReceiveTimeout()
           Effect.persist(Incremented(100))
 
-        case IncrementTwiceAndThenLog ⇒
+        case IncrementTwiceAndThenLog =>
           Effect
             .persist(Incremented(1), Incremented(1))
-            .thenRun { (_: State) ⇒
+            .thenRun { (_: State) =>
               loggingActor ! firstLogging
             }
-            .thenRun { _ ⇒
+            .thenRun { _ =>
               loggingActor ! secondLogging
             }
 
-        case EmptyEventsListAndThenLog ⇒
+        case EmptyEventsListAndThenLog =>
           Effect
             .persist(List.empty) // send empty list of events
-            .thenRun { _ ⇒
+            .thenRun { _ =>
               loggingActor ! firstLogging
             }
 
-        case DoNothingAndThenLog ⇒
+        case DoNothingAndThenLog =>
           Effect
             .none
-            .thenRun { _ ⇒
+            .thenRun { _ =>
               loggingActor ! firstLogging
             }
 
-        case LogThenStop ⇒
+        case LogThenStop =>
           Effect.none[Event, State]
-            .thenRun { _ ⇒
+            .thenRun { _ =>
               loggingActor ! firstLogging
             }
             .thenStop
 
-        case Fail ⇒
+        case Fail =>
           throw new TestException("boom!")
 
-        case StopIt ⇒
+        case StopIt =>
           Effect.none.thenStop()
 
       },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented(delta) ⇒
+      eventHandler = (state, evt) => evt match {
+        case Incremented(delta) =>
           probe ! ((state, evt))
           State(state.value + delta, state.history :+ state.value)
-      }).onRecoveryCompleted(_ ⇒ ())
+      }).onRecoveryCompleted(_ => ())
       .onSnapshot {
-        case (_, result) ⇒
+        case (_, result) =>
           snapshotProbe ! result
       }
   }
@@ -416,8 +416,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[Done]]
       val alwaysSnapshot: Behavior[Command] =
-        Behaviors.setup { ctx ⇒
-          counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (_, _, _) ⇒ true }
+        Behaviors.setup { ctx =>
+          counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (_, _, _) => true }
         }
       val c = spawn(alwaysSnapshot)
       val watchProbe = watcher(c)
@@ -431,7 +431,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbe.expectMessage("Terminated")
 
       val probe = TestProbe[(State, Event)]()
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒ counterWithProbe(ctx, pid, probe.ref)))
+      val c2 = spawn(Behaviors.setup[Command](ctx => counterWithProbe(ctx, pid, probe.ref)))
       // state should be rebuilt from snapshot, no events replayed
       // Fails as snapshot is async (i think)
       probe.expectNoMessage()
@@ -443,8 +443,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     "check all events for snapshot in PersistAll" in {
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[Done]]
-      val snapshotAtTwo = Behaviors.setup[Command](ctx ⇒
-        counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (s, _, _) ⇒ s.value == 2 }
+      val snapshotAtTwo = Behaviors.setup[Command](ctx =>
+        counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (s, _, _) => s.value == 2 }
       )
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
       val watchProbe = watcher(c)
@@ -459,7 +459,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbe.expectMessage("Terminated")
 
       val probeC2 = TestProbe[(State, Event)]()
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒ counterWithProbe(ctx, pid, probeC2.ref)))
+      val c2 = spawn(Behaviors.setup[Command](ctx => counterWithProbe(ctx, pid, probeC2.ref)))
       // middle event triggered all to be snapshot
       probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
@@ -468,7 +468,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "snapshot every N sequence nrs" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx ⇒ counter(ctx, pid).snapshotEvery(2)))
+      val c = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).snapshotEvery(2)))
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
@@ -481,7 +481,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       // no snapshot should have happened
       val probeC2 = TestProbe[(State, Event)]()
       val snapshotProbe = TestProbe[Try[Done]]()
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
         counterWithProbe(ctx, pid, probeC2.ref, snapshotProbe.ref)
           .snapshotEvery(2))
       )
@@ -493,7 +493,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbeC2.expectMessage("Terminated")
 
       val probeC3 = TestProbe[(State, Event)]()
-      val c3 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c3 = spawn(Behaviors.setup[Command](ctx =>
         counterWithProbe(ctx, pid, probeC3.ref).snapshotEvery(2))
       )
       // this time it should have been snapshotted so no events to replay
@@ -505,7 +505,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     "snapshot every N sequence nrs when persisting multiple events" in {
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[Done]]()
-      val c = spawn(Behaviors.setup[Command](ctx ⇒
+      val c = spawn(Behaviors.setup[Command](ctx =>
         counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotEvery(2))
       )
       val watchProbe = watcher(c)
@@ -519,7 +519,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbe.expectMessage("Terminated")
 
       val probeC2 = TestProbe[(State, Event)]()
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
         counterWithProbe(ctx, pid, probeC2.ref).snapshotEvery(2))
       )
       probeC2.expectNoMessage()
@@ -541,8 +541,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "tag events" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx ⇒
-        counter(ctx, pid).withTagger(_ ⇒ Set("tag1", "tag2")))
+      val c = spawn(Behaviors.setup[Command](ctx =>
+        counter(ctx, pid).withTagger(_ => Set("tag1", "tag2")))
       )
       val replyProbe = TestProbe[State]()
 
@@ -556,7 +556,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "adapt events" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command] { ctx ⇒
+      val c = spawn(Behaviors.setup[Command] { ctx =>
         val persistentBehavior = counter(ctx, pid)
 
         //#install-event-adapter
@@ -572,7 +572,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])
       ))
       c2 ! GetValue(replyProbe.ref)
@@ -582,7 +582,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "adapter multiple events with persist all" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx ⇒
+      val c = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event]))
       )
       val replyProbe = TestProbe[State]()
@@ -597,7 +597,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         EventEnvelope(Sequence(2), pid.id, 2, Wrapper(Incremented(1)))
       )
 
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])
       ))
       c2 ! GetValue(replyProbe.ref)
@@ -606,9 +606,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "adapt and tag events" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx ⇒
+      val c = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid)
-          .withTagger(_ ⇒ Set("tag99"))
+          .withTagger(_ => Set("tag99"))
           .eventAdapter(new WrapperEventAdapter[Event]))
       )
       val replyProbe = TestProbe[State]()
@@ -620,7 +620,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(Behaviors.setup[Command](ctx ⇒
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event]))
       )
       c2 ! GetValue(replyProbe.ref)
@@ -632,7 +632,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "handle scheduled message arriving before recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] {
-        timers ⇒
+        timers =>
           timers.startSingleTimer("tick", Increment, 1.millis)
           Thread.sleep(30) // now it's probably already in the mailbox, and will be stashed
           counter(nextPid)
@@ -648,7 +648,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "handle scheduled message arriving after recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] {
-        timers ⇒
+        timers =>
           // probably arrives after recovery completed
           timers.startSingleTimer("tick", Increment, 200.millis)
           counter(nextPid)
@@ -664,7 +664,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail after recovery timeout" in {
       EventFilter.error(start = "Persistence failure when replaying snapshot", occurrences = 1).intercept {
-        val c = spawn(Behaviors.setup[Command](ctx ⇒
+        val c = spawn(Behaviors.setup[Command](ctx =>
           counter(ctx, nextPid)
             .withSnapshotPluginId("slow-snapshot-store")
             .withJournalPluginId("short-recovery-timeout"))
@@ -682,7 +682,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
       // put some events in there, so that recovering takes a little time
       val c = spawn(Behaviors.setup[Command](counter(_, pid)))
-      (0 to 50).foreach { _ ⇒
+      (0 to 50).foreach { _ =>
         c ! IncrementWithConfirmation(probe.ref)
         probe.expectMessage(Done)
       }
@@ -699,11 +699,11 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
-      val w = Behaviors.setup[Any] { (ctx) ⇒
+      val w = Behaviors.setup[Any] { (ctx) =>
         ctx.watch(toWatch)
-        Behaviors.receive[Any] { (_, _) ⇒ Behaviors.same }
+        Behaviors.receive[Any] { (_, _) => Behaviors.same }
           .receiveSignal {
-            case (_, _: Terminated) ⇒
+            case (_, _: Terminated) =>
               probe.ref ! "Terminated"
               Behaviors.stopped
           }

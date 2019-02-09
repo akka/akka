@@ -35,9 +35,9 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
 
   class LogListener(testActor: ActorRef) extends Actor {
     def receive = {
-      case Info(_, _, msg: String) if msg.startsWith("New maximum payload size for [akka.cluster.GossipEnvelope]") ⇒
+      case Info(_, _, msg: String) if msg.startsWith("New maximum payload size for [akka.cluster.GossipEnvelope]") =>
         testActor ! msg
-      case _ ⇒
+      case _ =>
     }
   }
 }
@@ -78,7 +78,7 @@ abstract class NodeChurnSpec
     awaitMembersUp(numberOfMembers)
     within(20.seconds) {
       awaitAssert {
-        additionaSystems.foreach { s ⇒
+        additionaSystems.foreach { s =>
           val c = Cluster(s)
           c.state.members.size should be(numberOfMembers)
           c.state.members.forall(_.status == MemberStatus.Up) shouldBe true
@@ -92,7 +92,7 @@ abstract class NodeChurnSpec
     enterBarrier("removed-" + round)
     within(3.seconds) {
       awaitAssert {
-        additionaSystems.foreach { s ⇒
+        additionaSystems.foreach { s =>
           withClue(s"${Cluster(s).selfAddress}:") {
             Cluster(s).isTerminated should be(true)
           }
@@ -121,16 +121,16 @@ abstract class NodeChurnSpec
       // This test is configured with log-frame-size-exceeding and the LogListener
       // will send to the testActor if unexpected increase in message payload size.
       // It will fail after a while if vector clock entries of removed nodes are not pruned.
-      for (n ← 1 to rounds) {
+      for (n <- 1 to rounds) {
         log.info("round-" + n)
         val systems = Vector.fill(2)(ActorSystem(system.name, system.settings.config))
-        systems.foreach { s ⇒
+        systems.foreach { s =>
           muteDeadLetters()(s)
           Cluster(s).joinSeedNodes(seedNodes)
         }
         awaitAllMembersUp(systems)
         enterBarrier("members-up-" + n)
-        systems.foreach { node ⇒
+        systems.foreach { node =>
           if (n % 2 == 0)
             Cluster(node).down(Cluster(node).selfAddress)
           else
@@ -138,7 +138,7 @@ abstract class NodeChurnSpec
         }
         awaitRemoved(systems, n)
         enterBarrier("members-removed-" + n)
-        systems.foreach(s ⇒ TestKit.shutdownActorSystem(s, verifySystemShutdown = true))
+        systems.foreach(s => TestKit.shutdownActorSystem(s, verifySystemShutdown = true))
         enterBarrier("end-round-" + n)
         log.info("end of round-" + n)
         // log listener will send to testActor if payload size exceed configured log-frame-size-exceeding

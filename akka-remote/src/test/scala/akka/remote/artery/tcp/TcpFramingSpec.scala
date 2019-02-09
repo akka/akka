@@ -32,7 +32,7 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
   private val payload5 = ByteString((1 to 5).map(_.toByte).toArray)
 
   private def frameBytes(numberOfFrames: Int): ByteString =
-    (1 to numberOfFrames).foldLeft(ByteString.empty)((acc, _) ⇒ acc ++ encodeFrameHeader(payload5.size) ++ payload5)
+    (1 to numberOfFrames).foldLeft(ByteString.empty)((acc, _) => acc ++ encodeFrameHeader(payload5.size) ++ payload5)
 
   private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
@@ -85,9 +85,9 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
       val numberOfFrames = 100
       val bytes = TcpFraming.encodeConnectionHeader(3) ++ frameBytes(numberOfFrames)
       withClue(s"Random chunks seed: $rndSeed") {
-        val frames = Source.fromIterator(() ⇒ rechunk(bytes)).via(framingFlow).runWith(Sink.seq).futureValue
+        val frames = Source.fromIterator(() => rechunk(bytes)).via(framingFlow).runWith(Sink.seq).futureValue
         frames.size should ===(numberOfFrames)
-        frames.foreach { frame ⇒
+        frames.foreach { frame =>
           frame.byteBuffer.limit() should ===(payload5.size)
           val payload = new Array[Byte](frame.byteBuffer.limit())
           frame.byteBuffer.get(payload)

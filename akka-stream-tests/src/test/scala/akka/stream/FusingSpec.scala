@@ -16,7 +16,7 @@ class FusingSpec extends StreamSpec {
     GraphInterpreter.currentInterpreter.context
   }
 
-  val snitchFlow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
+  val snitchFlow = Flow[Int].map(x => { testActor ! actorRunningStage; x }).async
 
   "SubFusingActorMaterializer" must {
 
@@ -24,7 +24,7 @@ class FusingSpec extends StreamSpec {
       val async = Flow[Int].map(_ * 2).async
       Source(0 to 9)
         .map(_ * 10)
-        .flatMapMerge(5, i ⇒ Source(i to (i + 9)).via(async))
+        .flatMapMerge(5, i => Source(i to (i + 9)).via(async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
@@ -32,10 +32,10 @@ class FusingSpec extends StreamSpec {
     }
 
     "use multiple actors when there are asynchronous boundaries in the subflows (manual)" in {
-      val async = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
+      val async = Flow[Int].map(x => { testActor ! actorRunningStage; x }).async
       Source(0 to 9)
         .via(snitchFlow.async)
-        .flatMapMerge(5, i ⇒ Source.single(i).via(async))
+        .flatMapMerge(5, i => Source.single(i).via(async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
@@ -47,7 +47,7 @@ class FusingSpec extends StreamSpec {
     "use multiple actors when there are asynchronous boundaries in the subflows (operator)" in {
       Source(0 to 9)
         .via(snitchFlow)
-        .flatMapMerge(5, i ⇒ Source.single(i).via(snitchFlow.async))
+        .flatMapMerge(5, i => Source.single(i).via(snitchFlow.async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue

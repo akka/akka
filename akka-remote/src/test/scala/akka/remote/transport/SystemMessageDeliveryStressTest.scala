@@ -71,8 +71,8 @@ object SystemMessageDeliveryStressTest {
 
     override def sendSystemMessage(message: SystemMessage): Unit = {
       message match {
-        case Failed(_, _, seq) ⇒ testActor ! seq
-        case _                 ⇒
+        case Failed(_, _, seq) => testActor ! seq
+        case _                 =>
       }
     }
   }
@@ -88,7 +88,7 @@ object SystemMessageDeliveryStressTest {
     override def preStart(): Unit = self ! "sendnext"
 
     override def receive = {
-      case "sendnext" ⇒
+      case "sendnext" =>
         targetRef.sendSystemMessage(Failed(child, null, counter))
         counter += 1
         burstCounter += 1
@@ -168,7 +168,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       val toSend = (0 until msgCount).toList
       var maxDelay = 0L
 
-      for (m ← 0 until msgCount) {
+      for (m <- 0 until msgCount) {
         val start = System.currentTimeMillis()
         probeB.expectMsg(10.minutes, m)
         probeA.expectMsg(10.minutes, m)

@@ -70,7 +70,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
               DontRecurse
           }
         } catch {
-          case NeedMoreData ⇒
+          case NeedMoreData =>
             acceptUpstreamFinish = false
             if (current.canWorkWithPartialData) buffer = reader.remainingData
 
@@ -79,7 +79,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
             else pull(bytesIn)
 
             DontRecurse
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             failStage(new ParsingException(s"Parsing failed in step $current", ex))
 
             DontRecurse

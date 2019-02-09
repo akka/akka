@@ -28,7 +28,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
     var invocationCount = 0
 
     def receive = {
-      case x: Int ⇒ {
+      case x: Int => {
         Thread.sleep(delay)
         invocationCount += 1
         finishedCounter.countDown()
@@ -37,15 +37,15 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
   }
 
   class FirstActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
   class SecondActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
   class ParentActor extends Actor {
-    def receive = { case _ ⇒ {} }
+    def receive = { case _ => {} }
   }
 
   class ChildActor extends ParentActor {
@@ -60,7 +60,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
 
       var sentToFast = 0
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         // send most work to slow actor
         if (i % 20 == 0) {
           fast ! i
@@ -70,7 +70,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       }
 
       // now send some messages to actors to keep the dispatcher dispatching messages
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         Thread.sleep(150)
         if (i % 2 == 0) {
           fast ! i

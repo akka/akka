@@ -76,7 +76,7 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed2, seed3) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: Address ⇒
+            case a: Address =>
               seedNode1Address = a
               sender() ! "ok"
           }
@@ -87,7 +87,7 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed1) {
         enterBarrier("seed1-address-receiver-ready")
         seedNode1Address = Cluster(seed1System).selfAddress
-        List(seed2, seed3) foreach { r ⇒
+        List(seed2, seed3) foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! seedNode1Address
           expectMsg(5 seconds, "ok")
         }

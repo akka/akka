@@ -26,16 +26,16 @@ import akka.pattern.ask
 object ClusterShardingCustomShardAllocationSpec {
   class Entity extends Actor {
     def receive = {
-      case id: Int ⇒ sender() ! id
+      case id: Int => sender() ! id
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
   case object AllocateReq
@@ -49,15 +49,15 @@ object ClusterShardingCustomShardAllocationSpec {
     var useRegion: Option[ActorRef] = None
     var rebalance = Set.empty[String]
     def receive = {
-      case UseRegion(region) ⇒
+      case UseRegion(region) =>
         useRegion = Some(region)
         sender() ! UseRegionAck
-      case AllocateReq ⇒
+      case AllocateReq =>
         useRegion.foreach { sender() ! _ }
-      case RebalanceShards(shards) ⇒
+      case RebalanceShards(shards) =>
         rebalance = shards
         sender() ! RebalanceShardsAck
-      case RebalanceReq ⇒
+      case RebalanceReq =>
         sender() ! rebalance
         rebalance = Set.empty
     }

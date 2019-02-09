@@ -72,8 +72,8 @@ object BackoffSupervisor {
     randomFactor:   Double,
     maxNrOfRetries: Int): Props = {
     val supervisionStrategy = SupervisorStrategy.defaultStrategy match {
-      case oneForOne: OneForOneStrategy ⇒ oneForOne.withMaxNrOfRetries(maxNrOfRetries)
-      case s                            ⇒ s
+      case oneForOne: OneForOneStrategy => oneForOne.withMaxNrOfRetries(maxNrOfRetries)
+      case s                            => s
     }
     propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, supervisionStrategy)
   }
@@ -293,8 +293,8 @@ object BackoffSupervisor {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
     val calculatedDuration = Try(maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd).getOrElse(maxBackoff)
     calculatedDuration match {
-      case f: FiniteDuration ⇒ f
-      case _                 ⇒ maxBackoff
+      case f: FiniteDuration => f
+      case _                 => maxBackoff
     }
   }
 }
@@ -310,7 +310,7 @@ final class BackoffSupervisor(
   randomFactor:            Double,
   strategy:                SupervisorStrategy,
   val replyWhileStopped:   Option[Any],
-  val finalStopMessage:    Option[Any ⇒ Boolean])
+  val finalStopMessage:    Option[Any => Boolean])
   extends BackoffOnStopSupervisor(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, strategy, replyWhileStopped, finalStopMessage) {
 
   // for binary compatibility with 2.5.18

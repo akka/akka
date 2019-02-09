@@ -60,7 +60,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** connection established, waiting for registration from user handler */
   def waitingForRegistration(registration: ChannelRegistration, commander: ActorRef): Receive = {
-    case Register(handler, keepOpenOnPeerClosed, useResumeWriting) ⇒
+    case Register(handler, keepOpenOnPeerClosed, useResumeWriting) =>
       // up to this point we've been watching the commander,
       // but since registration is now complete we only need to watch the handler from here on
       if (handler != commander) {
@@ -77,17 +77,17 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(info))
 
-    case ResumeReading ⇒
+    case ResumeReading =>
       readingSuspended = false
 
-    case SuspendReading ⇒
+    case SuspendReading =>
       readingSuspended = true
 
-    case cmd: CloseCommand ⇒
+    case cmd: CloseCommand =>
       val info = ConnectionInfo(registration, commander, keepOpenOnPeerClosed = false, useResumeWriting = false)
       handleClose(info, Some(sender()), cmd.event)
 
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       // after sending `Register` user should watch this actor to make sure
       // it didn't die because of the timeout
       log.debug("Configured registration timeout of [{}] expired, stopping", RegisterTimeout)
@@ -97,52 +97,52 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** normal connected state */
   def connected(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
-      case SuspendReading    ⇒ suspendReading(info)
-      case ResumeReading     ⇒ resumeReading(info)
-      case ChannelReadable   ⇒ doRead(info, None)
-      case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
+      case SuspendReading    => suspendReading(info)
+      case ResumeReading     => resumeReading(info)
+      case ChannelReadable   => doRead(info, None)
+      case cmd: CloseCommand => handleClose(info, Some(sender()), cmd.event)
     }
 
   /** the peer sent EOF first, but we may still want to send */
   def peerSentEOF(info: ConnectionInfo): Receive =
     handleWriteMessages(info) orElse {
-      case cmd: CloseCommand ⇒ handleClose(info, Some(sender()), cmd.event)
-      case ResumeReading     ⇒ // ignore, no more data to read
+      case cmd: CloseCommand => handleClose(info, Some(sender()), cmd.event)
+      case ResumeReading     => // ignore, no more data to read
     }
 
   /** connection is closing but a write has to be finished first */
   def closingWithPendingWrite(info: ConnectionInfo, closeCommander: Option[ActorRef],
                               closedEvent: ConnectionClosed): Receive = {
-    case SuspendReading  ⇒ suspendReading(info)
-    case ResumeReading   ⇒ resumeReading(info)
-    case ChannelReadable ⇒ doRead(info, closeCommander)
+    case SuspendReading  => suspendReading(info)
+    case ResumeReading   => resumeReading(info)
+    case ChannelReadable => doRead(info, closeCommander)
 
-    case ChannelWritable ⇒
+    case ChannelWritable =>
       doWrite(info)
       if (!writePending) // writing is now finished
         handleClose(info, closeCommander, closedEvent)
 
-    case UpdatePendingWriteAndThen(remaining, work) ⇒
+    case UpdatePendingWriteAndThen(remaining, work) =>
       pendingWrite = remaining
       work()
       if (writePending) info.registration.enableInterest(OP_WRITE)
       else handleClose(info, closeCommander, closedEvent)
 
-    case WriteFileFailed(e) ⇒ handleError(info.handler, e) // rethrow exception from dispatcher task
+    case WriteFileFailed(e) => handleError(info.handler, e) // rethrow exception from dispatcher task
 
-    case Abort              ⇒ handleClose(info, Some(sender()), Aborted)
+    case Abort              => handleClose(info, Some(sender()), Aborted)
   }
 
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(info: ConnectionInfo, closeCommander: Option[ActorRef]): Receive = {
-    case SuspendReading  ⇒ suspendReading(info)
-    case ResumeReading   ⇒ resumeReading(info)
-    case ChannelReadable ⇒ doRead(info, closeCommander)
-    case Abort           ⇒ handleClose(info, Some(sender()), Aborted)
+    case SuspendReading  => suspendReading(info)
+    case ResumeReading   => resumeReading(info)
+    case ChannelReadable => doRead(info, closeCommander)
+    case Abort           => handleClose(info, Some(sender()), Aborted)
   }
 
   def handleWriteMessages(info: ConnectionInfo): Receive = {
-    case ChannelWritable ⇒
+    case ChannelWritable =>
       if (writePending) {
         doWrite(info)
         if (!writePending && interestedInResume.nonEmpty) {
@@ -151,7 +151,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         }
       }
 
-    case write: WriteCommand ⇒
+    case write: WriteCommand =>
       if (writingSuspended) {
         if (TraceLogging) log.debug("Dropping write because writing is suspended")
         sender() ! write.failureMessage.withCause(DroppingWriteBecauseWritingIsSuspendedException)
@@ -166,7 +166,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         if (writePending) doWrite(info)
       }
 
-    case ResumeWriting ⇒
+    case ResumeWriting =>
       /*
        * If more than one actor sends Writes then the first to send this
        * message might resume too early for the second, leading to a Write of
@@ -183,17 +183,17 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         else sender() ! CommandFailed(ResumeWriting)
       } else sender() ! WritingResumed
 
-    case UpdatePendingWriteAndThen(remaining, work) ⇒
+    case UpdatePendingWriteAndThen(remaining, work) =>
       pendingWrite = remaining
       work()
       if (writePending) info.registration.enableInterest(OP_WRITE)
 
-    case WriteFileFailed(e) ⇒ handleError(info.handler, e) // rethrow exception from dispatcher task
+    case WriteFileFailed(e) => handleError(info.handler, e) // rethrow exception from dispatcher task
   }
 
   /** stopWith sets this state while waiting for the SelectionHandler to execute the `cancelAndClose` thunk */
   def unregistering: Receive = {
-    case Unregistered ⇒ context.stop(self) // postStop will notify interested parties
+    case Unregistered => context.stop(self) // postStop will notify interested parties
   }
 
   // AUXILIARIES and IMPLEMENTATION
@@ -205,7 +205,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
     // Turn off Nagle's algorithm by default
     try channel.socket.setTcpNoDelay(true) catch {
-      case e: SocketException ⇒
+      case e: SocketException =>
         // as reported in #16653 some versions of netcat (`nc -z`) doesn't allow setTcpNoDelay
         // continue anyway
         log.debug("Could not enable TcpNoDelay: {}", e.getMessage)
@@ -253,28 +253,28 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           if (readBytes > 0) info.handler ! Received(ByteString(buffer))
 
           readBytes match {
-            case `maxBufferSpace` ⇒ if (pullMode) MoreDataWaiting else innerRead(buffer, remainingLimit - maxBufferSpace)
-            case x if x >= 0      ⇒ AllRead
-            case -1               ⇒ EndOfStream
-            case _ ⇒
+            case `maxBufferSpace` => if (pullMode) MoreDataWaiting else innerRead(buffer, remainingLimit - maxBufferSpace)
+            case x if x >= 0      => AllRead
+            case -1               => EndOfStream
+            case _ =>
               throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
           }
         } else MoreDataWaiting
 
       val buffer = bufferPool.acquire()
       try innerRead(buffer, ReceivedMessageSizeLimit) match {
-        case AllRead ⇒
+        case AllRead =>
           if (!pullMode) info.registration.enableInterest(OP_READ)
-        case MoreDataWaiting ⇒
+        case MoreDataWaiting =>
           if (!pullMode) self ! ChannelReadable
-        case EndOfStream if channel.socket.isOutputShutdown ⇒
+        case EndOfStream if channel.socket.isOutputShutdown =>
           if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
           doCloseConnection(info.handler, closeCommander, ConfirmedClosed)
-        case EndOfStream ⇒
+        case EndOfStream =>
           if (TraceLogging) log.debug("Read returned end-of-stream, our side not yet closed")
           handleClose(info, closeCommander, PeerClosed)
       } catch {
-        case e: IOException ⇒ handleError(info.handler, e)
+        case e: IOException => handleError(info.handler, e)
       } finally bufferPool.release(buffer)
     }
 
@@ -286,21 +286,21 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   def handleClose(info: ConnectionInfo, closeCommander: Option[ActorRef],
                   closedEvent: ConnectionClosed): Unit = closedEvent match {
-    case Aborted ⇒
+    case Aborted =>
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
       doCloseConnection(info.handler, closeCommander, closedEvent)
-    case PeerClosed if info.keepOpenOnPeerClosed ⇒
+    case PeerClosed if info.keepOpenOnPeerClosed =>
       // report that peer closed the connection
       info.handler ! PeerClosed
       // used to check if peer already closed its side later
       peerClosed = true
       context.become(peerSentEOF(info))
-    case _ if writePending ⇒ // finish writing first
+    case _ if writePending => // finish writing first
       // Our registered actor is now free to terminate cleanly
       unsignDeathPact()
       if (TraceLogging) log.debug("Got Close command but write is still pending.")
       context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
-    case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
+    case ConfirmedClosed => // shutdown output and wait for confirmation
       if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
 
       // If peer closed first, the socket is now fully closed.
@@ -310,7 +310,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       if (peerClosed || !safeShutdownOutput())
         doCloseConnection(info.handler, closeCommander, closedEvent)
       else context.become(closing(info, closeCommander))
-    case _ ⇒ // close now
+    case _ => // close now
       if (TraceLogging) log.debug("Got Close command, closing connection.")
       doCloseConnection(info.handler, closeCommander, closedEvent)
   }
@@ -329,22 +329,22 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       channel.socket().shutdownOutput()
       true
     } catch {
-      case _: SocketException ⇒ false
+      case _: SocketException => false
     }
 
   @tailrec private[this] def extractMsg(t: Throwable): String =
     if (t == null) "unknown"
     else {
       t.getMessage match {
-        case null | "" ⇒ extractMsg(t.getCause)
-        case msg       ⇒ msg
+        case null | "" => extractMsg(t.getCause)
+        case msg       => msg
       }
     }
 
   def prepareAbort(): Unit = {
     try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
     catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
         // (also affected: OS/X Java 1.6.0_37)
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
@@ -364,11 +364,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       prepareAbort()
 
     registration match {
-      case None ⇒
+      case None =>
         context.stop(self)
-      case Some(reg) ⇒
+      case Some(reg) =>
         context.become(unregistering)
-        reg.cancelAndClose(() ⇒ self ! Unregistered)
+        reg.cancelAndClose(() => self ! Unregistered)
     }
   }
 
@@ -385,8 +385,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     def isCommandFailed: Boolean = closedMessage.exists(_.closedEvent.isInstanceOf[CommandFailed])
     def notifyInterested(): Unit =
       for {
-        msg ← closedMessage
-        ref ← interestedInClose
+        msg <- closedMessage
+        ref <- interestedInClose
       } ref ! msg.closedEvent
 
     if (!channel.isOpen || isCommandFailed || registration.isEmpty)
@@ -394,7 +394,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       notifyInterested()
     else
       // otherwise, we unregister and notify afterwards
-      registration.foreach(_.cancelAndClose(() ⇒ notifyInterested()))
+      registration.foreach(_.cancelAndClose(() => notifyInterested()))
   }
 
   override def postRestart(reason: Throwable): Unit =
@@ -403,12 +403,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
     @tailrec def create(head: WriteCommand, tail: WriteCommand = Write.empty): PendingWrite =
       head match {
-        case Write.empty                         ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
-        case Write(data, ack) if data.nonEmpty   ⇒ PendingBufferWrite(commander, data, ack, tail)
-        case WriteFile(path, offset, count, ack) ⇒ PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
-        case WritePath(path, offset, count, ack) ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
-        case CompoundWrite(h, t)                 ⇒ create(h, t)
-        case x @ Write(_, ack) ⇒ // empty write with either an ACK or a non-standard NoACK
+        case Write.empty                         => if (tail eq Write.empty) EmptyPendingWrite else create(tail)
+        case Write(data, ack) if data.nonEmpty   => PendingBufferWrite(commander, data, ack, tail)
+        case WriteFile(path, offset, count, ack) => PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
+        case WritePath(path, offset, count, ack) => PendingWriteFile(commander, path, offset, count, ack, tail)
+        case CompoundWrite(h, t)                 => create(h, t)
+        case x @ Write(_, ack) => // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
           create(tail)
       }
@@ -422,7 +422,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       buffer.flip()
       new PendingBufferWrite(commander, data.drop(copied), ack, buffer, tail)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         bufferPool.release(buffer)
         throw e
     }
@@ -460,7 +460,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         val next = writeToChannel(remainingData)
         if (next ne EmptyPendingWrite) info.registration.enableInterest(OP_WRITE)
         next
-      } catch { case e: IOException ⇒ handleError(info.handler, e); this }
+      } catch { case e: IOException => handleError(info.handler, e); this }
     }
 
     def release(): Unit = bufferPool.release(buffer)
@@ -495,11 +495,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           self ! UpdatePendingWriteAndThen(updated, TcpConnection.doNothing)
         } else {
           release()
-          val andThen = if (!ack.isInstanceOf[NoAck]) () ⇒ commander ! ack else doNothing
+          val andThen = if (!ack.isInstanceOf[NoAck]) () => commander ! ack else doNothing
           self ! UpdatePendingWriteAndThen(PendingWrite(commander, tail), andThen)
         }
       } catch {
-        case e: IOException ⇒ self ! WriteFileFailed(e)
+        case e: IOException => self ! WriteFileFailed(e)
       }
   }
 }
@@ -530,7 +530,7 @@ private[io] object TcpConnection {
 
   // INTERNAL MESSAGES
 
-  final case class UpdatePendingWriteAndThen(remainingWrite: PendingWrite, work: () ⇒ Unit) extends NoSerializationVerificationNeeded
+  final case class UpdatePendingWriteAndThen(remainingWrite: PendingWrite, work: () => Unit) extends NoSerializationVerificationNeeded
   final case class WriteFileFailed(e: IOException)
   case object Unregistered
 
@@ -546,7 +546,7 @@ private[io] object TcpConnection {
     def release(): Unit = throw new IllegalStateException
   }
 
-  val doNothing: () ⇒ Unit = () ⇒ ()
+  val doNothing: () => Unit = () => ()
 
   val DroppingWriteBecauseWritingIsSuspendedException =
     new IOException("Dropping write because writing is suspended") with NoStackTrace

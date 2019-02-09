@@ -14,7 +14,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   val halfLength = chainLength / 2
   val repetition = 100
 
-  val map = Map((x: Int) ⇒ x + 1)
+  val map = Map((x: Int) => x + 1)
 
   // GraphStages can be reused
   val dropOne = Drop(1)
@@ -108,8 +108,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       val batch = Batch(
         0L,
         ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, in: Int) ⇒ agg + in)
+        (in: Int) => in,
+        (agg: Int, in: Int) => agg + in)
 
       new OneBoundedSetup[Int](Vector.fill(chainLength / 10)(batch): _*) {
 

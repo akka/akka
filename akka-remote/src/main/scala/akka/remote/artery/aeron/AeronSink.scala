@@ -41,10 +41,10 @@ private[remote] object AeronSink {
 
   private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
                                 giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
-    extends (() ⇒ Boolean) {
+    extends (() => Boolean) {
     val giveUpAfterNanos = giveUpAfter match {
-      case f: FiniteDuration ⇒ f.toNanos
-      case _                 ⇒ -1L
+      case f: FiniteDuration => f.toNanos
+      case _                 => -1L
     }
     var n = 0L
     var startTime = 0L
@@ -108,8 +108,8 @@ private[remote] class AeronSink(
       private val spinning = 2 * taskRunner.idleCpuLevel
       private var backoffCount = spinning
       private var lastMsgSize = 0
-      private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ taskOnOfferSuccess()),
-        giveUpAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
+      private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ => taskOnOfferSuccess()),
+        giveUpAfter, getAsyncCallback(_ => onGiveUp()), getAsyncCallback(_ => onPublicationClosed()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false

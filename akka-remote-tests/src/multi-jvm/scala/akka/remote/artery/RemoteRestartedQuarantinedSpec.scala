@@ -28,8 +28,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
+      case "shutdown" => context.system.terminate()
+      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
     }
   }
 
@@ -92,7 +92,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         enterBarrier("quarantined")
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
+          case ThisActorSystemQuarantinedEvent(local, remote) =>
         }
 
         // check that we quarantine back

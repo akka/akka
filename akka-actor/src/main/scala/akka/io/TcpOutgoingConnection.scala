@@ -42,42 +42,42 @@ private[io] class TcpOutgoingConnection(
   private def stop(cause: Throwable): Unit =
     stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)), shouldAbort = true)
 
-  private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
+  private def reportConnectFailure(thunk: => Unit): Unit = {
     try {
       thunk
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
         stop(e)
     }
   }
 
   def receive: Receive = {
-    case registration: ChannelRegistration ⇒
+    case registration: ChannelRegistration =>
       setRegistration(registration)
       reportConnectFailure {
         if (remoteAddress.isUnresolved) {
           log.debug("Resolving {} before connecting", remoteAddress.getHostName)
           Dns.resolve(remoteAddress.getHostName)(system, self) match {
-            case None ⇒
+            case None =>
               context.become(resolving(registration))
-            case Some(resolved) ⇒
+            case Some(resolved) =>
               register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
           }
         } else {
           register(remoteAddress, registration)
         }
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
   }
 
   def resolving(registration: ChannelRegistration): Receive = {
-    case resolved: Dns.Resolved ⇒
+    case resolved: Dns.Resolved =>
       reportConnectFailure {
         register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
   }
 
@@ -95,7 +95,7 @@ private[io] class TcpOutgoingConnection(
 
   def connecting(registration: ChannelRegistration, remainingFinishConnectRetries: Int): Receive = {
     {
-      case ChannelConnectable ⇒
+      case ChannelConnectable =>
         reportConnectFailure {
           if (channel.finishConnect()) {
             if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
@@ -114,7 +114,7 @@ private[io] class TcpOutgoingConnection(
             }
           }
         }
-      case ReceiveTimeout ⇒
+      case ReceiveTimeout =>
         connectionTimeout()
     }
   }

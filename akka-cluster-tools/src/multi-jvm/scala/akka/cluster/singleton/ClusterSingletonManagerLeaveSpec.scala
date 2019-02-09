@@ -42,10 +42,10 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case "stop" ⇒
+      case "stop" =>
         testActor ! "stop"
         context.stop(self)
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }
@@ -105,14 +105,14 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       join(second, first)
       runOn(first, second) {
         within(10.seconds) {
-          awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(2))
+          awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(2))
         }
       }
       enterBarrier("second-up")
 
       join(third, first)
       within(10.seconds) {
-        awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(3))
+        awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(3))
       }
       enterBarrier("all-up")
 

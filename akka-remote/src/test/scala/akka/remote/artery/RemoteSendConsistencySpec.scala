@@ -61,7 +61,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
     "be able to identify a remote actor and ping it" in {
       val actorOnSystemB = systemB.actorOf(Props(new Actor {
         def receive = {
-          case "ping" ⇒ sender() ! "pong"
+          case "ping" => sender() ! "pong"
         }
       }), "echo")
 
@@ -131,7 +131,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
         remoteRef ! counter
 
         override def receive: Receive = {
-          case i: Int ⇒
+          case i: Int =>
             if (i != counter) testActor ! s"Failed, expected $counter got $i"
             else if (counter == 0) {
               testActor ! "success"
@@ -170,7 +170,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryM
         sel ! counter
 
         override def receive: Receive = {
-          case i: Int ⇒
+          case i: Int =>
             if (i != counter) testActor ! s"Failed, expected $counter got $i"
             else if (counter == 0) {
               testActor ! "success2"

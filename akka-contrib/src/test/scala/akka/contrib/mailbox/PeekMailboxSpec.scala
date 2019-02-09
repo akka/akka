@@ -15,20 +15,20 @@ object PeekMailboxSpec {
   class PeekActor(tries: Int) extends Actor {
     var togo = tries
     def receive = {
-      case Check ⇒
+      case Check =>
         sender() ! Check
         PeekMailboxExtension.ack()
-      case DoubleAck ⇒
+      case DoubleAck =>
         PeekMailboxExtension.ack()
         PeekMailboxExtension.ack()
-      case msg ⇒
+      case msg =>
         sender() ! msg
         if (togo == 0) throw new RuntimeException("DONTWANNA")
         togo -= 1
         PeekMailboxExtension.ack()
     }
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
-      for (m ← msg if m == "DIE") context stop self // for testing the case of mailbox.cleanUp
+      for (m <- msg if m == "DIE") context stop self // for testing the case of mailbox.cleanUp
     }
   }
 }
@@ -95,7 +95,7 @@ class PeekMailboxSpec extends AkkaSpec("""
 //#demo
 class MyActor extends Actor {
   def receive = {
-    case msg ⇒
+    case msg =>
       println(msg)
       doStuff(msg) // may fail
       PeekMailboxExtension.ack()

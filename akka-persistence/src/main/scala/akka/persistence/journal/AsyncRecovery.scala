@@ -45,7 +45,7 @@ trait AsyncRecovery {
    * @see [[AsyncWriteJournal]]
    */
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long,
-                          max: Long)(recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit]
+                          max: Long)(recoveryCallback: PersistentRepr => Unit): Future[Unit]
 
   /**
    * Plugin API: asynchronously reads the highest stored sequence number for the

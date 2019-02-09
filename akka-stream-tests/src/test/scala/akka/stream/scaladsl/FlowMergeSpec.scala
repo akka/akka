@@ -33,7 +33,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Set.empty[Int]
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         subscription.request(1)
         collected += probe.expectNext()
       }

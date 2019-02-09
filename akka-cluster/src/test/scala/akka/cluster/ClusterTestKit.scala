@@ -89,7 +89,7 @@ trait ClusterTestKit extends TestKitBase {
     def joinCluster(actorSystem: ActorSystem): Unit = {
       require(isRegistered(actorSystem), "Unknown actor system")
 
-      val addresses = actorSystems.map(s ⇒ Cluster(s).selfAddress)
+      val addresses = actorSystems.map(s => Cluster(s).selfAddress)
 
       val joiningNodeCluster = Cluster(actorSystem)
       joiningNodeCluster.joinSeedNodes(addresses)
@@ -99,7 +99,7 @@ trait ClusterTestKit extends TestKitBase {
       actorSystems.contains(actorSystem)
 
     /** Shuts down all registered [[ActorSystem]]s */
-    def shutdownAll(): Unit = actorSystems.foreach(sys ⇒ shutdown(sys))
+    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys))
 
     /**
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
@@ -194,10 +194,10 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
 
     val util = new ClusterTestUtil(system.name)
 
-    val config = (version: Config) ⇒ if (enforced) version else unenforced(version)
+    val config = (version: Config) => if (enforced) version else unenforced(version)
 
     try {
-      val nodes = for (_ ← 0 until clusterSize) yield {
+      val nodes = for (_ <- 0 until clusterSize) yield {
         val system = util.newActorSystem(config(baseConfig))
         util.joinCluster(system)
         system
@@ -206,7 +206,7 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
 
       val rolling = Random.shuffle(nodes)
 
-      for (restarting ← rolling.tail) {
+      for (restarting <- rolling.tail) {
         val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
         util.joinCluster(restarted)
         awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted), timeout)

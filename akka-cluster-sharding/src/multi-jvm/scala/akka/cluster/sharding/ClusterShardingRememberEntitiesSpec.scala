@@ -29,17 +29,17 @@ object ClusterShardingRememberEntitiesSpec {
     probe ! Started(self)
 
     def receive = {
-      case m ⇒ sender() ! m
+      case m => sender() ! m
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int                     ⇒ id.toString
-    case ShardRegion.StartEntity(id) ⇒ id
+  val extractShardId: ShardRegion.ExtractShardId = msg => msg match {
+    case id: Int                     => id.toString
+    case ShardRegion.StartEntity(id) => id
   }
 
 }
@@ -108,12 +108,12 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {

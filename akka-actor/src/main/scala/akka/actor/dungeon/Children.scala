@@ -15,10 +15,10 @@ import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
 
 private[akka] object Children {
-  val GetNobody = () ⇒ Nobody
+  val GetNobody = () => Nobody
 }
 
-private[akka] trait Children { this: ActorCell ⇒
+private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._
 
@@ -34,8 +34,8 @@ private[akka] trait Children { this: ActorCell ⇒
 
   final def child(name: String): Option[ActorRef] = Option(getChild(name))
   final def getChild(name: String): ActorRef = childrenRefs.getByName(name) match {
-    case Some(s: ChildRestartStats) ⇒ s.child
-    case _                          ⇒ null
+    case Some(s: ChildRestartStats) => s.child
+    case _                          => null
   }
   def findChild(name: String): Optional[ActorRef] = Optional.ofNullable(getChild(name))
 
@@ -54,13 +54,13 @@ private[akka] trait Children { this: ActorCell ⇒
 
   private[akka] def getFunctionRefOrNobody(name: String, uid: Int = ActorCell.undefinedUid): InternalActorRef =
     functionRefs.getOrElse(name, Children.GetNobody()) match {
-      case f: FunctionRef ⇒
+      case f: FunctionRef =>
         if (uid == ActorCell.undefinedUid || f.path.uid == uid) f else Nobody
-      case other ⇒
+      case other =>
         other
     }
 
-  private[akka] def addFunctionRef(f: (ActorRef, Any) ⇒ Unit, name: String = ""): FunctionRef = {
+  private[akka] def addFunctionRef(f: (ActorRef, Any) => Unit, name: String = ""): FunctionRef = {
     val r = randomName(new java.lang.StringBuilder("$$"))
     val n = if (name != "") s"$r-$name" else r
     val childPath = new ChildActorPath(self.path, n, ActorCell.newUid())
@@ -117,8 +117,8 @@ private[akka] trait Children { this: ActorCell ⇒
       }
 
       if (actor match {
-        case r: RepointableRef ⇒ r.isStarted
-        case _                 ⇒ true
+        case r: RepointableRef => r.isStarted
+        case _                 => true
       }) shallDie(actor)
     }
     actor.asInstanceOf[InternalActorRef].stop()
@@ -143,20 +143,20 @@ private[akka] trait Children { this: ActorCell ⇒
   @tailrec final def initChild(ref: ActorRef): Option[ChildRestartStats] = {
     val cc = childrenRefs
     cc.getByName(ref.path.name) match {
-      case old @ Some(_: ChildRestartStats) ⇒ old.asInstanceOf[Option[ChildRestartStats]]
-      case Some(ChildNameReserved) ⇒
+      case old @ Some(_: ChildRestartStats) => old.asInstanceOf[Option[ChildRestartStats]]
+      case Some(ChildNameReserved) =>
         val crs = ChildRestartStats(ref)
         val name = ref.path.name
         if (swapChildrenRefs(cc, cc.add(name, crs))) Some(crs) else initChild(ref)
-      case None ⇒ None
+      case None => None
     }
   }
 
   @tailrec final protected def setChildrenTerminationReason(reason: ChildrenContainer.SuspendReason): Boolean = {
     childrenRefs match {
-      case c: ChildrenContainer.TerminatingChildrenContainer ⇒
+      case c: ChildrenContainer.TerminatingChildrenContainer =>
         swapChildrenRefs(c, c.copy(reason = reason)) || setChildrenTerminationReason(reason)
-      case _ ⇒ false
+      case _ => false
     }
   }
 
@@ -171,21 +171,21 @@ private[akka] trait Children { this: ActorCell ⇒
   protected def isTerminating = childrenRefs.isTerminating
 
   protected def waitingForChildrenOrNull = childrenRefs match {
-    case TerminatingChildrenContainer(_, _, w: WaitingForChildren) ⇒ w
-    case _ ⇒ null
+    case TerminatingChildrenContainer(_, _, w: WaitingForChildren) => w
+    case _ => null
   }
 
   protected def suspendChildren(exceptFor: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
-      case _ ⇒
+      case ChildRestartStats(child, _, _) if !(exceptFor contains child) => child.asInstanceOf[InternalActorRef].suspend()
+      case _ =>
     }
 
   protected def resumeChildren(causedByFailure: Throwable, perp: ActorRef): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child: InternalActorRef, _, _) ⇒
+      case ChildRestartStats(child: InternalActorRef, _, _) =>
         child.resume(if (perp == child) causedByFailure else null)
-      case stats ⇒
+      case stats =>
         throw new IllegalStateException(s"Unexpected child ActorRef: ${stats.child}")
     }
 
@@ -199,15 +199,15 @@ private[akka] trait Children { this: ActorCell ⇒
     if (name.indexOf('#') == -1) {
       // optimization for the non-uid case
       getChildByName(name) match {
-        case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
-        case _                            ⇒ getFunctionRefOrNobody(name)
+        case Some(crs: ChildRestartStats) => crs.child.asInstanceOf[InternalActorRef]
+        case _                            => getFunctionRefOrNobody(name)
       }
     } else {
       val (childName, uid) = ActorCell.splitNameAndUid(name)
       getChildByName(childName) match {
-        case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+        case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid =>
           crs.child.asInstanceOf[InternalActorRef]
-        case _ ⇒ getFunctionRefOrNobody(childName, uid)
+        case _ => getFunctionRefOrNobody(childName, uid)
       }
     }
 
@@ -219,12 +219,12 @@ private[akka] trait Children { this: ActorCell ⇒
     }
 
     childrenRefs match { // The match must be performed BEFORE the removeChild
-      case TerminatingChildrenContainer(_, _, reason) ⇒
+      case TerminatingChildrenContainer(_, _, reason) =>
         removeChild(child) match {
-          case _: TerminatingChildrenContainer ⇒ None
-          case _                               ⇒ Some(reason)
+          case _: TerminatingChildrenContainer => None
+          case _                               => Some(reason)
         }
-      case _ ⇒
+      case _ =>
         removeChild(child)
         None
     }
@@ -236,9 +236,9 @@ private[akka] trait Children { this: ActorCell ⇒
 
   private def checkName(name: String): String = {
     name match {
-      case null ⇒ throw InvalidActorNameException("actor name must not be null")
-      case ""   ⇒ throw InvalidActorNameException("actor name must not be empty")
-      case _ ⇒
+      case null => throw InvalidActorNameException("actor name must not be null")
+      case ""   => throw InvalidActorNameException("actor name must not be empty")
+      case _ =>
         ActorPath.validatePathElement(name)
         name
     }
@@ -252,7 +252,7 @@ private[akka] trait Children { this: ActorCell ⇒
         if (oldInfo eq null)
           Serialization.currentTransportInformation.value = system.provider.serializationInformation
 
-        props.args forall (arg ⇒
+        props.args forall (arg =>
           arg == null ||
             arg.isInstanceOf[NoSerializationVerificationNeeded] || {
               val o = arg.asInstanceOf[AnyRef]
@@ -262,7 +262,7 @@ private[akka] trait Children { this: ActorCell ⇒
               ser.deserialize(bytes, serializer.identifier, ms).get != null
             })
       } catch {
-        case NonFatal(e) ⇒ throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)
+        case NonFatal(e) => throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)
       } finally Serialization.currentTransportInformation.value = oldInfo
     }
 
@@ -280,16 +280,16 @@ private[akka] trait Children { this: ActorCell ⇒
           cell.provider.actorOf(cell.systemImpl, props, cell.self, childPath,
             systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
-          case e: InterruptedException ⇒
+          case e: InterruptedException =>
             unreserveChild(name)
             Thread.interrupted() // clear interrupted flag before throwing according to java convention
             throw e
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             unreserveChild(name)
             throw e
         }
       // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
-      if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
+      if (mailbox ne null) for (_ <- 1 to mailbox.suspendCount) actor.suspend()
       initChild(actor)
       actor.start()
       actor

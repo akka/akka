@@ -13,7 +13,7 @@ object DispatchSpec {
   class UnserializableMessageClass
   class EmptyActor extends Actor {
     override def receive = {
-      case _: UnserializableMessageClass ⇒ // OK
+      case _: UnserializableMessageClass => // OK
     }
   }
 }

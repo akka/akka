@@ -5,7 +5,7 @@
 package akka.discovery
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.actor._
 import akka.annotation.InternalApi
@@ -23,12 +23,12 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
   private lazy val _defaultImplMethod =
     system.settings.config.getString("akka.discovery.method") match {
-      case "<method>" ⇒
+      case "<method>" =>
         throw new IllegalArgumentException(
           "No default service discovery implementation configured in " +
             "`akka.discovery.method`. Make sure to configure this setting to your preferred implementation such as " +
             "'akka-dns' in your application.conf (from the akka-discovery module).")
-      case method ⇒ method
+      case method => method
     }
 
   private lazy val defaultImpl = loadServiceDiscovery(_defaultImplMethod)
@@ -65,13 +65,13 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
     def create(clazzName: String): Try[ServiceDiscovery] = {
       dynamic
-        .createInstanceFor[ServiceDiscovery](clazzName, (classOf[ExtendedActorSystem] → system) :: Nil)
+        .createInstanceFor[ServiceDiscovery](clazzName, (classOf[ExtendedActorSystem] -> system) :: Nil)
         .recoverWith {
-          case _: ClassNotFoundException | _: NoSuchMethodException ⇒
-            dynamic.createInstanceFor[ServiceDiscovery](clazzName, (classOf[ActorSystem] → system) :: Nil)
+          case _: ClassNotFoundException | _: NoSuchMethodException =>
+            dynamic.createInstanceFor[ServiceDiscovery](clazzName, (classOf[ActorSystem] -> system) :: Nil)
         }
         .recoverWith {
-          case _: ClassNotFoundException | _: NoSuchMethodException ⇒
+          case _: ClassNotFoundException | _: NoSuchMethodException =>
             dynamic.createInstanceFor[ServiceDiscovery](clazzName, Nil)
         }
     }
@@ -80,13 +80,13 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
     val instanceTry = create(classNameFromConfig(configName))
 
     instanceTry match {
-      case Failure(e @ (_: ClassNotFoundException | _: NoSuchMethodException)) ⇒
+      case Failure(e @ (_: ClassNotFoundException | _: NoSuchMethodException)) =>
         throw new IllegalArgumentException(
           s"Illegal [$configName] value or incompatible class! " +
             "The implementation class MUST extend akka.discovery.ServiceDiscovery and take an " +
             "ExtendedActorSystem as constructor argument.", e)
-      case Failure(e)        ⇒ throw e
-      case Success(instance) ⇒ instance
+      case Failure(e)        => throw e
+      case Success(instance) => instance
     }
 
   }
@@ -111,7 +111,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
       system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery").get
       throw new RuntimeException("Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
-      case _: ClassNotFoundException ⇒ // all good
+      case _: ClassNotFoundException => // all good
     }
   }
 

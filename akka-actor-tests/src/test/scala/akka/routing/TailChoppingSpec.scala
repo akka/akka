@@ -18,9 +18,9 @@ object TailChoppingSpec {
       var times: Int = _
 
       def receive = {
-        case "stop"  ⇒ context.stop(self)
-        case "times" ⇒ sender() ! times
-        case _ ⇒
+        case "stop"  => context.stop(self)
+        case "times" => sender() ! times
+        case _ =>
           times += 1
           Thread sleep sleepTime.toMillis
           sender ! "ack"
@@ -31,14 +31,14 @@ object TailChoppingSpec {
 class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import TailChoppingSpec._
 
-  def oneOfShouldEqual(what: Any, default: Any, ref: ActorRef*)(f: ActorRef ⇒ Any): Unit = {
-    val results = ref.map(p ⇒ f(p))
+  def oneOfShouldEqual(what: Any, default: Any, ref: ActorRef*)(f: ActorRef => Any): Unit = {
+    val results = ref.map(p => f(p))
     results.count(_ == what) should equal(1)
     results.count(_ == default) should equal(results.size - 1)
   }
 
-  def allShouldEqual(what: Any, ref: ActorRef*)(f: ActorRef ⇒ Any): Unit = {
-    val results = ref.map(p ⇒ f(p))
+  def allShouldEqual(what: Any, ref: ActorRef*)(f: ActorRef => Any): Unit = {
+    val results = ref.map(p => f(p))
     results.count(_ == what) should equal(results.size)
   }
 
@@ -50,16 +50,16 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter1.addAndGet(msg)
+          case "end"    => doneLatch.countDown()
+          case msg: Int => counter1.addAndGet(msg)
         }
       }))
 
       val counter2 = new AtomicInteger
       val actor2 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter2.addAndGet(msg)
+          case "end"    => doneLatch.countDown()
+          case msg: Int => counter2.addAndGet(msg)
         }
       }))
 
@@ -84,7 +84,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
       probe.send(routedActor, "")
       probe.expectMsg("ack")
 
-      oneOfShouldEqual(1, 1, actor1, actor2)(ref ⇒ Await.result(ref ? "times", timeout.duration))
+      oneOfShouldEqual(1, 1, actor1, actor2)(ref => Await.result(ref ? "times", timeout.duration))
 
       routedActor ! Broadcast("stop")
     }
@@ -99,10 +99,10 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
 
       probe.send(routedActor, "")
       probe.expectMsgPF() {
-        case Failure(_: AskTimeoutException) ⇒
+        case Failure(_: AskTimeoutException) =>
       }
 
-      allShouldEqual(1, actor1, actor2)(ref ⇒ Await.result(ref ? "times", timeout.duration))
+      allShouldEqual(1, actor1, actor2)(ref => Await.result(ref ? "times", timeout.duration))
 
       routedActor ! Broadcast("stop")
     }

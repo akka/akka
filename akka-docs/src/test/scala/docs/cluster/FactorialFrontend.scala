@@ -31,13 +31,13 @@ class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLog
   }
 
   def receive = {
-    case (n: Int, factorial: BigInt) ⇒
+    case (n: Int, factorial: BigInt) =>
       if (n == upToN) {
         log.debug("{}! = {}", n, factorial)
         if (repeat) sendJobs()
         else context.stop(self)
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       log.info("Timeout")
       sendJobs()
   }

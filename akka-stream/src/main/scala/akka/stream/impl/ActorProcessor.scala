@@ -135,20 +135,20 @@ import akka.event.Logging
   }
 
   protected def waitingForUpstream: Actor.Receive = {
-    case OnComplete                ⇒ onComplete()
-    case OnSubscribe(subscription) ⇒ onSubscribe(subscription)
-    case OnError(cause)            ⇒ onError(cause)
+    case OnComplete                => onComplete()
+    case OnSubscribe(subscription) => onSubscribe(subscription)
+    case OnError(cause)            => onError(cause)
   }
 
   protected def upstreamRunning: Actor.Receive = {
-    case OnNext(element)           ⇒ enqueueInputElement(element)
-    case OnComplete                ⇒ onComplete()
-    case OnError(cause)            ⇒ onError(cause)
-    case OnSubscribe(subscription) ⇒ subscription.cancel() // spec rule 2.5
+    case OnNext(element)           => enqueueInputElement(element)
+    case OnComplete                => onComplete()
+    case OnError(cause)            => onError(cause)
+    case OnSubscribe(subscription) => subscription.cancel() // spec rule 2.5
   }
 
   protected def completed: Actor.Receive = {
-    case OnSubscribe(_) ⇒ throw new IllegalStateException("onSubscribe called after onError or onComplete")
+    case OnSubscribe(_) => throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
   protected def inputOnError(e: Throwable): Unit = {
@@ -210,7 +210,7 @@ import akka.event.Logging
   protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 
   private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
-    subscribers foreach { sub ⇒
+    subscribers foreach { sub =>
       if (subscriber eq null) {
         subscriber = sub
         tryOnSubscribe(subscriber, createSubscription())
@@ -219,17 +219,17 @@ import akka.event.Logging
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
-    case ExposedPublisher(publisher) ⇒
+    case ExposedPublisher(publisher) =>
       exposedPublisher = publisher
       subreceive.become(downstreamRunning)
-    case other ⇒
+    case other =>
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
 
   protected def downstreamRunning: Actor.Receive = {
-    case SubscribePending ⇒
+    case SubscribePending =>
       subscribePending(exposedPublisher.takePendingSubscribers())
-    case RequestMore(_, elements) ⇒
+    case RequestMore(_, elements) =>
       if (elements < 1) {
         error(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
@@ -238,7 +238,7 @@ import akka.event.Logging
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
         pump.pump()
       }
-    case Cancel(_) ⇒
+    case Cancel(_) =>
       downstreamCompleted = true
       exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
       pump.pump()

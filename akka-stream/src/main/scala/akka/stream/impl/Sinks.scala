@@ -157,7 +157,7 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any,
+@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable => Any,
                                                         val attributes: Attributes,
                                                         shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
@@ -349,36 +349,36 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
-          case Some(_) ⇒
+        case QueueSink.Pull(pullPromise) => currentRequest match {
+          case Some(_) =>
             pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
-          case None ⇒
+          case None =>
             if (buffer.isEmpty) currentRequest = Some(pullPromise)
             else {
               if (buffer.used == maxBuffer) tryPull(in)
               sendDownstream(pullPromise)
             }
         }
-        case QueueSink.Cancel ⇒ completeStage()
+        case QueueSink.Cancel => completeStage()
       }
 
       def sendDownstream(promise: Requested[T]): Unit = {
         val e = buffer.dequeue()
         promise.complete(e)
         e match {
-          case Success(_: Some[_]) ⇒ //do nothing
-          case Success(None)       ⇒ completeStage()
-          case Failure(t)          ⇒ failStage(t)
+          case Success(_: Some[_]) => //do nothing
+          case Success(None)       => completeStage()
+          case Failure(t)          => failStage(t)
         }
       }
 
       def enqueueAndNotify(requested: Received[T]): Unit = {
         buffer.enqueue(requested)
         currentRequest match {
-          case Some(p) ⇒
+          case Some(p) =>
             sendDownstream(p)
             currentRequest = None
-          case None ⇒ //do nothing
+          case None => //do nothing
         }
       }
 
@@ -397,8 +397,8 @@ import akka.util.ccompat._
         val p = Promise[Option[T]]
         callback.invokeWithFeedback(Pull(p))
           .failed.foreach {
-            case NonFatal(e) ⇒ p.tryFailure(e)
-            case _           ⇒ ()
+            case NonFatal(e) => p.tryFailure(e)
+            case _           => ()
           }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
@@ -415,7 +415,7 @@ import akka.util.ccompat._
  * INTERNAL API
  */
 @InternalApi private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T]) extends akka.stream.javadsl.SinkQueueWithCancel[T] {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
   def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
   def cancel(): Unit = delegate.cancel()
 
@@ -459,7 +459,7 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
+@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
   val in = Inlet[T]("lazySink.in")
   override def initialAttributes = DefaultAttributes.lazySink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -478,7 +478,7 @@ import akka.util.ccompat._
         switching = true
         val cb: AsyncCallback[Try[Sink[T, M]]] =
           getAsyncCallback {
-            case Success(sink) ⇒
+            case Success(sink) =>
               // check if the stage is still in need for the lazy sink
               // (there could have been an onUpstreamFailure in the meantime that has completed the promise)
               if (!promise.isCompleted) {
@@ -487,19 +487,19 @@ import akka.util.ccompat._
                   promise.success(Some(mat))
                   setKeepGoing(true)
                 } catch {
-                  case NonFatal(e) ⇒
+                  case NonFatal(e) =>
                     promise.failure(e)
                     failStage(e)
                 }
               }
-            case Failure(e) ⇒
+            case Failure(e) =>
               promise.failure(e)
               failStage(e)
           }
         try {
           sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             promise.failure(e)
             failStage(e)
         }

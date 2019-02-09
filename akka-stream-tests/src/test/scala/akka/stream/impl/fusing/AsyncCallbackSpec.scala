@@ -24,7 +24,7 @@ class AsyncCallbackSpec extends AkkaSpec {
   case class Elem(n: Int)
   case object Stopped
 
-  class AsyncCallbackGraphStage(probe: ActorRef, early: Option[AsyncCallback[AnyRef] ⇒ Unit] = None)
+  class AsyncCallbackGraphStage(probe: ActorRef, early: Option[AsyncCallback[AnyRef] => Unit] = None)
     extends GraphStageWithMaterializedValue[FlowShape[Int, Int], AsyncCallback[AnyRef]] {
 
     val in = Inlet[Int]("in")
@@ -33,14 +33,14 @@ class AsyncCallbackSpec extends AkkaSpec {
 
     def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, AsyncCallback[AnyRef]) = {
       val logic = new GraphStageLogic(shape) {
-        val callback = getAsyncCallback((whatever: AnyRef) ⇒ {
+        val callback = getAsyncCallback((whatever: AnyRef) => {
           whatever match {
-            case t: Throwable     ⇒ throw t
-            case "fail-the-stage" ⇒ failStage(new RuntimeException("failing the stage"))
-            case anythingElse     ⇒ probe ! anythingElse
+            case t: Throwable     => throw t
+            case "fail-the-stage" => failStage(new RuntimeException("failing the stage"))
+            case anythingElse     => probe ! anythingElse
           }
         })
-        early.foreach(cb ⇒ cb(callback))
+        early.foreach(cb => cb(callback))
 
         override def preStart(): Unit = {
           probe ! Started
@@ -82,7 +82,7 @@ class AsyncCallbackSpec extends AkkaSpec {
       out.request(1)
       in.expectRequest()
 
-      (0 to 10).foreach { n ⇒
+      (0 to 10).foreach { n =>
         val msg = "whatever" + n
         callback.invoke(msg)
         probe.expectMsg(msg)
@@ -107,7 +107,7 @@ class AsyncCallbackSpec extends AkkaSpec {
       out.request(1)
       in.expectRequest()
 
-      (0 to 10).foreach { n ⇒
+      (0 to 10).foreach { n =>
         val msg = "whatever" + n
         val feedbackF = callback.invokeWithFeedback(msg)
         probe.expectMsg(msg)
@@ -139,7 +139,7 @@ class AsyncCallbackSpec extends AkkaSpec {
       val callback = Source.fromPublisher(in)
         .viaMat(new AsyncCallbackGraphStage(
           probe.ref,
-          Some(asyncCb ⇒ asyncCb.invoke("early"))
+          Some(asyncCb => asyncCb.invoke("early"))
         ))(Keep.right)
         .to(Sink.ignore)
         .run()
@@ -163,7 +163,7 @@ class AsyncCallbackSpec extends AkkaSpec {
       val callback = Source.fromPublisher(in)
         .viaMat(new AsyncCallbackGraphStage(
           probe.ref,
-          Some(asyncCb ⇒ earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))
+          Some(asyncCb => earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))
         ))(Keep.right)
         .to(Sink.ignore)
         .run()
@@ -191,15 +191,15 @@ class AsyncCallbackSpec extends AkkaSpec {
         .run()
 
       import system.dispatcher
-      val feedbacks = (1 to 100).map { n ⇒
+      val feedbacks = (1 to 100).map { n =>
         Future {
           callback.invokeWithFeedback(n.toString)
-        }.flatMap(d ⇒ d)
+        }.flatMap(d => d)
       }
 
       probe.expectMsg(Started)
       Future.sequence(feedbacks).futureValue should have size (100)
-      (1 to 100).map(_ ⇒ probe.expectMsgType[String]).toSet should have size (100)
+      (1 to 100).map(_ => probe.expectMsgType[String]).toSet should have size (100)
 
       in.sendComplete()
       probe.expectMsg(Stopped)
@@ -248,7 +248,7 @@ class AsyncCallbackSpec extends AkkaSpec {
         val shape = SourceShape(out)
         def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
           val logic = new GraphStageLogic(shape) {
-            val callbacks = (0 to 10).map(_ ⇒ getAsyncCallback[AnyRef](probe ! _)).toSet
+            val callbacks = (0 to 10).map(_ => getAsyncCallback[AnyRef](probe ! _)).toSet
             setHandler(out, new OutHandler {
               def onPull(): Unit = ()
             })
@@ -266,12 +266,12 @@ class AsyncCallbackSpec extends AkkaSpec {
         .run()
 
       val happyPathFeedbacks =
-        acbs.map(acb ⇒
+        acbs.map(acb =>
           Future { acb.invokeWithFeedback("bö") }.flatMap(identity)
         )
       Future.sequence(happyPathFeedbacks).futureValue // will throw on fail or timeout on not completed
 
-      for (_ ← 0 to 10) acbProbe.expectMsg("bö")
+      for (_ <- 0 to 10) acbProbe.expectMsg("bö")
 
       val (half, otherHalf) = acbs.splitAt(4)
       val firstHalfFutures = half.map(_.invokeWithFeedback("ba"))
@@ -280,12 +280,12 @@ class AsyncCallbackSpec extends AkkaSpec {
       val unhappyPath = firstHalfFutures ++ otherHalfFutures
 
       // all futures should either be completed or failed with StreamDetachedException
-      unhappyPath.foreach { future ⇒
+      unhappyPath.foreach { future =>
         try {
           val done = Await.result(future, remainingOrDefault)
           done should ===(Done)
         } catch {
-          case _: StreamDetachedException ⇒ // this is fine
+          case _: StreamDetachedException => // this is fine
         }
       }
 

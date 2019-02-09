@@ -74,7 +74,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
   import ActorSpecMessages._
 
-  def decoration[T]: Behavior[T] ⇒ Behavior[T]
+  def decoration[T]: Behavior[T] => Behavior[T]
 
   implicit class BehaviorDecorator[T](behavior: Behavior[T])(implicit ev: ClassTag[T]) {
     def decorate: Behavior[T] = decoration[T](behavior)
@@ -84,7 +84,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
     "be usable from Behavior.interpretMessage" in {
       // compilation only
-      lazy val b: Behavior[String] = Behaviors.receive { (context, message) ⇒
+      lazy val b: Behavior[String] = Behaviors.receive { (context, message) =>
         Behavior.interpretMessage(b, context, message)
       }
     }
@@ -92,18 +92,18 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
 
-      lazy val behavior: Behavior[Command] = Behaviors.receive[Command] { (_, message) ⇒
+      lazy val behavior: Behavior[Command] = Behaviors.receive[Command] { (_, message) =>
         message match {
-          case Ping ⇒
+          case Ping =>
             probe.ref ! Pong
             Behaviors.same
-          case Miss ⇒
+          case Miss =>
             probe.ref ! Missed
             Behaviors.unhandled
-          case Renew(ref) ⇒
+          case Renew(ref) =>
             ref ! Renewed
             behavior
-          case other ⇒
+          case other =>
             throw new RuntimeException(s"Unexpected message: $other")
         }
       }.decorate
@@ -126,10 +126,10 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]()
 
       val internal = (Behaviors.receivePartial[Command] {
-        case (_, Fail) ⇒
+        case (_, Fail) =>
           throw new TestException("Boom")
       } receiveSignal {
-        case (_, signal) ⇒
+        case (_, signal) =>
           probe.ref ! ReceivedSignal(signal)
           Behaviors.same
       }).decorate
@@ -147,9 +147,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
       val behavior: Behavior[Command] = (
         Behaviors.receivePartial[Command] {
-          case (_, Stop) ⇒ Behaviors.stopped
+          case (_, Stop) => Behaviors.stopped
         } receiveSignal {
-          case (_, signal) ⇒
+          case (_, signal) =>
             probe.ref ! ReceivedSignal(signal)
             Behaviors.same
         }).decorate
@@ -163,17 +163,17 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]()
 
       val child: Behavior[Command] = (Behaviors.receivePartial[Command] {
-        case (_, Fail) ⇒ throw new TestException("Boom")
-        case (_, Ping) ⇒
+        case (_, Fail) => throw new TestException("Boom")
+        case (_, Ping) =>
           probe.ref ! Pong
           Behaviors.same
       } receiveSignal {
-        case (_, signal) ⇒
+        case (_, signal) =>
           probe.ref ! GotChildSignal(signal)
           Behavior.stopped
       }).decorate
 
-      val parent: Behavior[Command] = Behaviors.setup[Command](context ⇒ {
+      val parent: Behavior[Command] = Behaviors.setup[Command](context => {
         val childRef = context.spawnAnonymous(
           Behaviors.supervise(child).onFailure(SupervisorStrategy.restart)
         )
@@ -181,11 +181,11 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
         probe.ref ! ChildMade(childRef)
 
         (Behaviors.receivePartial[Command] {
-          case (context, StopRef(ref)) ⇒
+          case (context, StopRef(ref)) =>
             context.stop(ref)
             Behavior.same
         } receiveSignal {
-          case (_, signal) ⇒
+          case (_, signal) =>
             probe.ref ! ReceivedSignal(signal)
             Behavior.stopped
         }).decorate
@@ -207,16 +207,16 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]()
 
       val child: Behavior[Command] = Behaviors.empty[Command].decorate
-      val parent: Behavior[Command] = Behaviors.setup[Command](context ⇒ {
+      val parent: Behavior[Command] = Behaviors.setup[Command](context => {
         val childRef = context.spawnAnonymous(child)
         context.watch(childRef)
         probe.ref ! ChildMade(childRef)
         Behaviors.receivePartial[Command] {
-          case (context, StopRef(ref)) ⇒
+          case (context, StopRef(ref)) =>
             context.stop(ref)
             Behaviors.same
         } receiveSignal {
-          case (_, signal) ⇒
+          case (_, signal) =>
             probe.ref ! ReceivedSignal(signal)
             Behavior.stopped
         }
@@ -229,14 +229,14 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
     "reset behavior upon restart" in {
       val probe = TestProbe[Int]()
-      val internal = Behaviors.setup[Command](_ ⇒ {
+      val internal = Behaviors.setup[Command](_ => {
         var counter = 0
         Behaviors.receivePartial[Command] {
-          case (_, Ping) ⇒
+          case (_, Ping) =>
             counter += 1
             probe.ref ! counter
             Behavior.same
-          case (_, Fail) ⇒
+          case (_, Fail) =>
             throw new TestException("Boom")
         }
       }).decorate
@@ -253,14 +253,14 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
     "not reset behavior upon resume" in {
       val probe = TestProbe[Int]()
-      val internal = Behaviors.setup[Command](_ ⇒ {
+      val internal = Behaviors.setup[Command](_ => {
         var counter = 0
         Behaviors.receivePartial[Command] {
-          case (_, Ping) ⇒
+          case (_, Ping) =>
             counter += 1
             probe.ref ! counter
             Behavior.same
-          case (_, Fail) ⇒
+          case (_, Fail) =>
             throw new TestException("Boom")
         }
       }).decorate
@@ -278,25 +278,25 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "stop upon stop" in {
       val probe = TestProbe[Event]()
       val behavior = (Behaviors.receivePartial[Command] {
-        case (_, Ping) ⇒
+        case (_, Ping) =>
           probe.ref ! Pong
           Behaviors.same
-        case (_, Fail) ⇒
+        case (_, Fail) =>
           throw new TestException("boom")
       } receiveSignal {
-        case (_, PostStop) ⇒
+        case (_, PostStop) =>
           probe.ref ! ReceivedSignal(PostStop)
           Behavior.same
       }).decorate
       val actorToWatch = spawn(behavior)
       val watcher: ActorRef[Command] = spawn((
         Behaviors.receivePartial[Any] {
-          case (context, Ping) ⇒
+          case (context, Ping) =>
             context.watch(actorToWatch)
             probe.ref ! Pong
             Behavior.same
         } receiveSignal {
-          case (_, signal) ⇒
+          case (_, signal) =>
             probe.ref ! ReceivedSignal(signal)
             Behavior.same
         }
@@ -316,10 +316,10 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]()
       val victim = spawn(Behaviors.empty[Command])
       val actor = spawn(Behaviors.receivePartial[Command] {
-        case (_, Ping) ⇒
+        case (_, Ping) =>
           probe.ref ! Pong
           Behaviors.same
-        case (context, StopRef(ref)) ⇒
+        case (context, StopRef(ref)) =>
           assertThrows[IllegalArgumentException] {
             context.stop(ref)
             probe.ref ! Pong
@@ -338,20 +338,20 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "watch a child actor before its termination" in {
       val probe = TestProbe[Event]()
       val child = Behaviors.receivePartial[Command] {
-        case (_, Stop) ⇒
+        case (_, Stop) =>
           Behaviors.stopped
       }.decorate
       spawn(
-        Behaviors.setup[Command](context ⇒ {
+        Behaviors.setup[Command](context => {
           val childRef = context.spawn(child, "A")
           context.watch(childRef)
           probe.ref ! ChildMade(childRef)
           Behaviors.receivePartial[Command] {
-            case (_, Ping) ⇒
+            case (_, Ping) =>
               probe.ref ! Pong
               Behaviors.same
           } receiveSignal {
-            case (_, signal) ⇒
+            case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
@@ -365,20 +365,20 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "watch a child actor after its termination" in {
       val probe = TestProbe[Event]()
       val child = Behaviors.receivePartial[Command] {
-        case (_, Stop) ⇒
+        case (_, Stop) =>
           Behaviors.stopped
       }.decorate
       val actor = spawn(
-        Behaviors.setup[Command](context ⇒ {
+        Behaviors.setup[Command](context => {
           val childRef = context.spawn(child, "A")
           probe.ref ! ChildMade(childRef)
           Behaviors.receivePartial[Command] {
-            case (context, Watch(ref)) ⇒
+            case (context, Watch(ref)) =>
               context.watch(ref)
               probe.ref ! Pong
               Behaviors.same
           } receiveSignal {
-            case (_, signal) ⇒
+            case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
@@ -396,24 +396,24 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "unwatch a child actor before its termination" in {
       val probe = TestProbe[Event]()
       val child = Behaviors.receivePartial[Command] {
-        case (_, Stop) ⇒
+        case (_, Stop) =>
           Behaviors.stopped
       }.decorate
       val actor = spawn(
-        Behaviors.setup[Command](context ⇒ {
+        Behaviors.setup[Command](context => {
           val childRef = context.spawn(child, "A")
           probe.ref ! ChildMade(childRef)
           Behaviors.receivePartial[Command] {
-            case (context, Watch(ref)) ⇒
+            case (context, Watch(ref)) =>
               context.watch(ref)
               probe.ref ! Pong
               Behaviors.same
-            case (context, UnWatch(ref)) ⇒
+            case (context, UnWatch(ref)) =>
               context.unwatch(ref)
               probe.ref ! Pong
               Behaviors.same
           } receiveSignal {
-            case (_, signal) ⇒
+            case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
@@ -431,31 +431,31 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "terminate upon not handling Terminated" in {
       val probe = TestProbe[Event]()
       val child = (Behaviors.receivePartial[Command] {
-        case (_, Stop) ⇒
+        case (_, Stop) =>
           Behaviors.stopped
       } receiveSignal {
-        case (_, signal) ⇒
+        case (_, signal) =>
           probe.ref ! GotChildSignal(signal)
           Behavior.same
       }).decorate
       val actor = spawn(
-        Behaviors.setup[Command](context ⇒ {
+        Behaviors.setup[Command](context => {
           val childRef = context.spawn(child, "A")
           context.watch(childRef)
           probe.ref ! ChildMade(childRef)
           Behaviors.receivePartial[Command] {
-            case (_, Inert) ⇒
+            case (_, Inert) =>
               probe.ref ! InertEvent
               Behaviors.receive[Command] {
-                case (_, _) ⇒ Behaviors.unhandled
+                case (_, _) => Behaviors.unhandled
               } receiveSignal {
-                case (_, Terminated(_)) ⇒ Behaviors.unhandled
-                case (_, signal) ⇒
+                case (_, Terminated(_)) => Behaviors.unhandled
+                case (_, signal) =>
                   probe.ref ! ReceivedSignal(signal)
                   Behaviors.same
               }
           } receiveSignal {
-            case (_, signal) ⇒
+            case (_, signal) =>
               probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
@@ -476,8 +476,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       type Info = (ActorSystem[Nothing], ActorRef[String])
       val probe = TestProbe[Info]
       val actor = spawn(Behaviors.receivePartial[String] {
-        case (context, "info") ⇒
-          probe.ref ! (context.system → context.self)
+        case (context, "info") =>
+          probe.ref ! (context.system -> context.self)
           Behaviors.same
       }.decorate)
       actor ! "info"
@@ -488,14 +488,14 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       type Children = Seq[ActorRef[Nothing]]
       val probe = TestProbe[Children]()
       val actor = spawn(Behaviors.receivePartial[String] {
-        case (context, "create") ⇒
+        case (context, "create") =>
           context.spawn(Behaviors.empty, "B")
           probe.ref ! context.child("B").toSeq
           Behaviors.same
-        case (context, "all") ⇒
+        case (context, "all") =>
           probe.ref ! context.children.toSeq
           Behaviors.same
-        case (context, get) ⇒
+        case (context, get) =>
           probe.ref ! context.child(get).toSeq
           Behaviors.same
       }.decorate)
@@ -512,10 +512,10 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "set small receive timeout" in {
       val probe = TestProbe[Event]()
       val actor = spawn(Behaviors.receivePartial[Command] {
-        case (_, ReceiveTimeout) ⇒
+        case (_, ReceiveTimeout) =>
           probe.ref ! GotReceiveTimeout
           Behaviors.same
-        case (context, SetTimeout(duration)) ⇒
+        case (context, SetTimeout(duration)) =>
           context.setReceiveTimeout(duration, ReceiveTimeout)
           probe.ref ! TimeoutSet
           Behaviors.same
@@ -528,16 +528,16 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "set large receive timeout" in {
       val probe = TestProbe[String]()
       val actor = spawn(Behaviors.receivePartial[String] {
-        case (context, "schedule") ⇒
+        case (context, "schedule") =>
           context.scheduleOnce(1.second, probe.ref, "scheduled")
           Behaviors.same
-        case (_, "ping") ⇒
+        case (_, "ping") =>
           probe.ref ! "pong"
           Behaviors.same
-        case (_, "receive timeout") ⇒
+        case (_, "receive timeout") =>
           probe.ref ! "received timeout"
           Behaviors.same
-        case (context, duration) ⇒
+        case (context, duration) =>
           context.setReceiveTimeout(Duration(duration).asInstanceOf[FiniteDuration], "receive timeout")
           probe.ref ! "timeout set"
           Behaviors.same
@@ -553,7 +553,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "schedule a message" in {
       val probe = TestProbe[Event]()
       val actor = spawn(Behaviors.receivePartial[Command] {
-        case (context, Ping) ⇒
+        case (context, Ping) =>
           context.scheduleOnce(1.nano, probe.ref, Pong)
           Behaviors.same
       }.decorate)
@@ -566,10 +566,10 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val messages = TestProbe[Envelope]()
       val probe = TestProbe[ActorRef[String]]()
       val actor = spawn(Behaviors.receivePartial[String] {
-        case (context, "message") ⇒
+        case (context, "message") =>
           messages.ref.tell((context.self, "received message"))
           Behaviors.same
-        case (context, name) ⇒
+        case (context, name) =>
           probe.ref ! context.spawnMessageAdapter(identity, name)
           Behaviors.same
       }.decorate)
@@ -578,7 +578,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val adapter = probe.receiveMessage()
       adapter.path.name should include(adapterName)
       adapter ! "message"
-      messages.expectMessage(actor → "received message")
+      messages.expectMessage(actor -> "received message")
     }
 
     "not allow null messages" in {
@@ -591,11 +591,11 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
     "not have problems stopping already stopped child" in {
       val probe = TestProbe[Event]()
       val actor = spawn(
-        Behaviors.setup[Command](context ⇒ {
+        Behaviors.setup[Command](context => {
           val child = context.spawnAnonymous(Behaviors.empty[Command])
           probe.ref ! ChildMade(child)
           Behaviors.receivePartial[Command] {
-            case (context, StopRef(ref)) ⇒
+            case (context, StopRef(ref)) =>
               context.stop(ref)
               probe.ref ! Pong
               Behaviors.same
@@ -614,22 +614,22 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
 class NormalActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = x ⇒ x
+  override def decoration[T] = x => x
 }
 
 class WidenActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ b.widen { case x ⇒ x }
+  override def decoration[T] = b => b.widen { case x => x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ b)
+  override def decoration[T] = b => Behaviors.setup(_ => b)
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
+  override def decoration[T] = b => Behaviors.setup(_ => Behaviors.setup(_ => b))
 }
 
 class InterceptActorContextSpec extends ActorContextSpec {
@@ -642,5 +642,5 @@ class InterceptActorContextSpec extends ActorContextSpec {
       target(context, signal)
   }
 
-  override def decoration[T]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.intercept[T, T](tap)(b)
+  override def decoration[T]: Behavior[T] => Behavior[T] = b => Behaviors.intercept[T, T](tap)(b)
 }

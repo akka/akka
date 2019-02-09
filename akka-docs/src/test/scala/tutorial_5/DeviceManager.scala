@@ -23,11 +23,11 @@ class DeviceManager extends Actor with ActorLogging {
   override def postStop(): Unit = log.info("DeviceManager stopped")
 
   override def receive = {
-    case trackMsg @ RequestTrackDevice(groupId, _) ⇒
+    case trackMsg @ RequestTrackDevice(groupId, _) =>
       groupIdToActor.get(groupId) match {
-        case Some(ref) ⇒
+        case Some(ref) =>
           ref forward trackMsg
-        case None ⇒
+        case None =>
           log.info("Creating device group actor for {}", groupId)
           val groupActor = context.actorOf(DeviceGroup.props(groupId), "group-" + groupId)
           context.watch(groupActor)
@@ -36,7 +36,7 @@ class DeviceManager extends Actor with ActorLogging {
           actorToGroupId += groupActor -> groupId
       }
 
-    case Terminated(groupActor) ⇒
+    case Terminated(groupActor) =>
       val groupId = actorToGroupId(groupActor)
       log.info("Device group actor for {} has been terminated", groupId)
       actorToGroupId -= groupActor

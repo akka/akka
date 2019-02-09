@@ -21,7 +21,7 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
     new RemoteInstruments(system.asInstanceOf[ExtendedActorSystem], system.log, vec)
   }
 
-  def ensureDebugLog[T](messages: String*)(f: ⇒ T): T = {
+  def ensureDebugLog[T](messages: String*)(f: => T): T = {
     if (messages.isEmpty)
       f
     else

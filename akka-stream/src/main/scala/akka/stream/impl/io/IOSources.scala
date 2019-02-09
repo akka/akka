@@ -30,13 +30,13 @@ import scala.util.{ Failure, Success, Try }
 
 private[akka] object FileSource {
 
-  val completionHandler = new CompletionHandler[Integer, Try[Int] ⇒ Unit] {
+  val completionHandler = new CompletionHandler[Integer, Try[Int] => Unit] {
 
-    override def completed(result: Integer, attachment: Try[Int] ⇒ Unit): Unit = {
+    override def completed(result: Integer, attachment: Try[Int] => Unit): Unit = {
       attachment(Success(result))
     }
 
-    override def failed(ex: Throwable, attachment: Try[Int] ⇒ Unit): Unit = {
+    override def failed(ex: Throwable, attachment: Try[Int] => Unit): Unit = {
       attachment(Failure(ex))
     }
   }
@@ -57,12 +57,12 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val ioResultPromise = Promise[IOResult]()
 
     val logic = new GraphStageLogic(shape) with OutHandler {
-      handler ⇒
+      handler =>
       val buffer = ByteBuffer.allocate(chunkSize)
       val maxReadAhead = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       var channel: FileChannel = _
       var position = startPosition
-      var chunkCallback: Try[Int] ⇒ Unit = _
+      var chunkCallback: Try[Int] => Unit = _
       var eofEncountered = false
       var availableChunks: Vector[ByteString] = Vector.empty[ByteString]
 
@@ -79,7 +79,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
           channel = FileChannel.open(path, StandardOpenOption.READ)
           channel.position(position)
         } catch {
-          case ex: Exception ⇒
+          case ex: Exception =>
             ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
             throw ex
         }
@@ -91,7 +91,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
         //if already read something and try
         if (availableChunks.nonEmpty) {
           emitMultiple(out, availableChunks.iterator,
-            () ⇒ if (eofEncountered) success() else setHandler(out, handler)
+            () => if (eofEncountered) success() else setHandler(out, handler)
           )
           availableChunks = Vector.empty[ByteString]
         } else if (eofEncountered) success()
@@ -106,7 +106,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       @tailrec def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
         if (chunks.size < maxChunks && !eofEncountered) {
           val readBytes = try channel.read(buffer, position) catch {
-            case NonFatal(ex) ⇒
+            case NonFatal(ex) =>
               failStage(ex)
               ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
               throw ex
@@ -146,7 +146,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
  * INTERNAL API
  * Source backed by the given input stream.
  */
-@InternalApi private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+@InternalApi private[akka] final class InputStreamSource(createInputStream: () => InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -162,7 +162,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)
     } catch {
-      case ex: Exception ⇒
+      case ex: Exception =>
         ioResultPromise.failure(ex)
         ErrorPublisher(ex, attributes.nameOrDefault("inputStreamSource")).asInstanceOf[Publisher[ByteString]]
     }

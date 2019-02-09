@@ -142,9 +142,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def resume(): Boolean = currentStatus match {
-    case Closed ⇒
+    case Closed =>
       setStatus(Closed); false
-    case s ⇒
+    case s =>
       val next = if (s < suspendUnit) s else s - suspendUnit
       if (updateStatus(s, next)) next < suspendUnit
       else resume()
@@ -158,9 +158,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def suspend(): Boolean = currentStatus match {
-    case Closed ⇒
+    case Closed =>
       setStatus(Closed); false
-    case s ⇒
+    case s =>
       if (updateStatus(s, s + suspendUnit)) s < suspendUnit
       else suspend()
   }
@@ -171,9 +171,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def becomeClosed(): Boolean = currentStatus match {
-    case Closed ⇒
+    case Closed =>
       setStatus(Closed); false
-    case s ⇒ updateStatus(s, Closed) || becomeClosed()
+    case s => updateStatus(s, Closed) || becomeClosed()
   }
 
   /**
@@ -213,9 +213,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old.head, _new.head)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = currentStatus match {
-    case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
-    case Closed           ⇒ false
-    case _                ⇒ hasSystemMessageHint || hasSystemMessages
+    case Open | Scheduled => hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
+    case Closed           => false
+    case _                => hasSystemMessageHint || hasSystemMessages
   }
 
   override final def run(): Unit = {
@@ -233,14 +233,14 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   override final def getRawResult(): Unit = ()
   override final def setRawResult(unit: Unit): Unit = ()
   final override def exec(): Boolean = try { run(); false } catch {
-    case _: InterruptedException ⇒
+    case _: InterruptedException =>
       Thread.currentThread.interrupt()
       false
-    case anything: Throwable ⇒
+    case anything: Throwable =>
       val t = Thread.currentThread
       t.getUncaughtExceptionHandler match {
-        case null ⇒
-        case some ⇒ some.uncaughtException(t, anything)
+        case null =>
+        case some => some.uncaughtException(t, anything)
       }
       throw anything
   }
@@ -300,8 +300,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       msg.unlink()
       try dlm.systemEnqueue(actor.self, msg)
       catch {
-        case e: InterruptedException ⇒ interruption = e
-        case NonFatal(e) ⇒ actor.system.eventStream.publish(
+        case e: InterruptedException => interruption = e
+        case NonFatal(e) => actor.system.eventStream.publish(
           Error(e, actor.self.path.toString, this.getClass, "error while enqueuing " + msg + " to deadLetters: " + e.getMessage))
       }
     }
@@ -438,7 +438,7 @@ private[akka] trait SystemMessageQueue {
 /**
  * INTERNAL API
  */
-private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
+private[akka] trait DefaultSystemMessageQueue { self: Mailbox =>
 
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
@@ -464,8 +464,8 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
   }
 
   def hasSystemMessages: Boolean = systemQueueGet.head match {
-    case null | NoMessage ⇒ false
-    case _                ⇒ true
+    case null | NoMessage => false
+    case _                => true
   }
 
 }
@@ -813,8 +813,8 @@ trait ControlAwareMessageQueueSemantics extends QueueBasedMessageQueue {
   def queue: Queue[Envelope]
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit = handle match {
-    case envelope @ Envelope(_: ControlMessage, _) ⇒ controlQueue add envelope
-    case envelope                                  ⇒ queue add envelope
+    case envelope @ Envelope(_: ControlMessage, _) => controlQueue add envelope
+    case envelope                                  => queue add envelope
   }
 
   def dequeue(): Envelope = {
@@ -883,8 +883,8 @@ object BoundedControlAwareMailbox {
     val queue = new ConcurrentLinkedQueue[Envelope]()
 
     override def enqueue(receiver: ActorRef, handle: Envelope): Unit = handle match {
-      case envelope @ Envelope(_: ControlMessage, _) ⇒ enqueueWithTimeout(controlQueue, receiver, envelope)
-      case envelope                                  ⇒ enqueueWithTimeout(queue, receiver, envelope)
+      case envelope @ Envelope(_: ControlMessage, _) => enqueueWithTimeout(controlQueue, receiver, envelope)
+      case envelope                                  => enqueueWithTimeout(queue, receiver, envelope)
     }
 
     override def numberOfMessages: Int = size.get()

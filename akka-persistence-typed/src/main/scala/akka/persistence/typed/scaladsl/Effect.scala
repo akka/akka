@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.ExpectingReply
@@ -101,7 +101,7 @@ object Effect {
    * finding mistakes.
    */
   def reply[ReplyMessage, Event, State](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none[Event, State].thenReply[ReplyMessage](cmd)(_ ⇒ replyWithMessage)
+    none[Event, State].thenReply[ReplyMessage](cmd)(_ => replyWithMessage)
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -126,7 +126,7 @@ trait Effect[+Event, State] {
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
-  final def thenRun(callback: State ⇒ Unit): Effect[Event, State] =
+  final def thenRun(callback: State => Unit): Effect[Event, State] =
     CompositeEffect(this, SideEffect(callback))
 
   /**
@@ -164,7 +164,7 @@ trait Effect[+Event, State] {
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: State ⇒ ReplyMessage): ReplyEffect[Event, State] =
+  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State] =
     CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
 
   /**

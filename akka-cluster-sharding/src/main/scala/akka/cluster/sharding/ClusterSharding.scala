@@ -173,8 +173,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config
       .getString("akka.cluster.sharding.use-dispatcher") match {
-        case "" ⇒ Dispatchers.DefaultDispatcherId
-        case id ⇒ id
+        case "" => Dispatchers.DefaultDispatcherId
+        case id => id
       }
     system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
   }
@@ -213,7 +213,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     allocationStrategy: ShardAllocationStrategy,
     handOffStopMessage: Any): ActorRef = {
 
-    internalStart(typeName, _ ⇒ entityProps, settings, extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
+    internalStart(typeName, _ => entityProps, settings, extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
   }
 
   /**
@@ -256,7 +256,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   @InternalApi private[akka] def internalStart(
     typeName:           String,
-    entityProps:        String ⇒ Props,
+    entityProps:        String => Props,
     settings:           ClusterShardingSettings,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
@@ -265,7 +265,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     if (settings.shouldHostShard(cluster)) {
       regions.get(typeName) match {
-        case null ⇒
+        case null =>
           // it's ok to Start several time, the guardian will deduplicate concurrent requests
           implicit val timeout = system.settings.CreationTimeout
           val startMsg = Start(typeName, entityProps, settings,
@@ -273,7 +273,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
           val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
           regions.put(typeName, shardRegion)
           shardRegion
-        case ref ⇒ ref // already started, use cached ActorRef
+        case ref => ref // already started, use cached ActorRef
       }
     } else {
       log.debug("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
@@ -387,13 +387,13 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 
     internalStart(
       typeName,
-      _ ⇒ entityProps,
+      _ => entityProps,
       settings,
       extractEntityId = {
-        case msg if messageExtractor.entityId(msg) ne null ⇒
+        case msg if messageExtractor.entityId(msg) ne null =>
           (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
-      extractShardId = msg ⇒ messageExtractor.shardId(msg),
+      extractShardId = msg => messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
       handOffStopMessage = handOffStopMessage
     )
@@ -513,7 +513,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
 
     proxies.get(proxyName(typeName, dataCenter)) match {
-      case null ⇒
+      case null =>
         // it's ok to StartProxy several time, the guardian will deduplicate concurrent requests
         implicit val timeout = system.settings.CreationTimeout
         val settings = ClusterShardingSettings(system).withRole(role)
@@ -522,14 +522,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
         // it must be possible to start several proxies, one per data center
         proxies.put(proxyName(typeName, dataCenter), shardRegion)
         shardRegion
-      case ref ⇒ ref // already started, use cached ActorRef
+      case ref => ref // already started, use cached ActorRef
     }
   }
 
   private def proxyName(typeName: String, dataCenter: Option[DataCenter]): String = {
     dataCenter match {
-      case None    ⇒ s"${typeName}Proxy"
-      case Some(t) ⇒ s"${typeName}Proxy" + "-" + t
+      case None    => s"${typeName}Proxy"
+      case Some(t) => s"${typeName}Proxy" + "-" + t
     }
   }
 
@@ -584,10 +584,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       Option(role.orElse(null)),
       Option(dataCenter.orElse(null)),
       extractEntityId = {
-        case msg if messageExtractor.entityId(msg) ne null ⇒
+        case msg if messageExtractor.entityId(msg) ne null =>
           (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
       },
-      extractShardId = msg ⇒ messageExtractor.shardId(msg)
+      extractShardId = msg => messageExtractor.shardId(msg)
     )
 
   }
@@ -609,14 +609,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   def shardRegion(typeName: String): ActorRef = {
     regions.get(typeName) match {
-      case null ⇒
+      case null =>
         proxies.get(proxyName(typeName, None)) match {
-          case null ⇒
+          case null =>
             throw new IllegalArgumentException(
               s"Shard type [$typeName] must be started first")
-          case ref ⇒ ref
+          case ref => ref
         }
-      case ref ⇒ ref
+      case ref => ref
     }
   }
 
@@ -629,10 +629,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    */
   def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
     proxies.get(proxyName(typeName, Some(dataCenter))) match {
-      case null ⇒
+      case null =>
         throw new IllegalArgumentException(
           s"Shard type [$typeName] must be started first")
-      case ref ⇒ ref
+      case ref => ref
     }
   }
 
@@ -654,7 +654,7 @@ private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(
     typeName:           String,
-    entityProps:        String ⇒ Props,
+    entityProps:        String => Props,
     settings:           ClusterShardingSettings,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
@@ -698,11 +698,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
     if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
-        case Some(ref) ⇒ ref
-        case None ⇒
+        case Some(ref) => ref
+        case None =>
           val name = settings.role match {
-            case Some(r) ⇒ URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
-            case None    ⇒ "replicator"
+            case Some(r) => URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
+            case None    => "replicator"
           }
           // Use members within the data center and with the given role (if any)
           val replicatorRoles = Set(
@@ -724,7 +724,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
       extractEntityId,
       extractShardId,
       allocationStrategy,
-      handOffStopMessage) ⇒
+      handOffStopMessage) =>
       try {
         import settings.role
         import settings.tuningParameters.coordinatorFailureBackoff
@@ -775,7 +775,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         }
         sender() ! Started(shardRegion)
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           // don't restart
           // could be invalid ReplicatorSettings, or InvalidActorNameException
           // if it has already been started
@@ -786,14 +786,14 @@ private[akka] class ClusterShardingGuardian extends Actor {
       dataCenter,
       settings,
       extractEntityId,
-      extractShardId) ⇒
+      extractShardId) =>
       try {
         val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
         val cPath = coordinatorPath(URLEncoder.encode(typeName, ByteString.UTF_8))
         // it must be possible to start several proxies, one per data center
         val actorName = dataCenter match {
-          case None    ⇒ encName
-          case Some(t) ⇒ URLEncoder.encode(typeName + "-" + t, ByteString.UTF_8)
+          case None    => encName
+          case Some(t) => URLEncoder.encode(typeName + "-" + t, ByteString.UTF_8)
         }
         val shardRegion = context.child(actorName).getOrElse {
           context.actorOf(
@@ -813,7 +813,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         }
         sender() ! Started(shardRegion)
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           // don't restart
           // could be InvalidActorNameException if it has already been started
           sender() ! Status.Failure(e)

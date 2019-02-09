@@ -70,7 +70,7 @@ object RemoveInternalClusterShardingData {
       else {
         val journalPluginId = system.settings.config.getString("akka.cluster.sharding.journal-plugin-id")
         import system.dispatcher
-        remove(system, journalPluginId, typeNames, terminateSystem = true, remove2dot3Data).onComplete { _ ⇒
+        remove(system, journalPluginId, typeNames, terminateSystem = true, remove2dot3Data).onComplete { _ =>
           system.terminate()
         }
       }
@@ -131,12 +131,12 @@ object RemoveInternalClusterShardingData {
     var hasSnapshots = false
 
     override def receiveRecover: Receive = {
-      case event: ShardCoordinator.Internal.DomainEvent ⇒
+      case event: ShardCoordinator.Internal.DomainEvent =>
 
-      case SnapshotOffer(_, _) ⇒
+      case SnapshotOffer(_, _) =>
         hasSnapshots = true
 
-      case RecoveryCompleted ⇒
+      case RecoveryCompleted =>
         deleteMessages(Long.MaxValue)
         if (hasSnapshots)
           deleteSnapshots(SnapshotSelectionCriteria())
@@ -145,23 +145,23 @@ object RemoveInternalClusterShardingData {
     }
 
     override def receiveCommand: Receive = ({
-      case DeleteSnapshotsSuccess(_) ⇒
+      case DeleteSnapshotsSuccess(_) =>
         context.become(waitDeleteMessagesSuccess)
-      case DeleteMessagesSuccess(_) ⇒
+      case DeleteMessagesSuccess(_) =>
         context.become(waitDeleteSnapshotsSuccess)
     }: Receive).orElse(handleFailure)
 
     def waitDeleteSnapshotsSuccess: Receive = ({
-      case DeleteSnapshotsSuccess(_) ⇒ done()
+      case DeleteSnapshotsSuccess(_) => done()
     }: Receive).orElse(handleFailure)
 
     def waitDeleteMessagesSuccess: Receive = ({
-      case DeleteMessagesSuccess(_) ⇒ done()
+      case DeleteMessagesSuccess(_) => done()
     }: Receive).orElse(handleFailure)
 
     def handleFailure: Receive = {
-      case DeleteMessagesFailure(cause, _)  ⇒ failure(cause)
-      case DeleteSnapshotsFailure(_, cause) ⇒ failure(cause)
+      case DeleteMessagesFailure(cause, _)  => failure(cause)
+      case DeleteSnapshotsFailure(_, cause) => failure(cause)
     }
 
     def done(): Unit = {
@@ -209,16 +209,16 @@ class RemoveInternalClusterShardingData(journalPluginId: String, typeNames: Set[
   }
 
   def receive = {
-    case Result(Success(_)) ⇒
+    case Result(Success(_)) =>
       log.info("Removed data for persistenceId [{}]", currentPid)
       if (remainingPids.isEmpty) done()
       else removeNext()
 
-    case Result(Failure(cause)) ⇒
+    case Result(Failure(cause)) =>
       log.error("Failed to remove data for persistenceId [{}]", currentPid)
       failure(cause)
 
-    case Terminated(ref) ⇒
+    case Terminated(ref) =>
       if (ref == currentRef) {
         val msg = s"Failed to remove data for persistenceId [$currentPid], unexpected termination"
         log.error(msg)

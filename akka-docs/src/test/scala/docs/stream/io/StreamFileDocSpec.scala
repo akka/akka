@@ -69,7 +69,7 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
     //#file-sink
     val text = Source.single("Hello Akka Stream!")
     val result: Future[IOResult] = text
-      .map(t ⇒ ByteString(t))
+      .map(t => ByteString(t))
       .runWith(FileIO.toPath(file))
     //#file-sink
   }

@@ -34,8 +34,8 @@ object ThrottlerTransportAdapterSpec {
 
   class Echo extends Actor {
     override def receive = {
-      case "ping" ⇒ sender() ! "pong"
-      case x      ⇒ sender() ! x
+      case "ping" => sender() ! "pong"
+      case x      => sender() ! x
     }
   }
 
@@ -50,15 +50,15 @@ object ThrottlerTransportAdapterSpec {
     var startTime = 0L
 
     override def receive = {
-      case "start" ⇒
+      case "start" =>
         self ! "sendNext"
         startTime = System.nanoTime()
-      case "sendNext" ⇒ if (messageCount > 0) {
+      case "sendNext" => if (messageCount > 0) {
         remote ! "ping"
         self ! "sendNext"
         messageCount -= 1
       }
-      case "pong" ⇒
+      case "pong" =>
         received += 1
         if (received >= MessageCount) controller ! (System.nanoTime() - startTime)
     }
@@ -131,8 +131,8 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
       here ! "Cleanup"
       fishForMessage(5.seconds) {
-        case "Cleanup"           ⇒ true
-        case Lost("Blackhole 3") ⇒ false
+        case "Cleanup"           => true
+        case Lost("Blackhole 3") => false
       }
     }
 

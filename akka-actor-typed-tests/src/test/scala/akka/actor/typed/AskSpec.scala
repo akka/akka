@@ -42,10 +42,10 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     system.executionContext
 
   val behavior: Behavior[Msg] = receive[Msg] {
-    case (_, foo: Foo) ⇒
+    case (_, foo: Foo) =>
       foo.replyTo ! "foo"
       Behaviors.same
-    case (_, Stop(r)) ⇒
+    case (_, Stop(r)) =>
       r ! (())
       Behaviors.stopped
   }
@@ -93,10 +93,10 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     /** See issue #19947 (MatchError with adapted ActorRef) */
     "fail the future if the actor doesn't exist" in {
       val noSuchActor: ActorRef[Msg] = system match {
-        case adaptedSys: ActorSystemAdapter[_] ⇒
+        case adaptedSys: ActorSystemAdapter[_] =>
           import akka.actor.typed.scaladsl.adapter._
           adaptedSys.untypedSystem.provider.resolveActorRef("/foo/bar")
-        case _ ⇒
+        case _ =>
           fail("this test must only run in an adapted actor system")
       }
 
@@ -120,7 +120,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
         class LegacyActor extends akka.actor.Actor {
           def receive = {
-            case Ping(respondTo) ⇒ respondTo ! akka.actor.Status.Failure(ex)
+            case Ping(respondTo) => respondTo ! akka.actor.Status.Failure(ex)
           }
         }
 
@@ -142,20 +142,20 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[AnyRef]("probe")
       val behv =
         Behaviors.receive[String] {
-          case (context, "start-ask") ⇒
+          case (context, "start-ask") =>
             context.ask[Question, Long](probe.ref)(Question(_)) {
-              case Success(42L) ⇒
+              case Success(42L) =>
                 throw new RuntimeException("Unsupported number")
-              case _ ⇒ "test"
+              case _ => "test"
             }
             Behavior.same
-          case (_, "test") ⇒
+          case (_, "test") =>
             probe.ref ! "got-test"
             Behavior.same
-          case (_, "get-state") ⇒
+          case (_, "get-state") =>
             probe.ref ! "running"
             Behavior.same
-          case (_, _) ⇒
+          case (_, _) =>
             Behavior.unhandled
         }
 

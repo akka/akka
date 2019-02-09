@@ -126,20 +126,20 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
       var reference = Map.empty[Long, Int]
 
       def verify(): Unit = {
-        val m = longMap.keysIterator.map(key ⇒ key → longMap.get(key)).toMap
+        val m = longMap.keysIterator.map(key => key -> longMap.get(key)).toMap
 
         m should be(reference)
       }
 
-      (1 to 1000).foreach { i ⇒
+      (1 to 1000).foreach { i =>
         withClue(s"seed=$seed, iteration=$i") {
           val key = rnd.nextInt(100)
           val value = rnd.nextPrintableChar()
           rnd.nextInt(3) match {
-            case 0 | 1 ⇒
+            case 0 | 1 =>
               longMap = longMap.updated(key, value)
               reference = reference.updated(key, value)
-            case 2 ⇒
+            case 2 =>
               longMap = longMap.remove(key)
               reference = reference - key
           }

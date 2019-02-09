@@ -7,7 +7,7 @@ package akka.cluster
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
 

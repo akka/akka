@@ -23,10 +23,10 @@ class FlowBatchSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).batch(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = 2, seed = i => i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         sub.request(1)
         publisher.sendNext(i)
         subscriber.expectNext(i)
@@ -39,10 +39,10 @@ class FlowBatchSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[List[Int]]()
 
-      Source.fromPublisher(publisher).batch(max = Long.MaxValue, seed = i ⇒ List(i))(aggregate = (ints, i) ⇒ i :: ints).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = Long.MaxValue, seed = i => List(i))(aggregate = (ints, i) => i :: ints).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         publisher.sendNext(i)
       }
       subscriber.expectNoMsg(1.second)
@@ -53,8 +53,8 @@ class FlowBatchSpec extends StreamSpec {
 
     "work on a variable rate chain" in {
       val future = Source(1 to 1000)
-        .batch(max = 100, seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
-        .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
+        .batch(max = 100, seed = i => i)(aggregate = (sum, i) => sum + i)
+        .map { i => if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .runFold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
     }
@@ -63,7 +63,7 @@ class FlowBatchSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).batch(max = 2, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batch(max = 2, seed = i => i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       sub.request(1)
@@ -90,7 +90,7 @@ class FlowBatchSpec extends StreamSpec {
 
     "work with a buffer and fold" in {
       val future = Source(1 to 50)
-        .batch(max = Long.MaxValue, seed = i ⇒ i)(aggregate = _ + _)
+        .batch(max = Long.MaxValue, seed = i => i)(aggregate = _ + _)
         .buffer(50, OverflowStrategy.backpressure)
         .runFold(0)(_ + _)
       Await.result(future, 3.seconds) should be((1 to 50).sum)

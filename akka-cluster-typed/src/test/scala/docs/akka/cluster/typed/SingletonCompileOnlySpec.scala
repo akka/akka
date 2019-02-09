@@ -22,12 +22,12 @@ object SingletonCompileOnlySpec {
 
   def counter(value: Int): Behavior[CounterCommand] =
     Behaviors.receiveMessage[CounterCommand] {
-      case Increment ⇒
+      case Increment =>
         counter(value + 1)
-      case GetValue(replyTo) ⇒
+      case GetValue(replyTo) =>
         replyTo ! value
         Behaviors.same
-      case GoodByeCounter ⇒
+      case GoodByeCounter =>
         // Do async action then stop
         Behaviors.stopped
     }

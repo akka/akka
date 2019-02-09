@@ -61,13 +61,13 @@ object PersistencePluginProxySpec {
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {
-      case RecoveryCompleted ⇒ // ignore
-      case payload ⇒
+      case RecoveryCompleted => // ignore
+      case payload =>
         probe ! payload
     }
     override def receiveCommand = {
-      case payload ⇒
-        persist(payload) { _ ⇒
+      case payload =>
+        persist(payload) { _ =>
           probe ! payload
         }
     }
@@ -77,7 +77,7 @@ object PersistencePluginProxySpec {
     val p = context.actorOf(Props(classOf[ExamplePersistentActor], probe, context.system.name))
 
     def receive = {
-      case m ⇒ p forward m
+      case m => p forward m
     }
 
   }

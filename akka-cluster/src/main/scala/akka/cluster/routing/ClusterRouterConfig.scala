@@ -90,8 +90,8 @@ final case class ClusterRouterGroupSettings(
     throw new IllegalArgumentException("routeesPaths must be defined")
 
   routeesPaths.foreach {
-    case RelativeActorPath(_) ⇒ // good
-    case p ⇒
+    case RelativeActorPath(_) => // good
+    case p =>
       throw new IllegalArgumentException(s"routeesPaths [$p] is not a valid actor path without address information")
   }
 
@@ -180,8 +180,8 @@ final case class ClusterRouterPoolSettings(
  */
 private[akka] object ClusterRouterSettingsBase {
   def useRoleOption(role: String): Option[String] = role match {
-    case null | "" ⇒ None
-    case _         ⇒ Some(role)
+    case null | "" => None
+    case _         => Some(role)
   }
 
   /**
@@ -192,8 +192,8 @@ private[akka] object ClusterRouterSettingsBase {
    */
   def getMaxTotalNrOfInstances(config: Config): Int =
     config.getInt("nr-of-instances") match {
-      case 1 | 0 ⇒ config.getInt("cluster.max-nr-of-instances-per-node")
-      case other ⇒ other
+      case 1 | 0 => config.getInt("cluster.max-nr-of-instances-per-node")
+      case other => other
     }
 }
 
@@ -207,7 +207,7 @@ private[akka] trait ClusterRouterSettingsBase {
 
   require(totalInstances > 0, "totalInstances of cluster router must be > 0")
   require(useRoles != null, "useRoles must be non-null")
-  require(!useRoles.exists(role ⇒ role == null || role.isEmpty), "All roles in useRoles must be non-empty")
+  require(!useRoles.exists(role => role == null || role.isEmpty), "All roles in useRoles must be non-empty")
 }
 
 /**
@@ -234,11 +234,11 @@ final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSe
   override private[akka] def createRouterActor(): RouterActor = new ClusterRouterGroupActor(settings)
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case ClusterRouterGroup(_: ClusterRouterGroup, _) ⇒ throw new IllegalStateException(
+    case ClusterRouterGroup(_: ClusterRouterGroup, _) => throw new IllegalStateException(
       "ClusterRouterGroup is not allowed to wrap a ClusterRouterGroup")
-    case ClusterRouterGroup(otherLocal, _) ⇒
+    case ClusterRouterGroup(otherLocal, _) =>
       copy(local = this.local.withFallback(otherLocal).asInstanceOf[Group])
-    case _ ⇒
+    case _ =>
       copy(local = this.local.withFallback(other).asInstanceOf[Group])
   }
 
@@ -289,11 +289,11 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
   override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case ClusterRouterPool(_: ClusterRouterPool, _) ⇒
+    case ClusterRouterPool(_: ClusterRouterPool, _) =>
       throw new IllegalStateException("ClusterRouterPool is not allowed to wrap a ClusterRouterPool")
-    case ClusterRouterPool(otherLocal, _) ⇒
+    case ClusterRouterPool(otherLocal, _) =>
       copy(local = this.local.withFallback(otherLocal).asInstanceOf[Pool])
-    case _ ⇒
+    case _ =>
       copy(local = this.local.withFallback(other).asInstanceOf[Pool])
   }
 
@@ -331,8 +331,8 @@ private[akka] class ClusterRouterPoolActor(
   override def addRoutees(): Unit = {
     @tailrec
     def doAddRoutees(): Unit = selectDeploymentTarget match {
-      case None ⇒ // done
-      case Some(target) ⇒
+      case None => // done
+      case Some(target) =>
         val routeeProps = cell.routeeProps
         val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
           scope = RemoteScope(target))
@@ -355,10 +355,10 @@ private[akka] class ClusterRouterPoolActor(
     } else {
       // find the node with least routees
       val numberOfRouteesPerNode: Map[Address, Int] = {
-        val nodeMap: Map[Address, Int] = currentNodes.map(_ → 0).toMap.withDefaultValue(0)
-        currentRoutees.foldLeft(nodeMap) { (acc, x) ⇒
+        val nodeMap: Map[Address, Int] = currentNodes.map(_ -> 0).toMap.withDefaultValue(0)
+        currentRoutees.foldLeft(nodeMap) { (acc, x) =>
           val address = fullAddress(x)
-          acc + (address → (acc(address) + 1))
+          acc + (address -> (acc(address) + 1))
         }
       }
 
@@ -376,8 +376,8 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
   extends RouterActor with ClusterRouterActor {
 
   val group = cell.routerConfig match {
-    case x: Group ⇒ x
-    case other ⇒
+    case x: Group => x
+    case other =>
       throw ActorInitializationException("ClusterRouterGroupActor can only be used with group, not " + other.getClass)
   }
 
@@ -385,7 +385,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
 
   var usedRouteePaths: Map[Address, Set[String]] =
     if (settings.allowLocalRoutees)
-      Map(cluster.selfAddress → settings.routeesPaths.toSet)
+      Map(cluster.selfAddress -> settings.routeesPaths.toSet)
     else
       Map.empty
 
@@ -395,8 +395,8 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
   override def addRoutees(): Unit = {
     @tailrec
     def doAddRoutees(): Unit = selectDeploymentTarget match {
-      case None ⇒ // done
-      case Some((address, path)) ⇒
+      case None => // done
+      case Some((address, path)) =>
         val routee = group.routeeFor(address + path, context)
         usedRouteePaths = usedRouteePaths.updated(address, usedRouteePaths.getOrElse(address, Set.empty) + path)
         // must register each one, since registered routees are used in selectDeploymentTarget
@@ -421,9 +421,9 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
       if (unusedNodes.nonEmpty) {
         Some((unusedNodes.head, settings.routeesPaths.head))
       } else {
-        val (address, used) = usedRouteePaths.minBy { case (_, used) ⇒ used.size }
+        val (address, used) = usedRouteePaths.minBy { case (_, used) => used.size }
         // pick next of the unused paths
-        settings.routeesPaths.collectFirst { case p if !used.contains(p) ⇒ (address, p) }
+        settings.routeesPaths.collectFirst { case p if !used.contains(p) => (address, p) }
       }
     }
   }
@@ -439,7 +439,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
  * The router actor, subscribes to cluster events and
  * adjusts the routees.
  */
-private[akka] trait ClusterRouterActor { this: RouterActor ⇒
+private[akka] trait ClusterRouterActor { this: RouterActor =>
 
   def settings: ClusterRouterSettingsBase
 
@@ -458,7 +458,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   var nodes: immutable.SortedSet[Address] = {
     import akka.cluster.Member.addressOrdering
     cluster.readView.members.collect {
-      case m if isAvailable(m) ⇒ m.address
+      case m if isAvailable(m) => m.address
     }
   }
 
@@ -483,12 +483,12 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
    */
   def fullAddress(routee: Routee): Address = {
     val address = routee match {
-      case ActorRefRoutee(ref)       ⇒ ref.path.address
-      case ActorSelectionRoutee(sel) ⇒ sel.anchor.path.address
+      case ActorRefRoutee(ref)       => ref.path.address
+      case ActorSelectionRoutee(sel) => sel.anchor.path.address
     }
     address match {
-      case Address(_, _, None, None) ⇒ cluster.selfAddress
-      case a                         ⇒ a
+      case Address(_, _, None, None) => cluster.selfAddress
+      case a                         => a
     }
   }
 
@@ -516,23 +516,23 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   }
 
   def clusterReceive: Receive = {
-    case s: CurrentClusterState ⇒
+    case s: CurrentClusterState =>
       import akka.cluster.Member.addressOrdering
-      nodes = s.members.collect { case m if isAvailable(m) ⇒ m.address }
+      nodes = s.members.collect { case m if isAvailable(m) => m.address }
       addRoutees()
 
-    case m: MemberEvent if isAvailable(m.member) ⇒
+    case m: MemberEvent if isAvailable(m.member) =>
       addMember(m.member)
 
-    case other: MemberEvent ⇒
+    case other: MemberEvent =>
       // other events means that it is no longer interesting, such as
       // MemberExited, MemberRemoved
       removeMember(other.member)
 
-    case UnreachableMember(m) ⇒
+    case UnreachableMember(m) =>
       removeMember(m)
 
-    case ReachableMember(m) ⇒
+    case ReachableMember(m) =>
       if (isAvailable(m)) addMember(m)
   }
 }

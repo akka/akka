@@ -40,7 +40,7 @@ object WriteAggregatorSpec {
       context.actorSelection(probes(address).path)
 
     override def senderAddress(): Address =
-      probes.find { case (a, r) ⇒ r == sender() }.get._1
+      probes.find { case (a, r) => r == sender() }.get._1
   }
 
   def writeAckAdapterProps(replica: ActorRef): Props =
@@ -50,13 +50,13 @@ object WriteAggregatorSpec {
     var replicator: Option[ActorRef] = None
 
     def receive = {
-      case WriteAck ⇒
+      case WriteAck =>
         replicator.foreach(_ ! WriteAck)
-      case WriteNack ⇒
+      case WriteNack =>
         replicator.foreach(_ ! WriteNack)
-      case DeltaNack ⇒
+      case DeltaNack =>
         replicator.foreach(_ ! DeltaNack)
-      case msg ⇒
+      case msg =>
         replicator = Some(sender())
         replica ! msg
     }
@@ -100,14 +100,14 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   val writeAll = WriteAll(timeout)
 
   def probes(probe: ActorRef): Map[Address, ActorRef] =
-    nodes.toSeq.map(_ → system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
+    nodes.toSeq.map(_ -> system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
 
   /**
    * Create a tuple for each node with the WriteAckAdapter and the TestProbe
    */
   def probes(): Map[Address, TestMock] = {
     val probe = TestProbe()
-    nodes.toSeq.map(_ → TestMock()).toMap
+    nodes.toSeq.map(_ -> TestMock()).toMap
   }
 
   "WriteAggregator" must {
@@ -127,7 +127,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
 
     "send to more when no immediate reply" in {
       val testProbes = probes()
-      val testProbeRefs = testProbes.map { case (a, tm) ⇒ a → tm.writeAckAdapter }
+      val testProbeRefs = testProbes.map { case (a, tm) => a -> tm.writeAckAdapter }
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
         data, writeMajority, testProbeRefs, nodes, Set(nodeC, nodeD), testActor, durable = false))
 
@@ -211,7 +211,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
 
     "retry with full state when no immediate reply or nack" in {
       val testProbes = probes()
-      val testProbeRefs = testProbes.map { case (a, tm) ⇒ a → tm.writeAckAdapter }
+      val testProbeRefs = testProbes.map { case (a, tm) => a -> tm.writeAckAdapter }
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorPropsWithDelta(
         fullState2, delta, writeAll, testProbeRefs, nodes, Set.empty, testActor, durable = false))
 

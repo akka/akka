@@ -32,8 +32,8 @@ object DeviceGroupQuery {
     requester:       ActorRef[RespondAllTemperatures],
     timeout:         FiniteDuration
   ): Behavior[DeviceGroupQueryMessage] = {
-    Behaviors.setup { context ⇒
-      Behaviors.withTimers { timers ⇒
+    Behaviors.setup { context =>
+      Behaviors.withTimers { timers =>
         new DeviceGroupQuery(deviceIdToActor, requestId, requester, timeout, context, timers)
       }
     }
@@ -71,7 +71,7 @@ class DeviceGroupQuery(
   //#query-outline
 
   deviceIdToActor.foreach {
-    case (deviceId, device) ⇒
+    case (deviceId, device) =>
       context.watchWith(device, DeviceTerminated(deviceId))
       device ! ReadTemperature(0, respondTemperatureAdapter)
   }
@@ -80,15 +80,15 @@ class DeviceGroupQuery(
   //#query-state
   override def onMessage(msg: DeviceGroupQueryMessage): Behavior[DeviceGroupQueryMessage] =
     msg match {
-      case WrappedRespondTemperature(response) ⇒ onRespondTemperature(response)
-      case DeviceTerminated(deviceId)          ⇒ onDeviceTerminated(deviceId)
-      case CollectionTimeout                   ⇒ onCollectionTimout()
+      case WrappedRespondTemperature(response) => onRespondTemperature(response)
+      case DeviceTerminated(deviceId)          => onDeviceTerminated(deviceId)
+      case CollectionTimeout                   => onCollectionTimout()
     }
 
   private def onRespondTemperature(response: RespondTemperature): Behavior[DeviceGroupQueryMessage] = {
     val reading = response.value match {
-      case Some(value) ⇒ Temperature(value)
-      case None        ⇒ TemperatureNotAvailable
+      case Some(value) => Temperature(value)
+      case None        => TemperatureNotAvailable
     }
 
     val deviceId = response.deviceId
@@ -107,7 +107,7 @@ class DeviceGroupQuery(
   }
 
   private def onCollectionTimout(): Behavior[DeviceGroupQueryMessage] = {
-    repliesSoFar ++= stillWaiting.map(deviceId ⇒ deviceId -> DeviceTimedOut)
+    repliesSoFar ++= stillWaiting.map(deviceId => deviceId -> DeviceTimedOut)
     stillWaiting = Set.empty
     respondWhenAllCollected()
   }

@@ -34,10 +34,10 @@ object MergeLatest {
 
 }
 
-final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buildElem: Array[T] ⇒ M) extends GraphStage[UniformFanInShape[T, M]] {
+final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buildElem: Array[T] => M) extends GraphStage[UniformFanInShape[T, M]] {
   require(inputPorts >= 1, "input ports must be >= 1")
 
-  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergeLatest.in" + i))
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergeLatest.in" + i))
   val out: Outlet[M] = Outlet[M]("MergeLatest.out")
   override val shape: UniformFanInShape[T, M] = UniformFanInShape(out, in: _*)
 
@@ -51,7 +51,7 @@ final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buil
     override def preStart(): Unit = in.foreach(tryPull)
 
     in.zipWithIndex.foreach {
-      case (input, index) ⇒
+      case (input, index) =>
         setHandler(input, new InHandler {
           override def onPush(): Unit = {
             messages.update(index, grab(input))

@@ -29,7 +29,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
 
         val concat1 = b add Concat[Int]()
         val concat2 = b add Concat[Int]()
@@ -46,7 +46,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
       val subscription = probe.expectSubscription()
 
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         subscription.request(1)
         probe.expectNext(i)
       }
@@ -132,7 +132,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       val promise = Promise[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val concat = b add Concat[Int]()
         Source(List(1, 2, 3)) ~> concat.in(0)
         Source.fromFuture(promise.future) ~> concat.in(1)

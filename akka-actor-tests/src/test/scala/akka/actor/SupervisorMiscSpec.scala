@@ -41,8 +41,8 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable): Unit = { countDownLatch.countDown() }
           def receive = {
-            case "status" ⇒ this.sender() ! "OK"
-            case _        ⇒ this.context.stop(self)
+            case "status" => this.sender() ! "OK"
+            case _        => this.context.stop(self)
           }
         })
 
@@ -59,10 +59,10 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
         countDownLatch.await(10, TimeUnit.SECONDS)
 
-        Seq("actor1" → actor1, "actor2" → actor2, "actor3" → actor3, "actor4" → actor4) map {
-          case (id, ref) ⇒ (id, ref ? "status")
+        Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4) map {
+          case (id, ref) => (id, ref ? "status")
         } foreach {
-          case (id, f) ⇒ (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
+          case (id, f) => (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
         }
       }
     }
@@ -70,7 +70,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "be able to create named children in its constructor" in {
       val a = system.actorOf(Props(new Actor {
         context.actorOf(Props.empty, "bob")
-        def receive = { case x: Exception ⇒ throw x }
+        def receive = { case x: Exception => throw x }
         override def preStart(): Unit = testActor ! "preStart"
       }))
       val m = "weird message"
@@ -86,7 +86,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       val parent = system.actorOf(Props(new Actor {
         val kid = context.watch(context.actorOf(Props.empty, "foo"))
         def receive = {
-          case Terminated(`kid`) ⇒
+          case Terminated(`kid`) =>
             try {
               val newKid = context.actorOf(Props.empty, "foo")
               val result =
@@ -97,9 +97,9 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
                 else "green"
               testActor ! result
             } catch {
-              case NonFatal(e) ⇒ testActor ! e
+              case NonFatal(e) => testActor ! e
             }
-          case "engage" ⇒ context.stop(kid)
+          case "engage" => context.stop(kid)
         }
       }))
       parent ! "engage"
@@ -109,14 +109,14 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "not be able to recreate child when old child is alive" in {
       val parent = system.actorOf(Props(new Actor {
         def receive = {
-          case "engage" ⇒
+          case "engage" =>
             try {
               val kid = context.actorOf(Props.empty, "foo")
               context.stop(kid)
               context.actorOf(Props.empty, "foo")
               testActor ! "red"
             } catch {
-              case e: InvalidActorNameException ⇒ testActor ! "green"
+              case e: InvalidActorNameException => testActor ! "green"
             }
         }
       }))
@@ -133,7 +133,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
           }
         }
 
-        def receive = { case "engage" ⇒ context.stop(context.actorOf(Props.empty, "Robert")) }
+        def receive = { case "engage" => context.stop(context.actorOf(Props.empty, "Robert")) }
       }))
       parent ! "engage"
       expectMsg("green")
@@ -145,10 +145,10 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "have access to the failing child’s reference in supervisorStrategy" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy() {
-          case _: Exception ⇒ testActor ! sender(); SupervisorStrategy.Stop
+          case _: Exception => testActor ! sender(); SupervisorStrategy.Stop
         }
         def receive = {
-          case "doit" ⇒ context.actorOf(Props.empty, "child") ! Kill
+          case "doit" => context.actorOf(Props.empty, "child") ! Kill
         }
       }))
       EventFilter[ActorKilledException](occurrences = 1) intercept {

@@ -8,7 +8,7 @@ import akka.compat._
 
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
@@ -361,12 +361,12 @@ object ByteString {
       if (that.isEmpty) this
       else if (this.isEmpty) that
       else that match {
-        case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-        case b: ByteString1 ⇒
+        case b: ByteString1C => ByteStrings(this, b.toByteString1)
+        case b: ByteString1 =>
           if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
             new ByteString1(bytes, startIndex, length + b.length)
           else ByteStrings(this, b)
-        case bs: ByteStrings ⇒ ByteStrings(this, bs)
+        case bs: ByteStrings => ByteStrings(this, bs)
       }
     }
 
@@ -393,31 +393,31 @@ object ByteString {
     def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
 
     def apply(b1: ByteString1, b2: ByteString1): ByteString = compare(b1, b2) match {
-      case 3 ⇒ new ByteStrings(Vector(b1, b2), b1.length + b2.length)
-      case 2 ⇒ b2
-      case 1 ⇒ b1
-      case 0 ⇒ ByteString.empty
+      case 3 => new ByteStrings(Vector(b1, b2), b1.length + b2.length)
+      case 2 => b2
+      case 1 => b1
+      case 0 => ByteString.empty
     }
 
     def apply(b: ByteString1, bs: ByteStrings): ByteString = compare(b, bs) match {
-      case 3 ⇒ new ByteStrings(b +: bs.bytestrings, bs.length + b.length)
-      case 2 ⇒ bs
-      case 1 ⇒ b
-      case 0 ⇒ ByteString.empty
+      case 3 => new ByteStrings(b +: bs.bytestrings, bs.length + b.length)
+      case 2 => bs
+      case 1 => b
+      case 0 => ByteString.empty
     }
 
     def apply(bs: ByteStrings, b: ByteString1): ByteString = compare(bs, b) match {
-      case 3 ⇒ new ByteStrings(bs.bytestrings :+ b, bs.length + b.length)
-      case 2 ⇒ b
-      case 1 ⇒ bs
-      case 0 ⇒ ByteString.empty
+      case 3 => new ByteStrings(bs.bytestrings :+ b, bs.length + b.length)
+      case 2 => b
+      case 1 => bs
+      case 0 => ByteString.empty
     }
 
     def apply(bs1: ByteStrings, bs2: ByteStrings): ByteString = compare(bs1, bs2) match {
-      case 3 ⇒ new ByteStrings(bs1.bytestrings ++ bs2.bytestrings, bs1.length + bs2.length)
-      case 2 ⇒ bs2
-      case 1 ⇒ bs1
-      case 0 ⇒ ByteString.empty
+      case 3 => new ByteStrings(bs1.bytestrings ++ bs2.bytestrings, bs1.length + bs2.length)
+      case 2 => bs2
+      case 1 => bs1
+      case 0 => ByteString.empty
     }
 
     // 0: both empty, 1: 2nd empty, 2: 1st empty, 3: neither empty
@@ -436,7 +436,7 @@ object ByteString {
 
       builder.sizeHint(nByteStrings)
 
-      for (_ ← 0 until nByteStrings) {
+      for (_ <- 0 until nByteStrings) {
         val bs = ByteString1.readFromInputStream(is)
         builder += bs
         length += bs.length
@@ -473,9 +473,9 @@ object ByteString {
       if (that.isEmpty) this
       else if (this.isEmpty) that
       else that match {
-        case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-        case b: ByteString1  ⇒ ByteStrings(this, b)
-        case bs: ByteStrings ⇒ ByteStrings(this, bs)
+        case b: ByteString1C => ByteStrings(this, b.toByteString1)
+        case b: ByteString1  => ByteStrings(this, b)
+        case bs: ByteStrings => ByteStrings(this, bs)
       }
     }
 
@@ -496,7 +496,7 @@ object ByteString {
       else {
         val ar = new Array[Byte](length)
         var pos = 0
-        bytestrings foreach { b ⇒
+        bytestrings foreach { b =>
           b.copyToArray(ar, pos, b.length)
           pos += b.length
         }
@@ -640,8 +640,8 @@ object ByteString {
 
   private[akka] object Companion {
     private val companionMap = Seq(ByteString1, ByteString1C, ByteStrings).
-      map(x ⇒ x.SerializationIdentity → x).toMap.
-      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
+      map(x => x.SerializationIdentity -> x).toMap.
+      withDefault(x => throw new IllegalArgumentException("Invalid serialization id " + x))
 
     def apply(from: Byte): Companion = companionMap(from)
   }
@@ -706,14 +706,14 @@ sealed abstract class ByteString
   // *must* be overridden by derived classes.
   override def dropRight(n: Int): ByteString = throw new UnsupportedOperationException("Method dropRight is not implemented in ByteString")
 
-  override def takeWhile(p: Byte ⇒ Boolean): ByteString = iterator.takeWhile(p).toByteString
-  override def dropWhile(p: Byte ⇒ Boolean): ByteString = iterator.dropWhile(p).toByteString
-  override def span(p: Byte ⇒ Boolean): (ByteString, ByteString) =
+  override def takeWhile(p: Byte => Boolean): ByteString = iterator.takeWhile(p).toByteString
+  override def dropWhile(p: Byte => Boolean): ByteString = iterator.dropWhile(p).toByteString
+  override def span(p: Byte => Boolean): (ByteString, ByteString) =
     { val (a, b) = iterator.span(p); (a.toByteString, b.toByteString) }
 
   override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
 
-  override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
+  override def indexWhere(p: Byte => Boolean): Int = iterator.indexWhere(p)
 
   // optimized in subclasses
   override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
@@ -747,7 +747,7 @@ sealed abstract class ByteString
   // override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
   //   iterator.copyToArray(xs, start, len)
 
-  override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
+  override def foreach[@specialized U](f: Byte => U): Unit = iterator foreach f
 
   private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit
 
@@ -834,9 +834,9 @@ sealed abstract class ByteString
   /**
    * map method that will automatically cast Int back into Byte.
    */
-  final def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
+  final def mapI(f: Byte => Int): ByteString = map(f andThen (_.toByte))
 
-  def map[A](f: Byte ⇒ Byte): ByteString = fromSpecific(super.map(f))
+  def map[A](f: Byte => Byte): ByteString = fromSpecific(super.map(f))
 }
 
 object CompactByteString {
@@ -869,7 +869,7 @@ object CompactByteString {
    */
   def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString = {
     if (bytes.isEmpty) empty
-    else ByteString.ByteString1C(bytes.iterator.map(x ⇒ num.toInt(x).toByte).to(Array))
+    else ByteString.ByteString1C(bytes.iterator.map(x => num.toInt(x).toByte).to(Array))
   }
 
   /**
@@ -936,7 +936,7 @@ sealed abstract class CompactByteString extends ByteString with Serializable {
  * The created ByteString is not automatically compacted.
  */
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
-  builder ⇒
+  builder =>
 
   import ByteString.{ ByteString1C, ByteString1, ByteStrings }
   private var _length: Int = 0
@@ -945,7 +945,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   private var _tempLength: Int = 0
   private var _tempCapacity: Int = 0
 
-  protected def fillArray(len: Int)(fill: (Array[Byte], Int) ⇒ Unit): this.type = {
+  protected def fillArray(len: Int)(fill: (Array[Byte], Int) => Unit): this.type = {
     ensureTempSize(_tempLength + len)
     fill(_temp, _tempLength)
     _tempLength += len
@@ -953,9 +953,9 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  @inline protected final def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
+  @inline protected final def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer => Unit): this.type = {
     fillArray(len) {
-      case (array, start) ⇒
+      case (array, start) =>
         val buffer = ByteBuffer.wrap(array, start, len)
         buffer.order(byteOrder)
         fill(buffer)
@@ -1004,34 +1004,34 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
 
   override def addAll(xs: IterableOnce[Byte]): this.type = {
     xs match {
-      case _ if xs.isEmpty ⇒
+      case _ if xs.isEmpty =>
       // do nothing
-      case b: ByteString1C ⇒
+      case b: ByteString1C =>
         clearTemp()
         _builder += b.toByteString1
         _length += b.length
-      case b: ByteString1 ⇒
+      case b: ByteString1 =>
         clearTemp()
         _builder += b
         _length += b.length
-      case bs: ByteStrings ⇒
+      case bs: ByteStrings =>
         clearTemp()
         _builder ++= bs.bytestrings
         _length += bs.length
-      case xs: WrappedArray.ofByte ⇒
+      case xs: WrappedArray.ofByte =>
         putByteArrayUnsafe(xs.array.clone)
-      case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) ⇒
+      case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) =>
         val copied = Array.from(xs)
 
         clearTemp()
         _builder += ByteString.ByteString1(copied)
         _length += seq.length
-      case seq: collection.IndexedSeq[Byte] ⇒
+      case seq: collection.IndexedSeq[Byte] =>
         ensureTempSize(_tempLength + seq.size)
         seq.copyToArray(_temp, _tempLength)
         _tempLength += seq.length
         _length += seq.length
-      case _ ⇒
+      case _ =>
         super.++=(xs)
     }
     this
@@ -1071,7 +1071,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add a single Int to this builder.
    */
   def putInt(x: Int)(implicit byteOrder: ByteOrder): this.type = {
-    fillArray(4) { (target, offset) ⇒
+    fillArray(4) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
         target(offset + 0) = (x >>> 24).toByte
         target(offset + 1) = (x >>> 16).toByte
@@ -1091,7 +1091,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add a single Long to this builder.
    */
   def putLong(x: Long)(implicit byteOrder: ByteOrder): this.type = {
-    fillArray(8) { (target, offset) ⇒
+    fillArray(8) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
         target(offset + 0) = (x >>> 56).toByte
         target(offset + 1) = (x >>> 48).toByte
@@ -1119,12 +1119,12 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add the `n` least significant bytes of the given Long to this builder.
    */
   def putLongPart(x: Long, n: Int)(implicit byteOrder: ByteOrder): this.type = {
-    fillArray(n) { (target, offset) ⇒
+    fillArray(n) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
         val start = n * 8 - 8
-        (0 until n) foreach { i ⇒ target(offset + i) = (x >>> start - 8 * i).toByte }
+        (0 until n) foreach { i => target(offset + i) = (x >>> start - 8 * i).toByte }
       } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-        (0 until n) foreach { i ⇒ target(offset + i) = (x >>> 8 * i).toByte }
+        (0 until n) foreach { i => target(offset + i) = (x >>> 8 * i).toByte }
       } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
     }
   }
@@ -1151,7 +1151,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * Add a number of Bytes from an array to this builder.
    */
   def putBytes(array: Array[Byte], start: Int, len: Int): this.type =
-    fillArray(len) { case (target, targetOffset) ⇒ Array.copy(array, start, target, targetOffset, len) }
+    fillArray(len) { case (target, targetOffset) => Array.copy(array, start, target, targetOffset, len) }
 
   /**
    * Add a number of Shorts from an array to this builder.

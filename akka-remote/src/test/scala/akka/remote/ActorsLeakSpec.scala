@@ -35,16 +35,16 @@ object ActorsLeakSpec {
 
     def recurse(node: ActorRef): List[ActorRef] = {
       val children: List[ActorRef] = node match {
-        case wc: ActorRefWithCell ⇒
+        case wc: ActorRefWithCell =>
           val cell = wc.underlying
 
           cell.childrenRefs match {
-            case ChildrenContainer.TerminatingChildrenContainer(_, toDie, reason) ⇒ Nil
-            case x @ (ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer) ⇒ Nil
-            case n: ChildrenContainer.NormalChildrenContainer ⇒ cell.childrenRefs.children.toList
-            case x ⇒ Nil
+            case ChildrenContainer.TerminatingChildrenContainer(_, toDie, reason) => Nil
+            case x @ (ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer) => Nil
+            case n: ChildrenContainer.NormalChildrenContainer => cell.childrenRefs.children.toList
+            case x => Nil
           }
-        case _ ⇒ Nil
+        case _ => Nil
       }
 
       node :: children.flatMap(recurse)
@@ -55,7 +55,7 @@ object ActorsLeakSpec {
 
   class StoppableActor extends Actor {
     override def receive = {
-      case "stop" ⇒ context.stop(self)
+      case "stop" => context.stop(self)
     }
   }
 
@@ -70,7 +70,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       val ref = system.actorOf(Props[EchoActor], "echo")
       val echoPath = RootActorPath(RARP(system).provider.getDefaultAddress) / "user" / "echo"
 
-      val targets = List("/system/endpointManager", "/system/transports").map { path ⇒
+      val targets = List("/system/endpointManager", "/system/transports").map { path =>
         system.actorSelection(path) ! Identify(0)
         expectMsgType[ActorIdentity].getRef
       }
@@ -78,7 +78,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       val initialActors = targets.flatMap(collectLiveActors).toSet
 
       //Clean shutdown case
-      for (_ ← 1 to 3) {
+      for (_ <- 1 to 3) {
 
         val remoteSystem = ActorSystem(
           "remote",
@@ -99,7 +99,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       }
 
       // Quarantine an old incarnation case
-      for (_ ← 1 to 3) {
+      for (_ <- 1 to 3) {
         //always use the same address
         val remoteSystem = ActorSystem(
           "remote",
@@ -138,7 +138,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
       }
 
       // Missing SHUTDOWN case
-      for (_ ← 1 to 3) {
+      for (_ <- 1 to 3) {
 
         val remoteSystem = ActorSystem(
           "remote",

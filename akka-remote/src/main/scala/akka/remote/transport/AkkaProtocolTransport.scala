@@ -133,14 +133,14 @@ private[transport] class AkkaProtocolManager(
   // The AkkaProtocolTransport does not handle the recovery of associations, this task is implemented in the
   // remoting itself. Hence the strategy Stop.
   override val supervisorStrategy = OneForOneStrategy() {
-    case NonFatal(_) ⇒ Stop
+    case NonFatal(_) => Stop
   }
 
   private def actorNameFor(remoteAddress: Address): String =
     "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId()
 
   override def ready: Receive = {
-    case InboundAssociation(handle) ⇒
+    case InboundAssociation(handle) =>
       val stateActorLocalAddress = localAddress
       val stateActorAssociationHandler = associationListener
       val stateActorSettings = settings
@@ -153,9 +153,9 @@ private[transport] class AkkaProtocolManager(
         AkkaPduProtobufCodec,
         failureDetector)), actorNameFor(handle.remoteAddress))
 
-    case AssociateUnderlying(remoteAddress, statusPromise) ⇒
+    case AssociateUnderlying(remoteAddress, statusPromise) =>
       createOutboundStateActor(remoteAddress, statusPromise, None)
-    case AssociateUnderlyingRefuseUid(remoteAddress, statusPromise, refuseUid) ⇒
+    case AssociateUnderlyingRefuseUid(remoteAddress, statusPromise, refuseUid) =>
       createOutboundStateActor(remoteAddress, statusPromise, refuseUid)
 
   }
@@ -326,11 +326,11 @@ private[transport] class ProtocolStateActor(
   val handshakeTimerKey = "handshake-timer"
 
   initialData match {
-    case d: OutboundUnassociated ⇒
+    case d: OutboundUnassociated =>
       d.transport.associate(d.remoteAddress).map(Handle(_)) pipeTo self
       startWith(Closed, d)
 
-    case d: InboundUnassociated ⇒
+    case d: InboundUnassociated =>
       d.wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       initHandshakeTimer()
       startWith(WaitHandshake, d)
@@ -341,11 +341,11 @@ private[transport] class ProtocolStateActor(
   when(Closed) {
 
     // Transport layer events for outbound associations
-    case Event(Status.Failure(e), OutboundUnassociated(_, statusPromise, _)) ⇒
+    case Event(Status.Failure(e), OutboundUnassociated(_, statusPromise, _)) =>
       statusPromise.failure(e)
       stop()
 
-    case Event(Handle(wrappedHandle), OutboundUnassociated(_, statusPromise, _)) ⇒
+    case Event(Handle(wrappedHandle), OutboundUnassociated(_, statusPromise, _)) =>
       wrappedHandle.readHandlerPromise.trySuccess(ActorHandleEventListener(self))
       if (sendAssociate(wrappedHandle, localHandshakeInfo)) {
         failureDetector.heartbeat()
@@ -358,31 +358,31 @@ private[transport] class ProtocolStateActor(
         stay()
       }
 
-    case Event(DisassociateUnderlying(_), _) ⇒
+    case Event(DisassociateUnderlying(_), _) =>
       stop()
 
-    case Event(HandshakeTimer, OutboundUnassociated(_, statusPromise, _)) ⇒
+    case Event(HandshakeTimer, OutboundUnassociated(_, statusPromise, _)) =>
       val errMsg = "No response from remote for outbound association. Associate timed out after " +
         s"[${settings.HandshakeTimeout.toMillis} ms]."
       statusPromise.failure(new TimeoutException(errMsg))
       stop(FSM.Failure(TimeoutReason(errMsg)))
 
-    case _ ⇒ stay()
+    case _ => stay()
 
   }
 
   // Timeout of this state is handled by the HandshakeTimer
   when(WaitHandshake) {
-    case Event(Disassociated(info), _) ⇒
+    case Event(Disassociated(info), _) =>
       stop(FSM.Failure(info))
 
-    case Event(InboundPayload(p), OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
+    case Event(InboundPayload(p), OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) =>
       decodePdu(p) match {
-        case Associate(handshakeInfo) if refuseUid.exists(_ == handshakeInfo.uid) ⇒
+        case Associate(handshakeInfo) if refuseUid.exists(_ == handshakeInfo.uid) =>
           sendDisassociate(wrappedHandle, Quarantined)
           stop(FSM.Failure(ForbiddenUidReason))
 
-        case Associate(handshakeInfo) ⇒
+        case Associate(handshakeInfo) =>
           failureDetector.heartbeat()
           cancelTimer(handshakeTimerKey)
           goto(Open) using AssociatedWaitHandler(
@@ -390,11 +390,11 @@ private[transport] class ProtocolStateActor(
             wrappedHandle,
             immutable.Queue.empty)
 
-        case Disassociate(info) ⇒
+        case Disassociate(info) =>
           // After receiving Disassociate we MUST NOT send back a Disassociate (loop)
           stop(FSM.Failure(info))
 
-        case msg ⇒
+        case msg =>
           // Expected handshake to be finished, dropping connection
           if (log.isDebugEnabled)
             log.debug(
@@ -405,16 +405,16 @@ private[transport] class ProtocolStateActor(
 
       }
 
-    case Event(HeartbeatTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒ handleTimers(wrappedHandle)
+    case Event(HeartbeatTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) => handleTimers(wrappedHandle)
 
     // Events for inbound associations
-    case Event(InboundPayload(p), InboundUnassociated(associationHandler, wrappedHandle)) ⇒
+    case Event(InboundPayload(p), InboundUnassociated(associationHandler, wrappedHandle)) =>
       decodePdu(p) match {
         // After receiving Disassociate we MUST NOT send back a Disassociate (loop)
-        case Disassociate(info) ⇒ stop(FSM.Failure(info))
+        case Disassociate(info) => stop(FSM.Failure(info))
 
         // Incoming association -- implicitly ACK by a heartbeat
-        case Associate(info) ⇒
+        case Associate(info) =>
           if (!settings.RequireCookie || info.cookie == settings.SecureCookie) {
             sendAssociate(wrappedHandle, localHandshakeInfo)
             failureDetector.heartbeat()
@@ -435,7 +435,7 @@ private[transport] class ProtocolStateActor(
           }
 
         // Got a stray message -- explicitly reset the association (force remote endpoint to reassociate)
-        case msg ⇒
+        case msg =>
           if (log.isDebugEnabled)
             log.debug(
               "Sending disassociate to [{}] because unexpected message of type [{}] was received while unassociated",
@@ -445,7 +445,7 @@ private[transport] class ProtocolStateActor(
 
       }
 
-    case Event(HandshakeTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒
+    case Event(HandshakeTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) =>
       if (log.isDebugEnabled)
         log.debug(
           "Sending disassociate to [{}] because handshake timed out for outbound association after [{}] ms.",
@@ -455,7 +455,7 @@ private[transport] class ProtocolStateActor(
       stop(FSM.Failure(TimeoutReason("No response from remote for outbound association. Handshake timed out after " +
         s"[${settings.HandshakeTimeout.toMillis} ms].")))
 
-    case Event(HandshakeTimer, InboundUnassociated(_, wrappedHandle)) ⇒
+    case Event(HandshakeTimer, InboundUnassociated(_, wrappedHandle)) =>
       if (log.isDebugEnabled)
         log.debug(
           "Sending disassociate to [{}] because handshake timed out for inbound association after [{}] ms.",
@@ -468,43 +468,43 @@ private[transport] class ProtocolStateActor(
   }
 
   when(Open) {
-    case Event(Disassociated(info), _) ⇒
+    case Event(Disassociated(info), _) =>
       stop(FSM.Failure(info))
 
-    case Event(InboundPayload(p), _) ⇒
+    case Event(InboundPayload(p), _) =>
       decodePdu(p) match {
-        case Disassociate(info) ⇒
+        case Disassociate(info) =>
           stop(FSM.Failure(info))
 
-        case Heartbeat ⇒
+        case Heartbeat =>
           failureDetector.heartbeat()
           stay()
 
-        case Payload(payload) ⇒
+        case Payload(payload) =>
           // use incoming ordinary message as alive sign
           failureDetector.heartbeat()
           stateData match {
-            case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
+            case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) =>
               // Queue message until handler is registered
               stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
-            case ListenerReady(listener, _) ⇒
+            case ListenerReady(listener, _) =>
               listener notify InboundPayload(payload)
               stay()
-            case msg ⇒
+            case msg =>
               throw new AkkaProtocolException(s"unhandled message in state Open(InboundPayload) with type [${safeClassName(msg)}]")
           }
 
-        case _ ⇒ stay()
+        case _ => stay()
       }
 
-    case Event(HeartbeatTimer, AssociatedWaitHandler(_, wrappedHandle, _)) ⇒ handleTimers(wrappedHandle)
-    case Event(HeartbeatTimer, ListenerReady(_, wrappedHandle))            ⇒ handleTimers(wrappedHandle)
+    case Event(HeartbeatTimer, AssociatedWaitHandler(_, wrappedHandle, _)) => handleTimers(wrappedHandle)
+    case Event(HeartbeatTimer, ListenerReady(_, wrappedHandle))            => handleTimers(wrappedHandle)
 
-    case Event(DisassociateUnderlying(info: DisassociateInfo), _) ⇒
+    case Event(DisassociateUnderlying(info: DisassociateInfo), _) =>
       val handle = stateData match {
-        case ListenerReady(_, wrappedHandle)            ⇒ wrappedHandle
-        case AssociatedWaitHandler(_, wrappedHandle, _) ⇒ wrappedHandle
-        case msg ⇒
+        case ListenerReady(_, wrappedHandle)            => wrappedHandle
+        case AssociatedWaitHandler(_, wrappedHandle, _) => wrappedHandle
+        case msg =>
           throw new AkkaProtocolException(s"unhandled message in state Open(DisassociateUnderlying) with type [${safeClassName(msg)}]")
       }
       // No debug logging here as sending DisassociateUnderlying(Unknown) should have been logged from where
@@ -513,7 +513,7 @@ private[transport] class ProtocolStateActor(
       sendDisassociate(handle, info)
       stop()
 
-    case Event(HandleListenerRegistered(listener), AssociatedWaitHandler(_, wrappedHandle, queue)) ⇒
+    case Event(HandleListenerRegistered(listener), AssociatedWaitHandler(_, wrappedHandle, queue)) =>
       queue.foreach { listener notify InboundPayload(_) }
       stay() using ListenerReady(listener, wrappedHandle)
   }
@@ -544,8 +544,8 @@ private[transport] class ProtocolStateActor(
   }
 
   private def safeClassName(obj: AnyRef): String = obj match {
-    case null ⇒ "null"
-    case _    ⇒ obj.getClass.getName
+    case null => "null"
+    case _    => obj.getClass.getName
   }
 
   override def postStop(): Unit = {
@@ -554,64 +554,64 @@ private[transport] class ProtocolStateActor(
   }
 
   onTermination {
-    case StopEvent(reason, _, OutboundUnassociated(_, statusPromise, _)) ⇒
+    case StopEvent(reason, _, OutboundUnassociated(_, statusPromise, _)) =>
       statusPromise.tryFailure(reason match {
-        case FSM.Failure(info: DisassociateInfo) ⇒ disassociateException(info)
-        case _                                   ⇒ new AkkaProtocolException("Transport disassociated before handshake finished")
+        case FSM.Failure(info: DisassociateInfo) => disassociateException(info)
+        case _                                   => new AkkaProtocolException("Transport disassociated before handshake finished")
       })
 
-    case StopEvent(reason, _, OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
+    case StopEvent(reason, _, OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) =>
       statusPromise.tryFailure(reason match {
-        case FSM.Failure(TimeoutReason(errorMessage)) ⇒
+        case FSM.Failure(TimeoutReason(errorMessage)) =>
           new AkkaProtocolException(errorMessage)
-        case FSM.Failure(info: DisassociateInfo) ⇒
+        case FSM.Failure(info: DisassociateInfo) =>
           disassociateException(info)
-        case FSM.Failure(ForbiddenUidReason) ⇒
+        case FSM.Failure(ForbiddenUidReason) =>
           InvalidAssociationException("The remote system has a UID that has been quarantined. Association aborted.")
-        case _ ⇒
+        case _ =>
           new AkkaProtocolException("Transport disassociated before handshake finished")
       })
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
-    case StopEvent(reason, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, _)) ⇒
+    case StopEvent(reason, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, _)) =>
       // Invalidate exposed but still unfinished promise. The underlying association disappeared, so after
       // registration immediately signal a disassociate
       val disassociateNotification = reason match {
-        case FSM.Failure(info: DisassociateInfo) ⇒ Disassociated(info)
-        case _                                   ⇒ Disassociated(Unknown)
+        case FSM.Failure(info: DisassociateInfo) => Disassociated(info)
+        case _                                   => Disassociated(Unknown)
       }
       handlerFuture foreach { _ notify disassociateNotification }
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
-    case StopEvent(reason, _, ListenerReady(handler, wrappedHandle)) ⇒
+    case StopEvent(reason, _, ListenerReady(handler, wrappedHandle)) =>
       val disassociateNotification = reason match {
-        case FSM.Failure(info: DisassociateInfo) ⇒ Disassociated(info)
-        case _                                   ⇒ Disassociated(Unknown)
+        case FSM.Failure(info: DisassociateInfo) => Disassociated(info)
+        case _                                   => Disassociated(Unknown)
       }
       handler notify disassociateNotification
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
-    case StopEvent(reason, _, InboundUnassociated(_, wrappedHandle)) ⇒
+    case StopEvent(reason, _, InboundUnassociated(_, wrappedHandle)) =>
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
   }
 
   private def disassociateException(info: DisassociateInfo): Exception = info match {
-    case Unknown ⇒
+    case Unknown =>
       new AkkaProtocolException("The remote system explicitly disassociated (reason unknown).")
-    case Shutdown ⇒
+    case Shutdown =>
       InvalidAssociationException("The remote system refused the association because it is shutting down.")
-    case Quarantined ⇒
+    case Quarantined =>
       InvalidAssociationException("The remote system has quarantined this system. No further associations to the remote " +
         "system are possible until this system is restarted.")
   }
 
   override protected def logTermination(reason: FSM.Reason): Unit = reason match {
-    case FSM.Failure(_: DisassociateInfo) ⇒ // no logging
-    case FSM.Failure(ForbiddenUidReason)  ⇒ // no logging
-    case FSM.Failure(TimeoutReason(errorMessage)) ⇒
+    case FSM.Failure(_: DisassociateInfo) => // no logging
+    case FSM.Failure(ForbiddenUidReason)  => // no logging
+    case FSM.Failure(TimeoutReason(errorMessage)) =>
       log.info(errorMessage)
-    case _ ⇒ super.logTermination(reason)
+    case _ => super.logTermination(reason)
   }
 
   private def listenForListenerRegistration(readHandlerPromise: Promise[HandleEventListener]): Unit =
@@ -656,30 +656,30 @@ private[transport] class ProtocolStateActor(
   }
 
   private def decodePdu(pdu: ByteString): AkkaPdu = try codec.decodePdu(pdu) catch {
-    case NonFatal(e) ⇒ throw new AkkaProtocolException("Error while decoding incoming Akka PDU of length: " + pdu.length, e)
+    case NonFatal(e) => throw new AkkaProtocolException("Error while decoding incoming Akka PDU of length: " + pdu.length, e)
   }
 
   // Neither heartbeats neither disassociate cares about backing off if write fails:
   //  - Missing heartbeats are not critical
   //  - Disassociate messages are not guaranteed anyway
   private def sendHeartbeat(wrappedHandle: AssociationHandle): Boolean = try wrappedHandle.write(codec.constructHeartbeat) catch {
-    case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing HEARTBEAT to transport", e)
+    case NonFatal(e) => throw new AkkaProtocolException("Error writing HEARTBEAT to transport", e)
   }
 
   private def sendDisassociate(wrappedHandle: AssociationHandle, info: DisassociateInfo): Unit =
     try wrappedHandle.write(codec.constructDisassociate(info)) catch {
-      case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
+      case NonFatal(e) => throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
     }
 
   private def sendAssociate(wrappedHandle: AssociationHandle, info: HandshakeInfo): Boolean = try {
     wrappedHandle.write(codec.constructAssociate(info))
   } catch {
-    case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing ASSOCIATE to transport", e)
+    case NonFatal(e) => throw new AkkaProtocolException("Error writing ASSOCIATE to transport", e)
   }
 
   private def disassociationReason(reason: FSM.Reason): String = reason match {
-    case FSM.Normal      ⇒ "the ProtocolStateActor was stopped normally"
-    case FSM.Shutdown    ⇒ "the ProtocolStateActor was shutdown"
-    case FSM.Failure(ex) ⇒ s"the ProtocolStateActor failed: $ex"
+    case FSM.Normal      => "the ProtocolStateActor was stopped normally"
+    case FSM.Shutdown    => "the ProtocolStateActor was shutdown"
+    case FSM.Failure(ex) => s"the ProtocolStateActor failed: $ex"
   }
 }

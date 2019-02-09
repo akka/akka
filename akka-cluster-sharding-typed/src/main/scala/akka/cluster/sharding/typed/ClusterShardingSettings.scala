@@ -9,8 +9,8 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.{ ClusterShardingSettings ⇒ UntypedShardingSettings }
-import akka.cluster.singleton.{ ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
+import akka.cluster.sharding.{ ClusterShardingSettings => UntypedShardingSettings }
+import akka.cluster.singleton.{ ClusterSingletonManagerSettings => UntypedClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
 import com.typesafe.config.Config

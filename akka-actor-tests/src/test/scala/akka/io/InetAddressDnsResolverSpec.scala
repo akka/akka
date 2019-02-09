@@ -14,7 +14,7 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = default
     akka.io.dns.inet-address.negative-ttl = default
     akka.actor.serialize-creators = on
-    """) { thisSpecs ⇒
+    """) { thisSpecs =>
 
   "The DNS resolver default ttl's" must {
     "use the default value for positive caching if it is not overridden" in {
@@ -96,23 +96,23 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
     actorRef.underlyingActor
   }
 
-  private def withNewSystemProperty[T](property: String, testValue: String)(test: ⇒ T): T = {
+  private def withNewSystemProperty[T](property: String, testValue: String)(test: => T): T = {
     val oldValue = Option(System.getProperty(property))
     try {
       System.setProperty(property, testValue)
       test
     } finally {
-      oldValue.foreach(v ⇒ System.setProperty(property, v))
+      oldValue.foreach(v => System.setProperty(property, v))
     }
   }
 
-  private def withNewSecurityProperty[T](property: String, testValue: String)(test: ⇒ T): T = {
+  private def withNewSecurityProperty[T](property: String, testValue: String)(test: => T): T = {
     val oldValue = Option(Security.getProperty(property))
     try {
       Security.setProperty(property, testValue)
       test
     } finally {
-      oldValue.foreach(v ⇒ Security.setProperty(property, v))
+      oldValue.foreach(v => Security.setProperty(property, v))
     }
   }
 
@@ -123,7 +123,7 @@ class InetAddressDnsResolverConfigSpec extends AkkaSpec(
     akka.io.dns.inet-address.negative-ttl = never
     akka.actor.serialize-creators = on
     """) {
-  thisSpecs ⇒
+  thisSpecs =>
 
   "The DNS resolver parsed ttl's" must {
     "use ttl=Long.MaxValue if user provides 'forever' " in {

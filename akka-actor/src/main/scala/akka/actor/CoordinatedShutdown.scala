@@ -166,22 +166,22 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     // is started but it might be a race between (failing?) startup and shutdown.
     def cleanupActorSystemJvmHook(): Unit = {
       coord.actorSystemJvmHook match {
-        case OptionVal.Some(cancellable) if !runningJvmHook && !cancellable.isCancelled ⇒
+        case OptionVal.Some(cancellable) if !runningJvmHook && !cancellable.isCancelled =>
           cancellable.cancel()
           coord.actorSystemJvmHook = OptionVal.None
-        case _ ⇒
+        case _ =>
       }
     }
     try system.registerOnTermination(cleanupActorSystemJvmHook())
     catch {
-      case _: RejectedExecutionException ⇒ cleanupActorSystemJvmHook()
+      case _: RejectedExecutionException => cleanupActorSystemJvmHook()
     }
     coord
   }
 
   // locate reason-specific overrides and merge with defaults.
   @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
-    reason.flatMap { r ⇒
+    reason.flatMap { r =>
       val basePath = s"""reason-overrides."${r.getClass.getName}""""
       if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
     }.getOrElse(
@@ -190,7 +190,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   }
 
   private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
-    coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
+    coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () =>
       val confForReason = confWithOverrides(conf, coord.shutdownReason())
       val terminateActorSystem = confForReason.getBoolean("terminate-actor-system")
       val exitJvm = confForReason.getBoolean("exit-jvm")
@@ -213,7 +213,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       }
 
       if (terminateActorSystem) {
-        system.terminate().map { _ ⇒
+        system.terminate().map { _ =>
           if (exitJvm && !runningJvmHook) System.exit(exitCode)
           Done
         }(ExecutionContexts.sameThreadExecutionContext)
@@ -237,7 +237,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
             val totalTimeout = coord.totalTimeout().max(3.seconds)
             Await.ready(coord.run(JvmExitReason), totalTimeout)
           } catch {
-            case NonFatal(e) ⇒
+            case NonFatal(e) =>
               coord.log.warning(
                 "CoordinatedShutdown from JVM shutdown failed: {}",
                 e.getMessage)
@@ -266,14 +266,14 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       depends-on = []
     """)
     phasesConf.root.unwrapped.asScala.toMap.map {
-      case (k, _: java.util.Map[_, _]) ⇒
+      case (k, _: java.util.Map[_, _]) =>
         val c = phasesConf.getConfig(k).withFallback(defaultPhaseConfig)
         val dependsOn = c.getStringList("depends-on").asScala.toSet
         val timeout = c.getDuration("timeout", MILLISECONDS).millis
         val recover = c.getBoolean("recover")
         val enabled = c.getBoolean("enabled")
-        k → Phase(dependsOn, timeout, recover, enabled)
-      case (k, v) ⇒
+        k -> Phase(dependsOn, timeout, recover, enabled)
+      case (k, v) =>
         throw new IllegalArgumentException(s"Expected object value for [$k], got [$v]")
     }
   }
@@ -297,8 +297,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
       if (unmarked(u)) {
         tempMark += u
         phases.get(u) match {
-          case Some(p) ⇒ p.dependsOn.foreach(depthFirstSearch)
-          case None    ⇒
+          case Some(p) => p.dependsOn.foreach(depthFirstSearch)
+          case None    =>
         }
         unmarked -= u // permanent mark
         tempMark -= u
@@ -322,7 +322,7 @@ final class CoordinatedShutdown private[akka] (
   private val knownPhases = phases.keySet ++ phases.values.flatMap(_.dependsOn)
   /** INTERNAL API */
   private[akka] val orderedPhases = CoordinatedShutdown.topologicalSort(phases)
-  private val tasks = new ConcurrentHashMap[String, Vector[(String, () ⇒ Future[Done])]]
+  private val tasks = new ConcurrentHashMap[String, Vector[(String, () => Future[Done])]]
   private val runStarted = new AtomicReference[Option[Reason]](None)
   private val runPromise = Promise[Done]()
 
@@ -346,7 +346,7 @@ final class CoordinatedShutdown private[akka] (
    * It is possible to add a task to a later phase by a task in an earlier phase
    * and it will be performed.
    */
-  @tailrec def addTask(phase: String, taskName: String)(task: () ⇒ Future[Done]): Unit = {
+  @tailrec def addTask(phase: String, taskName: String)(task: () => Future[Done]): Unit = {
     require(
       knownPhases(phase),
       s"Unknown phase [$phase], known phases [$knownPhases]. " +
@@ -355,10 +355,10 @@ final class CoordinatedShutdown private[akka] (
       "Try to use unique, self-explanatory names.")
     val current = tasks.get(phase)
     if (current == null) {
-      if (tasks.putIfAbsent(phase, Vector(taskName → task)) != null)
+      if (tasks.putIfAbsent(phase, Vector(taskName -> task)) != null)
         addTask(phase, taskName)(task) // CAS failed, retry
     } else {
-      if (!tasks.replace(phase, current, current :+ (taskName → task)))
+      if (!tasks.replace(phase, current, current :+ (taskName -> task)))
         addTask(phase, taskName)(task) // CAS failed, retry
     }
   }
@@ -376,7 +376,7 @@ final class CoordinatedShutdown private[akka] (
    * and it will be performed.
    */
   def addTask(phase: String, taskName: String, task: Supplier[CompletionStage[Done]]): Unit =
-    addTask(phase, taskName)(() ⇒ task.get().toScala)
+    addTask(phase, taskName)(() => task.get().toScala)
 
   /**
    * The `Reason` for the shutdown as passed to the `run` method. `None` if the shutdown
@@ -427,36 +427,36 @@ final class CoordinatedShutdown private[akka] (
       val debugEnabled = log.isDebugEnabled
       def loop(remainingPhases: List[String]): Future[Done] = {
         remainingPhases match {
-          case Nil ⇒ Future.successful(Done)
-          case phase :: remaining if !phases(phase).enabled ⇒
+          case Nil => Future.successful(Done)
+          case phase :: remaining if !phases(phase).enabled =>
             tasks.get(phase) match {
-              case null  ⇒ // This pretty much is ok as there are no tasks
-              case tasks ⇒ log.info("Phase [{}] disabled through configuration, skipping [{}] tasks", phase, tasks.size)
+              case null  => // This pretty much is ok as there are no tasks
+              case tasks => log.info("Phase [{}] disabled through configuration, skipping [{}] tasks", phase, tasks.size)
             }
             loop(remaining)
-          case phase :: remaining ⇒
+          case phase :: remaining =>
             val phaseResult = tasks.get(phase) match {
-              case null ⇒
+              case null =>
                 if (debugEnabled) log.debug("Performing phase [{}] with [0] tasks", phase)
                 Future.successful(Done)
-              case tasks ⇒
+              case tasks =>
                 if (debugEnabled) log.debug(
                   "Performing phase [{}] with [{}] tasks: [{}]",
-                  phase, tasks.size, tasks.map { case (taskName, _) ⇒ taskName }.mkString(", "))
+                  phase, tasks.size, tasks.map { case (taskName, _) => taskName }.mkString(", "))
                 // note that tasks within same phase are performed in parallel
                 val recoverEnabled = phases(phase).recover
                 val result = Future.sequence(tasks.map {
-                  case (taskName, task) ⇒
+                  case (taskName, task) =>
                     try {
                       val r = task.apply()
                       if (recoverEnabled) r.recover {
-                        case NonFatal(e) ⇒
+                        case NonFatal(e) =>
                           log.warning("Task [{}] failed in phase [{}]: {}", taskName, phase, e.getMessage)
                           Done
                       }
                       else r
                     } catch {
-                      case NonFatal(e) ⇒
+                      case NonFatal(e) =>
                         // in case task.apply throws
                         if (recoverEnabled) {
                           log.warning("Task [{}] failed in phase [{}]: {}", taskName, phase, e.getMessage)
@@ -464,7 +464,7 @@ final class CoordinatedShutdown private[akka] (
                         } else
                           Future.failed(e)
                     }
-                }).map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
+                }).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
                 val timeout = phases(phase).timeout
                 val deadline = Deadline.now + timeout
                 val timeoutFut = try {
@@ -482,7 +482,7 @@ final class CoordinatedShutdown private[akka] (
                         new TimeoutException(s"Coordinated shutdown phase [$phase] timed out after $timeout"))
                   }
                 } catch {
-                  case _: IllegalStateException ⇒
+                  case _: IllegalStateException =>
                     // The call to `after` threw IllegalStateException, triggered by system termination
                     result
                 }
@@ -491,13 +491,13 @@ final class CoordinatedShutdown private[akka] (
             if (remaining.isEmpty)
               phaseResult // avoid flatMap when system terminated in last phase
             else
-              phaseResult.flatMap(_ ⇒ loop(remaining))
+              phaseResult.flatMap(_ => loop(remaining))
         }
       }
 
       val remainingPhases = fromPhase match {
-        case None    ⇒ orderedPhases // all
-        case Some(p) ⇒ orderedPhases.dropWhile(_ != p)
+        case None    => orderedPhases // all
+        case Some(p) => orderedPhases.dropWhile(_ != p)
       }
       val done = loop(remainingPhases)
       runPromise.completeWith(done)
@@ -530,8 +530,8 @@ final class CoordinatedShutdown private[akka] (
    */
   def timeout(phase: String): FiniteDuration =
     phases.get(phase) match {
-      case Some(p) ⇒ p.timeout
-      case None ⇒
+      case Some(p) => p.timeout
+      case None =>
         throw new IllegalArgumentException(s"Unknown phase [$phase]. All phases must be defined in configuration")
     }
 
@@ -541,7 +541,7 @@ final class CoordinatedShutdown private[akka] (
   def totalTimeout(): FiniteDuration = {
     import scala.collection.JavaConverters._
     tasks.keySet.asScala.foldLeft(Duration.Zero) {
-      case (acc, phase) ⇒ acc + timeout(phase)
+      case (acc, phase) => acc + timeout(phase)
     }
   }
 
@@ -551,7 +551,7 @@ final class CoordinatedShutdown private[akka] (
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
    */
-  def addJvmShutdownHook[T](hook: ⇒ T): Unit = addCancellableJvmShutdownHook(hook)
+  def addJvmShutdownHook[T](hook: => T): Unit = addCancellableJvmShutdownHook(hook)
 
   /**
    * Scala API: Add a JVM shutdown hook that will be run when the JVM process
@@ -565,7 +565,7 @@ final class CoordinatedShutdown private[akka] (
    * For shutdown hooks that does not have any requirements on running before the Akka
    * shutdown hooks the standard library JVM shutdown hooks APIs are better suited.
    */
-  @tailrec def addCancellableJvmShutdownHook[T](hook: ⇒ T): Cancellable = {
+  @tailrec def addCancellableJvmShutdownHook[T](hook: => T): Cancellable = {
     if (runStarted.get == None) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
@@ -590,7 +590,7 @@ final class CoordinatedShutdown private[akka] (
                   false
                 }
               } catch {
-                case _: IllegalStateException ⇒
+                case _: IllegalStateException =>
                   // shutdown already in progress
                   false
               }
@@ -598,7 +598,7 @@ final class CoordinatedShutdown private[akka] (
             def isCancelled: Boolean = cancelled
           }
         } catch {
-          case e: IllegalStateException ⇒
+          case e: IllegalStateException =>
             // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
             log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
             _jvmHooksLatch.get.countDown()

@@ -155,8 +155,8 @@ import scala.concurrent.{ Future, Promise }
 
   private class FlowMonitorImpl[T] extends AtomicReference[Any](Initialized) with FlowMonitor[T] {
     override def state = get match {
-      case s: StreamState[_] ⇒ s.asInstanceOf[StreamState[T]]
-      case msg               ⇒ Received(msg.asInstanceOf[T])
+      case s: StreamState[_] => s.asInstanceOf[StreamState[T]]
+      case msg               => Received(msg.asInstanceOf[T])
     }
   }
 
@@ -195,8 +195,8 @@ import scala.concurrent.{ Future, Promise }
 
         override def postStop(): Unit = {
           monitor.state match {
-            case Finished | _: Failed ⇒
-            case _                    ⇒ monitor.set(Failed(new AbruptStageTerminationException(this)))
+            case Finished | _: Failed =>
+            case _                    => monitor.set(Failed(new AbruptStageTerminationException(this)))
           }
         }
 
@@ -227,7 +227,7 @@ import scala.concurrent.{ Future, Promise }
         val cancelCallback: AtomicReference[Option[AsyncCallback[Unit]]] = new AtomicReference(None)
 
         override def preStart() = {
-          cancelCallback.set(Some(getAsyncCallback[Unit](_ ⇒ completeStage())))
+          cancelCallback.set(Some(getAsyncCallback[Unit](_ => completeStage())))
           if (cancelled.get)
             completeStage()
           else
@@ -291,10 +291,10 @@ import scala.concurrent.{ Future, Promise }
 
         override def preStart(): Unit =
           futureSource.value match {
-            case Some(it) ⇒
+            case Some(it) =>
               // this optimisation avoids going through any execution context, in similar vein to FastFuture
               onFutureSourceCompleted(it)
-            case _ ⇒
+            case _ =>
               val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
               futureSource.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
           }
@@ -329,7 +329,7 @@ import scala.concurrent.{ Future, Promise }
           if (!sinkIn.isClosed) sinkIn.cancel()
 
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
-          result.map { graph ⇒
+          result.map { graph =>
             val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
             val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
             materialized.success(matVal)
@@ -342,7 +342,7 @@ import scala.concurrent.{ Future, Promise }
             }
 
           }.recover {
-            case t ⇒
+            case t =>
               sinkIn.cancel()
               materialized.failure(t)
               failStage(t)
@@ -373,8 +373,8 @@ import scala.concurrent.{ Future, Promise }
 
           def onFutureCompleted(result: Try[T]): Unit = {
             result match {
-              case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
-              case scala.util.Failure(t) ⇒ failStage(t)
+              case scala.util.Success(v) => emit(out, v, () => completeStage())
+              case scala.util.Failure(t) => failStage(t)
             }
           }
 
@@ -438,10 +438,10 @@ import scala.concurrent.{ Future, Promise }
    * which adds a detacher operator to every input.
    */
   @InternalApi private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
-    GraphDSL.create() { implicit builder ⇒
+    GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
       val concat = builder.add(stage)
-      val ds = concat.inlets.map { inlet ⇒
+      val ds = concat.inlets.map { inlet =>
         val detacher = builder.add(GraphStages.detacher[T])
         detacher ~> inlet
         detacher.in

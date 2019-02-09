@@ -7,7 +7,7 @@ package akka.actor.typed.internal.adapter
 import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilter, LoggingFilterWithMarker, LogMarker ⇒ UntypedLM }
+import akka.event.{ LoggingBus, LoggingFilter, LoggingFilterWithMarker, LogMarker => UntypedLM }
 import akka.util.OptionVal
 
 import scala.collection.JavaConverters._
@@ -310,11 +310,11 @@ private[akka] abstract class AbstractLogger extends Logger {
   }
 
   protected def notify(level: LogLevel, message: String, marker: OptionVal[LogMarker]): Unit = level match {
-    case ErrorLevel   ⇒ notifyDebug(message, marker)
-    case WarningLevel ⇒ notifyWarning(message, OptionVal.None, marker)
-    case InfoLevel    ⇒ notifyInfo(message, marker)
-    case DebugLevel   ⇒ notifyDebug(message, marker)
-    case _            ⇒ ()
+    case ErrorLevel   => notifyDebug(message, marker)
+    case WarningLevel => notifyWarning(message, OptionVal.None, marker)
+    case InfoLevel    => notifyInfo(message, marker)
+    case DebugLevel   => notifyDebug(message, marker)
+    case _            => ()
   }
 
   /**
@@ -322,9 +322,9 @@ private[akka] abstract class AbstractLogger extends Logger {
    * there are more than four arguments.
    */
   private def format(t: String, arg1: Any): String = arg1 match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ formatArray(t, a: _*)
-    case a: Array[_] ⇒ formatArray(t, (a map (_.asInstanceOf[AnyRef]): _*))
-    case x ⇒ formatArray(t, x)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatArray(t, a: _*)
+    case a: Array[_] => formatArray(t, (a map (_.asInstanceOf[AnyRef]): _*))
+    case x => formatArray(t, x)
   }
   private def format(t: String, arg1: Any, arg2: Any): String = formatArray(t, arg1, arg2)
   private def format(t: String, arg1: Any, arg2: Any, arg3: Any): String = formatArray(t, arg1, arg2, arg3)
@@ -390,15 +390,15 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
 
   private[akka] def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val error = cause match {
-      case OptionVal.Some(cause) ⇒
+      case OptionVal.Some(cause) =>
         marker match {
-          case OptionVal.Some(m) ⇒ Error(cause, logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-          case OptionVal.None    ⇒ Error(cause, logSource, logClass, message, mdc)
+          case OptionVal.Some(m) => Error(cause, logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.None    => Error(cause, logSource, logClass, message, mdc)
         }
-      case OptionVal.None ⇒
+      case OptionVal.None =>
         marker match {
-          case OptionVal.Some(m) ⇒ Error(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-          case OptionVal.None    ⇒ Error(logSource, logClass, message, mdc)
+          case OptionVal.Some(m) => Error(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+          case OptionVal.None    => Error(logSource, logClass, message, mdc)
         }
     }
     bus.publish(error)
@@ -408,24 +408,24 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
     val warning =
       if (cause.isDefined) Warning(cause.get, logSource, logClass, message, mdc, marker.orNull.asInstanceOf[UntypedLM])
       else marker match {
-        case OptionVal.Some(m) ⇒ Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-        case OptionVal.None    ⇒ Warning(logSource, logClass, message, mdc)
+        case OptionVal.Some(m) => Warning(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+        case OptionVal.None    => Warning(logSource, logClass, message, mdc)
       }
     bus.publish(warning)
   }
 
   private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit = {
     val info = marker match {
-      case OptionVal.Some(m) ⇒ Info(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-      case OptionVal.None    ⇒ Info(logSource, logClass, message, mdc)
+      case OptionVal.Some(m) => Info(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+      case OptionVal.None    => Info(logSource, logClass, message, mdc)
     }
     bus.publish(info)
   }
 
   private[akka] def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit = {
     val debug = marker match {
-      case OptionVal.Some(m) ⇒ Debug(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
-      case OptionVal.None    ⇒ Debug(logSource, logClass, message, mdc)
+      case OptionVal.Some(m) => Debug(logSource, logClass, message, mdc, m.asInstanceOf[UntypedLM])
+      case OptionVal.None    => Debug(logSource, logClass, message, mdc)
     }
     bus.publish(debug)
   }

@@ -33,19 +33,19 @@ object ClusterShardingFailureSpec {
     var n = 0
 
     def receive = {
-      case Get(id)   ⇒ sender() ! Value(id, n)
-      case Add(_, i) ⇒ n += i
+      case Get(id)   => sender() ! Value(id, n)
+      case Add(_, i) => n += i
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m @ Get(id)    ⇒ (id, m)
-    case m @ Add(id, _) ⇒ (id, m)
+    case m @ Get(id)    => (id, m)
+    case m @ Add(id, _) => (id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    ⇒ id.charAt(0).toString
-    case Add(id, _) ⇒ id.charAt(0).toString
+    case Get(id)    => id.charAt(0).toString
+    case Add(id, _) => id.charAt(0).toString
   }
 
 }
@@ -109,12 +109,12 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   val cluster = Cluster(system)

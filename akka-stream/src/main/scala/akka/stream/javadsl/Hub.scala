@@ -138,9 +138,9 @@ object PartitionHub {
    */
   @ApiMayChange def ofStateful[T](clazz: Class[T], partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
                                   startAfterNrOfConsumers: Int, bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
-    val p: () ⇒ (akka.stream.scaladsl.PartitionHub.ConsumerInfo, T) ⇒ Long = () ⇒ {
+    val p: () => (akka.stream.scaladsl.PartitionHub.ConsumerInfo, T) => Long = () => {
       val f = partitioner.get()
-      (info, elem) ⇒ f.applyAsLong(info, elem)
+      (info, elem) => f.applyAsLong(info, elem)
     }
     akka.stream.scaladsl.PartitionHub.statefulSink[T](p, startAfterNrOfConsumers, bufferSize)
       .mapMaterializedValue(_.asJava)
@@ -183,7 +183,7 @@ object PartitionHub {
   @ApiMayChange def of[T](clazz: Class[T], partitioner: BiFunction[Integer, T, Integer], startAfterNrOfConsumers: Int,
                           bufferSize: Int): Sink[T, Source[T, NotUsed]] =
     akka.stream.scaladsl.PartitionHub.sink[T](
-      (size, elem) ⇒ partitioner.apply(size, elem),
+      (size, elem) => partitioner.apply(size, elem),
       startAfterNrOfConsumers, bufferSize)
       .mapMaterializedValue(_.asJava)
       .asJava

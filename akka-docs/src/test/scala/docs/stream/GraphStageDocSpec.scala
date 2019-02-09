@@ -121,7 +121,7 @@ class GraphStageDocSpec extends AkkaSpec {
   }
 
   //#one-to-one
-  class Map[A, B](f: A ⇒ B) extends GraphStage[FlowShape[A, B]] {
+  class Map[A, B](f: A => B) extends GraphStage[FlowShape[A, B]] {
 
     val in = Inlet[A]("Map.in")
     val out = Outlet[B]("Map.out")
@@ -151,13 +151,13 @@ class GraphStageDocSpec extends AkkaSpec {
     val result =
       Source(Vector("one", "two", "three"))
         .via(stringLength)
-        .runFold(Seq.empty[Int])((elem, acc) ⇒ elem :+ acc)
+        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
 
     Await.result(result, 3.seconds) should ===(Seq(3, 3, 5))
   }
 
   //#many-to-one
-  class Filter[A](p: A ⇒ Boolean) extends GraphStage[FlowShape[A, A]] {
+  class Filter[A](p: A => Boolean) extends GraphStage[FlowShape[A, A]] {
 
     val in = Inlet[A]("Filter.in")
     val out = Outlet[A]("Filter.out")
@@ -190,7 +190,7 @@ class GraphStageDocSpec extends AkkaSpec {
     val result =
       Source(Vector(1, 2, 3, 4, 5, 6))
         .via(evenFilter)
-        .runFold(Seq.empty[Int])((elem, acc) ⇒ elem :+ acc)
+        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
 
     Await.result(result, 3.seconds) should ===(Seq(2, 4, 6))
   }
@@ -243,7 +243,7 @@ class GraphStageDocSpec extends AkkaSpec {
     val result =
       Source(Vector(1, 2, 3))
         .via(duplicator)
-        .runFold(Seq.empty[Int])((elem, acc) ⇒ elem :+ acc)
+        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
 
     Await.result(result, 3.seconds) should ===(Seq(1, 1, 2, 2, 3, 3))
   }
@@ -283,14 +283,14 @@ class GraphStageDocSpec extends AkkaSpec {
     val result =
       Source(Vector(1, 2, 3))
         .via(duplicator)
-        .runFold(Seq.empty[Int])((elem, acc) ⇒ elem :+ acc)
+        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
 
     Await.result(result, 3.seconds) should ===(Seq(1, 1, 2, 2, 3, 3))
 
   }
 
   "Demonstrate chaining of graph stages" in {
-    val sink = Sink.fold[List[Int], Int](List.empty[Int])((acc, n) ⇒ acc :+ n)
+    val sink = Sink.fold[List[Int], Int](List.empty[Int])((acc, n) => acc :+ n)
 
     //#graph-operator-chain
     val resultFuture = Source(1 to 5)
@@ -320,7 +320,7 @@ class GraphStageDocSpec extends AkkaSpec {
         new GraphStageLogic(shape) {
 
           override def preStart(): Unit = {
-            val callback = getAsyncCallback[Unit] { (_) ⇒
+            val callback = getAsyncCallback[Unit] { (_) =>
               completeStage()
             }
             switch.foreach(callback.invoke)
@@ -407,7 +407,7 @@ class GraphStageDocSpec extends AkkaSpec {
       Source(Vector(1, 2, 3))
         .via(new TimedGate[Int](2.second))
         .takeWithin(250.millis)
-        .runFold(Seq.empty[Int])((elem, acc) ⇒ elem :+ acc)
+        .runFold(Seq.empty[Int])((elem, acc) => elem :+ acc)
 
     Await.result(result, 3.seconds) should ===(Seq(1))
   }
@@ -532,7 +532,7 @@ class GraphStageDocSpec extends AkkaSpec {
     // tests:
     val result1 = Source(Vector(1, 2, 3))
       .via(new TwoBuffer)
-      .runFold(Vector.empty[Int])((acc, n) ⇒ acc :+ n)
+      .runFold(Vector.empty[Int])((acc, n) => acc :+ n)
 
     Await.result(result1, 3.seconds) should ===(Vector(1, 2, 3))
 

@@ -11,7 +11,7 @@ import scala.util.Failure
 import akka.actor.Address
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
+import java.lang.System.{ currentTimeMillis => newTimestamp }
 
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
@@ -172,7 +172,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Impl
       g2.nodes.size should ===(2)
       g2.nodeMetricsFor(m1.address).map(_.metrics) should ===(Some(m1.metrics))
       g2.nodeMetricsFor(m2.address).map(_.metrics) should ===(Some(m2Updated.metrics))
-      g2.nodes collect { case peer if peer.address == m2.address ⇒ peer.timestamp should ===(m2Updated.timestamp) }
+      g2.nodes collect { case peer if peer.address == m2.address => peer.timestamp should ===(m2Updated.timestamp) }
     }
 
     "merge an existing metric set for a node and update node ring" in {
@@ -239,10 +239,10 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
   val node2 = NodeMetrics(Address("akka.tcp", "sys", "a", 2555), 1, collector.sample.metrics)
 
   val nodes: Seq[NodeMetrics] = {
-    (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) ⇒
-      nodes map { n ⇒
-        n.copy(metrics = collector.sample.metrics.flatMap(latest ⇒ n.metrics.collect {
-          case streaming if latest sameAs streaming ⇒ streaming :+ latest
+    (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) =>
+      nodes map { n =>
+        n.copy(metrics = collector.sample.metrics.flatMap(latest => n.metrics.collect {
+          case streaming if latest sameAs streaming => streaming :+ latest
         }))
       }
     }
@@ -256,9 +256,9 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
     }
 
     "extract expected MetricValue types for load balancing" in {
-      nodes foreach { node ⇒
+      nodes foreach { node =>
         node match {
-          case HeapMemory(address, _, used, committed, _) ⇒
+          case HeapMemory(address, _, used, committed, _) =>
             used should be > (0L)
             committed should be >= (used)
             // Documentation java.lang.management.MemoryUsage says that committed <= max,
@@ -269,7 +269,7 @@ class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with Metri
         }
 
         node match {
-          case Cpu(address, _, systemLoadAverageOption, cpuCombinedOption, cpuStolenOption, processors) ⇒
+          case Cpu(address, _, systemLoadAverageOption, cpuCombinedOption, cpuStolenOption, processors) =>
             processors should be > (0)
             if (systemLoadAverageOption.isDefined)
               systemLoadAverageOption.get should be >= (0.0)

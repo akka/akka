@@ -52,14 +52,14 @@ object AkkaProtocolStressTest {
     var losses = 0
 
     def receive = {
-      case "start" ⇒ self ! "sendNext"
-      case "sendNext" ⇒ if (nextSeq < limit) {
+      case "start" => self ! "sendNext"
+      case "sendNext" => if (nextSeq < limit) {
         remote ! nextSeq
         nextSeq += 1
         if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
         else self ! "sendNext"
       }
-      case seq: Int ⇒
+      case seq: Int =>
         if (seq > maxSeq) {
           losses += seq - maxSeq - 1
           maxSeq = seq
@@ -79,7 +79,7 @@ object AkkaProtocolStressTest {
 
     // Make sure the other side eventually "gets the message"
     def done: Receive = {
-      case ResendFinal ⇒
+      case ResendFinal =>
         controller ! ((maxSeq, losses))
     }
   }
@@ -91,7 +91,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
-      case seq: Int ⇒ sender() ! seq
+      case seq: Int => sender() ! seq
     }
   }), "echo")
 
@@ -112,7 +112,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
       val tester = system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
 
       expectMsgPF(60.seconds) {
-        case (received: Int, lost: Int) ⇒
+        case (received: Int, lost: Int) =>
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }
     }

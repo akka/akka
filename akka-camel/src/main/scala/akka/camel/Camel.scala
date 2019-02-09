@@ -89,20 +89,20 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
 
   final val ProducerChildDispatcher: String = config.getString("akka.camel.producer.use-dispatcher")
 
-  final val Conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
+  final val Conversions: (String, RouteDefinition) => RouteDefinition = {
     val specifiedConversions = {
       import scala.collection.JavaConverters.asScalaSetConverter
       val section = config.getConfig("akka.camel.conversions")
-      section.entrySet.asScala.map(e ⇒ (e.getKey, section.getString(e.getKey)))
+      section.entrySet.asScala.map(e => (e.getKey, section.getString(e.getKey)))
     }
     val conversions = specifiedConversions.foldLeft(Map[String, Class[_ <: AnyRef]]()) {
-      case (m, (key, fqcn)) ⇒
+      case (m, (key, fqcn)) =>
         m.updated(key, dynamicAccess.getClassFor[AnyRef](fqcn).recover {
-          case e ⇒ throw new ConfigurationException("Could not find/load Camel Converter class [" + fqcn + "]", e)
+          case e => throw new ConfigurationException("Could not find/load Camel Converter class [" + fqcn + "]", e)
         }.get)
     }
 
-    (s: String, r: RouteDefinition) ⇒ conversions.get(s).fold(r)(r.convertBodyTo)
+    (s: String, r: RouteDefinition) => conversions.get(s).fold(r)(r.convertBodyTo)
   }
   /**
    * Configured setting, determine the class used to load/retrieve the instance of the Camel Context
@@ -110,7 +110,7 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
   final val ContextProvider: ContextProvider = {
     val fqcn = config.getString("akka.camel.context-provider")
     dynamicAccess.createInstanceFor[ContextProvider](fqcn, immutable.Seq.empty).recover {
-      case e ⇒ throw new ConfigurationException("Could not find/load Context Provider class [" + fqcn + "]", e)
+      case e => throw new ConfigurationException("Could not find/load Context Provider class [" + fqcn + "]", e)
     }.get
   }
 }

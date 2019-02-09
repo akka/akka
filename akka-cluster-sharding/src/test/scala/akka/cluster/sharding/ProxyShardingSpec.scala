@@ -30,11 +30,11 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg @ id ⇒ (id.toString, msg)
+    case msg @ id => (id.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
   val shardProxy: ActorRef =

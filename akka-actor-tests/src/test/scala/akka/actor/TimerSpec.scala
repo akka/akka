@@ -31,10 +31,10 @@ object TimerSpec {
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
 
-  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int): Props =
+  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int): Props =
     Props(new Target(monitor, interval, repeat, initial))
 
-  class Target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int) extends Actor with Timers {
+  class Target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int) extends Actor with Timers {
     private var bumpCount = initial()
 
     if (repeat)
@@ -61,32 +61,32 @@ object TimerSpec {
     }
 
     override def receive = {
-      case Tick(n) ⇒
+      case Tick(n) =>
         monitor ! Tock(n)
-      case Bump ⇒
+      case Bump =>
         bump()
-      case SlowThenBump(latch) ⇒
+      case SlowThenBump(latch) =>
         Await.ready(latch, 10.seconds)
         bump()
-      case End ⇒
+      case End =>
         context.stop(self)
-      case Cancel ⇒
+      case Cancel =>
         timers.cancel("T")
-      case Throw(e) ⇒
+      case Throw(e) =>
         throw e
-      case SlowThenThrow(latch, e) ⇒
+      case SlowThenThrow(latch, e) =>
         Await.ready(latch, 10.seconds)
         throw e
-      case AutoReceive ⇒ autoReceive()
+      case AutoReceive => autoReceive()
     }
   }
 
-  def fsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int): Props =
+  def fsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int): Props =
     Props(new FsmTarget(monitor, interval, repeat, initial))
 
   object TheState
 
-  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int) extends FSM[TheState.type, Int] {
+  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int) extends FSM[TheState.type, Int] {
 
     private var restarting = false
 
@@ -119,25 +119,25 @@ object TimerSpec {
     }
 
     when(TheState) {
-      case Event(Tick(n), _) ⇒
+      case Event(Tick(n), _) =>
         monitor ! Tock(n)
         stay
-      case Event(Bump, bumpCount) ⇒
+      case Event(Bump, bumpCount) =>
         bump(bumpCount)
-      case Event(SlowThenBump(latch), bumpCount) ⇒
+      case Event(SlowThenBump(latch), bumpCount) =>
         Await.ready(latch, 10.seconds)
         bump(bumpCount)
-      case Event(End, _) ⇒
+      case Event(End, _) =>
         stop()
-      case Event(Cancel, _) ⇒
+      case Event(Cancel, _) =>
         cancelTimer("T")
         stay
-      case Event(Throw(e), _) ⇒
+      case Event(Throw(e), _) =>
         throw e
-      case Event(SlowThenThrow(latch, e), _) ⇒
+      case Event(SlowThenThrow(latch, e), _) =>
         Await.ready(latch, 10.seconds)
         throw e
-      case Event(AutoReceive, _) ⇒
+      case Event(AutoReceive, _) =>
         autoReceive()
     }
 
@@ -148,13 +148,13 @@ object TimerSpec {
 
 class TimerSpec extends AbstractTimerSpec {
   override def testName: String = "Timers"
-  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props =
+  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props =
     TimerSpec.target(monitor, interval, repeat, initial)
 }
 
 class FsmTimerSpec extends AbstractTimerSpec {
   override def testName: String = "FSM Timers"
-  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props =
+  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props =
     TimerSpec.fsmTarget(monitor, interval, repeat, initial)
 }
 
@@ -164,7 +164,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
   val interval = 1.second
   val dilatedInterval = interval.dilated
 
-  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props
+  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props
 
   def testName: String
 
@@ -233,7 +233,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       val probe = TestProbe()
       val startCounter = new AtomicInteger(0)
       val ref = system.actorOf(target(probe.ref, dilatedInterval, repeat = true,
-        initial = () ⇒ startCounter.incrementAndGet()))
+        initial = () => startCounter.incrementAndGet()))
       probe.expectMsg(Tock(1))
 
       val latch = new TestLatch(1)
@@ -300,14 +300,14 @@ class TimersAndStashSpec extends AkkaSpec {
     timers.startSingleTimer("key", "scheduled", 50.millis)
     def receive: Receive = stashing
     def notStashing: Receive = {
-      case msg ⇒ probe ! msg
+      case msg => probe ! msg
     }
 
     def stashing: Receive = {
-      case StopStashing ⇒
+      case StopStashing =>
         context.become(notStashing)
         unstashAll()
-      case "scheduled" ⇒
+      case "scheduled" =>
         probe ! "saw-scheduled"
         stash()
     }

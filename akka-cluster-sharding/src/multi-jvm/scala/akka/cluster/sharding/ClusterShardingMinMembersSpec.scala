@@ -25,11 +25,11 @@ object ClusterShardingMinMembersSpec {
   case object StopEntity
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int ⇒ id.toString
+  val extractShardId: ShardRegion.ExtractShardId = msg => msg match {
+    case id: Int => id.toString
   }
 
 }
@@ -87,12 +87,12 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {

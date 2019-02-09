@@ -70,7 +70,7 @@ object DeployerSpec {
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }
@@ -227,8 +227,8 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.routerConfig.getClass should ===(expected.getClass)
       deployment.get.scope should ===(NoScopeGiven)
       expected match {
-        case pool: Pool ⇒ deployment.get.routerConfig.asInstanceOf[Pool].resizer should ===(pool.resizer)
-        case _          ⇒
+        case pool: Pool => deployment.get.routerConfig.asInstanceOf[Pool].resizer should ===(pool.resizer)
+        case _          =>
       }
     }
   }

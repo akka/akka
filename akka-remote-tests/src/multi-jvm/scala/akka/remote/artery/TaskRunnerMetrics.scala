@@ -18,25 +18,25 @@ class TaskRunnerMetrics(system: ActorSystem) {
     val aeronSourceHistogram = new Histogram(SECONDS.toNanos(10), 3)
     val aeronSinkHistogram = new Histogram(SECONDS.toNanos(10), 3)
     system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport match {
-      case a: ArteryTransport ⇒
-        a.afrFileChannel.foreach { afrFileChannel ⇒
+      case a: ArteryTransport =>
+        a.afrFileChannel.foreach { afrFileChannel =>
           var c = 0
           var aeronSourceMaxBeforeDelegate = 0L
           var aeronSinkMaxBeforeDelegate = 0L
           val reader = new FlightRecorderReader(afrFileChannel)
-          reader.structure.hiFreqLog.logs.foreach(_.compactEntries.foreach { entry ⇒
+          reader.structure.hiFreqLog.logs.foreach(_.compactEntries.foreach { entry =>
             c += 1
             if (c > entryOffset) {
               entry.code match {
-                case FlightRecorderEvents.AeronSource_ReturnFromTaskRunner ⇒
+                case FlightRecorderEvents.AeronSource_ReturnFromTaskRunner =>
                   aeronSourceHistogram.recordValue(entry.param)
-                case FlightRecorderEvents.AeronSink_ReturnFromTaskRunner ⇒
+                case FlightRecorderEvents.AeronSink_ReturnFromTaskRunner =>
                   aeronSinkHistogram.recordValue(entry.param)
-                case FlightRecorderEvents.AeronSource_DelegateToTaskRunner ⇒
+                case FlightRecorderEvents.AeronSource_DelegateToTaskRunner =>
                   aeronSourceMaxBeforeDelegate = math.max(aeronSourceMaxBeforeDelegate, entry.param)
-                case FlightRecorderEvents.AeronSink_DelegateToTaskRunner ⇒
+                case FlightRecorderEvents.AeronSink_DelegateToTaskRunner =>
                   aeronSinkMaxBeforeDelegate = math.max(aeronSinkMaxBeforeDelegate, entry.param)
-                case _ ⇒
+                case _ =>
               }
             }
           })
@@ -54,7 +54,7 @@ class TaskRunnerMetrics(system: ActorSystem) {
             aeronSinkHistogram.outputPercentileDistribution(System.out, 1000.0)
           }
         }
-      case _ ⇒
+      case _ =>
     }
   }
 

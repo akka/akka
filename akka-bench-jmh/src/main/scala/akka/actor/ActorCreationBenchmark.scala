@@ -48,6 +48,6 @@ class ActorCreationBenchmark {
 
 class MyActor extends Actor {
   override def receive: Receive = {
-    case _ ⇒
+    case _ =>
   }
 }

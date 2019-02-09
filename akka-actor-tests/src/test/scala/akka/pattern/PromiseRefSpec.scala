@@ -27,7 +27,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promiseRef = PromiseRef(5.seconds)
 
       val target = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       target ! Request(promiseRef.ref)
@@ -57,13 +57,13 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promise = Promise[Int]()
 
       val alice = system.actorOf(Props(new Actor {
-        def receive = { case Response ⇒ promise.success(42) }
+        def receive = { case Response => promise.success(42) }
       }))
 
       val promiseRef = PromiseRef.wrap(alice, promise)
 
       val bob = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       bob ! Request(promiseRef.ref)

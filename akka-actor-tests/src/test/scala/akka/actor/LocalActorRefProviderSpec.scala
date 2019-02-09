@@ -34,7 +34,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
   "An LocalActorRefProvider" must {
 
     "find actor refs using actorFor" in {
-      val a = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
+      val a = system.actorOf(Props(new Actor { def receive = { case _ => } }))
       val b = system.actorFor(a.path)
       a should ===(b)
     }
@@ -44,7 +44,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val a = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty, name = childName)
         def receive = {
-          case "lookup" ⇒
+          case "lookup" =>
             if (childName == child.path.name) sender() ! context.actorFor(childName)
             else sender() ! s"$childName is not ${child.path.name}!"
         }
@@ -102,7 +102,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val GetChild = "GetChild"
       val a = watch(system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty)
-        def receive = { case `GetChild` ⇒ sender() ! child }
+        def receive = { case `GetChild` => sender() ! child }
       })))
       a.tell(GetChild, testActor)
       val child = expectMsgType[ActorRef]
@@ -128,14 +128,14 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
 
       provider.isInstanceOf[LocalActorRefProvider] should ===(true)
 
-      for (i ← 0 until 100) {
+      for (i <- 0 until 100) {
         val address = "new-actor" + i
         implicit val timeout = Timeout(5 seconds)
-        val actors = for (j ← 1 to 4) yield Future(system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }), address))
-        val set = Set() ++ actors.map(a ⇒ Await.ready(a, timeout.duration).value match {
-          case Some(Success(a: ActorRef)) ⇒ 1
-          case Some(Failure(ex: InvalidActorNameException)) ⇒ 2
-          case x ⇒ x
+        val actors = for (j <- 1 to 4) yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
+        val set = Set() ++ actors.map(a => Await.ready(a, timeout.duration).value match {
+          case Some(Success(a: ActorRef)) => 1
+          case Some(Failure(ex: InvalidActorNameException)) => 2
+          case x => x
         })
         set should ===(Set[Any](1, 2))
       }
@@ -144,7 +144,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     "only create one instance of an actor from within the same message invocation" in {
       val supervisor = system.actorOf(Props(new Actor {
         def receive = {
-          case "" ⇒
+          case "" =>
             val a, b = context.actorOf(Props.empty, "duplicate")
         }
       }))

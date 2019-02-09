@@ -47,14 +47,14 @@ abstract class MembershipChangeListenerExitingSpec
         val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+            case state: CurrentClusterState =>
+              if (state.members.exists(m => m.address == secondAddress && m.status == Exiting))
                 exitingLatch.countDown()
-            case MemberExited(m) if m.address == secondAddress ⇒
+            case MemberExited(m) if m.address == secondAddress =>
               exitingLatch.countDown()
-            case MemberRemoved(m, Exiting) if m.address == secondAddress ⇒
+            case MemberRemoved(m, Exiting) if m.address == secondAddress =>
               removedLatch.countDown()
-            case _ ⇒ // ignore
+            case _ => // ignore
           }
         }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("registered-listener")
@@ -67,12 +67,12 @@ abstract class MembershipChangeListenerExitingSpec
         val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+            case state: CurrentClusterState =>
+              if (state.members.exists(m => m.address == secondAddress && m.status == Exiting))
                 exitingLatch.countDown()
-            case MemberExited(m) if m.address == secondAddress ⇒
+            case MemberExited(m) if m.address == secondAddress =>
               exitingLatch.countDown()
-            case _ ⇒ // ignore
+            case _ => // ignore
           }
         }).withDeploy(Deploy.local)), classOf[MemberEvent])
         enterBarrier("registered-listener")

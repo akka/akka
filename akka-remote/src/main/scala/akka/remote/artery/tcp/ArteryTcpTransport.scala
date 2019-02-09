@@ -54,8 +54,8 @@ private[remote] object ArteryTcpTransport {
   private val successUnit = Success(())
 
   def optionToTry(opt: Option[Throwable]): Try[Unit] = opt match {
-    case None    ⇒ successUnit
-    case Some(t) ⇒ Failure(t)
+    case None    => successUnit
+    case Some(t) => Failure(t)
   }
 }
 
@@ -80,14 +80,14 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     if (tlsEnabled) {
       system.settings.setup.get[SSLEngineProviderSetup] match {
-        case Some(p) ⇒
+        case Some(p) =>
           OptionVal.Some(p.sslEngineProvider(system))
-        case None ⇒
+        case None =>
           // load from config
           OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
             settings.SSLEngineProviderClassName,
             List((classOf[ActorSystem], system))).recover {
-              case e ⇒ throw new ConfigurationException(
+              case e => throw new ConfigurationException(
                 s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
             }.get)
       }
@@ -114,9 +114,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         val sslProvider = sslEngineProvider.get
         Tcp().outgoingTlsConnectionWithSSLEngine(
           remoteAddress,
-          createSSLEngine = () ⇒ sslProvider.createClientSSLEngine(host, port),
+          createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
           connectTimeout = settings.Advanced.ConnectionTimeout,
-          verifySession = session ⇒ optionToTry(sslProvider.verifyClientSession(host, session)))
+          verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
       } else {
         Tcp()
           .outgoingConnection(
@@ -126,11 +126,11 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
-      val flowFactory = () ⇒ {
+      val flowFactory = () => {
 
         def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
-            .via(Flow.lazyInitAsync(() ⇒ {
+            .via(Flow.lazyInitAsync(() => {
               // only open the actual connection if any new messages are sent
               afr.loFreq(
                 TcpOutbound_Connected,
@@ -143,7 +143,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
                   .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
                   .via(connectionFlow))
             }))
-            .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
+            .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
             .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))
 
@@ -168,7 +168,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     }
 
     Flow[EnvelopeBuffer]
-      .map { env ⇒
+      .map { env =>
         val size = env.byteBuffer.limit()
         afr.hiFreq(TcpOutbound_Sent, size)
 
@@ -179,7 +179,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         TcpFraming.encodeFrameHeader(size) ++ bytes
       }
       .via(connectionFlowWithRestart)
-      .map(_ ⇒ throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
+      .map(_ => throw new IllegalStateException(s"Unexpected incoming bytes in outbound connection to [${outboundContext.remoteAddress}]"))
       .toMat(Sink.ignore)(Keep.right)
   }
 
@@ -212,7 +212,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       else
         (
           Flow[EnvelopeBuffer]
-          .map(_ ⇒ log.warning("Dropping large message, missing large-message-destinations configuration."))
+          .map(_ => log.warning("Dropping large message, missing large-message-destinations configuration."))
           .to(Sink.ignore),
           Promise[Done]().future) // never completed, not enabled
     }
@@ -224,14 +224,14 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     // frame. That was not chosen because it is more complicated to implement and might have more runtime
     // overhead.
     inboundStream =
-      OptionVal.Some(Sink.fromGraph(GraphDSL.create() { implicit b ⇒
+      OptionVal.Some(Sink.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
-        val partition = b.add(Partition[EnvelopeBuffer](3, env ⇒ {
+        val partition = b.add(Partition[EnvelopeBuffer](3, env => {
           env.streamId match {
-            case OrdinaryStreamId ⇒ 1
-            case ControlStreamId  ⇒ 0
-            case LargeStreamId    ⇒ 2
-            case other            ⇒ throw new IllegalArgumentException(s"Unexpected streamId [$other]")
+            case OrdinaryStreamId => 1
+            case ControlStreamId  => 0
+            case LargeStreamId    => 2
+            case other            => throw new IllegalArgumentException(s"Unexpected streamId [$other]")
           }
         }))
         partition.out(0) ~> controlStream
@@ -249,8 +249,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .via(inboundKillSwitch.flow)
         .via(new TcpFraming(afr))
         .alsoTo(inboundStream.get)
-        .filter(_ ⇒ false) // don't send back anything in this TCP socket
-        .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
+        .filter(_ => false) // don't send back anything in this TCP socket
+        .map(_ => ByteString.empty) // make it a Flow[ByteString] again
     }
 
     val bindHost = bindAddress.address.host.get
@@ -262,8 +262,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         Tcp().bindTlsWithSSLEngine(
           interface = bindHost,
           port = bindPort,
-          createSSLEngine = () ⇒ sslProvider.createServerSSLEngine(bindHost, bindPort),
-          verifySession = session ⇒ optionToTry(sslProvider.verifyServerSession(bindHost, session)))
+          createSSLEngine = () => sslProvider.createServerSSLEngine(bindHost, bindPort),
+          verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)))
       } else {
         Tcp().bind(
           interface = bindHost,
@@ -272,10 +272,10 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       }
 
     serverBinding = serverBinding match {
-      case None ⇒
+      case None =>
         val afr = createFlightRecorderEventSink()
         val binding = connectionSource
-          .to(Sink.foreach { connection ⇒
+          .to(Sink.foreach { connection =>
             afr.loFreq(
               TcpInbound_Connected,
               s"${connection.remoteAddress.getHostString}:${connection.remoteAddress.getPort}")
@@ -283,7 +283,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           })
           .run()
           .recoverWith {
-            case e ⇒ Future.failed(new RemoteTransportException(
+            case e => Future.failed(new RemoteTransportException(
               s"Failed to bind TCP to [${localAddress.address.host.get}:${localAddress.address.port.get}] due to: " +
                 e.getMessage, e))
           }(ExecutionContexts.sameThreadExecutionContext)
@@ -292,7 +292,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         Await.result(binding, settings.Bind.BindTimeout)
         afr.loFreq(TcpInbound_Bound, s"$bindHost:$bindPort")
         Some(binding)
-      case s @ Some(_) ⇒
+      case s @ Some(_) =>
         // already bound, when restarting
         s
     }
@@ -303,17 +303,17 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     implicit val ec: ExecutionContext = materializer.executionContext
     val completed = Future.firstCompletedOf(
       List(controlStreamCompleted, ordinaryMessagesStreamCompleted, largeMessagesStreamCompleted))
-    val restart = () ⇒ {
+    val restart = () => {
       inboundKillSwitch.shutdown()
       inboundKillSwitch = KillSwitches.shared("inboundKillSwitch")
 
       val allStopped: Future[Done] = for {
-        _ ← controlStreamCompleted.recover { case _ ⇒ Done }
-        _ ← ordinaryMessagesStreamCompleted.recover { case _ ⇒ Done }
-        _ ← if (largeMessageChannelEnabled)
-          largeMessagesStreamCompleted.recover { case _ ⇒ Done } else Future.successful(Done)
+        _ <- controlStreamCompleted.recover { case _ => Done }
+        _ <- ordinaryMessagesStreamCompleted.recover { case _ => Done }
+        _ <- if (largeMessageChannelEnabled)
+          largeMessagesStreamCompleted.recover { case _ => Done } else Future.successful(Done)
       } yield Done
-      allStopped.foreach(_ ⇒ runInboundStreams())
+      allStopped.foreach(_ => runInboundStreams())
     }
 
     attachInboundStreamRestart("Inbound streams", completed, restart)
@@ -326,7 +326,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
       MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
         .via(inboundKillSwitch.flow)
         .via(inboundFlow(settings, NoInboundCompressions))
-        .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
+        .toMat(inboundControlSink)({ case (a, (c, d)) => (a, c, d) })
         .run()(controlMaterializer)
     attachControlMessageObserver(ctrl)
     updateStreamMatValues(completed)
@@ -342,7 +342,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         MergeHub.source[EnvelopeBuffer].addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
           .via(inboundKillSwitch.flow)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
+          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) => (a, b, c) })
           .run()(materializer)
 
       } else {
@@ -358,12 +358,12 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         val (inboundHub, compressionAccess, laneHub) =
           laneSource
             .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner, inboundLanes,
-              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
+              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) => (a, b, c) })
             .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).iterator.map { _ ⇒
+          (0 until inboundLanes).iterator.map { _ =>
             laneHub.toMat(lane)(Keep.right).run()(materializer)
           }.to(immutable.Vector)
 
@@ -371,8 +371,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ laneKillSwitch.abort(reason) }
-        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
+        Future.firstCompletedOf(completedValues).failed.foreach { reason => laneKillSwitch.abort(reason) }
+        val allCompleted = Future.sequence(completedValues).map(_ => Done)
 
         (inboundHub, compressionAccess, allCompleted)
       }
@@ -403,13 +403,13 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     implicit val ec: ExecutionContext = materializer.executionContext
     updateStreamMatValues(ControlStreamId, InboundStreamMatValues[NotUsed](
       NotUsed,
-      completed.recover { case _ ⇒ Done }))
+      completed.recover { case _ => Done }))
   }
 
   override protected def shutdownTransport(): Future[Done] = {
     import system.dispatcher
     inboundKillSwitch.shutdown()
-    unbind().map { _ ⇒
+    unbind().map { _ =>
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       Done
     }
@@ -417,16 +417,16 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   private def unbind(): Future[Done] = {
     serverBinding match {
-      case Some(binding) ⇒
+      case Some(binding) =>
         import system.dispatcher
         for {
-          b ← binding
-          _ ← b.unbind()
+          b <- binding
+          _ <- b.unbind()
         } yield {
           topLevelFlightRecorder.loFreq(TcpInbound_Bound, s"${localAddress.address.host.get}:${localAddress.address.port}")
           Done
         }
-      case None ⇒
+      case None =>
         Future.successful(Done)
     }
   }

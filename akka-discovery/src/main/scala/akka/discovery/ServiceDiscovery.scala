@@ -42,8 +42,8 @@ object ServiceDiscovery {
     override def toString: String = s"Resolved($serviceName,$addresses)"
 
     override def equals(obj: Any): Boolean = obj match {
-      case other: Resolved ⇒ serviceName == other.serviceName && addresses == other.addresses
-      case _               ⇒ false
+      case other: Resolved => serviceName == other.serviceName && addresses == other.addresses
+      case _               => false
     }
 
     override def hashCode(): Int = {
@@ -61,7 +61,7 @@ object ServiceDiscovery {
     private implicit val inetAddressOrdering: Ordering[InetAddress] =
       Ordering.by[InetAddress, Iterable[Byte]](_.getAddress)
 
-    implicit val addressOrdering: Ordering[ResolvedTarget] = Ordering.by { t ⇒
+    implicit val addressOrdering: Ordering[ResolvedTarget] = Ordering.by { t =>
       (t.address, t.host, t.port)
     }
 
@@ -101,8 +101,8 @@ object ServiceDiscovery {
     override def toString: String = s"ResolvedTarget($host,$port,$address)"
 
     override def equals(obj: Any): Boolean = obj match {
-      case other: ResolvedTarget ⇒ host == other.host && port == other.port && address == other.address
-      case _                     ⇒ false
+      case other: ResolvedTarget => host == other.host && port == other.port && address == other.address
+      case _                     => false
     }
 
     override def hashCode(): Int = {
@@ -166,8 +166,8 @@ final class Lookup(
   override def toString: String = s"Lookup($serviceName,$portName,$protocol)"
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: Lookup ⇒ serviceName == other.serviceName && portName == other.portName && protocol == other.protocol
-    case _             ⇒ false
+    case other: Lookup => serviceName == other.serviceName && portName == other.portName && protocol == other.protocol
+    case _             => false
   }
 
   override def hashCode(): Int = {
@@ -225,11 +225,11 @@ case object Lookup {
    */
   def parseSrv(str: String): Lookup =
     str match {
-      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
+      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) =>
         Lookup(serviceName).withPortName(portName).withProtocol(protocol)
 
-      case null ⇒ throw new NullPointerException("Unable to create Lookup from passed SRV string. Passed value is 'null'")
-      case _    ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
+      case null => throw new NullPointerException("Unable to create Lookup from passed SRV string. Passed value is 'null'")
+      case _    => throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
     }
 
   /**
@@ -237,8 +237,8 @@ case object Lookup {
    */
   def isValidSrv(srv: String): Boolean =
     srv match {
-      case SrvQuery(_, _, serviceName) ⇒ validDomainName(serviceName)
-      case _                           ⇒ false
+      case SrvQuery(_, _, serviceName) => validDomainName(serviceName)
+      case _                           => false
     }
 
   private def validDomainName(name: String): Boolean =

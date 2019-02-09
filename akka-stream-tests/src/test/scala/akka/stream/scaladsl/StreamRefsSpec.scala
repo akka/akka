@@ -33,7 +33,7 @@ object StreamRefsSpec {
     implicit val mat = ActorMaterializer()
 
     def receive = {
-      case "give" ⇒
+      case "give" =>
         /*
          * Here we're able to send a source to a remote recipient
          *
@@ -44,32 +44,32 @@ object StreamRefsSpec {
 
         ref pipeTo sender()
 
-      case "give-infinite" ⇒
-        val source: Source[String, NotUsed] = Source.fromIterator(() ⇒ Iterator.from(1)).map("ping-" + _)
+      case "give-infinite" =>
+        val source: Source[String, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map("ping-" + _)
         val (r: NotUsed, ref: Future[SourceRef[String]]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
 
         ref pipeTo sender()
 
-      case "give-fail" ⇒
+      case "give-fail" =>
         val ref = Source.failed[String](new Exception("Booooom!") with NoStackTrace)
           .runWith(StreamRefs.sourceRef())
 
         ref pipeTo sender()
 
-      case "give-complete-asap" ⇒
+      case "give-complete-asap" =>
         val ref = Source.empty
           .runWith(StreamRefs.sourceRef())
 
         ref pipeTo sender()
 
-      case "give-subscribe-timeout" ⇒
+      case "give-subscribe-timeout" =>
         val ref = Source.repeat("is anyone there?")
           .toMat(StreamRefs.sourceRef())(Keep.right) // attributes like this so they apply to the Sink.sourceRef
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .run()
 
         ref pipeTo sender()
-      //      case "send-bulk" ⇒
+      //      case "send-bulk" =>
       //        /*
       //         * Here we're able to send a source to a remote recipient
       //         * The source is a "bulk transfer one, in which we're ready to send a lot of data"
@@ -80,7 +80,7 @@ object StreamRefsSpec {
       //        val ref: SourceRef[ByteString] = source.runWith(SourceRef.bulkTransfer())
       //        sender() ! BulkSourceMsg(ref)
 
-      case "receive" ⇒
+      case "receive" =>
         /*
          * We write out code, knowing that the other side will stream the data into it.
          *
@@ -93,7 +93,7 @@ object StreamRefsSpec {
 
         sink pipeTo sender()
 
-      case "receive-ignore" ⇒
+      case "receive-ignore" =>
         val sink =
           StreamRefs.sinkRef[String]()
             .to(Sink.ignore)
@@ -101,7 +101,7 @@ object StreamRefsSpec {
 
         sink pipeTo sender()
 
-      case "receive-subscribe-timeout" ⇒
+      case "receive-subscribe-timeout" =>
         val sink = StreamRefs.sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .to(Sink.actorRef(probe, "<COMPLETE>"))
@@ -109,7 +109,7 @@ object StreamRefsSpec {
 
         sink pipeTo sender()
 
-      case "receive-32" ⇒
+      case "receive-32" =>
         val (sink, driver) = StreamRefs.sinkRef[String]()
           .toMat(TestSink.probe(context.system))(Keep.both)
           .run()
@@ -129,7 +129,7 @@ object StreamRefsSpec {
 
         sink pipeTo sender()
 
-      //      case "receive-bulk" ⇒
+      //      case "receive-bulk" =>
       //        /*
       //         * We write out code, knowing that the other side will stream the data into it.
       //         * This will open a dedicated connection per transfer.
@@ -252,7 +252,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       probe.expectNoMessage(100.millis)
 
       probe.request(20)
-      probe.expectNextN((1 to 20).map(i ⇒ "ping-" + (i + 1)))
+      probe.expectNextN((1 to 20).map(i => "ping-" + (i + 1)))
       probe.cancel()
 
       // since no demand anyway
@@ -344,12 +344,12 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "receive"
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
 
-      val msgs = (1 to 100).toList.map(i ⇒ s"payload-$i")
+      val msgs = (1 to 100).toList.map(i => s"payload-$i")
 
       Source(msgs)
         .runWith(remoteSink)
 
-      msgs.foreach(t ⇒ p.expectMsg(t))
+      msgs.foreach(t => p.expectMsg(t))
       p.expectMsg("<COMPLETE>")
     }
 
@@ -380,7 +380,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
         .take(10) // the timeout is 500ms, so this makes sure we run more time than that
         .runWith(remoteSink)
 
-      (0 to 9).foreach { _ ⇒
+      (0 to 9).foreach { _ =>
         p.expectMsg("whatever")
       }
       p.expectMsg("<COMPLETE>")

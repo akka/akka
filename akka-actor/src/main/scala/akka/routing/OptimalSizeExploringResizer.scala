@@ -188,13 +188,13 @@ case class DefaultOptimalSizeExploringResizer(
     val currentSize = currentRoutees.length
 
     val messagesInRoutees = currentRoutees map {
-      case ActorRefRoutee(a: ActorRefWithCell) ⇒
+      case ActorRefRoutee(a: ActorRefWithCell) =>
         a.underlying match {
-          case cell: ActorCell ⇒
+          case cell: ActorCell =>
             cell.mailbox.numberOfMessages + (if (cell.currentMessage != null) 1 else 0)
-          case cell ⇒ cell.numberOfMessages
+          case cell => cell.numberOfMessages
         }
-      case _ ⇒ 0
+      case _ => 0
     }
 
     val totalQueueLength = messagesInRoutees.sum
@@ -219,10 +219,10 @@ case class DefaultOptimalSizeExploringResizer(
           val duration = Duration.fromNanos(System.nanoTime() - record.checkTime)
           val last: Duration = duration / totalProcessed
           //exponentially decrease the weight of old last metrics data
-          val toUpdate = performanceLog.get(currentSize).fold(last) { oldSpeed ⇒
+          val toUpdate = performanceLog.get(currentSize).fold(last) { oldSpeed =>
             (oldSpeed * (1.0 - weightOfLatestMetric)) + (last * weightOfLatestMetric)
           }
-          performanceLog + (currentSize → toUpdate)
+          performanceLog + (currentSize -> toUpdate)
         } else performanceLog
       } else performanceLog
 
@@ -257,12 +257,12 @@ case class DefaultOptimalSizeExploringResizer(
   private def optimize(currentSize: PoolSize): Int = {
 
     val adjacentDispatchWaits: Map[PoolSize, Duration] = {
-      def adjacency = (size: Int) ⇒ Math.abs(currentSize - size)
+      def adjacency = (size: Int) => Math.abs(currentSize - size)
       val sizes = performanceLog.keys.toSeq
       val numOfSizesEachSide = numOfAdjacentSizesToConsiderDuringOptimization / 2
       val leftBoundary = sizes.filter(_ < currentSize).sortBy(adjacency).take(numOfSizesEachSide).lastOption.getOrElse(currentSize)
       val rightBoundary = sizes.filter(_ >= currentSize).sortBy(adjacency).take(numOfSizesEachSide).lastOption.getOrElse(currentSize)
-      performanceLog.filter { case (size, _) ⇒ size >= leftBoundary && size <= rightBoundary }
+      performanceLog.filter { case (size, _) => size >= leftBoundary && size <= rightBoundary }
     }
 
     val optimalSize = adjacentDispatchWaits.minBy(_._2)._1

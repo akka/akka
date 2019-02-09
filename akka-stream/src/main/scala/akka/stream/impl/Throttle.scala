@@ -27,7 +27,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
   val cost:            Int,
   val per:             FiniteDuration,
   val maximumBurst:    Int,
-  val costCalculation: (T) ⇒ Int,
+  val costCalculation: (T) => Int,
   val mode:            ThrottleMode)
   extends SimpleLinearGraphStage[T] {
   require(cost > 0, "cost must be > 0")
@@ -53,8 +53,8 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
     var willStop = false
     var currentElement: T = _
     val enforcing = mode match {
-      case Enforcing ⇒ true
-      case Shaping   ⇒ false
+      case Enforcing => true
+      case Shaping   => false
     }
 
     override def preStart(): Unit = tokenBucket.init()

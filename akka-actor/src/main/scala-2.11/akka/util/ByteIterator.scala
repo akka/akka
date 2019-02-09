@@ -26,7 +26,7 @@ object ByteIterator {
   }
 
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
-    iterator ⇒
+    iterator =>
 
     @inline final def len: Int = until - from
 
@@ -44,11 +44,11 @@ object ByteIterator {
     final override def length: Int = { val l = len; clear(); l }
 
     final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
-      case that: ByteIterator ⇒
+      case that: ByteIterator =>
         if (that.isEmpty) this
         else if (this.isEmpty) that
         else that match {
-          case that: ByteArrayIterator ⇒
+          case that: ByteArrayIterator =>
             if ((this.array eq that.array) && (this.until == that.from)) {
               this.until = that.until
               that.clear()
@@ -58,9 +58,9 @@ object ByteIterator {
               this.clear()
               result
             }
-          case that: MultiByteArrayIterator ⇒ this ++: that
+          case that: MultiByteArrayIterator => this ++: that
         }
-      case _ ⇒ super.++(that)
+      case _ => super.++(that)
     }
 
     final override def clone: ByteArrayIterator = new ByteArrayIterator(array, from, until)
@@ -75,14 +75,14 @@ object ByteIterator {
       this
     }
 
-    final override def takeWhile(p: Byte ⇒ Boolean): this.type = {
+    final override def takeWhile(p: Byte => Boolean): this.type = {
       val prev = from
       dropWhile(p)
       until = from; from = prev
       this
     }
 
-    final override def dropWhile(p: Byte ⇒ Boolean): this.type = {
+    final override def dropWhile(p: Byte => Boolean): this.type = {
       var stop = false
       while (!stop && hasNext) {
         if (p(array(from))) { from = from + 1 } else { stop = true }
@@ -212,22 +212,22 @@ object ByteIterator {
     }
 
     final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
-      case that: ByteIterator ⇒
+      case that: ByteIterator =>
         if (that.isEmpty) this
         else if (this.isEmpty) that
         else {
           that match {
-            case that: ByteArrayIterator ⇒
+            case that: ByteArrayIterator =>
               iterators = this.iterators :+ that
               that.clear()
               this
-            case that: MultiByteArrayIterator ⇒
+            case that: MultiByteArrayIterator =>
               iterators = this.iterators ++ that.iterators
               that.clear()
               this
           }
         }
-      case _ ⇒ super.++(that)
+      case _ => super.++(that)
     }
 
     final override def clone: MultiByteArrayIterator = {
@@ -262,7 +262,7 @@ object ByteIterator {
         drop(rest)
       } else this
 
-    final override def takeWhile(p: Byte ⇒ Boolean): this.type = {
+    final override def takeWhile(p: Byte => Boolean): this.type = {
       var stop = false
       var builder = new ListBuffer[ByteArrayIterator]
       while (!stop && !iterators.isEmpty) {
@@ -276,7 +276,7 @@ object ByteIterator {
       normalize()
     }
 
-    @tailrec final override def dropWhile(p: Byte ⇒ Boolean): this.type =
+    @tailrec final override def dropWhile(p: Byte => Boolean): this.type =
       if (!isEmpty) {
         current.dropWhile(p)
         val dropMore = current.isEmpty
@@ -299,7 +299,7 @@ object ByteIterator {
       normalize()
     }
 
-    override def foreach[@specialized U](f: Byte ⇒ U): Unit = {
+    override def foreach[@specialized U](f: Byte => U): Unit = {
       iterators foreach { _ foreach f }
       clear()
     }
@@ -313,7 +313,7 @@ object ByteIterator {
       }
     }
 
-    @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
+    @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: => A)(getMult: (Array[A], Int, Int) => Unit): this.type =
       if (n <= 0) this else {
         if (isEmpty) EmptyImmutableSeq.iterator.next()
         val nDone = if (current.len >= elemSize) {
@@ -424,22 +424,22 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
   // the parent class.
-  override def takeWhile(p: Byte ⇒ Boolean): this.type = throw new UnsupportedOperationException("Method takeWhile is not implemented in ByteIterator")
+  override def takeWhile(p: Byte => Boolean): this.type = throw new UnsupportedOperationException("Method takeWhile is not implemented in ByteIterator")
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
   // the parent class.
-  override def dropWhile(p: Byte ⇒ Boolean): this.type = throw new UnsupportedOperationException("Method dropWhile is not implemented in ByteIterator")
+  override def dropWhile(p: Byte => Boolean): this.type = throw new UnsupportedOperationException("Method dropWhile is not implemented in ByteIterator")
 
-  override def span(p: Byte ⇒ Boolean): (ByteIterator, ByteIterator) = {
+  override def span(p: Byte => Boolean): (ByteIterator, ByteIterator) = {
     val that = clone
     this.takeWhile(p)
     that.drop(this.len)
     (this, that)
   }
 
-  override def indexWhere(p: Byte ⇒ Boolean): Int = indexWhere(p, 0)
-  def indexWhere(p: Byte ⇒ Boolean, from: Int): Int = {
+  override def indexWhere(p: Byte => Boolean): Int = indexWhere(p, 0)
+  def indexWhere(p: Byte => Boolean, from: Int): Int = {
     var index = from
     var found = false
     while (!found && hasNext) if (p(next())) { found = true } else { index += 1 }
@@ -456,12 +456,12 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   override def toSeq: ByteString = toByteString
 
-  override def foreach[@specialized U](f: Byte ⇒ U): Unit =
+  override def foreach[@specialized U](f: Byte => U): Unit =
     while (hasNext) f(next())
 
-  override def foldLeft[@specialized B](z: B)(op: (B, Byte) ⇒ B): B = {
+  override def foldLeft[@specialized B](z: B)(op: (B, Byte) => B): B = {
     var acc = z
-    foreach { byte ⇒ acc = op(acc, byte) }
+    foreach { byte => acc = op(acc, byte) }
     acc
   }
 
@@ -536,11 +536,11 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   def getLongPart(n: Int)(implicit byteOrder: ByteOrder): Long = {
     if (byteOrder == ByteOrder.BIG_ENDIAN) {
       var x = 0L
-      (1 to n) foreach (_ ⇒ x = (x << 8) | (next() & 0xff))
+      (1 to n) foreach (_ => x = (x << 8) | (next() & 0xff))
       x
     } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
       var x = 0L
-      (0 until n) foreach (i ⇒ x |= (next() & 0xff) << 8 * i)
+      (0 until n) foreach (i => x |= (next() & 0xff) << 8 * i)
       x
     } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
   }

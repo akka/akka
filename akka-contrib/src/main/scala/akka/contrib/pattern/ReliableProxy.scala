@@ -52,7 +52,7 @@ object ReliableProxy {
     context.watch(target)
 
     def receive = {
-      case Message(msg, snd, serial) ⇒
+      case Message(msg, snd, serial) =>
         if (serial == lastSerial + 1) {
           target.tell(msg, snd)
           sender() ! Ack(serial)
@@ -62,7 +62,7 @@ object ReliableProxy {
         } else {
           logDebug("Received message from {} with wrong serial: {}", snd, msg)
         }
-      case Terminated(`target`) ⇒ context stop self
+      case Terminated(`target`) => context stop self
     }
   }
 
@@ -73,9 +73,9 @@ object ReliableProxy {
   def compare(a: Int, b: Int): Int = {
     val c = a - b
     c match {
-      case x if x < 0  ⇒ -1
-      case x if x == 0 ⇒ 0
-      case x if x > 0  ⇒ 1
+      case x if x < 0  => -1
+      case x if x == 0 => 0
+      case x if x > 0  => 1
     }
   }
 
@@ -116,7 +116,7 @@ object ReliableProxy {
 /**
  * INTERNAL API
  */
-private[akka] trait ReliableProxyDebugLogging extends ActorLogging { this: Actor ⇒
+private[akka] trait ReliableProxyDebugLogging extends ActorLogging { this: Actor =>
   val debug: Boolean =
     Try(context.system.settings.config.getBoolean("akka.reliable-proxy.debug")) getOrElse false
 
@@ -229,7 +229,7 @@ import ReliableProxy._
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
                     reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
   extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
-  import FSM.`→`
+  import FSM.`->`
 
   var tunnel: ActorRef = _
   var currentSerial: Int = 0
@@ -268,7 +268,7 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   }
 
   override def supervisorStrategy = OneForOneStrategy() {
-    case _ ⇒ SupervisorStrategy.Escalate
+    case _ => SupervisorStrategy.Escalate
   }
 
   override def postStop(): Unit = {
@@ -280,50 +280,50 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
   startWith(initialState, Vector.empty)
 
   when(Idle) {
-    case Event(Terminated(_), _) ⇒ terminated()
-    case Event(Ack(_), _)        ⇒ stay()
-    case Event(Unsent(msgs), _)  ⇒ goto(Active) using resend(updateSerial(msgs))
-    case Event(msg, _)           ⇒ goto(Active) using Vector(send(msg, sender()))
+    case Event(Terminated(_), _) => terminated()
+    case Event(Ack(_), _)        => stay()
+    case Event(Unsent(msgs), _)  => goto(Active) using resend(updateSerial(msgs))
+    case Event(msg, _)           => goto(Active) using Vector(send(msg, sender()))
   }
 
   onTransition {
-    case _ → Active     ⇒ scheduleTick()
-    case Active → Idle  ⇒ cancelTimer(resendTimer)
-    case _ → Connecting ⇒ scheduleReconnectTick()
+    case _ -> Active     => scheduleTick()
+    case Active -> Idle  => cancelTimer(resendTimer)
+    case _ -> Connecting => scheduleReconnectTick()
   }
 
   when(Active) {
-    case Event(Terminated(_), _) ⇒
+    case Event(Terminated(_), _) =>
       terminated()
-    case Event(Ack(serial), queue) ⇒
-      val q = queue dropWhile (m ⇒ compare(m.serial, serial) <= 0)
+    case Event(Ack(serial), queue) =>
+      val q = queue dropWhile (m => compare(m.serial, serial) <= 0)
       if (compare(serial, lastAckSerial) > 0) lastAckSerial = serial
       scheduleTick()
       if (q.isEmpty) goto(Idle) using Vector.empty
       else stay using q
-    case Event(Tick, queue) ⇒
+    case Event(Tick, queue) =>
       logResend(queue.size)
       queue foreach { tunnel ! _ }
       scheduleTick()
       stay()
-    case Event(Unsent(msgs), queue) ⇒
+    case Event(Unsent(msgs), queue) =>
       stay using queue ++ resend(updateSerial(msgs))
-    case Event(msg, queue) ⇒
+    case Event(msg, queue) =>
       stay using (queue :+ send(msg, sender()))
   }
 
   when(Connecting) {
-    case Event(Terminated(_), _) ⇒
+    case Event(Terminated(_), _) =>
       stay()
-    case Event(ActorIdentity(_, Some(actor)), queue) ⇒
+    case Event(ActorIdentity(_, Some(actor)), queue) =>
       val curr = currentTarget
       cancelTimer(reconnectTimer)
       createTunnel(actor)
       if (currentTarget != curr) gossip(TargetChanged(currentTarget))
       if (queue.isEmpty) goto(Idle) else goto(Active) using resend(queue)
-    case Event(ActorIdentity(_, None), _) ⇒
+    case Event(ActorIdentity(_, None), _) =>
       stay()
-    case Event(ReconnectTick, _) ⇒
+    case Event(ReconnectTick, _) =>
       if (maxConnectAttempts exists (_ == attemptedReconnects)) {
         logDebug("Failed to reconnect after {}", attemptedReconnects)
         stop()
@@ -334,9 +334,9 @@ class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
         attemptedReconnects += 1
         stay()
       }
-    case Event(Unsent(msgs), queue) ⇒
+    case Event(Unsent(msgs), queue) =>
       stay using queue ++ updateSerial(msgs)
-    case Event(msg, queue) ⇒
+    case Event(msg, queue) =>
       stay using (queue :+ Message(msg, sender(), nextSerial()))
   }
 

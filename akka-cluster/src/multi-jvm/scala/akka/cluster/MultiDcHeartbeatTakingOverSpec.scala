@@ -166,7 +166,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
             observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
             info(s"Got confirmation from ${observer.lastSender} that it is actively monitoring now")
           } catch {
-            case ex: Throwable ⇒
+            case ex: Throwable =>
               throw new AssertionError(s"Monitoring was Dormant on ${cluster.selfAddress}, where we expected it to be active!", ex)
           }
         }, 20.seconds)
@@ -184,7 +184,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
    */
   private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
+      .union(cluster.state.members.filter(m => m.dataCenter == dataCenter &&
         m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
@@ -193,7 +193,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
     membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: SortedSet[Member]): List[RoleName] = {
-    val res = ms.toList.flatMap(m ⇒ roleName(m.address))
+    val res = ms.toList.flatMap(m => roleName(m.address))
     require(res.size == ms.size, s"Not all members were converted to roles! Got: ${ms}, found ${res}")
     res
   }

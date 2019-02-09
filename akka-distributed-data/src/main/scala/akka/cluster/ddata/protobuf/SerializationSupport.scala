@@ -15,7 +15,7 @@ import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
-import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages ⇒ dm }
+import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.serialization._
 import akka.protobuf.ByteString
 import akka.protobuf.MessageLite
@@ -69,8 +69,8 @@ trait SerializationSupport {
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }
@@ -81,9 +81,9 @@ trait SerializationSupport {
   }
 
   def addressToProto(address: Address): dm.Address.Builder = address match {
-    case Address(_, _, Some(host), Some(port)) ⇒
+    case Address(_, _, Some(host), Some(port)) =>
       dm.Address.newBuilder().setHostname(host).setPort(port)
-    case _ ⇒ throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
+    case _ => throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
   }
 
   def addressFromProto(address: dm.Address): Address =
@@ -108,7 +108,7 @@ trait SerializationSupport {
   def versionVectorToProto(versionVector: VersionVector): dm.VersionVector = {
     val b = dm.VersionVector.newBuilder()
     versionVector.versionsIterator.foreach {
-      case (node, value) ⇒ b.addEntries(dm.VersionVector.Entry.newBuilder().
+      case (node, value) => b.addEntries(dm.VersionVector.Entry.newBuilder().
         setNode(uniqueAddressToProto(node)).setVersion(value))
     }
     b.build()
@@ -124,8 +124,8 @@ trait SerializationSupport {
     else if (entries.size == 1)
       VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
     else {
-      val versions: TreeMap[UniqueAddress, Long] = scala.collection.immutable.TreeMap.from(versionVector.getEntriesList.asScala.iterator.map(entry ⇒
-        uniqueAddressFromProto(entry.getNode) → entry.getVersion))
+      val versions: TreeMap[UniqueAddress, Long] = scala.collection.immutable.TreeMap.from(versionVector.getEntriesList.asScala.iterator.map(entry =>
+        uniqueAddressFromProto(entry.getNode) -> entry.getVersion))
       VersionVector(versions)
     }
   }

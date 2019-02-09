@@ -129,7 +129,7 @@ object SharedLeveldbPluginDocSpec {
     }
 
     def receive = {
-      case ActorIdentity(1, Some(store)) ⇒
+      case ActorIdentity(1, Some(store)) =>
         SharedLeveldbJournal.setStore(store, context.system)
     }
   }
@@ -161,7 +161,7 @@ class MyJournal extends AsyncWriteJournal {
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
                           toSequenceNr: Long, max: Long)(
-    replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = ???
+    replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
   def asyncReadHighestSequenceNr(
     persistenceId:  String,
     fromSequenceNr: Long): Future[Long] = ???

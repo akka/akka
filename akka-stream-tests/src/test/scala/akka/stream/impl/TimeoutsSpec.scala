@@ -121,7 +121,7 @@ class TimeoutsSpec extends StreamSpec {
 
       // Two seconds in overall, but won't timeout until time between elements is large enough
       // (i.e. this works differently from completionTimeout)
-      for (_ ← 1 to 4) {
+      for (_ <- 1 to 4) {
         upstreamProbe.sendNext(1)
         downstreamProbe.requestNext(1)
         downstreamProbe.expectNoMsg(500.millis) // No timeout yet
@@ -146,7 +146,7 @@ class TimeoutsSpec extends StreamSpec {
         .backpressureTimeout(1.second)
         .runWith(Sink.fromSubscriber(subscriber))
 
-      for (i ← 1 to 3) {
+      for (i <- 1 to 3) {
         subscriber.requestNext(i)
         subscriber.expectNoMsg(250.millis)
       }
@@ -288,7 +288,7 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source.fromPublisher(upWrite) ~> timeoutStage.in1
@@ -336,7 +336,7 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
         Source.fromPublisher(upWrite) ~> timeoutStage.in1

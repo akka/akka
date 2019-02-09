@@ -25,24 +25,24 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   "InputStreamSource" must {
 
     "not signal when no demand" in {
-      val f = StreamConverters.fromInputStream(() ⇒ new InputStream {
+      val f = StreamConverters.fromInputStream(() => new InputStream {
         override def read(): Int = 42
       })
 
       Await.result(f
         .takeWithin(5.seconds)
-        .runForeach(it ⇒ ()), 10.seconds)
+        .runForeach(it => ()), 10.seconds)
     }
 
     "read bytes from InputStream" in assertAllStagesStopped {
-      val f = StreamConverters.fromInputStream(() ⇒ new InputStream {
+      val f = StreamConverters.fromInputStream(() => new InputStream {
         @volatile var buf = List("a", "b", "c").map(_.charAt(0).toInt)
         override def read(): Int = {
           buf match {
-            case head :: tail ⇒
+            case head :: tail =>
               buf = tail
               head
-            case Nil ⇒
+            case Nil =>
               -1
           }
 
@@ -55,7 +55,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "emit as soon as read" in assertAllStagesStopped {
       val latch = new CountDownLatch(1)
-      val probe = StreamConverters.fromInputStream(() ⇒ new InputStream {
+      val probe = StreamConverters.fromInputStream(() => new InputStream {
         @volatile var emitted = false
         override def read(): Int = {
           if (!emitted) {

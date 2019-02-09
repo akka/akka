@@ -65,8 +65,8 @@ class FramingBenchmark {
   def setup(): Unit = {
     materializer = ActorMaterializer()
 
-    val frame = List.range(0, messageSize, 1).map(_ ⇒ Random.nextPrintableChar()).mkString + "\n"
-    flow = Source.repeat(ByteString(List.range(0, framePerSeq, 1).map(_ ⇒ frame).mkString)).take(100000)
+    val frame = List.range(0, messageSize, 1).map(_ => Random.nextPrintableChar()).mkString + "\n"
+    flow = Source.repeat(ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString)).take(100000)
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
   }
 
@@ -80,7 +80,7 @@ class FramingBenchmark {
   def framing(): Unit = {
     val lock = new Semaphore(1)
     lock.acquire()
-    flow.runWith(Sink.onComplete(_ ⇒ lock.release()))(materializer)
+    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
     lock.acquire()
   }
 

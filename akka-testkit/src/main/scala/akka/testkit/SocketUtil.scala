@@ -24,7 +24,7 @@ object SocketUtil {
       SocketUtil.temporaryServerAddress(address = "127.20.0.0")
       true
     } catch {
-      case _: java.net.BindException ⇒
+      case _: java.net.BindException =>
         false
     }
   }
@@ -52,16 +52,16 @@ object SocketUtil {
         ds.bind(new InetSocketAddress("localhost", tcpPort))
         tcpPort
       } catch {
-        case NonFatal(_) ⇒ findBoth(tries - 1)
+        case NonFatal(_) => findBoth(tries - 1)
       } finally {
         ds.close()
       }
     }
 
     protocol match {
-      case Tcp  ⇒ temporaryLocalPort(udp = false)
-      case Udp  ⇒ temporaryLocalPort(udp = true)
-      case Both ⇒ findBoth(5)
+      case Tcp  => temporaryLocalPort(udp = false)
+      case Udp  => temporaryLocalPort(udp = true)
+      case Both => findBoth(5)
     }
   }
 
@@ -77,10 +77,10 @@ object SocketUtil {
     Vector.fill(numberOfAddresses) {
 
       val address = hostname match {
-        case RANDOM_LOOPBACK_ADDRESS ⇒
+        case RANDOM_LOOPBACK_ADDRESS =>
           if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
           else "127.0.0.1"
-        case other ⇒
+        case other =>
           other
       }
 
@@ -94,12 +94,12 @@ object SocketUtil {
         (ss, new InetSocketAddress(address, ss.getLocalPort))
       }
 
-    } collect { case (socket, address) ⇒ socket.close(); address }
+    } collect { case (socket, address) => socket.close(); address }
   }
 
   def temporaryServerHostnameAndPort(interface: String = RANDOM_LOOPBACK_ADDRESS): (String, Int) = {
     val socketAddress = temporaryServerAddress(interface)
-    socketAddress.getHostString → socketAddress.getPort
+    socketAddress.getHostString -> socketAddress.getPort
   }
 
   def temporaryUdpIpv6Port(iface: NetworkInterface) = {

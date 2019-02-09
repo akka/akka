@@ -50,9 +50,9 @@ class InboundControlJunctionSpec
       val recipient = OptionVal.None // not used
 
       val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
-        .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
+        .map(msg => InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
         .viaMat(new InboundControlJunction)(Keep.both)
-        .map { case env: InboundEnvelope ⇒ env.message }
+        .map { case env: InboundEnvelope => env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

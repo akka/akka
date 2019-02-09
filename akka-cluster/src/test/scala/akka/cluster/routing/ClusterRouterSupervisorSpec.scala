@@ -14,7 +14,7 @@ object ClusterRouterSupervisorSpec {
   class KillableActor(testActor: ActorRef) extends Actor {
 
     def receive = {
-      case "go away" ⇒
+      case "go away" =>
         throw new IllegalArgumentException("Goodbye then!")
     }
 
@@ -36,7 +36,7 @@ class ClusterRouterSupervisorSpec extends AkkaSpec("""
       val router = system.actorOf(
         ClusterRouterPool(RoundRobinPool(nrOfInstances = 1, supervisorStrategy =
           OneForOneStrategy(loggingEnabled = false) {
-            case _ ⇒
+            case _ =>
               testActor ! "supervised"
               SupervisorStrategy.Stop
           }), ClusterRouterPoolSettings(

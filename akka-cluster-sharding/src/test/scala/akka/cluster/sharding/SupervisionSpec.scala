@@ -26,11 +26,11 @@ object SupervisionSpec {
   case object StopMessage
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case Msg(id, msg) ⇒ (id.toString, msg)
+    case Msg(id, msg) => (id.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
-    case Msg(id, msg) ⇒ (id % 2).toString
+    case Msg(id, msg) => (id % 2).toString
   }
 
   class PassivatingActor extends Actor with ActorLogging {
@@ -44,15 +44,15 @@ object SupervisionSpec {
     }
 
     override def receive: Receive = {
-      case "passivate" ⇒
+      case "passivate" =>
         log.info("Passivating")
         context.parent ! Passivate(StopMessage)
         // simulate another message causing a stop before the region sends the stop message
         // e.g. a persistent actor having a persist failure while processing the next message
         context.stop(self)
-      case "hello" ⇒
+      case "hello" =>
         sender() ! Response(self)
-      case StopMessage ⇒
+      case StopMessage =>
         log.info("Received stop from region")
         context.parent ! PoisonPill
     }

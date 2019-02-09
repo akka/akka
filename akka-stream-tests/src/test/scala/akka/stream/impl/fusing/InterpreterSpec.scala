@@ -24,7 +24,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   "Interpreter" must {
 
-    "implement map correctly" in new OneBoundedSetup[Int](Map((x: Int) ⇒ x + 1)) {
+    "implement map correctly" in new OneBoundedSetup[Int](Map((x: Int) => x + 1)) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -44,9 +44,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "implement chain of maps correctly" in new OneBoundedSetup[Int](
-      Map((x: Int) ⇒ x + 1),
-      Map((x: Int) ⇒ x * 2),
-      Map((x: Int) ⇒ x + 1)) {
+      Map((x: Int) => x + 1),
+      Map((x: Int) => x * 2),
+      Map((x: Int) => x + 1)) {
 
       lastEvents() should be(Set.empty)
 
@@ -81,7 +81,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "implement one-to-many many-to-one chain correctly" in new OneBoundedSetup[Int](
       Doubler(),
-      Filter((x: Int) ⇒ x != 0)) {
+      Filter((x: Int) => x != 0)) {
 
       lastEvents() should be(Set.empty)
 
@@ -105,7 +105,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "implement many-to-one one-to-many chain correctly" in new OneBoundedSetup[Int](
-      Filter((x: Int) ⇒ x != 0),
+      Filter((x: Int) => x != 0),
       Doubler()) {
 
       lastEvents() should be(Set.empty)
@@ -147,9 +147,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "implement take inside a chain" in new OneBoundedSetup[Int](
-      Filter((x: Int) ⇒ x != 0),
+      Filter((x: Int) => x != 0),
       takeTwo,
-      Map((x: Int) ⇒ x + 1)) {
+      Map((x: Int) => x + 1)) {
 
       lastEvents() should be(Set.empty)
 
@@ -169,7 +169,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnComplete, OnNext(3)))
     }
 
-    "implement fold" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
+    "implement fold" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) => agg + x)) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -188,7 +188,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(3), OnComplete))
     }
 
-    "implement fold with proper cancel" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
+    "implement fold with proper cancel" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) => agg + x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -208,7 +208,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "work if fold completes while not in a push position" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) ⇒ agg + x)) {
+    "work if fold completes while not in a push position" in new OneBoundedSetup[Int](Fold(0, (agg: Int, x: Int) => agg + x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -247,8 +247,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     "implement batch (conflate)" in new OneBoundedSetup[Int](Batch(
       1L,
       ConstantFun.zeroLong,
-      (in: Int) ⇒ in,
-      (agg: Int, x: Int) ⇒ agg + x)) {
+      (in: Int) => in,
+      (agg: Int, x: Int) => agg + x)) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -307,13 +307,13 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       Batch(
         1L,
         ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x),
+        (in: Int) => in,
+        (agg: Int, x: Int) => agg + x),
       Batch(
         1L,
         ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x)) {
+        (in: Int) => in,
+        (agg: Int, x: Int) => agg + x)) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -344,8 +344,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "work with expand-expand" in new OneBoundedSetup[Int](
-      new Expand((x: Int) ⇒ Iterator.from(x)),
-      new Expand((x: Int) ⇒ Iterator.from(x))) {
+      new Expand((x: Int) => Iterator.from(x)),
+      new Expand((x: Int) => Iterator.from(x))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -380,8 +380,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       Batch(
         1L,
         ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x),
+        (in: Int) => in,
+        (agg: Int, x: Int) => agg + x),
       new Expand(Iterator.continually(_: Int))) {
 
       lastEvents() should be(Set(RequestOne))
@@ -416,8 +416,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       Batch(
         1L,
         ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x)) {
+        (in: Int) => in,
+        (agg: Int, x: Int) => agg + x)) {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(1)
@@ -433,11 +433,11 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     // Note, the new interpreter has no jumpback table, still did not want to remove the test
     "work with jumpback table and completed elements" in new OneBoundedSetup[Int](
-      Map((x: Int) ⇒ x),
-      Map((x: Int) ⇒ x),
+      Map((x: Int) => x),
+      Map((x: Int) => x),
       KeepGoing(),
-      Map((x: Int) ⇒ x),
-      Map((x: Int) ⇒ x)) {
+      Map((x: Int) => x),
+      Map((x: Int) => x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -476,9 +476,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "work with pushAndFinish if indirect upstream completes with pushAndFinish" in new OneBoundedSetup[Int](
-      Map((x: Any) ⇒ x),
+      Map((x: Any) => x),
       new PushFinishStage,
-      Map((x: Any) ⇒ x)) {
+      Map((x: Any) => x)) {
 
       lastEvents() should be(Set.empty)
 
@@ -491,7 +491,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "work with pushAndFinish if upstream completes with pushAndFinish and downstream immediately pulls" in new OneBoundedSetup[Int](
       new PushFinishStage,
-      Fold(0, (x: Int, y: Int) ⇒ x + y)) {
+      Fold(0, (x: Int, y: Int) => x + y)) {
 
       lastEvents() should be(Set.empty)
 
@@ -525,8 +525,8 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       val ev = lastEvents()
       ev.nonEmpty should be(true)
       ev.forall {
-        case OnError(_: IllegalArgumentException) ⇒ true
-        case _                                    ⇒ false
+        case OnError(_: IllegalArgumentException) => true
+        case _                                    => false
       } should be(true)
     }
 
@@ -615,7 +615,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends SimpleLinearGraphStage[Any] {
+  private[akka] class PushFinishStage(onPostStop: () => Unit = () => ()) extends SimpleLinearGraphStage[Any] {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPush(): Unit = {

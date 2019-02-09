@@ -319,7 +319,7 @@ sealed trait BackoffOnStopOptions extends ExtendedBackoffOptions[BackoffOnStopOp
    * the supervised actor is running then it will be forwarded to the supervised actor and
    * when the supervised actor stops its self the supervisor will stop its self.
    */
-  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOnStopOptions
+  def withFinalStopMessage(isFinalStopMessage: Any => Boolean): BackoffOnStopOptions
 }
 
 @DoNotInherit
@@ -334,7 +334,7 @@ private final case class BackoffOnStopOptionsImpl[T](
   reset:              Option[BackoffReset]  = None,
   supervisorStrategy: OneForOneStrategy     = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
   replyWhileStopped:  Option[Any]           = None,
-  finalStopMessage:   Option[Any ⇒ Boolean] = None
+  finalStopMessage:   Option[Any => Boolean] = None
 ) extends BackoffOnStopOptions {
 
   private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -348,16 +348,16 @@ private final case class BackoffOnStopOptionsImpl[T](
 
   // additional
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
-  def withFinalStopMessage(action: Any ⇒ Boolean) = copy(finalStopMessage = Some(action))
+  def withFinalStopMessage(action: Any => Boolean) = copy(finalStopMessage = Some(action))
 
   def props: Props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
     backoffReset match {
-      case AutoReset(resetBackoff) ⇒
+      case AutoReset(resetBackoff) =>
         require(minBackoff <= resetBackoff && resetBackoff <= maxBackoff)
-      case _ ⇒ // ignore
+      case _ => // ignore
     }
 
     Props(new BackoffOnStopSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
@@ -389,9 +389,9 @@ private final case class BackoffOnFailureOptionsImpl[T](
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
     backoffReset match {
-      case AutoReset(resetBackoff) ⇒
+      case AutoReset(resetBackoff) =>
         require(minBackoff <= resetBackoff && resetBackoff <= maxBackoff)
-      case _ ⇒ // ignore
+      case _ => // ignore
     }
 
     Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))

@@ -35,7 +35,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val m1 = b.add(Merge[Int](2))
         val m2 = b.add(Merge[Int](2))
 
@@ -51,7 +51,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -64,7 +64,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "work with one-way merge" in {
-      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      val result = Source.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[Int](1))
         val source = b.add(Source(1 to 3))
 
@@ -85,7 +85,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[Int](6))
 
         source1 ~> merge.in(0)
@@ -102,7 +102,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Set.empty[Int]
-      for (_ ← 1 to 5) {
+      for (_ <- 1 to 5) {
         subscription.request(1)
         collected += probe.expectNext()
       }
@@ -171,7 +171,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val src1 = Source.asSubscriber[Int]
       val src2 = Source.asSubscriber[Int]
 
-      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b ⇒ (s1, s2) ⇒
+      val (graphSubscriber1, graphSubscriber2) = RunnableGraph.fromGraph(GraphDSL.create(src1, src2)((_, _)) { implicit b => (s1, s2) =>
         val merge = b.add(Merge[Int](2))
         s1.out ~> merge.in(0)
         s2.out ~> merge.in(1)

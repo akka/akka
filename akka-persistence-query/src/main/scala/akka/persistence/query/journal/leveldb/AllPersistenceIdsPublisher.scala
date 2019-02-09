@@ -36,31 +36,31 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: I
   def receive = init
 
   def init: Receive = {
-    case _: Request ⇒
+    case _: Request =>
       journal ! LeveldbJournal.SubscribeAllPersistenceIds
       context.become(active)
-    case Cancel ⇒ context.stop(self)
+    case Cancel => context.stop(self)
   }
 
   def active: Receive = {
-    case LeveldbJournal.CurrentPersistenceIds(allPersistenceIds) ⇒
+    case LeveldbJournal.CurrentPersistenceIds(allPersistenceIds) =>
       buf ++= allPersistenceIds
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
 
-    case LeveldbJournal.PersistenceIdAdded(persistenceId) ⇒
+    case LeveldbJournal.PersistenceIdAdded(persistenceId) =>
       if (liveQuery) {
         buf :+= persistenceId
         deliverBuf()
       }
 
-    case _: Request ⇒
+    case _: Request =>
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
 
-    case Cancel ⇒ context.stop(self)
+    case Cancel => context.stop(self)
   }
 
 }

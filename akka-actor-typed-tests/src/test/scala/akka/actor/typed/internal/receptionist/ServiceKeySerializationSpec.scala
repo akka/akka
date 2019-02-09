@@ -19,11 +19,11 @@ class ServiceKeySerializationSpec extends ScalaTestWithActorTestKit(ActorRefSeri
     "be serialized and deserialized by ServiceKeySerializer" in {
       val obj = ServiceKey[Int]("testKey")
       serialization.findSerializerFor(obj) match {
-        case serializer: ServiceKeySerializer ⇒
+        case serializer: ServiceKeySerializer =>
           val blob = serializer.toBinary(obj)
           val ref = serializer.fromBinary(blob, serializer.manifest(obj))
           ref should be(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }

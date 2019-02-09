@@ -15,7 +15,7 @@ object UniformFanOutShape {
 class UniformFanOutShape[-I, +O](n: Int, _init: FanOutShape.Init[I @uncheckedVariance]) extends FanOutShape[I](_init) {
 
   //initialize by side-effect
-  for (i ← 0 until n) newOutlet[O](s"out$i")
+  for (i <- 0 until n) newOutlet[O](s"out$i")
 
   def this(n: Int) = this(n, FanOutShape.Name[I]("UniformFanOut"))
   def this(n: Int, name: String) = this(n, FanOutShape.Name[I](name))

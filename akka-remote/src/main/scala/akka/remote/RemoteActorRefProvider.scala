@@ -51,13 +51,13 @@ private[akka] object RemoteActorRefProvider {
     startWith(Uninitialized, None)
 
     when(Uninitialized) {
-      case Event(i: Internals, _) ⇒
+      case Event(i: Internals, _) =>
         systemGuardian ! RegisterTerminationHook
         goto(Idle) using Some(i)
     }
 
     when(Idle) {
-      case Event(TerminationHook, Some(internals)) ⇒
+      case Event(TerminationHook, Some(internals)) =>
         log.info("Shutting down remote daemon.")
         internals.remoteDaemon ! TerminationHook
         goto(WaitDaemonShutdown)
@@ -65,19 +65,19 @@ private[akka] object RemoteActorRefProvider {
 
     // TODO: state timeout
     when(WaitDaemonShutdown) {
-      case Event(TerminationHookDone, Some(internals)) ⇒
+      case Event(TerminationHookDone, Some(internals)) =>
         log.info("Remote daemon shut down; proceeding with flushing remote transports.")
         internals.transport.shutdown() pipeTo self
         goto(WaitTransportShutdown)
     }
 
     when(WaitTransportShutdown) {
-      case Event(Done, _) ⇒
+      case Event(Done, _) =>
         log.info("Remoting shut down.")
         systemGuardian ! TerminationHookDone
         stop()
 
-      case Event(Status.Failure(ex), _) ⇒
+      case Event(Status.Failure(ex), _) =>
         log.error(ex, "Remoting shut down with error")
         systemGuardian ! TerminationHookDone
         stop()
@@ -98,26 +98,26 @@ private[akka] object RemoteActorRefProvider {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, recipient, seqOpt) ⇒
+      case Send(m, senderOption, recipient, seqOpt) =>
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
-      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
+      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) =>
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(DeadLetter(m, senderOption.getOrElse(_provider.deadLetters), recipient))
-      case env: OutboundEnvelope ⇒
+      case env: OutboundEnvelope =>
         super.!(DeadLetter(unwrapSystemMessageEnvelope(env.message), env.sender.getOrElse(_provider.deadLetters),
           env.recipient.getOrElse(_provider.deadLetters)))
-      case DeadLetter(env: OutboundEnvelope, _, _) ⇒
+      case DeadLetter(env: OutboundEnvelope, _, _) =>
         super.!(DeadLetter(unwrapSystemMessageEnvelope(env.message), env.sender.getOrElse(_provider.deadLetters),
           env.recipient.getOrElse(_provider.deadLetters)))
-      case _ ⇒ super.!(message)(sender)
+      case _ => super.!(message)(sender)
     }
 
     private def unwrapSystemMessageEnvelope(msg: AnyRef): AnyRef = msg match {
-      case SystemMessageEnvelope(m, _, _) ⇒ m
-      case _                              ⇒ msg
+      case SystemMessageEnvelope(m, _, _) => m
+      case _                              => msg
     }
 
     @throws(classOf[java.io.ObjectStreamException])
@@ -150,7 +150,7 @@ private[akka] class RemoteActorRefProvider(
   protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, dynamicAccess, deployer,
-    Some(deadLettersPath ⇒ new RemoteDeadLetterActorRef(this, deadLettersPath, eventStream)))
+    Some(deadLettersPath => new RemoteDeadLetterActorRef(this, deadLettersPath, eventStream)))
 
   @volatile
   private var _log = local.log
@@ -207,9 +207,9 @@ private[akka] class RemoteActorRefProvider(
       },
       transport =
         if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
-          case ArterySettings.AeronUpd ⇒ new ArteryAeronUdpTransport(system, this)
-          case ArterySettings.Tcp      ⇒ new ArteryTcpTransport(system, this, tlsEnabled = false)
-          case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, this, tlsEnabled = true)
+          case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
+          case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
+          case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
         }
         else new Remoting(system, this))
 
@@ -242,7 +242,7 @@ private[akka] class RemoteActorRefProvider(
     def createFailureDetector(): FailureDetector =
       FailureDetectorLoader.load(remoteSettings.WatchFailureDetectorImplementationClass, remoteSettings.WatchFailureDetectorConfig, system)
 
-    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
+    new DefaultFailureDetectorRegistry(() => createFailureDetector())
   }
 
   protected def createRemoteDeploymentWatcher(system: ActorSystemImpl): ActorRef =
@@ -284,10 +284,10 @@ private[akka] class RemoteActorRefProvider(
       @scala.annotation.tailrec
       def lookupRemotes(p: Iterable[String]): Option[Deploy] = {
         p.headOption match {
-          case None           ⇒ None
-          case Some("remote") ⇒ lookupRemotes(p.drop(3))
-          case Some("user")   ⇒ deployer.lookup(p.drop(1))
-          case Some(_)        ⇒ None
+          case None           => None
+          case Some("remote") => lookupRemotes(p.drop(3))
+          case Some("user")   => deployer.lookup(p.drop(1))
+          case Some(_)        => None
         }
       }
 
@@ -295,21 +295,21 @@ private[akka] class RemoteActorRefProvider(
       val lookup =
         if (lookupDeploy)
           elems.head match {
-            case "user" | "system" ⇒ deployer.lookup(elems.drop(1))
-            case "remote"          ⇒ lookupRemotes(elems)
-            case _                 ⇒ None
+            case "user" | "system" => deployer.lookup(elems.drop(1))
+            case "remote"          => lookupRemotes(elems)
+            case _                 => None
           }
         else None
 
       val deployment = {
         deploy.toList ::: lookup.toList match {
-          case Nil ⇒ Nil
-          case l   ⇒ List(l reduce ((a, b) ⇒ b withFallback a))
+          case Nil => Nil
+          case l   => List(l reduce ((a, b) => b withFallback a))
         }
       }
 
-      Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
-        case d @ Deploy(_, _, _, RemoteScope(address), _, _) ⇒
+      Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) => b withFallback a) match {
+        case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else if (props.deploy.scope == LocalScope) {
@@ -320,7 +320,7 @@ private[akka] class RemoteActorRefProvider(
               val dispatcher = system.dispatchers.lookup(props.dispatcher)
               system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
             } catch {
-              case NonFatal(e) ⇒ throw new ConfigurationException(
+              case NonFatal(e) => throw new ConfigurationException(
                 s"configuration problem while creating [$path] with dispatcher [${props.dispatcher}] and mailbox [${props.mailbox}]", e)
             }
             val localAddress = transport.localAddressForRemote(address)
@@ -328,10 +328,10 @@ private[akka] class RemoteActorRefProvider(
               withUid(path.uid)
             new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
           } catch {
-            case NonFatal(e) ⇒ throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
+            case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
           }
 
-        case _ ⇒
+        case _ =>
           local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
@@ -343,7 +343,7 @@ private[akka] class RemoteActorRefProvider(
       new RemoteActorRef(transport, transport.localAddressForRemote(path.address),
         path, Nobody, props = None, deploy = None)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, "Error while looking up address [{}]", path.address)
         new EmptyLocalActorRef(this, path, eventStream)
     }
@@ -351,7 +351,7 @@ private[akka] class RemoteActorRefProvider(
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
   override private[akka] def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
-    case ActorPathExtractor(address, elems) ⇒
+    case ActorPathExtractor(address, elems) =>
       if (hasAddress(address)) actorFor(rootGuardian, elems)
       else {
         val rootPath = RootActorPath(address) / elems
@@ -359,12 +359,12 @@ private[akka] class RemoteActorRefProvider(
           new RemoteActorRef(transport, transport.localAddressForRemote(address),
             rootPath, Nobody, props = None, deploy = None)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.error(e, "Error while looking up address [{}]", rootPath.address)
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
-    case _ ⇒ local.actorFor(ref, path)
+    case _ => local.actorFor(ref, path)
   }
 
   @deprecated("use actorSelection instead of actorFor", "2.2")
@@ -377,7 +377,7 @@ private[akka] class RemoteActorRefProvider(
       new RemoteActorRef(transport, transport.localAddressForRemote(address),
         RootActorPath(address), Nobody, props = None, deploy = None)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, "No root guardian at [{}]", address)
         new EmptyLocalActorRef(this, RootActorPath(address), eventStream)
     }
@@ -389,17 +389,17 @@ private[akka] class RemoteActorRefProvider(
    */
   private[akka] def resolveActorRefWithLocalAddress(path: String, localAddress: Address): InternalActorRef = {
     path match {
-      case ActorPathExtractor(address, elems) ⇒
+      case ActorPathExtractor(address, elems) =>
         if (hasAddress(address))
           local.resolveActorRef(rootGuardian, elems)
         else try {
           new RemoteActorRef(transport, localAddress, RootActorPath(address) / elems, Nobody, props = None, deploy = None)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
             new EmptyLocalActorRef(this, RootActorPath(address) / elems, eventStream)
         }
-      case _ ⇒
+      case _ =>
         log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
         deadLetters
     }
@@ -409,8 +409,8 @@ private[akka] class RemoteActorRefProvider(
     // using thread local LRU cache, which will call internalRresolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null ⇒ internalResolveActorRef(path) // not initialized yet
-      case c    ⇒ c.threadLocalCache(this).getOrCompute(path)
+      case null => internalResolveActorRef(path) // not initialized yet
+      case c    => c.threadLocalCache(this).getOrCompute(path)
     }
   }
 
@@ -419,7 +419,7 @@ private[akka] class RemoteActorRefProvider(
    * public `resolveActorRef(path: String)`.
    */
   private[akka] def internalResolveActorRef(path: String): ActorRef = path match {
-    case ActorPathExtractor(address, elems) ⇒
+    case ActorPathExtractor(address, elems) =>
       if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
       else {
         val rootPath = RootActorPath(address) / elems
@@ -427,12 +427,12 @@ private[akka] class RemoteActorRefProvider(
           new RemoteActorRef(transport, transport.localAddressForRemote(address),
             rootPath, Nobody, props = None, deploy = None)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
-    case _ ⇒
+    case _ =>
       log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
@@ -443,7 +443,7 @@ private[akka] class RemoteActorRefProvider(
       new RemoteActorRef(transport, transport.localAddressForRemote(path.address),
         path, Nobody, props = None, deploy = None)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.warning("Error while resolving ActorRef [{}] due to [{}]", path, e.getMessage)
         new EmptyLocalActorRef(this, path, eventStream)
     }
@@ -466,9 +466,9 @@ private[akka] class RemoteActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
     addr match {
-      case _ if hasAddress(addr)           ⇒ Some(local.rootPath.address)
-      case Address(_, _, Some(_), Some(_)) ⇒ try Some(transport.localAddressForRemote(addr)) catch { case NonFatal(_) ⇒ None }
-      case _                               ⇒ None
+      case _ if hasAddress(addr)           => Some(local.rootPath.address)
+      case Address(_, _, Some(_), Some(_)) => try Some(transport.localAddressForRemote(addr)) catch { case NonFatal(_) => None }
+      case _                               => None
     }
   }
 
@@ -478,8 +478,8 @@ private[akka] class RemoteActorRefProvider(
   private var serializationInformationCache: OptionVal[Serialization.Information] = OptionVal.None
   @InternalApi override private[akka] def serializationInformation: Serialization.Information =
     serializationInformationCache match {
-      case OptionVal.Some(info) ⇒ info
-      case OptionVal.None ⇒
+      case OptionVal.Some(info) => info
+      case OptionVal.None =>
         if ((transport eq null) || (transport.defaultAddress eq null))
           local.serializationInformation // address not know yet, access before complete init and binding
         else {
@@ -526,12 +526,12 @@ private[akka] class RemoteActorRef private[akka] (
     throw new IllegalArgumentException(s"Unexpected local address in RemoteActorRef [$this]")
 
   remote match {
-    case t: ArteryTransport ⇒
+    case t: ArteryTransport =>
       // detect mistakes such as using "akka.tcp" with Artery
       if (path.address.protocol != t.localAddress.address.protocol)
         throw new IllegalArgumentException(
           s"Wrong protocol of [${path}], expected [${t.localAddress.address.protocol}]")
-    case _ ⇒
+    case _ =>
   }
   @volatile private[remote] var cachedAssociation: artery.Association = null
 
@@ -541,9 +541,9 @@ private[akka] class RemoteActorRef private[akka] (
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {
-      case None       ⇒ this
-      case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(remote, localAddressToUse, path / s, Nobody, props = None, deploy = None)
+      case None       => this
+      case Some("..") => getParent getChild name
+      case _          => new RemoteActorRef(remote, localAddressToUse, path / s, Nobody, props = None, deploy = None)
     }
   }
 
@@ -551,11 +551,11 @@ private[akka] class RemoteActorRef private[akka] (
   override private[akka] def isTerminated: Boolean = false
 
   private def handleException(message: Any, sender: ActorRef): Catcher[Unit] = {
-    case e: InterruptedException ⇒
+    case e: InterruptedException =>
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message send"))
       remote.system.deadLetters.tell(message, sender)
       Thread.currentThread.interrupt()
-    case NonFatal(e) ⇒
+    case NonFatal(e) =>
       remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message send"))
       remote.system.deadLetters.tell(message, sender)
   }
@@ -577,12 +577,12 @@ private[akka] class RemoteActorRef private[akka] (
     try {
       //send to remote, unless watch message is intercepted by the remoteWatcher
       message match {
-        case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) ⇒
+        case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
           provider.remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
-        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) ⇒
+        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
           provider.remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
-        case _ ⇒ remote.send(message, OptionVal.None, this)
+        case _ => remote.send(message, OptionVal.None, this)
       }
     } catch handleException(message, Actor.noSender)
 

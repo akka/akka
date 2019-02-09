@@ -13,8 +13,8 @@ import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.{ Helpers, OptionVal }
-import akka.{ actor ⇒ untyped }
-import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
+import akka.{ actor => untyped }
+import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
@@ -31,7 +31,7 @@ import akka.actor.ActorRefProvider
 @InternalApi
 private[akka] final class FunctionRef[-T](
   override val path: ActorPath,
-  send:              (T, FunctionRef[T]) ⇒ Unit)
+  send:              (T, FunctionRef[T]) => Unit)
   extends ActorRef[T] with ActorRefImpl[T] with InternalRecipientRef[T] {
 
   override def tell(message: T): Unit = {
@@ -172,15 +172,15 @@ private[akka] final class FunctionRef[-T](
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)
-    _children += btk.context.self.path.name → btk
+    _children += btk.context.self.path.name -> btk
     btk.context.self
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
     _children get name match {
-      case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
-      case None ⇒
+      case Some(_) => throw untyped.InvalidActorNameException(s"actor name $name is already taken")
+      case None =>
         val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior)
-        _children += name → btk
+        _children += name -> btk
         btk.context.self
     }
 
@@ -214,16 +214,16 @@ private[akka] final class FunctionRef[-T](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
+  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = path / n withUid rnd().nextInt()
     val i = new BehaviorTestKitImpl[U](p, Behavior.ignore)
-    _children += p.name → i
+    _children += p.name -> i
 
     new FunctionRef[U](
       p,
-      (message, _) ⇒ { val m = f(message); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! message } })
+      (message, _) => { val m = f(message); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! message } })
   }
 
   /**

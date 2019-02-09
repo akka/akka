@@ -29,7 +29,7 @@ object ForkJoinPoolStarvationSpec {
     self ! "tick"
 
     override def receive = {
-      case "tick" ⇒
+      case "tick" =>
         self ! "tick"
     }
   }
@@ -37,7 +37,7 @@ object ForkJoinPoolStarvationSpec {
   class InnocentActor extends Actor {
 
     override def receive = {
-      case "ping" ⇒
+      case "ping" =>
         sender ! "All fine"
     }
   }
@@ -59,7 +59,7 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
 
       val innocentActor = system.actorOf(Props(new InnocentActor).withDispatcher("actorhang.task-dispatcher"))
 
-      for (_ ← 1 to Iterations) {
+      for (_ <- 1 to Iterations) {
         // External task submission via the default dispatcher
         innocentActor ! "ping"
         expectMsg("All fine")

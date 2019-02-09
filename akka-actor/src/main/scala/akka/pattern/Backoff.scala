@@ -554,7 +554,7 @@ trait BackoffOptions {
   /**
    * @see [[BackoffOnStopOptions.withFinalStopMessage()]]
    */
-  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
+  def withFinalStopMessage(isFinalStopMessage: Any => Boolean): BackoffOptions
 
   /**
    * Returns the props to create the back-off supervisor.
@@ -572,7 +572,7 @@ private final case class BackoffOptionsImpl(
   reset:              Option[BackoffReset]  = None,
   supervisorStrategy: OneForOneStrategy     = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
   replyWhileStopped:  Option[Any]           = None,
-  finalStopMessage:   Option[Any ⇒ Boolean] = None
+  finalStopMessage:   Option[Any => Boolean] = None
 ) extends akka.pattern.BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -583,24 +583,24 @@ private final case class BackoffOptionsImpl(
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
-  def withFinalStopMessage(action: Any ⇒ Boolean) = copy(finalStopMessage = Some(action))
+  def withFinalStopMessage(action: Any => Boolean) = copy(finalStopMessage = Some(action))
 
   def props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
     backoffReset match {
-      case AutoReset(resetBackoff) ⇒
+      case AutoReset(resetBackoff) =>
         require(minBackoff <= resetBackoff && resetBackoff <= maxBackoff)
-      case _ ⇒ // ignore
+      case _ => // ignore
     }
 
     backoffType match {
       //onFailure method in companion object
-      case RestartImpliesFailure ⇒
+      case RestartImpliesFailure =>
         Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
       //onStop method in companion object
-      case StopImpliesFailure ⇒
+      case StopImpliesFailure =>
         Props(new BackoffOnStopSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
     }
   }

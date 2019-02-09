@@ -52,7 +52,7 @@ object StreamConverters {
    * @param autoFlush If true the OutputStream will be flushed whenever a byte array is written
    */
   def fromOutputStream(f: function.Creator[OutputStream], autoFlush: Boolean): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
-    new Sink(scaladsl.StreamConverters.fromOutputStream(() ⇒ f.create(), autoFlush).toCompletionStage())
+    new Sink(scaladsl.StreamConverters.fromOutputStream(() => f.create(), autoFlush).toCompletionStage())
 
   /**
    * Creates a Sink which when materialized will return an [[java.io.InputStream]] which it is possible
@@ -124,7 +124,7 @@ object StreamConverters {
    * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
    */
   def fromInputStream(in: function.Creator[InputStream], chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
-    new Source(scaladsl.StreamConverters.fromInputStream(() ⇒ in.create(), chunkSize).toCompletionStage())
+    new Source(scaladsl.StreamConverters.fromInputStream(() => in.create(), chunkSize).toCompletionStage())
 
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
@@ -235,7 +235,7 @@ object StreamConverters {
    * to handle multiple invocations.
    */
   def javaCollector[T, R](collector: function.Creator[Collector[T, _ <: Any, R]]): Sink[T, CompletionStage[R]] =
-    new Sink(scaladsl.StreamConverters.javaCollector[T, R](() ⇒ collector.create()).toCompletionStage())
+    new Sink(scaladsl.StreamConverters.javaCollector[T, R](() => collector.create()).toCompletionStage())
 
   /**
    * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 ``Collector``
@@ -248,6 +248,6 @@ object StreamConverters {
    * to handle multiple invocations.
    */
   def javaCollectorParallelUnordered[T, R](parallelism: Int)(collector: function.Creator[Collector[T, _ <: Any, R]]): Sink[T, CompletionStage[R]] =
-    new Sink(scaladsl.StreamConverters.javaCollectorParallelUnordered[T, R](parallelism)(() ⇒ collector.create()).toCompletionStage())
+    new Sink(scaladsl.StreamConverters.javaCollectorParallelUnordered[T, R](parallelism)(() => collector.create()).toCompletionStage())
 
 }

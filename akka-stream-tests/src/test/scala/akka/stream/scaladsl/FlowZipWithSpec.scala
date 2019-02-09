@@ -58,7 +58,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
         subscription.request(2)
       }
       probe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
+        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
       probe.expectNoMsg(200.millis)
     }
@@ -103,7 +103,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
       val sourceFruits = Source(List("apple", "orange", "banana"))
 
       sourceCount.zipWith(sourceFruits) {
-        (countStr, fruitName) ⇒
+        (countStr, fruitName) =>
           s"$countStr $fruitName"
       }.runWith(Sink.foreach(println))
       // this will print 'one apple', 'two orange', 'three banana'

@@ -20,7 +20,7 @@ class PublisherSinkSpec extends StreamSpec {
 
     "be unique when created twice" in assertAllStagesStopped {
 
-      val (pub1, pub2) = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) { implicit b ⇒ (p1, p2) ⇒
+      val (pub1, pub2) = RunnableGraph.fromGraph(GraphDSL.create(Sink.asPublisher[Int](false), Sink.asPublisher[Int](false))(Keep.both) { implicit b => (p1, p2) =>
         import GraphDSL.Implicits._
 
         val bcast = b.add(Broadcast[Int](2))
@@ -47,7 +47,7 @@ class PublisherSinkSpec extends StreamSpec {
 
     "be able to use Publisher in materialized value transformation" in {
       val f = Source(1 to 3).runWith(
-        Sink.asPublisher[Int](false).mapMaterializedValue(p ⇒ Source.fromPublisher(p).runFold(0)(_ + _)))
+        Sink.asPublisher[Int](false).mapMaterializedValue(p => Source.fromPublisher(p).runFold(0)(_ + _)))
 
       Await.result(f, 3.seconds) should be(6)
     }

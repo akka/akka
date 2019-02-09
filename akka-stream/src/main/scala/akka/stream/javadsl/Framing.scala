@@ -124,7 +124,7 @@ object Framing {
       fieldOffset,
       maximumFrameLength,
       byteOrder,
-      (a: Array[Byte], s: Int) ⇒ computeFrameSize.apply(a, s)
+      (a: Array[Byte], s: Int) => computeFrameSize.apply(a, s)
     ).asJava
 
   /**

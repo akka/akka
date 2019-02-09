@@ -22,6 +22,6 @@ class UdpPortActor extends Actor {
     .getDefaultAddress.host.get, udp = true).getPort
 
   def receive = {
-    case GetUdpPort ⇒ sender() ! port
+    case GetUdpPort => sender() ! port
   }
 }

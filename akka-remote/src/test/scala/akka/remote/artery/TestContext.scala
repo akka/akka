@@ -36,13 +36,13 @@ private[remote] class TestInboundContext(
 
   override def association(remoteAddress: Address): OutboundContext =
     associationsByAddress.get(remoteAddress) match {
-      case null ⇒
+      case null =>
         val a = createAssociation(remoteAddress)
         associationsByAddress.putIfAbsent(remoteAddress, a) match {
-          case null     ⇒ a
-          case existing ⇒ existing
+          case null     => a
+          case existing => existing
         }
-      case existing ⇒ existing
+      case existing => existing
     }
 
   override def association(uid: Long): OptionVal[OutboundContext] =
@@ -51,7 +51,7 @@ private[remote] class TestInboundContext(
   override def completeHandshake(peer: UniqueAddress): Future[Done] = {
     val a = association(peer.address).asInstanceOf[TestOutboundContext]
     val done = a.completeHandshake(peer)
-    done.foreach { _ ⇒
+    done.foreach { _ =>
       associationsByUid.put(peer.uid, a)
     }(ExecutionContexts.sameThreadExecutionContext)
     done
@@ -80,8 +80,8 @@ private[remote] class TestOutboundContext(
   def completeHandshake(peer: UniqueAddress): Future[Done] = synchronized {
     _associationState.uniqueRemoteAddressPromise.trySuccess(peer)
     _associationState.uniqueRemoteAddress.value match {
-      case Some(Success(`peer`)) ⇒ // our value
-      case _ ⇒
+      case Some(Success(`peer`)) => // our value
+      case _ =>
         _associationState = _associationState.newIncarnation(Promise.successful(peer))
     }
     Future.successful(Done)
@@ -138,7 +138,7 @@ private[remote] class ManualReplyInboundContext(
   }
 
   def deliverLastReply(): Unit = synchronized {
-    lastReply.foreach { case (to, message) ⇒ super.sendControl(to, message) }
+    lastReply.foreach { case (to, message) => super.sendControl(to, message) }
     lastReply = None
   }
 }

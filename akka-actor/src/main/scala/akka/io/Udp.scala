@@ -236,7 +236,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
  */
 object UdpMessage {
   import Udp._
-  import java.lang.{ Iterable ⇒ JIterable }
+  import java.lang.{ Iterable => JIterable }
   import scala.collection.JavaConverters._
 
   /**

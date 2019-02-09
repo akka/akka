@@ -21,19 +21,19 @@ object ClusterShardingGetStatsSpec {
   class ShardedActor extends Actor with ActorLogging {
     log.info(s"entity started {}", self.path)
     def receive = {
-      case Stop    ⇒ context.stop(self)
-      case _: Ping ⇒ sender() ! Pong
+      case Stop    => context.stop(self)
+      case _: Ping => sender() ! Pong
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Ping(id) ⇒ (id.toString, msg)
+    case msg @ Ping(id) => (id.toString, msg)
   }
 
   val numberOfShards = 3
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Ping(id) ⇒ (id % numberOfShards).toString
+    case Ping(id) => (id % numberOfShards).toString
   }
 
   val shardTypeName = "Ping"
@@ -154,9 +154,9 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
             val pingProbe = TestProbe()
             // trigger starting of 2 entities on first and second node
             // but leave third node without entities
-            List(1, 2, 4, 6).foreach(n ⇒ region.tell(Ping(n), pingProbe.ref))
+            List(1, 2, 4, 6).foreach(n => region.tell(Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 4) {
-              case Pong ⇒ ()
+              case Pong => ()
             }
           }
         }
@@ -201,9 +201,9 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
           awaitAssert {
             val pingProbe = TestProbe()
             // make sure we have the 4 entities still alive across the fewer nodes
-            List(1, 2, 4, 6).foreach(n ⇒ region.tell(Ping(n), pingProbe.ref))
+            List(1, 2, 4, 6).foreach(n => region.tell(Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 4) {
-              case Pong ⇒ ()
+              case Pong => ()
             }
           }
         }

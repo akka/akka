@@ -134,7 +134,7 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       }
       clusterView.members.unsorted.map(_.status) should ===(Set(Joining))
       // and it should not change
-      1 to 5 foreach { _ ⇒
+      1 to 5 foreach { _ =>
         Thread.sleep(1000)
         clusterView.members.map(_.address) should ===(expectedAddresses)
         clusterView.members.unsorted.map(_.status) should ===(Set(Joining))

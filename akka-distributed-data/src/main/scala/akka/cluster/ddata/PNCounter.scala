@@ -177,12 +177,12 @@ final class PNCounter private[akka] (
 
   override def delta: Option[PNCounter] = {
     val incrementsDelta = increments.delta match {
-      case Some(d) ⇒ d
-      case None    ⇒ GCounter.empty
+      case Some(d) => d
+      case None    => GCounter.empty
     }
     val decrementsDelta = decrements.delta match {
-      case Some(d) ⇒ d
-      case None    ⇒ GCounter.empty
+      case Some(d) => d
+      case None    => GCounter.empty
     }
     Some(new PNCounter(incrementsDelta, decrementsDelta))
   }
@@ -219,9 +219,9 @@ final class PNCounter private[akka] (
   override def toString: String = s"PNCounter($value)"
 
   override def equals(o: Any): Boolean = o match {
-    case other: PNCounter ⇒
+    case other: PNCounter =>
       increments == other.increments && decrements == other.decrements
-    case _ ⇒ false
+    case _ => false
   }
 
   override def hashCode: Int = {

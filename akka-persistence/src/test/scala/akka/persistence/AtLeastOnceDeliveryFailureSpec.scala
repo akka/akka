@@ -44,7 +44,7 @@ object AtLeastOnceDeliveryFailureSpec {
   case class MsgSent(i: Int) extends Evt
   case class MsgConfirmed(deliveryId: Long, i: Int) extends Evt
 
-  trait ChaosSupport { this: Actor ⇒
+  trait ChaosSupport { this: Actor =>
     def random = ThreadLocalRandom.current
 
     def probe: ActorRef
@@ -73,12 +73,12 @@ object AtLeastOnceDeliveryFailureSpec {
     override def persistenceId = "chaosSender"
 
     def receiveCommand: Receive = {
-      case i: Int ⇒
+      case i: Int =>
         if (contains(i)) {
           log.debug(debugMessage(s"ignored duplicate ${i}"))
           sender() ! Ack(i)
         } else {
-          persist(MsgSent(i)) { evt ⇒
+          persist(MsgSent(i)) { evt =>
             updateState(evt)
             sender() ! Ack(i)
             if (shouldFail(liveProcessingFailureRate))
@@ -89,11 +89,11 @@ object AtLeastOnceDeliveryFailureSpec {
 
         }
 
-      case Confirm(deliveryId, i) ⇒ persist(MsgConfirmed(deliveryId, i))(updateState)
+      case Confirm(deliveryId, i) => persist(MsgConfirmed(deliveryId, i))(updateState)
     }
 
     def receiveRecover: Receive = {
-      case evt: Evt ⇒
+      case evt: Evt =>
         updateState(evt)
         if (shouldFail(replayProcessingFailureRate))
           throw new TestException(debugMessage(s"replay failed at event $evt"))
@@ -102,11 +102,11 @@ object AtLeastOnceDeliveryFailureSpec {
     }
 
     def updateState(evt: Evt): Unit = evt match {
-      case MsgSent(i) ⇒
+      case MsgSent(i) =>
         add(i)
-        deliver(destination.path)(deliveryId ⇒ Msg(deliveryId, i))
+        deliver(destination.path)(deliveryId => Msg(deliveryId, i))
 
-      case MsgConfirmed(deliveryId, i) ⇒
+      case MsgConfirmed(deliveryId, i) =>
         confirmDelivery(deliveryId)
     }
 
@@ -127,7 +127,7 @@ object AtLeastOnceDeliveryFailureSpec {
     val confirmFailureRate = config.getDouble("confirm-failure-rate")
 
     def receive = {
-      case m @ Msg(deliveryId, i) ⇒
+      case m @ Msg(deliveryId, i) =>
         if (shouldFail(confirmFailureRate)) {
           log.debug(debugMessage("confirm message failed", m))
         } else if (contains(i)) {
@@ -153,13 +153,13 @@ object AtLeastOnceDeliveryFailureSpec {
       context.watch(context.actorOf(Props(classOf[ChaosSender], destination, probe), "sender"))
 
     def receive = {
-      case Start  ⇒ 1 to numMessages foreach (snd ! _)
-      case Ack(i) ⇒ acks += i
-      case Terminated(_) ⇒
+      case Start  => 1 to numMessages foreach (snd ! _)
+      case Ack(i) => acks += i
+      case Terminated(_) =>
         // snd will be stopped if recovery or persist fails
         log.debug(s"sender stopped, starting it again")
         snd = createSender()
-        1 to numMessages foreach (i ⇒ if (!acks(i)) snd ! i)
+        1 to numMessages foreach (i => if (!acks(i)) snd ! i)
     }
   }
 }

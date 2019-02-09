@@ -22,22 +22,22 @@ object TransientSerializationErrorSpec {
   class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
-      case ManifestNotSerializable ⇒ throw new NotSerializableException()
-      case ManifestIllegal         ⇒ throw new IllegalArgumentException()
-      case ToBinaryNotSerializable ⇒ "TBNS"
-      case ToBinaryIllegal         ⇒ "TI"
-      case NotDeserializable       ⇒ "ND"
-      case IllegalOnDeserialize    ⇒ "IOD"
+      case ManifestNotSerializable => throw new NotSerializableException()
+      case ManifestIllegal         => throw new IllegalArgumentException()
+      case ToBinaryNotSerializable => "TBNS"
+      case ToBinaryIllegal         => "TI"
+      case NotDeserializable       => "ND"
+      case IllegalOnDeserialize    => "IOD"
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case ToBinaryNotSerializable ⇒ throw new NotSerializableException()
-      case ToBinaryIllegal         ⇒ throw new IllegalArgumentException()
-      case _                       ⇒ Array.emptyByteArray
+      case ToBinaryNotSerializable => throw new NotSerializableException()
+      case ToBinaryIllegal         => throw new IllegalArgumentException()
+      case _                       => Array.emptyByteArray
     }
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
       manifest match {
-        case "ND"  ⇒ throw new NotSerializableException() // Not sure this applies here
-        case "IOD" ⇒ throw new IllegalArgumentException()
+        case "ND"  => throw new NotSerializableException() // Not sure this applies here
+        case "IOD" => throw new IllegalArgumentException()
       }
     }
   }
@@ -96,7 +96,7 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
         ToBinaryNotSerializable,
         NotDeserializable,
         IllegalOnDeserialize
-      ).foreach(msg ⇒
+      ).foreach(msg =>
         selection.tell(msg, this.testActor)
       )
 

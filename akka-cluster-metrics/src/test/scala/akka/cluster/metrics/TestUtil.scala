@@ -93,7 +93,7 @@ case class MockitoSigarProvider(
  *
  * TODO change factory after https://github.com/akka/akka/issues/16369
  */
-trait MetricsCollectorFactory { this: AkkaSpec ⇒
+trait MetricsCollectorFactory { this: AkkaSpec =>
   import MetricsConfig._
   import org.hyperic.sigar.Sigar
 
@@ -106,7 +106,7 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
       new SigarMetricsCollector(selfAddress, defaultDecayFactor, new Sigar())
       //new SigarMetricsCollector(selfAddress, defaultDecayFactor, SimpleSigarProvider().createSigarInstance)
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
         log.warning("Sigar failed to load. Using JMX. Reason: " + e.toString)
         new JmxMetricsCollector(selfAddress, defaultDecayFactor)
     }
@@ -206,10 +206,10 @@ class ClusterMetricsView(system: ExtendedActorSystem) extends Closeable {
       override def preStart(): Unit = extension.subscribe(self)
       override def postStop(): Unit = extension.unsubscribe(self)
       def receive = {
-        case ClusterMetricsChanged(nodes) ⇒
+        case ClusterMetricsChanged(nodes) =>
           currentMetricsSet = nodes
           collectedMetricsList = nodes :: collectedMetricsList
-        case _ ⇒
+        case _ =>
         // Ignore.
       }
     }).withDispatcher(Dispatchers.DefaultDispatcherId).withDeploy(Deploy.local), name = "metrics-event-bus-listener")

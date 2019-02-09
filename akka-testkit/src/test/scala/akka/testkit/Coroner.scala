@@ -64,7 +64,7 @@ object Coroner {
     }
 
     override def result(atMost: Duration)(implicit permit: CanAwait): Boolean =
-      try { Await.result(cancelPromise.future, atMost) } catch { case _: TimeoutException ⇒ false }
+      try { Await.result(cancelPromise.future, atMost) } catch { case _: TimeoutException => false }
 
   }
 
@@ -96,7 +96,7 @@ object Coroner {
           watchedHandle.expired()
           out.println(s"Coroner not cancelled after ${duration.toMillis}ms. Looking for signs of foul play...")
           try printReport(reportTitle, out) catch {
-            case NonFatal(ex) ⇒ {
+            case NonFatal(ex) => {
               out.println("Error displaying Coroner's Report")
               ex.printStackTrace(out)
             }
@@ -160,7 +160,7 @@ object Coroner {
       if (threadInfos.isEmpty) {
         println("None")
       } else {
-        for (ti ← threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
+        for (ti <- threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
       }
     }
 
@@ -201,27 +201,27 @@ object Coroner {
       }
 
       val stackTrace = ti.getStackTrace
-      for (i ← 0 until stackTrace.length) {
+      for (i <- 0 until stackTrace.length) {
         val ste = stackTrace(i)
         appendMsg("\tat ", ste)
         if (i == 0 && ti.getLockInfo != null) {
           import java.lang.Thread.State._
           ti.getThreadState match {
-            case BLOCKED       ⇒ appendMsg("\t-  blocked on ", ti.getLockInfo)
-            case WAITING       ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case TIMED_WAITING ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case _             ⇒
+            case BLOCKED       => appendMsg("\t-  blocked on ", ti.getLockInfo)
+            case WAITING       => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case TIMED_WAITING => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case _             =>
           }
         }
 
-        for (mi ← ti.getLockedMonitors if mi.getLockedStackDepth == i)
+        for (mi <- ti.getLockedMonitors if mi.getLockedStackDepth == i)
           appendMsg("\t-  locked ", mi)
       }
 
       val locks = ti.getLockedSynchronizers
       if (locks.length > 0) {
         appendMsg("\n\tNumber of locked synchronizers = ", locks.length)
-        for (li ← locks) appendMsg("\t- ", li)
+        for (li <- locks) appendMsg("\t- ", li)
       }
       sb.append('\n')
       sb.toString
@@ -247,7 +247,7 @@ object Coroner {
  * counts during start and stop.
  */
 trait WatchedByCoroner {
-  self: TestKit ⇒
+  self: TestKit =>
 
   @volatile private var coronerWatch: Coroner.WatchHandle = _
 

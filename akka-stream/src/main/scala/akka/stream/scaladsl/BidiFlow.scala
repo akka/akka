@@ -57,7 +57,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting BidiFlow.
    */
-  def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): BidiFlow[I1, OO1, II2, O2, M] = {
+  def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(combine: (Mat, Mat2) => M): BidiFlow[I1, OO1, II2, O2, M] = {
     val newBidi1Shape = shape.deepCopy()
     val newBidi2Shape = bidi.shape.deepCopy()
 
@@ -115,7 +115,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting [[Flow]].
    */
-  def joinMat[Mat2, M](flow: Graph[FlowShape[O1, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I1, O2, M] = {
+  def joinMat[Mat2, M](flow: Graph[FlowShape[O1, I2], Mat2])(combine: (Mat, Mat2) => M): Flow[I1, O2, M] = {
     val newBidiShape = shape.deepCopy()
     val newFlowShape = flow.shape.deepCopy()
 
@@ -147,9 +147,9 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   /**
    * Transform only the materialized value of this BidiFlow, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): BidiFlow[I1, O1, I2, O2, Mat2] =
     new BidiFlow(
-      traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
+      traversalBuilder.transformMat(f.asInstanceOf[Any => Any]),
       shape
     )
 
@@ -218,9 +218,9 @@ object BidiFlow {
    */
   def fromGraph[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] =
     graph match {
-      case bidi: BidiFlow[I1, O1, I2, O2, Mat]         ⇒ bidi
-      case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat] ⇒ bidi.asScala
-      case other ⇒
+      case bidi: BidiFlow[I1, O1, I2, O2, Mat]         => bidi
+      case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat] => bidi.asScala
+      case other =>
         new BidiFlow(
           other.traversalBuilder,
           other.shape
@@ -248,7 +248,7 @@ object BidiFlow {
    */
   def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
     flow1: Graph[FlowShape[I1, O1], M1],
-    flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) ⇒ M): BidiFlow[I1, O1, I2, O2, M] = {
+    flow2: Graph[FlowShape[I2, O2], M2])(combine: (M1, M2) => M): BidiFlow[I1, O1, I2, O2, M] = {
     val newFlow1Shape = flow1.shape.deepCopy()
     val newFlow2Shape = flow2.shape.deepCopy()
 
@@ -287,7 +287,7 @@ object BidiFlow {
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * operator each, expressed by the two functions.
    */
-  def fromFunctions[I1, O1, I2, O2](outbound: I1 ⇒ O1, inbound: I2 ⇒ O2): BidiFlow[I1, O1, I2, O2, NotUsed] =
+  def fromFunctions[I1, O1, I2, O2](outbound: I1 => O1, inbound: I2 => O2): BidiFlow[I1, O1, I2, O2, NotUsed] =
     fromFlows(Flow[I1].map(outbound), Flow[I2].map(inbound))
 
   /**

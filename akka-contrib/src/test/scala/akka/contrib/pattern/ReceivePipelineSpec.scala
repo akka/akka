@@ -18,25 +18,25 @@ object ReceivePipelineSpec {
   class ReplierActor extends Actor with ReceivePipeline {
     def receive: Actor.Receive = becomeAndReply
     def becomeAndReply: Actor.Receive = {
-      case "become" ⇒ context.become(justReply)
-      case m        ⇒ sender ! m
+      case "become" => context.become(justReply)
+      case m        => sender ! m
     }
     def justReply: Actor.Receive = {
-      case m ⇒ sender ! m
+      case m => sender ! m
     }
   }
 
   class IntReplierActor(max: Int) extends Actor with ReceivePipeline {
     def receive: Actor.Receive = {
-      case m: Int if (m <= max) ⇒ sender ! m
+      case m: Int if (m <= max) => sender ! m
     }
   }
 
   class TotallerActor extends Actor with ReceivePipeline {
     var total = 0
     def receive: Actor.Receive = {
-      case m: Int ⇒ total += m
-      case "get"  ⇒ sender ! total
+      case m: Int => total += m
+      case "get"  => sender ! total
     }
   }
 
@@ -45,56 +45,56 @@ object ReceivePipelineSpec {
   }
 
   trait ListBuilderInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineOuter {
-      case n: Int ⇒ Inner(IntList((n until n + 3).toList))
+      case n: Int => Inner(IntList((n until n + 3).toList))
     }
   }
 
   trait AdderInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case n: Int               ⇒ Inner(n + 10)
-      case IntList(l)           ⇒ Inner(IntList(l.map(_ + 10)))
-      case "explicitly ignored" ⇒ HandledCompletely
+      case n: Int               => Inner(n + 10)
+      case IntList(l)           => Inner(IntList(l.map(_ + 10)))
+      case "explicitly ignored" => HandledCompletely
     }
   }
 
   trait ToStringInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case i: Int             ⇒ Inner(i.toString)
-      case IntList(l)         ⇒ Inner(l.toString)
-      case other: Iterable[_] ⇒ Inner(other.toString)
+      case i: Int             => Inner(i.toString)
+      case IntList(l)         => Inner(l.toString)
+      case other: Iterable[_] => Inner(other.toString)
     }
   }
 
   trait OddDoublerInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case i: Int if (i % 2 != 0) ⇒ Inner(i * 2)
+      case i: Int if (i % 2 != 0) => Inner(i * 2)
     }
   }
 
   trait EvenHalverInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case i: Int if (i % 2 == 0) ⇒ Inner(i / 2)
+      case i: Int if (i % 2 == 0) => Inner(i / 2)
     }
   }
 
   trait Timer {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     def notifyDuration(duration: Long): Unit
 
     pipelineInner {
-      case msg: Any ⇒
+      case msg: Any =>
         val start = 1L // = currentTimeMillis
         Inner(msg).andAfter {
           val end = 100L // = currentTimeMillis
@@ -176,16 +176,16 @@ object PersistentReceivePipelineSpec {
     override def persistenceId: String = "p-1"
 
     def becomeAndReply: Actor.Receive = {
-      case "become" ⇒ context.become(justReply)
-      case m        ⇒ sender ! m
+      case "become" => context.become(justReply)
+      case m        => sender ! m
     }
     def justReply: Actor.Receive = {
-      case m ⇒ sender ! m
+      case m => sender ! m
     }
 
     override def receiveCommand: Receive = becomeAndReply
     override def receiveRecover: Receive = {
-      case _ ⇒ // ...
+      case _ => // ...
     }
   }
 
@@ -350,11 +350,11 @@ object InActorSample extends App {
   class PipelinedActor extends Actor with ReceivePipeline {
 
     // Increment
-    pipelineInner { case i: Int ⇒ Inner(i + 1) }
+    pipelineInner { case i: Int => Inner(i + 1) }
     // Double
-    pipelineInner { case i: Int ⇒ Inner(i * 2) }
+    pipelineInner { case i: Int => Inner(i * 2) }
 
-    def receive: Receive = { case any ⇒ println(any) }
+    def receive: Receive = { case any => println(any) }
   }
 
   actor ! 5 // prints 12 = (5 + 1) * 2
@@ -366,14 +366,14 @@ object InActorSample extends App {
 
     //#in-actor-outer
     // Increment
-    pipelineInner { case i: Int ⇒ Inner(i + 1) }
+    pipelineInner { case i: Int => Inner(i + 1) }
     // Double
-    pipelineOuter { case i: Int ⇒ Inner(i * 2) }
+    pipelineOuter { case i: Int => Inner(i * 2) }
 
     // prints 11 = (5 * 2) + 1
     //#in-actor-outer
 
-    def receive: Receive = { case any ⇒ println(any) }
+    def receive: Receive = { case any => println(any) }
   }
 
   withOuterActor ! 5
@@ -385,7 +385,7 @@ object InterceptorSamples {
 
   //#interceptor-sample1
   val incrementInterceptor: Interceptor = {
-    case i: Int ⇒ Inner(i + 1)
+    case i: Int => Inner(i + 1)
   }
   //#interceptor-sample1
 
@@ -393,7 +393,7 @@ object InterceptorSamples {
 
   //#interceptor-sample2
   val timerInterceptor: Interceptor = {
-    case e ⇒
+    case e =>
       val start = System.nanoTime
       Inner(e).andAfter {
         val end = System.nanoTime
@@ -413,10 +413,10 @@ object MixinSample extends App {
 
   //#mixin-model
   val texts = Map(
-    "that.rug_EN" → "That rug really tied the room together.",
-    "your.opinion_EN" → "Yeah, well, you know, that's just, like, your opinion, man.",
-    "that.rug_ES" → "Esa alfombra realmente completaba la sala.",
-    "your.opinion_ES" → "Sí, bueno, ya sabes, eso es solo, como, tu opinion, amigo.")
+    "that.rug_EN" -> "That rug really tied the room together.",
+    "your.opinion_EN" -> "Yeah, well, you know, that's just, like, your opinion, man.",
+    "that.rug_ES" -> "Esa alfombra realmente completaba la sala.",
+    "your.opinion_ES" -> "Sí, bueno, ya sabes, eso es solo, como, tu opinion, amigo.")
 
   case class I18nText(locale: String, key: String)
   case class Message(author: Option[String], text: Any)
@@ -424,19 +424,19 @@ object MixinSample extends App {
 
   //#mixin-interceptors
   trait I18nInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case m @ Message(_, I18nText(loc, key)) ⇒
+      case m @ Message(_, I18nText(loc, key)) =>
         Inner(m.copy(text = texts(s"${key}_$loc")))
     }
   }
 
   trait AuditInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineOuter {
-      case m @ Message(Some(author), text) ⇒
+      case m @ Message(Some(author), text) =>
         println(s"$author is about to say: $text")
         Inner(m)
     }
@@ -450,7 +450,7 @@ object MixinSample extends App {
     with I18nInterceptor with AuditInterceptor {
 
     override def receive: Receive = {
-      case Message(author, text) ⇒
+      case Message(author, text) =>
         println(s"${author.getOrElse("Unknown")} says '$text'")
     }
   }
@@ -476,10 +476,10 @@ object UnhandledSample extends App {
   case class PrivateMessage(userId: Option[Long], msg: Any)
 
   trait PrivateInterceptor {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     pipelineInner {
-      case PrivateMessage(Some(userId), msg) ⇒
+      case PrivateMessage(Some(userId), msg) =>
         if (isGranted(userId))
           Inner(msg)
         else
@@ -495,12 +495,12 @@ object AfterSamples {
 
   //#interceptor-after
   trait TimerInterceptor extends ActorLogging {
-    this: ReceivePipeline ⇒
+    this: ReceivePipeline =>
 
     def logTimeTaken(time: Long) = log.debug(s"Time taken: $time ns")
 
     pipelineOuter {
-      case e ⇒
+      case e =>
         val start = System.nanoTime
         Inner(e).andAfter {
           val end = System.nanoTime

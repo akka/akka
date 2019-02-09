@@ -193,7 +193,7 @@ class PNCounterSpec extends WordSpec with Matchers {
       val PNCounter(value1) = c1
       val value2: BigInt = value1
       Changed(PNCounterKey("key"))(c1) match {
-        case c @ Changed(PNCounterKey("key")) ⇒
+        case c @ Changed(PNCounterKey("key")) =>
           val PNCounter(value3) = c.dataValue
           val value4: BigInt = value3
           value4 should be(1L)

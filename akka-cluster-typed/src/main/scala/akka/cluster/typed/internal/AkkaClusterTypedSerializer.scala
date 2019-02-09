@@ -26,20 +26,20 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
   private val ReceptionistEntryManifest = "a"
 
   override def manifest(o: AnyRef): String = o match {
-    case _: Entry ⇒ ReceptionistEntryManifest
-    case _ ⇒
+    case _: Entry => ReceptionistEntryManifest
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case e: Entry ⇒ receptionistEntryToBinary(e)
-    case _ ⇒
+    case e: Entry => receptionistEntryToBinary(e)
+    case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case ReceptionistEntryManifest ⇒ receptionistEntryFromBinary(bytes)
-    case _ ⇒
+    case ReceptionistEntryManifest => receptionistEntryFromBinary(bytes)
+    case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
   }

@@ -32,10 +32,10 @@ object Flow {
   def create[T](): javadsl.Flow[T, T, NotUsed] = fromGraph(scaladsl.Flow[T])
 
   def fromProcessor[I, O](processorFactory: function.Creator[Processor[I, O]]): javadsl.Flow[I, O, NotUsed] =
-    new Flow(scaladsl.Flow.fromProcessor(() ⇒ processorFactory.create()))
+    new Flow(scaladsl.Flow.fromProcessor(() => processorFactory.create()))
 
   def fromProcessorMat[I, O, Mat](processorFactory: function.Creator[Pair[Processor[I, O], Mat]]): javadsl.Flow[I, O, Mat] =
-    new Flow(scaladsl.Flow.fromProcessorMat { () ⇒
+    new Flow(scaladsl.Flow.fromProcessorMat { () =>
       val javaPair = processorFactory.create()
       (javaPair.first, javaPair.second)
     })
@@ -55,8 +55,8 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] ⇒ f
-      case other            ⇒ new Flow(scaladsl.Flow.fromGraph(other))
+      case f: Flow[I, O, M] => f
+      case other            => new Flow(scaladsl.Flow.fromGraph(other))
     }
 
   /**
@@ -227,8 +227,8 @@ object Flow {
   def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
     val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
-      .mapMaterializedValue(_ ⇒ fallback.create())
+      .fromGraph(new LazyFlow[I, O, M](t => flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .mapMaterializedValue(_ => fallback.create())
     new Flow(sflow)
   }
 
@@ -251,8 +251,8 @@ object Flow {
   def lazyInitAsync[I, O, M](flowFactory: function.Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
     import scala.compat.java8.FutureConverters._
 
-    val sflow = scaladsl.Flow.lazyInitAsync(() ⇒ flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
-      .mapMaterializedValue(fut ⇒ fut.map(_.fold[Optional[M]](Optional.empty())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    val sflow = scaladsl.Flow.lazyInitAsync(() => flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(fut => fut.map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
     new Flow(sflow)
   }
   /**
@@ -532,7 +532,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def mapConcat[T](f: function.Function[Out, java.lang.Iterable[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapConcat { elem ⇒ Util.immutableSeq(f(elem)) })
+    new Flow(delegate.mapConcat { elem => Util.immutableSeq(f(elem)) })
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -561,9 +561,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def statefulMapConcat[T](f: function.Creator[function.Function[Out, java.lang.Iterable[T]]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.statefulMapConcat { () ⇒
+    new Flow(delegate.statefulMapConcat { () =>
       val fun = f.create()
-      elem ⇒ Util.immutableSeq(fun(elem))
+      elem => Util.immutableSeq(fun(elem))
     })
 
   /**
@@ -596,7 +596,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsync(parallelism)(x ⇒ f(x).toScala))
+    new Flow(delegate.mapAsync(parallelism)(x => f(x).toScala))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -630,7 +630,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#mapAsync]]
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
+    new Flow(delegate.mapAsyncUnordered(parallelism)(x => f(x).toScala))
 
   /**
    * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
@@ -923,7 +923,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * See also [[FlowOps.scan]]
    */
   def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
-    new Flow(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+    new Flow(delegate.scanAsync(zero) { (out, in) => f(out, in).toScala })
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -970,7 +970,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def foldAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] = new Flow(delegate.foldAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+  def foldAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] = new Flow(delegate.foldAsync(zero) { (out, in) => f(out, in).toScala })
 
   /**
    * Similar to `fold` but uses first element as zero element.
@@ -1344,7 +1344,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
-      case elem if clazz.isInstance(elem) ⇒ supplier.get()
+      case elem if clazz.isInstance(elem) => supplier.get()
     }
 
   /**
@@ -1414,7 +1414,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def recoverWith(clazz: Class[_ <: Throwable], supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     recoverWith {
-      case elem if clazz.isInstance(elem) ⇒ supplier.get()
+      case elem if clazz.isInstance(elem) => supplier.get()
     }
 
   /**
@@ -1473,7 +1473,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     recoverWithRetries(attempts, {
-      case elem if clazz.isInstance(elem) ⇒ supplier.get()
+      case elem if clazz.isInstance(elem) => supplier.get()
     })
 
   /**
@@ -1688,7 +1688,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#extrapolate]]
    */
   def expand[U](expander: function.Function[Out, java.util.Iterator[U]]): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.expand(in ⇒ expander(in).asScala))
+    new Flow(delegate.expand(in => expander(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -1715,7 +1715,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]]): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala))
+    new Flow(delegate.extrapolate(in => extrapolator(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -1743,7 +1743,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#expand]]
    */
   def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]], initial: Out @uncheckedVariance): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala, Some(initial)))
+    new Flow(delegate.extrapolate(in => extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -1791,7 +1791,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels or substream cancels
    */
   def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out], javadsl.Source[Out, NotUsed]], Mat] =
-    new Flow(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
+    new Flow(delegate.prefixAndTail(n).map { case (taken, tail) => akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -2004,7 +2004,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def flatMapConcat[T, M](f: function.Function[Out, _ <: Graph[SourceShape[T], M]]): Flow[In, T, Mat] =
-    new Flow(delegate.flatMapConcat[T, M](x ⇒ f(x)))
+    new Flow(delegate.flatMapConcat[T, M](x => f(x)))
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -2020,7 +2020,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def flatMapMerge[T, M](breadth: Int, f: function.Function[Out, _ <: Graph[SourceShape[T], M]]): Flow[In, T, Mat] =
-    new Flow(delegate.flatMapMerge(breadth, o ⇒ f(o)))
+    new Flow(delegate.flatMapMerge(breadth, o => f(o)))
 
   /**
    * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
@@ -2576,7 +2576,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def zipWithIndex: Flow[In, Pair[Out, java.lang.Long], Mat] =
-    new Flow(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair[Out, java.lang.Long](elem, index) })
+    new Flow(delegate.zipWithIndex.map { case (elem, index) => Pair[Out, java.lang.Long](elem, index) })
 
   /**
    * If the first element has not passed through this operator before the provided timeout, the stream is failed
@@ -2730,7 +2730,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
+    new Flow(delegate.keepAlive(maxIdle, () => injectedElem.create()))
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
@@ -3074,7 +3074,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * downstream.
    */
   def watchTermination[M]()(matF: function.Function2[Mat, CompletionStage[Done], M]): javadsl.Flow[In, Out, M] =
-    new Flow(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
+    new Flow(delegate.watchTermination()((left, right) => matF(left, right.toJava)))
 
   /**
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
@@ -3212,7 +3212,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def log(name: String, extract: function.Function[Out, Any], log: LoggingAdapter): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.log(name, e ⇒ extract.apply(e))(log))
+    new Flow(delegate.log(name, e => extract.apply(e))(log))
 
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
@@ -3295,7 +3295,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   @ApiMayChange
   def asFlowWithContext[U, CtxU, CtxOut](collapseContext: function.Function2[U, CtxU, In], extractContext: function.Function[Out, CtxOut]): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
-    this.asScala.asFlowWithContext((x: U, c: CtxU) ⇒ collapseContext.apply(x, c))(x ⇒ extractContext.apply(x)).asJava
+    this.asScala.asFlowWithContext((x: U, c: CtxU) => collapseContext.apply(x, c))(x => extractContext.apply(x)).asJava
 
 }
 
@@ -3306,8 +3306,8 @@ object RunnableGraph {
    */
   def fromGraph[Mat](graph: Graph[ClosedShape, Mat]): RunnableGraph[Mat] =
     graph match {
-      case r: RunnableGraph[Mat] ⇒ r
-      case other                 ⇒ new RunnableGraphAdapter[Mat](scaladsl.RunnableGraph.fromGraph(graph))
+      case r: RunnableGraph[Mat] => r
+      case other                 => new RunnableGraphAdapter[Mat](scaladsl.RunnableGraph.fromGraph(graph))
     }
 
   /** INTERNAL API */

@@ -41,10 +41,10 @@ class AkkaConsoleReporter(
     output.flush()
   }
 
-  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]): Unit = {
+  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T => Unit)(implicit clazz: ClassTag[T]): Unit = {
     if (!metrics.isEmpty) {
       printWithBanner(s"-- ${simpleName(metrics.head._2.getClass)}", '-')
-      for ((key, metric) ← metrics) {
+      for ((key, metric) <- metrics) {
         output.println("  " + key)
         printer(metric)
       }

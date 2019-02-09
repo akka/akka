@@ -24,7 +24,7 @@ import java.util.concurrent.{
 import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
 
 object ThreadPoolConfig {
-  type QueueFactory = () ⇒ BlockingQueue[Runnable]
+  type QueueFactory = () => BlockingQueue[Runnable]
 
   val defaultAllowCoreThreadTimeout: Boolean = false
   val defaultCorePoolSize: Int = 16
@@ -35,15 +35,15 @@ object ThreadPoolConfig {
   def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int =
     math.min(math.max((Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt, floor), ceiling)
 
-  def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory = () ⇒ new ArrayBlockingQueue[Runnable](capacity, fair)
+  def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory = () => new ArrayBlockingQueue[Runnable](capacity, fair)
 
-  def synchronousQueue(fair: Boolean): QueueFactory = () ⇒ new SynchronousQueue[Runnable](fair)
+  def synchronousQueue(fair: Boolean): QueueFactory = () => new SynchronousQueue[Runnable](fair)
 
-  def linkedBlockingQueue(): QueueFactory = () ⇒ new LinkedBlockingQueue[Runnable]()
+  def linkedBlockingQueue(): QueueFactory = () => new LinkedBlockingQueue[Runnable]()
 
-  def linkedBlockingQueue(capacity: Int): QueueFactory = () ⇒ new LinkedBlockingQueue[Runnable](capacity)
+  def linkedBlockingQueue(capacity: Int): QueueFactory = () => new LinkedBlockingQueue[Runnable](capacity)
 
-  def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory = () ⇒ queue
+  def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory = () => queue
 
   def reusableQueue(queueFactory: QueueFactory): QueueFactory = reusableQueue(queueFactory())
 }
@@ -91,10 +91,10 @@ final case class ThreadPoolConfig(
   }
   final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
-      case m: MonitorableThreadFactory ⇒
+      case m: MonitorableThreadFactory =>
         // add the dispatcher id to the thread names
         m.withName(m.name + "-" + id)
-      case other ⇒ other
+      case other => other
     }
     new ThreadPoolExecutorServiceFactory(tf)
   }
@@ -152,7 +152,7 @@ final case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
     this.copy(config = config.copy(queueFactory = newQueueFactory))
 
   def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder =
-    fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
+    fs.foldLeft(this)((c, f) => f.map(_(c)).getOrElse(c))
 }
 
 object MonitorableThreadFactory {
@@ -160,7 +160,7 @@ object MonitorableThreadFactory {
     new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable) = () }
 
   private[akka] class AkkaForkJoinWorkerThread(_pool: ForkJoinPool) extends ForkJoinWorkerThread(_pool) with BlockContext {
-    override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
+    override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
       val result = new AtomicReference[Option[T]](None)
       ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
         def block(): Boolean = {

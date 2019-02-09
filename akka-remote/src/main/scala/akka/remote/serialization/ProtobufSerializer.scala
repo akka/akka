@@ -47,13 +47,13 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
     manifest match {
-      case Some(clazz) ⇒
+      case Some(clazz) =>
         @tailrec
         def parsingMethod(method: Method = null): Method = {
           val parsingMethodBinding = parsingMethodBindingRef.get()
           parsingMethodBinding.get(clazz) match {
-            case Some(cachedParsingMethod) ⇒ cachedParsingMethod
-            case None ⇒
+            case Some(cachedParsingMethod) => cachedParsingMethod
+            case None =>
               val unCachedParsingMethod =
                 if (method eq null) clazz.getDeclaredMethod("parseFrom", ProtobufSerializer.ARRAY_OF_BYTE_ARRAY: _*)
                 else method
@@ -65,7 +65,7 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
         }
         parsingMethod().invoke(null, bytes)
 
-      case None ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
+      case None => throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
     }
   }
 
@@ -75,8 +75,8 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     def toByteArrayMethod(method: Method = null): Method = {
       val toByteArrayMethodBinding = toByteArrayMethodBindingRef.get()
       toByteArrayMethodBinding.get(clazz) match {
-        case Some(cachedtoByteArrayMethod) ⇒ cachedtoByteArrayMethod
-        case None ⇒
+        case Some(cachedtoByteArrayMethod) => cachedtoByteArrayMethod
+        case None =>
           val unCachedtoByteArrayMethod =
             if (method eq null) clazz.getMethod("toByteArray")
             else method

@@ -4,9 +4,9 @@
 
 package akka.camel
 
-import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
+import java.util.{ Map => JMap, Set => JSet }
 import javax.activation.DataHandler
-import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage, StreamCache }
+import org.apache.camel.{ CamelContext, Message => JCamelMessage, StreamCache }
 import akka.AkkaException
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
@@ -76,7 +76,7 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
    * Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.
    * This method will throw a [[java.lang.ClassCastException]] if the body cannot be mapped to type A.
    */
-  def mapBody[A, B](transformer: A ⇒ B): CamelMessage = copy(body = transformer(body.asInstanceOf[A]))
+  def mapBody[A, B](transformer: A => B): CamelMessage = copy(body = transformer(body.asInstanceOf[A]))
 
   /**
    * Java API: Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.
@@ -112,8 +112,8 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
    * See http://camel.apache.org/stream-caching.html
    */
   def resetStreamCache(): Unit = body match {
-    case stream: StreamCache ⇒ stream.reset
-    case _                   ⇒
+    case stream: StreamCache => stream.reset
+    case _                   =>
   }
 
   /**
@@ -169,11 +169,11 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
    */
   override def equals(that: Any): Boolean =
     that match {
-      case that: CamelMessage if canEqual(that) ⇒
+      case that: CamelMessage if canEqual(that) =>
         this.body == that.body &&
           this.headers == that.headers &&
           this.attachments == that.attachments
-      case _ ⇒ false
+      case _ => false
     }
 
   /**
@@ -185,9 +185,9 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
    * Returns the n-th element of this product, 0-based.
    */
   override def productElement(n: Int): Any = n match {
-    case 0 ⇒ body
-    case 1 ⇒ headers
-    case 2 ⇒ attachments
+    case 0 => body
+    case 1 => headers
+    case 2 => attachments
   }
 
   /**
@@ -200,15 +200,15 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
    * This method should be called from every well-designed equals method that is open to be overridden in a subclass.
    */
   override def canEqual(that: Any): Boolean = that match {
-    case _: CamelMessage ⇒ true
-    case _               ⇒ false
+    case _: CamelMessage => true
+    case _               => false
   }
 }
 
 /**
  * Companion object of CamelMessage class.
  */
-object CamelMessage extends ((Any, Map[String, Any]) ⇒ CamelMessage) {
+object CamelMessage extends ((Any, Map[String, Any]) => CamelMessage) {
 
   /**
    * Returns a new CamelMessage based on the <code>body</code> and <code>headers</code>.
@@ -239,8 +239,8 @@ object CamelMessage extends ((Any, Map[String, Any]) ⇒ CamelMessage) {
    * newly created CamelMessage object.
    */
   private[camel] def canonicalize(msg: Any) = msg match {
-    case mobj: CamelMessage ⇒ mobj
-    case body               ⇒ CamelMessage(body, Map.empty[String, Any])
+    case mobj: CamelMessage => mobj
+    case body               => CamelMessage(body, Map.empty[String, Any])
   }
 
   /**
@@ -269,7 +269,7 @@ object CamelMessage extends ((Any, Map[String, Any]) ⇒ CamelMessage) {
    */
   private[camel] def copyContent(from: CamelMessage, to: JCamelMessage): Unit = {
     to.setBody(from.body)
-    for ((name, value) ← from.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
+    for ((name, value) <- from.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
     to.getAttachments.putAll(from.getAttachments)
   }
 }

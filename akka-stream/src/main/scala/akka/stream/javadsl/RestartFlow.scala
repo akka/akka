@@ -45,7 +45,7 @@ object RestartFlow {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                            flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
+    akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor) { () =>
       flowFactory.create().asScala
     }.asJava
   }
@@ -108,7 +108,7 @@ object RestartFlow {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                            maxRestarts: Int, flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
+    akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
       flowFactory.create().asScala
     }.asJava
   }
@@ -173,7 +173,7 @@ object RestartFlow {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                                      maxRestarts: Int, flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
+    akka.stream.scaladsl.RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
       flowFactory.create().asScala
     }.asJava
   }

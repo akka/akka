@@ -46,7 +46,7 @@ object RestartSink {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
-    akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
+    akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor) { () =>
       sinkFactory.create().asScala
     }.asJava
   }
@@ -111,7 +111,7 @@ object RestartSink {
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      maxRestarts: Int, sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
-    akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
+    akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
       sinkFactory.create().asScala
     }.asJava
   }

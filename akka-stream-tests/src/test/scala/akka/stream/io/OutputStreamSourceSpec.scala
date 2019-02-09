@@ -48,10 +48,10 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   def assertNoBlockedThreads(): Unit = {
     def threadsBlocked =
       ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).toSeq
-        .filter(t ⇒ t.getThreadName.startsWith("OutputStreamSourceSpec") &&
+        .filter(t => t.getThreadName.startsWith("OutputStreamSourceSpec") &&
           t.getLockName != null &&
           t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
-          t.getStackTrace.exists(s ⇒ s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
+          t.getStackTrace.exists(s => s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
 
     awaitAssert(threadsBlocked should ===(Seq()), 5.seconds, interval = 500.millis)
   }
@@ -70,7 +70,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     // https://github.com/akka/akka/issues/25983
     "not truncate the stream on close" in assertAllStagesStopped {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val (outputStream, result) =
           StreamConverters.asOutputStream()
             .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
@@ -104,7 +104,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .withAttributes(Attributes.inputBuffer(16, 16)).run
       val s = probe.expectSubscription()
 
-      (1 to 16).foreach { _ ⇒ outputStream.write(bytesArray) }
+      (1 to 16).foreach { _ => outputStream.write(bytesArray) }
 
       //blocked call
       val f = Future(outputStream.write(bytesArray))

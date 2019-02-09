@@ -64,7 +64,7 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
   var seqNo = -1L
 
   def receive = {
-    case r @ ReplayedMessage(persistent) ⇒
+    case r @ ReplayedMessage(persistent) =>
       if (debugEnabled)
         log.debug("Replay: {}", persistent)
       try {
@@ -81,10 +81,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
               "Perhaps, events were journaled out of sequence, or duplicate persistentId for different entities?"
             logIssue(errMsg)
             mode match {
-              case RepairByDiscardOld ⇒ // discard
-              case Fail               ⇒ throw new IllegalStateException(errMsg)
-              case Warn               ⇒ buffer.add(r)
-              case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+              case RepairByDiscardOld => // discard
+              case Fail               => throw new IllegalStateException(errMsg)
+              case Warn               => buffer.add(r)
+              case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
             }
           } else {
             // note that it is alright with == seqNo, since such may be emitted EventSeq
@@ -99,10 +99,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
             "Perhaps, the old writer kept journaling messages after the new writer created, or duplicate persistentId for different entities?"
           logIssue(errMsg)
           mode match {
-            case RepairByDiscardOld ⇒ // discard
-            case Fail               ⇒ throw new IllegalStateException(errMsg)
-            case Warn               ⇒ buffer.add(r)
-            case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+            case RepairByDiscardOld => // discard
+            case Fail               => throw new IllegalStateException(errMsg)
+            case Warn               => buffer.add(r)
+            case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
           }
 
         } else {
@@ -125,10 +125,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
                 "Perhaps, the new writer journaled the event out of sequence, or duplicate persistentId for different entities?"
               logIssue(errMsg)
               mode match {
-                case RepairByDiscardOld ⇒ iter.remove() // discard
-                case Fail               ⇒ throw new IllegalStateException(errMsg)
-                case Warn               ⇒ // keep
-                case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+                case RepairByDiscardOld => iter.remove() // discard
+                case Fail               => throw new IllegalStateException(errMsg)
+                case Warn               => // keep
+                case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
               }
 
             }
@@ -138,10 +138,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
         }
 
       } catch {
-        case e: IllegalStateException if mode == Fail ⇒ fail(e)
+        case e: IllegalStateException if mode == Fail => fail(e)
       }
 
-    case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) ⇒
+    case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
       if (debugEnabled)
         log.debug("Replay completed: {}", msg)
       sendBuffered()
@@ -157,17 +157,17 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
   }
 
   def logIssue(errMsg: String): Unit = mode match {
-    case Warn | RepairByDiscardOld ⇒ log.warning(errMsg)
-    case Fail                      ⇒ log.error(errMsg)
-    case Disabled                  ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+    case Warn | RepairByDiscardOld => log.warning(errMsg)
+    case Fail                      => log.error(errMsg)
+    case Disabled                  => throw new IllegalArgumentException("mode must not be Disabled")
   }
 
   def fail(cause: IllegalStateException): Unit = {
     buffer.clear()
     persistentActor.tell(ReplayMessagesFailure(cause), Actor.noSender)
     context.become {
-      case _: ReplayedMessage ⇒ // discard
-      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) ⇒
+      case _: ReplayedMessage => // discard
+      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
         context.stop(self)
     }
   }

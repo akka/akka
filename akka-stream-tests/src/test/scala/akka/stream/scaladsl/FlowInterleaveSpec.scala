@@ -27,7 +27,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to 12) {
+      for (_ <- 1 to 12) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }

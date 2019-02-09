@@ -34,15 +34,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
     result.zipWithIndex.foreach {
-      case (phase, i) ⇒
+      case (phase, i) =>
         phases.get(phase) match {
-          case Some(Phase(dependsOn, _, _, _)) ⇒
-            dependsOn.foreach { depPhase ⇒
+          case Some(Phase(dependsOn, _, _, _)) =>
+            dependsOn.foreach { depPhase =>
               withClue(s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
                 i should be > result.indexOf(depPhase)
               }
             }
-          case None ⇒ // ok
+          case None => // ok
         }
     }
     result
@@ -56,37 +56,37 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
       checkTopologicalSort(Map.empty) should ===(Nil)
 
       checkTopologicalSort(Map(
-        "a" → emptyPhase)) should ===(List("a"))
+        "a" -> emptyPhase)) should ===(List("a"))
 
       checkTopologicalSort(Map(
-        "b" → phase("a"))) should ===(List("a", "b"))
+        "b" -> phase("a"))) should ===(List("a", "b"))
 
       val result1 = checkTopologicalSort(Map(
-        "c" → phase("a"), "b" → phase("a")))
+        "c" -> phase("a"), "b" -> phase("a")))
       result1.head should ===("a")
       // b, c can be in any order
       result1.toSet should ===(Set("a", "b", "c"))
 
       checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("b"))) should ===(List("a", "b", "c"))
+        "b" -> phase("a"), "c" -> phase("b"))) should ===(List("a", "b", "c"))
 
       checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("a", "b"))) should ===(List("a", "b", "c"))
+        "b" -> phase("a"), "c" -> phase("a", "b"))) should ===(List("a", "b", "c"))
 
       val result2 = checkTopologicalSort(Map(
-        "c" → phase("a", "b")))
+        "c" -> phase("a", "b")))
       result2.last should ===("c")
       // a, b can be in any order
       result2.toSet should ===(Set("a", "b", "c"))
 
       checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("b"), "d" → phase("b", "c"),
-        "e" → phase("d"))) should ===(
+        "b" -> phase("a"), "c" -> phase("b"), "d" -> phase("b", "c"),
+        "e" -> phase("d"))) should ===(
         List("a", "b", "c", "d", "e"))
 
       val result3 = checkTopologicalSort(Map(
-        "a2" → phase("a1"), "a3" → phase("a2"),
-        "b2" → phase("b1"), "b3" → phase("b2")))
+        "a2" -> phase("a1"), "a3" -> phase("a2"),
+        "b2" -> phase("b1"), "b3" -> phase("b2")))
       val (a, b) = result3.partition(_.charAt(0) == 'a')
       a should ===(List("a1", "a2", "a3"))
       b should ===(List("b1", "b2", "b3"))
@@ -95,22 +95,22 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     "detect cycles in phases (non-DAG)" in {
       intercept[IllegalArgumentException] {
         CoordinatedShutdown.topologicalSort(Map(
-          "a" → phase("a")))
+          "a" -> phase("a")))
       }
 
       intercept[IllegalArgumentException] {
         CoordinatedShutdown.topologicalSort(Map(
-          "b" → phase("a"), "a" → phase("b")))
+          "b" -> phase("a"), "a" -> phase("b")))
       }
 
       intercept[IllegalArgumentException] {
         CoordinatedShutdown.topologicalSort(Map(
-          "c" → phase("a"), "c" → phase("b"), "b" → phase("c")))
+          "c" -> phase("a"), "c" -> phase("b"), "b" -> phase("c")))
       }
 
       intercept[IllegalArgumentException] {
         CoordinatedShutdown.topologicalSort(Map(
-          "d" → phase("a"), "d" → phase("c"), "c" → phase("b"), "b" → phase("d")))
+          "d" -> phase("a"), "d" -> phase("c"), "c" -> phase("b"), "b" -> phase("d")))
       }
 
     }
@@ -135,19 +135,19 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     "run ordered phases" in {
       import system.dispatcher
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> phase("a"),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.successful(Done)
       }
-      co.addTask("b", "b2") { () ⇒
+      co.addTask("b", "b2") { () =>
         Future {
           // to verify that c is not performed before b
           Thread.sleep(100)
@@ -155,7 +155,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
           Done
         }
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -165,19 +165,19 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "run from a given phase" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> phase("a"),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.successful(Done)
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -187,9 +187,9 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "only run once" in {
-      val phases = Map("a" → emptyPhase)
+      val phases = Map("a" -> emptyPhase)
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
@@ -206,15 +206,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     "continue after timeout or failure" in {
       import system.dispatcher
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.failed(new RuntimeException("boom"))
       }
-      co.addTask("a", "a2") { () ⇒
+      co.addTask("a", "a2") { () =>
         Future {
           // to verify that b is not performed before a also in case of failure
           Thread.sleep(100)
@@ -222,11 +222,11 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
           Done
         }
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Promise[Done]().future // never completed
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -243,15 +243,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "abort if recover=off" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Promise[Done]().future // never completed
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -265,15 +265,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "skip tasks in disabled phase" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.failed(new RuntimeException("Was expected to not be executed"))
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -286,12 +286,12 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "be possible to add tasks in later phase from task in earlier phase" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"))
+        "a" -> emptyPhase,
+        "b" -> phase("a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
-        co.addTask("b", "b1") { () ⇒
+        co.addTask("b", "b1") { () =>
           testActor ! "B"
           Future.successful(Done)
         }
@@ -318,9 +318,9 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
           }
         }
         """)) should ===(Map(
-        "a" → Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
-        "b" → Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
-        "c" → Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
+        "a" -> Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
+        "b" -> Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
+        "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
     }
 
     "default exit code to 0" in {

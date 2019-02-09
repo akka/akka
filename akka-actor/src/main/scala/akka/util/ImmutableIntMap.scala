@@ -72,7 +72,7 @@ import scala.annotation.tailrec
    * Worst case `O(n)`, creates new `ImmutableIntMap`
    * with the given key and value if that key is not yet present in the map.
    */
-  final def updateIfAbsent(key: Int, value: ⇒ Int): ImmutableIntMap =
+  final def updateIfAbsent(key: Int, value: => Int): ImmutableIntMap =
     if (size > 0) {
       val i = indexForKey(key)
       if (i >= 0) this
@@ -135,12 +135,12 @@ import scala.annotation.tailrec
 
   override final def toString: String =
     if (size < 1) "ImmutableIntMap()"
-    else Iterator.range(0, kvs.length - 1, 2).map(i ⇒ s"${kvs(i)} -> ${kvs(i + 1)}").mkString("ImmutableIntMap(", ", ", ")")
+    else Iterator.range(0, kvs.length - 1, 2).map(i => s"${kvs(i)} -> ${kvs(i + 1)}").mkString("ImmutableIntMap(", ", ", ")")
 
   override final def hashCode: Int = Arrays.hashCode(kvs)
 
   override final def equals(obj: Any): Boolean = obj match {
-    case other: ImmutableIntMap ⇒ Arrays.equals(kvs, other.kvs) // No need to test `this eq obj` since this is done for the kvs arrays anyway
-    case _                      ⇒ false
+    case other: ImmutableIntMap => Arrays.equals(kvs, other.kvs) // No need to test `this eq obj` since this is done for the kvs arrays anyway
+    case _                      => false
   }
 }

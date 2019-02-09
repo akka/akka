@@ -90,8 +90,8 @@ class BackoffSupervisorDocSpec {
       ).withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
         .withSupervisorStrategy(
           OneForOneStrategy() {
-            case _: MyException ⇒ SupervisorStrategy.Restart
-            case _              ⇒ SupervisorStrategy.Escalate
+            case _: MyException => SupervisorStrategy.Restart
+            case _              => SupervisorStrategy.Escalate
           }))
     //#backoff-custom-fail
 

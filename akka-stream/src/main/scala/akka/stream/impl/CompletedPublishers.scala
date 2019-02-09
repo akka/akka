@@ -18,7 +18,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
       tryOnSubscribe(subscriber, CancelledSubscription)
       tryOnComplete(subscriber)
     } catch {
-      case _: SpecViolation ⇒ // nothing we can do
+      case _: SpecViolation => // nothing we can do
     }
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
   override def toString: String = "already-completed-publisher"
@@ -37,7 +37,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
       tryOnSubscribe(subscriber, CancelledSubscription)
       tryOnError(subscriber, t)
     } catch {
-      case _: SpecViolation ⇒ // nothing we can do
+      case _: SpecViolation => // nothing we can do
     }
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
   override def toString: String = name
@@ -70,7 +70,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
     try rejectAdditionalSubscriber(subscriber, "Publisher") catch {
-      case _: SpecViolation ⇒ // nothing we can do
+      case _: SpecViolation => // nothing we can do
     }
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
   override def toString: String = "already-subscribed-publisher"

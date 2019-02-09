@@ -91,7 +91,7 @@ private[akka] object FlightRecorderReader {
       val hiFreq: Seq[FlightRecorderReader#Entry] = reader.structure.hiFreqLog.logs.flatMap(_.compactEntries)
       val loFreq: Seq[FlightRecorderReader#Entry] = reader.structure.loFreqLog.logs.flatMap(_.richEntries)
 
-      implicit val ordering = Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) ⇒ a.timeStamp.isBefore(b.timeStamp))
+      implicit val ordering = Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) => a.timeStamp.isBefore(b.timeStamp))
       val sorted = SortedSet[FlightRecorderReader#Entry](alerts: _*) ++ hiFreq ++ loFreq
 
       println("--- FLIGHT RECORDER LOG")
@@ -247,7 +247,7 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
   }
 
   private def readRollingLog(sectionParameters: SectionParameters): RollingLog = {
-    val logs = Vector.tabulate(SnapshotCount) { idx ⇒
+    val logs = Vector.tabulate(SnapshotCount) { idx =>
       readLog(idx, sectionParameters.offset + (idx * sectionParameters.logSize), sectionParameters)
     }
     RollingLog(sectionParameters, logs)
@@ -255,10 +255,10 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
 
   private def readLog(id: Int, offset: Long, sectionParameters: SectionParameters): Log = {
     val state = fileBuffer.getLong(offset + RollingEventLogSection.LogStateOffset) match {
-      case RollingEventLogSection.Empty    ⇒ Empty
-      case RollingEventLogSection.Live     ⇒ Live
-      case RollingEventLogSection.Snapshot ⇒ Snapshot
-      case other                           ⇒ throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
+      case RollingEventLogSection.Empty    => Empty
+      case RollingEventLogSection.Live     => Live
+      case RollingEventLogSection.Snapshot => Snapshot
+      case other                           => throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
     }
     Log(sectionParameters, offset, id, state, fileBuffer.getLong(offset + RollingEventLogSection.HeadPointerOffset))
   }

@@ -88,7 +88,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
   private def lookupConfigurator(id: String): MessageDispatcherConfigurator = {
     dispatcherConfigurators.get(id) match {
-      case null ⇒
+      case null =>
         // It doesn't matter if we create a dispatcher configurator that isn't used due to concurrent lookup.
         // That shouldn't happen often and in case it does the actual ExecutorService isn't
         // created until used, i.e. cheap.
@@ -97,11 +97,11 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
           else throw new ConfigurationException(s"Dispatcher [$id] not configured")
 
         dispatcherConfigurators.putIfAbsent(id, newConfigurator) match {
-          case null     ⇒ newConfigurator
-          case existing ⇒ existing
+          case null     => newConfigurator
+          case existing => existing
         }
 
-      case existing ⇒ existing
+      case existing => existing
     }
   }
 
@@ -135,13 +135,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
     idConfig(id)
       .withFallback(appConfig)
-      .withFallback(ConfigFactory.parseMap(Map("name" → simpleName).asJava))
+      .withFallback(ConfigFactory.parseMap(Map("name" -> simpleName).asJava))
       .withFallback(defaultDispatcherConfig)
   }
 
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("id" → id).asJava)
+    ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
 
   /**
@@ -172,17 +172,17 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     if (!cfg.hasPath("id")) throw new ConfigurationException("Missing dispatcher 'id' property in config: " + cfg.root.render)
 
     cfg.getString("type") match {
-      case "Dispatcher" ⇒ new DispatcherConfigurator(cfg, prerequisites)
-      case "BalancingDispatcher" ⇒
+      case "Dispatcher" => new DispatcherConfigurator(cfg, prerequisites)
+      case "BalancingDispatcher" =>
         // FIXME remove this case in 2.4
         throw new IllegalArgumentException("BalancingDispatcher is deprecated, use a BalancingPool instead. " +
           "During a migration period you can still use BalancingDispatcher by specifying the full class name: " +
           classOf[BalancingDispatcherConfigurator].getName)
-      case "PinnedDispatcher" ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
-      case fqn ⇒
-        val args = List(classOf[Config] → cfg, classOf[DispatcherPrerequisites] → prerequisites)
+      case "PinnedDispatcher" => new PinnedDispatcherConfigurator(cfg, prerequisites)
+      case fqn =>
+        val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({
-          case exception ⇒
+          case exception =>
             throw new ConfigurationException(
               ("Cannot instantiate MessageDispatcherConfigurator type [%s], defined in [%s], " +
                 "make sure it has constructor with [com.typesafe.config.Config] and " +
@@ -285,8 +285,8 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
   private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
-    case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
-    case _ ⇒
+    case e: ThreadPoolExecutorConfigurator => e.threadPoolConfig
+    case _ =>
       prerequisites.eventStream.publish(
         Warning(
           "PinnedDispatcherConfigurator",

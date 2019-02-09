@@ -327,7 +327,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
   }
 }
 
-private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with Matchers with Suite ⇒
+private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with Matchers with Suite =>
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _
@@ -429,7 +429,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   }
 
   def echoActor = system.actorOf(Props(new Actor {
-    def receive = { case msg ⇒ sender() ! "received " + msg }
+    def receive = { case msg => sender() ! "received " + msg }
   }), name = "echoActor")
 
 }

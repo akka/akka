@@ -59,10 +59,10 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
     extension.snapshotStoreFor(null)
 
   def writeSnapshots(): Seq[SnapshotMetadata] = {
-    1 to 5 map { i ⇒
+    1 to 5 map { i =>
       val metadata = SnapshotMetadata(pid, i + 10)
       snapshotStore.tell(SaveSnapshot(metadata, s"s-${i}"), senderProbe.ref)
-      senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
+      senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
     }
   }
 
@@ -150,7 +150,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
     "save and overwrite snapshot with same sequence number" in {
       val md = metadata(4)
       snapshotStore.tell(SaveSnapshot(md, s"s-5-modified"), senderProbe.ref)
-      val md2 = senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md2) ⇒ md2 }
+      val md2 = senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md2) => md2 }
       md2.sequenceNr should be(md.sequenceNr)
       snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr), Long.MaxValue), senderProbe.ref)
       val result = senderProbe.expectMsgType[LoadSnapshotResult]
@@ -162,7 +162,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       val metadata = SnapshotMetadata(pid, 100)
       val bigSnapshot = "0" * snapshotByteSizeLimit
       snapshotStore.tell(SaveSnapshot(metadata, bigSnapshot), senderProbe.ref)
-      senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
+      senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
     }
   }
 
@@ -173,12 +173,12 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
         val metadata = SnapshotMetadata(pid, 100)
         val snap = TestPayload(probe.ref)
         snapshotStore.tell(SaveSnapshot(metadata, snap), senderProbe.ref)
-        senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
+        senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
 
         val Pid = pid
         snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
         senderProbe.expectMsgPF() {
-          case LoadSnapshotResult(Some(SelectedSnapshot(SnapshotMetadata(Pid, 100, _), payload)), Long.MaxValue) ⇒
+          case LoadSnapshotResult(Some(SelectedSnapshot(SnapshotMetadata(Pid, 100, _), payload)), Long.MaxValue) =>
             payload should be(snap)
         }
       }

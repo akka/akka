@@ -42,13 +42,13 @@ object EventStreamSpec {
   class MyLog extends Actor {
     var dst: ActorRef = context.system.deadLetters
     def receive = {
-      case Logging.InitializeLogger(bus) ⇒
+      case Logging.InitializeLogger(bus) =>
         bus.subscribe(context.self, classOf[SetTarget])
         bus.subscribe(context.self, classOf[UnhandledMessage])
         sender() ! Logging.LoggerInitialized
-      case SetTarget(ref)      ⇒ { dst = ref; dst ! "OK" }
-      case e: Logging.LogEvent ⇒ dst ! e
-      case u: UnhandledMessage ⇒ dst ! u
+      case SetTarget(ref)      => { dst = ref; dst ! "OK" }
+      case e: Logging.LogEvent => dst ! e
+      case u: UnhandledMessage => dst ! u
     }
   }
 
@@ -289,7 +289,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val tm = new A
 
         val target = sys.actorOf(Props(new Actor {
-          def receive = { case in ⇒ a1.ref forward in }
+          def receive = { case in => a1.ref forward in }
         }), "to-be-killed")
 
         es.subscribe(a2.ref, classOf[Any])
@@ -317,7 +317,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         val a1, a2 = TestProbe()
 
         val target = system.actorOf(Props(new Actor {
-          def receive = { case in ⇒ a1.ref forward in }
+          def receive = { case in => a1.ref forward in }
         }), "to-be-killed")
 
         watch(target)
@@ -416,8 +416,8 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
   private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3 seconds): Unit = {
     a.fishForMessage(max, hint = "expected debug message prefix: " + messagePrefix) {
-      case Logging.Debug(_, _, msg: String) if msg startsWith messagePrefix ⇒ true
-      case other ⇒ false
+      case Logging.Debug(_, _, msg: String) if msg startsWith messagePrefix => true
+      case other => false
     }
   }
 

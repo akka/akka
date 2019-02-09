@@ -44,8 +44,8 @@ class AffinityPoolRequestResponseBenchmark {
     requireRightNumberOfCores(cores)
 
     val mailboxConf = mailbox match {
-      case "default" ⇒ ""
-      case "SingleConsumerOnlyUnboundedMailbox" ⇒
+      case "default" => ""
+      case "SingleConsumerOnlyUnboundedMailbox" =>
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
 

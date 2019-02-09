@@ -67,21 +67,21 @@ object PerformanceSpec {
     def failureWasDefined: Boolean = failAt != -1L
   }
 
-  def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
+  def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) => Effect[String, String]) = {
     Behaviors.supervise({
       val parameters = Parameters()
       EventSourcedBehavior[Command, String, String](
         persistenceId = PersistenceId(name),
         "",
         commandHandler = CommandHandler.command {
-          case StopMeasure      ⇒ Effect.none.thenRun(_ ⇒ probe.ref ! StopMeasure)
-          case FailAt(sequence) ⇒ Effect.none.thenRun(_ ⇒ parameters.failAt = sequence)
-          case command          ⇒ other(command, parameters)
+          case StopMeasure      => Effect.none.thenRun(_ => probe.ref ! StopMeasure)
+          case FailAt(sequence) => Effect.none.thenRun(_ => parameters.failAt = sequence)
+          case command          => other(command, parameters)
         },
         eventHandler = {
-          case (state, _) ⇒ state
+          case (state, _) => state
         }
-      ).onRecoveryCompleted { _ ⇒
+      ).onRecoveryCompleted { _ =>
           if (parameters.every(1000)) print("r")
         }
     }).onFailure(SupervisorStrategy.restart)
@@ -89,8 +89,8 @@ object PerformanceSpec {
 
   def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Reply]) =
     behavior(name, probe) {
-      case (CommandWithEvent(evt), parameters) ⇒
-        Effect.persist(evt).thenRun(_ ⇒ {
+      case (CommandWithEvent(evt), parameters) =>
+        Effect.persist(evt).thenRun(_ => {
           parameters.persistCalls += 1
           if (parameters.every(1000)) print(".")
           if (parameters.shouldFail) {
@@ -98,7 +98,7 @@ object PerformanceSpec {
             throw TestException("boom")
           }
         })
-      case _ ⇒ Effect.none
+      case _ => Effect.none
     }
 }
 
@@ -124,7 +124,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
     val m = new Measure(loadCycles)
     m.startMeasure()
     val parameters = Parameters(0, failAt = failAt.getOrElse(-1))
-    (1 to loadCycles).foreach { n ⇒
+    (1 to loadCycles).foreach { n =>
       parameters.persistCalls += 1
       persistentActor ! CommandWithEvent(s"msg$n")
       // stash is cleared when exception is thrown so have to wait before sending more commands

@@ -17,7 +17,7 @@ import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.ConfigFactory
 import akka.testkit.WithLogCapturing
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 
 class AsyncDnsResolverSpec extends AkkaSpec(
@@ -77,7 +77,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
     "fails if all dns clients timeout" in new Setup {
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsgPF(remainingOrDefault) {
-        case Failure(ResolveFailedException(_)) ⇒
+        case Failure(ResolveFailedException(_)) =>
       }
     }
 
@@ -88,7 +88,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       dnsClient2.expectMsg(Question4(2, "cats.com"))
       dnsClient2.reply(Failure(new RuntimeException("Yet another fail")))
       senderProbe.expectMsgPF(remainingOrDefault) {
-        case Failure(ResolveFailedException(_)) ⇒
+        case Failure(ResolveFailedException(_)) =>
       }
     }
 
@@ -105,7 +105,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = senderProbe.expectMsgType[Resolved]
-      answer.records.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord => r }.toSet shouldEqual Set(
         ARecord("127.0.0.1", Ttl.effectivelyForever, InetAddress.getByName("127.0.0.1"))
       )
     }
@@ -115,7 +115,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = senderProbe.expectMsgType[Resolved]
-      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
+      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect { case r: AAAARecord => r }
     }
 
     "return additional records for SRV requests" in new Setup {
@@ -141,7 +141,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
           search-domains = []
           ndots = 1
         """))
-    system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (_, _) ⇒ {
+    system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (_, _) => {
       clients
     })))
   }

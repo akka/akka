@@ -62,11 +62,11 @@ abstract class LeaderLeavingSpec
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
-              case state: CurrentClusterState ⇒
-                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
+              case state: CurrentClusterState =>
+                if (state.members.exists(m => m.address == oldLeaderAddress && m.status == Exiting))
                   exitingLatch.countDown()
-              case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
-              case _ ⇒ // ignore
+              case MemberExited(m) if m.address == oldLeaderAddress => exitingLatch.countDown()
+              case _ => // ignore
             }
           }).withDeploy(Deploy.local)), classOf[MemberEvent])
           enterBarrier("registered-listener")

@@ -9,7 +9,7 @@ import akka.stream.impl.SinkholeSubscriber
 import org.reactivestreams.tck.{ TestEnvironment, SubscriberWhiteboxVerification }
 import org.reactivestreams.tck.SubscriberWhiteboxVerification.{ SubscriberPuppet, WhiteboxSubscriberProbe }
 import org.scalatestplus.testng.{ TestNGSuiteLike }
-import java.lang.{ Integer ⇒ JInt }
+import java.lang.{ Integer => JInt }
 import scala.concurrent.Promise
 import org.reactivestreams.{ Subscription, Subscriber }
 

@@ -21,22 +21,22 @@ object OrElseStubbedSpec {
   def ping(counters: Map[String, Int]): Behavior[Ping] = {
 
     val ping1: Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping1(replyTo: ActorRef[Pong]) ⇒
+      case Ping1(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping1", counters.getOrElse("ping1", 0) + 1)
         replyTo ! Pong(newCounters("ping1"))
         ping(newCounters)
     }
 
     val ping2: Behavior[Ping] = Behaviors.receiveMessage {
-      case Ping2(replyTo: ActorRef[Pong]) ⇒
+      case Ping2(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping2", counters.getOrElse("ping2", 0) + 1)
         replyTo ! Pong(newCounters("ping2"))
         ping(newCounters)
-      case _ ⇒ Behaviors.unhandled
+      case _ => Behaviors.unhandled
     }
 
     val ping3: Behavior[Ping] = Behaviors.receiveMessagePartial {
-      case Ping3(replyTo: ActorRef[Pong]) ⇒
+      case Ping3(replyTo: ActorRef[Pong]) =>
         val newCounters = counters.updated("ping3", counters.getOrElse("ping3", 0) + 1)
         replyTo ! Pong(newCounters("ping3"))
         ping(newCounters)
@@ -84,8 +84,8 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "Behavior.orElse" must {
     "work for deferred behavior on the left" in {
-      val orElseDeferred = Behaviors.setup[Ping] { _ ⇒
-        Behaviors.receiveMessage { _ ⇒
+      val orElseDeferred = Behaviors.setup[Ping] { _ =>
+        Behaviors.receiveMessage { _ =>
           Behaviors.unhandled
         }
       }.orElse(ping(Map.empty))
@@ -98,9 +98,9 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "work for deferred behavior on the right" in {
-      val orElseDeferred = ping(Map.empty).orElse(Behaviors.setup { _ ⇒
+      val orElseDeferred = ping(Map.empty).orElse(Behaviors.setup { _ =>
         Behaviors.receiveMessage {
-          case PingInfinite(replyTo) ⇒
+          case PingInfinite(replyTo) =>
             replyTo ! Pong(-1)
             Behaviors.same
         }
@@ -123,20 +123,20 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     def dealer(set: Set[Any]): Behavior[Parent] = {
       val add = Behaviors.receiveMessage[Parent] {
-        case Add(o) ⇒ dealer(set + o)
-        case _      ⇒ Behaviors.unhandled
+        case Add(o) => dealer(set + o)
+        case _      => Behaviors.unhandled
       }
       val remove = Behaviors.receiveMessage[Parent] {
-        case Remove(o) ⇒ dealer(set - o)
-        case _         ⇒ Behaviors.unhandled
+        case Remove(o) => dealer(set - o)
+        case _         => Behaviors.unhandled
       }
       val getStack = Behaviors.receiveMessagePartial[Parent] {
-        case Stack(sender) ⇒
+        case Stack(sender) =>
           sender ! Thread.currentThread().getStackTrace
           Behaviors.same
       }
       val getSet = Behaviors.receiveMessagePartial[Parent] {
-        case Get(sender) ⇒
+        case Get(sender) =>
           sender ! set
           Behaviors.same
       }
@@ -145,10 +145,10 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     val y = spawn(dealer(Set.empty))
 
-    (0 to 10000) foreach { i ⇒
+    (0 to 10000) foreach { i =>
       y ! Add(i)
     }
-    (0 to 9999) foreach { i ⇒
+    (0 to 9999) foreach { i =>
       y ! Remove(i)
     }
     val probe = TestProbe[Set[Any]]
