@@ -9,6 +9,7 @@ import java.util.Properties
 
 import sbt.Keys._
 import sbt._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 
 import scala.collection.breakOut
 
@@ -25,7 +26,6 @@ object AkkaBuild {
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
-    Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       version in ThisBuild := "2.5-SNAPSHOT"

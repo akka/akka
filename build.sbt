@@ -524,7 +524,6 @@ def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
-    .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
 
 /* Command aliases one can run locally against a module
@@ -534,7 +533,8 @@ def akkaModule(name: String): Project =
 def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
   val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
-  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+  val optionalExternalTestFormat = externalTest.map(t => s";${t.id}/scalafmtAll").getOrElse("")
+  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
