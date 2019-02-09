@@ -27,7 +27,7 @@ class DeadLetterListener extends Actor {
     eventStream.unsubscribe(self)
 
   def receive = {
-    case DeadLetter(message, snd, rcp) ⇒
+    case DeadLetter(message, snd, rcp) =>
       count += 1
       val origin = if (snd eq context.system.deadLetters) "without sender" else s"from $snd"
       val done = maxCount != Int.MaxValue && count >= maxCount

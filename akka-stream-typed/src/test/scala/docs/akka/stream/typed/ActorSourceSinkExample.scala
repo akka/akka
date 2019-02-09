@@ -28,17 +28,17 @@ object ActorSourceSinkExample {
 
     val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](
       completionMatcher = {
-        case Complete ⇒
+        case Complete =>
       },
       failureMatcher = {
-        case Fail(ex) ⇒ ex
+        case Fail(ex) => ex
       },
       bufferSize = 8,
       overflowStrategy = OverflowStrategy.fail
     )
 
     val ref = source.collect {
-      case Message(msg) ⇒ msg
+      case Message(msg) => msg
     }.to(Sink.foreach(println)).run()
 
     ref ! Message("msg1")

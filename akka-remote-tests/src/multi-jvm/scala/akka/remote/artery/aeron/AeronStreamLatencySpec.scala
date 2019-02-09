@@ -218,7 +218,7 @@ abstract class AeronStreamLatencySpec
       val startMsg = "0".getBytes("utf-8")
       Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
-        .runForeach { envelope ⇒
+        .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           if (bytes.length == 1 && bytes(0) == startMsg(0))
             started.ref ! Done
@@ -238,7 +238,7 @@ abstract class AeronStreamLatencySpec
         }
 
       within(10.seconds) {
-        Source(1 to 50).map { _ ⇒
+        Source(1 to 50).map { _ =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(startMsg)
           envelope.byteBuffer.flip()
@@ -249,13 +249,13 @@ abstract class AeronStreamLatencySpec
         started.expectMsg(Done)
       }
 
-      for (rep ← 1 to repeat) {
+      for (rep <- 1 to repeat) {
         histogram.reset()
         count.set(0)
         lastRepeat.set(rep == repeat)
 
         val sendFlow = Flow[Unit]
-          .map { _ ⇒
+          .map { _ =>
             val envelope = pool.acquire()
             envelope.byteBuffer.put(payload)
             envelope.byteBuffer.flip()
@@ -324,7 +324,7 @@ abstract class AeronStreamLatencySpec
       enterBarrier("echo-started")
     }
 
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be low for ${s.testName}, at ${s.messageRate} msg/s, payloadSize = ${s.payloadSize}" in test(s)
     }
 

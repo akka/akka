@@ -21,7 +21,7 @@ class FlowIdleInjectSpec extends StreamSpec {
 
     "not emit additional elements if upstream is fast enough" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 10).keepAlive(1.second, () ⇒ 0).grouped(1000).runWith(Sink.head),
+        Source(1 to 10).keepAlive(1.second, () => 0).grouped(1000).runWith(Sink.head),
         3.seconds) should ===(1 to 10)
     }
 
@@ -29,7 +29,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val sourceWithIdleGap = Source(1 to 5) ++ Source(6 to 10).initialDelay(2.second)
 
       val result = Await.result(
-        sourceWithIdleGap.keepAlive(0.6.seconds, () ⇒ 0).grouped(1000).runWith(Sink.head),
+        sourceWithIdleGap.keepAlive(0.6.seconds, () => 0).grouped(1000).runWith(Sink.head),
         3.seconds) should ===(List(1, 2, 3, 4, 5, 0, 0, 0, 6, 7, 8, 9, 10))
     }
 
@@ -37,7 +37,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
 
@@ -52,7 +52,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -70,7 +70,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(1.5.second)
@@ -85,7 +85,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -102,7 +102,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(1.5.second)
@@ -119,7 +119,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      (Source(1 to 10) ++ Source.fromPublisher(upstream)).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
       downstream.expectNextN(1 to 10)
@@ -138,7 +138,7 @@ class FlowIdleInjectSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).keepAlive(1.second, () ⇒ 0).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).keepAlive(1.second, () => 0).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(2)
       downstream.expectNoMsg(500.millis)

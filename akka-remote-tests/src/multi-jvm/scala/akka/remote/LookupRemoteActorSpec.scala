@@ -35,7 +35,7 @@ class ArteryLookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new Loo
 object LookupRemoteActorSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 }

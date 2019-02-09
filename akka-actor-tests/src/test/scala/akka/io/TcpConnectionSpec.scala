@@ -46,7 +46,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     akka.io.tcp.trace-logging = on
     akka.io.tcp.register-timeout = 500ms
     akka.actor.serialize-creators = on
-    """) with WithLogCapturing { thisSpecs ⇒
+    """) with WithLogCapturing { thisSpecs =>
   import TcpConnectionSpec._
 
   // Helper to avoid Windows localization specific differences
@@ -67,7 +67,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       clientSocket.read(ByteBuffer.allocate(1))
       null
     } catch {
-      case NonFatal(e) ⇒ e.getMessage
+      case NonFatal(e) => e.getMessage
     }
   }
 
@@ -81,7 +81,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       clientSocket.write(ByteBuffer.allocate(1))
       null
     } catch {
-      case NonFatal(e) ⇒ e.getMessage.take(15)
+      case NonFatal(e) => e.getMessage.take(15)
     }
   }
 
@@ -248,7 +248,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         val writer = Files.newBufferedWriter(tmpFile)
         val oneKByteOfF = Array.fill[Char](1000)('F')
         // 10 mb of f:s in a file
-        for (_ ← 0 to 10000) {
+        for (_ <- 0 to 10000) {
           writer.write(oneKByteOfF)
         }
         writer.flush()
@@ -718,7 +718,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write) => written -= 1
         }
         writer.msgAvailable should ===(false)
 
@@ -756,7 +756,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write) => written -= 1
         }
 
         // drain the queue until it works again
@@ -792,7 +792,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write) => written -= 1
         }
         writer.msgAvailable should ===(false)
 
@@ -825,7 +825,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write) => written -= 1
         }
 
         // drain the queue until it works again
@@ -859,7 +859,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         expectTerminated(connectionActor)
         an[IOException] should be thrownBy { socket.getInputStream.read() }
       } catch {
-        case e: SocketTimeoutException ⇒
+        case e: SocketTimeoutException =>
           // thrown by serverSocket.accept, this may happen if network is offline
           info(e.getMessage)
           pending
@@ -895,7 +895,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       if (Helpers.isWindows) interestCallReceiver.expectMsg(OP_CONNECT)
     }
 
-    def run(body: ⇒ Unit): Unit = {
+    def run(body: => Unit): Unit = {
       try {
         setServerSocketOptions()
         localServerChannel.socket.bind(serverAddress)
@@ -923,10 +923,10 @@ class TcpConnectionSpec extends AkkaSpec("""
       new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
-        def cancelAndClose(andThen: () ⇒ Unit): Unit = onCancelAndClose(andThen)
+        def cancelAndClose(andThen: () => Unit): Unit = onCancelAndClose(andThen)
       }
 
-    protected def onCancelAndClose(andThen: () ⇒ Unit): Unit = andThen()
+    protected def onCancelAndClose(andThen: () => Unit): Unit = andThen()
 
     def createConnectionActorWithoutRegistration(
       serverAddress: InetSocketAddress           = serverAddress,
@@ -940,7 +940,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         })
   }
 
-  trait SmallRcvBuffer { _: LocalServerTest ⇒
+  trait SmallRcvBuffer { _: LocalServerTest =>
     override def setServerSocketOptions(): Unit = localServerChannel.socket.setReceiveBufferSize(1024)
   }
 
@@ -950,7 +950,7 @@ class TcpConnectionSpec extends AkkaSpec("""
     // calling .underlyingActor ensures that the actor is actually created at this point
     lazy val clientSideChannel = connectionActor.underlyingActor.channel
 
-    override def run(body: ⇒ Unit): Unit = super.run {
+    override def run(body: => Unit): Unit = super.run {
       registerCallReceiver.expectMsg(Registration(clientSideChannel, 0))
       registerCallReceiver.sender should ===(connectionActor)
       body
@@ -984,7 +984,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       if (Helpers.isWindows) clientSelectionKey.interestOps(OP_CONNECT)
     }
 
-    override def run(body: ⇒ Unit): Unit = super.run {
+    override def run(body: => Unit): Unit = super.run {
       try {
         serverSideChannel.configureBlocking(false)
         serverSideChannel should not be (null)
@@ -1039,7 +1039,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       (sel, key)
     }
 
-    override protected def onCancelAndClose(andThen: () ⇒ Unit): Unit =
+    override protected def onCancelAndClose(andThen: () => Unit): Unit =
       try {
         if (clientSideChannel.isOpen) clientSideChannel.close()
         if (nioSelector.isOpen) {
@@ -1072,9 +1072,9 @@ class TcpConnectionSpec extends AkkaSpec("""
           if (nioSelector.selectedKeys().contains(serverSelectionKey)) {
             if (into eq defaultbuffer) into.clear()
             serverSideChannel.read(into) match {
-              case -1    ⇒ throw new IllegalStateException("Connection was closed unexpectedly with remaining bytes " + remaining)
-              case 0     ⇒ throw new IllegalStateException("Made no progress")
-              case other ⇒ other
+              case -1    => throw new IllegalStateException("Connection was closed unexpectedly with remaining bytes " + remaining)
+              case 0     => throw new IllegalStateException("Made no progress")
+              case other => other
             }
           } else 0
 
@@ -1111,14 +1111,14 @@ class TcpConnectionSpec extends AkkaSpec("""
       }
 
     val interestsNames =
-      Seq(OP_ACCEPT → "accepting", OP_CONNECT → "connecting", OP_READ → "reading", OP_WRITE → "writing")
+      Seq(OP_ACCEPT -> "accepting", OP_CONNECT -> "connecting", OP_READ -> "reading", OP_WRITE -> "writing")
     def interestsDesc(interests: Int): String =
-      interestsNames.filter(i ⇒ (i._1 & interests) != 0).map(_._2).mkString(", ")
+      interestsNames.filter(i => (i._1 & interests) != 0).map(_._2).mkString(", ")
 
     def abortClose(channel: SocketChannel): Unit = {
       try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
       catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
           // (also affected: OS/X Java 1.6.0_37)
           log.debug("setSoLinger(true, 0) failed with {}", e)

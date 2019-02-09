@@ -71,21 +71,21 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
 
       runOn(first) {
         // split the cluster in two parts (first, second) / (third, fourth, fifth)
-        for (role1 ← side1; role2 ← side2) {
+        for (role1 <- side1; role2 <- side2) {
           testConductor.blackhole(role1, role2, Direction.Both).await
         }
       }
       enterBarrier("after-split")
 
       runOn(side1: _*) {
-        for (role ← side2) markNodeAsUnavailable(role)
+        for (role <- side2) markNodeAsUnavailable(role)
         // auto-down
         awaitMembersUp(side1.size, side2.toSet map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
-        for (role ← side1) markNodeAsUnavailable(role)
+        for (role <- side1) markNodeAsUnavailable(role)
         // auto-down
         awaitMembersUp(side2.size, side1.toSet map address)
         assertLeader(side2: _*)

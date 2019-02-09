@@ -58,7 +58,7 @@ akka {
     system.actorOf(Props(new Actor {
       context.watch(ref)
       def receive = {
-        case Terminated(r) ⇒ testActor ! r
+        case Terminated(r) => testActor ! r
       }
     }).withDeploy(Deploy.local))
 
@@ -76,7 +76,7 @@ akka {
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
       def receive = {
-        case t: Terminated ⇒ testActor ! t.actor.path
+        case t: Terminated => testActor ! t.actor.path
       }
     }).withDeploy(Deploy.local), name = "observer2")
 

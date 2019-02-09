@@ -5,11 +5,11 @@
 package akka.dispatch
 
 import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
-import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption }
+import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
 
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.{ LinkedList ⇒ JLinkedList }
+import java.lang.{ Iterable => JIterable }
+import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.{ Callable, Executor, ExecutorService }
 
 import scala.util.{ Failure, Success, Try }
@@ -162,19 +162,19 @@ object Futures {
    */
   def sequence[A](in: JIterable[Future[A]], executor: ExecutionContext): Future[JIterable[A]] = {
     implicit val d = executor
-    in.asScala.foldLeft(Future(new JLinkedList[A]())) { (fr, fa) ⇒ for (r ← fr; a ← fa) yield { r add a; r } }
+    in.asScala.foldLeft(Future(new JLinkedList[A]())) { (fr, fa) => for (r <- fr; a <- fa) yield { r add a; r } }
   }
 
   /**
-   * Transforms a JIterable[A] into a Future[JIterable[B]] using the provided Function A ⇒ Future[B].
+   * Transforms a JIterable[A] into a Future[JIterable[B]] using the provided Function A => Future[B].
    * This is useful for performing a parallel map. For example, to apply a function to all items of a list
    * in parallel.
    */
   def traverse[A, B](in: JIterable[A], fn: JFunc[A, Future[B]], executor: ExecutionContext): Future[JIterable[B]] = {
     implicit val d = executor
-    in.asScala.foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
+    in.asScala.foldLeft(Future(new JLinkedList[B]())) { (fr, a) =>
       val fb = fn(a)
-      for (r ← fr; b ← fb) yield { r add b; r }
+      for (r <- fr; b <- fb) yield { r add b; r }
     }
   }
 }
@@ -208,7 +208,7 @@ object japi {
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class UnitFunctionBridge[-T] extends (T ⇒ BoxedUnit) {
+  class UnitFunctionBridge[-T] extends (T => BoxedUnit) {
     final def apply$mcLJ$sp(l: Long): BoxedUnit = { internal(l.asInstanceOf[T]); BoxedUnit.UNIT }
     final def apply$mcLI$sp(i: Int): BoxedUnit = { internal(i.asInstanceOf[T]); BoxedUnit.UNIT }
     final def apply$mcLF$sp(f: Float): BoxedUnit = { internal(f.asInstanceOf[T]); BoxedUnit.UNIT }
@@ -260,8 +260,8 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
  */
 abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
   protected final override def internal(value: Try[T]): Unit = value match {
-    case Failure(t) ⇒ onComplete(t, null.asInstanceOf[T])
-    case Success(r) ⇒ onComplete(null, r)
+    case Failure(t) => onComplete(t, null.asInstanceOf[T])
+    case Success(r) => onComplete(null, r)
   }
 
   /**
@@ -321,7 +321,7 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
  * to failure cases.
  */
 object Filter {
-  def filterOf[T](f: akka.japi.Function[T, java.lang.Boolean]): (T ⇒ Boolean) =
+  def filterOf[T](f: akka.japi.Function[T, java.lang.Boolean]): (T => Boolean) =
     new Function1[T, Boolean] { def apply(result: T): Boolean = f(result).booleanValue() }
 }
 

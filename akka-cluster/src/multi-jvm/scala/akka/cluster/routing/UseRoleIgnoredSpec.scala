@@ -30,7 +30,7 @@ object UseRoleIgnoredMultiJvmSpec extends MultiNodeConfig {
     def this() = this(PoolRoutee)
 
     def receive = {
-      case msg ⇒
+      case msg =>
         log.info("msg = {}", msg)
         sender() ! Reply(routeeType, self)
     }
@@ -64,11 +64,11 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
   import akka.cluster.routing.UseRoleIgnoredMultiJvmSpec._
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
-    val zero = Map.empty[Address, Int] ++ roles.map(address(_) → 0)
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(`routeeType`, ref) ⇒ fullAddress(ref)
+      case Reply(`routeeType`, ref) => fullAddress(ref)
     }).foldLeft(zero) {
-      case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
@@ -76,8 +76,8 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
    * Fills in self address for local ActorRef
    */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
+    case Address(_, _, None, None) => cluster.selfAddress
+    case a                         => a
   }
 
   def currentRoutees(router: ActorRef) =
@@ -112,7 +112,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -142,7 +142,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -172,7 +172,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -202,7 +202,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -232,7 +232,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(2))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -262,7 +262,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(2))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -292,7 +292,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(6))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 
@@ -322,7 +322,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         awaitAssert(currentRoutees(router).size should ===(6))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router ! s"hit-$i"
         }
 

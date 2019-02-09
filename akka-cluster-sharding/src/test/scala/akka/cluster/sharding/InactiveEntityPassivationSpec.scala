@@ -32,20 +32,20 @@ object InactiveEntityPassivationSpec {
     def id = context.self.path.name
 
     def receive = {
-      case Passivate ⇒
+      case Passivate =>
         probe ! id + " passivating"
         context.stop(self)
-      case msg ⇒ probe ! GotIt(id, msg, System.nanoTime())
+      case msg => probe ! GotIt(id, msg, System.nanoTime())
     }
 
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int ⇒ (msg.toString, msg)
+    case msg: Int => (msg.toString, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg: Int ⇒ (msg % 10).toString
+    case msg: Int => (msg % 10).toString
   }
 
 }

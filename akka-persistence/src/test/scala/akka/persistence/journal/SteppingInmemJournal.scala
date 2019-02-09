@@ -47,7 +47,7 @@ object SteppingInmemJournal {
   def getRef(instanceId: String): ActorRef = synchronized(_current(instanceId))
 
   private def putRef(instanceId: String, instance: ActorRef): Unit = synchronized {
-    _current = _current + (instanceId → instance)
+    _current = _current + (instanceId -> instance)
   }
   private def remove(instanceId: String): Unit = synchronized(
     _current -= instanceId)
@@ -69,16 +69,16 @@ final class SteppingInmemJournal extends InmemJournal {
 
   val instanceId = context.system.settings.config.getString("akka.persistence.journal.stepping-inmem.instance-id")
 
-  var queuedOps: Seq[() ⇒ Future[Unit]] = Seq.empty
+  var queuedOps: Seq[() => Future[Unit]] = Seq.empty
   var queuedTokenRecipients = List.empty[ActorRef]
 
   override def receivePluginInternal = super.receivePluginInternal orElse {
-    case Token if queuedOps.isEmpty ⇒ queuedTokenRecipients = queuedTokenRecipients :+ sender()
-    case Token ⇒
+    case Token if queuedOps.isEmpty => queuedTokenRecipients = queuedTokenRecipients :+ sender()
+    case Token =>
       val op +: rest = queuedOps
       queuedOps = rest
       val tokenConsumer = sender()
-      op().onComplete(_ ⇒ tokenConsumer ! TokenConsumed)
+      op().onComplete(_ => tokenConsumer ! TokenConsumed)
   }
 
   override def preStart(): Unit = {
@@ -92,15 +92,15 @@ final class SteppingInmemJournal extends InmemJournal {
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
-    val futures = messages.map { message ⇒
+    val futures = messages.map { message =>
       val promise = Promise[Try[Unit]]()
       val future = promise.future
-      doOrEnqueue { () ⇒
+      doOrEnqueue { () =>
         promise.completeWith(super.asyncWriteMessages(Seq(message)).map {
-          case Nil       ⇒ AsyncWriteJournal.successUnit
-          case head :: _ ⇒ head
+          case Nil       => AsyncWriteJournal.successUnit
+          case head :: _ => head
         })
-        future.map(_ ⇒ ())
+        future.map(_ => ())
       }
       future
     }
@@ -111,7 +111,7 @@ final class SteppingInmemJournal extends InmemJournal {
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
     val promise = Promise[Unit]()
     val future = promise.future
-    doOrEnqueue { () ⇒
+    doOrEnqueue { () =>
       promise.completeWith(super.asyncDeleteMessagesTo(persistenceId, toSequenceNr))
       future
     }
@@ -121,17 +121,17 @@ final class SteppingInmemJournal extends InmemJournal {
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
     val promise = Promise[Long]()
     val future = promise.future
-    doOrEnqueue { () ⇒
+    doOrEnqueue { () =>
       promise.completeWith(super.asyncReadHighestSequenceNr(persistenceId, fromSequenceNr))
-      future.map(_ ⇒ ())
+      future.map(_ => ())
     }
     future
   }
 
-  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = {
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) => Unit): Future[Unit] = {
     val promise = Promise[Unit]()
     val future = promise.future
-    doOrEnqueue { () ⇒
+    doOrEnqueue { () =>
       promise.completeWith(super.asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max)(recoveryCallback))
       future
     }
@@ -139,12 +139,12 @@ final class SteppingInmemJournal extends InmemJournal {
     future
   }
 
-  private def doOrEnqueue(op: () ⇒ Future[Unit]): Unit = {
+  private def doOrEnqueue(op: () => Future[Unit]): Unit = {
     if (queuedTokenRecipients.nonEmpty) {
       val completed = op()
       val tokenRecipient +: rest = queuedTokenRecipients
       queuedTokenRecipients = rest
-      completed.onComplete(_ ⇒ tokenRecipient ! TokenConsumed)
+      completed.onComplete(_ => tokenRecipient ! TokenConsumed)
     } else {
       queuedOps = queuedOps :+ op
     }

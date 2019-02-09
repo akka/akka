@@ -5,7 +5,7 @@
 package akka.cluster
 
 import scala.concurrent.duration._
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 import akka.testkit.LongRunningTest
 import com.typesafe.config.{ Config, ConfigFactory }

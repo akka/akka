@@ -110,7 +110,7 @@ class SendQueueBenchmark {
     val burstSize = 1000
 
     val queue = new ManyToOneConcurrentArrayQueue[Int](1024)
-    val source = Source.fromGraph(new SendQueue[Int](_ ⇒ ()))
+    val source = Source.fromGraph(new SendQueue[Int](_ => ()))
 
     val (sendQueue, killSwitch) = source.viaMat(KillSwitches.single)(Keep.both)
       .toMat(new BarrierSink(N, latch, burstSize, barrier))(Keep.left).run()(materializer)

@@ -27,7 +27,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
-        case RequestLogs(streamId) ⇒
+        case RequestLogs(streamId) =>
           // obtain the source you want to offer:
           val source: Source[String, NotUsed] = streamLogs(streamId)
 
@@ -74,7 +74,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
-        case PrepareUpload(nodeId) ⇒
+        case PrepareUpload(nodeId) =>
           // obtain the source you want to offer:
           val sink: Sink[String, NotUsed] = logsSinkFor(nodeId)
 

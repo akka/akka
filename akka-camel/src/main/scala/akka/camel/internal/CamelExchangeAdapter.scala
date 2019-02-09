@@ -5,7 +5,7 @@
 package akka.camel.internal
 
 import org.apache.camel.util.ExchangeHelper
-import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
+import org.apache.camel.{ Exchange, Message => JCamelMessage }
 import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
 
 /**

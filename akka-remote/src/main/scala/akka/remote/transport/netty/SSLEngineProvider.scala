@@ -59,9 +59,9 @@ import javax.net.ssl.TrustManagerFactory
       ctx.init(keyManagers, trustManagers, rng)
       ctx
     } catch {
-      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+      case e: FileNotFoundException    => throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
+      case e: IOException              => throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+      case e: GeneralSecurityException => throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
     }
   }
 

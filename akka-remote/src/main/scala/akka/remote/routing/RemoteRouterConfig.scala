@@ -69,11 +69,11 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case RemoteRouterConfig(_: RemoteRouterConfig, _) ⇒ throw new IllegalStateException(
+    case RemoteRouterConfig(_: RemoteRouterConfig, _) => throw new IllegalStateException(
       "RemoteRouterConfig is not allowed to wrap a RemoteRouterConfig")
-    case RemoteRouterConfig(local: Pool, _) ⇒
+    case RemoteRouterConfig(local: Pool, _) =>
       copy(local = this.local.withFallback(local).asInstanceOf[Pool])
-    case _ ⇒ copy(local = this.local.withFallback(other).asInstanceOf[Pool])
+    case _ => copy(local = this.local.withFallback(other).asInstanceOf[Pool])
   }
 
 }

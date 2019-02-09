@@ -76,7 +76,7 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+      .flatMapConcat(elem => new GraphStages.SingleSource(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -88,7 +88,7 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .flatMapConcat(n ⇒ Source(n :: Nil))
+      .flatMapConcat(n => Source(n :: Nil))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -100,7 +100,7 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .map(elem ⇒ elem)
+      .map(elem => elem)
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)

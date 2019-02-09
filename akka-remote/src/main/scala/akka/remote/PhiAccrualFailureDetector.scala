@@ -128,11 +128,11 @@ class PhiAccrualFailureDetector(
     val oldState = state.get
 
     val newHistory = oldState.timestamp match {
-      case None ⇒
+      case None =>
         // this is heartbeat from a new resource
         // add starter records for this new resource
         firstHeartbeat
-      case Some(latestTimestamp) ⇒
+      case Some(latestTimestamp) =>
         // this is a known connection
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats

@@ -74,10 +74,10 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
       }
 
       updateWeightedRoutees() match {
-        case Some(weighted) ⇒
+        case Some(weighted) =>
           if (weighted.isEmpty) NoRoutee
           else weighted(ThreadLocalRandom.current.nextInt(weighted.total) + 1)
-        case None ⇒
+        case None =>
           routees(ThreadLocalRandom.current.nextInt(routees.size))
       }
 
@@ -172,11 +172,11 @@ final case class AdaptiveLoadBalancingPool(
   override def withFallback(other: RouterConfig): RouterConfig =
     if (this.supervisorStrategy ne Pool.defaultSupervisorStrategy) this
     else other match {
-      case _: FromConfig | _: NoRouter ⇒ this // NoRouter is the default, hence “neutral”
-      case otherRouter: AdaptiveLoadBalancingPool ⇒
+      case _: FromConfig | _: NoRouter => this // NoRouter is the default, hence “neutral”
+      case otherRouter: AdaptiveLoadBalancingPool =>
         if (otherRouter.supervisorStrategy eq Pool.defaultSupervisorStrategy) this
         else this.withSupervisorStrategy(otherRouter.supervisorStrategy)
-      case _ ⇒ throw new IllegalArgumentException("Expected AdaptiveLoadBalancingPool, got [%s]".format(other))
+      case _ => throw new IllegalArgumentException("Expected AdaptiveLoadBalancingPool, got [%s]".format(other))
     }
 
 }
@@ -256,10 +256,10 @@ case object HeapMetricsSelector extends CapacityMetricsSelector {
 
   override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = {
     nodeMetrics.collect {
-      case HeapMemory(address, _, used, committed, max) ⇒
+      case HeapMemory(address, _, used, committed, max) =>
         val capacity = max match {
-          case None    ⇒ (committed - used).toDouble / committed
-          case Some(m) ⇒ (m - used).toDouble / m
+          case None    => (committed - used).toDouble / committed
+          case Some(m) => (m - used).toDouble / m
         }
         (address, capacity)
     }.toMap
@@ -296,7 +296,7 @@ case object CpuMetricsSelector extends CapacityMetricsSelector {
 
   override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = {
     nodeMetrics.collect {
-      case Cpu(address, _, _, Some(cpuCombined), Some(cpuStolen), _) ⇒
+      case Cpu(address, _, _, Some(cpuCombined), Some(cpuStolen), _) =>
         // Arbitrary load rating function which skews in favor of stolen time.
         val load = cpuCombined + cpuStolen * (1.0 + factor)
         val capacity = if (load >= 1.0) 0.0 else 1.0 - load
@@ -322,7 +322,7 @@ case object SystemLoadAverageMetricsSelector extends CapacityMetricsSelector {
 
   override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = {
     nodeMetrics.collect {
-      case Cpu(address, _, Some(systemLoadAverage), _, _, processors) ⇒
+      case Cpu(address, _, Some(systemLoadAverage), _, _, processors) =>
         val capacity = 1.0 - math.min(1.0, systemLoadAverage / processors)
         (address, capacity)
     }.toMap
@@ -370,11 +370,11 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
     // aggregated average of the capacities by address
     val init: Map[Address, (Double, Int)] = Map.empty.withDefaultValue((0.0, 0))
     combined.foldLeft(init) {
-      case (acc, (address, capacity)) ⇒
+      case (acc, (address, capacity)) =>
         val (sum, count) = acc(address)
-        acc + (address → ((sum + capacity, count + 1)))
+        acc + (address -> ((sum + capacity, count + 1)))
     }.map {
-      case (address, (sum, count)) ⇒ address → (sum / count)
+      case (address, (sum, count)) => address -> (sum / count)
     }
   }
 
@@ -383,14 +383,14 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
 object MetricsSelector {
   def fromConfig(config: Config, dynamicAccess: DynamicAccess) =
     config.getString("metrics-selector") match {
-      case "mix"  ⇒ MixMetricsSelector
-      case "heap" ⇒ HeapMetricsSelector
-      case "cpu"  ⇒ CpuMetricsSelector
-      case "load" ⇒ SystemLoadAverageMetricsSelector
-      case fqn ⇒
-        val args = List(classOf[Config] → config)
+      case "mix"  => MixMetricsSelector
+      case "heap" => HeapMetricsSelector
+      case "cpu"  => CpuMetricsSelector
+      case "load" => SystemLoadAverageMetricsSelector
+      case fqn =>
+        val args = List(classOf[Config] -> config)
         dynamicAccess.createInstanceFor[MetricsSelector](fqn, args).recover({
-          case exception ⇒ throw new IllegalArgumentException(
+          case exception => throw new IllegalArgumentException(
             (s"Cannot instantiate metrics-selector [$fqn], " +
               "make sure it extends [akka.cluster.routing.MetricsSelector] and " +
               "has constructor with [com.typesafe.config.Config] parameter"), exception)
@@ -433,10 +433,10 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
   def weights(capacity: Map[Address, Double]): Map[Address, Int] = {
     if (capacity.isEmpty) Map.empty[Address, Int]
     else {
-      val (_, min) = capacity.minBy { case (_, c) ⇒ c }
+      val (_, min) = capacity.minBy { case (_, c) => c }
       // lowest usable capacity is 1% (>= 0.5% will be rounded to weight 1), also avoids div by zero
       val divisor = math.max(0.01, min)
-      capacity map { case (address, c) ⇒ (address → math.round((c) / divisor).toInt) }
+      capacity map { case (address, c) => (address -> math.round((c) / divisor).toInt) }
     }
   }
 
@@ -462,12 +462,12 @@ private[metrics] class WeightedRoutees(routees: immutable.IndexedSeq[Routee], se
   private val buckets: Array[Int] = {
     def fullAddress(routee: Routee): Address = {
       val a = routee match {
-        case ActorRefRoutee(ref)       ⇒ ref.path.address
-        case ActorSelectionRoutee(sel) ⇒ sel.anchor.path.address
+        case ActorRefRoutee(ref)       => ref.path.address
+        case ActorSelectionRoutee(sel) => sel.anchor.path.address
       }
       a match {
-        case Address(_, _, None, None) ⇒ selfAddress
-        case a                         ⇒ a
+        case Address(_, _, None, None) => selfAddress
+        case a                         => a
       }
     }
     val buckets = new Array[Int](routees.size)
@@ -475,7 +475,7 @@ private[metrics] class WeightedRoutees(routees: immutable.IndexedSeq[Routee], se
     val w = weights.withDefaultValue(meanWeight) // we don’t necessarily have metrics for all addresses
     var i = 0
     var sum = 0
-    routees foreach { r ⇒
+    routees foreach { r =>
       sum += w(fullAddress(r))
       buckets(i) = sum
       i += 1
@@ -527,8 +527,8 @@ private[metrics] class AdaptiveLoadBalancingMetricsListener(routingLogic: Adapti
   override def postStop(): Unit = extension.unsubscribe(self)
 
   def receive = {
-    case event: ClusterMetricsChanged ⇒ routingLogic.metricsChanged(event)
-    case _                            ⇒ // ignore
+    case event: ClusterMetricsChanged => routingLogic.metricsChanged(event)
+    case _                            => // ignore
   }
 
 }

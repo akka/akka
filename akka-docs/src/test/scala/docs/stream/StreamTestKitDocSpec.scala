@@ -138,7 +138,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
   "test source and a sink" in {
     import system.dispatcher
     //#test-source-and-sink
-    val flowUnderTest = Flow[Int].mapAsyncUnordered(2) { sleep ⇒
+    val flowUnderTest = Flow[Int].mapAsyncUnordered(2) { sleep =>
       pattern.after(10.millis * sleep, using = system.scheduler)(Future.successful(sleep))
     }
 

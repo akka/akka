@@ -427,7 +427,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "keep mapped materialized value of empty builder" in {
       val builder =
         LinearTraversalBuilder.empty()
-          .transformMat((_: Any) ⇒ "NOTUSED")
+          .transformMat((_: Any) => "NOTUSED")
           .append(source.traversalBuilder, source.shape, Keep.left)
           .append(sink.traversalBuilder, sink.shape, Keep.left)
 
@@ -585,8 +585,8 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("testSink")),
-        source → (Attributes.name("test") and Attributes.name("testSource"))
+        sink -> (Attributes.name("test") and Attributes.name("testSink")),
+        source -> (Attributes.name("test") and Attributes.name("testSource"))
       ))
     }
 
@@ -599,8 +599,8 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("testSink")),
-        source → (Attributes.name("test") and Attributes.name("source"))
+        sink -> (Attributes.name("test") and Attributes.name("testSink")),
+        source -> (Attributes.name("test") and Attributes.name("source"))
       ))
     }
 
@@ -615,8 +615,8 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test2") and Attributes.name("testSink")),
-        source → (Attributes.name("test2") and Attributes.name("source2"))
+        sink -> (Attributes.name("test2") and Attributes.name("testSink")),
+        source -> (Attributes.name("test2") and Attributes.name("source2"))
       ))
     }
 
@@ -630,8 +630,8 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("sink")),
-        source → (Attributes.name("test") and Attributes.name("source"))
+        sink -> (Attributes.name("test") and Attributes.name("sink")),
+        source -> (Attributes.name("test") and Attributes.name("source"))
       ))
     }
 
@@ -647,9 +647,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("sink")),
-        flow1 → (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("source"))
+        sink -> (Attributes.name("test") and Attributes.name("sink")),
+        flow1 -> (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("flow")),
+        source -> (Attributes.name("test") and Attributes.name("compositeSource") and Attributes.name("source"))
       ))
     }
 
@@ -664,9 +664,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        compositeSink → (Attributes.name("test") and Attributes.name("sink")),
-        flow1 → (Attributes.name("test") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("source"))
+        compositeSink -> (Attributes.name("test") and Attributes.name("sink")),
+        flow1 -> (Attributes.name("test") and Attributes.name("flow")),
+        source -> (Attributes.name("test") and Attributes.name("source"))
       ))
     }
 
@@ -686,9 +686,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("sink")),
-        flow1 → (Attributes.name("test") and Attributes.name("flow")),
-        compositeSource → (Attributes.name("test") and Attributes.name("source-outer") and Attributes.name("source"))
+        sink -> (Attributes.name("test") and Attributes.name("sink")),
+        flow1 -> (Attributes.name("test") and Attributes.name("flow")),
+        compositeSource -> (Attributes.name("test") and Attributes.name("source-outer") and Attributes.name("source"))
       ))
     }
 
@@ -703,9 +703,9 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(List(
-        sink → (Attributes.name("test") and Attributes.name("sink")),
-        compositeFlow1 → (Attributes.name("test") and Attributes.name("flow")),
-        source → (Attributes.name("test") and Attributes.name("source"))
+        sink -> (Attributes.name("test") and Attributes.name("sink")),
+        compositeFlow1 -> (Attributes.name("test") and Attributes.name("flow")),
+        source -> (Attributes.name("test") and Attributes.name("source"))
       ))
     }
 

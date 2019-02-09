@@ -39,7 +39,7 @@ object ClusterDeployerSpec {
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }

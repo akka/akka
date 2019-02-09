@@ -25,7 +25,7 @@ private[persistence] object LeveldbStore {
   val emptyConfig = ConfigFactory.empty()
 
   def toCompactionIntervalMap(obj: ConfigObject): Map[String, Long] = {
-    obj.unwrapped().asScala.map(entry ⇒ (entry._1, java.lang.Long.parseLong(entry._2.toString))).toMap
+    obj.unwrapped().asScala.map(entry => (entry._1, java.lang.Long.parseLong(entry._2.toString))).toMap
   }
 }
 
@@ -66,13 +66,13 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     var allTags = Set.empty[String]
 
     val result = Future.fromTry(Try {
-      withBatch(batch ⇒ messages.map { a ⇒
+      withBatch(batch => messages.map { a =>
         Try {
-          a.payload.foreach { p ⇒
+          a.payload.foreach { p =>
             val (p2, tags) = p.payload match {
-              case Tagged(payload, tags) ⇒
+              case Tagged(payload, tags) =>
                 (p.withPayload(payload), tags)
-              case _ ⇒ (p, Set.empty[String])
+              case _ => (p, Set.empty[String])
             }
             if (tags.nonEmpty && hasTagSubscribers)
               allTags = allTags union tags
@@ -89,7 +89,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     })
 
     if (hasPersistenceIdSubscribers) {
-      persistenceIds.foreach { pid ⇒
+      persistenceIds.foreach { pid =>
         notifyPersistenceIdChange(pid)
       }
     }
@@ -100,11 +100,11 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     try Future.successful {
-      withBatch { batch ⇒
+      withBatch { batch =>
         val nid = numericId(persistenceId)
 
         // seek to first existing message
-        val fromSequenceNr = withIterator { iter ⇒
+        val fromSequenceNr = withIterator { iter =>
           val startKey = Key(nid, 1L, 0)
           iter.seek(keyToBytes(startKey))
           if (iter.hasNext) keyFromBytes(iter.peekNext().getKey).sequenceNr else Long.MaxValue
@@ -122,12 +122,12 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
         }
       }
     } catch {
-      case NonFatal(e) ⇒ Future.failed(e)
+      case NonFatal(e) => Future.failed(e)
     }
 
   def leveldbSnapshot(): ReadOptions = leveldbReadOptions.snapshot(leveldb.getSnapshot)
 
-  def withIterator[R](body: DBIterator ⇒ R): R = {
+  def withIterator[R](body: DBIterator => R): R = {
     val ro = leveldbSnapshot()
     val iterator = leveldb.iterator(ro)
     try {
@@ -138,7 +138,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     }
   }
 
-  def withBatch[R](body: WriteBatch ⇒ R): R = {
+  def withBatch[R](body: WriteBatch => R): R = {
     val batch = leveldb.createWriteBatch()
     try {
       val r = body(batch)
@@ -158,7 +158,7 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
     batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentBytes)
 
-    tags.foreach { tag ⇒
+    tags.foreach { tag =>
       val tagNid = tagNumericId(tag)
       val tagSeqNr = nextTagSequenceNr(tag)
       batch.put(keyToBytes(counterKey(tagNid)), counterToBytes(tagSeqNr))
@@ -168,8 +168,8 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
 
   private def nextTagSequenceNr(tag: String): Long = {
     val n = tagSequenceNr.get(tag) match {
-      case Some(n) ⇒ n
-      case None    ⇒ readHighestSequenceNr(tagNumericId(tag))
+      case Some(n) => n
+      case None    => readHighestSequenceNr(tagNumericId(tag))
     }
     tagSequenceNr = tagSequenceNr.updated(tag, n + 1)
     n + 1
@@ -197,11 +197,11 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
     persistenceIdSubscribers.addBinding(persistenceId, subscriber)
 
   protected def removeSubscriber(subscriber: ActorRef): Unit = {
-    val keys = persistenceIdSubscribers.collect { case (k, s) if s.contains(subscriber) ⇒ k }
-    keys.foreach { key ⇒ persistenceIdSubscribers.removeBinding(key, subscriber) }
+    val keys = persistenceIdSubscribers.collect { case (k, s) if s.contains(subscriber) => k }
+    keys.foreach { key => persistenceIdSubscribers.removeBinding(key, subscriber) }
 
-    val tagKeys = tagSubscribers.collect { case (k, s) if s.contains(subscriber) ⇒ k }
-    tagKeys.foreach { key ⇒ tagSubscribers.removeBinding(key, subscriber) }
+    val tagKeys = tagSubscribers.collect { case (k, s) if s.contains(subscriber) => k }
+    tagKeys.foreach { key => tagSubscribers.removeBinding(key, subscriber) }
 
     allPersistenceIdsSubscribers -= subscriber
   }

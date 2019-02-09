@@ -18,11 +18,11 @@ object RemoteActorSelectionSpec {
     log.info("Started")
     def receive = {
       // if we get props and a name, create a child, send ref back
-      case ActorCreateReq(p, n) ⇒
+      case ActorCreateReq(p, n) =>
         log.info(s"Creating child $n")
         sender() ! context.actorOf(p, n)
       // or select actor from here
-      case ActorSelReq(s) ⇒ sender() ! context.actorSelection(s)
+      case ActorSelReq(s) => sender() ! context.actorSelection(s)
     }
   }
   def selectionActorProps = Props(new SelectionActor)

@@ -27,21 +27,21 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
       Source.fromPublisher(upstream).runWith(Sink.asPublisher(false))(materializer).subscribe(downstream)
 
       val upstreamSubscription = upstream.expectSubscription()
-      val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) ⇒ sub }
+      val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) => sub }
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      upstream.expectEventPF { case RequestMore(_, e) ⇒ e } should ===(1L)
-      downstream.expectEventPF { case OnNext(e) ⇒ e } should ===(1)
+      upstream.expectEventPF { case RequestMore(_, e) => e } should ===(1L)
+      downstream.expectEventPF { case OnNext(e) => e } should ===(1)
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      downstream.expectNextPF[Int] { case e: Int ⇒ e } should ===(1)
+      downstream.expectNextPF[Int] { case e: Int => e } should ===(1)
 
       upstreamSubscription.sendComplete()
       downstream.expectEventPF {
-        case OnComplete ⇒
-        case _          ⇒ fail()
+        case OnComplete =>
+        case _          => fail()
       }
     }
 
@@ -50,12 +50,12 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
       val downstream = TestSubscriber.manualProbe[Int]()
       Source.fromPublisher(upstream).runWith(Sink.asPublisher(false))(materializer).subscribe(downstream)
       val upstreamSubscription = upstream.expectSubscription()
-      val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) ⇒ sub }
+      val downstreamSubscription: Subscription = downstream.expectEventPF { case OnSubscribe(sub) => sub }
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e) ⇒ e }
-      an[AssertionError] should be thrownBy downstream.expectNextPF[String] { case e: String ⇒ e }
+      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e) => e }
+      an[AssertionError] should be thrownBy downstream.expectNextPF[String] { case e: String => e }
 
       upstreamSubscription.sendComplete()
     }

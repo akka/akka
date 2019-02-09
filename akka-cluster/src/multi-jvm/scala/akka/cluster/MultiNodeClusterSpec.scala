@@ -83,20 +83,20 @@ object MultiNodeClusterSpec {
   class EndActor(testActor: ActorRef, target: Option[Address]) extends Actor {
     import EndActor._
     def receive: Receive = {
-      case SendEnd ⇒
-        target foreach { t ⇒
+      case SendEnd =>
+        target foreach { t =>
           context.actorSelection(RootActorPath(t) / self.path.elements) ! End
         }
-      case End ⇒
+      case End =>
         testActor forward End
         sender() ! EndAck
-      case EndAck ⇒
+      case EndAck =>
         testActor forward EndAck
     }
   }
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport { self: MultiNodeSpec =>
 
   override def initialParticipants = roles.size
 
@@ -126,7 +126,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
         ".*Cluster node successfully shut down.*",
-        ".*Using a dedicated scheduler for cluster.*") foreach { s ⇒
+        ".*Using a dedicated scheduler for cluster.*") foreach { s =>
           sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
         }
 
@@ -174,11 +174,11 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    */
   implicit def address(role: RoleName): Address = {
     cachedAddresses.get(role) match {
-      case null ⇒
+      case null =>
         val address = node(role).address
         cachedAddresses.put(role, address)
         address
-      case address ⇒ address
+      case address => address
     }
   }
 
@@ -241,7 +241,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    */
   def joinWithin(joinNode: RoleName, max: Duration = remainingOrDefault, interval: Duration = 1.second): Unit = {
     def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
-      clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
+      clusterView.members.exists { m => (m.address == member) && status.contains(m.status) }
 
     cluster.join(joinNode)
     awaitCond({
@@ -264,7 +264,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     import Member.addressOrdering
     val members = gotMembers.toIndexedSeq
     members.size should ===(expectedAddresses.length)
-    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address should ===(a) }
+    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) => members(i).address should ===(a) }
   }
 
   /**
@@ -310,12 +310,12 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     timeout:                  FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) should not contain (a)))
+        awaitAssert(canNotBePartOfMemberRing foreach (a => clusterView.members.map(_.address) should not contain (a)))
       awaitAssert(clusterView.members.size should ===(numberOfMembers))
       awaitAssert(clusterView.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.collectFirst {
-        case m if m.dataCenter == cluster.settings.SelfDataCenter ⇒ m.address
+        case m if m.dataCenter == cluster.settings.SelfDataCenter => m.address
       }
       awaitAssert(clusterView.leader should ===(expectedLeader))
     }
@@ -335,9 +335,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
       val awaiter = system.actorOf(Props(new Actor {
         def receive = {
-          case MemberRemoved(m, _) if m.address == toBeRemovedAddress ⇒
+          case MemberRemoved(m, _) if m.address == toBeRemovedAddress =>
             exitingLatch.countDown()
-          case _ ⇒
+          case _ =>
           // ignore
         }
       }).withDeploy(Deploy.local))
@@ -349,7 +349,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
       // verify that the member is EXITING
       try Await.result(exitingLatch, timeout) catch {
-        case cause: Exception ⇒
+        case cause: Exception =>
           throw new AssertionError(s"Member ${toBeRemovedAddress} was not removed within ${timeout}!", cause)
       }
       awaiter ! PoisonPill // you've done your job, now die
@@ -420,9 +420,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
   private def failureDetectorPuppet(address: Address): Option[FailureDetectorPuppet] =
     cluster.failureDetector match {
-      case reg: DefaultFailureDetectorRegistry[Address] ⇒
-        reg.failureDetector(address) collect { case p: FailureDetectorPuppet ⇒ p }
-      case _ ⇒ None
+      case reg: DefaultFailureDetectorRegistry[Address] =>
+        reg.failureDetector(address) collect { case p: FailureDetectorPuppet => p }
+      case _ => None
     }
 
 }

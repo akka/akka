@@ -71,11 +71,11 @@ class Dispatcher(
     try {
       executorService execute invocation
     } catch {
-      case e: RejectedExecutionException ⇒
+      case e: RejectedExecutionException =>
         try {
           executorService execute invocation
         } catch {
-          case e2: RejectedExecutionException ⇒
+          case e2: RejectedExecutionException =>
             eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
@@ -115,12 +115,12 @@ class Dispatcher(
           executorService execute mbox
           true
         } catch {
-          case _: RejectedExecutionException ⇒
+          case _: RejectedExecutionException =>
             try {
               executorService execute mbox
               true
             } catch { //Retry once
-              case e: RejectedExecutionException ⇒
+              case e: RejectedExecutionException =>
                 mbox.setAsIdle()
                 eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
                 throw e
@@ -137,7 +137,7 @@ object PriorityGenerator {
   /**
    * Creates a PriorityGenerator that uses the supplied function as priority generator
    */
-  def apply(priorityFunction: Any ⇒ Int): PriorityGenerator = new PriorityGenerator {
+  def apply(priorityFunction: Any => Int): PriorityGenerator = new PriorityGenerator {
     def gen(message: Any): Int = priorityFunction(message)
   }
 }

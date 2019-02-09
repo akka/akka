@@ -22,7 +22,7 @@ object BalancingSpec {
     override def preStart(): Unit = latch.countDown()
 
     def receive = {
-      case msg: Int ⇒
+      case msg: Int =>
         if (id != 1)
           Await.ready(latch, 1.minute)
         else if (msg <= 10)
@@ -36,7 +36,7 @@ object BalancingSpec {
       Props(classOf[Worker], TestLatch(0)(context.system))))
 
     def receive = {
-      case msg ⇒ pool.forward(msg)
+      case msg => pool.forward(msg)
     }
   }
 }
@@ -75,7 +75,7 @@ class BalancingSpec extends AkkaSpec(
     latch.reset()
     val iterationCount = 100
 
-    for (i ← 1 to iterationCount) {
+    for (i <- 1 to iterationCount) {
       pool ! i
     }
 

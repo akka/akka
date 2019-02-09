@@ -49,47 +49,47 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
   implicit val timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
-    val props: Props = FromConfig.props(Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) ⇒ {
-      dns.map(ns ⇒ factory.actorOf(Props(new DnsClient(ns))))
+    val props: Props = FromConfig.props(Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) => {
+      dns.map(ns => factory.actorOf(Props(new DnsClient(ns))))
     }).withDeploy(Deploy.local).withDispatcher(dispatcher))
     context.actorOf(props, name)
   }
 
   private val cacheCleanup = cache match {
-    case cleanup: PeriodicCacheCleanup ⇒ Some(cleanup)
-    case _                             ⇒ None
+    case cleanup: PeriodicCacheCleanup => Some(cleanup)
+    case _                             => None
   }
 
   override def preStart(): Unit = {
-    cacheCleanup.foreach { _ ⇒
+    cacheCleanup.foreach { _ =>
       val interval = Duration(resolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
       timers.startPeriodicTimer(CacheCleanup, CacheCleanup, interval)
     }
   }
 
   override def receive: Receive = {
-    case r: DnsProtocol.Resolve ⇒
+    case r: DnsProtocol.Resolve =>
       log.debug("Resolution request for {} {} from {}", r.name, r.requestType, sender())
       resolver.forward(r)
 
-    case Dns.Resolve(name) ⇒
+    case Dns.Resolve(name) =>
       // adapt legacy protocol to new protocol
       log.debug("Resolution request for {} from {}", name, sender())
       val adapted = DnsProtocol.Resolve(name)
       val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
-        .map { asyncResolved ⇒
+        .map { asyncResolved =>
           val ips = asyncResolved.records.collect {
-            case a: ARecord    ⇒ a.ip
-            case a: AAAARecord ⇒ a.ip
+            case a: ARecord    => a.ip
+            case a: AAAARecord => a.ip
           }
           Dns.Resolved(asyncResolved.name, ips)
         }
       reply pipeTo sender()
 
-    case CacheCleanup ⇒
+    case CacheCleanup =>
       cacheCleanup.foreach(_.cleanup())
 
-    case AsyncDnsManager.GetCache ⇒
+    case AsyncDnsManager.GetCache =>
       sender() ! cache
 
   }

@@ -54,7 +54,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
 
       val ref: ActorRef[String] = spawn(Behaviors.intercept(
         interceptor)(
-        Behaviors.receiveMessage[String] { m ⇒
+        Behaviors.receiveMessage[String] { m =>
           probe.ref ! s"actual behavior $m"
           Behaviors.same
         }
@@ -79,7 +79,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val beh: Behavior[String] =
         intercept(
           intercept(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(m =>
               Behaviors.same
             )
           )
@@ -100,7 +100,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       def next(count: Int): Behavior[String] =
         Behaviors.intercept(
           interceptor)(
-          Behaviors.receiveMessage(m ⇒
+          Behaviors.receiveMessage(m =>
             next(count + 1)
           )
         )
@@ -132,7 +132,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val beh: Behavior[String] =
         intercept(
           intercept(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(m =>
               Behaviors.same
             )
           )
@@ -155,7 +155,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
         Behaviors.intercept(
           // a new instance every "recursion"
           snitchingInterceptor(probe.ref))(
-            Behaviors.receiveMessage(m ⇒
+            Behaviors.receiveMessage(m =>
               next(count + 1)
             )
           )
@@ -188,7 +188,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       }
 
       val innerBehaviorStarted = new AtomicBoolean(false)
-      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { context ⇒
+      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { context =>
         innerBehaviorStarted.set(true)
         Behaviors.unhandled[String]
       }))
@@ -203,9 +203,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val interceptor = snitchingInterceptor(probe.ref)
 
       val ref: ActorRef[String] = spawn(Behaviors.intercept(interceptor)(
-        Behaviors.setup { _ ⇒
+        Behaviors.setup { _ =>
           var count = 0
-          Behaviors.receiveMessage[String] { m ⇒
+          Behaviors.receiveMessage[String] { m =>
             count += 1
             probe.ref ! s"actual behavior $m-$count"
             Behaviors.same
@@ -230,9 +230,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
 
       def next(count1: Int): Behavior[String] = {
         Behaviors.intercept(interceptor)(
-          Behaviors.setup { _ ⇒
+          Behaviors.setup { _ =>
             var count2 = 0
-            Behaviors.receiveMessage[String] { m ⇒
+            Behaviors.receiveMessage[String] { m =>
               count2 += 1
               probe.ref ! s"actual behavior $m-$count1-$count2"
               next(count1 + 1)
@@ -265,7 +265,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(Behaviors.intercept(interceptor)(
-          Behaviors.setup[String] { _ ⇒ Behaviors.same[String] }))
+          Behaviors.setup[String] { _ => Behaviors.same[String] }))
         probe.expectTerminated(ref, probe.remainingOrDefault)
       }
 
@@ -274,7 +274,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     "be useful for implementing PoisonPill" in {
 
       def inner(count: Int): Behavior[Msg] = Behaviors.receiveMessage {
-        case Msg(hello, replyTo) ⇒
+        case Msg(hello, replyTo) =>
           replyTo ! s"$hello-$count"
           inner(count + 1)
       }
@@ -282,9 +282,9 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
         override def aroundReceive(context: TypedActorContext[Any], message: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
           message match {
-            case MyPoisonPill ⇒ Behaviors.stopped
-            case m: Msg       ⇒ target(context, m)
-            case _            ⇒ Behaviors.unhandled
+            case MyPoisonPill => Behaviors.stopped
+            case m: Msg       => target(context, m)
+            case _            => Behaviors.unhandled
           }
 
         override def aroundSignal(context: TypedActorContext[Any], signal: Signal, target: SignalTarget[Msg]): Behavior[Msg] =
@@ -328,7 +328,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
       }
 
       val probe = TestProbe[Message]()
-      val ref = spawn(Behaviors.intercept(partialInterceptor)(Behaviors.receiveMessage { msg ⇒
+      val ref = spawn(Behaviors.intercept(partialInterceptor)(Behaviors.receiveMessage { msg =>
         probe.ref ! msg
         Behaviors.same
       }))

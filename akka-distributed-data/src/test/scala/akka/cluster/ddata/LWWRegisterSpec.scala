@@ -19,7 +19,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
   "A LWWRegister" must {
     "use latest of successive assignments" in {
       val r = (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(n - 1)
           r.withValue(node1, n, defaultClock[Int])
       }
@@ -59,7 +59,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       implicit val node = SelfUniqueAddress(node1)
 
       (1 to 100).foldLeft(LWWRegister.create(0)) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(n - 1)
           val r2 = r.withValueOf(n)
           r2.timestamp should be > r.timestamp
@@ -72,7 +72,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       val LWWRegister(value1) = r1
       val value2: String = value1
       Changed(LWWRegisterKey[String]("key"))(r1) match {
-        case c @ Changed(LWWRegisterKey("key")) ⇒
+        case c @ Changed(LWWRegisterKey("key")) =>
           val LWWRegister(value3) = c.dataValue
           val value4: String = value3
           value4 should be("a")
@@ -82,7 +82,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
     "can be used as first-write-wins-register" in {
       import LWWRegister.reverseClock
       val r = (1 to 100).foldLeft(LWWRegister(node1, 0, reverseClock[Int])) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(0)
           val newRegister = r.merge(r.withValue(node1, n, reverseClock[Int]))
           newRegister should be(r)

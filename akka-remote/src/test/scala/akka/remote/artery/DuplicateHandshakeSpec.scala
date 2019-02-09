@@ -35,13 +35,13 @@ class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
 
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     TestSource.probe[AnyRef]
-      .map { msg ⇒
+      .map { msg =>
         val association = inboundContext.association(addressA.uid)
         val ser = serialization.serializerFor(msg.getClass)
         val serializerId = ser.identifier
         val manifest = ser match {
-          case s: SerializerWithStringManifest ⇒ s.manifest(msg)
-          case _                               ⇒ ""
+          case s: SerializerWithStringManifest => s.manifest(msg)
+          case _                               => ""
         }
 
         val env = new ReusableInboundEnvelope
@@ -51,7 +51,7 @@ class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
         env
       }
       .via(new DuplicateHandshakeReq(numberOfLanes = 3, inboundContext, system.asInstanceOf[ExtendedActorSystem], pool))
-      .map { case env: InboundEnvelope ⇒ (env.message -> env.lane) }
+      .map { case env: InboundEnvelope => (env.message -> env.lane) }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

@@ -191,9 +191,9 @@ trait ExplicitAskSupport {
    * } pipeTo nextActor
    * }}}
    */
-  def ask(actorRef: ActorRef, messageFactory: ActorRef ⇒ Any)(implicit timeout: Timeout): Future[Any] =
+  def ask(actorRef: ActorRef, messageFactory: ActorRef => Any)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(messageFactory, timeout, ActorRef.noSender)
-  def ask(actorRef: ActorRef, messageFactory: ActorRef ⇒ Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
+  def ask(actorRef: ActorRef, messageFactory: ActorRef => Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(messageFactory, timeout, sender)
 
   /**
@@ -248,9 +248,9 @@ trait ExplicitAskSupport {
    * }}}
    *
    */
-  def ask(actorSelection: ActorSelection, messageFactory: ActorRef ⇒ Any)(implicit timeout: Timeout): Future[Any] =
+  def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any)(implicit timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(messageFactory, timeout, ActorRef.noSender)
-  def ask(actorSelection: ActorSelection, messageFactory: ActorRef ⇒ Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
+  def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(messageFactory, timeout, sender)
 }
 
@@ -325,10 +325,10 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
    * INTERNAL API: for binary compatibility
    */
   private[pattern] def internalAsk(message: Any, timeout: Timeout, sender: ActorRef) = actorRef match {
-    case ref: InternalActorRef if ref.isTerminated ⇒
+    case ref: InternalActorRef if ref.isTerminated =>
       actorRef ! message
       Future.failed[Any](AskableActorRef.recipientTerminatedException(actorRef, message, sender))
-    case ref: InternalActorRef ⇒
+    case ref: InternalActorRef =>
       if (timeout.duration.length <= 0)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
       else {
@@ -336,7 +336,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
         actorRef.tell(message, a)
         a.result.future
       }
-    case _ ⇒ Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
+    case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
   }
 
 }
@@ -346,21 +346,21 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
  */
 final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
 
-  def ask(message: ActorRef ⇒ Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def ask(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  def ?(message: ActorRef ⇒ Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def ?(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
   /**
    * INTERNAL API: for binary compatibility
    */
-  private[pattern] def internalAsk(messageFactory: ActorRef ⇒ Any, timeout: Timeout, sender: ActorRef): Future[Any] = actorRef match {
-    case ref: InternalActorRef if ref.isTerminated ⇒
+  private[pattern] def internalAsk(messageFactory: ActorRef => Any, timeout: Timeout, sender: ActorRef): Future[Any] = actorRef match {
+    case ref: InternalActorRef if ref.isTerminated =>
       val message = messageFactory(ref.provider.deadLetters)
       actorRef ! message
       Future.failed[Any](AskableActorRef.recipientTerminatedException(actorRef, message, sender))
-    case ref: InternalActorRef ⇒
+    case ref: InternalActorRef =>
       if (timeout.duration.length <= 0) {
         val message = messageFactory(ref.provider.deadLetters)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
@@ -371,10 +371,10 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
         actorRef.tell(message, a)
         a.result.future
       }
-    case _ if sender eq null ⇒
+    case _ if sender eq null =>
       Future.failed[Any](new IllegalArgumentException("No recipient for the reply was provided, " +
         s"question not sent to [$actorRef]."))
-    case _ ⇒
+    case _ =>
       val message = if (sender == null) null else messageFactory(sender.asInstanceOf[InternalActorRef].provider.deadLetters)
       Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
   }
@@ -421,7 +421,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
    * INTERNAL API: for binary compatibility
    */
   private[pattern] def internalAsk(message: Any, timeout: Timeout, sender: ActorRef): Future[Any] = actorSel.anchor match {
-    case ref: InternalActorRef ⇒
+    case ref: InternalActorRef =>
       if (timeout.duration.length <= 0)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorSel, message, sender))
       else {
@@ -429,7 +429,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         actorSel.tell(message, a)
         a.result.future
       }
-    case _ ⇒ Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorSel, message, sender))
+    case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorSel, message, sender))
   }
 }
 
@@ -438,17 +438,17 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
  */
 final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
 
-  def ask(message: ActorRef ⇒ Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def ask(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
-  def ?(message: ActorRef ⇒ Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def ?(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
   /**
    * INTERNAL API: for binary compatibility
    */
-  private[pattern] def internalAsk(messageFactory: ActorRef ⇒ Any, timeout: Timeout, sender: ActorRef): Future[Any] = actorSel.anchor match {
-    case ref: InternalActorRef ⇒
+  private[pattern] def internalAsk(messageFactory: ActorRef => Any, timeout: Timeout, sender: ActorRef): Future[Any] = actorSel.anchor match {
+    case ref: InternalActorRef =>
       if (timeout.duration.length <= 0) {
         val message = messageFactory(ref.provider.deadLetters)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorSel, message, sender))
@@ -459,10 +459,10 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
         actorSel.tell(message, a)
         a.result.future
       }
-    case _ if sender eq null ⇒
+    case _ if sender eq null =>
       Future.failed[Any](new IllegalArgumentException("No recipient for the reply was provided, " +
         s"question not sent to [$actorSel]."))
-    case _ ⇒
+    case _ =>
       val message = if (sender == null) null else messageFactory(sender.asInstanceOf[InternalActorRef].provider.deadLetters)
       Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorSel, message, sender))
   }
@@ -509,20 +509,20 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
-    case null  ⇒ false
-    case other ⇒ updateWatchedBy(other, other + watcher) || addWatcher(watcher)
+    case null  => false
+    case other => updateWatchedBy(other, other + watcher) || addWatcher(watcher)
   }
 
   @tailrec
   private[this] final def remWatcher(watcher: ActorRef): Unit = watchedBy match {
-    case null  ⇒ ()
-    case other ⇒ if (!updateWatchedBy(other, other - watcher)) remWatcher(watcher)
+    case null  => ()
+    case other => if (!updateWatchedBy(other, other - watcher)) remWatcher(watcher)
   }
 
   @tailrec
   private[this] final def clearWatchers(): Set[ActorRef] = watchedBy match {
-    case null  ⇒ ActorCell.emptyActorRefSet
-    case other ⇒ if (!updateWatchedBy(other, null)) clearWatchers() else other
+    case null  => ActorCell.emptyActorRefSet
+    case other => if (!updateWatchedBy(other, null)) clearWatchers() else other
   }
 
   @inline
@@ -547,7 +547,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
    */
   @tailrec
   def path: ActorPath = state match {
-    case null ⇒
+    case null =>
       if (updateState(null, Registering)) {
         var p: ActorPath = null
         try {
@@ -556,46 +556,46 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
           p
         } finally { setState(p) }
       } else path
-    case p: ActorPath       ⇒ p
-    case StoppedWithPath(p) ⇒ p
-    case Stopped ⇒
+    case p: ActorPath       => p
+    case StoppedWithPath(p) => p
+    case Stopped =>
       // even if we are already stopped we still need to produce a proper path
       updateState(Stopped, StoppedWithPath(provider.tempPath()))
       path
-    case Registering ⇒ path // spin until registration is completed
+    case Registering => path // spin until registration is completed
   }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
-    case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒
+    case Stopped | _: StoppedWithPath => provider.deadLetters ! message
+    case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
       if (!(result.tryComplete(
         message match {
-          case Status.Success(r) ⇒ Success(r)
-          case Status.Failure(f) ⇒ Failure(f)
-          case other             ⇒ Success(other)
+          case Status.Success(r) => Success(r)
+          case Status.Failure(f) => Failure(f)
+          case other             => Success(other)
         }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate                      ⇒ stop()
-    case DeathWatchNotification(a, ec, at) ⇒ this.!(Terminated(a)(existenceConfirmed = ec, addressTerminated = at))
-    case Watch(watchee, watcher) ⇒
+    case _: Terminate                      => stop()
+    case DeathWatchNotification(a, ec, at) => this.!(Terminated(a)(existenceConfirmed = ec, addressTerminated = at))
+    case Watch(watchee, watcher) =>
       if (watchee == this && watcher != this) {
         if (!addWatcher(watcher))
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = true, addressTerminated = false))
       } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
-    case Unwatch(watchee, watcher) ⇒
+    case Unwatch(watchee, watcher) =>
       if (watchee == this && watcher != this) remWatcher(watcher)
       else System.err.println("BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, this))
-    case _ ⇒
+    case _ =>
   }
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated: Boolean = state match {
-    case Stopped | _: StoppedWithPath ⇒ true
-    case _                            ⇒ false
+    case Stopped | _: StoppedWithPath => true
+    case _                            => false
   }
 
   @tailrec
@@ -604,7 +604,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       result tryComplete ActorStopResult
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
-        watchers foreach { watcher ⇒
+        watchers foreach { watcher =>
           // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
           watcher.asInstanceOf[InternalActorRef]
             .sendSystemMessage(DeathWatchNotification(this, existenceConfirmed = true, addressTerminated = false))
@@ -612,12 +612,12 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       }
     }
     state match {
-      case null ⇒ // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either
+      case null => // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either
         if (updateState(null, Stopped)) ensureCompleted() else stop()
-      case p: ActorPath ⇒
+      case p: ActorPath =>
         if (updateState(p, StoppedWithPath(p))) { try ensureCompleted() finally provider.unregisterTempActor(p) } else stop()
-      case Stopped | _: StoppedWithPath ⇒ // already stopped
-      case Registering                  ⇒ stop() // spin until registration is completed before stopping
+      case Stopped | _: StoppedWithPath => // already stopped
+      case Registering                  => stop() // spin until registration is completed before stopping
     }
   }
 }
@@ -632,10 +632,10 @@ private[akka] object PromiseActorRef {
   private final case class StoppedWithPath(path: ActorPath)
 
   private val ActorStopResult = Failure(ActorKilledException("Stopped"))
-  private val defaultOnTimeout: String ⇒ Throwable = str ⇒ new AskTimeoutException(str)
+  private val defaultOnTimeout: String => Throwable = str => new AskTimeoutException(str)
 
   def apply(provider: ActorRefProvider, timeout: Timeout, targetName: Any, messageClassName: String,
-            sender: ActorRef = Actor.noSender, onTimeout: String ⇒ Throwable = defaultOnTimeout): PromiseActorRef = {
+            sender: ActorRef = Actor.noSender, onTimeout: String => Throwable = defaultOnTimeout): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName)
@@ -650,7 +650,7 @@ private[akka] object PromiseActorRef {
             " A typical reason for `AskTimeoutException` is that the recipient actor didn't send a reply."))
       }
     }
-    result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
+    result.future onComplete { _ => try a.stop() finally f.cancel() }
     a
   }
 

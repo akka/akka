@@ -21,12 +21,12 @@ object MyActor {
 class MyActor extends Actor {
   import MyActor._
   def receive = {
-    case message: Message ⇒ message match {
-      case BarMessage(bar) ⇒ sender() ! BazMessage("Got " + bar)
+    case message: Message => message match {
+      case BarMessage(bar) => sender() ! BazMessage("Got " + bar)
       // warning here:
       // "match may not be exhaustive. It would fail on the following input: FooMessage(_)"
       //#exhaustiveness-check
-      case FooMessage(_)   ⇒ // avoid the warning in our build logs
+      case FooMessage(_)   => // avoid the warning in our build logs
       //#exhaustiveness-check
     }
   }

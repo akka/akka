@@ -50,7 +50,7 @@ import scala.concurrent.{ Future, Promise }
  * INTERNAL API
  * Creates simple synchronous Sink which writes all incoming elements to the output stream.
  */
-@InternalApi private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString], autoFlush: Boolean)
+@InternalApi private[akka] final class OutputStreamSink(createOutput: () => OutputStream, val attributes: Attributes, shape: SinkShape[ByteString], autoFlush: Boolean)
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override def create(context: MaterializationContext) = {

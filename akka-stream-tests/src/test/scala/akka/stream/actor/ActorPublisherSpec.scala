@@ -50,14 +50,14 @@ object ActorPublisherSpec {
     import akka.stream.actor.ActorPublisherMessage._
 
     def receive = {
-      case Request(element)    ⇒ probe ! TotalDemand(totalDemand)
-      case Produce(elem)       ⇒ onNext(elem)
-      case Err(reason)         ⇒ onError(new RuntimeException(reason) with NoStackTrace)
-      case ErrThenStop(reason) ⇒ onErrorThenStop(new RuntimeException(reason) with NoStackTrace)
-      case Complete            ⇒ onComplete()
-      case CompleteThenStop    ⇒ onCompleteThenStop()
-      case Boom                ⇒ throw new RuntimeException("boom") with NoStackTrace
-      case ThreadName          ⇒ probe ! Thread.currentThread.getName
+      case Request(element)    => probe ! TotalDemand(totalDemand)
+      case Produce(elem)       => onNext(elem)
+      case Err(reason)         => onError(new RuntimeException(reason) with NoStackTrace)
+      case ErrThenStop(reason) => onErrorThenStop(new RuntimeException(reason) with NoStackTrace)
+      case Complete            => onComplete()
+      case CompleteThenStop    => onCompleteThenStop()
+      case Boom                => throw new RuntimeException("boom") with NoStackTrace
+      case ThreadName          => probe ! Thread.currentThread.getName
     }
   }
 
@@ -66,10 +66,10 @@ object ActorPublisherSpec {
     override def receive = stashing
 
     def stashing: Receive = {
-      case "unstash" ⇒
+      case "unstash" =>
         unstashAll()
         context.become(super.receive)
-      case _ ⇒ stash()
+      case _ => stash()
     }
 
   }
@@ -82,16 +82,16 @@ object ActorPublisherSpec {
     var buf = Vector.empty[Int]
 
     def receive = {
-      case i: Int ⇒
+      case i: Int =>
         if (buf.isEmpty && totalDemand > 0)
           onNext(i)
         else {
           buf :+= i
           deliverBuf()
         }
-      case Request(_) ⇒
+      case Request(_) =>
         deliverBuf()
-      case Cancel ⇒
+      case Cancel =>
         context.stop(self)
     }
 
@@ -121,9 +121,9 @@ object ActorPublisherSpec {
     override def subscriptionTimeout = timeout
 
     override def receive: Receive = {
-      case Request(_) ⇒
+      case Request(_) =>
         onNext(1)
-      case SubscriptionTimeoutExceeded ⇒
+      case SubscriptionTimeoutExceeded =>
         probe ! "timed-out"
         context.system.scheduler.scheduleOnce(timeout, probe, "cleaned-up")
         context.system.scheduler.scheduleOnce(timeout, self, PoisonPill)
@@ -139,7 +139,7 @@ object ActorPublisherSpec {
     override val requestStrategy = WatermarkRequestStrategy(10)
 
     def receive = {
-      case OnNext(s: String) ⇒
+      case OnNext(s: String) =>
         probe ! s
     }
   }
@@ -351,18 +351,18 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
         val sink: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe.ref))
 
         val (snd, rcv) = source.collect {
-          case n if n % 2 == 0 ⇒ "elem-" + n
+          case n if n % 2 == 0 => "elem-" + n
         }.toMat(sink)(Keep.both).run()
 
         (1 to 3) foreach { snd ! _ }
         probe.expectMsg("elem-2")
 
-        (4 to 500) foreach { n ⇒
+        (4 to 500) foreach { n =>
           if (n % 19 == 0) Thread.sleep(50) // simulate bursts
           snd ! n
         }
 
-        (4 to 500 by 2) foreach { n ⇒ probe.expectMsg("elem-" + n) }
+        (4 to 500 by 2) foreach { n => probe.expectMsg("elem-" + n) }
 
         watch(snd)
         rcv ! PoisonPill
@@ -381,7 +381,7 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
       val sink1 = Sink.fromSubscriber(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒ source2 ⇒
+      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b => source2 =>
         import GraphDSL.Implicits._
 
         val merge = b.add(Merge[Int](2))
@@ -402,7 +402,7 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
         senderRef2 ! _
       }
 
-      (0 to 10).foreach { msg ⇒
+      (0 to 10).foreach { msg =>
         probe1.expectMsg(msg.toString + "mark")
         probe2.expectMsg(msg.toString)
       }

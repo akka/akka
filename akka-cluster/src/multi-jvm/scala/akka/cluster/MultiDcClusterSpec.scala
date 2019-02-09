@@ -141,7 +141,7 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         cluster.leave(fourth)
 
         awaitAssert(clusterView.members.map(_.address) should not contain address(fourth))
-        awaitAssert(clusterView.members.collect { case m if m.status == Up ⇒ m.address } should contain(address(fifth)))
+        awaitAssert(clusterView.members.collect { case m if m.status == Up => m.address } should contain(address(fifth)))
       }
 
       enterBarrier("other-data-center-internal-unreachable changed")

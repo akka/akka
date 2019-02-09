@@ -102,7 +102,7 @@ final case class BalancingPool(
   override private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
 
     val rawDeployPath = context.self.path.elements.drop(1).mkString("/", "/", "")
-    val deployPath = BalancingPoolDeploy.invalidConfigKeyChars.foldLeft(rawDeployPath) { (replaced, c) ⇒
+    val deployPath = BalancingPoolDeploy.invalidConfigKeyChars.foldLeft(rawDeployPath) { (replaced, c) =>
       replaced.replace(c, '_')
     }
     val dispatcherId = s"BalancingPool-$deployPath"
@@ -137,13 +137,13 @@ final case class BalancingPool(
     else {
 
       other match {
-        case p: Pool ⇒
+        case p: Pool =>
           if ((this.supervisorStrategy eq Pool.defaultSupervisorStrategy)
             && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
             this.withSupervisorStrategy(p.supervisorStrategy)
           else this
 
-        case _ ⇒ this
+        case _ => this
       }
     }
 

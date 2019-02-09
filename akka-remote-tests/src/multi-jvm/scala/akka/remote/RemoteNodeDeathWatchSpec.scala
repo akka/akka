@@ -76,15 +76,15 @@ object RemoteNodeDeathWatchSpec {
 
   class ProbeActor(testActor: ActorRef) extends Actor {
     def receive = {
-      case WatchIt(watchee) ⇒
+      case WatchIt(watchee) =>
         context watch watchee
         sender() ! Ack
-      case UnwatchIt(watchee) ⇒
+      case UnwatchIt(watchee) =>
         context unwatch watchee
         sender() ! Ack
-      case t: Terminated ⇒
+      case t: Terminated =>
         testActor forward WrappedTerminated(t)
-      case msg ⇒ testActor forward msg
+      case msg => testActor forward msg
     }
   }
 }
@@ -350,7 +350,7 @@ abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchCon
         enterBarrier("watch-established-5")
         enterBarrier("stopped-5")
 
-        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet should ===(Set(a1, a2))
+        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) => t.actor }.toSet should ===(Set(a1, a2))
         p3.expectMsgType[WrappedTerminated](5 seconds).t.actor should ===(a3)
         p2.expectNoMessage(2 seconds)
         enterBarrier("terminated-verified-5")

@@ -81,7 +81,7 @@ object Address {
   /**
    * `Address` ordering type class, sorts addresses by protocol, name, host and port.
    */
-  implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
+  implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) =>
     if (a eq b) false
     else if (a.protocol != b.protocol) a.system.compareTo(b.protocol) < 0
     else if (a.system != b.system) a.system.compareTo(b.system) < 0
@@ -120,7 +120,7 @@ object RelativeActorPath extends PathUtils {
       if (uri.isAbsolute) None
       else Some(split(uri.getRawPath, uri.getRawFragment))
     } catch {
-      case _: URISyntaxException ⇒ None
+      case _: URISyntaxException => None
     }
   }
 }
@@ -129,7 +129,7 @@ object RelativeActorPath extends PathUtils {
  * This object serves as extractor for Scala and as address parser for Java.
  */
 object AddressFromURIString {
-  def unapply(addr: String): Option[Address] = try unapply(new URI(addr)) catch { case _: URISyntaxException ⇒ None }
+  def unapply(addr: String): Option[Address] = try unapply(new URI(addr)) catch { case _: URISyntaxException => None }
 
   def unapply(uri: URI): Option[Address] =
     if (uri eq null) None
@@ -148,8 +148,8 @@ object AddressFromURIString {
    * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
    */
   def apply(addr: String): Address = addr match {
-    case AddressFromURIString(address) ⇒ address
-    case _                             ⇒ throw new MalformedURLException(addr)
+    case AddressFromURIString(address) => address
+    case _                             => throw new MalformedURLException(addr)
   }
 
   /**
@@ -166,10 +166,10 @@ object ActorPathExtractor extends PathUtils {
     try {
       val uri = new URI(addr)
       uri.getRawPath match {
-        case null ⇒ None
-        case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment).drop(1)))
+        case null => None
+        case path => AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment).drop(1)))
       }
     } catch {
-      case _: URISyntaxException ⇒ None
+      case _: URISyntaxException => None
     }
 }

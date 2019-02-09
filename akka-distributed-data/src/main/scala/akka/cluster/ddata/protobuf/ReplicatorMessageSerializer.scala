@@ -16,11 +16,11 @@ import akka.cluster.ddata.PruningState
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages ⇒ dm }
+import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.BaseSerializer
-import akka.util.{ ByteString ⇒ AkkaByteString }
+import akka.util.{ ByteString => AkkaByteString }
 import akka.protobuf.ByteString
 import akka.cluster.ddata.Key.KeyR
 import java.util.concurrent.atomic.AtomicInteger
@@ -48,7 +48,7 @@ import akka.util.ccompat._
    * `evict` must be called from the outside, i.e. the
    * cache will not cleanup itself.
    */
-  final class SmallCache[A <: AnyRef, B <: AnyRef](size: Int, timeToLive: FiniteDuration, getOrAddFactory: A ⇒ B) {
+  final class SmallCache[A <: AnyRef, B <: AnyRef](size: Int, timeToLive: FiniteDuration, getOrAddFactory: A => B) {
     require((size & (size - 1)) == 0, "size must be a power of 2")
     require(size <= 32, "size must be <= 32")
 
@@ -152,8 +152,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private val cacheTimeToLive = system.settings.config.getDuration(
     "akka.cluster.distributed-data.serializer-cache-time-to-live", TimeUnit.MILLISECONDS).millis
-  private val readCache = new SmallCache[Read, Array[Byte]](4, cacheTimeToLive, m ⇒ readToProto(m).toByteArray)
-  private val writeCache = new SmallCache[Write, Array[Byte]](4, cacheTimeToLive, m ⇒ writeToProto(m).toByteArray)
+  private val readCache = new SmallCache[Read, Array[Byte]](4, cacheTimeToLive, m => readToProto(m).toByteArray)
+  private val writeCache = new SmallCache[Write, Array[Byte]](4, cacheTimeToLive, m => writeToProto(m).toByteArray)
   system.scheduler.schedule(cacheTimeToLive, cacheTimeToLive / 2) {
     readCache.evict()
     writeCache.evict()
@@ -181,76 +181,76 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val DeltaPropagationManifest = "Q"
   val DeltaNackManifest = "R"
 
-  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    GetManifest → getFromBinary,
-    GetSuccessManifest → getSuccessFromBinary,
-    NotFoundManifest → notFoundFromBinary,
-    GetFailureManifest → getFailureFromBinary,
-    SubscribeManifest → subscribeFromBinary,
-    UnsubscribeManifest → unsubscribeFromBinary,
-    ChangedManifest → changedFromBinary,
-    DataEnvelopeManifest → dataEnvelopeFromBinary,
-    WriteManifest → writeFromBinary,
-    WriteAckManifest → (_ ⇒ WriteAck),
-    ReadManifest → readFromBinary,
-    ReadResultManifest → readResultFromBinary,
-    StatusManifest → statusFromBinary,
-    GossipManifest → gossipFromBinary,
-    DeltaPropagationManifest → deltaPropagationFromBinary,
-    WriteNackManifest → (_ ⇒ WriteNack),
-    DeltaNackManifest → (_ ⇒ DeltaNack),
-    DurableDataEnvelopeManifest → durableDataEnvelopeFromBinary)
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
+    GetManifest -> getFromBinary,
+    GetSuccessManifest -> getSuccessFromBinary,
+    NotFoundManifest -> notFoundFromBinary,
+    GetFailureManifest -> getFailureFromBinary,
+    SubscribeManifest -> subscribeFromBinary,
+    UnsubscribeManifest -> unsubscribeFromBinary,
+    ChangedManifest -> changedFromBinary,
+    DataEnvelopeManifest -> dataEnvelopeFromBinary,
+    WriteManifest -> writeFromBinary,
+    WriteAckManifest -> (_ => WriteAck),
+    ReadManifest -> readFromBinary,
+    ReadResultManifest -> readResultFromBinary,
+    StatusManifest -> statusFromBinary,
+    GossipManifest -> gossipFromBinary,
+    DeltaPropagationManifest -> deltaPropagationFromBinary,
+    WriteNackManifest -> (_ => WriteNack),
+    DeltaNackManifest -> (_ => DeltaNack),
+    DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: DataEnvelope        ⇒ DataEnvelopeManifest
-    case _: Write               ⇒ WriteManifest
-    case WriteAck               ⇒ WriteAckManifest
-    case _: Read                ⇒ ReadManifest
-    case _: ReadResult          ⇒ ReadResultManifest
-    case _: DeltaPropagation    ⇒ DeltaPropagationManifest
-    case _: Status              ⇒ StatusManifest
-    case _: Get[_]              ⇒ GetManifest
-    case _: GetSuccess[_]       ⇒ GetSuccessManifest
-    case _: DurableDataEnvelope ⇒ DurableDataEnvelopeManifest
-    case _: Changed[_]          ⇒ ChangedManifest
-    case _: NotFound[_]         ⇒ NotFoundManifest
-    case _: GetFailure[_]       ⇒ GetFailureManifest
-    case _: Subscribe[_]        ⇒ SubscribeManifest
-    case _: Unsubscribe[_]      ⇒ UnsubscribeManifest
-    case _: Gossip              ⇒ GossipManifest
-    case WriteNack              ⇒ WriteNackManifest
-    case DeltaNack              ⇒ DeltaNackManifest
-    case _ ⇒
+    case _: DataEnvelope        => DataEnvelopeManifest
+    case _: Write               => WriteManifest
+    case WriteAck               => WriteAckManifest
+    case _: Read                => ReadManifest
+    case _: ReadResult          => ReadResultManifest
+    case _: DeltaPropagation    => DeltaPropagationManifest
+    case _: Status              => StatusManifest
+    case _: Get[_]              => GetManifest
+    case _: GetSuccess[_]       => GetSuccessManifest
+    case _: DurableDataEnvelope => DurableDataEnvelopeManifest
+    case _: Changed[_]          => ChangedManifest
+    case _: NotFound[_]         => NotFoundManifest
+    case _: GetFailure[_]       => GetFailureManifest
+    case _: Subscribe[_]        => SubscribeManifest
+    case _: Unsubscribe[_]      => UnsubscribeManifest
+    case _: Gossip              => GossipManifest
+    case WriteNack              => WriteNackManifest
+    case DeltaNack              => DeltaNackManifest
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: DataEnvelope        ⇒ dataEnvelopeToProto(m).toByteArray
-    case m: Write               ⇒ writeCache.getOrAdd(m)
-    case WriteAck               ⇒ writeAckBytes
-    case m: Read                ⇒ readCache.getOrAdd(m)
-    case m: ReadResult          ⇒ readResultToProto(m).toByteArray
-    case m: Status              ⇒ statusToProto(m).toByteArray
-    case m: DeltaPropagation    ⇒ deltaPropagationToProto(m).toByteArray
-    case m: Get[_]              ⇒ getToProto(m).toByteArray
-    case m: GetSuccess[_]       ⇒ getSuccessToProto(m).toByteArray
-    case m: DurableDataEnvelope ⇒ durableDataEnvelopeToProto(m).toByteArray
-    case m: Changed[_]          ⇒ changedToProto(m).toByteArray
-    case m: NotFound[_]         ⇒ notFoundToProto(m).toByteArray
-    case m: GetFailure[_]       ⇒ getFailureToProto(m).toByteArray
-    case m: Subscribe[_]        ⇒ subscribeToProto(m).toByteArray
-    case m: Unsubscribe[_]      ⇒ unsubscribeToProto(m).toByteArray
-    case m: Gossip              ⇒ compress(gossipToProto(m))
-    case WriteNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case DeltaNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case _ ⇒
+    case m: DataEnvelope        => dataEnvelopeToProto(m).toByteArray
+    case m: Write               => writeCache.getOrAdd(m)
+    case WriteAck               => writeAckBytes
+    case m: Read                => readCache.getOrAdd(m)
+    case m: ReadResult          => readResultToProto(m).toByteArray
+    case m: Status              => statusToProto(m).toByteArray
+    case m: DeltaPropagation    => deltaPropagationToProto(m).toByteArray
+    case m: Get[_]              => getToProto(m).toByteArray
+    case m: GetSuccess[_]       => getSuccessToProto(m).toByteArray
+    case m: DurableDataEnvelope => durableDataEnvelopeToProto(m).toByteArray
+    case m: Changed[_]          => changedToProto(m).toByteArray
+    case m: NotFound[_]         => notFoundToProto(m).toByteArray
+    case m: GetFailure[_]       => getFailureToProto(m).toByteArray
+    case m: Subscribe[_]        => subscribeToProto(m).toByteArray
+    case m: Unsubscribe[_]      => unsubscribeToProto(m).toByteArray
+    case m: Gossip              => compress(gossipToProto(m))
+    case WriteNack              => dm.Empty.getDefaultInstance.toByteArray
+    case DeltaNack              => dm.Empty.getDefaultInstance.toByteArray
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
-      case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new NotSerializableException(
+      case Some(f) => f(bytes)
+      case None => throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 
@@ -258,7 +258,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val b = dm.Status.newBuilder()
     b.setChunk(status.chunk).setTotChunks(status.totChunks)
     val entries = status.digests.foreach {
-      case (key, digest) ⇒
+      case (key, digest) =>
         b.addEntries(dm.Status.Entry.newBuilder().
           setKey(key).
           setDigest(ByteString.copyFrom(digest.toArray)))
@@ -269,15 +269,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
     Status(
-      status.getEntriesList.asScala.iterator.map(e ⇒
-        e.getKey → AkkaByteString(e.getDigest.toByteArray())).toMap,
+      status.getEntriesList.asScala.iterator.map(e =>
+        e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
       status.getChunk, status.getTotChunks)
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
     val b = dm.Gossip.newBuilder().setSendBack(gossip.sendBack)
     val entries = gossip.updatedData.foreach {
-      case (key, data) ⇒
+      case (key, data) =>
         b.addEntries(dm.Gossip.Entry.newBuilder().
           setKey(key).
           setEnvelope(dataEnvelopeToProto(data)))
@@ -288,8 +288,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
     Gossip(
-      gossip.getEntriesList.asScala.iterator.map(e ⇒
-        e.getKey → dataEnvelopeFromProto(e.getEnvelope)).toMap,
+      gossip.getEntriesList.asScala.iterator.map(e =>
+        e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
       sendBack = gossip.getSendBack)
   }
 
@@ -299,7 +299,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     if (deltaPropagation.reply)
       b.setReply(deltaPropagation.reply)
     val entries = deltaPropagation.deltas.foreach {
-      case (key, Delta(data, fromSeqNr, toSeqNr)) ⇒
+      case (key, Delta(data, fromSeqNr, toSeqNr)) =>
         val b2 = dm.DeltaPropagation.Entry.newBuilder()
           .setKey(key)
           .setEnvelope(dataEnvelopeToProto(data))
@@ -317,19 +317,19 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     DeltaPropagation(
       uniqueAddressFromProto(deltaPropagation.getFromNode),
       reply,
-      deltaPropagation.getEntriesList.asScala.iterator.map { e ⇒
+      deltaPropagation.getEntriesList.asScala.iterator.map { e =>
         val fromSeqNr = e.getFromSeqNr
         val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
-        e.getKey → Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
+        e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
       }.toMap)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {
     val consistencyValue = get.consistency match {
-      case ReadLocal       ⇒ 1
-      case ReadFrom(n, _)  ⇒ n
-      case _: ReadMajority ⇒ 0
-      case _: ReadAll      ⇒ -1
+      case ReadLocal       => 1
+      case ReadFrom(n, _)  => n
+      case _: ReadMajority => 0
+      case _: ReadAll      => -1
     }
 
     val b = dm.Get.newBuilder().
@@ -337,7 +337,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       setConsistency(consistencyValue).
       setTimeout(get.consistency.timeout.toMillis.toInt)
 
-    get.request.foreach(o ⇒ b.setRequest(otherMessageToProto(o)))
+    get.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
   }
 
@@ -347,10 +347,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val request = if (get.hasRequest()) Some(otherMessageFromProto(get.getRequest)) else None
     val timeout = Duration(get.getTimeout, TimeUnit.MILLISECONDS)
     val consistency = get.getConsistency match {
-      case 0  ⇒ ReadMajority(timeout)
-      case -1 ⇒ ReadAll(timeout)
-      case 1  ⇒ ReadLocal
-      case n  ⇒ ReadFrom(n, timeout)
+      case 0  => ReadMajority(timeout)
+      case -1 => ReadAll(timeout)
+      case 1  => ReadLocal
+      case n  => ReadFrom(n, timeout)
     }
     Get(key, consistency, request)
   }
@@ -360,7 +360,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       setKey(otherMessageToProto(getSuccess.key)).
       setData(otherMessageToProto(getSuccess.dataValue))
 
-    getSuccess.request.foreach(o ⇒ b.setRequest(otherMessageToProto(o)))
+    getSuccess.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
   }
 
@@ -374,7 +374,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def notFoundToProto(notFound: NotFound[_]): dm.NotFound = {
     val b = dm.NotFound.newBuilder().setKey(otherMessageToProto(notFound.key))
-    notFound.request.foreach(o ⇒ b.setRequest(otherMessageToProto(o)))
+    notFound.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
   }
 
@@ -387,7 +387,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def getFailureToProto(getFailure: GetFailure[_]): dm.GetFailure = {
     val b = dm.GetFailure.newBuilder().setKey(otherMessageToProto(getFailure.key))
-    getFailure.request.foreach(o ⇒ b.setRequest(otherMessageToProto(o)))
+    getFailure.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
   }
 
@@ -437,15 +437,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def pruningToProto(entries: Map[UniqueAddress, PruningState]): Iterable[dm.DataEnvelope.PruningEntry] = {
     entries.map {
-      case (removedAddress, state) ⇒
+      case (removedAddress, state) =>
         val b = dm.DataEnvelope.PruningEntry.newBuilder().
           setRemovedAddress(uniqueAddressToProto(removedAddress))
         state match {
-          case PruningState.PruningInitialized(owner, seen) ⇒
-            seen.toVector.sorted(Member.addressOrdering).map(addressToProto).foreach { a ⇒ b.addSeen(a) }
+          case PruningState.PruningInitialized(owner, seen) =>
+            seen.toVector.sorted(Member.addressOrdering).map(addressToProto).foreach { a => b.addSeen(a) }
             b.setOwnerAddress(uniqueAddressToProto(owner))
             b.setPerformed(false)
-          case PruningState.PruningPerformed(obsoleteTime) ⇒
+          case PruningState.PruningPerformed(obsoleteTime) =>
             b.setPerformed(true).setObsoleteTime(obsoleteTime)
             // TODO ownerAddress is only needed for PruningInitialized, but kept here for
             // wire backwards compatibility with 2.4.16 (required field)
@@ -483,7 +483,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     if (pruningEntries.isEmpty)
       Map.empty
     else
-      pruningEntries.asScala.iterator.map { pruningEntry ⇒
+      pruningEntries.asScala.iterator.map { pruningEntry =>
         val state =
           if (pruningEntry.getPerformed) {
             // for wire compatibility with Akka 2.4.x
@@ -494,7 +494,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
               uniqueAddressFromProto(pruningEntry.getOwnerAddress),
               pruningEntry.getSeenList.asScala.iterator.map(addressFromProto).to(immutable.Set))
         val removed = uniqueAddressFromProto(pruningEntry.getRemovedAddress)
-        removed → state
+        removed -> state
       }.toMap
   }
 
@@ -518,8 +518,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def readResultToProto(readResult: ReadResult): dm.ReadResult = {
     val b = dm.ReadResult.newBuilder()
     readResult.envelope match {
-      case Some(d) ⇒ b.setEnvelope(dataEnvelopeToProto(d))
-      case None    ⇒
+      case Some(d) => b.setEnvelope(dataEnvelopeToProto(d))
+      case None    =>
     }
     b.build()
   }
@@ -535,8 +535,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def durableDataEnvelopeToProto(durableDataEnvelope: DurableDataEnvelope): dm.DurableDataEnvelope = {
     // only keep the PruningPerformed entries
     val pruning = durableDataEnvelope.dataEnvelope.pruning.filter {
-      case (_, _: PruningPerformed) ⇒ true
-      case _                        ⇒ false
+      case (_, _: PruningPerformed) => true
+      case _                        => false
     }
 
     val builder = dm.DurableDataEnvelope.newBuilder()

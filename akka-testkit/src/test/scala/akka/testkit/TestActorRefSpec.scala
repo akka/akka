@@ -40,26 +40,26 @@ object TestActorRefSpec {
     var replyTo: ActorRef = null
 
     def receiveT = {
-      case "complexRequest" ⇒ {
+      case "complexRequest" => {
         replyTo = sender()
         val worker = TestActorRef(Props[WorkerActor])
         worker ! "work"
       }
-      case "complexRequest2" ⇒
+      case "complexRequest2" =>
         val worker = TestActorRef(Props[WorkerActor])
         worker ! sender()
-      case "workDone"      ⇒ replyTo ! "complexReply"
-      case "simpleRequest" ⇒ sender() ! "simpleReply"
+      case "workDone"      => replyTo ! "complexReply"
+      case "simpleRequest" => sender() ! "simpleReply"
     }
   }
 
   class WorkerActor() extends TActor {
     def receiveT = {
-      case "work" ⇒
+      case "work" =>
         sender() ! "workDone"
         context stop self
-      case replyTo: Promise[_] ⇒ replyTo.asInstanceOf[Promise[Any]].success("complexReply")
-      case replyTo: ActorRef   ⇒ replyTo ! "complexReply"
+      case replyTo: Promise[_] => replyTo.asInstanceOf[Promise[Any]].success("complexReply")
+      case replyTo: ActorRef   => replyTo ! "complexReply"
     }
 
     val supervisor = context.parent
@@ -69,13 +69,13 @@ object TestActorRefSpec {
   class SenderActor(replyActor: ActorRef) extends TActor {
 
     def receiveT = {
-      case "complex"  ⇒ replyActor ! "complexRequest"
-      case "complex2" ⇒ replyActor ! "complexRequest2"
-      case "simple"   ⇒ replyActor ! "simpleRequest"
-      case "complexReply" ⇒ {
+      case "complex"  => replyActor ! "complexRequest"
+      case "complex2" => replyActor ! "complexRequest2"
+      case "simple"   => replyActor ! "simpleRequest"
+      case "complexReply" => {
         counter -= 1
       }
-      case "simpleReply" ⇒ {
+      case "simpleReply" => {
         counter -= 1
       }
     }
@@ -85,14 +85,14 @@ object TestActorRefSpec {
     var count = 0
     var msg: String = _
     def receive = {
-      case Warning(_, _, m: String) ⇒ count += 1; msg = m
+      case Warning(_, _, m: String) => count += 1; msg = m
     }
   }
 
   class ReceiveTimeoutActor(target: ActorRef) extends Actor {
     context setReceiveTimeout 1.second
     def receive = {
-      case ReceiveTimeout ⇒
+      case ReceiveTimeout =>
         target ! "timeout"
         context stop self
     }
@@ -120,8 +120,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = TestActorRef(Props(new Actor { def receive = { case _ ⇒ } }))
-          def receive = { case _ ⇒ sender() ! nested }
+          val nested = TestActorRef(Props(new Actor { def receive = { case _ => } }))
+          def receive = { case _ => sender() ! nested }
         }))
         a should not be (null)
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
@@ -131,8 +131,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = context.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
-          def receive = { case _ ⇒ sender() ! nested }
+          val nested = context.actorOf(Props(new Actor { def receive = { case _ => } }))
+          def receive = { case _ => sender() ! nested }
         }))
         a should not be (null)
         val nested = Await.result((a ? "any").mapTo[ActorRef], timeout.duration)
@@ -173,13 +173,13 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         system.actorOf(Props(new Actor {
           context.watch(a)
           def receive = {
-            case t: Terminated ⇒ testActor forward WrappedTerminated(t)
-            case x             ⇒ testActor forward x
+            case t: Terminated => testActor forward WrappedTerminated(t)
+            case x             => testActor forward x
           }
         }))
         a.!(PoisonPill)(testActor)
         expectMsgPF(5 seconds) {
-          case WrappedTerminated(Terminated(`a`)) ⇒ true
+          case WrappedTerminated(Terminated(`a`)) => true
         }
         a.isTerminated should ===(true)
         assertThread()
@@ -192,7 +192,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
         val boss = TestActorRef(Props(new TActor {
           val ref = TestActorRef(Props(new TActor {
-            def receiveT = { case _ ⇒ }
+            def receiveT = { case _ => }
             override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
             override def postRestart(reason: Throwable): Unit = { counter -= 1 }
           }), self, "child")
@@ -200,7 +200,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
           override def supervisorStrategy =
             OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 1 second)(List(classOf[ActorKilledException]))
 
-          def receiveT = { case "sendKill" ⇒ ref ! Kill }
+          def receiveT = { case "sendKill" => ref ! Kill }
         }))
 
         boss ! "sendKill"
@@ -231,7 +231,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       class TA extends TActor {
         var s: String = _
         def receiveT = {
-          case x: String ⇒ s = x
+          case x: String => s = x
         }
       }
       val ref = TestActorRef(new TA)
@@ -273,8 +273,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         val parent = TestProbe()
         val child = TestActorRef(Props(new Actor {
           def receive: Receive = {
-            case 1 ⇒ throw new RuntimeException("expected")
-            case x ⇒ sender() ! x
+            case 1 => throw new RuntimeException("expected")
+            case x => sender() ! x
           }
         }), parent.ref, "Child")
 
@@ -286,8 +286,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         val parent = TestProbe()
         val child = parent.childActorOf(Props(new Actor {
           def receive: Receive = {
-            case 1 ⇒ throw new RuntimeException("expected")
-            case x ⇒ sender() ! x
+            case 1 => throw new RuntimeException("expected")
+            case x => sender() ! x
           }
         }), "Child")
 

@@ -64,12 +64,12 @@ private[metrics] class ClusterMetricsSupervisor extends Actor with ActorLogging 
   }
 
   override def receive = {
-    case CollectionStartMessage ⇒
+    case CollectionStartMessage =>
       children.foreach(stop)
       collectorInstance += 1
       actorOf(Props(classOf[ClusterMetricsCollector]), collectorName)
       log.debug(s"Collection started.")
-    case CollectionStopMessage ⇒
+    case CollectionStopMessage =>
       children.foreach(stop)
       log.debug(s"Collection stopped.")
   }
@@ -169,19 +169,19 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   }
 
   def receive = {
-    case GossipTick                 ⇒ gossip()
-    case MetricsTick                ⇒ sample()
-    case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
-    case state: CurrentClusterState ⇒ receiveState(state)
-    case MemberUp(m)                ⇒ addMember(m)
-    case MemberWeaklyUp(m)          ⇒ addMember(m)
-    case MemberRemoved(m, _)        ⇒ removeMember(m)
-    case MemberExited(m)            ⇒ removeMember(m)
-    case UnreachableMember(m)       ⇒ removeMember(m)
-    case ReachableMember(m) ⇒
+    case GossipTick                 => gossip()
+    case MetricsTick                => sample()
+    case msg: MetricsGossipEnvelope => receiveGossip(msg)
+    case state: CurrentClusterState => receiveState(state)
+    case MemberUp(m)                => addMember(m)
+    case MemberWeaklyUp(m)          => addMember(m)
+    case MemberRemoved(m, _)        => removeMember(m)
+    case MemberExited(m)            => removeMember(m)
+    case UnreachableMember(m)       => removeMember(m)
+    case ReachableMember(m) =>
       if (m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp)
         addMember(m)
-    case _: MemberEvent ⇒ // not interested in other types of MemberEvent
+    case _: MemberEvent => // not interested in other types of MemberEvent
 
   }
 
@@ -211,7 +211,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
    */
   def receiveState(state: CurrentClusterState): Unit =
     nodes = (state.members diff state.unreachable) collect {
-      case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp ⇒ m.address
+      case m if m.status == MemberStatus.Up || m.status == MemberStatus.WeaklyUp => m.address
     }
 
   /**

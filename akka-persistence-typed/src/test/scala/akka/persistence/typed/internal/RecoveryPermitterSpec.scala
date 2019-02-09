@@ -48,18 +48,18 @@ object RecoveryPermitterSpec {
       persistenceId = PersistenceId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
-        case StopActor ⇒ Effect.stop()
-        case command   ⇒ commandProbe.ref ! command; Effect.none
+        case StopActor => Effect.stop()
+        case command   => commandProbe.ref ! command; Effect.none
       },
-      eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
-    ).onRecoveryCompleted { _ ⇒
+      eventHandler = { (state, event) => eventProbe.ref ! event; state }
+    ).onRecoveryCompleted { _ =>
         eventProbe.ref ! Recovered
         if (throwOnRecovery) throw new TE
       }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
     Behaviors.receive[Any] {
-      (_, any) ⇒ target.ref ! any; Behaviors.same
+      (_, any) => target.ref ! any; Behaviors.same
     }
 }
 
@@ -187,15 +187,15 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       val parent =
         EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
           spawn(
-            Behaviors.setup[Command](ctx ⇒ {
+            Behaviors.setup[Command](ctx => {
               val persistentActor =
                 ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
               Behaviors.receive[Command] {
-                case (_, StopActor) ⇒
+                case (_, StopActor) =>
                   stopProbe.ref ! persistentActor
                   ctx.stop(persistentActor)
                   Behavior.same
-                case (_, message) ⇒
+                case (_, message) =>
                   persistentActor ! message
                   Behaviors.same
               }

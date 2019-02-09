@@ -72,35 +72,35 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     def receive = idle
 
     def idle: Receive = {
-      case RegisterConsumer ⇒
+      case RegisterConsumer =>
         log.info("RegisterConsumer: [{}]", sender().path)
         sender() ! RegistrationOk
         context.become(active(sender()))
-      case UnregisterConsumer ⇒
+      case UnregisterConsumer =>
         log.info("UnexpectedUnregistration: [{}]", sender().path)
         sender() ! UnexpectedUnregistration
         context stop self
-      case Reset ⇒ sender() ! ResetOk
-      case msg   ⇒ // no consumer, drop
+      case Reset => sender() ! ResetOk
+      case msg   => // no consumer, drop
     }
 
     def active(consumer: ActorRef): Receive = {
-      case UnregisterConsumer if sender() == consumer ⇒
+      case UnregisterConsumer if sender() == consumer =>
         log.info("UnregistrationOk: [{}]", sender().path)
         sender() ! UnregistrationOk
         context.become(idle)
-      case UnregisterConsumer ⇒
+      case UnregisterConsumer =>
         log.info("UnexpectedUnregistration: [{}], expected [{}]", sender().path, consumer.path)
         sender() ! UnexpectedUnregistration
         context stop self
-      case RegisterConsumer ⇒
+      case RegisterConsumer =>
         log.info("Unexpected RegisterConsumer [{}], active consumer [{}]", sender().path, consumer.path)
         sender() ! UnexpectedRegistration
         context stop self
-      case Reset ⇒
+      case Reset =>
         context.become(idle)
         sender() ! ResetOk
-      case msg ⇒ consumer ! msg
+      case msg => consumer ! msg
     }
   }
 
@@ -132,22 +132,22 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case n: Int if n <= current ⇒
+      case n: Int if n <= current =>
         context.stop(self)
-      case n: Int ⇒
+      case n: Int =>
         current = n
         delegateTo ! n
-      case message @ (RegistrationOk | UnexpectedRegistration) ⇒
+      case message @ (RegistrationOk | UnexpectedRegistration) =>
         delegateTo ! message
-      case GetCurrent ⇒
+      case GetCurrent =>
         sender() ! current
       //#consumer-end
-      case End ⇒
+      case End =>
         queue ! UnregisterConsumer
-      case UnregistrationOk ⇒
+      case UnregistrationOk =>
         stoppedBeforeUnregistration = false
         context stop self
-      case Ping ⇒
+      case Ping =>
         sender() ! Pong
       //#consumer-end
     }
@@ -204,7 +204,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       memberProbe.expectMsgType[MemberUp](15.seconds).member.address should ===(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should ===(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) => m.address }.toSet should ===(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")
@@ -303,7 +303,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     runOn(oldest) {
       expectMsg(5.seconds, msg)
     }
-    runOn(roles.filterNot(r ⇒ r == oldest || r == controller || r == observer): _*) {
+    runOn(roles.filterNot(r => r == oldest || r == controller || r == observer): _*) {
       expectNoMsg(1 second)
     }
     enterBarrier("after-" + msg + "-verified")
@@ -313,7 +313,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
     runOn(controller) {
       queue ! Reset
       expectMsg(ResetOk)
-      roles foreach { r ⇒
+      roles foreach { r =>
         log.info("Shutdown [{}]", node(r).address)
         testConductor.exit(r, 0).await
       }
@@ -400,8 +400,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       runOn(leaveRole) {
         system.actorSelection("/user/consumer").tell(Identify("singleton"), identifyProbe.ref)
         identifyProbe.expectMsgPF() {
-          case ActorIdentity("singleton", None) ⇒ // already terminated
-          case ActorIdentity("singleton", Some(singleton)) ⇒
+          case ActorIdentity("singleton", None) => // already terminated
+          case ActorIdentity("singleton", Some(singleton)) =>
             watch(singleton)
             expectTerminated(singleton)
         }

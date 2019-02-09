@@ -21,16 +21,16 @@ class ListenerSpec extends AkkaSpec {
 
       val broadcast = system.actorOf(Props(new Actor with Listeners {
         def receive = listenerManagement orElse {
-          case "foo" ⇒ gossip("bar")
+          case "foo" => gossip("bar")
         }
       }))
 
       def newListener = system.actorOf(Props(new Actor {
         def receive = {
-          case "bar" ⇒
+          case "bar" =>
             barCount.incrementAndGet
             barLatch.countDown()
-          case "foo" ⇒
+          case "foo" =>
             fooLatch.countDown()
         }
       }))
@@ -53,7 +53,7 @@ class ListenerSpec extends AkkaSpec {
 
       Await.ready(fooLatch, TestLatch.DefaultTimeout)
 
-      for (a ← List(broadcast, a1, a2, a3)) system.stop(a)
+      for (a <- List(broadcast, a1, a2, a3)) system.stop(a)
     }
   }
 }

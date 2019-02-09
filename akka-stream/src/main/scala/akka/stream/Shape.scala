@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
  * It is also used in the Java DSL for “untyped Inlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class InPort { self: Inlet[_] ⇒
+sealed abstract class InPort { self: Inlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
@@ -41,7 +41,7 @@ sealed abstract class InPort { self: Inlet[_] ⇒
  * It is also used in the Java DSL for “untyped Outlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class OutPort { self: Outlet[_] ⇒
+sealed abstract class OutPort { self: Outlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
@@ -150,8 +150,8 @@ final class Outlet[T] private (val s: String) extends OutPort {
    */
   def hasOnePort(ports: immutable.Seq[_]): Boolean = {
     ports.nonEmpty && (ports match {
-      case l: List[_] ⇒ l.tail.isEmpty // assuming List is most common
-      case _          ⇒ ports.size == 1 // e.g. Vector
+      case l: List[_] => l.tail.isEmpty // assuming List is most common
+      case _          => ports.size == 1 // e.g. Vector
     })
   }
 }

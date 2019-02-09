@@ -9,7 +9,7 @@ import akka.stream.actor.ActorPublisher
 /**
  * INTERNAL API
  */
-private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] ⇒
+private[akka] trait DeliveryBuffer[T] { _: ActorPublisher[T] =>
 
   var buf = Vector.empty[T]
 

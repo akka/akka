@@ -23,16 +23,16 @@ import com.typesafe.config.ConfigFactory
 object ClusterShardingSingleShardPerEntitySpec {
   class Entity extends Actor {
     def receive = {
-      case id: Int ⇒ sender() ! id
+      case id: Int => sender() ! id
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
 }

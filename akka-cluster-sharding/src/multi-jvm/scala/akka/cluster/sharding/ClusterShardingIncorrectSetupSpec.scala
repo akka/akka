@@ -29,11 +29,11 @@ class ClusterShardingIncorrectSetupMultiJvmNode2 extends ClusterShardingIncorrec
 
 object ClusterShardingIncorrectSetupSpec {
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 }
 

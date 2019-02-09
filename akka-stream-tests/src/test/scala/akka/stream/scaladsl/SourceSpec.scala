@@ -34,7 +34,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       implicit val ec = system.dispatcher
       //#source-single
       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
-      s.foreach(list ⇒ println(s"Collected elements: $list")) // prints: Collected elements: List(1)
+      s.foreach(list => println(s"Collected elements: $list")) // prints: Collected elements: List(1)
 
       //#source-single
 
@@ -88,7 +88,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val source = Source.asSubscriber[Int]
       val out = TestSubscriber.manualProbe[Int]
 
-      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b ⇒ (i0, i1, i2, i3, i4) ⇒
+      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b => (i0, i1, i2, i3, i4) =>
         import GraphDSL.Implicits._
         val m = b.add(Merge[Int](5))
         i0.out ~> m.in(0)
@@ -99,39 +99,39 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         SourceShape(m.out)
       }).to(Sink.fromSubscriber(out)).run()
 
-      for (i ← 0 to 4) probes(i).subscribe(s(i))
+      for (i <- 0 to 4) probes(i).subscribe(s(i))
       val sub = out.expectSubscription()
       sub.request(10)
 
-      val subs = for (i ← 0 to 4) {
+      val subs = for (i <- 0 to 4) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 4) yield out.expectNext()
+      val gotten = for (_ <- 0 to 4) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1, 2, 3, 4))
       out.expectComplete()
     }
 
     "combine from many inputs with simplified API" in {
       val probes = immutable.Seq.fill(3)(TestPublisher.manualProbe[Int]())
-      val source = for (i ← 0 to 2) yield Source.fromPublisher(probes(i))
+      val source = for (i <- 0 to 2) yield Source.fromPublisher(probes(i))
       val out = TestSubscriber.manualProbe[Int]
 
       Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
       val sub = out.expectSubscription()
       sub.request(3)
 
-      for (i ← 0 to 2) {
+      for (i <- 0 to 2) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 2) yield out.expectNext()
+      val gotten = for (_ <- 0 to 2) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1, 2))
       out.expectComplete()
     }
@@ -146,14 +146,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val sub = out.expectSubscription()
       sub.request(3)
 
-      for (i ← 0 to 1) {
+      for (i <- 0 to 1) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 1) yield out.expectNext()
+      val gotten = for (_ <- 0 to 1) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1))
       out.expectComplete()
     }
@@ -226,9 +226,9 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "generate a finite fibonacci sequence" in {
       Source.unfold((0, 1)) {
-        case (a, _) if a > 10000000 ⇒ None
-        case (a, b)                 ⇒ Some((b, a + b) → a)
-      }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+        case (a, _) if a > 10000000 => None
+        case (a, b)                 => Some((b, a + b) -> a)
+      }.runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
 
@@ -237,32 +237,32 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
         whenReady(
           Source.unfold((0, 1)) {
-            case (a, _) if a > 10000000 ⇒ throw t
-            case (a, b)                 ⇒ Some((b, a + b) → a)
-          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
+            case (a, _) if a > 10000000 => throw t
+            case (a, b)                 => Some((b, a + b) -> a)
+          }.runFold(List.empty[Int]) { case (xs, x) => x :: xs }.failed) {
             _ should be theSameInstanceAs (t)
           }
     }
 
     "generate a finite fibonacci sequence asynchronously" in {
       Source.unfoldAsync((0, 1)) {
-        case (a, _) if a > 10000000 ⇒ Future.successful(None)
-        case (a, b)                 ⇒ Future(Some((b, a + b) → a))(system.dispatcher)
-      }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+        case (a, _) if a > 10000000 => Future.successful(None)
+        case (a, b)                 => Future(Some((b, a + b) -> a))(system.dispatcher)
+      }.runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
 
     "generate an unbounded fibonacci sequence" in {
-      Source.unfold((0, 1))({ case (a, b) ⇒ Some((b, a + b) → a) })
+      Source.unfold((0, 1))({ case (a, b) => Some((b, a + b) -> a) })
         .take(36)
-        .runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+        .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
   }
 
   "Iterator Source" must {
     "properly iterate" in {
-      Source.fromIterator(() ⇒ Iterator.iterate(false)(!_))
+      Source.fromIterator(() => Iterator.iterate(false)(!_))
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(immutable.Seq(false, true, false, true, false, true, false, true, false, true))
@@ -270,26 +270,26 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "fail stream when iterator throws" in {
       Source
-        .fromIterator(() ⇒ (1 to 1000).toIterator.map(k ⇒ if (k < 10) k else throw TE("a")))
+        .fromIterator(() => (1 to 1000).toIterator.map(k => if (k < 10) k else throw TE("a")))
         .runWith(Sink.ignore)
         .failed.futureValue.getClass should ===(classOf[TE])
 
       Source
-        .fromIterator(() ⇒ (1 to 1000).toIterator.map(_ ⇒ throw TE("b")))
+        .fromIterator(() => (1 to 1000).toIterator.map(_ => throw TE("b")))
         .runWith(Sink.ignore)
         .failed.futureValue.getClass should ===(classOf[TE])
     }
 
     "use decider when iterator throws" in {
       Source
-        .fromIterator(() ⇒ (1 to 5).toIterator.map(k ⇒ if (k != 3) k else throw TE("a")))
+        .fromIterator(() => (1 to 5).toIterator.map(k => if (k != 3) k else throw TE("a")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(List(1, 2))
 
       Source
-        .fromIterator(() ⇒ (1 to 5).toIterator.map(_ ⇒ throw TE("b")))
+        .fromIterator(() => (1 to 5).toIterator.map(_ => throw TE("b")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .grouped(10)
         .runWith(Sink.headOption)
@@ -331,7 +331,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "continuously generate the same sequence" in {
       val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
       //#cycle
-      Source.cycle(() ⇒ List(1, 2, 3).iterator)
+      Source.cycle(() => List(1, 2, 3).iterator)
         .grouped(9)
         .runWith(Sink.head)
         // This will produce the Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
@@ -342,7 +342,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "throw an exception in case of empty iterator" in {
       //#cycle-error
       val empty = Iterator.empty
-      Source.cycle(() ⇒ empty)
+      Source.cycle(() => empty)
         .runWith(Sink.head)
         // This will return a failed future with an `IllegalArgumentException`
         //#cycle-error
@@ -361,7 +361,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     import scala.compat.java8.FunctionConverters._
     import java.util.stream.{ Stream, IntStream }
 
-    def javaStreamInts = IntStream.iterate(1, { i: Int ⇒ i + 1 }.asJava)
+    def javaStreamInts = IntStream.iterate(1, { i: Int => i + 1 }.asJava)
 
     "work with Java collections" in {
       val list = new java.util.LinkedList[Integer]()
@@ -369,23 +369,23 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       list.add(1)
       list.add(2)
 
-      StreamConverters.fromJavaStream(() ⇒ list.stream()).map(_.intValue).runWith(Sink.seq).futureValue should ===(List(0, 1, 2))
+      StreamConverters.fromJavaStream(() => list.stream()).map(_.intValue).runWith(Sink.seq).futureValue should ===(List(0, 1, 2))
     }
 
     "work with primitive streams" in {
-      StreamConverters.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10)).map(_.intValue).runWith(Sink.seq).futureValue should ===(1 to 10)
+      StreamConverters.fromJavaStream(() => IntStream.rangeClosed(1, 10)).map(_.intValue).runWith(Sink.seq).futureValue should ===(1 to 10)
     }
 
     "work with an empty stream" in {
-      StreamConverters.fromJavaStream(() ⇒ Stream.empty[Int]()).runWith(Sink.seq).futureValue should ===(Nil)
+      StreamConverters.fromJavaStream(() => Stream.empty[Int]()).runWith(Sink.seq).futureValue should ===(Nil)
     }
 
     "work with an infinite stream" in {
-      StreamConverters.fromJavaStream(() ⇒ javaStreamInts).take(1000).runFold(0)(_ + _).futureValue should ===(500500)
+      StreamConverters.fromJavaStream(() => javaStreamInts).take(1000).runFold(0)(_ + _).futureValue should ===(500500)
     }
 
     "work with a filtered stream" in {
-      StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter({ i: Int ⇒ i % 2 == 0 }.asJava))
+      StreamConverters.fromJavaStream(() => javaStreamInts.filter({ i: Int => i % 2 == 0 }.asJava))
         .take(1000).runFold(0)(_ + _).futureValue should ===(1001000)
     }
 
@@ -393,11 +393,11 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       import akka.stream.testkit.Utils.TE
       // Filtering is lazy on Java Stream
 
-      val failyFilter: Int ⇒ Boolean = i ⇒ throw TE("failing filter")
+      val failyFilter: Int => Boolean = i => throw TE("failing filter")
 
       a[TE] must be thrownBy {
         Await.result(
-          StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter(failyFilter.asJava)).runWith(Sink.ignore),
+          StreamConverters.fromJavaStream(() => javaStreamInts.filter(failyFilter.asJava)).runWith(Sink.ignore),
           3.seconds)
       }
     }
@@ -422,7 +422,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         override def close(): Unit = closed = true
       }
 
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new EmptyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+      Await.ready(StreamConverters.fromJavaStream(() => new EmptyStream[Unit]).runWith(Sink.ignore), 3.seconds)
 
       closed should ===(true)
     }
@@ -447,7 +447,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         override def close(): Unit = closed = true
       }
 
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new FailingStream[Unit]).runWith(Sink.ignore), 3.seconds)
+      Await.ready(StreamConverters.fromJavaStream(() => new FailingStream[Unit]).runWith(Sink.ignore), 3.seconds)
 
       closed should ===(true)
     }
@@ -510,7 +510,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "correctly propagate materialization failures" in {
-      val matValPoweredSource = Source.empty.mapMaterializedValue(_ ⇒ throw new RuntimeException("boom"))
+      val matValPoweredSource = Source.empty.mapMaterializedValue(_ => throw new RuntimeException("boom"))
 
       a[RuntimeException] shouldBe thrownBy(matValPoweredSource.preMaterialize())
     }

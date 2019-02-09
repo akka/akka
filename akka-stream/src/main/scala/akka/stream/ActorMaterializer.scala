@@ -70,8 +70,8 @@ object ActorMaterializer {
   private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) = {
     val props = StreamSupervisor.props(materializerSettings, haveShutDown)
     context match {
-      case s: ExtendedActorSystem ⇒ s.systemActorOf(props, StreamSupervisor.nextName())
-      case a: ActorContext        ⇒ a.actorOf(props, StreamSupervisor.nextName())
+      case s: ExtendedActorSystem => s.systemActorOf(props, StreamSupervisor.nextName())
+      case a: ActorContext        => a.actorOf(props, StreamSupervisor.nextName())
     }
   }
 
@@ -148,10 +148,10 @@ object ActorMaterializer {
 
   private def actorSystemOf(context: ActorRefFactory): ActorSystem = {
     val system = context match {
-      case s: ExtendedActorSystem ⇒ s
-      case c: ActorContext        ⇒ c.system
-      case null                   ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
-      case _ ⇒
+      case s: ExtendedActorSystem => s
+      case c: ActorContext        => c.system
+      case null                   => throw new IllegalArgumentException("ActorRefFactory context must be defined")
+      case _ =>
         throw new IllegalArgumentException(s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
     }
     system
@@ -168,8 +168,8 @@ private[akka] object ActorMaterializerHelper {
    */
   private[akka] def downcast(materializer: Materializer): ActorMaterializer =
     materializer match { //FIXME this method is going to cause trouble for other Materializer implementations
-      case m: ActorMaterializer ⇒ m
-      case _ ⇒ throw new IllegalArgumentException(s"required [${classOf[ActorMaterializer].getName}] " +
+      case m: ActorMaterializer => m
+      case _ => throw new IllegalArgumentException(s"required [${classOf[ActorMaterializer].getName}] " +
         s"but got [${materializer.getClass.getName}]")
     }
 }
@@ -497,10 +497,10 @@ final class ActorMaterializerSettings @InternalApi private (
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._
     copy(supervisionDecider = decider match {
-      case `resumingDecider`   ⇒ resumingDecider
-      case `restartingDecider` ⇒ restartingDecider
-      case `stoppingDecider`   ⇒ stoppingDecider
-      case other               ⇒ other.apply _
+      case `resumingDecider`   => resumingDecider
+      case `restartingDecider` => restartingDecider
+      case `stoppingDecider`   => stoppingDecider
+      case other               => other.apply _
     })
   }
 
@@ -579,7 +579,7 @@ final class ActorMaterializerSettings @InternalApi private (
   }
 
   override def equals(other: Any): Boolean = other match {
-    case s: ActorMaterializerSettings ⇒
+    case s: ActorMaterializerSettings =>
       s.initialInputBufferSize == initialInputBufferSize &&
         s.maxInputBufferSize == maxInputBufferSize &&
         s.dispatcher == dispatcher &&
@@ -592,7 +592,7 @@ final class ActorMaterializerSettings @InternalApi private (
         s.autoFusing == autoFusing &&
         s.ioSettings == ioSettings &&
         s.blockingIoDispatcher == blockingIoDispatcher
-    case _ ⇒ false
+    case _ => false
   }
 
   override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
@@ -630,8 +630,8 @@ final class IOSettings private (val tcpWriteBufferSize: Int) {
     tcpWriteBufferSize = tcpWriteBufferSize)
 
   override def equals(other: Any): Boolean = other match {
-    case s: IOSettings ⇒ s.tcpWriteBufferSize == tcpWriteBufferSize
-    case _             ⇒ false
+    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize
+    case _             => false
   }
 
   override def toString =
@@ -666,9 +666,9 @@ object StreamSubscriptionTimeoutSettings {
     val c = config.getConfig("subscription-timeout")
     StreamSubscriptionTimeoutSettings(
       mode = toRootLowerCase(c.getString("mode")) match {
-        case "no" | "off" | "false" | "noop" ⇒ NoopTermination
-        case "warn"                          ⇒ WarnTermination
-        case "cancel"                        ⇒ CancelTermination
+        case "no" | "off" | "false" | "noop" => NoopTermination
+        case "warn"                          => WarnTermination
+        case "cancel"                        => CancelTermination
       },
       timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
   }
@@ -680,8 +680,8 @@ object StreamSubscriptionTimeoutSettings {
  */
 final class StreamSubscriptionTimeoutSettings(val mode: StreamSubscriptionTimeoutTerminationMode, val timeout: FiniteDuration) {
   override def equals(other: Any): Boolean = other match {
-    case s: StreamSubscriptionTimeoutSettings ⇒ s.mode == mode && s.timeout == timeout
-    case _                                    ⇒ false
+    case s: StreamSubscriptionTimeoutSettings => s.mode == mode && s.timeout == timeout
+    case _                                    => false
   }
   override def toString: String = s"StreamSubscriptionTimeoutSettings($mode,$timeout)"
 }

@@ -22,12 +22,12 @@ object ActorRefBackpressureSinkSpec {
 
   class Fw(ref: ActorRef) extends Actor {
     def receive = {
-      case `initMessage` ⇒
+      case `initMessage` =>
         sender() ! ackMessage
         ref forward initMessage
-      case `completeMessage` ⇒
+      case `completeMessage` =>
         ref forward completeMessage
-      case msg: Int ⇒
+      case msg: Int =>
         sender() ! ackMessage
         ref forward msg
     }
@@ -39,9 +39,9 @@ object ActorRefBackpressureSinkSpec {
     var actorRef: ActorRef = Actor.noSender
 
     def receive = {
-      case TriggerAckMessage ⇒
+      case TriggerAckMessage =>
         actorRef ! ackMessage
-      case msg ⇒
+      case msg =>
         actorRef = sender()
         ref forward msg
     }
@@ -128,13 +128,13 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
         .withAttributes(inputBuffer(bufferSize, bufferSize))
       val bufferFullProbe = Promise[akka.Done.type]
       Source(1 to streamElementCount)
-        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ ⇒ bufferFullProbe.trySuccess(akka.Done))))
+        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .to(sink)
         .run()
       bufferFullProbe.future.futureValue should ===(akka.Done)
       expectMsg(initMessage)
       fw ! TriggerAckMessage
-      for (i ← 1 to streamElementCount) {
+      for (i <- 1 to streamElementCount) {
         expectMsg(i)
         fw ! TriggerAckMessage
       }

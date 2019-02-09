@@ -30,7 +30,7 @@ object MetricsBasedResizerSpec {
   class TestLatchingActor(implicit timeout: Timeout) extends Actor {
 
     def receive = {
-      case Latches(first, second) ⇒
+      case Latches(first, second) =>
         first.countDown()
         Try(Await.ready(second, timeout.duration))
     }
@@ -39,7 +39,7 @@ object MetricsBasedResizerSpec {
   def routee(implicit system: ActorSystem, timeout: Timeout): ActorRefRoutee =
     ActorRefRoutee(system.actorOf(Props(new TestLatchingActor)))
 
-  def routees(num: Int = 10)(implicit system: ActorSystem, timeout: Timeout) = (1 to num).map(_ ⇒ routee).toVector
+  def routees(num: Int = 10)(implicit system: ActorSystem, timeout: Timeout) = (1 to num).map(_ => routee).toVector
 
   case class TestRouter(routees: Vector[ActorRefRoutee])(implicit system: ActorSystem, timeout: Timeout) {
 
@@ -61,7 +61,7 @@ object MetricsBasedResizerSpec {
     def close(): Unit = msgs.foreach(_.open())
 
     def sendToAll(await: Boolean): Seq[Latches] = {
-      val sentMessages = routees.indices.map(i ⇒ mockSend(await, routeeIdx = i))
+      val sentMessages = routees.indices.map(i => mockSend(await, routeeIdx = i))
       sentMessages
     }
 
@@ -245,7 +245,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       Thread.sleep(300)
 
       // wait for routees to update their mail boxes
-      msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
+      msgs2.foreach(l => Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
@@ -262,7 +262,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val resizer = DefaultOptimalSizeExploringResizer(
         weightOfLatestMetric = 0.5)
 
-      resizer.performanceLog = Map(2 → oldSpeed.milliseconds)
+      resizer.performanceLog = Map(2 -> oldSpeed.milliseconds)
 
       val router = TestRouter(routees(2))
       val msgs1 = router.sendToAll(await = true)
@@ -277,7 +277,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       Thread.sleep(300)
 
       // wait for routees to update their mail boxes
-      msgs2.foreach(l ⇒ Await.ready(l.first, timeout.duration))
+      msgs2.foreach(l => Await.ready(l.first, timeout.duration))
 
       resizer.reportMessageCount(router.routees, router.msgs.size)
 
@@ -323,10 +323,10 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       val resizer = DefaultOptimalSizeExploringResizer(
         exploreStepSize = 0.3,
         explorationProbability = 1)
-      resizer.performanceLog = Map(11 → 1.milli, 13 → 1.millis, 12 → 3.millis)
+      resizer.performanceLog = Map(11 -> 1.milli, 13 -> 1.millis, 12 -> 3.millis)
 
-      val exploreSamples = (1 to 100).map(_ ⇒ resizer.resize(routees(10)))
-      exploreSamples.forall(change ⇒ Math.abs(change) >= 1 && Math.abs(change) <= (10 * 0.3)) should be(true)
+      val exploreSamples = (1 to 100).map(_ => resizer.resize(routees(10)))
+      exploreSamples.forall(change => Math.abs(change) >= 1 && Math.abs(change) <= (10 * 0.3)) should be(true)
 
     }
   }
@@ -334,7 +334,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
   "MetricsBasedResizer optimize" must {
     "optimize towards the fastest pool size" in {
       val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0)
-      resizer.performanceLog = Map(7 → 5.millis, 10 → 3.millis, 11 → 2.millis, 12 → 4.millis)
+      resizer.performanceLog = Map(7 -> 5.millis, 10 -> 3.millis, 11 -> 2.millis, 12 -> 4.millis)
       resizer.resize(routees(10)) should be(1)
       resizer.resize(routees(12)) should be(-1)
       resizer.resize(routees(7)) should be(2)
@@ -343,12 +343,12 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "ignore further away sample data when optmizing" in {
       val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0, numOfAdjacentSizesToConsiderDuringOptimization = 4)
       resizer.performanceLog = Map(
-        7 → 5.millis,
-        8 → 2.millis,
-        10 → 3.millis,
-        11 → 4.millis,
-        12 → 3.millis,
-        13 → 1.millis)
+        7 -> 5.millis,
+        8 -> 2.millis,
+        10 -> 3.millis,
+        11 -> 4.millis,
+        12 -> 3.millis,
+        13 -> 1.millis)
 
       resizer.resize(routees(10)) should be(-1)
     }

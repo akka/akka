@@ -31,12 +31,12 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
-import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity => UntypedStartEntity }
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.japi.function.{ Function ⇒ JFunction }
+import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
 import akka.persistence.typed.PersistenceId
@@ -52,9 +52,9 @@ import akka.util.Timeout
   extends ShardingMessageExtractor[Any, M] {
   override def entityId(message: Any): String = {
     message match {
-      case ShardingEnvelope(entityId, _) ⇒ entityId //also covers UntypedStartEntity in ShardingEnvelope
-      case UntypedStartEntity(entityId)  ⇒ entityId
-      case msg: E @unchecked             ⇒ delegate.entityId(msg)
+      case ShardingEnvelope(entityId, _) => entityId //also covers UntypedStartEntity in ShardingEnvelope
+      case UntypedStartEntity(entityId)  => entityId
+      case msg: E @unchecked             => delegate.entityId(msg)
     }
   }
 
@@ -62,13 +62,13 @@ import akka.util.Timeout
 
   override def unwrapMessage(message: Any): M = {
     message match {
-      case ShardingEnvelope(_, msg: M @unchecked) ⇒
+      case ShardingEnvelope(_, msg: M @unchecked) =>
         //also covers UntypedStartEntity in ShardingEnvelope
         msg
-      case msg: UntypedStartEntity ⇒
+      case msg: UntypedStartEntity =>
         // not really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
         msg.asInstanceOf[M]
-      case msg: E @unchecked ⇒
+      case msg: E @unchecked =>
         delegate.unwrapMessage(msg)
     }
   }
@@ -135,13 +135,13 @@ import akka.util.Timeout
   // scaladsl impl
   override def init[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
     val settings = entity.settings match {
-      case None    ⇒ ClusterShardingSettings(system)
-      case Some(s) ⇒ s
+      case None    => ClusterShardingSettings(system)
+      case Some(s) => s
     }
 
     val extractor = (entity.messageExtractor match {
-      case None    ⇒ new HashCodeMessageExtractor[M](settings.numberOfShards)
-      case Some(e) ⇒ e
+      case None    => new HashCodeMessageExtractor[M](settings.numberOfShards)
+      case Some(e) => e
     }).asInstanceOf[ShardingMessageExtractor[E, M]]
 
     internalInit(entity.createBehavior, entity.entityProps, entity.typeKey,
@@ -152,7 +152,7 @@ import akka.util.Timeout
   override def init[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = {
     import scala.compat.java8.OptionConverters._
     init(new scaladsl.Entity(
-      createBehavior = (ctx: EntityContext) ⇒ Behaviors.setup[M] { actorContext ⇒
+      createBehavior = (ctx: EntityContext) => Behaviors.setup[M] { actorContext =>
         entity.createBehavior(
           new javadsl.EntityContext[M](ctx.entityId, ctx.shard, actorContext.asJava))
       },
@@ -166,7 +166,7 @@ import akka.util.Timeout
   }
 
   private def internalInit[M, E](
-    behavior:           EntityContext ⇒ Behavior[M],
+    behavior:           EntityContext => Behavior[M],
     entityProps:        Props,
     typeKey:            scaladsl.EntityTypeKey[M],
     stopMessage:        Option[M],
@@ -177,13 +177,13 @@ import akka.util.Timeout
     val extractorAdapter = new ExtractorAdapter(extractor)
     val extractEntityId: ShardRegion.ExtractEntityId = {
       // TODO is it possible to avoid the double evaluation of entityId
-      case message if extractorAdapter.entityId(message) != null ⇒
+      case message if extractorAdapter.entityId(message) != null =>
         (extractorAdapter.entityId(message), extractorAdapter.unwrapMessage(message))
     }
-    val extractShardId: ShardRegion.ExtractShardId = { message ⇒
+    val extractShardId: ShardRegion.ExtractShardId = { message =>
       extractorAdapter.entityId(message) match {
-        case null ⇒ null
-        case eid  ⇒ extractorAdapter.shardId(eid)
+        case null => null
+        case eid  => extractorAdapter.shardId(eid)
       }
     }
 
@@ -205,12 +205,12 @@ import akka.util.Timeout
 
         def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
           stopMessage match {
-            case Some(_) ⇒ behv
-            case None    ⇒ Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+            case Some(_) => behv
+            case None    => Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
           }
         }
 
-        val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
+        val untypedEntityPropsFactory: String => akka.actor.Props = { entityId =>
           val behv = behavior(new EntityContext(entityId, shardCommandDelegator))
           PropsAdapter(poisonPillInterceptor(behv), entityProps)
         }
@@ -239,9 +239,9 @@ import akka.util.Timeout
     val typeNames = if (settings.shouldHostShard(cluster)) regions else proxies
 
     typeNames.putIfAbsent(typeKey.name, messageClassName) match {
-      case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
+      case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName =>
         throw new IllegalArgumentException(s"[${typeKey.name}] already initialized for [$spawnedMessageClassName]")
-      case _ ⇒ ()
+      case _ => ()
     }
 
     ActorRefAdapter(ref)
@@ -281,7 +281,7 @@ import akka.util.Timeout
   override def tell(msg: M): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)
 
-  override def ask[U](message: ActorRef[U] ⇒ M)(implicit timeout: Timeout): Future[U] = {
+  override def ask[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] = {
     val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout)
     val m = message(replyTo.ref)
     if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
@@ -290,12 +290,12 @@ import akka.util.Timeout
   }
 
   def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U] =
-    ask[U](replyTo ⇒ message.apply(replyTo))(timeout).toJava
+    ask[U](replyTo => message.apply(replyTo))(timeout).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
   private final class EntityPromiseRef[U](untyped: InternalActorRef, timeout: Timeout) {
-    import akka.actor.typed.internal.{ adapter ⇒ adapt }
+    import akka.actor.typed.internal.{ adapter => adapt }
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
@@ -345,7 +345,7 @@ import akka.util.Timeout
  */
 @InternalApi private[akka] object ShardCommandActor {
   import akka.actor.typed.scaladsl.adapter._
-  import akka.cluster.sharding.ShardRegion.{ Passivate ⇒ UntypedPassivate }
+  import akka.cluster.sharding.ShardRegion.{ Passivate => UntypedPassivate }
 
   def behavior(stopMessage: Any): Behavior[scaladsl.ClusterSharding.ShardCommand] = {
     def sendUntypedPassivate(entity: ActorRef[_], ctx: TypedActorContext[_]): Unit = {
@@ -353,15 +353,15 @@ import akka.util.Timeout
       ctx.asScala.system.toUntyped.actorSelection(pathToShard).tell(UntypedPassivate(stopMessage), entity.toUntyped)
     }
 
-    Behaviors.receive { (ctx, msg) ⇒
+    Behaviors.receive { (ctx, msg) =>
       msg match {
-        case scaladsl.ClusterSharding.Passivate(entity) ⇒
+        case scaladsl.ClusterSharding.Passivate(entity) =>
           sendUntypedPassivate(entity, ctx)
           Behaviors.same
-        case javadsl.ClusterSharding.Passivate(entity) ⇒
+        case javadsl.ClusterSharding.Passivate(entity) =>
           sendUntypedPassivate(entity, ctx)
           Behaviors.same
-        case _ ⇒
+        case _ =>
           Behaviors.unhandled
       }
     }

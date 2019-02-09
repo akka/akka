@@ -29,8 +29,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       setHandler(in, eagerTerminateInput)
       setHandler(out, eagerTerminateOutput)
       override def preStart(): Unit = {
-        emit(out, 1, () ⇒ emit(out, 2))
-        emit(out, 3, () ⇒ emit(out, 4))
+        emit(out, 1, () => emit(out, 2))
+        emit(out, 3, () => emit(out, 4))
       }
     }
   }
@@ -66,8 +66,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = {
-          emit(out, 5, () ⇒ emit(out, 6))
-          emit(out, 7, () ⇒ emit(out, 8))
+          emit(out, 5, () => emit(out, 6))
+          emit(out, 7, () => emit(out, 8))
           completeStage()
         }
       })
@@ -102,7 +102,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () ⇒ emit(out, 42, () ⇒ completeStage()))
+        override def onPull(): Unit = emitMultiple(out, Iterator.empty, () => emit(out, 42, () => completeStage()))
       })
     }
     override def toString = "GraphStageLogicSpec.emitEmptyIterable"
@@ -115,7 +115,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
       new GraphStageLogic(shape) {
         setHandler(shape.in, EagerTerminateInput)
         setHandler(shape.out, EagerTerminateOutput)
-        override def preStart(): Unit = readN(shape.in, n)(e ⇒ emitMultiple(shape.out, e.iterator, () ⇒ completeStage()), (_) ⇒ ())
+        override def preStart(): Unit = readN(shape.in, n)(e => emitMultiple(shape.out, e.iterator, () => completeStage()), (_) => ())
       }
   }
 
@@ -128,8 +128,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         setHandler(shape.out, EagerTerminateOutput)
         override def preStart(): Unit =
           readN(shape.in, n)(
-            _ ⇒ failStage(new IllegalStateException("Shouldn't happen!")),
-            e ⇒ emitMultiple(shape.out, e.iterator, () ⇒ completeStage()))
+            _ => failStage(new IllegalStateException("Shouldn't happen!")),
+            e => emitMultiple(shape.out, e.iterator, () => completeStage()))
       }
   }
 
@@ -150,7 +150,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
 
     "read N should not emit if upstream fails before N is sent" in assertAllStagesStopped {
       val error = new IllegalArgumentException("Don't argue like that!")
-      Source(1 to 5).map(x ⇒ if (x > 3) throw error else x).via(ReadNEmitN(6)).runWith(TestSink.probe)
+      Source(1 to 5).map(x => if (x > 3) throw error else x).via(ReadNEmitN(6)).runWith(TestSink.probe)
         .request(10)
         .expectError(error)
     }
@@ -300,7 +300,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
             override def toString = "stage-name"
           })
           // just to have another graphstage downstream
-          .map(_ ⇒ "whatever")
+          .map(_ => "whatever")
           .runWith(Sink.ignore)
       }
       ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")

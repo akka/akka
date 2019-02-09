@@ -37,7 +37,7 @@ class FlowConcatAllSpec extends StreamSpec {
       main.flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink.fromSubscriber(subscriber)).run()
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
-      for (i ← 1 to 10)
+      for (i <- 1 to 10)
         subscriber.expectNext() shouldBe i
       subscription.request(1)
       subscriber.expectComplete()
@@ -53,7 +53,7 @@ class FlowConcatAllSpec extends StreamSpec {
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
         .runWith(Sink.fromSubscriber(subscriber))
 
-      for (i ← 1 to 10)
+      for (i <- 1 to 10)
         subscriber.requestNext() shouldBe i
 
       subscriber.request(1)
@@ -106,7 +106,7 @@ class FlowConcatAllSpec extends StreamSpec {
     "on onError on opening substream, cancel the master stream and signal error " in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, _]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source.fromPublisher(publisher).flatMapConcat(_ ⇒ throw testException).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).flatMapConcat(_ => throw testException).to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()

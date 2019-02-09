@@ -64,7 +64,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
           context.watch(ref)
 
           def receive = {
-            case Terminated(r) ⇒ testActor ! r
+            case Terminated(r) => testActor ! r
           }
         }).withDeploy(Deploy.local))
 
@@ -78,7 +78,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
       def receive = {
-        case t: Terminated ⇒ testActor ! t.actor.path
+        case t: Terminated => testActor ! t.actor.path
       }
     }).withDeploy(Deploy.local), name = "observer2")
 

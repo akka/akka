@@ -123,15 +123,15 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
       implicit val sender = observer.ref
       selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
       observer.expectMsgType[CrossDcHeartbeatSender.MonitoringStateReport](5.seconds) match {
-        case CrossDcHeartbeatSender.MonitoringDormant() ⇒ // ok ...
-        case CrossDcHeartbeatSender.MonitoringActive(state) ⇒
+        case CrossDcHeartbeatSender.MonitoringDormant() => // ok ...
+        case CrossDcHeartbeatSender.MonitoringActive(state) =>
 
           // must not heartbeat myself
           state.activeReceivers should not contain cluster.selfUniqueAddress
 
           // not any of the members in the same datacenter; it's "cross-dc" after all
           val myDataCenterMembers = state.state.getOrElse(cluster.selfDataCenter, Set.empty)
-          myDataCenterMembers foreach { myDcMember ⇒
+          myDataCenterMembers foreach { myDcMember =>
             state.activeReceivers should not contain myDcMember.uniqueAddress
           }
 
@@ -150,7 +150,7 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
    */
   private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
     SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
+      .union(cluster.state.members.filter(m => m.dataCenter == dataCenter &&
         m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
@@ -159,7 +159,7 @@ abstract class MultiDcSunnyWeatherSpec extends MultiNodeSpec(MultiDcSunnyWeather
     membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: immutable.Set[Member]): immutable.Set[RoleName] = {
-    val res = ms.flatMap(m ⇒ roleName(m.address))
+    val res = ms.flatMap(m => roleName(m.address))
     require(res.size == ms.size, s"Not all members were converted to roles! Got: ${ms}, found ${res}")
     res
   }

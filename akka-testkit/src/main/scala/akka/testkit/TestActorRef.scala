@@ -30,13 +30,13 @@ class TestActorRef[T <: Actor](
         else _props.dispatcher)
     val dispatcher = _system.dispatchers.lookup(props.dispatcher)
     private val disregard = _supervisor match {
-      case l: LocalActorRef ⇒ l.underlying.reserveChild(name)
-      case r: RepointableActorRef ⇒ r.underlying match {
-        case _: UnstartedCell ⇒ throw new IllegalStateException("cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
-        case c: ActorCell     ⇒ c.reserveChild(name)
-        case o                ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well", name, o.getClass)
+      case l: LocalActorRef => l.underlying.reserveChild(name)
+      case r: RepointableActorRef => r.underlying match {
+        case _: UnstartedCell => throw new IllegalStateException("cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
+        case c: ActorCell     => c.reserveChild(name)
+        case o                => _system.log.error("trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well", name, o.getClass)
       }
-      case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
+      case s => _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
     }
   } with LocalActorRef(
     _system.asInstanceOf[ActorSystemImpl],
@@ -56,8 +56,8 @@ class TestActorRef[T <: Actor](
     new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope): Unit = {
         msg.message match {
-          case InternalGetActor ⇒ sender() ! actor
-          case _                ⇒ super.autoReceiveMessage(msg)
+          case InternalGetActor => sender() ! actor
+          case _                => super.autoReceiveMessage(msg)
         }
       }
     }
@@ -88,10 +88,10 @@ class TestActorRef[T <: Actor](
     // volatile mailbox read to bring in actor field
     if (isTerminated) throw IllegalActorStateException("underlying actor is terminated")
     underlying.actor.asInstanceOf[T] match {
-      case null ⇒
+      case null =>
         val t = TestKitExtension(_system).DefaultTimeout
         Await.result(this.?(InternalGetActor)(t), t.duration).asInstanceOf[T]
-      case ref ⇒ ref
+      case ref => ref
     }
   }
 
@@ -127,9 +127,9 @@ object TestActorRef {
     "$" + akka.util.Helpers.base64(l)
   }
 
-  def apply[T <: Actor: ClassTag](factory: ⇒ T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
+  def apply[T <: Actor: ClassTag](factory: => T)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), randomName)
 
-  def apply[T <: Actor: ClassTag](factory: ⇒ T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
+  def apply[T <: Actor: ClassTag](factory: => T, name: String)(implicit system: ActorSystem): TestActorRef[T] = apply[T](Props(factory), name)
 
   def apply[T <: Actor](props: Props)(implicit system: ActorSystem): TestActorRef[T] = apply[T](props, randomName)
 
@@ -149,7 +149,7 @@ object TestActorRef {
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = {
-    case exception ⇒ throw ActorInitializationException(
+    case exception => throw ActorInitializationException(
       null,
       "Could not instantiate Actor" +
         "\nMake sure Actor is NOT defined inside a class/trait," +

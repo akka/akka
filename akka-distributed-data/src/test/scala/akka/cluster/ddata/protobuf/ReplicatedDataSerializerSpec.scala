@@ -157,7 +157,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize large GSet" in {
       val largeSet = (10000 until 20000).foldLeft(GSet.empty[String]) {
-        case (acc, n) ⇒ acc.resetDelta.add(n.toString)
+        case (acc, n) => acc.resetDelta.add(n.toString)
       }
       val numberOfBytes = checkSerialization(largeSet)
       info(s"size of GSet with ${largeSet.size} elements: $numberOfBytes bytes")
@@ -166,11 +166,11 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize large ORSet" in {
       val largeSet = (10000 until 20000).foldLeft(ORSet.empty[String]) {
-        case (acc, n) ⇒
+        case (acc, n) =>
           val address = (n % 3) match {
-            case 0 ⇒ address1
-            case 1 ⇒ address2
-            case 2 ⇒ address3
+            case 0 => address1
+            case 1 => address2
+            case 2 => address3
           }
           acc.resetDelta.add(address, n.toString)
       }

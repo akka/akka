@@ -20,49 +20,49 @@ object ActorWithStashSpec {
   class StashingActor extends Actor with Stash {
     import context.system
     def greeted: Receive = {
-      case "bye" ⇒
+      case "bye" =>
         state.s = "bye"
         state.finished.await
-      case _ ⇒ // do nothing
+      case _ => // do nothing
     }
 
     def receive = {
-      case "hello" ⇒
+      case "hello" =>
         state.s = "hello"
         unstashAll()
         context.become(greeted)
-      case msg ⇒ stash()
+      case msg => stash()
     }
   }
 
   class StashingTwiceActor extends Actor with Stash {
     def receive = {
-      case "hello" ⇒
+      case "hello" =>
         try {
           stash()
           stash()
         } catch {
-          case e: IllegalStateException ⇒
+          case e: IllegalStateException =>
             state.expectedException.open()
         }
-      case msg ⇒ // do nothing
+      case msg => // do nothing
     }
   }
 
   class ActorWithProtocol extends Actor with Stash {
     import context.system
     def receive = {
-      case "open" ⇒
+      case "open" =>
         unstashAll()
         context.become {
-          case "write" ⇒ // do writing...
-          case "close" ⇒
+          case "write" => // do writing...
+          case "close" =>
             unstashAll()
             context.unbecome()
-          case msg ⇒ stash()
+          case msg => stash()
         }
-      case "done" ⇒ state.finished.await
-      case msg    ⇒ stash()
+      case "done" => state.finished.await
+      case msg    => stash()
     }
   }
 
@@ -77,7 +77,7 @@ object ActorWithStashSpec {
     context.stop(watched)
 
     def receive = {
-      case Terminated(`watched`) ⇒
+      case Terminated(`watched`) =>
         if (!stashed) {
           stash()
           stashed = true
@@ -150,15 +150,15 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
 
       val slaveProps = Props(new Actor with Stash {
         def receive = {
-          case "crash" ⇒
+          case "crash" =>
             throw new Exception("Crashing...")
 
           // when restartLatch is not yet open, stash all messages != "crash"
-          case msg if !restartLatch.isOpen ⇒
+          case msg if !restartLatch.isOpen =>
             stash()
 
           // when restartLatch is open, must receive "hello"
-          case "hello" ⇒
+          case "hello" =>
             hasMsgLatch.open()
         }
 
@@ -190,9 +190,9 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       import ActorDSL._
       val a = actor(new ActWithStash {
         become {
-          case "die" ⇒ throw new RuntimeException("dying")
+          case "die" => throw new RuntimeException("dying")
         }
-        whenRestarted { thr ⇒
+        whenRestarted { thr =>
           testActor ! "restarted"
         }
       })

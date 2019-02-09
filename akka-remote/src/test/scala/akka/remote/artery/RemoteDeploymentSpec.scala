@@ -14,8 +14,8 @@ object RemoteDeploymentSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case ex: Exception ⇒ throw ex
-      case x             ⇒ target = sender(); sender() ! x
+      case ex: Exception => throw ex
+      case x             => target = sender(); sender() ! x
     }
 
     override def preStart(): Unit = {}
@@ -35,20 +35,20 @@ object RemoteDeploymentSpec {
     var target: ActorRef = context.system.deadLetters
 
     override val supervisorStrategy = OneForOneStrategy() {
-      case e: Exception ⇒
+      case e: Exception =>
         probe ! e
         SupervisorStrategy.stop
     }
 
     def receive = {
-      case p: Props ⇒
+      case p: Props =>
         sender() ! context.actorOf(p)
 
-      case (p: Props, numMessages: Int) ⇒
+      case (p: Props, numMessages: Int) =>
         val child = context.actorOf(p)
         sender() ! child
         // stress as quick send as possible
-        (0 until numMessages).foreach(n ⇒ child.tell(n, sender()))
+        (0 until numMessages).foreach(n => child.tell(n, sender()))
     }
   }
 
@@ -117,23 +117,23 @@ class RemoteDeploymentSpec extends ArteryMultiNodeSpec(
       val numChildren = 20
       val numMessages = 5
 
-      val parents = (0 until numParents).map { i ⇒
+      val parents = (0 until numParents).map { i =>
         masterSystem.actorOf(parentProps(testActor), s"parent-$i")
       }.toVector
 
       val probes = Vector.fill(numParents, numChildren)(TestProbe()(masterSystem))
       val childProps = Props[Echo1]
-      for (p ← (0 until numParents); c ← (0 until numChildren)) {
+      for (p <- (0 until numParents); c <- (0 until numChildren)) {
         parents(p).tell((childProps, numMessages), probes(p)(c).ref)
       }
 
-      for (p ← (0 until numParents); c ← (0 until numChildren)) {
+      for (p <- (0 until numParents); c <- (0 until numChildren)) {
         val probe = probes(p)(c)
         probe.expectMsgType[ActorRef] // the child
       }
 
       val expectedMessages = (0 until numMessages).toVector
-      for (p ← (0 until numParents); c ← (0 until numChildren)) {
+      for (p <- (0 until numParents); c <- (0 until numChildren)) {
         val probe = probes(p)(c)
         probe.receiveN(numMessages) should equal(expectedMessages)
       }

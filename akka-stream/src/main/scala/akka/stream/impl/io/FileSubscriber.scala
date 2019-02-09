@@ -46,27 +46,27 @@ import scala.util.{ Failure, Success, Try }
 
     super.preStart()
   } catch {
-    case ex: Exception ⇒
+    case ex: Exception =>
       closeAndComplete(Failure(ex))
       cancel()
   }
 
   def receive = {
-    case ActorSubscriberMessage.OnNext(bytes: ByteString) ⇒
+    case ActorSubscriberMessage.OnNext(bytes: ByteString) =>
       try {
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
-        case ex: Exception ⇒
+        case ex: Exception =>
           closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(ex) ⇒
+    case ActorSubscriberMessage.OnError(ex) =>
       log.error(ex, "Tearing down FileSink({}) due to upstream error", f)
       closeAndComplete(Failure(AbruptIOTerminationException(IOResult(bytesWritten, Success(Done)), ex)))
       context.stop(self)
 
-    case ActorSubscriberMessage.OnComplete ⇒ context.stop(self)
+    case ActorSubscriberMessage.OnComplete => context.stop(self)
   }
 
   override def postStop(): Unit = {
@@ -82,11 +82,11 @@ import scala.util.{ Failure, Success, Try }
       if (chan ne null) chan.close()
       completionPromise.tryComplete(result)
     } catch {
-      case closingException: Exception ⇒ result match {
-        case Success(ioResult) ⇒
-          val statusWithClosingException = ioResult.status.transform(_ ⇒ Failure(closingException), ex ⇒ Failure(closingException.initCause(ex)))
+      case closingException: Exception => result match {
+        case Success(ioResult) =>
+          val statusWithClosingException = ioResult.status.transform(_ => Failure(closingException), ex => Failure(closingException.initCause(ex)))
           completionPromise.trySuccess(ioResult.copy(status = statusWithClosingException))
-        case Failure(ex) ⇒ completionPromise.tryFailure(closingException.initCause(ex))
+        case Failure(ex) => completionPromise.tryFailure(closingException.initCause(ex))
       }
     }
   }

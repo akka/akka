@@ -10,7 +10,7 @@ import akka.remote.WireFormats._
 import akka.remote._
 import akka.util.ByteString
 import akka.protobuf.InvalidProtocolBufferException
-import akka.protobuf.{ ByteString ⇒ PByteString }
+import akka.protobuf.{ ByteString => PByteString }
 import akka.util.OptionVal
 
 /**
@@ -79,10 +79,10 @@ private[remote] trait AkkaPduCodec {
    *   Encoded form as raw bytes
    */
   def encodePdu(pdu: AkkaPdu): ByteString = pdu match {
-    case Associate(info)      ⇒ constructAssociate(info)
-    case Payload(bytes)       ⇒ constructPayload(bytes)
-    case Disassociate(reason) ⇒ constructDisassociate(reason)
-    case Heartbeat            ⇒ constructHeartbeat
+    case Associate(info)      => constructAssociate(info)
+    case Payload(bytes)       => constructPayload(bytes)
+    case Disassociate(reason) => constructDisassociate(reason)
+    case Heartbeat            => constructHeartbeat
   }
 
   def constructPayload(payload: ByteString): ByteString
@@ -115,7 +115,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   private def ackBuilder(ack: Ack): AcknowledgementInfo.Builder = {
     val ackBuilder = AcknowledgementInfo.newBuilder()
     ackBuilder.setCumulativeAck(ack.cumulativeAck.rawValue)
-    ack.nacks foreach { nack ⇒ ackBuilder.addNacks(nack.rawValue) }
+    ack.nacks foreach { nack => ackBuilder.addNacks(nack.rawValue) }
     ackBuilder
   }
 
@@ -133,12 +133,12 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
     envelopeBuilder.setRecipient(serializeActorRef(recipient.path.address, recipient))
     senderOption match {
-      case OptionVal.Some(sender) ⇒ envelopeBuilder.setSender(serializeActorRef(localAddress, sender))
-      case OptionVal.None         ⇒
+      case OptionVal.Some(sender) => envelopeBuilder.setSender(serializeActorRef(localAddress, sender))
+      case OptionVal.None         =>
     }
 
-    seqOption foreach { seq ⇒ envelopeBuilder.setSeq(seq.rawValue) }
-    ackOption foreach { ack ⇒ ackAndEnvelopeBuilder.setAck(ackBuilder(ack)) }
+    seqOption foreach { seq => envelopeBuilder.setSeq(seq.rawValue) }
+    ackOption foreach { ack => ackAndEnvelopeBuilder.setAck(ackBuilder(ack)) }
     envelopeBuilder.setMessage(serializedMessage)
     ackAndEnvelopeBuilder.setEnvelope(envelopeBuilder)
 
@@ -162,9 +162,9 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   private val DISASSOCIATE_QUARANTINED = constructControlMessagePdu(WireFormats.CommandType.DISASSOCIATE_QUARANTINED, None)
 
   override def constructDisassociate(info: AssociationHandle.DisassociateInfo): ByteString = info match {
-    case AssociationHandle.Unknown     ⇒ DISASSOCIATE
-    case AssociationHandle.Shutdown    ⇒ DISASSOCIATE_SHUTTING_DOWN
-    case AssociationHandle.Quarantined ⇒ DISASSOCIATE_QUARANTINED
+    case AssociationHandle.Unknown     => DISASSOCIATE
+    case AssociationHandle.Shutdown    => DISASSOCIATE_SHUTTING_DOWN
+    case AssociationHandle.Quarantined => DISASSOCIATE_QUARANTINED
   }
 
   override val constructHeartbeat: ByteString =
@@ -177,7 +177,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
       else if (pdu.hasInstruction) decodeControlPdu(pdu.getInstruction)
       else throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
     } catch {
-      case e: InvalidProtocolBufferException ⇒ throw new PduCodecException("Decoding PDU failed.", e)
+      case e: InvalidProtocolBufferException => throw new PduCodecException("Decoding PDU failed.", e)
     }
   }
 
@@ -211,7 +211,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   private def decodeControlPdu(controlPdu: AkkaControlMessage): AkkaPdu = {
 
     controlPdu.getCommandType match {
-      case CommandType.ASSOCIATE if controlPdu.hasHandshakeInfo ⇒
+      case CommandType.ASSOCIATE if controlPdu.hasHandshakeInfo =>
         val handshakeInfo = controlPdu.getHandshakeInfo
         val cookie = if (handshakeInfo.hasCookie) Some(handshakeInfo.getCookie) else None
         Associate(
@@ -219,11 +219,11 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
             decodeAddress(handshakeInfo.getOrigin),
             handshakeInfo.getUid.toInt, // 64 bits are allocated in the wire formats, but we use only 32 for now
             cookie))
-      case CommandType.DISASSOCIATE               ⇒ Disassociate(AssociationHandle.Unknown)
-      case CommandType.DISASSOCIATE_SHUTTING_DOWN ⇒ Disassociate(AssociationHandle.Shutdown)
-      case CommandType.DISASSOCIATE_QUARANTINED   ⇒ Disassociate(AssociationHandle.Quarantined)
-      case CommandType.HEARTBEAT                  ⇒ Heartbeat
-      case x ⇒
+      case CommandType.DISASSOCIATE               => Disassociate(AssociationHandle.Unknown)
+      case CommandType.DISASSOCIATE_SHUTTING_DOWN => Disassociate(AssociationHandle.Shutdown)
+      case CommandType.DISASSOCIATE_QUARANTINED   => Disassociate(AssociationHandle.Quarantined)
+      case CommandType.HEARTBEAT                  => Heartbeat
+      case x =>
         throw new PduCodecException(s"Decoding of control PDU failed, invalid format, unexpected: [${x}]", null)
     }
   }
@@ -248,14 +248,14 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   }
 
   private def serializeAddress(address: Address): AddressData = address match {
-    case Address(protocol, system, Some(host), Some(port)) ⇒
+    case Address(protocol, system, Some(host), Some(port)) =>
       AddressData.newBuilder
         .setHostname(host)
         .setPort(port)
         .setSystem(system)
         .setProtocol(protocol)
         .build()
-    case _ ⇒ throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
+    case _ => throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
   }
 
 }

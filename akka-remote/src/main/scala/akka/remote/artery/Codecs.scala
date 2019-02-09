@@ -63,8 +63,8 @@ private[remote] class Encoder(
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
       private def serialization: Serialization = _serialization match {
-        case OptionVal.Some(s) ⇒ s
-        case OptionVal.None ⇒
+        case OptionVal.Some(s) => s
+        case OptionVal.None =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
@@ -72,15 +72,15 @@ private[remote] class Encoder(
 
       private val instruments: RemoteInstruments = RemoteInstruments(system)
 
-      private val changeActorRefCompressionCb = getAsyncCallback[CompressionTable[ActorRef]] { table ⇒
+      private val changeActorRefCompressionCb = getAsyncCallback[CompressionTable[ActorRef]] { table =>
         headerBuilder.setOutboundActorRefCompression(table)
       }
 
-      private val changeClassManifsetCompressionCb = getAsyncCallback[CompressionTable[String]] { table ⇒
+      private val changeClassManifsetCompressionCb = getAsyncCallback[CompressionTable[String]] { table =>
         headerBuilder.setOutboundClassManifestCompression(table)
       }
 
-      private val clearCompressionCb = getAsyncCallback[Unit] { _ ⇒
+      private val clearCompressionCb = getAsyncCallback[Unit] { _ =>
         headerBuilder.setOutboundActorRefCompression(CompressionTable.empty[ActorRef])
         headerBuilder.setOutboundClassManifestCompression(CompressionTable.empty[String])
       }
@@ -111,13 +111,13 @@ private[remote] class Encoder(
 
           // internally compression is applied by the builder:
           outboundEnvelope.recipient match {
-            case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
-            case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
+            case OptionVal.Some(r) => headerBuilder.setRecipientActorRef(r)
+            case OptionVal.None    => headerBuilder.setNoRecipient()
           }
 
           outboundEnvelope.sender match {
-            case OptionVal.None    ⇒ headerBuilder.setNoSender()
-            case OptionVal.Some(s) ⇒ headerBuilder.setSenderActorRef(s)
+            case OptionVal.None    => headerBuilder.setNoSender()
+            case OptionVal.Some(s) => headerBuilder.setSenderActorRef(s)
           }
 
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
@@ -141,29 +141,29 @@ private[remote] class Encoder(
           push(out, envelope)
 
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             bufferPool.release(envelope)
             outboundEnvelope.message match {
-              case _: SystemMessageEnvelope ⇒
+              case _: SystemMessageEnvelope =>
                 log.error(e, "Failed to serialize system message [{}].",
                   Logging.messageClassName(outboundEnvelope.message))
                 throw e
-              case _ if e.isInstanceOf[java.nio.BufferOverflowException] ⇒
+              case _ if e.isInstanceOf[java.nio.BufferOverflowException] =>
                 val reason = new OversizedPayloadException("Discarding oversized payload sent to " +
                   s"${outboundEnvelope.recipient}: max allowed size ${envelope.byteBuffer.limit()} " +
                   s"bytes. Message type [${Logging.messageClassName(outboundEnvelope.message)}].")
                 log.error(reason, "Failed to serialize oversized message [{}].",
                   Logging.messageClassName(outboundEnvelope.message))
                 pull(in)
-              case _ ⇒
+              case _ =>
                 log.error(e, "Failed to serialize message [{}].", Logging.messageClassName(outboundEnvelope.message))
                 pull(in)
             }
         } finally {
           Serialization.currentTransportInformation.value = oldInfo
           outboundEnvelope match {
-            case r: ReusableOutboundEnvelope ⇒ outboundEnvelopePool.release(r)
-            case _                           ⇒ // no need to release it
+            case r: ReusableOutboundEnvelope => outboundEnvelopePool.release(r)
+            case _                           => // no need to release it
           }
         }
       }
@@ -222,28 +222,28 @@ private[remote] object Decoder {
   }
 
   private[remote] trait InboundCompressionAccessImpl extends InboundCompressionAccess {
-    this: GraphStageLogic with StageLogging ⇒
+    this: GraphStageLogic with StageLogging =>
 
     def compressions: InboundCompressions
 
-    private val closeCompressionForCb = getAsyncCallback[Long] { uid ⇒
+    private val closeCompressionForCb = getAsyncCallback[Long] { uid =>
       compressions.close(uid)
     }
     private val confirmActorRefCompressionAdvertisementCb = getAsyncCallback[ActorRefCompressionAdvertisementAck] {
-      case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
+      case ActorRefCompressionAdvertisementAck(from, tableVersion) =>
         compressions.confirmActorRefCompressionAdvertisement(from.uid, tableVersion)
     }
     private val confirmClassManifestCompressionAdvertisementCb = getAsyncCallback[ClassManifestCompressionAdvertisementAck] {
-      case ClassManifestCompressionAdvertisementAck(from, tableVersion) ⇒
+      case ClassManifestCompressionAdvertisementAck(from, tableVersion) =>
         compressions.confirmClassManifestCompressionAdvertisement(from.uid, tableVersion)
     }
     private val runNextActorRefAdvertisementCb = getAsyncCallback[Unit] {
-      _ ⇒ compressions.runNextActorRefAdvertisement()
+      _ => compressions.runNextActorRefAdvertisement()
     }
     private val runNextClassManifestAdvertisementCb = getAsyncCallback[Unit] {
-      _ ⇒ compressions.runNextClassManifestAdvertisement()
+      _ => compressions.runNextClassManifestAdvertisement()
     }
-    private val currentCompressionOriginUidsCb = getAsyncCallback[Promise[Set[Long]]] { p ⇒
+    private val currentCompressionOriginUidsCb = getAsyncCallback[Promise[Set[Long]]] { p =>
       p.success(compressions.currentOriginUids)
     }
 
@@ -352,12 +352,12 @@ private[remote] class Decoder(
 
         if (settings.Advanced.Compression.Enabled) {
           settings.Advanced.Compression.ActorRefs.AdvertisementInterval match {
-            case d: FiniteDuration ⇒ schedulePeriodicallyWithInitialDelay(AdvertiseActorRefsCompressionTable, d, d)
-            case _                 ⇒ // not advertising actor ref compressions
+            case d: FiniteDuration => schedulePeriodicallyWithInitialDelay(AdvertiseActorRefsCompressionTable, d, d)
+            case _                 => // not advertising actor ref compressions
           }
           settings.Advanced.Compression.Manifests.AdvertisementInterval match {
-            case d: FiniteDuration ⇒ schedulePeriodicallyWithInitialDelay(AdvertiseClassManifestsCompressionTable, d, d)
-            case _                 ⇒ // not advertising class manifest compressions
+            case d: FiniteDuration => schedulePeriodicallyWithInitialDelay(AdvertiseClassManifestsCompressionTable, d, d)
+            case _                 => // not advertising class manifest compressions
           }
         }
       }
@@ -371,35 +371,35 @@ private[remote] class Decoder(
         val association = inboundContext.association(originUid)
 
         val recipient: OptionVal[InternalActorRef] = try headerBuilder.recipientActorRef(originUid) match {
-          case OptionVal.Some(ref) ⇒
+          case OptionVal.Some(ref) =>
             OptionVal(ref.asInstanceOf[InternalActorRef])
-          case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined ⇒
+          case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined =>
             resolveRecipient(headerBuilder.recipientActorRefPath.get)
-          case _ ⇒
+          case _ =>
             OptionVal.None
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             // probably version mismatch due to restarted system
             log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
         val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid) match {
-          case OptionVal.Some(ref) ⇒
+          case OptionVal.Some(ref) =>
             OptionVal(ref.asInstanceOf[InternalActorRef])
-          case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
+          case OptionVal.None if headerBuilder.senderActorRefPath.isDefined =>
             OptionVal(actorRefResolver.getOrCompute(headerBuilder.senderActorRefPath.get))
-          case _ ⇒
+          case _ =>
             OptionVal.None
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             // probably version mismatch due to restarted system
             log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e)
             OptionVal.None
         }
 
         val classManifestOpt = try headerBuilder.manifest(originUid) catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             // probably version mismatch due to restarted system
             log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e)
             OptionVal.None
@@ -424,23 +424,23 @@ private[remote] class Decoder(
           if ((messageCount & heavyHitterMask) == 0) {
             // --- hit refs and manifests for heavy-hitter counting
             association match {
-              case OptionVal.Some(assoc) ⇒
+              case OptionVal.Some(assoc) =>
                 val remoteAddress = assoc.remoteAddress
                 sender match {
-                  case OptionVal.Some(snd) ⇒
+                  case OptionVal.Some(snd) =>
                     compressions.hitActorRef(originUid, remoteAddress, snd, 1)
-                  case OptionVal.None ⇒
+                  case OptionVal.None =>
                 }
 
                 recipient match {
-                  case OptionVal.Some(rcp) ⇒
+                  case OptionVal.Some(rcp) =>
                     compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
-                  case OptionVal.None ⇒
+                  case OptionVal.None =>
                 }
 
                 compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
 
-              case _ ⇒
+              case _ =>
                 // we don't want to record hits for compression while handshake is still in progress.
                 log.debug("Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
             }
@@ -470,13 +470,13 @@ private[remote] class Decoder(
             if (bannedRemoteDeployedActorRefs.contains(recipientActorRefPath)) {
 
               headerBuilder.recipientActorRefPath match {
-                case OptionVal.Some(path) ⇒
+                case OptionVal.Some(path) =>
                   val ref = actorRefResolver.getOrCompute(path)
                   if (ref.isInstanceOf[EmptyLocalActorRef]) log.warning(
                     "Message for banned (terminated, unresolved) remote deployed recipient [{}].",
                     recipientActorRefPath)
                   push(out, decoded.withRecipient(ref))
-                case OptionVal.None ⇒
+                case OptionVal.None =>
                   log.warning(
                     "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
                     recipientActorRefPath)
@@ -492,18 +492,18 @@ private[remote] class Decoder(
           }
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.warning("Dropping message due to: {}", e)
           pull(in)
       }
 
       private def resolveRecipient(path: String): OptionVal[InternalActorRef] = {
         actorRefResolver.getOrCompute(path) match {
-          case empty: EmptyLocalActorRef ⇒
+          case empty: EmptyLocalActorRef =>
             val pathElements = empty.path.elements
             if (pathElements.nonEmpty && pathElements.head == "remote") OptionVal.None
             else OptionVal(empty)
-          case ref ⇒ OptionVal(ref)
+          case ref => OptionVal(ref)
         }
       }
 
@@ -511,7 +511,7 @@ private[remote] class Decoder(
 
       override protected def onTimer(timerKey: Any): Unit = {
         timerKey match {
-          case Tick ⇒
+          case Tick =>
             val now = System.nanoTime()
             val d = math.max(1, now - tickTimestamp)
             val rate = (messageCount - tickMessageCount) * TimeUnit.SECONDS.toNanos(1) / d
@@ -528,15 +528,15 @@ private[remote] class Decoder(
             tickMessageCount = messageCount
             tickTimestamp = now
 
-          case AdvertiseActorRefsCompressionTable ⇒
+          case AdvertiseActorRefsCompressionTable =>
             compressions.runNextActorRefAdvertisement() // TODO: optimise these operations, otherwise they stall the hotpath
 
-          case AdvertiseClassManifestsCompressionTable ⇒
+          case AdvertiseClassManifestsCompressionTable =>
             compressions.runNextClassManifestAdvertisement() // TODO: optimise these operations, otherwise they stall the hotpath
 
-          case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) ⇒
+          case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) =>
             resolveRecipient(recipientPath) match {
-              case OptionVal.None ⇒
+              case OptionVal.None =>
                 if (attemptsLeft > 0)
                   scheduleOnce(RetryResolveRemoteDeployedRecipient(
                     attemptsLeft - 1,
@@ -555,7 +555,7 @@ private[remote] class Decoder(
                   val recipient = actorRefResolver.getOrCompute(recipientPath)
                   push(out, inboundEnvelope.withRecipient(recipient))
                 }
-              case OptionVal.Some(recipient) ⇒
+              case OptionVal.Some(recipient) =>
                 push(out, inboundEnvelope.withRecipient(recipient))
             }
         }
@@ -588,8 +588,8 @@ private[remote] class Deserializer(
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
       private def serialization: Serialization = _serialization match {
-        case OptionVal.Some(s) ⇒ s
-        case OptionVal.None ⇒
+        case OptionVal.Some(s) => s
+        case OptionVal.None =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
@@ -615,10 +615,10 @@ private[remote] class Deserializer(
           }
           push(out, envelopeWithMessage)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             val from = envelope.association match {
-              case OptionVal.Some(a) ⇒ a.remoteAddress
-              case OptionVal.None    ⇒ "unknown"
+              case OptionVal.Some(a) => a.remoteAddress
+              case OptionVal.None    => "unknown"
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
@@ -683,7 +683,7 @@ private[remote] class DuplicateHandshakeReq(
         if (envelope.association.isEmpty && envelope.serializer == serializerId && envelope.classManifest == manifest) {
           // only need to duplicate HandshakeReq before handshake is completed
           try {
-            currentIterator = Vector.tabulate(numberOfLanes)(i ⇒ envelope.copyForLane(i)).iterator
+            currentIterator = Vector.tabulate(numberOfLanes)(i => envelope.copyForLane(i)).iterator
             push(out, currentIterator.next())
           } finally {
             val buf = envelope.envelopeBuffer

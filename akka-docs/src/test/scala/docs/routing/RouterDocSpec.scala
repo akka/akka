@@ -307,9 +307,9 @@ router-dispatcher {}
     }
 
     def receive = {
-      case w: Work ⇒
+      case w: Work =>
         router.route(w, sender())
-      case Terminated(a) ⇒
+      case Terminated(a) =>
         router = router.removeRoutee(a)
         val r = context.actorOf(Props[Worker])
         context watch r
@@ -320,7 +320,7 @@ router-dispatcher {}
 
   class Worker extends Actor {
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -333,7 +333,7 @@ router-dispatcher {}
     //#create-worker-actors
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -397,7 +397,7 @@ router-dispatcher {}
     val router10b: ActorRef =
       context.actorOf(BalancingPool(20).props(Props[Worker]), "router10b")
     //#balancing-pool-3
-    for (i ← 1 to 100) router10b ! i
+    for (i <- 1 to 100) router10b ! i
     val threads10b = Thread.getAllStackTraces.keySet.asScala.filter { _.getName contains "router10b" }
     val threads10bNr = threads10b.size
     require(threads10bNr == 5, s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
@@ -519,14 +519,14 @@ router-dispatcher {}
     //#optimal-size-exploring-resize-pool
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
 
   }
 
   class Echo extends Actor {
     def receive = {
-      case m ⇒ sender() ! m
+      case m => sender() ! m
     }
   }
 }

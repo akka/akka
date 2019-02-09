@@ -18,7 +18,7 @@ object ActorConfigurationVerificationSpec {
 
   class TestActor extends Actor {
     def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 

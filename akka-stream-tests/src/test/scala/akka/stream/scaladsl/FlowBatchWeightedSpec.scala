@@ -20,7 +20,7 @@ class FlowBatchWeightedSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).batchWeighted(max = 3, _ ⇒ 4, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).batchWeighted(max = 3, _ => 4, seed = i => i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
       publisher.sendNext(1)

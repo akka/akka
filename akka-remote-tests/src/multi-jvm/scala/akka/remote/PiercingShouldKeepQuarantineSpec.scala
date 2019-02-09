@@ -35,7 +35,7 @@ class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShould
 object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
     def receive = {
-      case "getuid" ⇒ sender() ! AddressUidExtension(context.system).longAddressUid
+      case "getuid" => sender() ! AddressUidExtension(context.system).longAddressUid
     }
   }
 }
@@ -65,7 +65,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
         Thread.sleep(1000)
 
         // Quarantine is up -- Should not be able to communicate with remote system any more
-        for (_ ← 1 to 4) {
+        for (_ <- 1 to 4) {
           system.actorSelection(node(second) / "user" / "subject") ! "getuid"
           expectNoMsg(2.seconds)
         }

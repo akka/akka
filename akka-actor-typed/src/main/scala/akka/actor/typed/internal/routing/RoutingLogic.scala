@@ -55,7 +55,7 @@ private[akka] object RoutingLogics {
       // make sure we keep a somewhat similar order so we can potentially continue roundrobining
       // from where we were unless the set of routees completely changed
       // Also, avoid putting all entries from the same node next to each other in case of cluster
-      val sortedNewRoutees = newRoutees.toArray.sortBy(ref ⇒ (ref.path.toStringWithoutAddress, ref.path.address))
+      val sortedNewRoutees = newRoutees.toArray.sortBy(ref => (ref.path.toStringWithoutAddress, ref.path.address))
 
       if (currentRoutees ne null) {
         val firstDiffIndex = {

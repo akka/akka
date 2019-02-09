@@ -15,7 +15,7 @@ object PatternSpec {
   final case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case (testLatch: TestLatch, duration: FiniteDuration) ⇒
+      case (testLatch: TestLatch, duration: FiniteDuration) =>
         Await.ready(testLatch, duration)
     }
   }

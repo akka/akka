@@ -5,7 +5,7 @@
 package docs.actor
 
 //#imports
-import java.lang.String.{ valueOf ⇒ println }
+import java.lang.String.{ valueOf => println }
 
 import akka.actor.{ ActorContext, ActorRef, TypedActor, TypedProps }
 import akka.routing.RoundRobinGroup
@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 //#imports
 
 //Mr funny man avoids printing to stdout AND keeping docs alright
-import java.lang.String.{ valueOf ⇒ println }
+import java.lang.String.{ valueOf => println }
 
 //#typed-actor-iface
 trait Squarer {
@@ -112,7 +112,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
       //#typed-actor-extension-tools
     } catch {
-      case e: Exception ⇒ //dun care
+      case e: Exception => //dun care
     }
   }
 
@@ -182,7 +182,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //Use "childSquarer" as a Squarer
       //#typed-actor-hierarchy
     } catch {
-      case e: Exception ⇒ //ignore
+      case e: Exception => //ignore
     }
   }
 
@@ -205,7 +205,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     // prepare routees
     val routees: List[HasName] = List.fill(5) { namedActor() }
-    val routeePaths = routees map { r ⇒
+    val routeePaths = routees map { r =>
       TypedActor(system).getActorRefFor(r).path.toStringWithoutAddress
     }
 

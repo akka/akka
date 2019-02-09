@@ -90,7 +90,7 @@ abstract class TlsTcpSpec(config: Config)
       engine.getSupportedProtocols.contains(provider.SSLProtocol) ||
         (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
     } catch {
-      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) ⇒
+      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) =>
         info(e.toString)
         false
     }
@@ -106,10 +106,10 @@ abstract class TlsTcpSpec(config: Config)
     expectMsg("ping-1")
 
     // and some more
-    (2 to 10).foreach { n ⇒
+    (2 to 10).foreach { n =>
       echoRef ! s"ping-$n"
     }
-    receiveN(9) should equal((2 to 10).map(n ⇒ s"ping-$n"))
+    receiveN(9) should equal((2 to 10).map(n => s"ping-$n"))
   }
 
   "Artery with TLS/TCP" must {
@@ -124,7 +124,7 @@ abstract class TlsTcpSpec(config: Config)
         // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n ⇒
+          val randomBytes = (1 to 10).map { n =>
             rng.nextBytes(bytes)
             bytes.toVector
           }.toSet
@@ -202,7 +202,7 @@ class TlsTcpWithActorSystemSetupSpec
   val sslProviderServerProbe = TestProbe()
   val sslProviderClientProbe = TestProbe()
 
-  val sslProviderSetup = SSLEngineProviderSetup(sys ⇒ new ConfigSSLEngineProvider(sys) {
+  val sslProviderSetup = SSLEngineProviderSetup(sys => new ConfigSSLEngineProvider(sys) {
     override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
       sslProviderServerProbe.ref ! "createServerSSLEngine"
       super.createServerSSLEngine(hostname, port)

@@ -216,13 +216,13 @@ import org.reactivestreams.Subscription
 
     // FIXME: Eliminate re-wraps
     def subreceive: SubReceive = new SubReceive({
-      case ExposedPublishers(publishers) ⇒
+      case ExposedPublishers(publishers) =>
         publishers.zip(outputs) foreach {
-          case (pub, output) ⇒
+          case (pub, output) =>
             output.subreceive(ExposedPublisher(pub))
         }
 
-      case SubstreamRequestMore(id, demand) ⇒
+      case SubstreamRequestMore(id, demand) =>
         if (demand < 1) // According to Reactive Streams Spec 3.9, with non-positive demand must yield onError
           error(id, ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
         else {
@@ -230,7 +230,7 @@ import org.reactivestreams.Subscription
           pending(id) = true
           outputs(id).subreceive(RequestMore(null, demand))
         }
-      case SubstreamCancel(id) ⇒
+      case SubstreamCancel(id) =>
         if (unmarkCancelled) {
           unmarkOutput(id)
         }
@@ -238,7 +238,7 @@ import org.reactivestreams.Subscription
         cancelled(id) = true
         onCancel(id)
         outputs(id).subreceive(Cancel(null))
-      case SubstreamSubscribePending(id) ⇒
+      case SubstreamSubscribePending(id) =>
         outputs(id).subreceive(SubscribePending)
     })
 
@@ -300,17 +300,17 @@ import org.reactivestreams.Subscription
 @InternalApi private[akka] class Unzip(_settings: ActorMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
-  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
+  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () =>
     primaryInputs.dequeueInputElement() match {
-      case (a, b) ⇒
+      case (a, b) =>
         outputBunch.enqueue(0, a)
         outputBunch.enqueue(1, b)
 
-      case t: akka.japi.Pair[_, _] ⇒
+      case t: akka.japi.Pair[_, _] =>
         outputBunch.enqueue(0, t.first)
         outputBunch.enqueue(1, t.second)
 
-      case t ⇒
+      case t =>
         throw new IllegalArgumentException(
           s"Unable to unzip elements of type ${t.getClass.getName}, " +
             s"can only handle Tuple2 and akka.japi.Pair!")

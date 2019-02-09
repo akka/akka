@@ -34,7 +34,7 @@ object ClusterSingletonLeavingSpeedSpec {
     }
 
     override def receive: Receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 }
@@ -61,7 +61,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   }
   """) {
 
-  private val systems = (1 to 3).map { n ⇒
+  private val systems = (1 to 3).map { n =>
     val roleConfig = ConfigFactory.parseString(s"""akka.cluster.roles=[role-${n % 3}]""")
     ActorSystem(system.name, roleConfig.withFallback(system.settings.config))
   }
@@ -90,7 +90,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
 
   "ClusterSingleton that is leaving" must {
     "join cluster" in {
-      systems.indices.foreach { i ⇒
+      systems.indices.foreach { i =>
         join(systems(i), systems.head, probes(i).ref)
       }
       // leader is most likely on system, lowest port
@@ -101,7 +101,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
 
     "quickly hand-over to next oldest" in {
 
-      val durations = systems.indices.take(1).map { i ⇒
+      val durations = systems.indices.take(1).map { i =>
         val t0 = System.nanoTime()
         val leaveAddress = Cluster(systems(i)).selfAddress
         CoordinatedShutdown(systems(i)).run(CoordinatedShutdown.ClusterLeavingReason)
@@ -115,7 +115,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
           awaitAssert {
             Cluster(systems(i)).isTerminated should ===(true)
             Cluster(system).state.members.map(_.address) should not contain leaveAddress
-            systems.foreach { sys ⇒
+            systems.foreach { sys =>
               if (!Cluster(sys).isTerminated)
                 Cluster(sys).state.members.map(_.address) should not contain leaveAddress
             }
@@ -129,7 +129,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
       }
 
       durations.zipWithIndex.foreach {
-        case ((stoppedDuration, startedDuration), i) ⇒
+        case ((stoppedDuration, startedDuration), i) =>
           println(s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
             s"diff ${(startedDuration - stoppedDuration).toMillis} ms")
       }

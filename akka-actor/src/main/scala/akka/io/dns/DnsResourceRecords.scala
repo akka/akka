@@ -129,11 +129,11 @@ private[dns] object ResourceRecord {
     val data = it.clone().take(rdLength)
     it.drop(rdLength)
     (recType: @switch) match {
-      case 1  ⇒ ARecord.parseBody(name, ttl, rdLength, data)
-      case 5  ⇒ CNameRecord.parseBody(name, ttl, rdLength, data, msg)
-      case 28 ⇒ AAAARecord.parseBody(name, ttl, rdLength, data)
-      case 33 ⇒ SRVRecord.parseBody(name, ttl, rdLength, data, msg)
-      case _  ⇒ UnknownRecord.parseBody(name, ttl, recType, recClass, rdLength, data)
+      case 1  => ARecord.parseBody(name, ttl, rdLength, data)
+      case 5  => CNameRecord.parseBody(name, ttl, rdLength, data, msg)
+      case 28 => AAAARecord.parseBody(name, ttl, rdLength, data)
+      case 33 => SRVRecord.parseBody(name, ttl, rdLength, data, msg)
+      case _  => UnknownRecord.parseBody(name, ttl, recType, recClass, rdLength, data)
     }
   }
 }

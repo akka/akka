@@ -40,7 +40,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       val downstreamProbe = TestSubscriber.manualProbe[Outputs]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b ⇒
+        .fromGraph(GraphDSL.create() { implicit b =>
           val zipLatest = b.add(ZipLatestWith((_: Int) + (_: Int)))
           val never = Source.single(3).initialDelay(1 day)
           Source(1 to 2).concat(never) ~> zipLatest.in0
@@ -75,7 +75,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b ⇒
+        .fromGraph(GraphDSL.create() { implicit b =>
           val zip = b.add(ZipLatestWith[Int, Int, Int]((_: Int) / (_: Int)))
           val never = Source.single(2).initialDelay(1 day)
           Source.single(1).concat(never) ~> zip.in0
@@ -97,7 +97,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
         subscription.request(2)
       }
       probe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒
+        case a: java.lang.ArithmeticException =>
           a.getMessage should be("/ by zero")
       }
       probe.expectNoMsg(200.millis)
@@ -146,7 +146,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       case class Person(name: String, surname: String, int: Int)
 
       RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b ⇒
+        .fromGraph(GraphDSL.create() { implicit b =>
           val zip = b.add(ZipLatestWith(Person.apply _))
 
           Source.single("Caplin") ~> zip.in0
@@ -173,7 +173,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
       val upstreamProbe = TestPublisher.manualProbe[Int]()
 
       RunnableGraph
-        .fromGraph(GraphDSL.create() { implicit b ⇒
+        .fromGraph(GraphDSL.create() { implicit b =>
           val sum22 = (v1: Int,
             v2: String,
             v3: Int,
@@ -195,7 +195,7 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
             v19: Int,
             v20: String,
             v21: Int,
-            v22: String) ⇒
+            v22: String) =>
             v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 +
               v11 + v12 + v13 + v14 + v15 + v16 + v17 + v18 + v19 + v20 + v21 + v22
 

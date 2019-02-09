@@ -29,7 +29,7 @@ class ReadHighestFailedException
 private object ChaosJournalMessages extends InmemMessages
 
 class ChaosJournal extends AsyncWriteJournal {
-  import ChaosJournalMessages.{ delete ⇒ del, _ }
+  import ChaosJournalMessages.{ delete => del, _ }
 
   val config = context.system.settings.config.getConfig("akka.persistence.journal.chaos")
   val writeFailureRate = config.getDouble("write-failure-rate")
@@ -43,25 +43,25 @@ class ChaosJournal extends AsyncWriteJournal {
     try Future.successful {
       if (shouldFail(writeFailureRate)) throw new WriteFailedException(messages.flatMap(_.payload))
       else
-        for (a ← messages) yield {
+        for (a <- messages) yield {
           a.payload.foreach(add)
           AsyncWriteJournal.successUnit
         }
     } catch {
-      case NonFatal(e) ⇒ Future.failed(e)
+      case NonFatal(e) => Future.failed(e)
     }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
     try Future.successful {
-      (1L to toSequenceNr).foreach { snr ⇒
+      (1L to toSequenceNr).foreach { snr =>
         del(persistenceId, snr)
       }
     } catch {
-      case NonFatal(e) ⇒ Future.failed(e)
+      case NonFatal(e) => Future.failed(e)
     }
   }
 
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] =
     if (shouldFail(replayFailureRate)) {
       val rm = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       val sm = rm.take(random.nextInt(rm.length + 1))

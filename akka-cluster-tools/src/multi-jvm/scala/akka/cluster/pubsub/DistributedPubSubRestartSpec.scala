@@ -40,7 +40,7 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
 
   class Shutdown extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
+      case "shutdown" => context.system.terminate()
     }
   }
 

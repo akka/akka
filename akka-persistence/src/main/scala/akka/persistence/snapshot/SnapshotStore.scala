@@ -32,59 +32,59 @@ trait SnapshotStore extends Actor with ActorLogging {
   final def receive = receiveSnapshotStore.orElse[Any, Unit](receivePluginInternal)
 
   final val receiveSnapshotStore: Actor.Receive = {
-    case LoadSnapshot(persistenceId, criteria, toSequenceNr) ⇒
+    case LoadSnapshot(persistenceId, criteria, toSequenceNr) =>
       if (criteria == SnapshotSelectionCriteria.None) {
         senderPersistentActor() ! LoadSnapshotResult(snapshot = None, toSequenceNr)
       } else {
         breaker.withCircuitBreaker(loadAsync(persistenceId, criteria.limit(toSequenceNr))) map {
-          sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
+          sso => LoadSnapshotResult(sso, toSequenceNr)
         } recover {
-          case e ⇒ LoadSnapshotFailed(e)
+          case e => LoadSnapshotFailed(e)
         } pipeTo senderPersistentActor()
       }
 
-    case SaveSnapshot(metadata, snapshot) ⇒
+    case SaveSnapshot(metadata, snapshot) =>
       val md = metadata.copy(timestamp = System.currentTimeMillis)
       breaker.withCircuitBreaker(saveAsync(md, snapshot)) map {
-        _ ⇒ SaveSnapshotSuccess(md)
+        _ => SaveSnapshotSuccess(md)
       } recover {
-        case e ⇒ SaveSnapshotFailure(metadata, e)
+        case e => SaveSnapshotFailure(metadata, e)
       } to (self, senderPersistentActor())
 
-    case evt: SaveSnapshotSuccess ⇒
+    case evt: SaveSnapshotSuccess =>
       try tryReceivePluginInternal(evt) finally senderPersistentActor ! evt // sender is persistentActor
-    case evt @ SaveSnapshotFailure(metadata, _) ⇒
+    case evt @ SaveSnapshotFailure(metadata, _) =>
       try {
         tryReceivePluginInternal(evt)
         breaker.withCircuitBreaker(deleteAsync(metadata))
       } finally senderPersistentActor() ! evt // sender is persistentActor
 
-    case d @ DeleteSnapshot(metadata) ⇒
+    case d @ DeleteSnapshot(metadata) =>
       breaker.withCircuitBreaker(deleteAsync(metadata)).map {
-        case _ ⇒ DeleteSnapshotSuccess(metadata)
+        case _ => DeleteSnapshotSuccess(metadata)
       }.recover {
-        case e ⇒ DeleteSnapshotFailure(metadata, e)
+        case e => DeleteSnapshotFailure(metadata, e)
       }.pipeTo(self)(senderPersistentActor()).onComplete {
-        case _ ⇒ if (publish) context.system.eventStream.publish(d)
+        case _ => if (publish) context.system.eventStream.publish(d)
       }
 
-    case evt: DeleteSnapshotSuccess ⇒
+    case evt: DeleteSnapshotSuccess =>
       try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
-    case evt: DeleteSnapshotFailure ⇒
+    case evt: DeleteSnapshotFailure =>
       try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
 
-    case d @ DeleteSnapshots(persistenceId, criteria) ⇒
+    case d @ DeleteSnapshots(persistenceId, criteria) =>
       breaker.withCircuitBreaker(deleteAsync(persistenceId, criteria)).map {
-        case _ ⇒ DeleteSnapshotsSuccess(criteria)
+        case _ => DeleteSnapshotsSuccess(criteria)
       }.recover {
-        case e ⇒ DeleteSnapshotsFailure(criteria, e)
+        case e => DeleteSnapshotsFailure(criteria, e)
       }.pipeTo(self)(senderPersistentActor()).onComplete {
-        case _ ⇒ if (publish) context.system.eventStream.publish(d)
+        case _ => if (publish) context.system.eventStream.publish(d)
       }
 
-    case evt: DeleteSnapshotsFailure ⇒
+    case evt: DeleteSnapshotsFailure =>
       try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt // sender is persistentActor
-    case evt: DeleteSnapshotsSuccess ⇒
+    case evt: DeleteSnapshotsSuccess =>
       try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
   }
 

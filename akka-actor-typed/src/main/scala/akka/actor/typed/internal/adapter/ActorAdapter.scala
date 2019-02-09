@@ -16,7 +16,7 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
 
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
@@ -57,7 +57,7 @@ import akka.util.OptionVal
   def receive: Receive = running
 
   def running: Receive = {
-    case untyped.Terminated(ref) ⇒
+    case untyped.Terminated(ref) =>
       val msg =
         if (failures contains ref) {
           val ex = failures(ref)
@@ -65,18 +65,18 @@ import akka.util.OptionVal
           ChildFailed(ActorRefAdapter(ref), ex)
         } else Terminated(ActorRefAdapter(ref))
       handleSignal(msg)
-    case untyped.ReceiveTimeout ⇒
+    case untyped.ReceiveTimeout =>
       handleMessage(ctx.receiveTimeoutMsg)
-    case wrapped: AdaptMessage[Any, T] @unchecked ⇒
-      withSafelyAdapted(() ⇒ wrapped.adapt()) {
-        case AdaptWithRegisteredMessageAdapter(msg) ⇒
+    case wrapped: AdaptMessage[Any, T] @unchecked =>
+      withSafelyAdapted(() => wrapped.adapt()) {
+        case AdaptWithRegisteredMessageAdapter(msg) =>
           adaptAndHandle(msg)
-        case msg: T @unchecked ⇒
+        case msg: T @unchecked =>
           handleMessage(msg)
       }
-    case AdaptWithRegisteredMessageAdapter(msg) ⇒
+    case AdaptWithRegisteredMessageAdapter(msg) =>
       adaptAndHandle(msg)
-    case msg: T @unchecked ⇒
+    case msg: T @unchecked =>
       handleMessage(msg)
   }
 
@@ -93,13 +93,13 @@ import akka.util.OptionVal
   }
 
   private def handleUnstashException: Catcher[Unit] = {
-    case e: UnstashException[T] @unchecked ⇒
+    case e: UnstashException[T] @unchecked =>
       behavior = e.behavior
       throw e.cause
-    case TypedActorFailedException(e: UnstashException[T] @unchecked) ⇒
+    case TypedActorFailedException(e: UnstashException[T] @unchecked) =>
       behavior = e.behavior
       throw TypedActorFailedException(e.cause)
-    case ActorInitializationException(actor, message, e: UnstashException[T] @unchecked) ⇒
+    case ActorInitializationException(actor, message, e: UnstashException[T] @unchecked) =>
       behavior = e.behavior
       throw ActorInitializationException(actor, message, e.cause)
   }
@@ -108,37 +108,37 @@ import akka.util.OptionVal
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
       b match {
-        case s: StoppedBehavior[T] ⇒
+        case s: StoppedBehavior[T] =>
           // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
           // until Terminate is received, i.e until postStop is invoked, and there PostStop
           // will be signaled to the previous/postStop behavior
           s.postStop match {
-            case OptionVal.None ⇒
+            case OptionVal.None =>
               // use previous as the postStop behavior
               behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
-            case OptionVal.Some(postStop) ⇒
+            case OptionVal.Some(postStop) =>
               // use the given postStop behavior, but canonicalize it
               behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
           }
           context.stop(self)
-        case f: FailedBehavior ⇒
+        case f: FailedBehavior =>
           // For the parent untyped supervisor to pick up the exception
           throw TypedActorFailedException(f.cause)
-        case _ ⇒
+        case _ =>
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }
     }
   }
 
   private def adaptAndHandle(msg: Any): Unit = {
-    @tailrec def handle(adapters: List[(Class[_], Any ⇒ T)]): Unit = {
+    @tailrec def handle(adapters: List[(Class[_], Any => T)]): Unit = {
       adapters match {
-        case Nil ⇒
+        case Nil =>
           // no adapter function registered for message class
           unhandled(msg)
-        case (clazz, f) :: tail ⇒
+        case (clazz, f) :: tail =>
           if (clazz.isAssignableFrom(msg.getClass)) {
-            withSafelyAdapted(() ⇒ f(msg))(handleMessage)
+            withSafelyAdapted(() => f(msg))(handleMessage)
           } else
             handle(tail) // recursive
       }
@@ -146,35 +146,35 @@ import akka.util.OptionVal
     handle(ctx.messageAdapters)
   }
 
-  private def withSafelyAdapted[U, V](adapt: () ⇒ U)(body: U ⇒ V): Unit = {
+  private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
     Try(adapt()) match {
-      case Success(a) ⇒
+      case Success(a) =>
         body(a)
-      case Failure(ex) ⇒
+      case Failure(ex) =>
         log.error(ex, "Exception thrown out of adapter. Stopping myself.")
         context.stop(self)
     }
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) ⇒ throw DeathPactException(ref)
-    case _: Signal       ⇒ // that's ok
-    case other           ⇒ super.unhandled(other)
+    case Terminated(ref) => throw DeathPactException(ref)
+    case _: Signal       => // that's ok
+    case other           => super.unhandled(other)
   }
 
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
-    case TypedActorFailedException(cause) ⇒
+    case TypedActorFailedException(cause) =>
       // These have already been optionally logged by typed supervision
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
-    case ex ⇒
+    case ex =>
       recordChildFailure(ex)
       val logMessage = ex match {
-        case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause match {
-          case ex: InvocationTargetException if ex.getCause ne null ⇒ ex.getCause.getMessage
-          case ex ⇒ ex.getMessage
+        case e: ActorInitializationException if e.getCause ne null => e.getCause match {
+          case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
+          case ex => ex.getMessage
         }
-        case e ⇒ e.getMessage
+        case e => e.getMessage
       }
       // log at Error as that is what the supervision strategy would have done.
       log.error(ex, logMessage)
@@ -219,14 +219,14 @@ import akka.util.OptionVal
 
   override def postStop(): Unit = {
     behavior match {
-      case null                   ⇒ // skip PostStop
-      case _: DeferredBehavior[_] ⇒
+      case null                   => // skip PostStop
+      case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case s: StoppedBehavior[_] ⇒ s.postStop match {
-        case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
-        case OptionVal.None           ⇒ // no postStop behavior defined
+      case s: StoppedBehavior[_] => s.postStop match {
+        case OptionVal.Some(postStop) => Behavior.interpretSignal(postStop, ctx, PostStop)
+        case OptionVal.None           => // no postStop behavior defined
       }
-      case b ⇒ Behavior.interpretSignal(b, ctx, PostStop)
+      case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
 
     behavior = Behavior.stopped
@@ -254,11 +254,11 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
       context.become(waitingForStart(Nil))
 
   def waitingForStart(stashed: List[Any]): Receive = {
-    case GuardianActorAdapter.Start ⇒
+    case GuardianActorAdapter.Start =>
       start()
 
       stashed.reverse.foreach(receive)
-    case other ⇒
+    case other =>
       // unlikely to happen but not impossible
       context.become(waitingForStart(other :: stashed))
   }

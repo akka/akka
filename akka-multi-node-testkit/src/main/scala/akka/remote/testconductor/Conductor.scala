@@ -33,14 +33,14 @@ import scala.util.control.NoStackTrace
  * All of this is bundled inside the [[akka.remote.testconductor.TestConductorExt]]
  * extension.
  */
-trait Conductor { this: TestConductorExt ⇒
+trait Conductor { this: TestConductorExt =>
 
   import Controller._
 
   private var _controller: ActorRef = _
   private def controller: ActorRef = _controller match {
-    case null ⇒ throw new IllegalStateException("TestConductorServer was not started")
-    case x    ⇒ x
+    case null => throw new IllegalStateException("TestConductorServer was not started")
+    case x    => x
   }
 
   /**
@@ -65,7 +65,7 @@ trait Conductor { this: TestConductorExt ⇒
     _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
-    controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
+    controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress => startClient(name, sockAddr) map (_ => sockAddr) }
   }
 
   /**
@@ -189,7 +189,7 @@ trait Conductor { this: TestConductorExt ⇒
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    controller ? Terminate(node, Right(exitValue)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+    controller ? Terminate(node, Right(exitValue)) mapTo classTag[Done] recover { case _: ClientDisconnectedException => Done }
   }
 
   /**
@@ -212,7 +212,7 @@ trait Conductor { this: TestConductorExt ⇒
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    controller ? Terminate(node, Left(abort)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+    controller ? Terminate(node, Left(abort)) mapTo classTag[Done] recover { case _: ClientDisconnectedException => Done }
   }
 
   /**
@@ -269,9 +269,9 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
     val channel = event.getChannel
     log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
-      case msg: NetworkOp ⇒
+      case msg: NetworkOp =>
         clients.get(channel) ! msg
-      case msg ⇒
+      case msg =>
         log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
         channel.close()
     }
@@ -312,53 +312,53 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   startWith(Initial, None)
 
   whenUnhandled {
-    case Event(ClientDisconnected, Some(s)) ⇒
+    case Event(ClientDisconnected, Some(s)) =>
       s ! Status.Failure(new ClientDisconnectedException("client disconnected in state " + stateName + ": " + channel))
       stop()
-    case Event(ClientDisconnected, None) ⇒ stop()
+    case Event(ClientDisconnected, None) => stop()
   }
 
   onTermination {
-    case _ ⇒
+    case _ =>
       controller ! ClientDisconnected(roleName)
       channel.close()
   }
 
   when(Initial, stateTimeout = 10 seconds) {
-    case Event(Hello(name, address), _) ⇒
+    case Event(Hello(name, address), _) =>
       roleName = RoleName(name)
       controller ! NodeInfo(roleName, address, self)
       goto(Ready)
-    case Event(x: NetworkOp, _) ⇒
+    case Event(x: NetworkOp, _) =>
       log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
       channel.close()
       stop()
-    case Event(ToClient(msg), _) ⇒
+    case Event(ToClient(msg), _) =>
       log.warning("cannot send {} in state Initial", msg)
       stay
-    case Event(StateTimeout, _) ⇒
+    case Event(StateTimeout, _) =>
       log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
       channel.close()
       stop()
   }
 
   when(Ready) {
-    case Event(d: Done, Some(s)) ⇒
+    case Event(d: Done, Some(s)) =>
       s ! d
       stay using None
-    case Event(op: ServerOp, _) ⇒
+    case Event(op: ServerOp, _) =>
       controller ! op
       stay
-    case Event(msg: NetworkOp, _) ⇒
+    case Event(msg: NetworkOp, _) =>
       log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       stop()
-    case Event(ToClient(msg: UnconfirmedClientOp), _) ⇒
+    case Event(ToClient(msg: UnconfirmedClientOp), _) =>
       channel.write(msg)
       stay
-    case Event(ToClient(msg), None) ⇒
+    case Event(ToClient(msg), None) =>
       channel.write(msg)
       stay using Some(sender())
-    case Event(ToClient(msg), _) ⇒
+    case Event(ToClient(msg), _) =>
       log.warning("cannot send {} while waiting for previous ACK", msg)
       stay
   }
@@ -402,16 +402,16 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
    * BarrierTimeouts in the players).
    */
   override def supervisorStrategy = OneForOneStrategy() {
-    case BarrierTimeout(data)             ⇒ failBarrier(data)
-    case FailedBarrier(data)              ⇒ failBarrier(data)
-    case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
-    case WrongBarrier(name, client, data) ⇒ { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
-    case ClientLost(data, node)           ⇒ failBarrier(data)
-    case DuplicateNode(data, node)        ⇒ failBarrier(data)
+    case BarrierTimeout(data)             => failBarrier(data)
+    case FailedBarrier(data)              => failBarrier(data)
+    case BarrierEmpty(data, msg)          => SupervisorStrategy.Resume
+    case WrongBarrier(name, client, data) => { client ! ToClient(BarrierResult(name, false)); failBarrier(data) }
+    case ClientLost(data, node)           => failBarrier(data)
+    case DuplicateNode(data, node)        => failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
-    for (c ← data.arrived) c ! ToClient(BarrierResult(data.barrier, false))
+    for (c <- data.arrived) c ! ToClient(BarrierResult(data.barrier, false))
     SupervisorStrategy.Restart
   }
 
@@ -423,23 +423,23 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   val generation = Iterator from 1
 
   override def receive = LoggingReceive {
-    case CreateServerFSM(channel) ⇒
-      val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
+    case CreateServerFSM(channel) =>
+      val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress => (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
       sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
-    case c @ NodeInfo(name, address, fsm) ⇒
+    case c @ NodeInfo(name, address, fsm) =>
       barrier forward c
       if (nodes contains name) {
         if (initialParticipants > 0) {
-          for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(BarrierResult("initial startup", false))
+          for (NodeInfo(_, _, client) <- nodes.values) client ! ToClient(BarrierResult("initial startup", false))
           initialParticipants = 0
         }
         fsm ! ToClient(BarrierResult("initial startup", false))
       } else {
-        nodes += name → c
+        nodes += name -> c
         if (initialParticipants <= 0) fsm ! ToClient(Done)
         else if (nodes.size == initialParticipants) {
-          for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(Done)
+          for (NodeInfo(_, _, client) <- nodes.values) client ! ToClient(Done)
           initialParticipants = 0
         }
         if (addrInterest contains name) {
@@ -447,35 +447,35 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           addrInterest -= name
         }
       }
-    case c @ ClientDisconnected(name) ⇒
+    case c @ ClientDisconnected(name) =>
       nodes -= name
       barrier forward c
-    case op: ServerOp ⇒
+    case op: ServerOp =>
       op match {
-        case _: EnterBarrier ⇒ barrier forward op
-        case _: FailBarrier  ⇒ barrier forward op
-        case GetAddress(node) ⇒
+        case _: EnterBarrier => barrier forward op
+        case _: FailBarrier  => barrier forward op
+        case GetAddress(node) =>
           if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
-          else addrInterest += node → ((addrInterest get node getOrElse Set()) + sender())
-        case _: Done ⇒ //FIXME what should happen?
+          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender())
+        case _: Done => //FIXME what should happen?
       }
-    case op: CommandOp ⇒
+    case op: CommandOp =>
       op match {
-        case Throttle(node, target, direction, rateMBit) ⇒
+        case Throttle(node, target, direction, rateMBit) =>
           val t = nodes(target)
           nodes(node).fsm forward ToClient(ThrottleMsg(t.addr, direction, rateMBit))
-        case Disconnect(node, target, abort) ⇒
+        case Disconnect(node, target, abort) =>
           val t = nodes(target)
           nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
-        case Terminate(node, shutdownOrExit) ⇒
+        case Terminate(node, shutdownOrExit) =>
           barrier ! BarrierCoordinator.RemoveClient(node)
           nodes(node).fsm forward ToClient(TerminateMsg(shutdownOrExit))
           nodes -= node
-        case Remove(node) ⇒
+        case Remove(node) =>
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
-    case GetNodes    ⇒ sender() ! nodes.keys
-    case GetSockAddr ⇒ sender() ! connection.getLocalAddress
+    case GetNodes    => sender() ! nodes.keys
+    case GetSockAddr => sender() ! connection.getLocalAddress
   }
 
   override def postStop(): Unit = {
@@ -495,7 +495,7 @@ private[akka] object BarrierCoordinator {
 
   final case class Data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef], deadline: Deadline)
 
-  trait Printer { this: Product with Throwable with NoStackTrace ⇒
+  trait Printer { this: Product with Throwable with NoStackTrace =>
     override def toString = productPrefix + productIterator.mkString("(", ", ", ")")
   }
 
@@ -528,7 +528,7 @@ private[akka] object BarrierCoordinator {
 private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import Controller._
-  import FSM.`→`
+  import FSM.`->`
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
@@ -541,22 +541,22 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   startWith(Idle, Data(Set(), "", Nil, null))
 
   whenUnhandled {
-    case Event(n: NodeInfo, d @ Data(clients, _, _, _)) ⇒
+    case Event(n: NodeInfo, d @ Data(clients, _, _, _)) =>
       if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
       stay using d.copy(clients = clients + n)
-    case Event(ClientDisconnected(name), d @ Data(clients, _, arrived, _)) ⇒
+    case Event(ClientDisconnected(name), d @ Data(clients, _, arrived, _)) =>
       if (arrived.isEmpty)
         stay using d.copy(clients = clients.filterNot(_.name == name))
       else {
         (clients find (_.name == name)) match {
-          case None    ⇒ stay
-          case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
+          case None    => stay
+          case Some(c) => throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
         }
       }
   }
 
   when(Idle) {
-    case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) =>
       if (failed)
         stay replying ToClient(BarrierResult(name, false))
       else if (clients.map(_.fsm) == Set(sender()))
@@ -567,18 +567,18 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
         goto(Waiting) using d.copy(barrier = name, arrived = sender() :: Nil,
           deadline = getDeadline(timeout))
       }
-    case Event(RemoveClient(name), d @ Data(clients, _, _, _)) ⇒
+    case Event(RemoveClient(name), d @ Data(clients, _, _, _)) =>
       if (clients.isEmpty) throw BarrierEmpty(d, "cannot remove " + name + ": no client to remove")
       stay using d.copy(clients = clients filterNot (_.name == name))
   }
 
   onTransition {
-    case Idle → Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
-    case Waiting → Idle ⇒ cancelTimer("Timeout")
+    case Idle -> Waiting => setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Waiting -> Idle => cancelTimer("Timeout")
   }
 
   when(Waiting) {
-    case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived, deadline)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived, deadline)) =>
       if (name != barrier) throw WrongBarrier(name, sender(), d)
       val together = if (clients.exists(_.fsm == sender())) sender() :: arrived else arrived
       val enterDeadline = getDeadline(timeout)
@@ -588,16 +588,16 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))
-    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) ⇒
+    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) =>
       clients find (_.name == name) match {
-        case None ⇒ stay
-        case Some(client) ⇒
+        case None => stay
+        case Some(client) =>
           handleBarrier(d.copy(clients = clients - client, arrived = arrived filterNot (_ == client.fsm)))
       }
-    case Event(FailBarrier(name), d @ Data(_, barrier, _, _)) ⇒
+    case Event(FailBarrier(name), d @ Data(_, barrier, _, _)) =>
       if (name != barrier) throw WrongBarrier(name, sender(), d)
       throw FailedBarrier(d)
-    case Event(StateTimeout, d) ⇒
+    case Event(StateTimeout, d) =>
       throw BarrierTimeout(d)
   }
 

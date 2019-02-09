@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.actor.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.japi.function.{ Function ⇒ JFunction }
+import akka.japi.function.{ Function => JFunction }
 import akka.util.JavaDurationConverters._
 
 import scala.compat.java8.FutureConverters._

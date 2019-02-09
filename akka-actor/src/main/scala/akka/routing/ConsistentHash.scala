@@ -40,7 +40,7 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
   def :+(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
     new ConsistentHash(
-      nodes ++ ((1 to virtualNodesFactor) map { r ⇒ (concatenateNodeHash(nodeHash, r) → node) }),
+      nodes ++ ((1 to virtualNodesFactor) map { r => (concatenateNodeHash(nodeHash, r) -> node) }),
       virtualNodesFactor)
   }
 
@@ -59,7 +59,7 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
   def :-(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
     new ConsistentHash(
-      nodes -- ((1 to virtualNodesFactor) map { r ⇒ concatenateNodeHash(nodeHash, r) }),
+      nodes -- ((1 to virtualNodesFactor) map { r => concatenateNodeHash(nodeHash, r) }),
       virtualNodesFactor)
   }
 
@@ -115,10 +115,10 @@ object ConsistentHash {
     new ConsistentHash(
       immutable.SortedMap.empty[Int, T] ++
         (for {
-          node ← nodes
+          node <- nodes
           nodeHash = hashFor(node.toString)
-          vnode ← 1 to virtualNodesFactor
-        } yield (concatenateNodeHash(nodeHash, vnode) → node)),
+          vnode <- 1 to virtualNodesFactor
+        } yield (concatenateNodeHash(nodeHash, vnode) -> node)),
       virtualNodesFactor)
   }
 

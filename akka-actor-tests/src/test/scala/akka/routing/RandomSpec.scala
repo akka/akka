@@ -21,7 +21,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val actor = system.actorOf(RandomPool(7).props(Props(new Actor {
         def receive = {
-          case "hello" ⇒ sender() ! "world"
+          case "hello" => sender() ! "world"
         }
 
         override def postStop(): Unit = {
@@ -36,7 +36,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       actor ! "hello"
 
       within(2 seconds) {
-        for (_ ← 1 to 5) expectMsg("world")
+        for (_ <- 1 to 5) expectMsg("world")
       }
 
       system.stop(actor)
@@ -50,23 +50,23 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val counter = new AtomicInteger
       var replies = Map.empty[Int, Int]
-      for (i ← 0 until connectionCount) {
-        replies = replies + (i → 0)
+      for (i <- 0 until connectionCount) {
+        replies = replies + (i -> 0)
       }
 
       val actor = system.actorOf(RandomPool(connectionCount).props(routeeProps =
         Props(new Actor {
           lazy val id = counter.getAndIncrement()
           def receive = {
-            case "hit" ⇒ sender() ! id
-            case "end" ⇒ doneLatch.countDown()
+            case "hit" => sender() ! id
+            case "end" => doneLatch.countDown()
           }
         })), name = "random")
 
-      for (_ ← 0 until iterationCount) {
-        for (_ ← 0 until connectionCount) {
+      for (_ <- 0 until iterationCount) {
+        for (_ <- 0 until connectionCount) {
           val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
-          replies = replies + (id → (replies(id) + 1))
+          replies = replies + (id -> (replies(id) + 1))
         }
       }
 
@@ -85,7 +85,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val actor = system.actorOf(RandomPool(6).props(routeeProps = Props(new Actor {
         def receive = {
-          case "hello" ⇒ helloLatch.countDown()
+          case "hello" => helloLatch.countDown()
         }
 
         override def postStop(): Unit = {

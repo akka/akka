@@ -54,7 +54,7 @@ final class GCounter private[akka] (
   /**
    * Scala API: Current total value of the counter.
    */
-  def value: BigInt = state.values.foldLeft(Zero) { (acc, v) ⇒ acc + v }
+  def value: BigInt = state.values.foldLeft(Zero) { (acc, v) => acc + v }
 
   /**
    * Java API: Current total value of the counter.
@@ -92,14 +92,14 @@ final class GCounter private[akka] (
     if (n == 0) this
     else {
       val nextValue = state.get(key) match {
-        case Some(v) ⇒ v + n
-        case None    ⇒ n
+        case Some(v) => v + n
+        case None    => n
       }
       val newDelta = delta match {
-        case None    ⇒ new GCounter(Map(key → nextValue))
-        case Some(d) ⇒ new GCounter(d.state + (key → nextValue))
+        case None    => new GCounter(Map(key -> nextValue))
+        case Some(d) => new GCounter(d.state + (key -> nextValue))
       }
-      assignAncestor(new GCounter(state + (key → nextValue), Some(newDelta)))
+      assignAncestor(new GCounter(state + (key -> nextValue), Some(newDelta)))
     }
   }
 
@@ -108,7 +108,7 @@ final class GCounter private[akka] (
     else if (this.isAncestorOf(that)) that.clearAncestor()
     else {
       var merged = that.state
-      for ((key, thisValue) ← state) {
+      for ((key, thisValue) <- state) {
         val thatValue = merged.getOrElse(key, Zero)
         if (thisValue > thatValue)
           merged = merged.updated(key, thisValue)
@@ -132,8 +132,8 @@ final class GCounter private[akka] (
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): GCounter =
     state.get(removedNode) match {
-      case Some(value) ⇒ new GCounter(state - removedNode).increment(collapseInto, value)
-      case None        ⇒ this
+      case Some(value) => new GCounter(state - removedNode).increment(collapseInto, value)
+      case None        => this
     }
 
   override def pruningCleanup(removedNode: UniqueAddress): GCounter =
@@ -144,8 +144,8 @@ final class GCounter private[akka] (
   override def toString: String = s"GCounter($value)"
 
   override def equals(o: Any): Boolean = o match {
-    case other: GCounter ⇒ state == other.state
-    case _               ⇒ false
+    case other: GCounter => state == other.state
+    case _               => false
   }
 
   override def hashCode: Int = state.hashCode

@@ -78,7 +78,7 @@ object StashBuffer {
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: T ⇒ Unit): Unit
+  def foreach(f: T => Unit): Unit
 
   /**
    * Process all stashed messages with the `behavior` and the returned
@@ -115,7 +115,7 @@ object StashBuffer {
    * messages will not be processed by this call and have to be unstashed
    * in another call.
    */
-  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T]
+  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T => T): Behavior[T]
 
 }
 

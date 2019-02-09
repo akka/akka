@@ -9,7 +9,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.annotation.InternalApi
 
 /** INTERNAL API */
-@InternalApi private[stream] final class JavaStreamSource[T, S <: java.util.stream.BaseStream[T, S]](open: () ⇒ java.util.stream.BaseStream[T, S])
+@InternalApi private[stream] final class JavaStreamSource[T, S <: java.util.stream.BaseStream[T, S]](open: () => java.util.stream.BaseStream[T, S])
   extends GraphStage[SourceShape[T]] {
 
   val out: Outlet[T] = Outlet("JavaStreamSource")

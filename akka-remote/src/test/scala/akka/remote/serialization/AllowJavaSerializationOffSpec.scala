@@ -11,8 +11,8 @@ import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.actor.actorRef2Scala
-import java.util.{ BitSet ⇒ ProgrammaticJavaDummy }
-import java.util.{ Date ⇒ SerializableDummy }
+import java.util.{ BitSet => ProgrammaticJavaDummy }
+import java.util.{ Date => SerializableDummy }
 
 class ConfigurationDummy
 class ProgrammaticDummy
@@ -21,7 +21,7 @@ object AllowJavaSerializationOffSpec {
 
   val dummySerializer = new FakeSerializer
 
-  val serializationSettings = SerializationSetup { _ ⇒
+  val serializationSettings = SerializationSetup { _ =>
     List(
       SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])))
   }
@@ -63,7 +63,7 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
   // that they'd need a different actor system to be able to create it... someone MAY pick a system with
   // allow-java-serialization=on to create the SerializationSetup and use that SerializationSetup
   // in another system with allow-java-serialization=off
-  val addedJavaSerializationSettings = SerializationSetup { _ ⇒
+  val addedJavaSerializationSettings = SerializationSetup { _ =>
     List(
       SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])),
       SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))

@@ -19,13 +19,13 @@ class SharedMutableStateDocSpec {
 
   class EchoActor extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 
   class CleanUpActor extends Actor {
     def receive = {
-      case set: mutable.Set[_] ⇒ set.clear()
+      case set: mutable.Set[_] => set.clear()
     }
   }
 
@@ -44,7 +44,7 @@ class SharedMutableStateDocSpec {
     }
 
     def receive = {
-      case _ ⇒
+      case _ =>
         implicit val ec = context.dispatcher
         implicit val timeout = Timeout(5 seconds) // needed for `?` below
 
@@ -53,7 +53,7 @@ class SharedMutableStateDocSpec {
         // application to break in weird ways
         Future { state = "This will race" }
         ((echoActor ? Message("With this other one")).mapTo[Message])
-          .foreach { received ⇒ state = received.msg }
+          .foreach { received => state = received.msg }
 
         // Very bad: shared mutable object allows
         // the other actor to mutate your own state,

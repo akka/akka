@@ -18,13 +18,13 @@ object SnapshotDirectoryFailureSpec {
     override def persistenceId: String = name
 
     override def receiveRecover: Receive = {
-      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+      case SnapshotOffer(md, s) => probe ! ((md, s))
     }
 
     override def receiveCommand = {
-      case s: String               ⇒ saveSnapshot(s)
-      case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case other                   ⇒ probe ! other
+      case s: String               => saveSnapshot(s)
+      case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
+      case other                   => probe ! other
     }
   }
 }

@@ -79,7 +79,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     // sys may be null for backwards compatibility reasons
     if (sys eq null) false
     else initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
+      case value @ Left(subscribers) =>
         if (initiallySubscribedOrUnsubscriber.compareAndSet(value, Right(unsubscriber))) {
           if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "initialized unsubscriber to: " + unsubscriber + ", registering " + subscribers.size + " initial subscribers with it"))
           subscribers foreach registerWithUnsubscriber
@@ -90,7 +90,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
           initUnsubscriber(unsubscriber)
         }
 
-      case Right(presentUnsubscriber) ⇒
+      case Right(presentUnsubscriber) =>
         if (debug) publish(Logging.Debug(simpleName(this), this.getClass, s"not using unsubscriber $unsubscriber, because already initialized with $presentUnsubscriber"))
         false
     }
@@ -103,11 +103,11 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   private def registerWithUnsubscriber(subscriber: ActorRef): Unit = {
     // sys may be null for backwards compatibility reasons
     if (sys ne null) initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
+      case value @ Left(subscribers) =>
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers + subscriber)))
           registerWithUnsubscriber(subscriber)
 
-      case Right(unsubscriber) ⇒
+      case Right(unsubscriber) =>
         unsubscriber ! EventStreamUnsubscriber.Register(subscriber)
     }
   }
@@ -123,11 +123,11 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   private def unregisterIfNoMoreSubscribedChannels(subscriber: ActorRef): Unit = {
     // sys may be null for backwards compatibility reasons
     if (sys ne null) initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
+      case value @ Left(subscribers) =>
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers - subscriber)))
           unregisterIfNoMoreSubscribedChannels(subscriber)
 
-      case Right(unsubscriber) ⇒
+      case Right(unsubscriber) =>
         unsubscriber ! EventStreamUnsubscriber.UnregisterIfNoMoreSubscribedChannels(subscriber)
     }
   }

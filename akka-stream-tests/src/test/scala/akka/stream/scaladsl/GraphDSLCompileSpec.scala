@@ -31,7 +31,7 @@ class GraphDSLCompileSpec extends StreamSpec {
 
   }
 
-  val apples = () ⇒ Iterator.continually(new Apple)
+  val apples = () => Iterator.continually(new Apple)
 
   val f1 = Flow[String].via(op[String, String]).named("f1")
   val f2 = Flow[String].via(op[String, String]).named("f2")
@@ -48,7 +48,7 @@ class GraphDSLCompileSpec extends StreamSpec {
   "A Graph" should {
     import GraphDSL.Implicits._
     "build simple merge" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[String](2))
         in1 ~> f1 ~> merge.in(0)
         in2 ~> f2 ~> merge.in(1)
@@ -58,7 +58,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build simple broadcast" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[String](2))
         in1 ~> f1 ~> bcast.in
         bcast.out(0) ~> f2 ~> out1
@@ -68,7 +68,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build simple balance" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val balance = b.add(Balance[String](2))
         in1 ~> f1 ~> balance.in
         balance.out(0) ~> f2 ~> out1
@@ -78,7 +78,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build simple merge - broadcast" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
         in1 ~> f1 ~> merge.in(0)
@@ -91,7 +91,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build simple merge - broadcast with implicits" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
@@ -116,7 +116,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     "detect cycle in " in {
       pending // FIXME needs cycle detection capability
       intercept[IllegalArgumentException] {
-        RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
           val merge = b.add(Merge[String](2))
           val bcast1 = b.add(Broadcast[String](2))
           val bcast2 = b.add(Broadcast[String](2))
@@ -134,7 +134,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "express complex topologies in a readable way" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[String](2))
         val bcast1 = b.add(Broadcast[String](2))
         val bcast2 = b.add(Broadcast[String](2))
@@ -148,7 +148,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build broadcast - merge" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[String](2))
         val merge = b.add(Merge[String](2))
         import GraphDSL.Implicits._
@@ -160,7 +160,7 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "build wikipedia Topological_sorting" in {
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val b3 = b.add(Broadcast[String](2))
         val b7 = b.add(Broadcast[String](2))
         val b11 = b.add(Broadcast[String](3))
@@ -189,7 +189,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "make it optional to specify flows" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(Merge[String](2))
         val bcast = b.add(Broadcast[String](2))
         import GraphDSL.Implicits._
@@ -201,12 +201,12 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build unzip - zip" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zip = b.add(Zip[Int, String]())
         val unzip = b.add(Unzip[Int, String]())
         val out = Sink.asPublisher[(Int, String)](false)
         import GraphDSL.Implicits._
-        Source(List(1 → "a", 2 → "b", 3 → "c")) ~> unzip.in
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out0 ~> Flow[Int].map(_ * 2) ~> zip.in0
         unzip.out1 ~> zip.in1
         zip.out ~> out
@@ -216,7 +216,7 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "throw an error if some ports are not connected" in {
       intercept[IllegalStateException] {
-        GraphDSL.create() { implicit b ⇒
+        GraphDSL.create() { implicit b =>
           val s = b.add(Source.empty[Int])
           val op = b.add(Flow[Int].map(_ + 1))
           val sink = b.add(Sink.foreach[Int](println))
@@ -232,7 +232,7 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "throw an error if a connected port is returned in the shape" in {
       intercept[IllegalStateException] {
-        GraphDSL.create() { implicit b ⇒
+        GraphDSL.create() { implicit b =>
           val s = b.add(Source.empty[Int])
           val op = b.add(Flow[Int].map(_ + 1))
           val sink = b.add(Sink.foreach[Int](println))
@@ -247,7 +247,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build with variance" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val merge = b.add(Merge[Fruit](2))
         Source.fromIterator[Fruit](apples) ~> Flow[Fruit] ~> merge.in(0)
@@ -258,7 +258,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build with variance when indices are not specified" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val fruitMerge = b.add(Merge[Fruit](2))
         Source.fromIterator[Fruit](apples) ~> fruitMerge
@@ -293,7 +293,7 @@ class GraphDSLCompileSpec extends StreamSpec {
     }
 
     "build with implicits and variance" in {
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         def appleSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Apple]()))
         def fruitSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Fruit]()))
         val outA = b add Sink.fromSubscriber(TestSubscriber.manualProbe[Fruit]())
@@ -318,7 +318,7 @@ class GraphDSLCompileSpec extends StreamSpec {
         b.add(Source.fromIterator(apples)) ~> Flow[Apple] ~> b.add(Sink.asPublisher[Fruit](false))
         appleSource ~> Flow[Apple] ~> merge.in(10)
 
-        Source(List(1 → "a", 2 → "b", 3 → "c")) ~> unzip.in
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.out1 ~> whatever
         unzip.out0 ~> b.add(Sink.asPublisher[Any](false))
 
@@ -331,31 +331,31 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "build with plain flow without junctions" in {
       import GraphDSL.Implicits._
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         in1 ~> f1 ~> out1
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         in1 ~> f1 ~> f2.to(out1)
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         (in1 via f1) ~> f2 ~> out1
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         in1 ~> out1
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         in1 ~> (f1 to out1)
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         (in1 via f1) ~> out1
         ClosedShape
       }).run()
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         (in1 via f1) ~> (f2 to out1)
         ClosedShape
       }).run()
@@ -363,7 +363,7 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "suitably override attribute handling methods" in {
       import akka.stream.Attributes._
-      val ga = GraphDSL.create() { implicit b ⇒
+      val ga = GraphDSL.create() { implicit b =>
         val id = b.add(GraphStages.identity[Any])
 
         FlowShape(id.in, id.out)

@@ -35,8 +35,8 @@ final case class IOResult(count: Long, status: Try[Done]) {
    * or throws [[UnsupportedOperationException]] otherwise.
    */
   def getError: Throwable = status match {
-    case Failure(t) ⇒ t
-    case Success(_) ⇒ throw new UnsupportedOperationException("IO operation was successful.")
+    case Failure(t) => t
+    case Success(_) => throw new UnsupportedOperationException("IO operation was successful.")
   }
 
 }

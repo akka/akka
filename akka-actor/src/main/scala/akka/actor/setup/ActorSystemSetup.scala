@@ -36,7 +36,7 @@ object ActorSystemSetup {
    * Scala API: Create an [[ActorSystemSetup]] containing all the provided settings
    */
   def apply(settings: Setup*): ActorSystemSetup =
-    new ActorSystemSetup(settings.map(s ⇒ s.getClass → s).toMap)
+    new ActorSystemSetup(settings.map(s => s.getClass -> s).toMap)
 
   /**
    * Java API: Create an [[ActorSystemSetup]] containing all the provided settings
@@ -73,7 +73,7 @@ final class ActorSystemSetup private[akka] (@InternalApi private[akka] val setup
    * present it will be replaced.
    */
   def withSetup[T <: Setup](t: T): ActorSystemSetup = {
-    new ActorSystemSetup(setups + (t.getClass → t))
+    new ActorSystemSetup(setups + (t.getClass -> t))
   }
 
   /**

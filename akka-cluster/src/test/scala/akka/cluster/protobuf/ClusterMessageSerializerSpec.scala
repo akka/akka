@@ -27,11 +27,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
   def checkSerialization(obj: AnyRef): Unit = {
     (obj, roundtrip(obj)) match {
-      case (env: GossipEnvelope, env2: GossipEnvelope) ⇒
+      case (env: GossipEnvelope, env2: GossipEnvelope) =>
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
-      case (_, ref) ⇒
+      case (_, ref) =>
         ref should ===(obj)
     }
 
@@ -140,7 +140,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
         val result = serializer.fromBinary(oldBytes, classOf[ClusterRouterPool])
 
         result match {
-          case pool: ClusterRouterPool ⇒
+          case pool: ClusterRouterPool =>
             pool.settings.totalInstances should ===(123)
             pool.settings.maxInstancesPerNode should ===(345)
             pool.settings.allowLocalRoutees should ===(true)

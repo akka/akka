@@ -137,13 +137,13 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   protected val default = config.getConfig("default")
   val routerTypeMapping: Map[String, String] =
     settings.config.getConfig("akka.actor.router.type-mapping").root.unwrapped.asScala.collect {
-      case (key, value: String) ⇒ (key → value)
+      case (key, value: String) => (key -> value)
     }.toMap
 
   config.root.asScala.map {
-    case ("default", _)             ⇒ None
-    case (key, value: ConfigObject) ⇒ parseConfig(key, value.toConfig)
-    case _                          ⇒ None
+    case ("default", _)             => None
+    case (key, value: ConfigObject) => parseConfig(key, value.toConfig)
+    case _                          => None
   }.flatten foreach deploy
 
   def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1))
@@ -152,9 +152,9 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
   def deploy(d: Deploy): Unit = {
     @tailrec def add(path: Array[String], d: Deploy, w: WildcardIndex[Deploy] = deployments.get): Unit = {
-      for (i ← path.indices) path(i) match {
-        case "" ⇒ throw InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
-        case el ⇒ ActorPath.validatePathElement(el, fullPath = d.path)
+      for (i <- path.indices) path(i) match {
+        case "" => throw InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
+        case el => ActorPath.validatePathElement(el, fullPath = d.path)
       }
 
       if (!deployments.compareAndSet(w, w.insert(path, d))) add(path, d)
@@ -196,16 +196,16 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
             s"[${args(0)._1.getName}] and optional [${args(1)._1.getName}] parameter", cause)
 
       // first try with Config param, and then with Config and DynamicAccess parameters
-      val args1 = List(classOf[Config] → deployment2)
-      val args2 = List(classOf[Config] → deployment2, classOf[DynamicAccess] → dynamicAccess)
+      val args1 = List(classOf[Config] -> deployment2)
+      val args2 = List(classOf[Config] -> deployment2, classOf[DynamicAccess] -> dynamicAccess)
       dynamicAccess.createInstanceFor[RouterConfig](fqn, args1).recover({
-        case e @ (_: IllegalArgumentException | _: ConfigException) ⇒ throw e
-        case e: NoSuchMethodException ⇒
+        case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
+        case e: NoSuchMethodException =>
           dynamicAccess.createInstanceFor[RouterConfig](fqn, args2).recover({
-            case e @ (_: IllegalArgumentException | _: ConfigException) ⇒ throw e
-            case _ ⇒ throwCannotInstantiateRouter(args2, e)
+            case e @ (_: IllegalArgumentException | _: ConfigException) => throw e
+            case _ => throwCannotInstantiateRouter(args2, e)
           }).get
-        case e ⇒ throwCannotInstantiateRouter(args2, e)
+        case e => throwCannotInstantiateRouter(args2, e)
       }).get
     }
 

@@ -73,7 +73,7 @@ object OSGi {
         "akka.http.$DSL$.coding.*",
         "akka.http.$DSL$.common.*",
         "akka.http.$DSL$.marshalling.*",
-        "akka.http.$DSL$.unmarshalling.*") flatMap { p ⇒
+        "akka.http.$DSL$.unmarshalling.*") flatMap { p =>
           Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
         },
     imports = Seq(

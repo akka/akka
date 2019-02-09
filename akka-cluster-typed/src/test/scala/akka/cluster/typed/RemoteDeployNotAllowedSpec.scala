@@ -58,26 +58,26 @@ class RemoteDeployNotAllowedSpec extends ScalaTestWithActorTestKit(RemoteDeployN
       case class SpawnChild(name: String) extends GuardianProtocol
       case object SpawnAnonymous extends GuardianProtocol
 
-      val guardianBehavior = Behaviors.receive[GuardianProtocol] { (ctx, msg) ⇒
+      val guardianBehavior = Behaviors.receive[GuardianProtocol] { (ctx, msg) =>
 
         msg match {
-          case SpawnChild(name) ⇒
+          case SpawnChild(name) =>
             // this should throw
             try {
               ctx.spawn(
-                Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty },
+                Behaviors.setup[AnyRef] { ctx => Behaviors.empty },
                 name)
             } catch {
-              case ex: Exception ⇒ probe.ref ! ex
+              case ex: Exception => probe.ref ! ex
             }
             Behaviors.same
 
-          case SpawnAnonymous ⇒
+          case SpawnAnonymous =>
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty })
+              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx => Behaviors.empty })
             } catch {
-              case ex: Exception ⇒ probe.ref ! ex
+              case ex: Exception => probe.ref ! ex
             }
             Behaviors.same
         }

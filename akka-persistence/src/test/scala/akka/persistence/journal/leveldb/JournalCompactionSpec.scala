@@ -26,7 +26,7 @@ class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBui
       val deletionBatchSize = 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -60,7 +60,7 @@ class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuild
       val deletionBatchSize = builder.compactionInterval // 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -94,7 +94,7 @@ class JournalCompactionThresholdSpec extends JournalCompactionSpecBase(SpecCompo
       val deletionBatchSize = builder.compactionInterval // 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -181,16 +181,16 @@ object JournalCompactionSpec {
     import EventLogger._
 
     override def receiveRecover: Receive = {
-      case Event(seqNr, _) ⇒ log.info("Recovered event {}", seqNr)
+      case Event(seqNr, _) => log.info("Recovered event {}", seqNr)
     }
 
     override def receiveCommand: Receive = {
-      case Generate ⇒
+      case Generate =>
         persist(Event(lastSequenceNr, randomText()))(onEventPersisted)
-      case Delete(toSeqNr) ⇒
+      case Delete(toSeqNr) =>
         log.info("Deleting messages up to {}", toSeqNr)
         deleteMessages(toSeqNr)
-      case evt: DeleteMessagesSuccess ⇒
+      case evt: DeleteMessagesSuccess =>
         watcher ! evt
     }
 

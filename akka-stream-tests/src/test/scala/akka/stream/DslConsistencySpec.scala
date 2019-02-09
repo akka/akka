@@ -44,66 +44,66 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val graphHelpers = Set("zipGraph", "zipWithGraph", "zipLatestGraph", "zipLatestWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph", "wireTapGraph", "orElseGraph", "divertToGraph")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
-    jFlowClass → graphHelpers,
-    jSourceClass → (graphHelpers ++ Set("watch", "ask")),
+    jFlowClass -> graphHelpers,
+    jSourceClass -> (graphHelpers ++ Set("watch", "ask")),
     // Java subflows can only be nested using .via and .to (due to type system restrictions)
-    jSubFlowClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
-    jSubSourceClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+    jSubFlowClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+    jSubSourceClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
 
-    sFlowClass → Set("of"),
-    sSourceClass → Set("adapt", "from", "watch"),
-    sSinkClass → Set("adapt"),
-    sSubFlowClass → Set(),
-    sSubSourceClass → Set(),
+    sFlowClass -> Set("of"),
+    sSourceClass -> Set("adapt", "from", "watch"),
+    sSinkClass -> Set("adapt"),
+    sSubFlowClass -> Set(),
+    sSubSourceClass -> Set(),
 
-    sRunnableGraphClass → Set("builder"))
+    sRunnableGraphClass -> Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 
   def assertHasMethod(c: Class[_], name: String): Unit = {
     // include class name to get better error message
     if (!allowMissing.getOrElse(c, Set.empty).contains(name))
-      c.getMethods.collect { case m if !ignore(m.getName) ⇒ c.getName + "." + m.getName } should contain(c.getName + "." + name)
+      c.getMethods.collect { case m if !ignore(m.getName) => c.getName + "." + m.getName } should contain(c.getName + "." + name)
   }
 
   "Java and Scala DSLs" must {
 
-    ("Source" → List[Class[_]](sSourceClass, jSourceClass)) ::
-      ("SubSource" → List[Class[_]](sSubSourceClass, jSubSourceClass)) ::
-      ("Flow" → List[Class[_]](sFlowClass, jFlowClass)) ::
-      ("SubFlow" → List[Class[_]](sSubFlowClass, jSubFlowClass)) ::
-      ("Sink" → List[Class[_]](sSinkClass, jSinkClass)) ::
-      ("RunnableFlow" → List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
+    ("Source" -> List[Class[_]](sSourceClass, jSourceClass)) ::
+      ("SubSource" -> List[Class[_]](sSubSourceClass, jSubSourceClass)) ::
+      ("Flow" -> List[Class[_]](sFlowClass, jFlowClass)) ::
+      ("SubFlow" -> List[Class[_]](sSubFlowClass, jSubFlowClass)) ::
+      ("Sink" -> List[Class[_]](sSinkClass, jSinkClass)) ::
+      ("RunnableFlow" -> List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
       Nil foreach {
-        case (element, classes) ⇒
+        case (element, classes) =>
 
           s"provide same $element transforming operators" in {
             val allOps =
               (for {
-                c ← classes
-                m ← c.getMethods
+                c <- classes
+                m <- c.getMethods
                 if !Modifier.isStatic(m.getModifiers)
                 if !ignore(m.getName)
                 if !m.getName.contains("$")
                 if !materializing(m)
               } yield m.getName).toSet
 
-            for (c ← classes; op ← allOps)
+            for (c <- classes; op <- allOps)
               assertHasMethod(c, op)
           }
 
           s"provide same $element materializing operators" in {
             val materializingOps =
               (for {
-                c ← classes
-                m ← c.getMethods
+                c <- classes
+                m <- c.getMethods
                 if !Modifier.isStatic(m.getModifiers)
                 if !ignore(m.getName)
                 if !m.getName.contains("$")
                 if materializing(m)
               } yield m.getName).toSet
 
-            for (c ← classes; op ← materializingOps)
+            for (c <- classes; op <- materializingOps)
               assertHasMethod(c, op)
           }
 

@@ -146,16 +146,16 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
 
       val deltaVersion = m1.delta.get match {
-        case ORMap.PutDeltaOp(delta, v, dt) ⇒
+        case ORMap.PutDeltaOp(delta, v, dt) =>
           delta match {
-            case AddDeltaOp(u) ⇒
+            case AddDeltaOp(u) =>
               if (u.elementsMap.contains("a"))
                 Some(u.elementsMap("a").versionAt(node1))
               else
                 None
-            case _ ⇒ None
+            case _ => None
           }
-        case _ ⇒ None
+        case _ => None
       }
 
       val fullVersion =
@@ -659,10 +659,10 @@ class ORMapSpec extends WordSpec with Matchers {
       val ORMap(entries1) = m1
       val entries2: Map[String, Flag] = entries1
       Changed(ORMapKey[String, Flag]("key"))(m1) match {
-        case c @ Changed(ORMapKey("key")) ⇒
+        case c @ Changed(ORMapKey("key")) =>
           val ORMap(entries3) = c.dataValue
           val entries4: Map[String, ReplicatedData] = entries3
-          entries4 should be(Map("a" → Flag(true), "b" → Flag(false)))
+          entries4 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
       }
     }
 

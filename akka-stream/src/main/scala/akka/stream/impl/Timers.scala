@@ -213,7 +213,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   }
 
-  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
+  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () => O) extends GraphStage[FlowShape[I, O]] {
     val in: Inlet[I] = Inlet("IdleInject.in")
     val out: Outlet[O] = Outlet("IdleInject.out")
 

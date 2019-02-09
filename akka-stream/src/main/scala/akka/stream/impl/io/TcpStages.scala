@@ -19,7 +19,7 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
-import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp ⇒ StreamTcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
 
@@ -67,18 +67,18 @@ import scala.concurrent.{ Future, Promise }
         val sender = evt._1
         val msg = evt._2
         msg match {
-          case Bound(localAddress) ⇒
+          case Bound(localAddress) =>
             listener = sender
             stageActor.watch(listener)
             if (isAvailable(out)) listener ! ResumeAccepting(1)
             val thisStage = self
-            bindingPromise.success(ServerBinding(localAddress)(() ⇒ {
+            bindingPromise.success(ServerBinding(localAddress)(() => {
               // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
               // stopped.
               thisStage.tell(Unbind, thisStage)
               unbindPromise.future
-            }, unbindPromise.future.map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)))
-          case f: CommandFailed ⇒
+            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
+          case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
               override def getMessage: String = s"Bind failed${f.causedByString}"
@@ -87,13 +87,13 @@ import scala.concurrent.{ Future, Promise }
             bindingPromise.failure(ex)
             unbindPromise.tryFailure(ex)
             failStage(ex)
-          case c: Connected ⇒
+          case c: Connected =>
             push(out, connectionFor(c, sender))
-          case Unbind ⇒
+          case Unbind =>
             if (!isClosed(out) && (listener ne null)) tryUnbind()
-          case Unbound ⇒
+          case Unbound =>
             unbindCompleted()
-          case Terminated(ref) if ref == listener ⇒
+          case Terminated(ref) if ref == listener =>
             if (unbindStarted) {
               unbindCompleted()
             } else {
@@ -119,13 +119,13 @@ import scala.concurrent.{ Future, Promise }
 
         val tcpFlow =
           Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose, ioSettings,
-            () ⇒ connectionFlowsAwaitingInitialization.decrementAndGet()))
+            () => connectionFlowsAwaitingInitialization.decrementAndGet()))
             .via(detacher[ByteString]) // must read ahead for proper completions
 
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
-          case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(connected.remoteAddress)))
-          case _                 ⇒ tcpFlow
+          case d: FiniteDuration => tcpFlow.join(TcpIdleTimeout(d, Some(connected.remoteAddress)))
+          case _                 => tcpFlow
         }
 
         StreamTcp.IncomingConnection(
@@ -150,7 +150,7 @@ import scala.concurrent.{ Future, Promise }
       }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
-        case BindShutdownTimer ⇒
+        case BindShutdownTimer =>
           completeStage() // TODO need to manually shut down instead right?
       }
 
@@ -189,7 +189,7 @@ private[stream] object ConnectionSourceStage {
     halfClose:           Boolean,
     ioSettings:          IOSettings) extends TcpRole
 
-  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () ⇒ Unit) extends TcpRole
+  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () => Unit) extends TcpRole
 
   /*
    * This is a *non-detached* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
@@ -218,14 +218,14 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _, _, registerCallback) ⇒
+        case Inbound(conn, _, _, registerCallback) =>
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
           registerCallback()
           pull(bytesIn)
-        case ob @ Outbound(manager, cmd, _, _, _) ⇒
+        case ob @ Outbound(manager, cmd, _, _, _) =>
           getStageActor(connecting(ob)).watch(manager)
           manager ! cmd
       }
@@ -235,9 +235,9 @@ private[stream] object ConnectionSourceStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)          ⇒ fail(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
-        case f @ CommandFailed(cmd) ⇒ fail(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
-        case c: Connected ⇒
+        case Terminated(_)          => fail(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) => fail(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
+        case c: Connected =>
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
           setHandler(bytesOut, readHandler)
@@ -253,12 +253,12 @@ private[stream] object ConnectionSourceStage {
     private def connected(evt: (ActorRef, Any)): Unit = {
       val msg = evt._2
       msg match {
-        case Received(data) ⇒
+        case Received(data) =>
           // Keep on reading even when closed. There is no "close-read-side" in TCP
           if (isClosed(bytesOut)) connection ! ResumeReading
           else push(bytesOut, data)
 
-        case WriteAck ⇒
+        case WriteAck =>
           if (writeBuffer.isEmpty)
             writeInProgress = false
           else {
@@ -275,13 +275,13 @@ private[stream] object ConnectionSourceStage {
           if (!isClosed(bytesIn) && !hasBeenPulled(bytesIn))
             pull(bytesIn)
 
-        case Terminated(_)          ⇒ fail(new StreamTcpException("The connection actor has terminated. Stopping now."))
-        case f @ CommandFailed(cmd) ⇒ fail(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
-        case ErrorClosed(cause)     ⇒ fail(new StreamTcpException(s"The connection closed with error: $cause"))
-        case Aborted                ⇒ fail(new StreamTcpException("The connection has been aborted"))
-        case Closed                 ⇒ completeStage()
-        case ConfirmedClosed        ⇒ completeStage()
-        case PeerClosed             ⇒ complete(bytesOut)
+        case Terminated(_)          => fail(new StreamTcpException("The connection actor has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) => fail(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
+        case ErrorClosed(cause)     => fail(new StreamTcpException(s"The connection closed with error: $cause"))
+        case Aborted                => fail(new StreamTcpException("The connection has been aborted"))
+        case Closed                 => completeStage()
+        case ConfirmedClosed        => completeStage()
+        case PeerClosed             => complete(bytesOut)
 
       }
     }
@@ -357,10 +357,10 @@ private[stream] object ConnectionSourceStage {
     }
     private def reportExceptionToPromise(ex: Throwable): Unit =
       role match {
-        case Outbound(_, _, localAddressPromise, _, _) ⇒
+        case Outbound(_, _, localAddressPromise, _, _) =>
           // Fail if has not been completed with an address earlier
           localAddressPromise.tryFailure(ex)
-        case _ ⇒ // do nothing...
+        case _ => // do nothing...
       }
 
     override def postStop(): Unit = reportExceptionToPromise(new StreamTcpException("Connection failed."))
@@ -373,7 +373,7 @@ private[stream] object ConnectionSourceStage {
  * INTERNAL API
  */
 @InternalApi private[akka] class IncomingConnectionStage(
-  connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () ⇒ Unit)
+  connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () => Unit)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -417,8 +417,8 @@ private[stream] object ConnectionSourceStage {
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[StreamTcp.OutgoingConnection]) = {
     // FIXME: A method like this would make soo much sense on Duration (i.e. toOption)
     val connTimeout = connectTimeout match {
-      case x: FiniteDuration ⇒ Some(x)
-      case _                 ⇒ None
+      case x: FiniteDuration => Some(x)
+      case _                 => None
     }
 
     val localAddressPromise = Promise[InetSocketAddress]
@@ -440,14 +440,14 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
-      case Some(address) ⇒ s" on connection to [$address]"
-      case _             ⇒ ""
+      case Some(address) => s" on connection to [$address]"
+      case _             => ""
     }
 
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
       BidiFlow.fromFlows(
         Flow[ByteString].mapError {
-          case t: TimeoutException ⇒
+          case t: TimeoutException =>
             new TcpIdleTimeoutException(s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout", idleTimeout)
         },
         Flow[ByteString]

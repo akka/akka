@@ -27,7 +27,7 @@ class FlowDetacherSpec extends StreamSpec {
     "pass through failure" in assertAllStagesStopped {
       val ex = new Exception("buh")
       val result = Source(1 to 100)
-        .map(x ⇒ if (x == 50) throw ex else x)
+        .map(x => if (x == 50) throw ex else x)
         .detach
         .runWith(Sink.seq)
       intercept[Exception] {

@@ -67,7 +67,7 @@ object SettingsExtensionDocSpec {
 
     //#extension-usage-actor
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
     }
 
     def connect(dbUri: String, circuitBreakerTimeout: Duration) = {

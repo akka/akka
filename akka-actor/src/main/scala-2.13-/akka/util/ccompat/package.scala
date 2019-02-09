@@ -8,10 +8,10 @@ import scala.language.implicitConversions
 import scala.language.higherKinds
 
 import scala.collection.GenTraversable
-import scala.{ collection ⇒ c }
+import scala.{ collection => c }
 import scala.collection.generic.{ CanBuildFrom, GenericCompanion, Sorted, SortedSetFactory }
-import scala.collection.{ immutable ⇒ i }
-import scala.collection.{ mutable ⇒ m }
+import scala.collection.{ immutable => i }
+import scala.collection.{ mutable => m }
 
 /**
  * INTERNAL API

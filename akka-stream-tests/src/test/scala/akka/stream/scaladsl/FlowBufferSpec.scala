@@ -55,10 +55,10 @@ class FlowBufferSpec extends StreamSpec {
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 100) publisher.sendNext(i)
+      for (i <- 1 to 100) publisher.sendNext(i)
 
       // drain
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         sub.request(1)
         subscriber.expectNext(i)
       }
@@ -73,13 +73,13 @@ class FlowBufferSpec extends StreamSpec {
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 200) publisher.sendNext(i)
+      for (i <- 1 to 200) publisher.sendNext(i)
 
       // The next request would  be otherwise in race with the last onNext in the above loop
       subscriber.expectNoMsg(500.millis)
 
       // drain
-      for (i ← 101 to 200) {
+      for (i <- 101 to 200) {
         sub.request(1)
         subscriber.expectNext(i)
       }
@@ -102,13 +102,13 @@ class FlowBufferSpec extends StreamSpec {
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 200) publisher.sendNext(i)
+      for (i <- 1 to 200) publisher.sendNext(i)
 
       // The next request would  be otherwise in race with the last onNext in the above loop
       subscriber.expectNoMsg(500.millis)
 
       // drain
-      for (i ← 1 to 99) {
+      for (i <- 1 to 99) {
         sub.request(1)
         subscriber.expectNext(i)
       }
@@ -134,13 +134,13 @@ class FlowBufferSpec extends StreamSpec {
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 150) publisher.sendNext(i)
+      for (i <- 1 to 150) publisher.sendNext(i)
 
       // The next request would  be otherwise in race with the last onNext in the above loop
       subscriber.expectNoMsg(500.millis)
 
       // drain
-      for (i ← 101 to 150) {
+      for (i <- 101 to 150) {
         sub.request(1)
         subscriber.expectNext(i)
       }
@@ -161,13 +161,13 @@ class FlowBufferSpec extends StreamSpec {
       subscriber.ensureSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 150) publisher.sendNext(i)
+      for (i <- 1 to 150) publisher.sendNext(i)
 
       // The next request would  be otherwise in race with the last onNext in the above loop
       subscriber.expectNoMsg(500.millis)
 
       // drain
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         subscriber.requestNext(i)
       }
 
@@ -188,23 +188,23 @@ class FlowBufferSpec extends StreamSpec {
       val sub = subscriber.expectSubscription()
 
       // Fill up buffer
-      for (i ← 1 to 100) publisher.sendNext(i)
+      for (i <- 1 to 100) publisher.sendNext(i)
 
       // drain
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         sub.request(1)
         subscriber.expectNext(i)
       }
 
       // overflow the buffer
-      for (i ← 101 to 111) publisher.sendNext(i)
+      for (i <- 101 to 111) publisher.sendNext(i)
 
       publisher.expectCancellation()
       val error = new BufferOverflowException("Buffer overflow (max capacity was: 100)!")
       subscriber.expectError(error)
     }
 
-    for (strategy ← List(OverflowStrategy.dropHead, OverflowStrategy.dropTail, OverflowStrategy.dropBuffer)) {
+    for (strategy <- List(OverflowStrategy.dropHead, OverflowStrategy.dropTail, OverflowStrategy.dropBuffer)) {
 
       s"work with $strategy if buffer size of one" in {
 
@@ -215,7 +215,7 @@ class FlowBufferSpec extends StreamSpec {
         val sub = subscriber.expectSubscription()
 
         // Fill up buffer
-        for (i ← 1 to 200) publisher.sendNext(i)
+        for (i <- 1 to 200) publisher.sendNext(i)
 
         // The request below is in race otherwise with the onNext(200) above
         subscriber.expectNoMsg(500.millis)

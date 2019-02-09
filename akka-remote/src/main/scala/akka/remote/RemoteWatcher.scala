@@ -55,7 +55,7 @@ private[akka] object RemoteWatcher {
     val watchingAddresses: Set[Address]) {
     override def toString: String = {
       def formatWatchingRefs: String =
-        watchingRefs.map(x ⇒ x._2.path.name + " -> " + x._1.path.name).mkString("[", ", ", "]")
+        watchingRefs.map(x => x._2.path.name + " -> " + x._1.path.name).mkString("[", ", ", "]")
       def formatWatchingAddresses: String =
         watchingAddresses.mkString("[", ", ", "]")
 
@@ -123,19 +123,19 @@ private[akka] class RemoteWatcher(
   }
 
   def receive = {
-    case HeartbeatTick                             ⇒ sendHeartbeat()
-    case Heartbeat | ArteryHeartbeat               ⇒ receiveHeartbeat()
-    case HeartbeatRsp(uid)                         ⇒ receiveHeartbeatRsp(uid.toLong)
-    case ArteryHeartbeatRsp(uid)                   ⇒ receiveHeartbeatRsp(uid)
-    case ReapUnreachableTick                       ⇒ reapUnreachable()
-    case ExpectedFirstHeartbeat(from)              ⇒ triggerFirstHeartbeat(from)
-    case WatchRemote(watchee, watcher)             ⇒ addWatch(watchee, watcher)
-    case UnwatchRemote(watchee, watcher)           ⇒ removeWatch(watchee, watcher)
-    case t @ Terminated(watchee: InternalActorRef) ⇒ terminated(watchee, t.existenceConfirmed, t.addressTerminated)
+    case HeartbeatTick                             => sendHeartbeat()
+    case Heartbeat | ArteryHeartbeat               => receiveHeartbeat()
+    case HeartbeatRsp(uid)                         => receiveHeartbeatRsp(uid.toLong)
+    case ArteryHeartbeatRsp(uid)                   => receiveHeartbeatRsp(uid)
+    case ReapUnreachableTick                       => reapUnreachable()
+    case ExpectedFirstHeartbeat(from)              => triggerFirstHeartbeat(from)
+    case WatchRemote(watchee, watcher)             => addWatch(watchee, watcher)
+    case UnwatchRemote(watchee, watcher)           => removeWatch(watchee, watcher)
+    case t @ Terminated(watchee: InternalActorRef) => terminated(watchee, t.existenceConfirmed, t.addressTerminated)
 
     // test purpose
-    case Stats ⇒
-      val watchSet = watching.iterator.flatMap { case (wee, wers) ⇒ wers.map { wer ⇒ wee → wer } }.toSet[(ActorRef, ActorRef)]
+    case Stats =>
+      val watchSet = watching.iterator.flatMap { case (wee, wers) => wers.map { wer => wee -> wer } }.toSet[(ActorRef, ActorRef)]
       sender() ! Stats(
         watching = watchSet.size,
         watchingNodes = watchingNodes.size)(watchSet, watchingNodes.toSet)
@@ -155,13 +155,13 @@ private[akka] class RemoteWatcher(
     if (watcheeByNodes.contains(from) && !unreachable(from)) {
       if (!addressUids.contains(from) || addressUids(from) != uid)
         reWatch(from)
-      addressUids += (from → uid)
+      addressUids += (from -> uid)
       failureDetector.heartbeat(from)
     }
   }
 
   def reapUnreachable(): Unit =
-    watchingNodes foreach { a ⇒
+    watchingNodes foreach { a =>
       if (!unreachable(a) && !failureDetector.isAvailable(a)) {
         log.warning("Detected unreachable: [{}]", a)
         quarantine(a, addressUids.get(a), "Deemed unreachable by remote failure detector", harmless = false)
@@ -175,8 +175,8 @@ private[akka] class RemoteWatcher(
 
   def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     remoteProvider.transport match {
-      case t: ArteryTransport if harmless ⇒ t.quarantine(address, uid, reason, harmless)
-      case _                              ⇒ remoteProvider.quarantine(address, uid, reason)
+      case t: ArteryTransport if harmless => t.quarantine(address, uid, reason, harmless)
+      case _                              => remoteProvider.quarantine(address, uid, reason)
     }
   }
 
@@ -206,7 +206,7 @@ private[akka] class RemoteWatcher(
 
     // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
     watching.get(watchee) match {
-      case Some(watchers) ⇒
+      case Some(watchers) =>
         watchers -= watcher
         if (watchers.isEmpty) {
           // clean up self watch when no more watchers of this watchee
@@ -214,7 +214,7 @@ private[akka] class RemoteWatcher(
           context unwatch watchee
           removeWatchee(watchee)
         }
-      case None ⇒
+      case None =>
     }
   }
 
@@ -223,14 +223,14 @@ private[akka] class RemoteWatcher(
     watching -= watchee
     // Could have used removeBinding, but it does not tell if this was the last entry. This saves a contains call.
     watcheeByNodes.get(watcheeAddress) match {
-      case Some(watchees) ⇒
+      case Some(watchees) =>
         watchees -= watchee
         if (watchees.isEmpty) {
           // unwatched last watchee on that node
           log.debug("Unwatched last watchee of node: [{}]", watcheeAddress)
           unwatchNode(watcheeAddress)
         }
-      case None ⇒
+      case None =>
     }
   }
 
@@ -248,15 +248,15 @@ private[akka] class RemoteWatcher(
     // addressTerminated case is already handled by the watcher itself in DeathWatch trait
     if (!addressTerminated)
       for {
-        watchers ← watching.get(watchee)
-        watcher ← watchers
+        watchers <- watching.get(watchee)
+        watcher <- watchers
       } watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed, addressTerminated))
 
     removeWatchee(watchee)
   }
 
   def sendHeartbeat(): Unit =
-    watchingNodes foreach { a ⇒
+    watchingNodes foreach { a =>
       if (!unreachable(a)) {
         if (failureDetector.isMonitoring(a)) {
           log.debug("Sending Heartbeat to [{}]", a)
@@ -285,8 +285,8 @@ private[akka] class RemoteWatcher(
    */
   def reWatch(address: Address): Unit =
     for {
-      watchees ← watcheeByNodes.get(address)
-      watchee ← watchees
+      watchees <- watcheeByNodes.get(address)
+      watchee <- watchees
     } {
       val watcher = self.asInstanceOf[InternalActorRef]
       log.debug("Re-watch [{} -> {}]", watcher.path, watchee.path)

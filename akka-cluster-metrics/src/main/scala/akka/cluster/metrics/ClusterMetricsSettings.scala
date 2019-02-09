@@ -20,8 +20,8 @@ case class ClusterMetricsSettings(config: Config) {
 
   // Extension.
   val MetricsDispatcher: String = cc.getString("dispatcher") match {
-    case "" ⇒ Dispatchers.DefaultDispatcherId
-    case id ⇒ id
+    case "" => Dispatchers.DefaultDispatcherId
+    case id => id
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
   val NativeLibraryExtractFolder: String = cc.getString("native-library-extract-folder")

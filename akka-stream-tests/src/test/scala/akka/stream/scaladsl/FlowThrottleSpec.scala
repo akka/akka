@@ -135,7 +135,7 @@ class FlowThrottleSpec extends StreamSpec {
 
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
-      for (i ← 7 to 11) upstream.sendNext(i)
+      for (i <- 7 to 11) upstream.sendNext(i)
       downstream.receiveWithin(300.millis, 5) should be(7 to 11)
       downstream.cancel()
     }
@@ -156,7 +156,7 @@ class FlowThrottleSpec extends StreamSpec {
       downstream.expectNext(6)
       downstream.expectNoMsg(500.millis) //wait to receive 2 in burst afterwards
       downstream.request(5)
-      for (i ← 7 to 10) upstream.sendNext(i)
+      for (i <- 7 to 10) upstream.sendNext(i)
       downstream.receiveWithin(100.millis, 2) should be(Seq(7, 8))
       downstream.cancel()
     }
@@ -185,7 +185,7 @@ class FlowThrottleSpec extends StreamSpec {
 
   "Throttle for various cost elements" must {
     "work for happy case" in assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 100.millis, 0, (_) ⇒ 1, Shaping)
+      Source(1 to 5).throttle(1, 100.millis, 0, (_) => 1, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1, 2, 3, 4, 5)
@@ -230,7 +230,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
 
     "send elements downstream as soon as time comes" in assertAllStagesStopped {
-      val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ ⇒ 2, Shaping).runWith(TestSink.probe[Int])
+      val probe = Source(1 to 10).throttle(4, 500.millis, 0, _ => 2, Shaping).runWith(TestSink.probe[Int])
         .request(5)
       probe.receiveWithin(600.millis) should be(Seq(1, 2))
       probe.expectNoMsg(100.millis)
@@ -243,7 +243,7 @@ class FlowThrottleSpec extends StreamSpec {
     "burst according to its maximum if enough time passed" in assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (_) ⇒ 1, Shaping).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (_) => 1, Shaping).runWith(Sink.fromSubscriber(downstream))
 
       // Exhaust bucket first
       downstream.request(5)
@@ -256,7 +256,7 @@ class FlowThrottleSpec extends StreamSpec {
       downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
-      for (i ← 7 to 11) upstream.sendNext(i)
+      for (i <- 7 to 11) upstream.sendNext(i)
       downstream.receiveWithin(300.millis, 5) should be(7 to 11)
       downstream.cancel()
     }
@@ -264,7 +264,7 @@ class FlowThrottleSpec extends StreamSpec {
     "burst some elements if have enough time" in assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (e) ⇒ if (e < 9) 1 else 20, Shaping).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).throttle(2, 400.millis, 5, (e) => if (e < 9) 1 else 20, Shaping).runWith(Sink.fromSubscriber(downstream))
 
       // Exhaust bucket first
       downstream.request(5)
@@ -277,7 +277,7 @@ class FlowThrottleSpec extends StreamSpec {
       downstream.expectNext(6)
       downstream.expectNoMsg(500.millis) //wait to receive 2 in burst afterwards
       downstream.request(5)
-      for (i ← 7 to 9) upstream.sendNext(i)
+      for (i <- 7 to 9) upstream.sendNext(i)
       downstream.receiveWithin(200.millis, 2) should be(Seq(7, 8))
       downstream.cancel()
     }
@@ -305,7 +305,7 @@ class FlowThrottleSpec extends StreamSpec {
 
     "handle rate calculation function exception" in assertAllStagesStopped {
       val ex = new RuntimeException with NoStackTrace
-      Source(1 to 5).throttle(2, 200.millis, 0, (_) ⇒ { throw ex }, Shaping)
+      Source(1 to 5).throttle(2, 200.millis, 0, (_) => { throw ex }, Shaping)
         .throttle(1, 100.millis, 5, Enforcing)
         .runWith(TestSink.probe[Int])
         .request(5)
@@ -320,7 +320,7 @@ class FlowThrottleSpec extends StreamSpec {
       val expectedMaxRate = new AtomicInteger
       val (ref, done) = Source.actorRef[Int](bufferSize = 100000, OverflowStrategy.fail)
         .throttle(300, 1000.millis)
-        .toMat(Sink.foreach { elem ⇒
+        .toMat(Sink.foreach { elem =>
           val now = System.nanoTime()
           val n1 = counter1.incrementAndGet()
           val duration1Millis = (now - timestamp1.get) / 1000 / 1000
@@ -340,7 +340,7 @@ class FlowThrottleSpec extends StreamSpec {
         .run()
 
       expectedMaxRate.set(200) // sleep (at least) 5 ms between each element
-      (1 to 2700).foreach { n ⇒
+      (1 to 2700).foreach { n =>
         if (!done.isCompleted) {
           ref ! n
           val now = System.nanoTime()

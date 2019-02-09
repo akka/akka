@@ -22,7 +22,7 @@ object ClusterSingletonRestart2Spec {
 
   class Singleton extends Actor {
     def receive = {
-      case _ ⇒ sender() ! Cluster(context.system).selfUniqueAddress
+      case _ => sender() ! Cluster(context.system).selfUniqueAddress
     }
   }
 }

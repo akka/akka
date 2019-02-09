@@ -25,18 +25,18 @@ object ClusterShardingGracefulShutdownSpec {
 
   class Entity extends Actor {
     def receive = {
-      case id: Int ⇒ sender() ! id
-      case StopEntity ⇒
+      case id: Int => sender() ! id
+      case StopEntity =>
         context.stop(self)
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int ⇒ id.toString
+  val extractShardId: ShardRegion.ExtractShardId = msg => msg match {
+    case id: Int => id.toString
   }
 
 }
@@ -89,12 +89,12 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
@@ -148,7 +148,7 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
 
       awaitAssert {
         val p = TestProbe()
-        val regionAddresses = (1 to 100).map { n ⇒
+        val regionAddresses = (1 to 100).map { n =>
           region.tell(n, p.ref)
           p.expectMsg(1.second, n)
           p.lastSender.path.address
@@ -166,7 +166,7 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
       runOn(first) {
         awaitAssert {
           val p = TestProbe()
-          for (n ← 1 to 200) {
+          for (n <- 1 to 200) {
             region.tell(n, p.ref)
             p.expectMsg(1.second, n)
             p.lastSender.path should be(region.path / n.toString / n.toString)

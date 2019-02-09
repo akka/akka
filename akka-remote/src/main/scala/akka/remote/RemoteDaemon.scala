@@ -68,18 +68,18 @@ private[akka] class RemoteSystemDaemon(
 
   @tailrec private def addChildParentNeedsWatch(parent: ActorRef, child: ActorRef): Boolean =
     parent2children.get(parent) match {
-      case null ⇒
+      case null =>
         if (parent2children.putIfAbsent(parent, Set(child)) == null) true
         else addChildParentNeedsWatch(parent, child)
-      case children ⇒
+      case children =>
         if (parent2children.replace(parent, children, children + child)) false
         else addChildParentNeedsWatch(parent, child)
     }
 
   @tailrec private def removeChildParentNeedsUnwatch(parent: ActorRef, child: ActorRef): Boolean = {
     parent2children.get(parent) match {
-      case null ⇒ false // no-op
-      case children ⇒
+      case null => false // no-op
+      case children =>
         val next = children - child
         if (next.isEmpty) {
           if (!parent2children.remove(parent, children)) removeChildParentNeedsUnwatch(parent, child)
@@ -102,54 +102,54 @@ private[akka] class RemoteSystemDaemon(
       import akka.actor.ActorCell._
       val (childName, uid) = splitNameAndUid(s)
       getChild(childName) match {
-        case null ⇒
+        case null =>
           val last = s.lastIndexOf('/')
           if (last == -1) (Nobody, n)
           else rec(s.substring(0, last), n + 1)
-        case ref if uid != undefinedUid && uid != ref.path.uid ⇒ (Nobody, n)
-        case ref ⇒ (ref, n)
+        case ref if uid != undefinedUid && uid != ref.path.uid => (Nobody, n)
+        case ref => (ref, n)
       }
     }
 
     val full = Vector() ++ names
     rec(full.mkString("/"), 0) match {
-      case (Nobody, _) ⇒ Nobody
-      case (ref, 0)    ⇒ ref
-      case (ref, n)    ⇒ ref.getChild(full.takeRight(n).iterator)
+      case (Nobody, _) => Nobody
+      case (ref, 0)    => ref
+      case (ref, n)    => ref.getChild(full.takeRight(n).iterator)
     }
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case DeathWatchNotification(child: ActorRefWithCell with ActorRefScope, _, _) if child.isLocal ⇒
+    case DeathWatchNotification(child: ActorRefWithCell with ActorRefScope, _, _) if child.isLocal =>
       terminating.locked {
         removeChild(child.path.elements.drop(1).mkString("/"), child)
         val parent = child.getParent
         if (removeChildParentNeedsUnwatch(parent, child)) parent.sendSystemMessage(Unwatch(parent, this))
         terminationHookDoneWhenNoChildren()
       }
-    case DeathWatchNotification(parent: ActorRef with ActorRefScope, _, _) if !parent.isLocal ⇒
+    case DeathWatchNotification(parent: ActorRef with ActorRefScope, _, _) if !parent.isLocal =>
       terminating.locked {
         parent2children.remove(parent) match {
-          case null ⇒
-          case children ⇒
-            for (c ← children) {
+          case null =>
+          case children =>
+            for (c <- children) {
               system.stop(c)
               removeChild(c.path.elements.drop(1).mkString("/"), c)
             }
             terminationHookDoneWhenNoChildren()
         }
       }
-    case _ ⇒ super.sendSystemMessage(message)
+    case _ => super.sendSystemMessage(message)
   }
 
   override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = try msg match {
-    case message: DaemonMsg ⇒
+    case message: DaemonMsg =>
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
-        case DaemonMsgCreate(_, _, path, _) if untrustedMode ⇒
+        case DaemonMsgCreate(_, _, path, _) if untrustedMode =>
           log.debug("does not accept deployments (untrusted) for [{}]", path) // TODO add security marker?
 
-        case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled ⇒
+        case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled =>
           val name = props.clazz.getCanonicalName
           if (remoteDeploymentWhitelist.contains(name))
             doCreateActor(message, props, deploy, path, supervisor)
@@ -159,11 +159,11 @@ private[akka] class RemoteSystemDaemon(
               "Received command to create remote Actor, but class [{}] is not white-listed! " +
                 "Target path: [{}]", props.actorClass, path)
           }
-        case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
+        case DaemonMsgCreate(props, deploy, path, supervisor) =>
           doCreateActor(message, props, deploy, path, supervisor)
       }
 
-    case sel: ActorSelectionMessage ⇒
+    case sel: ActorSelectionMessage =>
       val (concatenatedChildNames, m) = {
         val iter = sel.elements.iterator
         // find child elements, and the message to send, which is a remaining ActorSelectionMessage
@@ -173,46 +173,46 @@ private[akka] class RemoteSystemDaemon(
             (acc.reverse, sel.msg)
           else {
             iter.next() match {
-              case SelectChildName(name)       ⇒ rec(name :: acc)
-              case SelectParent if acc.isEmpty ⇒ rec(acc)
-              case SelectParent                ⇒ rec(acc.tail)
-              case pat: SelectChildPattern     ⇒ (acc.reverse, sel.copy(elements = pat +: iter.toVector))
+              case SelectChildName(name)       => rec(name :: acc)
+              case SelectParent if acc.isEmpty => rec(acc)
+              case SelectParent                => rec(acc.tail)
+              case pat: SelectChildPattern     => (acc.reverse, sel.copy(elements = pat +: iter.toVector))
             }
           }
         rec(Nil)
       }
       getChild(concatenatedChildNames.iterator) match {
-        case Nobody ⇒
+        case Nobody =>
           val emptyRef = new EmptyLocalActorRef(system.provider, path / sel.elements.map(_.toString),
             system.eventStream)
           emptyRef.tell(sel, sender)
-        case child ⇒
+        case child =>
           child.tell(m, sender)
       }
 
-    case Identify(messageId) ⇒ sender ! ActorIdentity(messageId, Some(this))
+    case Identify(messageId) => sender ! ActorIdentity(messageId, Some(this))
 
-    case TerminationHook ⇒
+    case TerminationHook =>
       terminating.switchOn {
         terminationHookDoneWhenNoChildren()
         foreachChild { system.stop }
       }
 
-    case AddressTerminated(address) ⇒
+    case AddressTerminated(address) =>
       foreachChild {
-        case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a)
-        case _ ⇒ // skip, this child doesn't belong to the terminated address
+        case a: InternalActorRef if a.getParent.path.address == address => system.stop(a)
+        case _ => // skip, this child doesn't belong to the terminated address
       }
 
-    case unknown ⇒ log.warning(LogMarker.Security, "Unknown message [{}] received by [{}]", unknown, this)
+    case unknown => log.warning(LogMarker.Security, "Unknown message [{}] received by [{}]", unknown, this)
 
   } catch {
-    case NonFatal(e) ⇒ log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)
+    case NonFatal(e) => log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)
   }
 
   private def doCreateActor(message: DaemonMsg, props: Props, deploy: Deploy, path: String, supervisor: ActorRef) = {
     path match {
-      case ActorPathExtractor(_, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+      case ActorPathExtractor(_, elems) if elems.nonEmpty && elems.head == "remote" =>
         // TODO RK currently the extracted “address” is just ignored, is that okay?
         // TODO RK canonicalize path so as not to duplicate it always #1446
         val subpath = elems.drop(1)
@@ -233,7 +233,7 @@ private[akka] class RemoteSystemDaemon(
           if (addChildParentNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
         }
         if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
-      case _ ⇒
+      case _ =>
         log.debug("remote path does not match path from message [{}]", message)
     }
   }

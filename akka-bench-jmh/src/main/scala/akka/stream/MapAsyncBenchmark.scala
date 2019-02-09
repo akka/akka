@@ -70,7 +70,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsync(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsync(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -82,7 +82,7 @@ class MapAsyncBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .mapAsyncUnordered(parallelism)(elem ⇒ if (spawn) Future(elem) else Future.successful(elem))
+      .mapAsyncUnordered(parallelism)(elem => if (spawn) Future(elem) else Future.successful(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)

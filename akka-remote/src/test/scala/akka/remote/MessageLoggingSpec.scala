@@ -41,7 +41,7 @@ object MessageLoggingSpec {
 
   class BadActor extends Actor {
     override def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! BadMsg("hah")
     }
   }

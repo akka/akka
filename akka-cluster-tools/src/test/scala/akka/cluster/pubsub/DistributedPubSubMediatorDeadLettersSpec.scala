@@ -21,7 +21,7 @@ object DistributedPubSubMediatorDeadLettersSpec {
   """
 }
 
-trait DeadLettersProbe { this: TestKitBase ⇒
+trait DeadLettersProbe { this: TestKitBase =>
   val deadLettersProbe = TestProbe()
   system.eventStream.subscribe(deadLettersProbe.ref, classOf[DeadLetter])
 

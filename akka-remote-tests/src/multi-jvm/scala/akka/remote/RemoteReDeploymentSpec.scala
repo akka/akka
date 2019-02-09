@@ -84,8 +84,8 @@ object RemoteReDeploymentMultiJvmSpec {
     val monitor = context.actorSelection("/user/echo")
     log.info(s"Started Parent on path ${self.path}")
     def receive = {
-      case (p: Props, n: String) ⇒ context.actorOf(p, n)
-      case msg                   ⇒ monitor ! msg
+      case (p: Props, n: String) => context.actorOf(p, n)
+      case msg                   => monitor ! msg
     }
   }
 
@@ -100,7 +100,7 @@ object RemoteReDeploymentMultiJvmSpec {
 
   class Echo(target: ActorRef) extends Actor with ActorLogging {
     def receive = {
-      case msg ⇒
+      case msg =>
         log.info(s"received $msg from ${sender()}")
         target ! msg
     }

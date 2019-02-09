@@ -68,27 +68,27 @@ final class ClusterSettings(val config: Config, val systemName: String) {
       .requiring(_ > 0, "cross-data-center-connections must be > 0")
 
     val CrossDcGossipProbability: Double = cc.getDouble("multi-data-center.cross-data-center-gossip-probability")
-      .requiring(d ⇒ d >= 0.0D && d <= 1.0D, "cross-data-center-gossip-probability must be >= 0.0 and <= 1.0")
+      .requiring(d => d >= 0.0D && d <= 1.0D, "cross-data-center-gossip-probability must be >= 0.0 and <= 1.0")
 
     val CrossDcFailureDetectorSettings: CrossDcFailureDetectorSettings =
       new CrossDcFailureDetectorSettings(cc.getConfig("multi-data-center.failure-detector"))
   }
 
   val SeedNodes: immutable.IndexedSeq[Address] =
-    immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(address) ⇒ address }.toVector
+    immutableSeq(cc.getStringList("seed-nodes")).map { case AddressFromURIString(address) => address }.toVector
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {
     val key = "retry-unsuccessful-join-after"
     toRootLowerCase(cc.getString(key)) match {
-      case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case "off" => Duration.Undefined
+      case _     => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val ShutdownAfterUnsuccessfulJoinSeedNodes: Duration = {
     val key = "shutdown-after-unsuccessful-join-seed-nodes"
     toRootLowerCase(cc.getString(key)) match {
-      case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
+      case "off" => Duration.Undefined
+      case _     => cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
@@ -101,8 +101,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val PublishStatsInterval: Duration = {
     val key = "publish-stats-interval"
     toRootLowerCase(cc.getString(key)) match {
-      case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case "off" => Duration.Undefined
+      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -118,8 +118,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val AutoDownUnreachableAfter: Duration = {
     val key = "auto-down-unreachable-after"
     toRootLowerCase(cc.getString(key)) match {
-      case "off" ⇒ Duration.Undefined
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case "off" => Duration.Undefined
+      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -132,8 +132,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"
     toRootLowerCase(cc.getString(key)) match {
-      case "off" ⇒ Duration.Zero
-      case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
+      case "off" => Duration.Zero
+      case _     => cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
   }
 
@@ -165,15 +165,15 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val MinNrOfMembersOfRole: Map[String, Int] = {
     import scala.collection.JavaConverters._
     cc.getConfig("role").root.asScala.collect {
-      case (key, value: ConfigObject) ⇒ key → value.toConfig.getInt("min-nr-of-members")
+      case (key, value: ConfigObject) => key -> value.toConfig.getInt("min-nr-of-members")
     }.toMap
   }
   val RunCoordinatedShutdownWhenDown: Boolean = cc.getBoolean("run-coordinated-shutdown-when-down")
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   val JmxMultiMbeansInSameEnabled: Boolean = cc.getBoolean("jmx.multi-mbeans-in-same-jvm")
   val UseDispatcher: String = cc.getString("use-dispatcher") match {
-    case "" ⇒ Dispatchers.DefaultDispatcherId
-    case id ⇒ id
+    case "" => Dispatchers.DefaultDispatcherId
+    case id => id
   }
   val GossipDifferentViewProbability: Double = cc.getDouble("gossip-different-view-probability")
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")

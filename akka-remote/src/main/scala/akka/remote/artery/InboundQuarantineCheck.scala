@@ -32,10 +32,10 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext) ext
       override def onPush(): Unit = {
         val env = grab(in)
         env.association match {
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             // unknown, handshake not completed
             push(out, env)
-          case OptionVal.Some(association) ⇒
+          case OptionVal.Some(association) =>
             if (association.associationState.isQuarantined(env.originUid)) {
               if (log.isDebugEnabled)
                 log.debug(
@@ -53,9 +53,9 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext) ext
       }
 
       private def isHeartbeat(msg: Any): Boolean = msg match {
-        case _: HeartbeatMessage ⇒ true
-        case ActorSelectionMessage(_: HeartbeatMessage, _, _) ⇒ true
-        case _ ⇒ false
+        case _: HeartbeatMessage => true
+        case ActorSelectionMessage(_: HeartbeatMessage, _, _) => true
+        case _ => false
       }
 
       // OutHandler

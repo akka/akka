@@ -48,9 +48,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
       private def onAsyncMessage(event: AdapterToStageMessage): Unit = {
         event match {
-          case Send(data) ⇒
-            emit(out, data, () ⇒ semaphore.release())
-          case Close ⇒
+          case Send(data) =>
+            emit(out, data, () => semaphore.release())
+          case Close =>
             completeStage()
         }
       }
@@ -81,7 +81,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Send(data)), writeTimeout)
     } catch {
-      case NonFatal(e) ⇒ throw new IOException(e)
+      case NonFatal(e) => throw new IOException(e)
     }
   }
 
@@ -107,7 +107,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Close), writeTimeout)
     } catch {
-      case NonFatal(e) ⇒ throw new IOException(e)
+      case NonFatal(e) => throw new IOException(e)
     }
   }
 }

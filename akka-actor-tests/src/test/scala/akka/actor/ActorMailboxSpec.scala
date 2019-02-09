@@ -168,7 +168,7 @@ object ActorMailboxSpec {
 
   class QueueReportingActor extends Actor {
     def receive = {
-      case _ ⇒ sender() ! context.asInstanceOf[ActorCell].mailbox.messageQueue
+      case _ => sender() ! context.asInstanceOf[ActorCell].mailbox.messageQueue
     }
   }
 
@@ -231,7 +231,7 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
 
     actor ! "ping"
     val q = expectMsgType[MessageQueue]
-    types foreach (t ⇒ assert(t isInstance q, s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]"))
+    types foreach (t => assert(t isInstance q, s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]"))
     q
   }
 

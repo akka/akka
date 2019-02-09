@@ -72,10 +72,10 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
       expected.size should ===(sampleCount)
 
       history.zip(expected) foreach {
-        case (mockMetrics, expectedData) ⇒
+        case (mockMetrics, expectedData) =>
           (mockMetrics, expectedData) match {
             case (Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
-              (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) ⇒
+              (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) =>
               loadAverageMock.get should ===(loadAverageEwma +- epsilon)
               cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
               cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
@@ -108,7 +108,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
 
       }
 
-      (1 to 3) foreach { step ⇒ cycle() }
+      (1 to 3) foreach { step => cycle() }
 
     }
 

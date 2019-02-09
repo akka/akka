@@ -34,11 +34,11 @@ class ActorRefSerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerial
     "be serialized and deserialized by MiscMessageSerializer" in {
       val obj = spawn(Behaviors.empty[Unit])
       serialization.findSerializerFor(obj) match {
-        case serializer: MiscMessageSerializer ⇒
+        case serializer: MiscMessageSerializer =>
           val blob = serializer.toBinary(obj)
           val ref = serializer.fromBinary(blob, serializer.manifest(obj))
           ref should ===(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }
@@ -48,11 +48,11 @@ class ActorRefSerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerial
       val obj = ActorRefSerializationSpec.MessageWrappingActorRef("some message", ref)
 
       serialization.findSerializerFor(obj) match {
-        case serializer: JavaSerializer ⇒
+        case serializer: JavaSerializer =>
           val blob = serializer.toBinary(obj)
           val restored = serializer.fromBinary(blob, None)
           restored should ===(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }

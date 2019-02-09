@@ -30,13 +30,13 @@ object RecoveryPermitterSpec {
     }
 
     override def receiveRecover: Receive = {
-      case RecoveryCompleted ⇒
+      case RecoveryCompleted =>
         probe ! RecoveryCompleted
         if (throwFromRecoveryCompleted)
           throw new TestExc
     }
     override def receiveCommand: Receive = {
-      case "stop" ⇒
+      case "stop" =>
         context.stop(self)
     }
   }
@@ -169,7 +169,7 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
       p3.expectMsg(RecoveryCompleted)
       p3.expectMsg("postStop")
       // it's restarting
-      (1 to 5).foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         p3.expectMsg(RecoveryCompleted)
         p3.expectMsg("postStop")
       }

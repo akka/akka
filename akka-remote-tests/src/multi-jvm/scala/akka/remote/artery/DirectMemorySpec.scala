@@ -34,13 +34,13 @@ object DirectMemorySpec extends MultiNodeConfig {
   case class Done(actor: ActorRef)
   class CountingEcho(reportTo: ActorRef, private var count: Int) extends Actor {
     override def receive: Receive = {
-      case Start(rootPath) ⇒
+      case Start(rootPath) =>
         count -= 1
         context.system.actorSelection(rootPath / "user" / self.path.name) ! Message
-      case Message if count > 0 ⇒
+      case Message if count > 0 =>
         count -= 1
         sender() ! Message
-      case Message ⇒
+      case Message =>
         reportTo ! Done(self)
     }
   }

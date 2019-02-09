@@ -6,7 +6,7 @@ package akka.actor.typed
 package internal
 
 import java.time.Duration
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
@@ -27,13 +27,13 @@ import akka.util.JavaDurationConverters._
 @InternalApi private[akka] trait ActorContextImpl[T] extends TypedActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
-  private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
+  private var _messageAdapters: List[(Class[_], Any => T)] = Nil
   private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage
   def timer: TimerSchedulerImpl[T] = _timer match {
-    case OptionVal.Some(timer) ⇒ timer
-    case OptionVal.None ⇒
+    case OptionVal.Some(timer) => timer
+    case OptionVal.None =>
       val timer = new TimerSchedulerImpl[T](this)
       _timer = OptionVal.Some(timer)
       timer
@@ -45,8 +45,8 @@ import akka.util.JavaDurationConverters._
 
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
-      case Some(c) ⇒ Optional.of(c.unsafeUpcast[Void])
-      case None    ⇒ Optional.empty()
+      case Some(c) => Optional.of(c.unsafeUpcast[Void])
+      case None    => Optional.empty()
     }
 
   override def getChildren: java.util.List[ActorRef[Void]] = {
@@ -81,7 +81,7 @@ import akka.util.JavaDurationConverters._
     spawnAnonymous(behavior, Props.empty)
 
   // Scala API impl
-  override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] => Req)(mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
     pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)
   }
@@ -96,8 +96,8 @@ import akka.util.JavaDurationConverters._
   }
 
   // Scala API impl
-  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] ⇒ T): Unit = {
-    future.onComplete(value ⇒ self.unsafeUpcast ! AdaptMessage(value, mapResult))
+  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))
   }
 
   // Java API impl
@@ -110,19 +110,19 @@ import akka.util.JavaDurationConverters._
     })
   }
 
-  private[akka] override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
+  private[akka] override def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] =
     internalSpawnMessageAdapter(f, name)
 
-  private[akka] override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] =
+  private[akka] override def spawnMessageAdapter[U](f: U => T): ActorRef[U] =
     internalSpawnMessageAdapter(f, name = "")
 
   /**
    * INTERNAL API: Needed to make Scala 2.12 compiler happy if spawnMessageAdapter is overloaded for scaladsl/javadsl.
    * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
    */
-  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
+  @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U => T, name: String): ActorRef[U]
 
-  override def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U] = {
+  override def messageAdapter[U: ClassTag](f: U => T): ActorRef[U] = {
     val messageClass = implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]]
     internalMessageAdapter(messageClass, f)
   }
@@ -130,16 +130,16 @@ import akka.util.JavaDurationConverters._
   override def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U] =
     internalMessageAdapter(messageClass, f.apply)
 
-  private def internalMessageAdapter[U](messageClass: Class[U], f: U ⇒ T): ActorRef[U] = {
+  private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
-    _messageAdapters = (messageClass, f.asInstanceOf[Any ⇒ T]) ::
-      _messageAdapters.filterNot { case (cls, _) ⇒ cls == messageClass }
+    _messageAdapters = (messageClass, f.asInstanceOf[Any => T]) ::
+      _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
     val ref = messageAdapterRef match {
-      case OptionVal.Some(ref) ⇒ ref.asInstanceOf[ActorRef[U]]
-      case OptionVal.None ⇒
+      case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
+      case OptionVal.None =>
         // AdaptMessage is not really a T, but that is erased
-        val ref = internalSpawnMessageAdapter[Any](msg ⇒ AdaptWithRegisteredMessageAdapter(msg).asInstanceOf[T], "adapter")
+        val ref = internalSpawnMessageAdapter[Any](msg => AdaptWithRegisteredMessageAdapter(msg).asInstanceOf[T], "adapter")
         messageAdapterRef = OptionVal.Some(ref)
         ref
     }
@@ -149,6 +149,6 @@ import akka.util.JavaDurationConverters._
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def messageAdapters: List[(Class[_], Any ⇒ T)] = _messageAdapters
+  @InternalApi private[akka] def messageAdapters: List[(Class[_], Any => T)] = _messageAdapters
 }
 

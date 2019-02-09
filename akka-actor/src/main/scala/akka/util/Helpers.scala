@@ -42,8 +42,8 @@ object Helpers {
    */
   def identityHashComparator[T <: AnyRef](comp: Comparator[T]): Comparator[T] = new Comparator[T] {
     def compare(a: T, b: T): Int = compareIdentityHash(a, b) match {
-      case 0 if a != b ⇒ comp.compare(a, b)
-      case x           ⇒ x
+      case 0 if a != b => comp.compare(a, b)
+      case x           => x
     }
   }
 
@@ -108,7 +108,7 @@ object Helpers {
      * @param cond The condition to check.
      * @param msg The message to report if the condition isn't met.
      */
-    @inline def requiring(cond: Boolean, msg: ⇒ Any): A = {
+    @inline def requiring(cond: Boolean, msg: => Any): A = {
       require(cond, msg)
       value
     }
@@ -120,7 +120,7 @@ object Helpers {
      * @param cond The function used to check the `value`.
      * @param msg The message to report if the condition isn't met.
      */
-    @inline def requiring(cond: A ⇒ Boolean, msg: ⇒ Any): A = {
+    @inline def requiring(cond: A => Boolean, msg: => Any): A = {
       require(cond(value), msg)
       value
     }

@@ -34,15 +34,15 @@ import scala.concurrent.duration._
   import context._
 
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
-    case ex ⇒
+    case ex =>
       val defaultDirective: Directive =
-        super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) ⇒ Escalate)
+        super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
 
-      strategy.decider.applyOrElse(ex, (_: Any) ⇒ defaultDirective) match {
+      strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective) match {
 
         // Whatever the final Directive is, we will translate all Restarts
         // to our own Restarts, which involves stopping the child.
-        case Restart ⇒
+        case Restart =>
           if (strategy.withinTimeRange.isFinite && restartCount == 0) {
             // If the user has defined a time range for the maxNrOfRetries, we'll schedule a message
             // to ourselves every time that range elapses, to reset the restart counter. We hide it
@@ -62,23 +62,23 @@ import scala.concurrent.duration._
           }
           Stop
 
-        case other ⇒ other
+        case other => other
       }
   }
 
   def waitChildTerminatedBeforeBackoff(childRef: ActorRef): Receive = {
-    case Terminated(`childRef`) ⇒
+    case Terminated(`childRef`) =>
       become(receive)
       child = None
       val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
       context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
       restartCount += 1
 
-    case StartChild ⇒ // Ignore it, we will schedule a new one once current child terminated.
+    case StartChild => // Ignore it, we will schedule a new one once current child terminated.
   }
 
   def onTerminated: Receive = {
-    case Terminated(c) ⇒
+    case Terminated(c) =>
       log.debug(s"Terminating, because child [$c] terminated itself")
       stop(self)
   }
@@ -86,12 +86,12 @@ import scala.concurrent.duration._
   def receive: Receive = onTerminated orElse handleBackoff
 
   protected def handleMessageToChild(msg: Any): Unit = child match {
-    case Some(c) ⇒
+    case Some(c) =>
       c.forward(msg)
-    case None ⇒
+    case None =>
       replyWhileStopped match {
-        case None    ⇒ context.system.deadLetters.forward(msg)
-        case Some(r) ⇒ sender() ! r
+        case None    => context.system.deadLetters.forward(msg)
+        case Some(r) => sender() ! r
       }
   }
 }

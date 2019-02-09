@@ -16,7 +16,7 @@ import akka.remote.{ RARP, RemoteScope }
 object RemoteRouterSpec {
   class Parent extends Actor {
     def receive = {
-      case (p: Props, name: String) ⇒
+      case (p: Props, name: String) =>
         sender() ! context.actorOf(p, name)
     }
   }
@@ -89,7 +89,7 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {
-    for (i ← 1 to n) yield {
+    for (i <- 1 to n) yield {
       val msg = i.toString
       router.tell(msg, probe.ref)
       probe.expectMsg(msg)
@@ -211,7 +211,7 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
     "set supplied supervisorStrategy" in {
       val probe = TestProbe()(masterSystem)
       val escalator = OneForOneStrategy() {
-        case e ⇒ probe.ref ! e; SupervisorStrategy.Escalate
+        case e => probe.ref ! e; SupervisorStrategy.Escalate
       }
       val router = masterSystem.actorOf(new RemoteRouterConfig(
         RoundRobinPool(1, supervisorStrategy = escalator),

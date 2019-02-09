@@ -172,7 +172,7 @@ abstract class ExtensionSetup[T <: Extension](
  * implementation of the extension. Intended for tests that need to replace
  * extension with stub/mock implementations.
  */
-abstract class AbstractExtensionSetup[T <: Extension](extId: ExtensionId[T], createExtension: ActorSystem[_] ⇒ T)
+abstract class AbstractExtensionSetup[T <: Extension](extId: ExtensionId[T], createExtension: ActorSystem[_] => T)
   extends ExtensionSetup[T](extId, new java.util.function.Function[ActorSystem[_], T] {
     override def apply(sys: ActorSystem[_]): T = createExtension.apply(sys)
   }) // TODO can be simplified when compiled only with Scala >= 2.12

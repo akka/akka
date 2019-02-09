@@ -85,7 +85,7 @@ object Framing {
     fieldOffset:        Int,
     maximumFrameLength: Int,
     byteOrder:          ByteOrder,
-    computeFrameSize:   (Array[Byte], Int) ⇒ Int): Flow[ByteString, ByteString, NotUsed] = {
+    computeFrameSize:   (Array[Byte], Int) => Int): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString].via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder, Some(computeFrameSize)))
       .named("lengthFieldFraming")
@@ -139,7 +139,7 @@ object Framing {
 
   class FramingException(msg: String) extends RuntimeException(msg)
 
-  private final val bigEndianDecoder: (ByteIterator, Int) ⇒ Int = (bs, length) ⇒ {
+  private final val bigEndianDecoder: (ByteIterator, Int) => Int = (bs, length) => {
     var count = length
     var decoded = 0
     while (count > 0) {
@@ -150,7 +150,7 @@ object Framing {
     decoded
   }
 
-  private final val littleEndianDecoder: (ByteIterator, Int) ⇒ Int = (bs, length) ⇒ {
+  private final val littleEndianDecoder: (ByteIterator, Int) => Int = (bs, length) => {
     val highestOctet = (length - 1) << 3
     val Mask = ((1L << (length << 3)) - 1).toInt
     var count = length
@@ -238,8 +238,8 @@ object Framing {
 
         // Retrive previous position
         val previous = indices.lastOption match {
-          case OptionVal.Some((_, i)) ⇒ i + separatorBytes.size
-          case OptionVal.None         ⇒ 0
+          case OptionVal.Some((_, i)) => i + separatorBytes.size
+          case OptionVal.None         => 0
         }
 
         if (possibleMatchPos - previous > maximumLineBytes) {
@@ -286,7 +286,7 @@ object Framing {
           if (isClosed(in) && buffer.isEmpty) completeStage()
         } else {
           // Emit results and compact buffer
-          emitMultiple(out, new FrameIterator(), () ⇒ {
+          emitMultiple(out, new FrameIterator(), () => {
             reset()
             if (isClosed(in) && buffer.isEmpty) completeStage()
           })
@@ -294,8 +294,8 @@ object Framing {
 
       private def reset(): Unit = {
         val previous = indices.lastOption match {
-          case OptionVal.Some((_, i)) ⇒ i + separatorBytes.size
-          case OptionVal.None         ⇒ 0
+          case OptionVal.Some((_, i)) => i + separatorBytes.size
+          case OptionVal.None         => 0
         }
 
         buffer = buffer.drop(previous).compact
@@ -347,7 +347,7 @@ object Framing {
     val lengthFieldOffset:  Int,
     val maximumFrameLength: Int,
     val byteOrder:          ByteOrder,
-    computeFrameSize:       Option[(Array[Byte], Int) ⇒ Int]) extends GraphStage[FlowShape[ByteString, ByteString]] {
+    computeFrameSize:       Option[(Array[Byte], Int) => Int]) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     //for the sake of binary compatibility
     def this(
@@ -360,8 +360,8 @@ object Framing {
 
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {
-      case ByteOrder.BIG_ENDIAN    ⇒ bigEndianDecoder
-      case ByteOrder.LITTLE_ENDIAN ⇒ littleEndianDecoder
+      case ByteOrder.BIG_ENDIAN    => bigEndianDecoder
+      case ByteOrder.LITTLE_ENDIAN => littleEndianDecoder
     }
 
     val in = Inlet[ByteString]("LengthFieldFramingStage.in")
@@ -397,8 +397,8 @@ object Framing {
         } else if (buffSize >= minimumChunkSize) {
           val parsedLength = intDecoder(buffer.iterator.drop(lengthFieldOffset), lengthFieldLength)
           frameSize = computeFrameSize match {
-            case Some(f) ⇒ f(buffer.take(lengthFieldOffset).toArray, parsedLength)
-            case None    ⇒ parsedLength + minimumChunkSize
+            case Some(f) => f(buffer.take(lengthFieldOffset).toArray, parsedLength)
+            case None    => parsedLength + minimumChunkSize
           }
           if (frameSize > maximumFrameLength) {
             failStage(new FramingException(s"Maximum allowed frame size is $maximumFrameLength but decoded frame header reported size $frameSize"))

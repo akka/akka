@@ -79,7 +79,7 @@ abstract class RestartNode3Spec
       runOn(first, third) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: UniqueAddress ⇒
+            case a: UniqueAddress =>
               secondUniqueAddress = a
               sender() ! "ok"
           }
@@ -90,7 +90,7 @@ abstract class RestartNode3Spec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r ⇒
+        List(first, third) foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }
@@ -116,7 +116,7 @@ abstract class RestartNode3Spec
         Cluster(secondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(secondSystem).readView.members.size should ===(3))
         awaitAssert(Cluster(secondSystem).readView.members.collectFirst {
-          case m if m.address == Cluster(secondSystem).selfAddress ⇒ m.status
+          case m if m.address == Cluster(secondSystem).selfAddress => m.status
         } should ===(Some(Joining)))
       }
       enterBarrier("second-joined")
@@ -139,7 +139,7 @@ abstract class RestartNode3Spec
       runOn(first, third) {
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
-          Cluster(system).readView.members.exists { m ⇒
+          Cluster(system).readView.members.exists { m =>
             m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }

@@ -64,24 +64,24 @@ object BlogPostExample {
   //#behavior
 
   //#command-handler
-  private val commandHandler: (BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] = { (state, command) ⇒
+  private val commandHandler: (BlogState, BlogCommand) => Effect[BlogEvent, BlogState] = { (state, command) =>
     state match {
 
-      case BlankState ⇒ command match {
-        case cmd: AddPost ⇒ addPost(cmd)
-        case _            ⇒ Effect.unhandled
+      case BlankState => command match {
+        case cmd: AddPost => addPost(cmd)
+        case _            => Effect.unhandled
       }
 
-      case draftState: DraftState ⇒ command match {
-        case cmd: ChangeBody  ⇒ changeBody(draftState, cmd)
-        case Publish(replyTo) ⇒ publish(draftState, replyTo)
-        case GetPost(replyTo) ⇒ getPost(draftState, replyTo)
-        case _: AddPost       ⇒ Effect.unhandled
+      case draftState: DraftState => command match {
+        case cmd: ChangeBody  => changeBody(draftState, cmd)
+        case Publish(replyTo) => publish(draftState, replyTo)
+        case GetPost(replyTo) => getPost(draftState, replyTo)
+        case _: AddPost       => Effect.unhandled
       }
 
-      case publishedState: PublishedState ⇒ command match {
-        case GetPost(replyTo) ⇒ getPost(publishedState, replyTo)
-        case _                ⇒ Effect.unhandled
+      case publishedState: PublishedState => command match {
+        case GetPost(replyTo) => getPost(publishedState, replyTo)
+        case _                => Effect.unhandled
       }
     }
   }
@@ -89,7 +89,7 @@ object BlogPostExample {
   private def addPost(cmd: AddPost): Effect[BlogEvent, BlogState] = {
     //#reply
     val evt = PostAdded(cmd.content.postId, cmd.content)
-    Effect.persist(evt).thenRun { _ ⇒
+    Effect.persist(evt).thenRun { _ =>
       // After persist is done additional side effects can be performed
       cmd.replyTo ! AddPostDone(cmd.content.postId)
     }
@@ -98,13 +98,13 @@ object BlogPostExample {
 
   private def changeBody(state: DraftState, cmd: ChangeBody): Effect[BlogEvent, BlogState] = {
     val evt = BodyChanged(state.postId, cmd.newBody)
-    Effect.persist(evt).thenRun { _ ⇒
+    Effect.persist(evt).thenRun { _ =>
       cmd.replyTo ! Done
     }
   }
 
   private def publish(state: DraftState, replyTo: ActorRef[Done]): Effect[BlogEvent, BlogState] = {
-    Effect.persist(Published(state.postId)).thenRun { _ ⇒
+    Effect.persist(Published(state.postId)).thenRun { _ =>
       println(s"Blog post ${state.postId} was published")
       replyTo ! Done
     }
@@ -122,27 +122,27 @@ object BlogPostExample {
   //#command-handler
 
   //#event-handler
-  private val eventHandler: (BlogState, BlogEvent) ⇒ BlogState = { (state, event) ⇒
+  private val eventHandler: (BlogState, BlogEvent) => BlogState = { (state, event) =>
     state match {
 
-      case BlankState ⇒ event match {
-        case PostAdded(_, content) ⇒
+      case BlankState => event match {
+        case PostAdded(_, content) =>
           DraftState(content)
-        case _ ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
+        case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
       }
 
-      case draftState: DraftState ⇒ event match {
+      case draftState: DraftState => event match {
 
-        case BodyChanged(_, newBody) ⇒
+        case BodyChanged(_, newBody) =>
           draftState.withBody(newBody)
 
-        case Published(_) ⇒
+        case Published(_) =>
           PublishedState(draftState.content)
 
-        case _ ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
+        case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
       }
 
-      case _: PublishedState ⇒
+      case _: PublishedState =>
         // no more changes after published
         throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
     }

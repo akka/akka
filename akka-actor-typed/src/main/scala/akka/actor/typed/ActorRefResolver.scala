@@ -57,7 +57,7 @@ abstract class ActorRefResolver extends Extension {
 }
 
 object ActorRefResolverSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ActorRefResolver): ActorRefResolverSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => ActorRefResolver): ActorRefResolverSetup =
     new ActorRefResolverSetup(new java.util.function.Function[ActorSystem[_], ActorRefResolver] {
       override def apply(sys: ActorSystem[_]): ActorRefResolver = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12

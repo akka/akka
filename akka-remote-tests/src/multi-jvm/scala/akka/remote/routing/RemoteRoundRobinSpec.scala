@@ -64,7 +64,7 @@ class ArteryRemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new Remot
 object RemoteRoundRobinSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender() ! self
+      case "hit" => sender() ! self
     }
   }
 
@@ -96,16 +96,16 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒
+          case ref: ActorRef =>
             info(s"reply from $ref")
             ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")
@@ -143,7 +143,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         expectMsgType[Routees].routees.size should ===(2)
 
         val repliesFrom: Set[ActorRef] =
-          (for (n ← 3 to 9) yield {
+          (for (n <- 3 to 9) yield {
             // each message trigger a resize, incrementing number of routees with 1
             actor ! "hit"
             Await.result(actor ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size should ===(n)
@@ -183,14 +183,14 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+          case ref: ActorRef => ref.path.address
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("end")

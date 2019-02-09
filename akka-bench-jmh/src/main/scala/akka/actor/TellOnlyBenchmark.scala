@@ -97,9 +97,9 @@ object TellOnlyBenchmark {
 
   class Echo extends Actor {
     def receive = {
-      case s @ `stop` ⇒
+      case s @ `stop` =>
         context stop self
-      case m ⇒ sender ! m
+      case m => sender ! m
     }
   }
 
@@ -134,8 +134,8 @@ object TellOnlyBenchmark {
       val mbox = receiver.mailbox
       mbox.enqueue(receiver.self, invocation)
       mbox.messageQueue match {
-        case mb: DroppingMessageQueue if mb.dropping ⇒ // do nothing
-        case _                                       ⇒ registerForExecution(mbox, true, false)
+        case mb: DroppingMessageQueue if mb.dropping => // do nothing
+        case _                                       => registerForExecution(mbox, true, false)
       }
     }
   }

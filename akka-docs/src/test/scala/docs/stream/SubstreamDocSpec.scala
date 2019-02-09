@@ -57,7 +57,7 @@ class SubstreamDocSpec extends AkkaSpec {
     val charCount = Source(text.toList)
       .splitAfter { _ == '\n' }
       .filter(_ != '\n')
-      .map(_ ⇒ 1)
+      .map(_ => 1)
       .reduce(_ + _)
       .to(Sink.foreach(println))
       .run()
@@ -67,13 +67,13 @@ class SubstreamDocSpec extends AkkaSpec {
   "generate substreams by flatMapConcat and flatMapMerge" in {
     //#flatMapConcat
     Source(1 to 2)
-      .flatMapConcat(i ⇒ Source(List.fill(3)(i)))
+      .flatMapConcat(i => Source(List.fill(3)(i)))
       .runWith(Sink.ignore)
     //#flatMapConcat
 
     //#flatMapMerge
     Source(1 to 2)
-      .flatMapMerge(2, i ⇒ Source(List.fill(3)(i)))
+      .flatMapMerge(2, i => Source(List.fill(3)(i)))
       .runWith(Sink.ignore)
     //#flatMapMerge
   }

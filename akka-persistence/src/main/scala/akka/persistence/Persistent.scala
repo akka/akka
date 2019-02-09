@@ -40,10 +40,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty // avoids calling .size
-    case v: Vector[PersistentRepr] ⇒ v.size > 1
-    case _                         ⇒ true // some other collection type, let's just check
-  }) payload.foreach { pr ⇒
+    case l: List[PersistentRepr]   => l.tail.nonEmpty // avoids calling .size
+    case v: Vector[PersistentRepr] => v.size > 1
+    case _                         => true // some other collection type, let's just check
+  }) payload.foreach { pr =>
     if (pr.persistenceId != payload.head.persistenceId)
       throw new IllegalArgumentException(
         "AtomicWrite must contain messages for the same persistenceId, " +

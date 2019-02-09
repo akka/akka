@@ -35,15 +35,15 @@ class DefaultOSGiLogger extends DefaultLogger {
      * @param logService OSGi LogService that has been registered,
      */
     def setLogService(logService: LogService): Unit = {
-      messagesToLog.foreach(x ⇒ {
+      messagesToLog.foreach(x => {
         logMessage(logService, x)
       })
       context.become(initialisedReceive(logService))
     }
 
     {
-      case logService: LogService ⇒ setLogService(logService)
-      case logEvent: LogEvent     ⇒ messagesToLog :+= logEvent
+      case logService: LogService => setLogService(logService)
+      case logEvent: LogEvent     => messagesToLog :+= logEvent
     }
   }
 
@@ -57,8 +57,8 @@ class DefaultOSGiLogger extends DefaultLogger {
     context.system.eventStream.unsubscribe(self, classOf[LogService])
 
     {
-      case logEvent: LogEvent      ⇒ logMessage(logService, logEvent)
-      case UnregisteringLogService ⇒ context.become(uninitialisedReceive)
+      case logEvent: LogEvent      => logMessage(logService, logEvent)
+      case UnregisteringLogService => context.become(uninitialisedReceive)
     }
   }
 
@@ -70,9 +70,9 @@ class DefaultOSGiLogger extends DefaultLogger {
    */
   def logMessage(logService: LogService, event: LogEvent): Unit = {
     event match {
-      case error: Logging.Error if error.cause != NoCause ⇒
+      case error: Logging.Error if error.cause != NoCause =>
         logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message), error.cause)
-      case _ ⇒
+      case _ =>
         logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
     }
   }

@@ -46,7 +46,7 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case _ ⇒ sender() ! self
+      case _ => sender() ! self
     }
   }
 }

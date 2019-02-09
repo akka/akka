@@ -29,7 +29,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
         val zipN = b.add(ZipN[Int](2))
 
         Source(1 to 4) ~> zipN.in(0)
@@ -59,7 +59,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
         val zipN = b.add(ZipN[Int](2))
 
         Source.fromPublisher(upstream1) ~> zipN.in(0)
@@ -84,7 +84,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
         val zipN = b.add(ZipN[Int](2))
 
         Source.fromPublisher(upstream1) ~> zipN.in(0)
@@ -110,7 +110,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
         val zipN = b.add(ZipN[Int](2))
 
         Source.fromPublisher(upstream1) ~> zipN.in(0)
@@ -135,7 +135,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
         val zipN = b.add(ZipN[Int](2))
 
         Source.fromPublisher(upstream1) ~> zipN.in(0)
@@ -161,7 +161,7 @@ class GraphZipNSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
         val zipN = b.add(ZipN[Int](2))
 
         Source.fromPublisher(upstream1) ~> zipN.in(0)

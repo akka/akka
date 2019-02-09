@@ -26,17 +26,17 @@ private[akka] object ActorTestKitGuardian {
   final case object Ack
 
   val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
-    case (context, SpawnActor(name, behavior, reply, props)) ⇒
+    case (context, SpawnActor(name, behavior, reply, props)) =>
       reply ! context.spawn(behavior, name, props)
       Behaviors.same
-    case (context, SpawnActorAnonymous(behavior, reply, props)) ⇒
+    case (context, SpawnActorAnonymous(behavior, reply, props)) =>
       reply ! context.spawnAnonymous(behavior, props)
       Behaviors.same
-    case (context, StopActor(ref, reply)) ⇒
+    case (context, StopActor(ref, reply)) =>
       context.watchWith(ref, ActorStopped(reply))
       context.stop(ref)
       Behaviors.same
-    case (_, ActorStopped(reply)) ⇒
+    case (_, ActorStopped(reply)) =>
       reply ! Ack
       Behaviors.same
   }
@@ -57,7 +57,7 @@ private[akka] object TestKitUtils {
       try {
         Modifier.isAbstract(Class.forName(className).getModifiers)
       } catch {
-        case _: Throwable ⇒ false // yes catch everything, best effort check
+        case _: Throwable => false // yes catch everything, best effort check
       }
     }
 
@@ -68,11 +68,11 @@ private[akka] object TestKitUtils {
       .dropWhile(!_.startsWith(startFrom))
       // then continue to the next entry after classToStartFrom that makes sense
       .dropWhile {
-        case `startFrom`                            ⇒ true
-        case str if str.startsWith(startFrom + "$") ⇒ true // lambdas inside startFrom etc
-        case TestKitRegex()                         ⇒ true // testkit internals
-        case str if isAbstractClass(str)            ⇒ true
-        case _                                      ⇒ false
+        case `startFrom`                            => true
+        case str if str.startsWith(startFrom + "$") => true // lambdas inside startFrom etc
+        case TestKitRegex()                         => true // testkit internals
+        case str if isAbstractClass(str)            => true
+        case _                                      => false
       }
 
     if (filteredStack.isEmpty)
@@ -100,7 +100,7 @@ private[akka] object TestKitUtils {
     throwIfShutdownTimesOut: Boolean): Unit = {
     system.terminate()
     try Await.ready(system.whenTerminated, timeout) catch {
-      case _: TimeoutException ⇒
+      case _: TimeoutException =>
         val message = "Failed to stop [%s] within [%s] \n%s".format(system.name, timeout, system.printTree)
         if (throwIfShutdownTimesOut) throw new RuntimeException(message)
         else println(message)

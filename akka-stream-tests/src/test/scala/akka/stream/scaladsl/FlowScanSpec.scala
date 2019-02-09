@@ -14,7 +14,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
+import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
 class FlowScanSpec extends StreamSpec {
 
@@ -49,7 +49,7 @@ class FlowScanSpec extends StreamSpec {
 
     "restart properly" in {
       import ActorAttributes._
-      val scan = Flow[Int].scan(0) { (old, current) ⇒
+      val scan = Flow[Int].scan(0) { (old, current) =>
         require(current > 0)
         old + current
       }.withAttributes(supervisionStrategy(Supervision.restartingDecider))
@@ -59,7 +59,7 @@ class FlowScanSpec extends StreamSpec {
 
     "resume properly" in {
       import ActorAttributes._
-      val scan = Flow[Int].scan(0) { (old, current) ⇒
+      val scan = Flow[Int].scan(0) { (old, current) =>
         require(current > 0)
         old + current
       }.withAttributes(supervisionStrategy(Supervision.resumingDecider))
@@ -68,7 +68,7 @@ class FlowScanSpec extends StreamSpec {
     }
 
     "scan normally for empty source" in {
-      Source.empty[Int].scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+      Source.empty[Int].scan(0) { case (a, b) => a + b }.runWith(TestSink.probe[Int])
         .request(2)
         .expectNext(0)
         .expectComplete()
@@ -77,7 +77,7 @@ class FlowScanSpec extends StreamSpec {
     "fail when upstream failed" in {
       val ex = TE("")
       Source.failed[Int](ex)
-        .scan(0) { case (a, b) ⇒ a + b }
+        .scan(0) { case (a, b) => a + b }
         .runWith(TestSink.probe[Int])
         .request(2)
         .expectNextOrError(0, ex)

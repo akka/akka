@@ -27,14 +27,14 @@ object ActorSystemSpec {
     var terminaters = Set[ActorRef]()
 
     def receive = {
-      case n: Int ⇒
+      case n: Int =>
         master = sender()
-        terminaters = Set() ++ (for (i ← 1 to n) yield {
+        terminaters = Set() ++ (for (i <- 1 to n) yield {
           val man = context.watch(context.system.actorOf(Props[Terminater]))
           man ! "run"
           man
         })
-      case Terminated(child) if terminaters contains child ⇒
+      case Terminated(child) if terminaters contains child =>
         terminaters -= child
         if (terminaters.isEmpty) {
           master ! "done"
@@ -52,13 +52,13 @@ object ActorSystemSpec {
 
   class Terminater extends Actor {
     def receive = {
-      case "run" ⇒ context.stop(self)
+      case "run" => context.stop(self)
     }
   }
 
   class Strategy extends SupervisorStrategyConfigurator {
     def create() = OneForOneStrategy() {
-      case _ ⇒ SupervisorStrategy.Escalate
+      case _ => SupervisorStrategy.Escalate
     }
   }
 
@@ -69,7 +69,7 @@ object ActorSystemSpec {
     latch.countDown()
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -87,7 +87,7 @@ object ActorSystemSpec {
         doneIt.switchOn {
           TestKit.awaitCond(mbox.actor.actor != null, 1.second)
           mbox.actor.actor match {
-            case FastActor(latch, _) ⇒ Await.ready(latch, 1.second)
+            case FastActor(latch, _) => Await.ready(latch, 1.second)
           }
         }
         ret
@@ -132,7 +132,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "reject invalid names" in {
       for (
-        n ← Seq(
+        n <- Seq(
           "-hallowelt",
           "_hallowelt",
           "hallo*welt",
@@ -190,7 +190,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val count = 10
       val latch = TestLatch(count)
 
-      for (i ← 1 to count) {
+      for (i <- 1 to count) {
         system2.registerOnTermination {
           Thread.sleep((i % 3).millis.dilated.toMillis)
           result add i
@@ -201,7 +201,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       system2.terminate()
       Await.ready(latch, 5 seconds)
 
-      val expected = (for (i ← 1 to count) yield i).reverse
+      val expected = (for (i <- 1 to count) yield i).reverse
 
       immutableSeq(result) should ===(expected)
     }
@@ -253,7 +253,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         system2.terminate()
         system2.registerOnTermination { count.incrementAndGet() }
       } catch {
-        case _: RejectedExecutionException ⇒ count.incrementAndGet()
+        case _: RejectedExecutionException => count.incrementAndGet()
       }
 
       Await.ready(system2.whenTerminated, 10.seconds)
@@ -263,7 +263,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliably create waves of actors" in {
       import system.dispatcher
       implicit val timeout = Timeout((20 seconds).dilated)
-      val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
+      val waves = for (i <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should ===(Vector("done", "done", "done"))
     }
 
@@ -285,7 +285,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
           created :+= t
           if (created.size % 1000 == 0) Thread.sleep(50) // in case of unfair thread scheduling
         } catch {
-          case _: IllegalStateException ⇒ failing = true
+          case _: IllegalStateException => failing = true
         }
 
         if (!failing && system.uptime >= 10) {
@@ -295,7 +295,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         }
       }
 
-      created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) should ===(Seq.empty[ActorRef])
+      created filter (ref => !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) should ===(Seq.empty[ActorRef])
     }
 
     "shut down when /user fails" in {
@@ -313,7 +313,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
           .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
         def receive = {
-          case "die" ⇒ throw new Exception("hello")
+          case "die" => throw new Exception("hello")
         }
       }))
       val probe = TestProbe()
@@ -334,7 +334,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
           .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
         def receive = {
-          case "die" ⇒ throw new Exception("hello")
+          case "die" => throw new Exception("hello")
         }
       }))
       EventFilter[Exception]("hello") intercept {
@@ -352,7 +352,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       try {
         val ref = system2.actorOf(Props(new Actor {
           def receive = {
-            case "ping" ⇒ sender() ! "pong"
+            case "ping" => sender() ! "pong"
           }
         }))
 

@@ -11,7 +11,7 @@ import akka.protobuf.{ ByteString, MessageLite }
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
-import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages ⇒ dm }
+import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages => dm }
 import scala.collection.JavaConverters._
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
@@ -37,40 +37,40 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   private val PublishManifest = "E"
   private val SendToOneSubscriberManifest = "F"
 
-  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    StatusManifest → statusFromBinary,
-    DeltaManifest → deltaFromBinary,
-    SendManifest → sendFromBinary,
-    SendToAllManifest → sendToAllFromBinary,
-    PublishManifest → publishFromBinary,
-    SendToOneSubscriberManifest → sendToOneSubscriberFromBinary)
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
+    StatusManifest -> statusFromBinary,
+    DeltaManifest -> deltaFromBinary,
+    SendManifest -> sendFromBinary,
+    SendToAllManifest -> sendToAllFromBinary,
+    PublishManifest -> publishFromBinary,
+    SendToOneSubscriberManifest -> sendToOneSubscriberFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: Status              ⇒ StatusManifest
-    case _: Delta               ⇒ DeltaManifest
-    case _: Send                ⇒ SendManifest
-    case _: SendToAll           ⇒ SendToAllManifest
-    case _: Publish             ⇒ PublishManifest
-    case _: SendToOneSubscriber ⇒ SendToOneSubscriberManifest
-    case _ ⇒
+    case _: Status              => StatusManifest
+    case _: Delta               => DeltaManifest
+    case _: Send                => SendManifest
+    case _: SendToAll           => SendToAllManifest
+    case _: Publish             => PublishManifest
+    case _: SendToOneSubscriber => SendToOneSubscriberManifest
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: Status              ⇒ compress(statusToProto(m))
-    case m: Delta               ⇒ compress(deltaToProto(m))
-    case m: Send                ⇒ sendToProto(m).toByteArray
-    case m: SendToAll           ⇒ sendToAllToProto(m).toByteArray
-    case m: Publish             ⇒ publishToProto(m).toByteArray
-    case m: SendToOneSubscriber ⇒ sendToOneSubscriberToProto(m).toByteArray
-    case _ ⇒
+    case m: Status              => compress(statusToProto(m))
+    case m: Delta               => compress(deltaToProto(m))
+    case m: Send                => sendToProto(m).toByteArray
+    case m: SendToAll           => sendToAllToProto(m).toByteArray
+    case m: Publish             => publishToProto(m).toByteArray
+    case m: SendToOneSubscriber => sendToOneSubscriberToProto(m).toByteArray
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
-      case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new NotSerializableException(
+      case Some(f) => f(bytes)
+      case None => throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 
@@ -88,8 +88,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 ⇒ ()
-      case n ⇒
+      case -1 => ()
+      case n =>
         out.write(buffer, 0, n)
         readChunk()
     }
@@ -100,9 +100,9 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   }
 
   private def addressToProto(address: Address): dm.Address.Builder = address match {
-    case Address(protocol, system, Some(host), Some(port)) ⇒
+    case Address(protocol, system, Some(host), Some(port)) =>
       dm.Address.newBuilder().setSystem(system).setHostname(host).setPort(port).setProtocol(protocol)
-    case _ ⇒ throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
+    case _ => throw new IllegalArgumentException(s"Address [${address}] could not be serialized: host or port missing.")
   }
 
   private def addressFromProto(address: dm.Address): Address =
@@ -110,7 +110,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def statusToProto(status: Status): dm.Status = {
     val versions = status.versions.map {
-      case (a, v) ⇒
+      case (a, v) =>
         dm.Status.Version.newBuilder().
           setAddress(addressToProto(a)).
           setTimestamp(v).
@@ -127,16 +127,16 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def statusFromProto(status: dm.Status): Status = {
     val isReplyToStatus = if (status.hasReplyToStatus) status.getReplyToStatus else false
-    Status(status.getVersionsList.asScala.iterator.map(v ⇒
-      addressFromProto(v.getAddress) → v.getTimestamp).toMap, isReplyToStatus)
+    Status(status.getVersionsList.asScala.iterator.map(v =>
+      addressFromProto(v.getAddress) -> v.getTimestamp).toMap, isReplyToStatus)
   }
 
   private def deltaToProto(delta: Delta): dm.Delta = {
-    val buckets = delta.buckets.map { b ⇒
+    val buckets = delta.buckets.map { b =>
       val entries = b.content.map {
-        case (key, value) ⇒
+        case (key, value) =>
           val b = dm.Delta.Entry.newBuilder().setKey(key).setVersion(value.version)
-          value.ref.foreach(r ⇒ b.setRef(Serialization.serializedActorPath(r)))
+          value.ref.foreach(r => b.setRef(Serialization.serializedActorPath(r)))
           b.build()
       }.toVector.asJava
 
@@ -153,9 +153,9 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     deltaFromProto(dm.Delta.parseFrom(decompress(bytes)))
 
   private def deltaFromProto(delta: dm.Delta): Delta =
-    Delta(delta.getBucketsList.asScala.toVector.map { b ⇒
-      val content: TreeMap[String, ValueHolder] = scala.collection.immutable.TreeMap.from(b.getContentList.asScala.iterator.map { entry ⇒
-        entry.getKey → ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
+    Delta(delta.getBucketsList.asScala.toVector.map { b =>
+      val content: TreeMap[String, ValueHolder] = scala.collection.immutable.TreeMap.from(b.getContentList.asScala.iterator.map { entry =>
+        entry.getKey -> ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
       })
       Bucket(addressFromProto(b.getOwner), b.getVersion, content)
     })

@@ -75,8 +75,8 @@ import org.reactivestreams.Subscription
   def shutdown(reason: Option[Throwable]): Unit = {
     shutdownReason = reason
     pendingSubscribers.getAndSet(null) match {
-      case null    ⇒ // already called earlier
-      case pending ⇒ pending foreach reportSubscribeFailure
+      case null    => // already called earlier
+      case pending => pending foreach reportSubscribeFailure
     }
   }
 
@@ -84,15 +84,15 @@ import org.reactivestreams.Subscription
 
   private def reportSubscribeFailure(subscriber: Subscriber[_ >: T]): Unit =
     try shutdownReason match {
-      case Some(_: SpecViolation) ⇒ // ok, not allowed to call onError
-      case Some(e) ⇒
+      case Some(_: SpecViolation) => // ok, not allowed to call onError
+      case Some(e) =>
         tryOnSubscribe(subscriber, CancelledSubscription)
         tryOnError(subscriber, e)
-      case None ⇒
+      case None =>
         tryOnSubscribe(subscriber, CancelledSubscription)
         tryOnComplete(subscriber)
     } catch {
-      case _: SpecViolation ⇒ // nothing to do
+      case _: SpecViolation => // nothing to do
     }
 
 }
@@ -114,7 +114,7 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] trait SoftShutdown { this: Actor ⇒
+@InternalApi private[akka] trait SoftShutdown { this: Actor =>
   def softShutdown(): Unit = {
     val children = context.children
     if (children.isEmpty) {
@@ -122,8 +122,8 @@ import org.reactivestreams.Subscription
     } else {
       context.children foreach context.watch
       context.become {
-        case Terminated(_) ⇒ if (context.children.isEmpty) context.stop(self)
-        case _             ⇒ // ignore all the rest, we’re practically dead
+        case Terminated(_) => if (context.children.isEmpty) context.stop(self)
+        case _             => // ignore all the rest, we’re practically dead
       }
     }
   }

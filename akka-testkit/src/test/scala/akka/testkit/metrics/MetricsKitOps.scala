@@ -15,7 +15,7 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet
  * Extracted to give easy overview of user-API detached from MetricsKit internals.
  */
 private[akka] trait MetricsKitOps extends MetricKeyDSL {
-  this: MetricsKit ⇒
+  this: MetricsKit =>
 
   type MetricKey = MetricKeyDSL#MetricKey
 
@@ -31,7 +31,7 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
    *
    * Do not use for short running pieces of code.
    */
-  def timedWithKnownOps[T](key: MetricKey, ops: Long)(run: ⇒ T): T = {
+  def timedWithKnownOps[T](key: MetricKey, ops: Long)(run: => T): T = {
     val c = getOrRegister(key.toString, new KnownOpsInTimespanTimer(expectedOps = ops))
     try run finally c.stop()
   }
@@ -94,6 +94,6 @@ private[metrics] trait MetricsPrefix extends MetricSet {
   abstract override def getMetrics: util.Map[String, Metric] = {
     // does not have to be fast, is only called once during registering registry
     import collection.JavaConverters._
-    (super.getMetrics.asScala.map { case (k, v) ⇒ (prefix / k).toString → v }).asJava
+    (super.getMetrics.asScala.map { case (k, v) => (prefix / k).toString -> v }).asJava
   }
 }

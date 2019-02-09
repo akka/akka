@@ -19,12 +19,12 @@ import akka.remote.artery.MaxThroughputSpec._
 object FanOutThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("akka.test.FanOutThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 4
-      case value ⇒ value.toInt
+      case null  => 4
+      case value => value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
 
-  for (n ← 1 to totalNumberOfNodes) role("node-" + n)
+  for (n <- 1 to totalNumberOfNodes) role("node-" + n)
 
   val barrierTimeout = 5.minutes
 
@@ -141,8 +141,8 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
     runOn(roles.head) {
       enterBarrier(receiverName + "-started")
       val ignore = TestProbe()
-      val receivers = targetNodes.map(target ⇒ identifyReceiver(receiverName, target)).toArray[Target]
-      val senders = for ((target, i) ← targetNodes.zipWithIndex) yield {
+      val receivers = targetNodes.map(target => identifyReceiver(receiverName, target)).toArray[Target]
+      val senders = for ((target, i) <- targetNodes.zipWithIndex) yield {
         val receiver = receivers(i)
         val plotProbe = TestProbe()
         val snd = system.actorOf(
@@ -154,7 +154,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
         (snd, terminationProbe, plotProbe)
       }
       senders.foreach {
-        case (snd, terminationProbe, plotProbe) ⇒
+        case (snd, terminationProbe, plotProbe) =>
           terminationProbe.expectTerminated(snd, barrierTimeout)
           if (snd == senders.head._1) {
             val plotResult = plotProbe.expectMsgType[PlotResult]
@@ -169,7 +169,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
   "Max throughput of fan-out" must {
     val reporter = BenchmarkFileReporter("FanOutThroughputSpec", system)
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
   }

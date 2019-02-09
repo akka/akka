@@ -12,7 +12,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 
-import scala.collection.{ Map ⇒ SMap }
+import scala.collection.{ Map => SMap }
 
 object GraphInterpreterSpecKit {
 
@@ -45,7 +45,7 @@ object GraphInterpreterSpecKit {
       upstream.stageId = idx
       logics(idx) = upstream
       upstream.out.id = 0
-      outOwners = outOwners + (upstream.out → upstream)
+      outOwners = outOwners + (upstream.out -> upstream)
       idx += 1
     }
 
@@ -65,7 +65,7 @@ object GraphInterpreterSpecKit {
       while (inletIdx < stage.shape.inlets.length) {
         val inlet = stage.shape.inlets(inletIdx)
         inlet.id = inletIdx
-        inOwners = inOwners + (inlet → logic)
+        inOwners = inOwners + (inlet -> logic)
         inletIdx += 1
       }
 
@@ -73,7 +73,7 @@ object GraphInterpreterSpecKit {
       while (outletIdx < stage.shape.outlets.length) {
         val outlet = stage.shape.outlets(outletIdx)
         outlet.id = outletIdx
-        outOwners = outOwners + (outlet → logic)
+        outOwners = outOwners + (outlet -> logic)
         outletIdx += 1
       }
       logics(idx) = logic
@@ -88,7 +88,7 @@ object GraphInterpreterSpecKit {
       downstream.stageId = idx
       logics(idx) = downstream
       downstream.in.id = 0
-      inOwners = inOwners + (downstream.in → downstream)
+      inOwners = inOwners + (downstream.in -> downstream)
 
       idx += 1
       downstreamIdx += 1
@@ -103,7 +103,7 @@ object GraphInterpreterSpecKit {
   private[stream] def createLinearFlowConnections(logics: Seq[GraphStageLogic]): Array[Connection] = {
     require(logics.length >= 2, s"$logics is too short to create a linear flow")
     logics.sliding(2).zipWithIndex.map {
-      case (window, idx) ⇒
+      case (window, idx) =>
         val outOwner = window(0)
         val inOwner = window(1)
 
@@ -133,7 +133,7 @@ object GraphInterpreterSpecKit {
 
     val connections = new Array[Connection](connectedPorts.size)
     connectedPorts.zipWithIndex.foreach {
-      case ((outlet, inlet), idx) ⇒
+      case ((outlet, inlet), idx) =>
 
         val outOwner = outOwners(outlet)
         val inOwner = inOwners(inlet)
@@ -155,20 +155,20 @@ object GraphInterpreterSpecKit {
 
   private def setPortIds(shape: Shape): Unit = {
     shape.inlets.zipWithIndex.foreach {
-      case (inlet, idx) ⇒ inlet.id = idx
+      case (inlet, idx) => inlet.id = idx
     }
     shape.outlets.zipWithIndex.foreach {
-      case (outlet, idx) ⇒ outlet.id = idx
+      case (outlet, idx) => outlet.id = idx
     }
   }
 
   private def setPortIds(stage: GraphStageWithMaterializedValue[_ <: Shape, _]): Unit = {
-    stage.shape.inlets.zipWithIndex.foreach { case (inlet, idx) ⇒ inlet.id = idx }
-    stage.shape.outlets.zipWithIndex.foreach { case (inlet, idx) ⇒ inlet.id = idx }
+    stage.shape.inlets.zipWithIndex.foreach { case (inlet, idx) => inlet.id = idx }
+    stage.shape.outlets.zipWithIndex.foreach { case (inlet, idx) => inlet.id = idx }
   }
 
   private def setLogicIds(logics: Array[GraphStageLogic]): Unit = {
-    logics.zipWithIndex.foreach { case (logic, idx) ⇒ logic.stageId = idx }
+    logics.zipWithIndex.foreach { case (logic, idx) => logic.stageId = idx }
   }
 
 }
@@ -222,18 +222,18 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       def connect[T](upstream: UpstreamBoundaryStageLogic[T], in: Inlet[T]): AssemblyBuilder = {
         upstreams :+= upstream
-        connectedPorts :+= upstream.out → in
+        connectedPorts :+= upstream.out -> in
         this
       }
 
       def connect[T](out: Outlet[T], downstream: DownstreamBoundaryStageLogic[T]): AssemblyBuilder = {
         downstreams :+= downstream
-        connectedPorts :+= out → downstream.in
+        connectedPorts :+= out -> downstream.in
         this
       }
 
       def connect[T](out: Outlet[T], in: Inlet[T]): AssemblyBuilder = {
-        connectedPorts :+= out → in
+        connectedPorts :+= out -> in
         this
       }
 
@@ -251,7 +251,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
         logger,
         logics,
         connections,
-        onAsyncInput = (_, _, _, _) ⇒ (),
+        onAsyncInput = (_, _, _, _) => (),
         fuzzingMode = false,
         context = null)
       _interpreter.init(null)
@@ -393,8 +393,8 @@ trait GraphInterpreterSpecKit extends StreamSpec {
           val internalEvent = portToConn(in.id).slot
 
           internalEvent match {
-            case Failed(_, elem) ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
-            case elem            ⇒ lastEvent += OnNext(DownstreamPortProbe.this, elem)
+            case Failed(_, elem) => lastEvent += OnNext(DownstreamPortProbe.this, elem)
+            case elem            => lastEvent += OnNext(DownstreamPortProbe.this, elem)
           }
         }
 
@@ -441,7 +441,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     // Must be lazy because I turned this stage "inside-out" therefore changing initialization order
     // to make tests a bit more readable
     lazy val insideOutStage: GraphStageLogic = new GraphStageLogic(stageshape) {
-      private def mayFail(task: ⇒ Unit): Unit = {
+      private def mayFail(task: => Unit): Unit = {
         if (!_failOnNextEvent) task
         else {
           _failOnNextEvent = false

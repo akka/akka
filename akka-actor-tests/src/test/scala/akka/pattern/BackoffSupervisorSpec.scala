@@ -23,8 +23,8 @@ object BackoffSupervisorSpec {
 
   class Child(probe: ActorRef) extends Actor {
     def receive = {
-      case "boom" ⇒ throw new TestException
-      case msg    ⇒ probe ! msg
+      case "boom" => throw new TestException
+      case msg    => probe ! msg
     }
   }
 
@@ -35,8 +35,8 @@ object BackoffSupervisorSpec {
 
   class ManualChild(probe: ActorRef) extends Actor {
     def receive = {
-      case "boom" ⇒ throw new TestException
-      case msg ⇒
+      case "boom" => throw new TestException
+      case msg =>
         probe ! msg
         context.parent ! BackoffSupervisor.Reset
     }
@@ -89,10 +89,10 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       }
       filterException[TestException] {
         val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Stop
+          case _: TestException => SupervisorStrategy.Stop
         }
         val restartingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Restart
+          case _: TestException => SupervisorStrategy.Restart
         }
 
         assertCustomStrategy(
@@ -159,10 +159,10 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
 
         val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Stop
+          case _: TestException => SupervisorStrategy.Stop
         }
         val restartingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Restart
+          case _: TestException => SupervisorStrategy.Restart
         }
 
         assertManualReset(
@@ -237,7 +237,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         minBackoff: FiniteDuration,
         maxBackoff: FiniteDuration,
         randomFactor: Double,
-        expectedResult: FiniteDuration) ⇒
+        expectedResult: FiniteDuration) =>
 
         val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
         assert(calculatedValue === expectedResult)

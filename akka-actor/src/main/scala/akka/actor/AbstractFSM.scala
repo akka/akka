@@ -30,7 +30,7 @@ object AbstractFSM {
  *
  */
 abstract class AbstractFSM[S, D] extends FSM[S, D] {
-  import java.util.{ List ⇒ JList }
+  import java.util.{ List => JList }
 
   import FSM._
   import akka.japi.pf.FI._

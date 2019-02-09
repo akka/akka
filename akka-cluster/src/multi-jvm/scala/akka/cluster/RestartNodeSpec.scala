@@ -47,10 +47,10 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
     context.actorSelection(RootActorPath(a) / "user" / "address-receiver") ! Identify(None)
 
     def receive = {
-      case ActorIdentity(None, Some(ref)) ⇒
+      case ActorIdentity(None, Some(ref)) =>
         context.watch(ref)
         replyTo ! Done
-      case t: Terminated ⇒
+      case t: Terminated =>
     }
   }
 }
@@ -96,7 +96,7 @@ abstract class RestartNodeSpec
       runOn(first, third) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: UniqueAddress ⇒
+            case a: UniqueAddress =>
               secondUniqueAddress = a
               sender() ! "ok"
           }
@@ -107,7 +107,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r ⇒
+        List(first, third) foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }
@@ -145,7 +145,7 @@ abstract class RestartNodeSpec
       runOn(first, third) {
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
-          Cluster(system).readView.members.exists { m ⇒
+          Cluster(system).readView.members.exists { m =>
             m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }

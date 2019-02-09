@@ -70,7 +70,7 @@ object EventSourcedBehaviorStashSpec {
 
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
     Behaviors.supervise[Command[_]] {
-      Behaviors.setup(_ ⇒ eventSourcedCounter(persistenceId))
+      Behaviors.setup(_ => eventSourcedCounter(persistenceId))
     }.onFailure(SupervisorStrategy.restart.withLoggingEnabled(enabled = false))
 
   def eventSourcedCounter(
@@ -78,20 +78,20 @@ object EventSourcedBehaviorStashSpec {
     EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
       persistenceId,
       emptyState = State(0, active = true),
-      commandHandler = (state, command) ⇒ {
+      commandHandler = (state, command) => {
         if (state.active) active(state, command)
         else inactive(state, command)
       },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented(delta) ⇒
+      eventHandler = (state, evt) => evt match {
+        case Incremented(delta) =>
           if (!state.active) throw new IllegalStateException
           State(state.value + delta, active = true)
-        case ValueUpdated(value) ⇒
+        case ValueUpdated(value) =>
           State(value, active = state.active)
-        case Activated ⇒
+        case Activated =>
           if (state.active) throw new IllegalStateException
           state.copy(active = true)
-        case Deactivated ⇒
+        case Deactivated =>
           if (!state.active) throw new IllegalStateException
           state.copy(active = false)
       })
@@ -101,30 +101,30 @@ object EventSourcedBehaviorStashSpec {
 
   private def active(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case cmd: Increment ⇒
+      case cmd: Increment =>
         Effect.persist(Incremented(1))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case cmd @ UpdateValue(_, value, _) ⇒
+          .thenReply(cmd)(_ => Ack(cmd.id))
+      case cmd @ UpdateValue(_, value, _) =>
         Effect.persist(ValueUpdated(value))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case query: GetValue ⇒
+          .thenReply(cmd)(_ => Ack(cmd.id))
+      case query: GetValue =>
         Effect.reply(query)(state)
-      case cmd: Deactivate ⇒
+      case cmd: Deactivate =>
         Effect.persist(Deactivated)
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case cmd: Activate ⇒
+          .thenReply(cmd)(_ => Ack(cmd.id))
+      case cmd: Activate =>
         // already active
         Effect.reply(cmd)(Ack(cmd.id))
-      case _: Unhandled ⇒
+      case _: Unhandled =>
         Effect.unhandled.thenNoReply()
-      case Throw(id, t, replyTo) ⇒
+      case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case cmd: IncrementThenThrow ⇒
+      case cmd: IncrementThenThrow =>
         Effect.persist(Incremented(1))
-          .thenRun((_: State) ⇒ throw cmd.t)
+          .thenRun((_: State) => throw cmd.t)
           .thenNoReply()
-      case cmd: Slow ⇒
+      case cmd: Slow =>
         cmd.latch.await(30, TimeUnit.SECONDS)
         Effect.reply(cmd)(Ack(cmd.id))
     }
@@ -132,28 +132,28 @@ object EventSourcedBehaviorStashSpec {
 
   private def inactive(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case _: Increment ⇒
+      case _: Increment =>
         Effect.stash()
-      case cmd @ UpdateValue(_, value, _) ⇒
+      case cmd @ UpdateValue(_, value, _) =>
         Effect.persist(ValueUpdated(value))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case query: GetValue ⇒
+          .thenReply(cmd)(_ => Ack(cmd.id))
+      case query: GetValue =>
         Effect.reply(query)(state)
-      case cmd: Deactivate ⇒
+      case cmd: Deactivate =>
         // already inactive
         Effect.reply(cmd)(Ack(cmd.id))
-      case cmd: Activate ⇒
+      case cmd: Activate =>
         Effect.persist(Activated)
           .thenUnstashAll()
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case _: Unhandled ⇒
+          .thenReply(cmd)(_ => Ack(cmd.id))
+      case _: Unhandled =>
         Effect.unhandled.thenNoReply()
-      case Throw(id, t, replyTo) ⇒
+      case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case _: IncrementThenThrow ⇒
+      case _: IncrementThenThrow =>
         Effect.stash()
-      case _: Slow ⇒
+      case _: Slow =>
         Effect.stash()
     }
   }
@@ -270,15 +270,15 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       val stateProbe = TestProbe[State]
       val notUsedProbe = TestProbe[NotUsed]
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-1-$n", ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Deactivate(s"deact-2-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         if (n % 10 == 0)
           c ! Unhandled(notUsedProbe.ref)
         c ! Increment(s"inc-3-$n", ackProbe.ref)
@@ -286,33 +286,33 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       c ! GetValue(stateProbe.ref)
 
-      (1 to 5).foreach { n ⇒
+      (1 to 5).foreach { n =>
         c ! UpdateValue(s"upd-4-$n", n * 1000, ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Activate(s"act-5-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-6-$n", ackProbe.ref)
       }
 
       c ! GetValue(stateProbe.ref)
 
-      (6 to 8).foreach { n ⇒
+      (6 to 8).foreach { n =>
         c ! UpdateValue(s"upd-7-$n", n * 1000, ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Deactivate(s"deact-8-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-9-$n", ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Activate(s"act-10-$n", ackProbe.ref)
       }
 
@@ -323,47 +323,47 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       // verify the order
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-1-$n"))
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"deact-2-$n"))
       }
 
-      (1 to 5).foreach { n ⇒
+      (1 to 5).foreach { n =>
         ackProbe.expectMessage(Ack(s"upd-4-$n"))
       }
 
       ackProbe.expectMessage(Ack("act-5-1"))
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-3-$n"))
       }
 
-      (2 to 3).foreach { n ⇒
+      (2 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"act-5-$n"))
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-6-$n"))
       }
 
-      (6 to 8).foreach { n ⇒
+      (6 to 8).foreach { n =>
         ackProbe.expectMessage(Ack(s"upd-7-$n"))
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"deact-8-$n"))
       }
 
       ackProbe.expectMessage(Ack("act-10-1"))
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-9-$n"))
       }
 
-      (2 to 3).foreach { n ⇒
+      (2 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"act-10-$n"))
       }
 
@@ -416,7 +416,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       // make first command slow to ensure that all subsequent commands are enqueued first
       c ! Slow("slow", latch, ackProbe.ref)
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         if (n == 3)
           c ! IncrementThenThrow(s"inc-$n", new TestException("test"), ackProbe.ref)
         else
@@ -442,11 +442,11 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         c ! Increment(s"inc-$n", ackProbe.ref)
       }
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         if (n != 5)
           ackProbe.expectMessage(Ack(s"inc-$n"))
       }
@@ -494,39 +494,39 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       val behavior = EventSourcedBehavior[String, String, Boolean](
         PersistenceId("stash-is-full-drop"),
         emptyState = false,
-        commandHandler = { (state, command) ⇒
+        commandHandler = { (state, command) =>
           state match {
-            case false ⇒
+            case false =>
               command match {
-                case "ping" ⇒
+                case "ping" =>
                   probe.ref ! "pong"
                   Effect.none
-                case "start-stashing" ⇒
+                case "start-stashing" =>
                   Effect.persist("start-stashing")
-                case msg ⇒
+                case msg =>
                   probe.ref ! msg
                   Effect.none
               }
 
-            case true ⇒
+            case true =>
               command match {
-                case "unstash" ⇒
+                case "unstash" =>
                   Effect.persist("unstash")
                     .thenUnstashAll()
                     // FIXME this is run before unstash, so not sequentially as the docs say
                     // https://github.com/akka/akka/issues/26489
-                    .thenRun(_ ⇒
+                    .thenRun(_ =>
                       probe.ref ! "done-unstashing"
                     )
-                case _ ⇒
+                case _ =>
                   Effect.stash()
               }
           }
         },
         {
-          case (_, "start-stashing") ⇒ true
-          case (_, "unstash")        ⇒ false
-          case (_, _)                ⇒ throw new IllegalArgumentException()
+          case (_, "start-stashing") => true
+          case (_, "unstash")        => false
+          case (_, _)                => throw new IllegalArgumentException()
         }
       )
 
@@ -540,7 +540,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
       EventFilter.warning(start = "Stash buffer is full, dropping message").intercept {
-        (0 to limit).foreach { n ⇒
+        (0 to limit).foreach { n =>
           c ! s"cmd-$n" // limit triggers overflow
         }
         probe.expectMessageType[Dropped]
@@ -549,7 +549,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       // we can still unstash and continue interacting
       c ! "unstash"
       probe.expectMessage("done-unstashing") // before actually unstashing, see above
-      (0 to (limit - 1)).foreach { n ⇒
+      (0 to (limit - 1)).foreach { n =>
         probe.expectMessage(s"cmd-$n")
       }
 
@@ -569,13 +569,13 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
           PersistenceId("stash-is-full-fail"),
           "",
           commandHandler = {
-            case (_, "ping") ⇒
+            case (_, "ping") =>
               probe.ref ! "pong"
               Effect.none
-            case (_, _) ⇒
+            case (_, _) =>
               Effect.stash()
           },
-          (state, _) ⇒ state
+          (state, _) => state
         )
 
         val c = failStashTestKit.spawn(behavior)
@@ -586,7 +586,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
         EventFilter[StashOverflowException](occurrences = 1).intercept {
           val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
-          (0 to limit).foreach { n ⇒
+          (0 to limit).foreach { n =>
             c ! s"cmd-$n" // limit triggers overflow
           }
           probe.expectTerminated(c, 10.seconds)

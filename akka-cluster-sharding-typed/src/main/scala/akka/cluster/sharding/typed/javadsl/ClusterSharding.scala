@@ -19,7 +19,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.japi.function.{ Function ⇒ JFunction }
+import akka.japi.function.{ Function => JFunction }
 import akka.persistence.typed.PersistenceId
 import akka.util.Timeout
 
@@ -342,7 +342,7 @@ object StartEntity {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] ⇒
+@DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] =>
 
   /**
    * Name of the entity type.
@@ -399,7 +399,7 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] { scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] ⇒
+@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] { scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*

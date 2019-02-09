@@ -65,7 +65,7 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
 
       // cause TestMessage manifest to become a heavy hitter
       // cause echo to become a heavy hitter
-      (1 to messagesToExchange).foreach { i ⇒ echoRefA ! TestMessage("hello") }
+      (1 to messagesToExchange).foreach { i => echoRefA ! TestMessage("hello") }
       receiveN(messagesToExchange) // the replies
 
       within(10.seconds) {
@@ -218,7 +218,7 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
     val echoRefA = expectMsgType[ActorIdentity].ref.get
 
     // cause TestMessage manifest to become a heavy hitter
-    (1 to messagesToExchange).foreach { i ⇒ echoRefA ! TestMessage("hello") }
+    (1 to messagesToExchange).foreach { i => echoRefA ! TestMessage("hello") }
     receiveN(messagesToExchange) // the replies
 
     within(10.seconds) {
@@ -295,7 +295,7 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
         allRefs ::= echoWrap
 
         // cause echo to become a heavy hitter
-        (1 to messagesToExchange).foreach { i ⇒ echoWrap ! TestMessage("hello") }
+        (1 to messagesToExchange).foreach { i => echoWrap ! TestMessage("hello") }
         receiveN(messagesToExchange) // the replies
 
         var currentTable: CompressionTable[ActorRef] = null
@@ -317,9 +317,9 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
         (((currentTable.version - lastTable.version) & 127) <= 2) should be(true)
 
         def removeFirst(l: List[Int], it: Int): List[Int] = l match {
-          case Nil           ⇒ Nil
-          case `it` :: tail  ⇒ tail
-          case other :: tail ⇒ other :: removeFirst(tail, it)
+          case Nil           => Nil
+          case `it` :: tail  => tail
+          case other :: tail => other :: removeFirst(tail, it)
         }
 
         remainingExpectedTableVersions = removeFirst(remainingExpectedTableVersions, lastTable.version)
@@ -342,17 +342,17 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: TestMessage ⇒ TestMessageManifest
+      case _: TestMessage => TestMessageManifest
     }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case msg: TestMessage ⇒ msg.name.getBytes
+    case msg: TestMessage => msg.name.getBytes
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     manifest match {
-      case TestMessageManifest ⇒ TestMessage(new String(bytes))
-      case unknown             ⇒ throw new Exception("Unknown manifest: " + unknown)
+      case TestMessageManifest => TestMessage(new String(bytes))
+      case unknown             => throw new Exception("Unknown manifest: " + unknown)
     }
   }
 }

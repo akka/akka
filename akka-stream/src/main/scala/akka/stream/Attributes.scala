@@ -44,9 +44,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   private[stream] def isAsync: Boolean = {
     attributeList.nonEmpty && attributeList.exists {
-      case AsyncBoundary                 ⇒ true
-      case ActorAttributes.Dispatcher(_) ⇒ true
-      case _                             ⇒ false
+      case AsyncBoundary                 => true
+      case ActorAttributes.Dispatcher(_) => true
+      case _                             => false
     }
   }
 
@@ -71,7 +71,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * This is the expected way for operators to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }.asJava
+    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }.asJava
 
   /**
    * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof or
@@ -84,8 +84,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def get[T <: Attribute: ClassTag](default: T): T =
     get[T] match {
-      case Some(a) ⇒ a
-      case None    ⇒ default
+      case Some(a) => a
+      case None    => default
     }
 
   /**
@@ -100,7 +100,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    attributeList.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
   }
 
   /**
@@ -121,15 +121,15 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
     @tailrec
     def find(list: List[Attribute]): OptionVal[Attribute] = list match {
-      case Nil ⇒ OptionVal.None
-      case head :: tail ⇒
+      case Nil => OptionVal.None
+      case head :: tail =>
         if (c.isInstance(head)) OptionVal.Some(head)
         else find(tail)
     }
 
     find(attributeList) match {
-      case OptionVal.Some(t) ⇒ t.asInstanceOf[T]
-      case OptionVal.None    ⇒ throw new IllegalStateException(s"Mandatory attribute [$c] not found")
+      case OptionVal.Some(t) => t.asInstanceOf[T]
+      case OptionVal.None    => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 
@@ -158,13 +158,13 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: java.lang.StringBuilder): String =
       if (i.hasNext)
         i.next() match {
-          case Name(n) ⇒
+          case Name(n) =>
             if (buf ne null) concatNames(i, null, buf.append('-').append(n))
             else if (first ne null) {
               val b = new java.lang.StringBuilder((first.length + n.length) * 2)
               concatNames(i, null, b.append(first).append('-').append(n))
             } else concatNames(i, n, null)
-          case _ ⇒ concatNames(i, first, buf)
+          case _ => concatNames(i, first, buf)
         }
       else if (buf eq null) first
       else buf.toString
@@ -177,9 +177,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
     @tailrec def find(attrs: List[Attribute]): String = attrs match {
-      case Attributes.Name(name) :: _ ⇒ name
-      case _ :: tail                  ⇒ find(tail)
-      case Nil                        ⇒ default
+      case Attributes.Name(name) :: _ => name
+      case _ :: tail                  => find(tail)
+      case Nil                        => default
     }
     find(attributeList)
   }
@@ -220,7 +220,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     if (attributeList.isEmpty) java.util.Collections.emptyList()
     else {
       val result = new java.util.ArrayList[T]
-      attributeList.foreach { a ⇒
+      attributeList.foreach { a =>
         if (c.isInstance(a))
           result.add(c.cast(a))
       }
@@ -238,7 +238,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def filtered[T <: Attribute: ClassTag]: List[T] = {
     val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
+    attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) => c.cast(attr) }
   }
 
   /**
@@ -254,7 +254,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) => c cast attr }.asJava
 
   /**
    * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
@@ -263,8 +263,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirst[T <: Attribute: ClassTag](default: T): T = {
     getFirst[T] match {
-      case Some(a) ⇒ a
-      case None    ⇒ default
+      case Some(a) => a
+      case None    => default
     }
   }
 
@@ -274,7 +274,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirst[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) => c.cast(attr) }
   }
 
 }
@@ -400,8 +400,8 @@ object ActorAttributes {
     @InternalApi
     private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
       attributes.mandatoryAttribute[Dispatcher] match {
-        case IODispatcher           ⇒ settings.blockingIoDispatcher
-        case Dispatcher(dispatcher) ⇒ dispatcher
+        case IODispatcher           => settings.blockingIoDispatcher
+        case Dispatcher(dispatcher) => dispatcher
       }
 
     /**

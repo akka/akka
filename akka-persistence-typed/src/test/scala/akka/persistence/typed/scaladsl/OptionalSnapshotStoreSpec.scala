@@ -31,12 +31,12 @@ object OptionalSnapshotStoreSpec {
       persistenceId = PersistenceId(name),
       emptyState = State(),
       commandHandler = CommandHandler.command {
-        _ ⇒ Effect.persist(Event()).thenRun(probe.ref ! _)
+        _ => Effect.persist(Event()).thenRun(probe.ref ! _)
       },
       eventHandler = {
-        case (_, _) ⇒ State()
+        case (_, _) => State()
       }
-    ).snapshotWhen { case _ ⇒ true }
+    ).snapshotWhen { case _ => true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
     persistentBehavior(probe).withSnapshotPluginId("akka.persistence.snapshot-store.local")

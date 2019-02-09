@@ -59,22 +59,22 @@ object StreamRefSpec extends MultiNodeConfig {
     implicit val mat = ActorMaterializer()(context)
 
     def receive = {
-      case RequestLogs(streamId) ⇒
+      case RequestLogs(streamId) =>
         // materialize the SourceRef:
         val (done: Future[Done], ref: Future[SourceRef[String]]) =
-          Source.fromIterator(() ⇒ Iterator.from(1))
-            .map(n ⇒ s"elem-$n")
+          Source.fromIterator(() => Iterator.from(1))
+            .map(n => s"elem-$n")
             .watchTermination()(Keep.right)
             .toMat(StreamRefs.sourceRef())(Keep.both)
-            .mapMaterializedValue { m ⇒
+            .mapMaterializedValue { m =>
               streamLifecycleProbe ! s"started-$streamId"
               m
             }
             .run()
 
         done.onComplete {
-          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$streamId"
-          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$streamId"
+          case Success(_) => streamLifecycleProbe ! s"completed-$streamId"
+          case Failure(_) => streamLifecycleProbe ! s"failed-$streamId"
         }
 
         // wrap the SourceRef in some domain message, such that the sender knows what source it is
@@ -100,22 +100,22 @@ object StreamRefSpec extends MultiNodeConfig {
     implicit val mat = ActorMaterializer()(context)
 
     def receive = {
-      case PrepareUpload(nodeId) ⇒
+      case PrepareUpload(nodeId) =>
 
         // materialize the SinkRef (the remote is like a source of data for us):
         val (ref: Future[SinkRef[String]], done: Future[Done]) =
           StreamRefs.sinkRef[String]()
             .throttle(1, 1.second)
             .toMat(Sink.ignore)(Keep.both)
-            .mapMaterializedValue { m ⇒
+            .mapMaterializedValue { m =>
               streamLifecycleProbe ! s"started-$nodeId"
               m
             }
             .run()
 
         done.onComplete {
-          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$nodeId"
-          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$nodeId"
+          case Success(_) => streamLifecycleProbe ! s"completed-$nodeId"
+          case Failure(_) => streamLifecycleProbe ! s"failed-$nodeId"
         }
 
         // wrap the SinkRef in some domain message, such that the sender knows what source it is
@@ -215,14 +215,14 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
         ref ! PrepareUpload("system-42-tmp")
         val ready = expectMsgType[MeasurementsSinkReady]
 
-        Source.fromIterator(() ⇒ Iterator.from(1))
-          .map(n ⇒ s"elem-$n")
+        Source.fromIterator(() => Iterator.from(1))
+          .map(n => s"elem-$n")
           .watchTermination()(Keep.right)
           .to(ready.sinkRef)
           .run()
           .onComplete {
-            case Success(_) ⇒ streamLifecycle1.ref ! s"completed-system-42-tmp"
-            case Failure(_) ⇒ streamLifecycle1.ref ! s"failed-system-42-tmp"
+            case Success(_) => streamLifecycle1.ref ! s"completed-system-42-tmp"
+            case Failure(_) => streamLifecycle1.ref ! s"failed-system-42-tmp"
           }
       }
       runOn(third) {

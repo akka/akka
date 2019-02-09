@@ -39,14 +39,14 @@ object ClusterSingletonPersistenceSpec {
     EventSourcedBehavior[Command, String, String](
       persistenceId = PersistenceId("TheSingleton"),
       emptyState = "",
-      commandHandler = (state, cmd) ⇒ cmd match {
-        case Add(s) ⇒ Effect.persist(s)
-        case Get(replyTo) ⇒
+      commandHandler = (state, cmd) => cmd match {
+        case Add(s) => Effect.persist(s)
+        case Get(replyTo) =>
           replyTo ! state
           Effect.none
-        case StopPlz ⇒ Effect.stop()
+        case StopPlz => Effect.stop()
       },
-      eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
+      eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
 
 }
 

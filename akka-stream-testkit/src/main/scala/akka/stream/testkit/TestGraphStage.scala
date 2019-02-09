@@ -65,7 +65,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onPush()
           probe.ref ! GraphStageMessages.Push
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Push, ex)
             throw ex
         }
@@ -75,7 +75,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onUpstreamFinish()
           probe.ref ! GraphStageMessages.UpstreamFinish
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.UpstreamFinish, ex)
             throw ex
         }
@@ -86,7 +86,7 @@ private[testkit] class TestSinkStage[T, M](
           inHandler.onUpstreamFailure(ex)
           probe.ref ! GraphStageMessages.Failure(ex)
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Failure(ex), ex)
             throw ex
         }
@@ -131,7 +131,7 @@ private[testkit] class TestSourceStage[T, M](
           outHandler.onPull()
           probe.ref ! GraphStageMessages.Pull
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Pull, ex)
             throw ex
         }
@@ -141,7 +141,7 @@ private[testkit] class TestSourceStage[T, M](
           outHandler.onDownstreamFinish()
           probe.ref ! GraphStageMessages.DownstreamFinish
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.DownstreamFinish, ex)
             throw ex
         }

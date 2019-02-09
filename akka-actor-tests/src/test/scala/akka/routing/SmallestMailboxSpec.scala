@@ -18,15 +18,15 @@ class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val usedActors = new ConcurrentHashMap[Int, String]()
       val router = system.actorOf(SmallestMailboxPool(3).props(routeeProps = Props(new Actor {
         def receive = {
-          case (busy: TestLatch, receivedLatch: TestLatch) ⇒
+          case (busy: TestLatch, receivedLatch: TestLatch) =>
             usedActors.put(0, self.path.toString)
             self ! "another in busy mailbox"
             receivedLatch.countDown()
             Await.ready(busy, TestLatch.DefaultTimeout)
-          case (msg: Int, receivedLatch: TestLatch) ⇒
+          case (msg: Int, receivedLatch: TestLatch) =>
             usedActors.put(msg, self.path.toString)
             receivedLatch.countDown()
-          case _: String ⇒
+          case _: String =>
         }
       })))
 

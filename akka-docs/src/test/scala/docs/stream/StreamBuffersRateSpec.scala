@@ -16,9 +16,9 @@ class StreamBuffersRateSpec extends AkkaSpec {
     def println(s: Any) = ()
     //#pipelining
     Source(1 to 3)
-      .map { i ⇒ println(s"A: $i"); i }.async
-      .map { i ⇒ println(s"B: $i"); i }.async
-      .map { i ⇒ println(s"C: $i"); i }.async
+      .map { i => println(s"A: $i"); i }.async
+      .map { i => println(s"B: $i"); i }.async
+      .map { i => println(s"C: $i"); i }.async
       .runWith(Sink.ignore)
     //#pipelining
   }
@@ -44,16 +44,16 @@ class StreamBuffersRateSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case class Tick()
 
-    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+    RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
       // this is the asynchronous stage in this graph
-      val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) ⇒ count).async)
+      val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count).async)
 
       Source.tick(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.in0
 
       Source.tick(initialDelay = 1.second, interval = 1.second, "message!")
-        .conflateWithSeed(seed = (_) ⇒ 1)((count, _) ⇒ count + 1) ~> zipper.in1
+        .conflateWithSeed(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
 
       zipper.out ~> Sink.foreach(println)
       ClosedShape

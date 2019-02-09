@@ -68,7 +68,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
         probe.expectNext("e")
 
         val more = (1 to 100).map("f" + _)
-        more.foreach { p ⇒
+        more.foreach { p =>
           system.actorOf(TestActor.props(p)) ! p
         }
 

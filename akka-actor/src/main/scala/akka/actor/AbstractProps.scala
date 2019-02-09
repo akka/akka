@@ -46,14 +46,14 @@ private[akka] trait AbstractProps {
     val ac = classOf[Actor]
     val coc = classOf[Creator[_]]
     val actorClass = Reflect.findMarker(cc, coc) match {
-      case t: ParameterizedType ⇒
+      case t: ParameterizedType =>
         t.getActualTypeArguments.head match {
-          case c: Class[_] ⇒ c // since T <: Actor
-          case v: TypeVariable[_] ⇒
-            v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac ⇒ c } getOrElse ac
-          case x ⇒ throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
+          case c: Class[_] => c // since T <: Actor
+          case v: TypeVariable[_] =>
+            v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac => c } getOrElse ac
+          case x => throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
         }
-      case c: Class[_] if (c == coc) ⇒
+      case c: Class[_] if (c == coc) =>
         throw new IllegalArgumentException("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
     }
     create(classOf[CreatorConsumer], actorClass, creator)

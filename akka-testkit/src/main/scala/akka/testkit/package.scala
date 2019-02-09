@@ -12,7 +12,7 @@ import scala.collection.immutable
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 package object testkit {
-  def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit system: ActorSystem): T = {
+  def filterEvents[T](eventFilters: Iterable[EventFilter])(block: => T)(implicit system: ActorSystem): T = {
     def now = System.currentTimeMillis
 
     system.eventStream.publish(TestEvent.Mute(eventFilters.to(immutable.Seq)))
@@ -32,9 +32,9 @@ package object testkit {
     }
   }
 
-  def filterEvents[T](eventFilters: EventFilter*)(block: ⇒ T)(implicit system: ActorSystem): T = filterEvents(eventFilters.toSeq)(block)
+  def filterEvents[T](eventFilters: EventFilter*)(block: => T)(implicit system: ActorSystem): T = filterEvents(eventFilters.toSeq)(block)
 
-  def filterException[T <: Throwable](block: ⇒ Unit)(implicit system: ActorSystem, t: ClassTag[T]): Unit = EventFilter[T]() intercept (block)
+  def filterException[T <: Throwable](block: => Unit)(implicit system: ActorSystem, t: ClassTag[T]): Unit = EventFilter[T]() intercept (block)
 
   /**
    * Scala API. Scale timeouts (durations) during tests with the configured

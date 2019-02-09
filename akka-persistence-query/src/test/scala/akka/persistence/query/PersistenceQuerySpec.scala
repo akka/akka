@@ -37,7 +37,7 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
 
   "ReadJournal" must {
     "be found by full config key" in {
-      withActorSystem() { system ⇒
+      withActorSystem() { system =>
         val readJournalPluginConfig: Config = ConfigFactory.parseString(customReadJournalPluginConfig)
         PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
           DummyReadJournal.Identifier, readJournalPluginConfig)
@@ -61,7 +61,7 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
     }
 
     "throw if unable to find query journal by config key" in {
-      withActorSystem() { system ⇒
+      withActorSystem() { system =>
         intercept[IllegalArgumentException] {
           PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "-unknown")
         }.getMessage should include("missing persistence plugin")
@@ -72,7 +72,7 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
 
   private val systemCounter = new AtomicInteger()
 
-  private def withActorSystem(conf: String = "")(block: ActorSystem ⇒ Unit): Unit = {
+  private def withActorSystem(conf: String = "")(block: ActorSystem => Unit): Unit = {
     val config =
       DummyReadJournalProvider.config
         .withFallback(DummyJavaReadJournalProvider.config)

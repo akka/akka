@@ -25,15 +25,15 @@ private[camel] class CamelSupervisor extends Actor with CamelSupport {
   private val registry: ActorRef = context.actorOf(Props(classOf[Registry], activationTracker), "registry")
 
   override val supervisorStrategy = OneForOneStrategy() {
-    case NonFatal(e) ⇒
+    case NonFatal(e) =>
       Resume
   }
 
   def receive = {
-    case AddWatch(actorRef)     ⇒ context.watch(actorRef)
-    case Terminated(actorRef)   ⇒ registry ! DeRegister(actorRef)
-    case msg: ActivationMessage ⇒ activationTracker forward msg
-    case msg                    ⇒ registry forward (msg)
+    case AddWatch(actorRef)     => context.watch(actorRef)
+    case Terminated(actorRef)   => registry ! DeRegister(actorRef)
+    case msg: ActivationMessage => activationTracker forward msg
+    case msg                    => registry forward (msg)
   }
 }
 
@@ -101,46 +101,46 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
     override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
                             decision: SupervisorStrategy.Directive): Unit =
       cause match {
-        case _: ActorActivationException | _: ActorDeActivationException ⇒
+        case _: ActorActivationException | _: ActorDeActivationException =>
           try context.system.eventStream.publish {
             Logging.Error(cause.getCause, child.path.toString, getClass, cause.getMessage)
-          } catch { case NonFatal(_) ⇒ }
-        case _ ⇒ super.logFailure(context, child, cause, decision)
+          } catch { case NonFatal(_) => }
+        case _ => super.logFailure(context, child, cause, decision)
       }
   }
 
   override val supervisorStrategy = new RegistryLogStrategy()({
-    case e: ActorActivationException ⇒
+    case e: ActorActivationException =>
       activationTracker ! EndpointFailedToActivate(e.actorRef, e.getCause)
       stop(e.actorRef)
       Resume
-    case e: ActorDeActivationException ⇒
+    case e: ActorDeActivationException =>
       activationTracker ! EndpointFailedToDeActivate(e.actorRef, e.getCause)
       stop(e.actorRef)
       Resume
-    case NonFatal(e) ⇒
+    case NonFatal(e) =>
       Resume
   })
 
   def receive = {
-    case msg @ Register(consumer, _, Some(_)) ⇒
+    case msg @ Register(consumer, _, Some(_)) =>
       if (!consumers(consumer)) {
         consumers += consumer
         consumerRegistrar forward msg
         parent ! AddWatch(consumer)
       }
-    case msg @ Register(producer, _, None) ⇒
+    case msg @ Register(producer, _, None) =>
       if (!producers(producer)) {
         producers += producer
         parent ! AddWatch(producer)
       }
       producerRegistrar forward msg
-    case DeRegister(actorRef) ⇒
-      producers.find(_ == actorRef).foreach { p ⇒
+    case DeRegister(actorRef) =>
+      producers.find(_ == actorRef).foreach { p =>
         deRegisterProducer(p)
         producers -= p
       }
-      consumers.find(_ == actorRef).foreach { c ⇒
+      consumers.find(_ == actorRef).foreach { c =>
         deRegisterConsumer(c)
         consumers -= c
       }
@@ -159,31 +159,31 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
   private var camelObjects = Map[ActorRef, (Endpoint, SendProcessor)]()
 
   def receive = {
-    case Register(producer, endpointUri, _) ⇒
+    case Register(producer, endpointUri, _) =>
       if (!camelObjects.contains(producer)) {
         try {
           val endpoint = camelContext.getEndpoint(endpointUri)
           val processor = new SendProcessor(endpoint)
-          camelObjects = camelObjects.updated(producer, endpoint → processor)
+          camelObjects = camelObjects.updated(producer, endpoint -> processor)
           // if this throws, the supervisor stops the producer and de-registers it on termination
           processor.start()
           producer ! CamelProducerObjects(endpoint, processor)
           activationTracker ! EndpointActivated(producer)
         } catch {
-          case NonFatal(e) ⇒ throw new ActorActivationException(producer, e)
+          case NonFatal(e) => throw new ActorActivationException(producer, e)
         }
       } else {
-        camelObjects.get(producer) foreach { case (endpoint, processor) ⇒ producer ! CamelProducerObjects(endpoint, processor) }
+        camelObjects.get(producer) foreach { case (endpoint, processor) => producer ! CamelProducerObjects(endpoint, processor) }
       }
-    case DeRegister(producer) ⇒
+    case DeRegister(producer) =>
       camelObjects.get(producer) foreach {
-        case (_, processor) ⇒
+        case (_, processor) =>
           try {
             camelObjects.get(producer).foreach(_._2.stop())
             camelObjects -= producer
             activationTracker ! EndpointDeActivated(producer)
           } catch {
-            case NonFatal(e) ⇒ throw new ActorDeActivationException(producer, e)
+            case NonFatal(e) => throw new ActorDeActivationException(producer, e)
           }
       }
   }
@@ -195,22 +195,22 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
  */
 private[camel] class ConsumerRegistrar(activationTracker: ActorRef) extends Actor with CamelSupport {
   def receive = {
-    case Register(consumer, endpointUri, Some(consumerConfig)) ⇒
+    case Register(consumer, endpointUri, Some(consumerConfig)) =>
       try {
         // if this throws, the supervisor stops the consumer and de-registers it on termination
         camelContext.addRoutes(new ConsumerActorRouteBuilder(endpointUri, consumer, consumerConfig, camel.settings))
         activationTracker ! EndpointActivated(consumer)
       } catch {
-        case NonFatal(e) ⇒ throw new ActorActivationException(consumer, e)
+        case NonFatal(e) => throw new ActorActivationException(consumer, e)
       }
-    case DeRegister(consumer) ⇒
+    case DeRegister(consumer) =>
       try {
         val route = consumer.path.toString
         camelContext.stopRoute(route)
         camelContext.removeRoute(route)
         activationTracker ! EndpointDeActivated(consumer)
       } catch {
-        case NonFatal(e) ⇒ throw new ActorDeActivationException(consumer, e)
+        case NonFatal(e) => throw new ActorDeActivationException(consumer, e)
       }
   }
 }

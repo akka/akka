@@ -188,18 +188,18 @@ trait ActorPublisher[T] extends Actor {
    * otherwise `onNext` will throw `IllegalStateException`.
    */
   def onNext(element: T): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber =>
       if (demand > 0) {
         demand -= 1
         tryOnNext(subscriber, element)
       } else
         throw new IllegalStateException(
           "onNext is not allowed when the stream has not requested elements, totalDemand was 0")
-    case _: ErrorEmitted ⇒
+    case _: ErrorEmitted =>
       throw new IllegalStateException("onNext must not be called after onError")
-    case Completed | CompleteThenStop ⇒
+    case Completed | CompleteThenStop =>
       throw new IllegalStateException("onNext must not be called after onComplete")
-    case Canceled ⇒ // drop
+    case Canceled => // drop
   }
 
   /**
@@ -207,15 +207,15 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onComplete(): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber =>
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
         try tryOnComplete(subscriber) finally subscriber = null
-    case Completed | CompleteThenStop ⇒
+    case Completed | CompleteThenStop =>
       throw new IllegalStateException("onComplete must only be called once")
-    case _: ErrorEmitted ⇒
+    case _: ErrorEmitted =>
       throw new IllegalStateException("onComplete must not be called after onError")
-    case Canceled ⇒ // drop
+    case Canceled => // drop
   }
 
   /**
@@ -228,11 +228,11 @@ trait ActorPublisher[T] extends Actor {
    * will be delayed until such [[Subscriber]] arrives.
    */
   def onCompleteThenStop(): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber =>
       lifecycleState = CompleteThenStop
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
         try tryOnComplete(subscriber) finally context.stop(self)
-    case _ ⇒ onComplete()
+    case _ => onComplete()
   }
 
   /**
@@ -240,15 +240,15 @@ trait ActorPublisher[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber =>
       lifecycleState = ErrorEmitted(cause, stop = false)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
         try tryOnError(subscriber, cause) finally subscriber = null
-    case _: ErrorEmitted ⇒
+    case _: ErrorEmitted =>
       throw new IllegalStateException("onError must only be called once")
-    case Completed | CompleteThenStop ⇒
+    case Completed | CompleteThenStop =>
       throw new IllegalStateException("onError must not be called after onComplete")
-    case Canceled ⇒ // drop
+    case Canceled => // drop
   }
   /**
    * Terminate the stream with failure. After that you are not allowed to
@@ -260,18 +260,18 @@ trait ActorPublisher[T] extends Actor {
    * will be delayed until such [[Subscriber]] arrives.
    */
   def onErrorThenStop(cause: Throwable): Unit = lifecycleState match {
-    case Active | PreSubscriber ⇒
+    case Active | PreSubscriber =>
       lifecycleState = ErrorEmitted(cause, stop = true)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
         try tryOnError(subscriber, cause) finally context.stop(self)
-    case _ ⇒ onError(cause)
+    case _ => onError(cause)
   }
 
   /**
    * INTERNAL API
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
-    case req @ Request(n) ⇒
+    case req @ Request(n) =>
       if (req.isProcessed()) {
         // it's an unstashed Request, demand is already handled
         super.aroundReceive(receive, req)
@@ -288,45 +288,45 @@ trait ActorPublisher[T] extends Actor {
         }
       }
 
-    case Subscribe(sub: Subscriber[_]) ⇒
+    case Subscribe(sub: Subscriber[_]) =>
       lifecycleState match {
-        case PreSubscriber ⇒
+        case PreSubscriber =>
           scheduledSubscriptionTimeout.cancel()
           subscriber = sub
           lifecycleState = Active
           tryOnSubscribe(sub, new ActorPublisherSubscription(self))
-        case ErrorEmitted(cause, stop) ⇒
+        case ErrorEmitted(cause, stop) =>
           if (stop) context.stop(self)
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnError(sub, cause)
-        case Completed ⇒
+        case Completed =>
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnComplete(sub)
-        case CompleteThenStop ⇒
+        case CompleteThenStop =>
           context.stop(self)
           tryOnSubscribe(sub, CancelledSubscription)
           tryOnComplete(sub)
-        case Active | Canceled ⇒
+        case Active | Canceled =>
           if (subscriber eq sub)
             rejectDuplicateSubscriber(sub)
           else
             rejectAdditionalSubscriber(sub, "ActorPublisher")
       }
 
-    case Cancel ⇒
+    case Cancel =>
       if (lifecycleState != Canceled) {
         // possible to receive again in case of stash
         cancelSelf()
         super.aroundReceive(receive, msg)
       }
 
-    case SubscriptionTimeoutExceeded ⇒
+    case SubscriptionTimeoutExceeded =>
       if (!scheduledSubscriptionTimeout.isCancelled) {
         cancelSelf()
         super.aroundReceive(receive, msg)
       }
 
-    case _ ⇒
+    case _ =>
       super.aroundReceive(receive, msg)
   }
 
@@ -344,9 +344,9 @@ trait ActorPublisher[T] extends Actor {
     import context.dispatcher
 
     subscriptionTimeout match {
-      case timeout: FiniteDuration ⇒
+      case timeout: FiniteDuration =>
         scheduledSubscriptionTimeout = context.system.scheduler.scheduleOnce(timeout, self, SubscriptionTimeoutExceeded)
-      case _ ⇒
+      case _ =>
       // ignore...
     }
   }
@@ -364,7 +364,7 @@ trait ActorPublisher[T] extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
-    state.get(self) foreach { s ⇒
+    state.get(self) foreach { s =>
       // restore previous state
       subscriber = s.subscriber.orNull
       demand = s.demand

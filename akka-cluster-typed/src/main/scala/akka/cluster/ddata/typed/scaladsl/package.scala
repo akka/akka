@@ -4,7 +4,7 @@
 
 package akka.cluster.ddata.typed
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 
 package object scaladsl {
   /**

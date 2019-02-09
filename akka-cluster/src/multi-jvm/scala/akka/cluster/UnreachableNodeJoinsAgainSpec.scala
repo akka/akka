@@ -77,7 +77,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(first) {
         // pull network for victim node from all nodes
-        allBut(victim).foreach { roleName ⇒
+        allBut(victim).foreach { roleName =>
           testConductor.blackhole(victim, roleName, Direction.Both).await
         }
       }
@@ -146,7 +146,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(first) {
         // put the network back in
-        allBut(victim).foreach { roleName ⇒
+        allBut(victim).foreach { roleName =>
           testConductor.passThrough(victim, roleName, Direction.Both).await
         }
       }

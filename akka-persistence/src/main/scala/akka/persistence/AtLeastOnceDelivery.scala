@@ -133,7 +133,7 @@ trait AtLeastOnceDelivery extends PersistentActor with AtLeastOnceDeliveryLike {
    * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
-  def deliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit = {
+  def deliver(destination: ActorPath)(deliveryIdToMessage: Long => Any): Unit = {
     internalDeliver(destination)(deliveryIdToMessage)
   }
 
@@ -157,7 +157,7 @@ trait AtLeastOnceDelivery extends PersistentActor with AtLeastOnceDeliveryLike {
    * This method will throw [[AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException]]
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
-  def deliver(destination: ActorSelection)(deliveryIdToMessage: Long ⇒ Any): Unit = {
+  def deliver(destination: ActorSelection)(deliveryIdToMessage: Long => Any): Unit = {
     internalDeliver(destination)(deliveryIdToMessage)
   }
 
@@ -256,7 +256,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] final def internalDeliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit = {
+  private[akka] final def internalDeliver(destination: ActorPath)(deliveryIdToMessage: Long => Any): Unit = {
     if (unconfirmed.size >= maxUnconfirmedMessages)
       throw new MaxUnconfirmedMessagesExceededException(
         s"Too many unconfirmed messages, maximum allowed is [$maxUnconfirmedMessages]")
@@ -275,7 +275,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] final def internalDeliver(destination: ActorSelection)(deliveryIdToMessage: Long ⇒ Any): Unit = {
+  private[akka] final def internalDeliver(destination: ActorSelection)(deliveryIdToMessage: Long => Any): Unit = {
     val isWildcardSelection = destination.pathString.contains("*")
     require(!isWildcardSelection, "Delivering to wildcard actor selections is not supported by AtLeastOnceDelivery. " +
       "Introduce an mediator Actor which this AtLeastOnceDelivery Actor will deliver the messages to," +
@@ -310,10 +310,10 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
 
     unconfirmed
       .iterator
-      .filter { case (_, delivery) ⇒ delivery.timestamp <= deadline }
+      .filter { case (_, delivery) => delivery.timestamp <= deadline }
       .take(redeliveryBurstLimit)
       .foreach {
-        case (deliveryId, delivery) ⇒
+        case (deliveryId, delivery) =>
           send(deliveryId, delivery, now)
 
           if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
@@ -344,7 +344,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
   def getDeliverySnapshot: AtLeastOnceDeliverySnapshot =
     AtLeastOnceDeliverySnapshot(
       deliverySequenceNr,
-      unconfirmed.iterator.map { case (deliveryId, d) ⇒ UnconfirmedDelivery(deliveryId, d.destination, d.message) }.to(immutable.IndexedSeq))
+      unconfirmed.iterator.map { case (deliveryId, d) => UnconfirmedDelivery(deliveryId, d.destination, d.message) }.to(immutable.IndexedSeq))
 
   /**
    * If snapshot from [[#getDeliverySnapshot]] was saved it will be received during recovery
@@ -353,8 +353,8 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
   def setDeliverySnapshot(snapshot: AtLeastOnceDeliverySnapshot): Unit = {
     deliverySequenceNr = snapshot.currentDeliveryId
     val now = System.nanoTime()
-    unconfirmed = scala.collection.immutable.SortedMap.from(snapshot.unconfirmedDeliveries.iterator.map(d ⇒
-      d.deliveryId → Delivery(d.destination, d.message, now, 0)))
+    unconfirmed = scala.collection.immutable.SortedMap.from(snapshot.unconfirmedDeliveries.iterator.map(d =>
+      d.deliveryId -> Delivery(d.destination, d.message, now, 0)))
   }
 
   /**
@@ -386,10 +386,10 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
    */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
     message match {
-      case RedeliveryTick ⇒
+      case RedeliveryTick =>
         redeliverOverdue()
 
-      case _ ⇒
+      case _ =>
         super.aroundReceive(receive, message)
     }
 }
@@ -425,7 +425,7 @@ abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPers
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id ⇒ deliveryIdToMessage.apply(id))
+    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
 
   /**
    * Java API: Send the message created by the `deliveryIdToMessage` function to
@@ -448,7 +448,7 @@ abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPers
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorSelection, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id ⇒ deliveryIdToMessage.apply(id))
+    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
 }
 
 /**
@@ -483,7 +483,7 @@ abstract class AbstractPersistentActorWithAtLeastOnceDelivery extends AbstractPe
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorPath, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id ⇒ deliveryIdToMessage.apply(id))
+    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
 
   /**
    * Java API: Send the message created by the `deliveryIdToMessage` function to
@@ -506,5 +506,5 @@ abstract class AbstractPersistentActorWithAtLeastOnceDelivery extends AbstractPe
    * if [[#numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorSelection, deliveryIdToMessage: akka.japi.Function[java.lang.Long, Object]): Unit =
-    internalDeliver(destination)(id ⇒ deliveryIdToMessage.apply(id))
+    internalDeliver(destination)(id => deliveryIdToMessage.apply(id))
 }

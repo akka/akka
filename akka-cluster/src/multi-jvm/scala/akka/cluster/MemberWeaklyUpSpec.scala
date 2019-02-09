@@ -58,7 +58,7 @@ abstract class MemberWeaklyUpSpec
     "detect network partition and mark nodes on other side as unreachable" taggedAs LongRunningTest in within(20 seconds) {
       runOn(first) {
         // split the cluster in two parts (first, second) / (third, fourth, fifth)
-        for (role1 ← side1; role2 ← side2) {
+        for (role1 <- side1; role2 <- side2) {
           testConductor.blackhole(role1, role2, Direction.Both).await
         }
       }
@@ -87,14 +87,14 @@ abstract class MemberWeaklyUpSpec
       runOn(side1: _*) {
         awaitAssert {
           clusterView.members.size should be(4)
-          clusterView.members.exists { m ⇒ m.address == address(second) && m.status == WeaklyUp } should be(true)
+          clusterView.members.exists { m => m.address == address(second) && m.status == WeaklyUp } should be(true)
         }
       }
 
       runOn(side2: _*) {
         awaitAssert {
           clusterView.members.size should be(4)
-          clusterView.members.exists { m ⇒ m.address == address(fifth) && m.status == WeaklyUp } should be(true)
+          clusterView.members.exists { m => m.address == address(fifth) && m.status == WeaklyUp } should be(true)
         }
       }
 
@@ -103,7 +103,7 @@ abstract class MemberWeaklyUpSpec
 
     "change status to Up after healed network partition" taggedAs LongRunningTest in within(20 seconds) {
       runOn(first) {
-        for (role1 ← side1; role2 ← side2) {
+        for (role1 <- side1; role2 <- side2) {
           testConductor.passThrough(role1, role2, Direction.Both).await
         }
       }

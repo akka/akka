@@ -55,7 +55,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     if (events.nonEmpty) {
       var newState = state
 
-      val writes = events.map { event ⇒
+      val writes = events.map { event =>
         newState = newState.nextSequenceNr()
         PersistentRepr(
           event,
@@ -83,10 +83,10 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   /** Intended to be used in .onSignal(returnPermitOnStop) by behaviors */
   protected def returnPermitOnStop: PartialFunction[(ActorContext[InternalProtocol], Signal), Behavior[InternalProtocol]] = {
-    case (_, PostStop) ⇒
+    case (_, PostStop) =>
       tryReturnRecoveryPermit("PostStop")
       Behaviors.stopped
-    case (_, PreRestart) ⇒
+    case (_, PreRestart) =>
       tryReturnRecoveryPermit("PreRestart")
       Behaviors.stopped
   }

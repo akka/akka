@@ -51,18 +51,18 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
   // we have to forget about long-gone threads sometime
   private def gc(): Unit = {
     queues = queues.foldLeft(Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]]) {
-      case (m, (k, v)) ⇒
+      case (m, (k, v)) =>
         val nv = v filter (_.get ne null)
-        if (nv.isEmpty) m else m += (k → nv)
+        if (nv.isEmpty) m else m += (k -> nv)
     }.result
   }
 
   protected[akka] def registerQueue(mbox: CallingThreadMailbox, q: MessageQueue): Unit = synchronized {
     if (queues contains mbox) {
       val newSet = queues(mbox) + new WeakReference(q)
-      queues += mbox → newSet
+      queues += mbox -> newSet
     } else {
-      queues += mbox → Set(new WeakReference(q))
+      queues += mbox -> Set(new WeakReference(q))
     }
     val now = System.nanoTime
     if (now - lastGC > 1000000000l) {
@@ -83,7 +83,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
   protected[akka] def gatherFromAllOtherQueues(mbox: CallingThreadMailbox, own: MessageQueue): Unit = synchronized {
     if (queues contains mbox) {
       for {
-        ref ← queues(mbox)
+        ref <- queues(mbox)
         q = ref.get
         if (q ne null) && (q ne own)
       } {
@@ -148,17 +148,17 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
   protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)
     actor.mailbox match {
-      case mbox: CallingThreadMailbox ⇒
+      case mbox: CallingThreadMailbox =>
         val queue = mbox.queue
         runQueue(mbox, queue)
-      case x ⇒ throw ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
+      case x => throw ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
     }
   }
 
   protected[akka] override def unregister(actor: ActorCell): Unit = {
     val mbox = actor.mailbox match {
-      case m: CallingThreadMailbox ⇒ Some(m)
-      case _                       ⇒ None
+      case m: CallingThreadMailbox => Some(m)
+      case _                       => None
     }
     super.unregister(actor)
     mbox foreach CallingThreadDispatcherQueues(actor.system).unregisterQueues
@@ -166,14 +166,14 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
 
   protected[akka] override def suspend(actor: ActorCell): Unit = {
     actor.mailbox match {
-      case m: CallingThreadMailbox ⇒ { m.suspendSwitch.switchOn; m.suspend() }
-      case m                       ⇒ m.systemEnqueue(actor.self, Suspend())
+      case m: CallingThreadMailbox => { m.suspendSwitch.switchOn; m.suspend() }
+      case m                       => m.systemEnqueue(actor.self, Suspend())
     }
   }
 
   protected[akka] override def resume(actor: ActorCell): Unit = {
     actor.mailbox match {
-      case mbox: CallingThreadMailbox ⇒
+      case mbox: CallingThreadMailbox =>
         val queue = mbox.queue
         val switched = mbox.suspendSwitch.switchOff {
           CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(mbox, queue)
@@ -181,22 +181,22 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
         }
         if (switched)
           runQueue(mbox, queue)
-      case m ⇒ m.systemEnqueue(actor.self, Resume(causedByFailure = null))
+      case m => m.systemEnqueue(actor.self, Resume(causedByFailure = null))
     }
   }
 
   protected[akka] override def systemDispatch(receiver: ActorCell, message: SystemMessage): Unit = {
     receiver.mailbox match {
-      case mbox: CallingThreadMailbox ⇒
+      case mbox: CallingThreadMailbox =>
         mbox.systemEnqueue(receiver.self, message)
         runQueue(mbox, mbox.queue)
-      case m ⇒ m.systemEnqueue(receiver.self, message)
+      case m => m.systemEnqueue(receiver.self, message)
     }
   }
 
   protected[akka] override def dispatch(receiver: ActorCell, handle: Envelope): Unit = {
     receiver.mailbox match {
-      case mbox: CallingThreadMailbox ⇒
+      case mbox: CallingThreadMailbox =>
         val queue = mbox.queue
         val execute = mbox.suspendSwitch.fold {
           queue.enqueue(receiver.self, handle)
@@ -206,7 +206,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
           true
         }
         if (execute) runQueue(mbox, queue)
-      case m ⇒ m.enqueue(receiver.self, handle)
+      case m => m.enqueue(receiver.self, handle)
     }
   }
 
@@ -252,12 +252,12 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
             intex = checkThreadInterruption(intex)
             true
           } catch {
-            case ie: InterruptedException ⇒
+            case ie: InterruptedException =>
               log.error(ie, "Interrupted during message processing")
               Thread.interrupted() // clear interrupted flag before we continue, exception will be thrown later
               intex = ie
               true
-            case NonFatal(e) ⇒
+            case NonFatal(e) =>
               log.error(e, "Error during message processing")
               false
           }
@@ -274,7 +274,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
       val gotLock = try {
         mbox.ctdLock.tryLock(50, TimeUnit.MILLISECONDS)
       } catch {
-        case ie: InterruptedException ⇒
+        case ie: InterruptedException =>
           Thread.interrupted() // clear interrupted flag before we continue, exception will be thrown later
           intex = ie
           false

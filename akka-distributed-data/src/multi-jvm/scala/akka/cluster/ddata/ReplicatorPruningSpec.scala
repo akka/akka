@@ -78,8 +78,8 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       cluster.subscribe(memberProbe.ref, initialStateMode = InitialStateAsEvents, classOf[MemberUp])
       val thirdUniqueAddress = {
         val member = memberProbe.fishForMessage(3.seconds) {
-          case MemberUp(m) if m.address == node(third).address ⇒ true
-          case _ ⇒ false
+          case MemberUp(m) if m.address == node(third).address => true
+          case _ => false
         }.asInstanceOf[MemberUp].member
         member.uniqueAddress
       }
@@ -93,10 +93,10 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _.incrementBy("x", 1).incrementBy("y", 1) }
       expectMsg(UpdateSuccess(KeyC, None))
 
-      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" → Set("A")) }
+      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" -> Set("A")) }
       expectMsg(UpdateSuccess(KeyD, None))
 
-      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ :+ ("a" → GSet.empty[String].add("A")) }
+      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ :+ ("a" -> GSet.empty[String].add("A")) }
       expectMsg(UpdateSuccess(KeyE, None))
 
       enterBarrier("updates-done")
@@ -152,7 +152,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyA, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyA, _) ⇒
+              case g @ GetSuccess(KeyA, _) =>
                 val value = g.get(KeyA).value.toInt
                 values += value
                 value should be(9)
@@ -165,7 +165,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyB, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyB, _) ⇒
+              case g @ GetSuccess(KeyB, _) =>
                 g.get(KeyB).elements should be(Set("a", "b", "c"))
                 g.get(KeyB).needPruningFrom(thirdUniqueAddress) should be(false)
             }
@@ -175,8 +175,8 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyC, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyC, _) ⇒
-                g.get(KeyC).entries should be(Map("x" → 3L, "y" → 3L))
+              case g @ GetSuccess(KeyC, _) =>
+                g.get(KeyC).entries should be(Map("x" -> 3L, "y" -> 3L))
                 g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
@@ -185,7 +185,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyD, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyD, _) ⇒
+              case g @ GetSuccess(KeyD, _) =>
                 g.get(KeyD).entries("a") should be(Set("A"))
                 g.get(KeyD).needPruningFrom(thirdUniqueAddress) should be(false)
             }
@@ -195,7 +195,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyE, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyE, _) ⇒
+              case g @ GetSuccess(KeyE, _) =>
                 g.get(KeyE).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
@@ -205,12 +205,12 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
       // after pruning performed we should not be able to update with data from removed node
       def updateAfterPruning(expectedValue: Int): Unit = {
-        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing ⇒
+        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing =>
           // inject data from removed node to simulate bad data
           existing.merge(oldCounter) :+ 1
         }
         expectMsgPF() {
-          case UpdateSuccess(KeyA, _) ⇒
+          case UpdateSuccess(KeyA, _) =>
             replicator ! Get(KeyA, ReadLocal)
             val retrieved = expectMsgType[GetSuccess[GCounter]].dataValue
             retrieved.value should be(expectedValue)

@@ -24,7 +24,7 @@ object RemoteDeployerSpec {
       """).withFallback(ArterySpecSupport.defaultConfig)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }

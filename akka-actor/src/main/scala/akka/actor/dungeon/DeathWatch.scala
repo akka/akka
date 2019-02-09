@@ -10,7 +10,7 @@ import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, Internal
 import akka.event.AddressTerminatedTopic
 import akka.util.unused
 
-private[akka] trait DeathWatch { this: ActorCell ⇒
+private[akka] trait DeathWatch { this: ActorCell =>
 
   /**
    * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
@@ -23,7 +23,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   def isWatching(ref: ActorRef): Boolean = watching contains ref
 
   override final def watch(subject: ActorRef): ActorRef = subject match {
-    case a: InternalActorRef ⇒
+    case a: InternalActorRef =>
       if (a != self) {
         if (!watchingContains(a))
           maintainAddressTerminatedSubscription(a) {
@@ -37,7 +37,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   }
 
   override final def watchWith(subject: ActorRef, msg: Any): ActorRef = subject match {
-    case a: InternalActorRef ⇒
+    case a: InternalActorRef =>
       if (a != self) {
         if (!watchingContains(a))
           maintainAddressTerminatedSubscription(a) {
@@ -51,7 +51,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   }
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
-    case a: InternalActorRef ⇒
+    case a: InternalActorRef =>
       if (a != self && watchingContains(a)) {
         a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         maintainAddressTerminatedSubscription(a) {
@@ -74,8 +74,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    */
   protected def watchedActorTerminated(actor: ActorRef, existenceConfirmed: Boolean, addressTerminated: Boolean): Unit = {
     watchingGet(actor) match {
-      case None ⇒ // We're apparently no longer watching this actor.
-      case Some(optionalMessage) ⇒
+      case None => // We're apparently no longer watching this actor.
+      case Some(optionalMessage) =>
         maintainAddressTerminatedSubscription(actor) {
           watching = removeFromMap(actor, watching)
         }
@@ -165,8 +165,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       maintainAddressTerminatedSubscription() {
         try {
           watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-            case (watchee: InternalActorRef, _) ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
-            case (watchee, _) ⇒
+            case (watchee: InternalActorRef, _) => watchee.sendSystemMessage(Unwatch(watchee, self))
+            case (watchee, _) =>
               // should never happen, suppress "match may not be exhaustive" compiler warning
               throw new IllegalStateException(s"Expected InternalActorRef, but got [${watchee.getClass.getName}]")
           }
@@ -212,7 +212,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   protected def addressTerminated(address: Address): Unit = {
     // cleanup watchedBy since we know they are dead
     maintainAddressTerminatedSubscription() {
-      for (a ← watchedBy; if a.path.address == address) watchedBy -= a
+      for (a <- watchedBy; if a.path.address == address) watchedBy -= a
     }
 
     // send DeathWatchNotification to self for all matching subjects
@@ -221,7 +221,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     // When a parent is watching a child and it terminates due to AddressTerminated
     // it is removed by sending DeathWatchNotification with existenceConfirmed = true to support
     // immediate creation of child with same name.
-    for ((a, _) ← watching; if a.path.address == address) {
+    for ((a, _) <- watching; if a.path.address == address) {
       self.sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = childrenRefs.getByRef(a).isDefined, addressTerminated = true))
     }
   }
@@ -232,11 +232,11 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * Ends subscription to AddressTerminated if subscribing and the
    * block removes the last non-local ref from watching and watchedBy.
    */
-  private def maintainAddressTerminatedSubscription[T](change: ActorRef = null)(block: ⇒ T): T = {
+  private def maintainAddressTerminatedSubscription[T](change: ActorRef = null)(block: => T): T = {
     def isNonLocal(ref: ActorRef) = ref match {
-      case null                              ⇒ true
-      case a: InternalActorRef if !a.isLocal ⇒ true
-      case _                                 ⇒ false
+      case null                              => true
+      case a: InternalActorRef if !a.isLocal => true
+      case _                                 => false
     }
 
     if (isNonLocal(change)) {

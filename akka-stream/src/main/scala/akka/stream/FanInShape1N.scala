@@ -13,7 +13,7 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
 
   //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
   val in0: Inlet[T0 @uncheckedVariance] = newInlet[T0]("in0")
-  for (i ← 1 until n) newInlet[T1](s"in$i")
+  for (i <- 1 until n) newInlet[T1](s"in$i")
 
   def this(n: Int) = this(n, FanInShape.Name[O]("FanInShape1N"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))

@@ -14,7 +14,7 @@ import org.reactivestreams.Publisher
 class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
 
   def createPublisher(elements: Long): Publisher[ByteString] = {
-    StreamConverters.fromInputStream(() ⇒ new InputStream {
+    StreamConverters.fromInputStream(() => new InputStream {
       @volatile var num = 0
       override def read(): Int = {
         num += 1

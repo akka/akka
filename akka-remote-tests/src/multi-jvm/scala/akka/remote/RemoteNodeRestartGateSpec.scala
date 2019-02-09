@@ -33,8 +33,8 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case msg        ⇒ sender() ! msg
+      case "shutdown" => context.system.terminate()
+      case msg        => sender() ! msg
     }
   }
 

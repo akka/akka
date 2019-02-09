@@ -31,40 +31,40 @@ object EndToEndEventAdapterSpec {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { case m: AppModel ⇒ JSON(m.payload) }
+      event match { case m: AppModel => JSON(m.payload) }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case m: JSON if m.payload.toString.startsWith("a") ⇒ EventSeq.single(A(m.payload))
-      case _ ⇒ EventSeq.empty
+      case m: JSON if m.payload.toString.startsWith("a") => EventSeq.single(A(m.payload))
+      case _ => EventSeq.empty
     }
   }
   class NewAEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { case m: AppModel ⇒ JSON(m.payload) }
+      event match { case m: AppModel => JSON(m.payload) }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case m: JSON if m.payload.toString.startsWith("a") ⇒ EventSeq.single(NewA(m.payload))
-      case _ ⇒ EventSeq.empty
+      case m: JSON if m.payload.toString.startsWith("a") => EventSeq.single(NewA(m.payload))
+      case _ => EventSeq.empty
     }
   }
   class BEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { case m: AppModel ⇒ JSON(m.payload) }
+      event match { case m: AppModel => JSON(m.payload) }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case m: JSON if m.payload.toString.startsWith("b") ⇒ EventSeq.single(B(m.payload))
-      case _ ⇒ EventSeq.empty
+      case m: JSON if m.payload.toString.startsWith("b") => EventSeq.single(B(m.payload))
+      case _ => EventSeq.empty
     }
   }
   class NewBEndToEndAdapter(system: ExtendedActorSystem) extends EventAdapter {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { case m: AppModel ⇒ JSON(m.payload) }
+      event match { case m: AppModel => JSON(m.payload) }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case m: JSON if m.payload.toString.startsWith("b") ⇒ EventSeq.single(NewB(m.payload))
-      case _ ⇒ EventSeq.empty
+      case m: JSON if m.payload.toString.startsWith("b") => EventSeq.single(NewB(m.payload))
+      case _ => EventSeq.empty
     }
   }
 
@@ -74,18 +74,18 @@ object EndToEndEventAdapterSpec {
     var state: List[Any] = Nil
 
     val persistIncoming: Receive = {
-      case GetState ⇒
+      case GetState =>
         state.reverse.foreach { sender() ! _ }
-      case in ⇒
-        persist(in) { e ⇒
+      case in =>
+        persist(in) { e =>
           state ::= e
           sender() ! e
         }
     }
 
     override def receiveRecover = {
-      case RecoveryCompleted ⇒ // ignore
-      case e                 ⇒ state ::= e
+      case RecoveryCompleted => // ignore
+      case e                 => state ::= e
     }
     override def receiveCommand = persistIncoming
 
@@ -98,7 +98,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
   import EndToEndEventAdapterSpec._
 
   val storageLocations = List("akka.persistence.journal.leveldb.dir")
-    .map(s ⇒ new File(journalConfig.getString(s)))
+    .map(s => new File(journalConfig.getString(s)))
 
   override protected def beforeAll(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
@@ -154,7 +154,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
   def persister(name: String, probe: Option[ActorRef] = None)(implicit system: ActorSystem) =
     system.actorOf(Props(classOf[EndToEndAdapterActor], name, "akka.persistence.journal." + journalName, probe))
 
-  def withActorSystem[T](name: String, config: Config)(block: ActorSystem ⇒ T): T = {
+  def withActorSystem[T](name: String, config: Config)(block: ActorSystem => T): T = {
     val system = ActorSystem(name, journalConfig withFallback config)
     try block(system) finally Await.ready(system.terminate(), 3.seconds)
   }
@@ -162,7 +162,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
   "EventAdapters in end-to-end scenarios" must {
 
     "use the same adapter when reading as was used when writing to the journal" in
-      withActorSystem("SimpleSystem", adaptersConfig) { implicit system ⇒
+      withActorSystem("SimpleSystem", adaptersConfig) { implicit system =>
         val p = TestProbe()
         implicit val ref = p.ref
 
@@ -187,7 +187,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
     "allow using an adapter, when write was performed without an adapter" in {
       val persistentName = "p2"
 
-      withActorSystem("NoAdapterSystem", adaptersConfig) { implicit system ⇒
+      withActorSystem("NoAdapterSystem", adaptersConfig) { implicit system =>
         val p = TestProbe()
         implicit val ref = p.ref
 
@@ -209,7 +209,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
         p.expectMsg(B("b1"))
       }
 
-      withActorSystem("NowAdaptersAddedSystem", newAdaptersConfig) { implicit system ⇒
+      withActorSystem("NowAdaptersAddedSystem", newAdaptersConfig) { implicit system =>
         val p = TestProbe()
         implicit val ref = p.ref
 
@@ -228,7 +228,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
         .withoutPath(s"$journalPath.event-adapters.a")
         .withoutPath(s"""$journalPath.event-adapter-bindings."${classOf[EndToEndEventAdapterSpec].getCanonicalName}$$A"""")
 
-      withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 ⇒
+      withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 =>
         EventFilter[ActorInitializationException](occurrences = 1, pattern = ".*undefined event-adapter.*") intercept {
           intercept[IllegalArgumentException] {
             Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])

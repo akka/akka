@@ -106,7 +106,7 @@ object Sink {
    * the stream.
    */
   def foreachAsync[T](parallelism: Int)(f: function.Function[T, CompletionStage[Void]]): Sink[T, CompletionStage[Done]] =
-    new Sink(scaladsl.Sink.foreachAsync(parallelism)((x: T) ⇒ f(x).toScala.map(_ ⇒ ())(ExecutionContexts.sameThreadExecutionContext)).toCompletionStage())
+    new Sink(scaladsl.Sink.foreachAsync(parallelism)((x: T) => f(x).toScala.map(_ => ())(ExecutionContexts.sameThreadExecutionContext)).toCompletionStage())
 
   /**
    * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
@@ -129,7 +129,7 @@ object Sink {
    * or [[scala.util.Failure]].
    */
   def onComplete[In](callback: function.Procedure[Try[Done]]): Sink[In, NotUsed] =
-    new Sink(scaladsl.Sink.onComplete[In](x ⇒ callback.apply(x)))
+    new Sink(scaladsl.Sink.onComplete[In](x => callback.apply(x)))
 
   /**
    * A `Sink` that materializes into a `CompletionStage` of the first value received.
@@ -182,7 +182,7 @@ object Sink {
    */
   def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
     import scala.collection.JavaConverters._
-    new Sink(scaladsl.Sink.takeLast[In](n).mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+    new Sink(scaladsl.Sink.takeLast[In](n).mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
   }
 
   /**
@@ -197,7 +197,7 @@ object Sink {
    */
   def seq[In]: Sink[In, CompletionStage[java.util.List[In]]] = {
     import scala.collection.JavaConverters._
-    new Sink(scaladsl.Sink.seq[In].mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+    new Sink(scaladsl.Sink.seq[In].mapMaterializedValue(fut => fut.map(sq => sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
   }
 
   /**
@@ -253,8 +253,8 @@ object Sink {
    */
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M] ⇒ s
-      case other         ⇒ new Sink(scaladsl.Sink.fromGraph(other))
+      case s: Sink[T, M] => s
+      case other         => new Sink(scaladsl.Sink.fromGraph(other))
     }
 
   /**
@@ -263,7 +263,7 @@ object Sink {
   def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
     import scala.collection.JavaConverters._
     val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
-    new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))
+    new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num => strategy.apply(num)))
   }
 
   /**
@@ -299,8 +299,8 @@ object Sink {
   @deprecated("Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)", "2.5.11")
   def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]], fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyInit[T, M](
-      t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
-      () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
+      t => sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
+      () => fallback.create()).mapMaterializedValue(_.toJava))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -313,8 +313,8 @@ object Sink {
    */
   def lazyInitAsync[T, M](sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
     val sSink = scaladsl.Sink.lazyInitAsync[T, M](
-      () ⇒ sinkFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)
-    ).mapMaterializedValue(fut ⇒ fut.map(_.fold(Optional.empty[M]())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+      () => sinkFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)
+    ).mapMaterializedValue(fut => fut.map(_.fold(Optional.empty[M]())(m => Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
     new Sink(sSink)
   }
 }

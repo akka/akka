@@ -51,9 +51,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   "Unfold Resource Source" must {
     "read contents from a file" in assertAllStagesStopped {
       val p = Source.unfoldResource[String, BufferedReader](
-        () ⇒ newBufferedReader(),
-        reader ⇒ Option(reader.readLine()),
-        reader ⇒ reader.close())
+        () => newBufferedReader(),
+        reader => Option(reader.readLine()),
+        reader => reader.close())
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
@@ -78,19 +78,19 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "continue when Strategy is Resume and exception happened" in assertAllStagesStopped {
       val p = Source.unfoldResource[String, BufferedReader](
-        () ⇒ newBufferedReader(),
-        reader ⇒ {
+        () => newBufferedReader(),
+        reader => {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Option(s)
         },
-        reader ⇒ reader.close()).withAttributes(supervisionStrategy(resumingDecider))
+        reader => reader.close()).withAttributes(supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
 
       p.subscribe(c)
       val sub = c.expectSubscription()
 
-      (0 to 49).foreach(i ⇒ {
+      (0 to 49).foreach(i => {
         sub.request(1)
         c.expectNext() should ===(if (i < 10) manyLinesArray(i) else manyLinesArray(i + 10))
       })
@@ -100,19 +100,19 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "close and open stream again when Strategy is Restart" in assertAllStagesStopped {
       val p = Source.unfoldResource[String, BufferedReader](
-        () ⇒ newBufferedReader(),
-        reader ⇒ {
+        () => newBufferedReader(),
+        reader => {
           val s = reader.readLine()
           if (s != null && s.contains("b")) throw TE("") else Option(s)
         },
-        reader ⇒ reader.close()).withAttributes(supervisionStrategy(restartingDecider))
+        reader => reader.close()).withAttributes(supervisionStrategy(restartingDecider))
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
 
       p.subscribe(c)
       val sub = c.expectSubscription()
 
-      (0 to 19).foreach(i ⇒ {
+      (0 to 19).foreach(i => {
         sub.request(1)
         c.expectNext() should ===(manyLinesArray(0))
       })
@@ -123,12 +123,12 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val chunkSize = 50
       val buffer = new Array[Char](chunkSize)
       val p = Source.unfoldResource[ByteString, Reader](
-        () ⇒ newBufferedReader(),
-        reader ⇒ {
+        () => newBufferedReader(),
+        reader => {
           val s = reader.read(buffer)
           if (s > 0) Some(ByteString(buffer.mkString("")).take(s)) else None
         },
-        reader ⇒ reader.close())
+        reader => reader.close())
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[ByteString]()
 
@@ -142,7 +142,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       p.subscribe(c)
       val sub = c.expectSubscription()
 
-      (0 to 121).foreach(i ⇒ {
+      (0 to 121).foreach(i => {
         sub.request(1)
         c.expectNext().utf8String should ===(nextChunk().toString)
       })
@@ -155,9 +155,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
       try {
         val p = Source.unfoldResource[String, BufferedReader](
-          () ⇒ newBufferedReader(),
-          reader ⇒ Option(reader.readLine()),
-          reader ⇒ reader.close()).runWith(TestSink.probe)(materializer)
+          () => newBufferedReader(),
+          reader => Option(reader.readLine()),
+          reader => reader.close()).runWith(TestSink.probe)(materializer)
 
         materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSource").get
@@ -168,9 +168,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when create throws exception" in assertAllStagesStopped {
       EventFilter[TE](occurrences = 1).intercept {
         val p = Source.unfoldResource[String, BufferedReader](
-          () ⇒ throw TE(""),
-          reader ⇒ Option(reader.readLine()),
-          reader ⇒ reader.close())
+          () => throw TE(""),
+          reader => Option(reader.readLine()),
+          reader => reader.close())
           .runWith(Sink.asPublisher(false))
         val c = TestSubscriber.manualProbe[String]()
         p.subscribe(c)
@@ -185,9 +185,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       EventFilter[TE](occurrences = 1).intercept {
         Source.unfoldResource[String, Iterator[String]](
-          () ⇒ Iterator("a"),
-          it ⇒ if (it.hasNext) Some(it.next()) else None,
-          _ ⇒ throw TE(""))
+          () => Iterator("a"),
+          it => if (it.hasNext) Some(it.next()) else None,
+          _ => throw TE(""))
           .runWith(Sink.fromSubscriber(out))
 
         out.request(61)
@@ -200,9 +200,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "not close the resource twice when read fails" in {
       val closedCounter = new AtomicInteger(0)
       val probe = Source.unfoldResource[Int, Int](
-        () ⇒ 23, // the best resource there is
-        _ ⇒ throw TE("failing read"),
-        _ ⇒ closedCounter.incrementAndGet()
+        () => 23, // the best resource there is
+        _ => throw TE("failing read"),
+        _ => closedCounter.incrementAndGet()
       ).runWith(TestSink.probe[Int])
 
       probe.request(1)
@@ -214,9 +214,9 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "not close the resource twice when read fails and then close fails" in {
       val closedCounter = new AtomicInteger(0)
       val probe = Source.unfoldResource[Int, Int](
-        () ⇒ 23, // the best resource there is
-        _ ⇒ throw TE("failing read"),
-        { _ ⇒
+        () => 23, // the best resource there is
+        _ => throw TE("failing read"),
+        { _ =>
           closedCounter.incrementAndGet()
           if (closedCounter.get == 1) throw TE("boom")
         }

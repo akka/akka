@@ -19,9 +19,9 @@ object JavaLoggerSpec {
 
   class LogProducer extends Actor with ActorLogging {
     def receive = {
-      case e: Exception ⇒
+      case e: Exception =>
         log.error(e, e.getMessage)
-      case (s: String, x: Int) ⇒
+      case (s: String, x: Int) =>
         log.info(s, x)
     }
   }

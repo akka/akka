@@ -55,15 +55,15 @@ class KeepGoingStageSpec extends StreamSpec {
         }
 
         private def onCommand(cmd: PingCmd): Unit = cmd match {
-          case Register(probe) ⇒ listener = Some(probe)
-          case Ping            ⇒ listener.foreach(_ ! Pong)
-          case CompleteStage ⇒
+          case Register(probe) => listener = Some(probe)
+          case Ping            => listener.foreach(_ ! Pong)
+          case CompleteStage =>
             completeStage()
             listener.foreach(_ ! EndOfEventHandler)
-          case FailStage ⇒
+          case FailStage =>
             failStage(TE("test"))
             listener.foreach(_ ! EndOfEventHandler)
-          case Throw ⇒
+          case Throw =>
             try {
               throw TE("test")
             } finally listener.foreach(_ ! EndOfEventHandler)

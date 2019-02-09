@@ -64,40 +64,40 @@ object AccountExampleWithOptionState {
 
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
         cmd match {
-          case c @ Deposit(amount) ⇒
+          case c @ Deposit(amount) =>
             Effect.persist(Deposited(amount))
-              .thenReply(c)(_ ⇒ Confirmed)
+              .thenReply(c)(_ => Confirmed)
 
-          case c @ Withdraw(amount) ⇒
+          case c @ Withdraw(amount) =>
             if (canWithdraw(amount)) {
               Effect.persist(Withdrawn(amount))
-                .thenReply(c)(_ ⇒ Confirmed)
+                .thenReply(c)(_ => Confirmed)
 
             } else {
               Effect.reply(c)(Rejected(s"Insufficient balance $balance to be able to withdraw $amount"))
             }
 
-          case c: GetBalance ⇒
+          case c: GetBalance =>
             Effect.reply(c)(CurrentBalance(balance))
 
-          case c: CloseAccount ⇒
+          case c: CloseAccount =>
             if (balance == Zero)
               Effect.persist(AccountClosed)
-                .thenReply(c)(_ ⇒ Confirmed)
+                .thenReply(c)(_ => Confirmed)
             else
               Effect.reply(c)(Rejected("Can't close account with non-zero balance"))
 
-          case c: CreateAccount ⇒
+          case c: CreateAccount =>
             Effect.reply(c)(Rejected("Account is already created"))
 
         }
 
       override def applyEvent(event: AccountEvent): Account =
         event match {
-          case Deposited(amount) ⇒ copy(balance = balance + amount)
-          case Withdrawn(amount) ⇒ copy(balance = balance - amount)
-          case AccountClosed     ⇒ ClosedAccount
-          case AccountCreated    ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+          case Deposited(amount) => copy(balance = balance + amount)
+          case Withdrawn(amount) => copy(balance = balance - amount)
+          case AccountClosed     => ClosedAccount
+          case AccountCreated    => throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
         }
 
       def canWithdraw(amount: BigDecimal): Boolean = {
@@ -108,13 +108,13 @@ object AccountExampleWithOptionState {
     case object ClosedAccount extends Account {
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
         cmd match {
-          case c @ (_: Deposit | _: Withdraw) ⇒
+          case c @ (_: Deposit | _: Withdraw) =>
             Effect.reply(c)(Rejected("Account is closed"))
-          case c: GetBalance ⇒
+          case c: GetBalance =>
             Effect.reply(c)(CurrentBalance(Zero))
-          case c: CloseAccount ⇒
+          case c: CloseAccount =>
             Effect.reply(c)(Rejected("Account is already closed"))
-          case c: CreateAccount ⇒
+          case c: CreateAccount =>
             Effect.reply(c)(Rejected("Account is already created"))
         }
 
@@ -126,23 +126,23 @@ object AccountExampleWithOptionState {
       EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Option[Account]](
         PersistenceId(s"Account|$accountNumber"),
         None,
-        (state, cmd) ⇒ state match {
-          case None          ⇒ onFirstCommand(cmd)
-          case Some(account) ⇒ account.applyCommand(cmd)
+        (state, cmd) => state match {
+          case None          => onFirstCommand(cmd)
+          case Some(account) => account.applyCommand(cmd)
         },
-        (state, event) ⇒ state match {
-          case None          ⇒ Some(onFirstEvent(event))
-          case Some(account) ⇒ Some(account.applyEvent(event))
+        (state, event) => state match {
+          case None          => Some(onFirstEvent(event))
+          case Some(account) => Some(account.applyEvent(event))
         }
       )
     }
 
     def onFirstCommand(cmd: AccountCommand[_]): ReplyEffect = {
       cmd match {
-        case c: CreateAccount ⇒
+        case c: CreateAccount =>
           Effect.persist(AccountCreated)
-            .thenReply(c)(_ ⇒ Confirmed)
-        case _ ⇒
+            .thenReply(c)(_ => Confirmed)
+        case _ =>
           // CreateAccount before handling any other commands
           Effect.unhandled.thenNoReply()
       }
@@ -150,8 +150,8 @@ object AccountExampleWithOptionState {
 
     def onFirstEvent(event: AccountEvent): Account = {
       event match {
-        case AccountCreated ⇒ OpenedAccount(Zero)
-        case _              ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [EmptyAccount]")
+        case AccountCreated => OpenedAccount(Zero)
+        case _              => throw new IllegalStateException(s"unexpected event [$event] in state [EmptyAccount]")
       }
     }
 

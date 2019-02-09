@@ -31,38 +31,38 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
 
   override def receivePluginInternal: Receive = receiveCompactionInternal orElse {
-    case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
+    case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) =>
       import context.dispatcher
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
       asyncReadHighestSequenceNr(tagAsPersistenceId(tag), readHighestSequenceNrFrom)
-        .flatMap { highSeqNr ⇒
+        .flatMap { highSeqNr =>
           val toSeqNr = math.min(toSequenceNr, highSeqNr)
           if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
             Future.successful(highSeqNr)
           else {
             asyncReplayTaggedMessages(tag, fromSequenceNr, toSeqNr, max) {
-              case ReplayedTaggedMessage(p, tag, offset) ⇒
-                adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+              case ReplayedTaggedMessage(p, tag, offset) =>
+                adaptFromJournal(p).foreach { adaptedPersistentRepr =>
                   replyTo.tell(ReplayedTaggedMessage(adaptedPersistentRepr, tag, offset), Actor.noSender)
                 }
-            }.map(_ ⇒ highSeqNr)
+            }.map(_ => highSeqNr)
           }
         }.map {
-          highSeqNr ⇒ RecoverySuccess(highSeqNr)
+          highSeqNr => RecoverySuccess(highSeqNr)
         }.recover {
-          case e ⇒ ReplayMessagesFailure(e)
+          case e => ReplayMessagesFailure(e)
         }.pipeTo(replyTo)
 
-    case SubscribePersistenceId(persistenceId: String) ⇒
+    case SubscribePersistenceId(persistenceId: String) =>
       addPersistenceIdSubscriber(sender(), persistenceId)
       context.watch(sender())
-    case SubscribeAllPersistenceIds ⇒
+    case SubscribeAllPersistenceIds =>
       addAllPersistenceIdsSubscriber(sender())
       context.watch(sender())
-    case SubscribeTag(tag: String) ⇒
+    case SubscribeTag(tag: String) =>
       addTagSubscriber(sender(), tag)
       context.watch(sender())
-    case Terminated(ref) ⇒
+    case Terminated(ref) =>
       removeSubscriber(ref)
   }
 }
@@ -121,11 +121,11 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
     "akka.persistence.journal.leveldb-shared.timeout")
 
   override def receivePluginInternal: Receive = {
-    case cmd: LeveldbJournal.SubscriptionCommand ⇒
+    case cmd: LeveldbJournal.SubscriptionCommand =>
       // forward subscriptions, they are used by query-side
       store match {
-        case Some(s) ⇒ s.forward(cmd)
-        case None ⇒
+        case Some(s) => s.forward(cmd)
+        case None =>
           log.error("Failed {} request. " +
             "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`", cmd)
       }

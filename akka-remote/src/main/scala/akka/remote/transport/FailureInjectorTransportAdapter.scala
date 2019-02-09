@@ -69,14 +69,14 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   protected def maximumOverhead = 0
 
   override def managementCommand(cmd: Any): Future[Boolean] = cmd match {
-    case All(mode) ⇒
+    case All(mode) =>
       allMode = mode
       Future.successful(true)
-    case One(address, mode) ⇒
+    case One(address, mode) =>
       //  don't care about the protocol part - we are injected in the stack anyway!
       addressChaosTable.put(address.copy(protocol = "", system = ""), mode)
       Future.successful(true)
-    case _ ⇒ wrappedTransport.managementCommand(cmd)
+    case _ => wrappedTransport.managementCommand(cmd)
   }
 
   protected def interceptListen(
@@ -87,7 +87,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
       // Side effecting: As this class is not an actor, the only way to safely modify state is through volatile vars.
       // Listen is called only during the initialization of the stack, and upstreamListener is not read before this
       // finishes.
-      listener ⇒ upstreamListener = Some(listener)
+      listener => upstreamListener = Some(listener)
     }
     Future.successful(this)
   }
@@ -97,28 +97,28 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     if (shouldDropInbound(remoteAddress, Unit, "interceptAssociate") || shouldDropOutbound(remoteAddress, Unit, "interceptAssociate"))
       statusPromise.failure(new FailureInjectorException("Simulated failure of association to " + remoteAddress))
     else
-      statusPromise.completeWith(wrappedTransport.associate(remoteAddress).map { handle ⇒
+      statusPromise.completeWith(wrappedTransport.associate(remoteAddress).map { handle =>
         addressChaosTable.putIfAbsent(handle.remoteAddress.copy(protocol = "", system = ""), PassThru)
         new FailureInjectorHandle(handle, this)
       })
   }
 
   def notify(ev: AssociationEvent): Unit = ev match {
-    case InboundAssociation(handle) if shouldDropInbound(handle.remoteAddress, ev, "notify") ⇒ //Ignore
-    case _ ⇒ upstreamListener match {
-      case Some(listener) ⇒ listener notify interceptInboundAssociation(ev)
-      case None           ⇒
+    case InboundAssociation(handle) if shouldDropInbound(handle.remoteAddress, ev, "notify") => //Ignore
+    case _ => upstreamListener match {
+      case Some(listener) => listener notify interceptInboundAssociation(ev)
+      case None           =>
     }
   }
 
   def interceptInboundAssociation(ev: AssociationEvent): AssociationEvent = ev match {
-    case InboundAssociation(handle) ⇒ InboundAssociation(FailureInjectorHandle(handle, this))
-    case _                          ⇒ ev
+    case InboundAssociation(handle) => InboundAssociation(FailureInjectorHandle(handle, this))
+    case _                          => ev
   }
 
   def shouldDropInbound(remoteAddress: Address, instance: Any, debugMessage: String): Boolean = chaosMode(remoteAddress) match {
-    case PassThru ⇒ false
-    case Drop(_, inboundDropP) ⇒
+    case PassThru => false
+    case Drop(_, inboundDropP) =>
       if (rng.nextDouble() <= inboundDropP) {
         if (shouldDebugLog) log.debug("Dropping inbound [{}] for [{}] {}", instance.getClass, remoteAddress, debugMessage)
         true
@@ -126,8 +126,8 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 
   def shouldDropOutbound(remoteAddress: Address, instance: Any, debugMessage: String): Boolean = chaosMode(remoteAddress) match {
-    case PassThru ⇒ false
-    case Drop(outboundDropP, _) ⇒
+    case PassThru => false
+    case Drop(outboundDropP, _) =>
       if (rng.nextDouble() <= outboundDropP) {
         if (shouldDebugLog) log.debug("Dropping outbound [{}] for [{}] {}", instance.getClass, remoteAddress, debugMessage)
         true
@@ -154,7 +154,7 @@ private[remote] final case class FailureInjectorHandle(
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()
   readHandlerPromise.future.foreach {
-    listener ⇒
+    listener =>
       upstreamListener = listener
       wrappedHandle.readHandlerPromise.success(this)
   }

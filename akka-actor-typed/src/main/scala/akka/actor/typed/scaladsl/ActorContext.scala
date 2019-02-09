@@ -229,12 +229,12 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * The function is applied inside the "parent" actor and can safely access
    * state of the "parent".
    */
-  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U]
 
   /**
    * INTERNAL API: See `spawnMessageAdapter` with name parameter
    */
-  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T): ActorRef[U]
 
   /**
    * Create a message adapter that will convert or wrap messages such that other Actor’s
@@ -262,7 +262,7 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U]
+  def messageAdapter[U: ClassTag](f: U => T): ActorRef[U]
 
   /**
    * Perform a single request-response message interaction with another actor, and transform the messages back to
@@ -287,7 +287,7 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] => Req)(mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
   /**
    * Sends the result of the given `Future` to this Actor (“`self`”), after adapted it with
@@ -296,6 +296,6 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] ⇒ T): Unit
+  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit
 
 }

@@ -35,7 +35,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
       // #using-json-framing
 
@@ -56,7 +56,7 @@ class JsonFramingSpec extends AkkaSpec {
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .take(1)
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""")
@@ -72,7 +72,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       Await.result(result, 3.seconds) shouldBe Seq(
@@ -88,7 +88,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       result.futureValue shouldBe Seq(
@@ -112,7 +112,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source.apply(input)
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       result.futureValue shouldBe Seq(
@@ -458,7 +458,7 @@ class JsonFramingSpec extends AkkaSpec {
         val buffer = new JsonObjectParser()
 
         """{ "name": "john"""".foreach {
-          c ⇒
+          c =>
             buffer.offer(ByteString(c))
             buffer.poll() should ===(None)
         }
@@ -492,7 +492,7 @@ class JsonFramingSpec extends AkkaSpec {
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(5)).map(_.utf8String)
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry)
+          case (acc, entry) => acc ++ Seq(entry)
         }
 
       a[FramingException] shouldBe thrownBy {
@@ -504,7 +504,7 @@ class JsonFramingSpec extends AkkaSpec {
       val input = List(
         """{ "name": "john" }""",
         """{ "name": "jack" }""",
-        """{ "name": "very very long name somehow. how did this happen?" }""").map(s ⇒ ByteString(s))
+        """{ "name": "very very long name somehow. how did this happen?" }""").map(s => ByteString(s))
 
       val probe = Source(input)
         .via(JsonFraming.objectScanner(48))

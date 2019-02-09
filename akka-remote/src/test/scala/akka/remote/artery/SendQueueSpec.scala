@@ -31,14 +31,14 @@ object SendQueueSpec {
 
   class Producer(producerId: String) extends Actor {
     def receive = {
-      case ProduceToQueue(from, until, queue) ⇒
+      case ProduceToQueue(from, until, queue) =>
         var i = from
         while (i < until) {
           if (!queue.offer(Msg(producerId, i)))
             throw new IllegalStateException(s"offer failed from $producerId value $i")
           i += 1
         }
-      case ProduceToQueueValue(from, until, queue) ⇒
+      case ProduceToQueueValue(from, until, queue) =>
         var i = from
         while (i < until) {
           if (!queue.offer(Msg(producerId, i)))
@@ -113,8 +113,8 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       downstream.request(10)
       sendQueue.inject(queue)
 
-      for (round ← 1 to 100000) {
-        for (n ← 1 to burstSize) {
+      for (round <- 1 to 100000) {
+        for (n <- 1 to burstSize) {
           if (!sendQueue.offer(round * 1000 + n))
             fail(s"offer failed at round $round message $n")
         }
@@ -128,7 +128,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
     "support multiple producers" in {
       val numberOfProducers = 5
       val queue = createQueue[Msg](numberOfProducers * 512)
-      val producers = Vector.tabulate(numberOfProducers)(i ⇒ system.actorOf(producerProps(s"producer-$i")))
+      val producers = Vector.tabulate(numberOfProducers)(i => system.actorOf(producerProps(s"producer-$i")))
 
       // send 100 per producer before materializing
       producers.foreach(_ ! ProduceToQueue(0, 100, queue))
@@ -142,7 +142,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       // send 100 more per producer
       downstream.request(producers.size * 200)
       val msgByProducer = downstream.expectNextN(producers.size * 200).groupBy(_.fromProducer)
-      (0 until producers.size).foreach { i ⇒
+      (0 until producers.size).foreach { i =>
         msgByProducer(s"producer-$i").map(_.value) should ===(0 until 200)
       }
 
@@ -150,7 +150,7 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       downstream.request(producers.size * 1000) // more than enough
       producers.foreach(_ ! ProduceToQueueValue(200, 700, sendQueue))
       val msgByProducer2 = downstream.expectNextN(producers.size * 500).groupBy(_.fromProducer)
-      (0 until producers.size).foreach { i ⇒
+      (0 until producers.size).foreach { i =>
         msgByProducer2(s"producer-$i").map(_.value) should ===(200 until 700)
       }
 
@@ -159,9 +159,9 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
     "deliver first message" in {
 
-      def test(f: (Queue[String], SendQueue.QueueValue[String], TestSubscriber.Probe[String]) ⇒ Unit): Unit = {
+      def test(f: (Queue[String], SendQueue.QueueValue[String], TestSubscriber.Probe[String]) => Unit): Unit = {
 
-        (1 to 100).foreach { n ⇒
+        (1 to 100).foreach { n =>
           val queue = createQueue[String](16)
           val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](sendToDeadLetters))
             .toMat(TestSink.probe)(Keep.both).run()
@@ -179,39 +179,39 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
         }
       }
 
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         queue.offer("a")
         downstream.request(10)
         sendQueue.inject(queue)
       }
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         sendQueue.inject(queue)
         queue.offer("a")
         downstream.request(10)
       }
 
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         queue.offer("a")
         sendQueue.inject(queue)
         downstream.request(10)
       }
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         downstream.request(10)
         queue.offer("a")
         sendQueue.inject(queue)
       }
 
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         sendQueue.inject(queue)
         downstream.request(10)
         sendQueue.offer("a")
       }
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         downstream.request(10)
         sendQueue.inject(queue)
         sendQueue.offer("a")
       }
-      test { (queue, sendQueue, downstream) ⇒
+      test { (queue, sendQueue, downstream) =>
         sendQueue.inject(queue)
         sendQueue.offer("a")
         downstream.request(10)

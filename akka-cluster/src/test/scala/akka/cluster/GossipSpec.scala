@@ -42,7 +42,7 @@ class GossipSpec extends WordSpec with Matchers {
   "A Gossip" must {
 
     "have correct test setup" in {
-      List(a1, a2, b1, b2, c1, c2, c3, d1, e1, e2, e3).foreach(m ⇒
+      List(a1, a2, b1, b2, c1, c2, c3, d1, e1, e2, e3).foreach(m =>
         m.dataCenter should ===(DefaultDataCenter))
     }
 
@@ -375,7 +375,7 @@ class GossipSpec extends WordSpec with Matchers {
 
       gdc2.tombstones.keys should contain(dc2d1.uniqueAddress)
       gdc2.members should not contain (dc2d1)
-      gdc2.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      gdc2.overview.reachability.records.filter(r => r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       gdc2.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
 
       // when we merge the two, it should not be reintroduced
@@ -384,7 +384,7 @@ class GossipSpec extends WordSpec with Matchers {
 
       merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
       merged1.members should not contain (dc2d1)
-      merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      merged1.overview.reachability.records.filter(r => r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
       merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
     }
@@ -414,7 +414,7 @@ class GossipSpec extends WordSpec with Matchers {
 
       merged1.tombstones.keys should contain(dc2d1.uniqueAddress)
       merged1.tombstones.keys should not contain (dc2d3.uniqueAddress)
-      merged1.overview.reachability.records.filter(r ⇒ r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
+      merged1.overview.reachability.records.filter(r => r.subject == dc2d1.uniqueAddress || r.observer == dc2d1.uniqueAddress) should be(empty)
       merged1.overview.reachability.versions.keys should not contain (dc2d1.uniqueAddress)
       merged1.version.versions.keys should not contain (VectorClock.Node(vclockName(dc2d1.uniqueAddress)))
     }

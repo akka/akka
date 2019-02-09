@@ -17,7 +17,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 object EventBusSpec {
   class TestActorWrapperActor(testActor: ActorRef) extends Actor {
     def receive = {
-      case x ⇒ testActor forward x
+      case x => testActor forward x
     }
   }
 }
@@ -74,11 +74,11 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
     }
 
     "allow to add multiple subscribers" in {
-      val subscribers = (1 to 10) map { _ ⇒ createNewSubscriber() }
+      val subscribers = (1 to 10) map { _ => createNewSubscriber() }
       val events = createEvents(10)
       val classifiers = events map getClassifierFor
-      subscribers.zip(classifiers) forall { case (s, c) ⇒ bus.subscribe(s, c) } should ===(true)
-      subscribers.zip(classifiers) forall { case (s, c) ⇒ bus.unsubscribe(s, c) } should ===(true)
+      subscribers.zip(classifiers) forall { case (s, c) => bus.subscribe(s, c) } should ===(true)
+      subscribers.zip(classifiers) forall { case (s, c) => bus.unsubscribe(s, c) } should ===(true)
 
       subscribers foreach (disposeSubscriber(system, _))
     }
@@ -109,11 +109,11 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
 
     "publish the given event to all intended subscribers" in {
       val range = 0 until 10
-      val subscribers = range map (_ ⇒ createNewSubscriber())
-      subscribers foreach { s ⇒ bus.subscribe(s, classifier) should ===(true) }
+      val subscribers = range map (_ => createNewSubscriber())
+      subscribers foreach { s => bus.subscribe(s, classifier) should ===(true) }
       bus.publish(event)
-      range foreach { _ ⇒ expectMsg(event) }
-      subscribers foreach { s ⇒ bus.unsubscribe(s, classifier) should ===(true); disposeSubscriber(system, s) }
+      range foreach { _ => expectMsg(event) }
+      subscribers foreach { s => bus.unsubscribe(s, classifier) should ===(true); disposeSubscriber(system, s) }
     }
 
     "not publish the given event to any other subscribers than the intended ones" in {
@@ -261,16 +261,16 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
   private def expectUnsubscribedByUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"actor $a has terminated, unsubscribing it from $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
-      case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true
-      case other ⇒ false
+      case Logging.Debug(_, _, msg) if msg equals expectedMsg => true
+      case other => false
     }
   }
 
   private def expectUnregisterFromUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"unregistered watch of $a in $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
-      case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true
-      case other ⇒ false
+      case Logging.Debug(_, _, msg) if msg equals expectedMsg => true
+      case other => false
     }
   }
 }

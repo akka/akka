@@ -23,9 +23,9 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "execute the post stop" in {
       val sawSignal = Promise[Done]()
-      spawn(Behaviors.setup[AnyRef] { _ ⇒
+      spawn(Behaviors.setup[AnyRef] { _ =>
         Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-          case (context, PostStop) ⇒
+          case (context, PostStop) =>
             sawSignal.success(Done)
             Behaviors.empty
         })
@@ -36,7 +36,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     // #25082
     "execute the post stop when wrapped" in {
       val sawSignal = Promise[Done]()
-      val ref = spawn(Behaviors.setup[AnyRef] { _ ⇒
+      val ref = spawn(Behaviors.setup[AnyRef] { _ =>
         Behaviors.intercept(
           new BehaviorInterceptor[AnyRef, AnyRef] {
             override def aroundReceive(context: typed.TypedActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
@@ -48,7 +48,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
             }
           }
         )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-            case (context, PostStop) ⇒
+            case (context, PostStop) =>
               sawSignal.success(Done)
               Behaviors.empty
           }))
@@ -61,7 +61,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "execute the post stop early" in {
       val sawSignal = Promise[Done]()
       spawn(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-        case (context, PostStop) ⇒
+        case (context, PostStop) =>
           sawSignal.success(Done)
           Behaviors.empty
       }))
@@ -76,7 +76,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val ex = intercept[IllegalArgumentException] {
         Behaviors.stopped(
           // illegal:
-          Behaviors.setup[String] { _ ⇒
+          Behaviors.setup[String] { _ =>
             throw TestException("boom!")
           }
         )

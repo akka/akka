@@ -34,7 +34,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up3 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
+      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
         val m = b.add(MergeLatest[Int](3))
 
         s1 ~> m
@@ -66,7 +66,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up3 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
+      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
         val m = b.add(MergeLatest[Int](3))
 
         s1 ~> m
@@ -111,7 +111,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
     }
 
     "work with one-way merge" in {
-      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
+      val result = Source.fromGraph(GraphDSL.create() { implicit b =>
         val merge = b.add(MergeLatest[Int](1))
         val source = b.add(Source(1 to 3))
 
@@ -127,7 +127,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up2 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b ⇒ (s1, s2) ⇒
+      val (in1, in2) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b => (s1, s2) =>
         val m = b.add(MergeLatest[Int](2, true))
 
         s1 ~> m

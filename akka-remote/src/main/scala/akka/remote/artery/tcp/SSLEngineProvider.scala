@@ -103,11 +103,11 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
       ctx.init(keyManagers, trustManagers, rng)
       ctx
     } catch {
-      case e: FileNotFoundException ⇒
+      case e: FileNotFoundException =>
         throw new SslTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException ⇒
+      case e: IOException =>
         throw new SslTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒
+      case e: GeneralSecurityException =>
         throw new SslTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
     }
   }
@@ -191,7 +191,7 @@ object SSLEngineProviderSetup {
    * Scala API: factory for defining a `SSLEngineProvider` that is passed in when ActorSystem
    * is created rather than creating one from configured class name.
    */
-  def apply(sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider): SSLEngineProviderSetup =
+  def apply(sslEngineProvider: ExtendedActorSystem => SSLEngineProvider): SSLEngineProviderSetup =
     new SSLEngineProviderSetup(sslEngineProvider)
 
   /**
@@ -199,7 +199,7 @@ object SSLEngineProviderSetup {
    * is created rather than creating one from configured class name.
    */
   def create(sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
-    apply(sys ⇒ sslEngineProvider(sys))
+    apply(sys => sslEngineProvider(sys))
 
 }
 
@@ -212,7 +212,7 @@ object SSLEngineProviderSetup {
  * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup()]]
  */
 @ApiMayChange class SSLEngineProviderSetup private (
-  val sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider) extends Setup
+  val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider) extends Setup
 
 /**
  * INTERNAL API
@@ -220,17 +220,17 @@ object SSLEngineProviderSetup {
 @InternalApi private[akka] object SecureRandomFactory {
   def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = randomNumberGenerator match {
-      case s @ ("SHA1PRNG" | "NativePRNG") ⇒
+      case s @ ("SHA1PRNG" | "NativePRNG") =>
         log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
 
-      case "" | "SecureRandom" ⇒
+      case "" | "SecureRandom" =>
         log.debug("SSL random number generator set to [SecureRandom]")
         new SecureRandom
 
-      case unknown ⇒
+      case unknown =>
         log.warning(LogMarker.Security, "Unknown SSL random number generator [{}] falling back to SecureRandom", unknown)
         new SecureRandom
     }

@@ -23,13 +23,13 @@ object FlowAskSpec {
 
   class Replier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒ sender() ! Reply(msg)
+      case msg: Int => sender() ! Reply(msg)
     }
   }
 
   class ReplyAndProxy(to: ActorRef) extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒
+      case msg: Int =>
         to ! msg
         sender() ! Reply(msg)
     }
@@ -37,7 +37,7 @@ object FlowAskSpec {
 
   class RandomDelaysReplier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒
+      case msg: Int =>
         import context.dispatcher
 
         val replyTo = sender()
@@ -50,21 +50,21 @@ object FlowAskSpec {
 
   class StatusReplier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒ sender() ! akka.actor.Status.Success(Reply(msg))
+      case msg: Int => sender() ! akka.actor.Status.Success(Reply(msg))
     }
   }
 
   class FailOn(n: Int) extends Actor {
     override def receive: Receive = {
-      case `n`      ⇒ sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
-      case msg: Int ⇒ sender() ! akka.actor.Status.Success(Reply(msg))
+      case `n`      => sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
+      case msg: Int => sender() ! akka.actor.Status.Success(Reply(msg))
     }
   }
 
   class FailOnAllExcept(n: Int) extends Actor {
     override def receive: Receive = {
-      case `n`      ⇒ sender() ! akka.actor.Status.Success(Reply(n))
-      case msg: Int ⇒ sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
+      case `n`      => sender() ! akka.actor.Status.Success(Reply(n))
+      case msg: Int => sender() ! akka.actor.Status.Failure(new Exception(s"Booming for $n!"))
     }
   }
 
@@ -140,7 +140,7 @@ class FlowAskSpec extends StreamSpec {
       val p = Source(1 to 50).ask[Reply](4)(replyRandomDelays).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(1000)
-      for (n ← 1 to 50) c.expectNext(Reply(n))
+      for (n <- 1 to 50) c.expectNext(Reply(n))
       c.expectComplete()
     }
 
@@ -180,7 +180,7 @@ class FlowAskSpec extends StreamSpec {
 
       val input = "a" :: "b" :: "c" :: "d" :: "e" :: "f" :: Nil
 
-      val elements = Source.fromIterator(() ⇒ input.iterator)
+      val elements = Source.fromIterator(() => input.iterator)
         .ask[String](5)(p.ref)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
@@ -219,7 +219,7 @@ class FlowAskSpec extends StreamSpec {
         .to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      for (n ← List(1, 2, 4, 5)) c.expectNext(Reply(n))
+      for (n <- List(1, 2, 4, 5)) c.expectNext(Reply(n))
       c.expectComplete()
     }
 

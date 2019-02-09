@@ -10,7 +10,7 @@ import akka.testkit.DefaultTimeout
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ Future }
 
-trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
+trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
   import scala.concurrent.duration.Duration
 
   import system.dispatcher
@@ -27,7 +27,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e: Throwable ⇒
+        case e: Throwable =>
           dead.set(true)
           e.printStackTrace
       }
@@ -42,7 +42,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e: Throwable ⇒
+        case e: Throwable =>
           dead.set(true)
           e.printStackTrace
       }
@@ -57,7 +57,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e: Throwable ⇒
+        case e: Throwable =>
           dead.set(true)
           e.printStackTrace
       }

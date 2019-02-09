@@ -11,7 +11,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.util.unused
 
@@ -50,18 +50,18 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
     @throws[UnknownHostException]
     def addr: InetAddress = addrOption match {
-      case Some(ipAddress) ⇒ ipAddress
-      case None            ⇒ throw new UnknownHostException(name)
+      case Some(ipAddress) => ipAddress
+      case None            => throw new UnknownHostException(name)
     }
   }
 
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
       val ipv4: immutable.Seq[Inet4Address] = addresses.iterator.collect({
-        case a: Inet4Address ⇒ a
+        case a: Inet4Address => a
       }).to(immutable.IndexedSeq)
       val ipv6: immutable.Seq[Inet6Address] = addresses.iterator.collect({
-        case a: Inet6Address ⇒ a
+        case a: Inet6Address => a
       }).to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
@@ -169,7 +169,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
 object IpVersionSelector {
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
     System.getProperty("java.net.preferIPv6Addresses") match {
-      case "true" ⇒ ipv6 orElse ipv4
-      case _      ⇒ ipv4 orElse ipv6
+      case "true" => ipv6 orElse ipv4
+      case _      => ipv4 orElse ipv6
     }
 }

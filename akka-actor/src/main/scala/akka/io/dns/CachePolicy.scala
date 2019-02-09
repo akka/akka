@@ -20,8 +20,8 @@ object CachePolicy {
     def getValue: java.time.Duration = value.asJava
 
     override def equals(other: Any): Boolean = other match {
-      case that: Ttl ⇒ value == that.value
-      case _         ⇒ false
+      case that: Ttl => value == that.value
+      case _         => false
     }
 
     override def hashCode(): Int = value.hashCode()

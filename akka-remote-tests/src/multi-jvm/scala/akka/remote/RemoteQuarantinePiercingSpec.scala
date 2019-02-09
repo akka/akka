@@ -39,8 +39,8 @@ class ArteryRemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePierci
 object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
+      case "shutdown" => context.system.terminate()
+      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
     }
   }
 }

@@ -13,7 +13,7 @@ import java.lang.management.MemoryMXBean
 import java.lang.management.ManagementFactory
 import java.lang.management.OperatingSystemMXBean
 import java.lang.management.MemoryUsage
-import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
+import java.lang.System.{ currentTimeMillis => newTimestamp }
 import akka.cluster.Cluster
 import java.io.Closeable
 import org.hyperic.sigar.SigarProxy
@@ -60,7 +60,7 @@ private[metrics] object MetricsCollector {
     def create(provider: String) = TryNative {
       log.debug(s"Trying ${provider}.")
       system.asInstanceOf[ExtendedActorSystem].dynamicAccess
-        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] → system)).get
+        .createInstanceFor[MetricsCollector](provider, List(classOf[ActorSystem] -> system)).get
     }
 
     val collector = if (useCustom)
@@ -71,7 +71,7 @@ private[metrics] object MetricsCollector {
       create(collectorCustom) orElse create(collectorSigar) orElse create(collectorJMX)
 
     collector.recover {
-      case e ⇒ throw new ConfigurationException(s"Could not create metrics collector: ${e}")
+      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e}")
     }.get
   }
 }

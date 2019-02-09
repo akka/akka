@@ -32,7 +32,7 @@ import akka.testkit.TestLatch
 object FlowGroupBySpec {
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
-    def lift(key: Int ⇒ Int) = f.prefixAndTail(1).map(p ⇒ key(p._1.head) → (Source.single(p._1.head) ++ p._2)).concatSubstreams
+    def lift(key: Int => Int) = f.prefixAndTail(1).map(p => key(p._1.head) -> (Source.single(p._1.head) ++ p._2)).concatSubstreams
   }
 
 }
@@ -138,7 +138,7 @@ class FlowGroupBySpec extends StreamSpec {
 
     "fail when key function return null" in {
       val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
-        .groupBy(3, e ⇒ if (e.startsWith("A")) null else e.substring(0, 1))
+        .groupBy(3, e => if (e.startsWith("A")) null else e.substring(0, 1))
         .grouped(10)
         .mergeSubstreams
         .runWith(TestSink.probe[Seq[String]])
@@ -235,7 +235,7 @@ class FlowGroupBySpec extends StreamSpec {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source.fromPublisher(publisherProbeProbe)
-        .groupBy(2, elem ⇒ if (elem == 2) throw exc else elem % 2)
+        .groupBy(2, elem => if (elem == 2) throw exc else elem % 2)
         .lift(_ % 2)
         .runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[(Int, Source[Int, NotUsed])]()
@@ -265,7 +265,7 @@ class FlowGroupBySpec extends StreamSpec {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source.fromPublisher(publisherProbeProbe)
-        .groupBy(2, elem ⇒ if (elem == 2) throw exc else elem % 2)
+        .groupBy(2, elem => if (elem == 2) throw exc else elem % 2)
         .lift(_ % 2)
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
@@ -352,7 +352,7 @@ class FlowGroupBySpec extends StreamSpec {
     "emit subscribe before completed" in assertAllStagesStopped {
       val futureGroupSource =
         Source.single(0)
-          .groupBy(1, elem ⇒ "all")
+          .groupBy(1, elem => "all")
           .prefixAndTail(0)
           .map(_._2)
           .concatSubstreams
@@ -372,8 +372,8 @@ class FlowGroupBySpec extends StreamSpec {
       val subscriber = TestSubscriber.manualProbe[ByteString]()
 
       val publisher = Source.fromPublisher[ByteString](publisherProbe)
-        .groupBy(256, elem ⇒ elem.head).map(_.reverse).mergeSubstreams
-        .groupBy(256, elem ⇒ elem.head).map(_.reverse).mergeSubstreams
+        .groupBy(256, elem => elem.head).map(_.reverse).mergeSubstreams
+        .groupBy(256, elem => elem.head).map(_.reverse).mergeSubstreams
         .runWith(Sink.asPublisher(false))
       publisher.subscribe(subscriber)
 
@@ -381,7 +381,7 @@ class FlowGroupBySpec extends StreamSpec {
       val downstreamSubscription = subscriber.expectSubscription()
 
       downstreamSubscription.request(300)
-      for (i ← 1 to 300) {
+      for (i <- 1 to 300) {
         val byteString = randomByteString(10)
         upstreamSubscription.expectRequest()
         upstreamSubscription.sendNext(byteString)
@@ -396,7 +396,7 @@ class FlowGroupBySpec extends StreamSpec {
 
       Source
         .fromPublisher(upstream)
-        .via(new GroupBy[Int, Boolean](2, elem ⇒ elem == 0))
+        .via(new GroupBy[Int, Boolean](2, elem => elem == 0))
         .runWith(Sink.fromSubscriber(downstreamMaster))
 
       val substream = TestSubscriber.probe[Int]()
@@ -427,7 +427,7 @@ class FlowGroupBySpec extends StreamSpec {
 
       Source
         .fromPublisher(upstream)
-        .via(new GroupBy[Int, Int](10, elem ⇒ elem))
+        .via(new GroupBy[Int, Int](10, elem => elem))
         .runWith(Sink.fromSubscriber(downstreamMaster))
 
       val substream1 = TestSubscriber.probe[Int]()
@@ -508,7 +508,7 @@ class FlowGroupBySpec extends StreamSpec {
 
       Source
         .fromPublisher(upstream)
-        .via(new GroupBy[Int, Int](10, elem ⇒ elem))
+        .via(new GroupBy[Int, Int](10, elem => elem))
         .runWith(Sink.fromSubscriber(downstreamMaster))
 
       val substream1 = TestSubscriber.probe[Int]()
@@ -549,7 +549,7 @@ class FlowGroupBySpec extends StreamSpec {
       var blockingNextElement: ByteString = null.asInstanceOf[ByteString]
 
       val probes = new java.util.ArrayList[Promise[TestSubscriber.Probe[ByteString]]](100)
-      (0 to 99).foreach(_ ⇒ probes.add(Promise[TestSubscriber.Probe[ByteString]]()))
+      (0 to 99).foreach(_ => probes.add(Promise[TestSubscriber.Probe[ByteString]]()))
 
       var probesWriterTop = 0
       var probesReaderTop = 0
@@ -596,11 +596,11 @@ class FlowGroupBySpec extends StreamSpec {
 
       val publisherProbe = TestPublisher.manualProbe[ByteString]()
       Source.fromPublisher[ByteString](publisherProbe)
-        .groupBy(100, elem ⇒ Math.abs(elem.head % 100)).to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in"))))).run()(mat)
+        .groupBy(100, elem => Math.abs(elem.head % 100)).to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in"))))).run()(mat)
 
       val upstreamSubscription = publisherProbe.expectSubscription()
 
-      for (i ← 1 to 400) {
+      for (i <- 1 to 400) {
         val byteString = randomByteString(10)
         val index = Math.abs(byteString.head % 100)
 
@@ -633,7 +633,7 @@ class FlowGroupBySpec extends StreamSpec {
     }
 
     "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
-      case class Elem(id: Int, substream: Int, f: () ⇒ Any)
+      case class Elem(id: Int, substream: Int, f: () => Any)
       val queue = Source.queue[Elem](3, OverflowStrategy.backpressure)
         .groupBy(2, _.substream)
         .buffer(2, OverflowStrategy.backpressure)
@@ -644,13 +644,13 @@ class FlowGroupBySpec extends StreamSpec {
       val threeProcessed = Promise[Done]()
       val blockSubStream1 = TestLatch()
       List(
-        Elem(1, 1, () ⇒ {
+        Elem(1, 1, () => {
           // timeout just to not wait forever if something is wrong, not really relevant for test
           Await.result(blockSubStream1, 10.seconds)
           1
         }),
-        Elem(2, 1, () ⇒ 2),
-        Elem(3, 2, () ⇒ {
+        Elem(2, 1, () => 2),
+        Elem(3, 2, () => {
           threeProcessed.success(Done)
           3
         })).foreach(queue.offer)

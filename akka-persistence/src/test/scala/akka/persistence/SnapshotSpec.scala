@@ -14,18 +14,18 @@ object SnapshotSpec {
     var state = List.empty[String]
 
     override def receiveRecover: Receive = {
-      case payload: String                     ⇒ state = s"${payload}-${lastSequenceNr}" :: state
-      case SnapshotOffer(_, snapshot: List[_]) ⇒ state = snapshot.asInstanceOf[List[String]]
+      case payload: String                     => state = s"${payload}-${lastSequenceNr}" :: state
+      case SnapshotOffer(_, snapshot: List[_]) => state = snapshot.asInstanceOf[List[String]]
     }
 
     override def receiveCommand = {
-      case payload: String ⇒
-        persist(payload) { _ ⇒
+      case payload: String =>
+        persist(payload) { _ =>
           state = s"${payload}-${lastSequenceNr}" :: state
         }
-      case TakeSnapshot            ⇒ saveSnapshot(state)
-      case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case GetState                ⇒ probe ! state.reverse
+      case TakeSnapshot            => saveSnapshot(state)
+      case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
+      case GetState                => probe ! state.reverse
     }
   }
 
@@ -33,19 +33,19 @@ object SnapshotSpec {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
-      case payload: String              ⇒ probe ! s"${payload}-${lastSequenceNr}"
-      case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
-      case other                        ⇒ probe ! other
+      case payload: String              => probe ! s"${payload}-${lastSequenceNr}"
+      case offer @ SnapshotOffer(md, s) => probe ! offer
+      case other                        => probe ! other
     }
 
     override def receiveCommand = {
-      case "done" ⇒ probe ! "done"
-      case payload: String ⇒
-        persist(payload) { _ ⇒
+      case "done" => probe ! "done"
+      case payload: String =>
+        persist(payload) { _ =>
           probe ! s"${payload}-${lastSequenceNr}"
         }
-      case offer @ SnapshotOffer(md, s) ⇒ probe ! offer
-      case other                        ⇒ probe ! other
+      case offer @ SnapshotOffer(md, s) => probe ! offer
+      case other                        => probe ! other
     }
   }
 
@@ -53,17 +53,17 @@ object SnapshotSpec {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
-      case payload: String                             ⇒ probe ! s"${payload}-${lastSequenceNr}"
-      case other if !other.isInstanceOf[SnapshotOffer] ⇒ probe ! other
+      case payload: String                             => probe ! s"${payload}-${lastSequenceNr}"
+      case other if !other.isInstanceOf[SnapshotOffer] => probe ! other
     }
 
     override def receiveCommand = {
-      case "done" ⇒ probe ! "done"
-      case payload: String ⇒
-        persist(payload) { _ ⇒
+      case "done" => probe ! "done"
+      case payload: String =>
+        persist(payload) { _ =>
           probe ! s"${payload}-${lastSequenceNr}"
         }
-      case other ⇒ probe ! other
+      case other => probe ! other
     }
   }
 
@@ -75,8 +75,8 @@ object SnapshotSpec {
 
     override def receiveCommand = receiveDelete orElse super.receiveCommand
     def receiveDelete: Receive = {
-      case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr)
-      case DeleteN(criteria) ⇒ deleteSnapshots(criteria)
+      case Delete1(metadata) => deleteSnapshot(metadata.sequenceNr)
+      case DeleteN(criteria) => deleteSnapshots(criteria)
     }
   }
 }
@@ -107,7 +107,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val persistenceId = name
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
@@ -132,7 +132,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val persistenceId = name
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -146,7 +146,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor ! "done"
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 4, timestamp), state) =>
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
@@ -159,7 +159,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val persistenceId = name
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -175,7 +175,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val persistenceId = name
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
+        case SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, timestamp), state) =>
           state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
@@ -204,7 +204,7 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       persistentActor1 ! "done"
 
       val metadata = expectMsgPF() {
-        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) =>
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
       }
@@ -213,13 +213,13 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
 
       persistentActor1 ! Delete1(metadata)
       deleteProbe.expectMsgType[DeleteSnapshot]
-      expectMsgPF() { case m @ DeleteSnapshotSuccess(SnapshotMetadata(`persistenceId`, 4, _)) ⇒ }
+      expectMsgPF() { case m @ DeleteSnapshotSuccess(SnapshotMetadata(`persistenceId`, 4, _)) => }
 
       // recover persistentActor from 2nd snapshot (3rd was deleted) plus replayed messages
       val persistentActor2 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))
 
       expectMsgPF(hint = "" + SnapshotOffer(SnapshotMetadata(`persistenceId`, 2, 0), null)) {
-        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 2, _), state) ⇒
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 2, _), state) =>
           state should ===(List("a-1", "b-2").reverse)
           md
       }
@@ -240,12 +240,12 @@ class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "Sn
       val criteria = SnapshotSelectionCriteria(maxSequenceNr = 4)
       persistentActor1 ! DeleteN(criteria)
       expectMsgPF() {
-        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
+        case SnapshotOffer(md @ SnapshotMetadata(`persistenceId`, 4, _), state) =>
           state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       expectMsg(RecoveryCompleted)
       deleteProbe.expectMsgType[DeleteSnapshots]
-      expectMsgPF() { case DeleteSnapshotsSuccess(`criteria`) ⇒ }
+      expectMsgPF() { case DeleteSnapshotsSuccess(`criteria`) => }
 
       // recover persistentActor from replayed messages (all snapshots deleted)
       val persistentActor2 = system.actorOf(Props(classOf[DeleteSnapshotTestPersistentActor], name, recovery, testActor))

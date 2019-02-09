@@ -34,12 +34,12 @@ class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
     val recipient = OptionVal.None // not used
     TestSource.probe[AnyRef]
       .map {
-        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) ⇒
+        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) =>
           InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid,
             inboundContext.association(ackReplyTo.uid))
       }
       .via(new SystemMessageAcker(inboundContext))
-      .map { case env: InboundEnvelope ⇒ env.message }
+      .map { case env: InboundEnvelope => env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

@@ -10,7 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.LoggingFilterWithMarker
 import akka.util.OptionVal
-import akka.{ ConfigurationException, actor ⇒ untyped }
+import akka.{ ConfigurationException, actor => untyped }
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -38,14 +38,14 @@ import scala.concurrent.duration._
   override def stop[U](child: ActorRef[U]): Unit =
     if (child.path.parent == self.path) { // only if a direct child
       toUntyped(child) match {
-        case f: akka.actor.FunctionRef ⇒
+        case f: akka.actor.FunctionRef =>
           val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]
           cell.removeFunctionRef(f)
-        case c ⇒
+        case c =>
           untypedContext.child(child.path.name) match {
-            case Some(`c`) ⇒
+            case Some(`c`) =>
               untypedContext.stop(c)
-            case _ ⇒
+            case _ =>
             // child that was already stopped
           }
       }
@@ -79,10 +79,10 @@ import scala.concurrent.duration._
     import untypedContext.dispatcher
     untypedContext.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
+  override private[akka] def internalSpawnMessageAdapter[U](f: U => T, _name: String): ActorRef[U] = {
     val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
-    val ref = cell.addFunctionRef((_, msg) ⇒ untypedContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
+    val ref = cell.addFunctionRef((_, msg) => untypedContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
   }
 
@@ -96,8 +96,8 @@ import scala.concurrent.duration._
 
   override def log: Logger = {
     actorLogger match {
-      case OptionVal.Some(logger) ⇒ logger
-      case OptionVal.None ⇒
+      case OptionVal.Some(logger) => logger
+      case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         initLoggerWithClass(logClass)
     }
@@ -115,8 +115,8 @@ import scala.concurrent.duration._
 
   private def toUntypedImp[U](context: TypedActorContext[_]): untyped.ActorContext =
     context match {
-      case adapter: ActorContextAdapter[_] ⇒ adapter.untypedContext
-      case _ ⇒
+      case adapter: ActorContextAdapter[_] => adapter.untypedContext
+      case _ =>
         throw new UnsupportedOperationException("only adapted untyped ActorContext permissible " +
           s"($context of class ${context.getClass.getName})")
     }
@@ -125,16 +125,16 @@ import scala.concurrent.duration._
 
   def toUntyped[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
-      case _ ⇒
+      case c: TypedActorContext[_] => toUntypedImp(c)
+      case _ =>
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 
   def toUntyped[U](context: javadsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
-      case _ ⇒
+      case c: TypedActorContext[_] => toUntypedImp(c)
+      case _ =>
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
@@ -142,9 +142,9 @@ import scala.concurrent.duration._
   def spawnAnonymous[T](context: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
     try {
       Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() ⇒ behavior, props)))
+      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props)))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }
@@ -152,9 +152,9 @@ import scala.concurrent.duration._
   def spawn[T](context: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
     try {
       Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props), name))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }

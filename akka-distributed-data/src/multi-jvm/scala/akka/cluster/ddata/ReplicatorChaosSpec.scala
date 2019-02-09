@@ -69,11 +69,11 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       awaitAssert {
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) ⇒ g.dataValue match {
-            case c: GCounter  ⇒ c.value
-            case c: PNCounter ⇒ c.value
-            case c: GSet[_]   ⇒ c.elements
-            case c: ORSet[_]  ⇒ c.elements
+          case g @ GetSuccess(`key`, _) => g.dataValue match {
+            case c: GCounter  => c.value
+            case c: PNCounter => c.value
+            case c: GSet[_]   => c.elements
+            case c: ORSet[_]  => c.elements
           }
         }
         value should be(expected)
@@ -105,7 +105,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       }
 
       runOn(first) {
-        for (_ ← 0 until 5) {
+        for (_ <- 0 until 5) {
           replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
           replicator ! Update(KeyB, PNCounter(), WriteLocal)(_ decrement 1)
           replicator ! Update(KeyC, GCounter(), WriteAll(timeout))(_ :+ 1)
@@ -163,7 +163,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       val side1 = Seq(first, second)
       val side2 = Seq(third, fourth, fifth)
       runOn(first) {
-        for (a ← side1; b ← side2)
+        for (a <- side1; b <- side2)
           testConductor.blackhole(a, b, Direction.Both).await
       }
       enterBarrier("split")
@@ -216,7 +216,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       val side1 = Seq(first, second)
       val side2 = Seq(third, fifth) // fourth was shutdown
       runOn(first) {
-        for (a ← side1; b ← side2)
+        for (a <- side1; b <- side2)
           testConductor.passThrough(a, b, Direction.Both).await
       }
       enterBarrier("split-repaired")

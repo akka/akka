@@ -22,7 +22,7 @@ import scala.collection.immutable
 @InternalApi class AsyncDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationVerificationNeeded {
   private val cacheRef = new AtomicReference(new Cache[(String, RequestType), Resolved](
     immutable.SortedSet()(expiryEntryOrdering()),
-    immutable.Map(), () ⇒ clock))
+    immutable.Map(), () => clock))
 
   private val nanoBase = System.nanoTime()
 
@@ -36,8 +36,8 @@ import scala.collection.immutable
     val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
 
     val all = (ipv4 ++ ipv6 ++ both).collect {
-      case r: ARecord    ⇒ r.ip
-      case r: AAAARecord ⇒ r.ip
+      case r: ARecord    => r.ip
+      case r: AAAARecord => r.ip
     }
     if (all.isEmpty) None
     else Some(Dns.Resolved(name, all))

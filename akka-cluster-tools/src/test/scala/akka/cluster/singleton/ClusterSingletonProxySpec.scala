@@ -18,7 +18,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
   val seed = new ActorSys()
 
   val testSystems = {
-    val joiners = (0 until 4).map(n ⇒ new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
+    val joiners = (0 until 4).map(n => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
     joiners :+ seed
   }
 
@@ -29,7 +29,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
     }
   }
 
-  override def afterAll(): Unit = testSystems.foreach { sys ⇒
+  override def afterAll(): Unit = testSystems.foreach { sys =>
     TestKit.shutdownActorSystem(sys.system)
   }
 }
@@ -87,7 +87,7 @@ object ClusterSingletonProxySpec {
     log.info("Singleton created on {}", Cluster(context.system).selfAddress)
 
     def receive: Actor.Receive = {
-      case msg ⇒
+      case msg =>
         log.info(s"Got $msg")
         sender() ! "Got " + msg
     }

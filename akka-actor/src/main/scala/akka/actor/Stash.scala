@@ -19,17 +19,17 @@ import scala.util.control.NoStackTrace
  *  <pre>
  *    class ActorWithProtocol extends Actor with Stash {
  *      def receive = {
- *        case "open" ⇒
+ *        case "open" =>
  *          unstashAll()
  *          context.become({
- *            case "write" ⇒ // do writing...
- *            case "close" ⇒
+ *            case "write" => // do writing...
+ *            case "close" =>
  *              unstashAll()
  *              context.unbecome()
- *            case msg ⇒ stash()
+ *            case msg => stash()
  *          }, discardOld = false)
- *        case "done" ⇒ // done
- *        case msg    ⇒ stash()
+ *        case "done" => // done
+ *        case msg    => stash()
  *      }
  *    }
  *  </pre>
@@ -88,7 +88,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
  *
  * @see [[StashSupport]]
  */
-private[akka] trait StashFactory { this: Actor ⇒
+private[akka] trait StashFactory { this: Actor =>
   private[akka] def createStash()(implicit ctx: ActorContext, ref: ActorRef): StashSupport = new StashSupport {
     def context: ActorContext = ctx
     def self: ActorRef = ref
@@ -137,8 +137,8 @@ private[akka] trait StashSupport {
    */
   private[akka] val mailbox: DequeBasedMessageQueueSemantics = {
     actorCell.mailbox.messageQueue match {
-      case queue: DequeBasedMessageQueueSemantics ⇒ queue
-      case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
+      case queue: DequeBasedMessageQueueSemantics => queue
+      case other => throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
         """An (unbounded) deque-based mailbox can be configured as follows:
           |  my-custom-mailbox {
           |    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
@@ -168,7 +168,7 @@ private[akka] trait StashSupport {
    * small `others`.
    */
   private[akka] def prepend(others: immutable.Seq[Envelope]): Unit =
-    theStash = others.foldRight(theStash)((e, s) ⇒ e +: s)
+    theStash = others.foldRight(theStash)((e, s) => e +: s)
 
   /**
    *  Prepends the oldest message in the stash to the mailbox, and then removes that
@@ -196,7 +196,7 @@ private[akka] trait StashSupport {
    *
    *  The stash is guaranteed to be empty after calling `unstashAll()`.
    */
-  def unstashAll(): Unit = unstashAll(_ ⇒ true)
+  def unstashAll(): Unit = unstashAll(_ => true)
 
   /**
    * INTERNAL API.
@@ -213,9 +213,9 @@ private[akka] trait StashSupport {
    *  @param filterPredicate only stashed messages selected by this predicate are
    *                         prepended to the mailbox.
    */
-  private[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
+  private[akka] def unstashAll(filterPredicate: Any => Boolean): Unit = {
     try {
-      val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
+      val i = theStash.reverseIterator.filter(envelope => filterPredicate(envelope.message))
       while (i.hasNext) enqueueFirst(i.next())
     } finally {
       theStash = Vector.empty[Envelope]
@@ -241,8 +241,8 @@ private[akka] trait StashSupport {
   private def enqueueFirst(envelope: Envelope): Unit = {
     mailbox.enqueueFirst(self, envelope)
     envelope.message match {
-      case Terminated(ref) ⇒ actorCell.terminatedQueuedFor(ref)
-      case _               ⇒
+      case Terminated(ref) => actorCell.terminatedQueuedFor(ref)
+      case _               =>
     }
   }
 }

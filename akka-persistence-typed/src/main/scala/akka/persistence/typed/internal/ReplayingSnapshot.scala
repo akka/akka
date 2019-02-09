@@ -49,15 +49,15 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
     def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
       Behaviors.receiveMessage[InternalProtocol] {
-        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r, receivedPoisonPill)
-        case JournalResponse(r)          ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-        case cmd: IncomingCommand[C] ⇒
+        case SnapshotterResponse(r)      => onSnapshotterResponse(r, receivedPoisonPill)
+        case JournalResponse(r)          => onJournalResponse(r)
+        case RecoveryTickEvent(snapshot) => onRecoveryTick(snapshot)
+        case cmd: IncomingCommand[C] =>
           if (receivedPoisonPill) Behaviors.unhandled
           else onCommand(cmd)
-        case RecoveryPermitGranted ⇒ Behaviors.unhandled // should not happen, we already have the permit
+        case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
       }.receiveSignal(returnPermitOnStop.orElse {
-        case (_, PoisonPill) ⇒ stay(receivedPoisonPill = true)
+        case (_, PoisonPill) => stay(receivedPoisonPill = true)
       })
     }
     stay(receivedPoisonPillInPreviousPhase)
@@ -75,9 +75,9 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     setup.cancelRecoveryTimer()
 
     event match {
-      case Some(evt) ⇒
+      case Some(evt) =>
         setup.log.error(cause, "Exception in receiveRecover when replaying snapshot [{}]", evt.getClass.getName)
-      case _ ⇒
+      case _ =>
         setup.log.error(cause, "Persistence failure when replaying snapshot")
     }
 
@@ -104,22 +104,22 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     response match {
-      case LoadSnapshotResult(sso, toSnr) ⇒
+      case LoadSnapshotResult(sso, toSnr) =>
         var state: S = setup.emptyState
 
         val seqNr: Long = sso match {
-          case Some(SelectedSnapshot(metadata, snapshot)) ⇒
+          case Some(SelectedSnapshot(metadata, snapshot)) =>
             state = snapshot.asInstanceOf[S]
             metadata.sequenceNr
-          case None ⇒ 0 // from the beginning please
+          case None => 0 // from the beginning please
         }
 
         becomeReplayingEvents(state, seqNr, toSnr, receivedPoisonPill)
 
-      case LoadSnapshotFailed(cause) ⇒
+      case LoadSnapshotFailed(cause) =>
         onRecoveryFailure(cause, event = None)
 
-      case _ ⇒
+      case _ =>
         Behaviors.unhandled
     }
   }

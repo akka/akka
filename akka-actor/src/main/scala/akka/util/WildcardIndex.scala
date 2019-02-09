@@ -10,9 +10,9 @@ import scala.collection.immutable.HashMap
 private[akka] final case class WildcardIndex[T](wildcardTree: WildcardTree[T] = WildcardTree[T](), doubleWildcardTree: WildcardTree[T] = WildcardTree[T]()) {
 
   def insert(elems: Array[String], d: T): WildcardIndex[T] = elems.lastOption match {
-    case Some("**") ⇒ copy(doubleWildcardTree = doubleWildcardTree.insert(elems.iterator, d))
-    case Some(_)    ⇒ copy(wildcardTree = wildcardTree.insert(elems.iterator, d))
-    case _          ⇒ this
+    case Some("**") => copy(doubleWildcardTree = doubleWildcardTree.insert(elems.iterator, d))
+    case Some(_)    => copy(wildcardTree = wildcardTree.insert(elems.iterator, d))
+    case _          => this
   }
 
   def find(elems: Iterable[String]): Option[T] =
@@ -56,10 +56,10 @@ private[akka] final case class WildcardTree[T](data: Option[T] = None, children:
     if (!elems.hasNext) this
     else {
       children.get(elems.next()) match {
-        case Some(branch) ⇒ branch.findWithSingleWildcard(elems)
-        case None ⇒ children.get("*") match {
-          case Some(branch) ⇒ branch.findWithSingleWildcard(elems)
-          case None         ⇒ WildcardTree[T]()
+        case Some(branch) => branch.findWithSingleWildcard(elems)
+        case None => children.get("*") match {
+          case Some(branch) => branch.findWithSingleWildcard(elems)
+          case None         => WildcardTree[T]()
         }
       }
     }
@@ -69,10 +69,10 @@ private[akka] final case class WildcardTree[T](data: Option[T] = None, children:
     else {
       val newAlt = children.getOrElse("**", alt)
       children.get(elems.next()) match {
-        case Some(branch) ⇒ branch.findWithTerminalDoubleWildcard(elems, newAlt)
-        case None ⇒ children.get("*") match {
-          case Some(branch) ⇒ branch.findWithTerminalDoubleWildcard(elems, newAlt)
-          case None         ⇒ newAlt
+        case Some(branch) => branch.findWithTerminalDoubleWildcard(elems, newAlt)
+        case None => children.get("*") match {
+          case Some(branch) => branch.findWithTerminalDoubleWildcard(elems, newAlt)
+          case None         => newAlt
         }
       }
     }

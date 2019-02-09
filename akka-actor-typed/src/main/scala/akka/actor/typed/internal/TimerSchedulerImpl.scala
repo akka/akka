@@ -24,17 +24,17 @@ import scala.concurrent.duration.FiniteDuration
     override def toString = s"TimerMsg(key=$key, generation=$generation, owner=$owner)"
   }
 
-  def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
-      case ctxImpl: ActorContextImpl[T] ⇒
+      case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
         val behavior = factory(timerScheduler)
         timerScheduler.intercept(behavior)
-      case _ ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
+      case _ => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
 
 }
@@ -63,8 +63,8 @@ import scala.concurrent.duration.FiniteDuration
 
   private def startTimer(key: Any, msg: T, delay: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
-      case Some(t) ⇒ cancelTimer(t)
-      case None    ⇒
+      case Some(t) => cancelTimer(t)
+      case None    =>
     }
     val nextGen = timerGen.next()
 
@@ -94,8 +94,8 @@ import scala.concurrent.duration.FiniteDuration
 
   override def cancel(key: Any): Unit = {
     timers.get(key) match {
-      case None    ⇒ // already removed/canceled
-      case Some(t) ⇒ cancelTimer(t)
+      case None    => // already removed/canceled
+      case Some(t) => cancelTimer(t)
     }
   }
 
@@ -107,7 +107,7 @@ import scala.concurrent.duration.FiniteDuration
 
   override def cancelAll(): Unit = {
     ctx.log.debug("Cancel all timers")
-    timers.valuesIterator.foreach { timer ⇒
+    timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }
     timers = Map.empty
@@ -115,11 +115,11 @@ import scala.concurrent.duration.FiniteDuration
 
   def interceptTimerMsg(log: Logger, timerMsg: TimerMsg): OptionVal[T] = {
     timers.get(timerMsg.key) match {
-      case None ⇒
+      case None =>
         // it was from canceled timer that was already enqueued in mailbox
         log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
         OptionVal.none // message should be ignored
-      case Some(t) ⇒
+      case Some(t) =>
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
           log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
@@ -158,20 +158,20 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
 
   override def aroundReceive(ctx: typed.TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val maybeIntercepted = msg match {
-      case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
-      case msg           ⇒ OptionVal.Some(msg)
+      case msg: TimerMsg => timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
+      case msg           => OptionVal.Some(msg)
     }
 
     maybeIntercepted match {
-      case OptionVal.None              ⇒ Behavior.same // None means not applicable
-      case OptionVal.Some(intercepted) ⇒ target(ctx, intercepted)
+      case OptionVal.None              => Behavior.same // None means not applicable
+      case OptionVal.Some(intercepted) => target(ctx, intercepted)
     }
   }
 
   override def aroundSignal(ctx: typed.TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     signal match {
-      case PreRestart | PostStop ⇒ timerSchedulerImpl.cancelAll()
-      case _                     ⇒ // unhandled
+      case PreRestart | PostStop => timerSchedulerImpl.cancelAll()
+      case _                     => // unhandled
     }
     target(ctx, signal)
   }

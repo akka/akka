@@ -104,10 +104,10 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
       throw new IllegalArgumentException(s"Highest SEQ so far was $maxSeq but cumulative ACK is ${ack.cumulativeAck}")
     val newNacked =
       if (ack.nacks.isEmpty) Vector.empty
-      else (nacked ++ nonAcked) filter { m ⇒ ack.nacks(m.seq) }
+      else (nacked ++ nonAcked) filter { m => ack.nacks(m.seq) }
     if (newNacked.size < ack.nacks.size) throw new ResendUnfulfillableException
     else this.copy(
-      nonAcked = nonAcked.filter { m ⇒ m.seq > ack.cumulativeAck },
+      nonAcked = nonAcked.filter { m => m.seq > ack.cumulativeAck },
       nacked = newNacked)
   }
 
@@ -166,7 +166,7 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     var updatedLastDelivered = lastDelivered
     var prev = lastDelivered
 
-    for (bufferedMsg ← buf) {
+    for (bufferedMsg <- buf) {
       if (bufferedMsg.seq.isSuccessor(updatedLastDelivered)) {
         deliver :+= bufferedMsg
         updatedLastDelivered = updatedLastDelivered.inc

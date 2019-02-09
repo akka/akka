@@ -47,7 +47,7 @@ private[affinity] object AffinityPool {
     try
       OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Void])))
     catch {
-      case NonFatal(_) ⇒ OptionVal.None
+      case NonFatal(_) => OptionVal.None
     }
 
   type IdleState = Int
@@ -82,24 +82,24 @@ private[affinity] object AffinityPool {
 
     final def idle(): Unit = {
       (state: @switch) match {
-        case Initial ⇒
+        case Initial =>
           idling = true
           transitionTo(Spinning)
-        case Spinning ⇒
+        case Spinning =>
           onSpinWaitMethodHandle match {
-            case OptionVal.Some(m) ⇒ m.invokeExact()
-            case OptionVal.None    ⇒
+            case OptionVal.Some(m) => m.invokeExact()
+            case OptionVal.None    =>
           }
           turns += 1
           if (turns > maxSpins)
             transitionTo(Yielding)
-        case Yielding ⇒
+        case Yielding =>
           turns += 1
           if (turns > maxYields) {
             parkPeriodNs = minParkPeriodNs
             transitionTo(Parking)
           } else Thread.`yield`()
-        case Parking ⇒
+        case Parking =>
           LockSupport.parkNanos(parkPeriodNs)
           parkPeriodNs = Math.min(parkPeriodNs << 1, maxParkPeriodNs)
       }
@@ -159,7 +159,7 @@ private[akka] class AffinityPool(
     bookKeepingLock.withGuard {
       if (poolState == Uninitialized) {
         poolState = Initializing
-        workQueues.foreach(q ⇒ addWorker(workers, q))
+        workQueues.foreach(q => addWorker(workers, q))
         poolState = Running
       }
       this
@@ -278,14 +278,14 @@ private[akka] class AffinityPool(
       @tailrec def runLoop(): Unit =
         if (!Thread.interrupted()) {
           (poolState: @switch) match {
-            case Uninitialized ⇒ ()
-            case Initializing | Running ⇒
+            case Uninitialized => ()
+            case Initializing | Running =>
               executeNext()
               runLoop()
-            case ShuttingDown ⇒
+            case ShuttingDown =>
               if (executeNext()) runLoop()
               else ()
-            case ShutDown | Terminated ⇒ ()
+            case ShutDown | Terminated => ()
           }
         }
 
@@ -318,31 +318,31 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
     config.getInt("parallelism-max"))
   private val taskQueueSize = config.getInt("task-queue-size")
 
-  private val idleCpuLevel = config.getInt("idle-cpu-level").requiring(level ⇒
+  private val idleCpuLevel = config.getInt("idle-cpu-level").requiring(level =>
     1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
 
   private val queueSelectorFactoryFQCN = config.getString("queue-selector")
   private val queueSelectorFactory: QueueSelectorFactory =
-    prerequisites.dynamicAccess.createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] → config))
+    prerequisites.dynamicAccess.createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] -> config))
       .recover({
-        case _ ⇒ throw new IllegalArgumentException(
+        case _ => throw new IllegalArgumentException(
           s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
       }).get
 
   private val rejectionHandlerFactoryFCQN = config.getString("rejection-handler")
   private val rejectionHandlerFactory = prerequisites.dynamicAccess
     .createInstanceFor[RejectionHandlerFactory](rejectionHandlerFactoryFCQN, Nil).recover({
-      case exception ⇒ throw new IllegalArgumentException(
+      case exception => throw new IllegalArgumentException(
         s"Cannot instantiate RejectionHandlerFactory(rejection-handler = $rejectionHandlerFactoryFCQN), make sure it has an accessible empty constructor",
         exception)
     }).get
 
   override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
-      case m: MonitorableThreadFactory ⇒
+      case m: MonitorableThreadFactory =>
         // add the dispatcher id to the thread names
         m.withName(m.name + "-" + id)
-      case other ⇒ other
+      case other => other
     }
 
     new ExecutorServiceFactory {
@@ -396,7 +396,7 @@ private[akka] final class ThrowOnOverflowRejectionHandler extends RejectionHandl
 private[akka] final class FairDistributionHashCache( final val config: Config) extends QueueSelectorFactory {
   private final val MaxFairDistributionThreshold = 2048
 
-  private[this] final val fairDistributionThreshold = config.getInt("fair-work-distribution.threshold").requiring(thr ⇒
+  private[this] final val fairDistributionThreshold = config.getInt("fair-work-distribution.threshold").requiring(thr =>
     0 <= thr && thr <= MaxFairDistributionThreshold, s"fair-work-distribution.threshold must be between 0 and $MaxFairDistributionThreshold")
 
   override final def create(): QueueSelector = new AtomicReference[ImmutableIntMap](ImmutableIntMap.empty) with QueueSelector {

@@ -15,7 +15,7 @@ import org.scalatest.WordSpecLike
 object PersistentShardSpec {
   class EntityActor(id: String) extends Actor {
     override def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -33,12 +33,12 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with Word
       val props = Props(new PersistentShard(
         "cats",
         "shard-1",
-        id ⇒ Props(new EntityActor(id)),
+        id => Props(new EntityActor(id)),
         ClusterShardingSettings(system),
         {
-          case _ ⇒ ("entity-1", "msg")
+          case _ => ("entity-1", "msg")
         },
-        _ ⇒ "shard-1",
+        _ => "shard-1",
         PoisonPill
       ))
       val persistentShard = system.actorOf(props)

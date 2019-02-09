@@ -28,8 +28,8 @@ object ManualTime {
    */
   def apply()(implicit system: ActorSystem[_]): ManualTime =
     system.scheduler match {
-      case sc: akka.testkit.ExplicitlyTriggeredScheduler ⇒ new ManualTime(sc)
-      case _ ⇒ throw new IllegalArgumentException("ActorSystem not configured with explicitly triggered scheduler, " +
+      case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
+      case _ => throw new IllegalArgumentException("ActorSystem not configured with explicitly triggered scheduler, " +
         "make sure to include akka.actor.testkit.typed.scaladsl.ManualTime.config() when setting up the test")
     }
 

@@ -13,14 +13,14 @@ object VectorClockPerfSpec {
 
   def createVectorClockOfSize(size: Int): (VectorClock, SortedSet[Node]) =
     (1 to size).foldLeft((VectorClock(), SortedSet.empty[Node])) {
-      case ((vc, nodes), i) ⇒
+      case ((vc, nodes), i) =>
         val node = Node(i.toString)
         (vc :+ node, nodes + node)
     }
 
   def copyVectorClock(vc: VectorClock): VectorClock = {
     val versions = vc.versions.foldLeft(TreeMap.empty[Node, Long]) {
-      case (versions, (n, t)) ⇒ versions.updated(Node.fromHash(n), t)
+      case (versions, (n, t)) => versions.updated(Node.fromHash(n), t)
     }
     vc.copy(versions = versions)
   }
@@ -46,10 +46,10 @@ class VectorClockPerfSpec extends WordSpec with Matchers {
   val vcAfterMiddle = vcBaseMiddle :+ firstNode
   val vcConcurrentMiddle = vcBaseMiddle :+ middleNode
 
-  def checkThunkFor(vc1: VectorClock, vc2: VectorClock, thunk: (VectorClock, VectorClock) ⇒ Unit, times: Int): Unit = {
+  def checkThunkFor(vc1: VectorClock, vc2: VectorClock, thunk: (VectorClock, VectorClock) => Unit, times: Int): Unit = {
     val vcc1 = copyVectorClock(vc1)
     val vcc2 = copyVectorClock(vc2)
-    for (i ← 1 to times) {
+    for (i <- 1 to times) {
       thunk(vcc1, vcc2)
     }
   }

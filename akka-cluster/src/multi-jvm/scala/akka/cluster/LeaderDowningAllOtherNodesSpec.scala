@@ -51,7 +51,7 @@ abstract class LeaderDowningAllOtherNodesSpec
       val shutdownAddresses = others.map(address).toSet
       enterBarrier("before-all-other-shutdown")
       runOn(first) {
-        for (node ← others)
+        for (node <- others)
           testConductor.exit(node, 0).await
       }
       enterBarrier("all-other-shutdown")

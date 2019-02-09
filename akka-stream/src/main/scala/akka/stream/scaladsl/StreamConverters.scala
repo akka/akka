@@ -24,8 +24,8 @@ import akka.NotUsed
  */
 object StreamConverters {
 
-  import Source.{ shape ⇒ sourceShape }
-  import Sink.{ shape ⇒ sinkShape }
+  import Source.{ shape => sourceShape }
+  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
@@ -45,7 +45,7 @@ object StreamConverters {
    * @param in a function which creates the InputStream to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
-  def fromInputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
+  def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
     Source.fromGraph(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
 
   /**
@@ -78,7 +78,7 @@ object StreamConverters {
    * The [[OutputStream]] will be closed when the stream flowing into this [[Sink]] is completed. The [[Sink]]
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
-  def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
+  def fromOutputStream(out: () => OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
     Sink.fromGraph(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
 
   /**
@@ -108,10 +108,10 @@ object StreamConverters {
    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
    * to handle multiple invocations.
    */
-  def javaCollector[T, R](collectorFactory: () ⇒ java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] =
-    Flow[T].fold(() ⇒
-      new CollectorState[T, R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) { (state, elem) ⇒ () ⇒ state().update(elem) }
-      .map(state ⇒ state().finish())
+  def javaCollector[T, R](collectorFactory: () => java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] =
+    Flow[T].fold(() =>
+      new CollectorState[T, R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) { (state, elem) => () => state().update(elem) }
+      .map(state => state().finish())
       .toMat(Sink.head)(Keep.right).withAttributes(DefaultAttributes.javaCollector)
 
   /**
@@ -124,26 +124,26 @@ object StreamConverters {
    * Note that a flow can be materialized multiple times, so the function producing the ``Collector`` must be able
    * to handle multiple invocations.
    */
-  def javaCollectorParallelUnordered[T, R](parallelism: Int)(collectorFactory: () ⇒ java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] = {
+  def javaCollectorParallelUnordered[T, R](parallelism: Int)(collectorFactory: () => java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] = {
     if (parallelism == 1) javaCollector[T, R](collectorFactory)
     else {
-      Sink.fromGraph(GraphDSL.create(Sink.head[R]) { implicit b ⇒ sink ⇒
+      Sink.fromGraph(GraphDSL.create(Sink.head[R]) { implicit b => sink =>
         import GraphDSL.Implicits._
         val collector = collectorFactory().asInstanceOf[Collector[T, Any, R]]
         val balance = b.add(Balance[T](parallelism))
-        val merge = b.add(Merge[() ⇒ CollectorState[T, R]](parallelism))
+        val merge = b.add(Merge[() => CollectorState[T, R]](parallelism))
 
-        for (i ← 0 until parallelism) {
+        for (i <- 0 until parallelism) {
           val worker = Flow[T]
-            .fold(() ⇒ new CollectorState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem) }
+            .fold(() => new CollectorState(collector)) { (state, elem) => () => state().update(elem) }
             .async
 
           balance.out(i) ~> worker ~> merge.in(i)
         }
 
         merge.out
-          .fold(() ⇒ new ReducerState(collector)) { (state, elem) ⇒ () ⇒ state().update(elem().accumulated) }
-          .map(state ⇒ state().finish()) ~> sink.in
+          .fold(() => new ReducerState(collector)) { (state, elem) => () => state().update(elem().accumulated) }
+          .map(state => state().finish()) ~> sink.in
 
         SinkShape(balance.in)
       }).withAttributes(DefaultAttributes.javaCollectorParallelUnordered)
@@ -166,7 +166,7 @@ object StreamConverters {
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
     // TODO removing the QueueSink name, see issue #22523
     Sink.fromGraph(new QueueSink[T]().withAttributes(Attributes.none))
-      .mapMaterializedValue(queue ⇒ StreamSupport.stream(
+      .mapMaterializedValue(queue => StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
           var nextElementFuture: Future[Option[T]] = queue.pull()
           var nextElement: Option[T] = _
@@ -189,11 +189,11 @@ object StreamConverters {
    * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
    * elements and send them downstream on demand.
    *
-   * Example usage: `Source.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10))`
+   * Example usage: `Source.fromJavaStream(() => IntStream.rangeClosed(1, 10))`
    *
    * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
    * and the rest of flow.
    */
-  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](stream: () ⇒ java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](stream: () => java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
     Source.fromGraph(new JavaStreamSource[T, S](stream)).withAttributes(DefaultAttributes.fromJavaStream)
 }

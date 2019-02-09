@@ -12,7 +12,7 @@ import akka.pattern.ask
 
 object BroadcastSpec {
   class TestActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 }
 
@@ -26,16 +26,16 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter1.addAndGet(msg)
+          case "end"    => doneLatch.countDown()
+          case msg: Int => counter1.addAndGet(msg)
         }
       }))
 
       val counter2 = new AtomicInteger
       val actor2 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter2.addAndGet(msg)
+          case "end"    => doneLatch.countDown()
+          case msg: Int => counter2.addAndGet(msg)
         }
       }))
 
@@ -56,8 +56,8 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val counter1 = new AtomicInteger
       val actor1 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end" ⇒ doneLatch.countDown()
-          case msg: Int ⇒
+          case "end" => doneLatch.countDown()
+          case msg: Int =>
             counter1.addAndGet(msg)
             sender() ! "ack"
         }
@@ -66,8 +66,8 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val counter2 = new AtomicInteger
       val actor2 = system.actorOf(Props(new Actor {
         def receive = {
-          case "end"    ⇒ doneLatch.countDown()
-          case msg: Int ⇒ counter2.addAndGet(msg)
+          case "end"    => doneLatch.countDown()
+          case msg: Int => counter2.addAndGet(msg)
         }
       }))
 

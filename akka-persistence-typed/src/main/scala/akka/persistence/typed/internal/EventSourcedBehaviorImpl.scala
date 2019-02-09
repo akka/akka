@@ -37,9 +37,9 @@ private[akka] object EventSourcedBehaviorImpl {
 
   def defaultOnSnapshot[A](ctx: ActorContext[A], meta: SnapshotMetadata, result: Try[Done]): Unit = {
     result match {
-      case Success(_) ⇒
+      case Success(_) =>
         ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-      case Failure(t) ⇒
+      case Failure(t) =>
         ctx.log.error(t, "Save snapshot failed, snapshot metadata: [{}]", meta)
     }
   }
@@ -68,16 +68,16 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   loggerClass:         Class[_],
   journalPluginId:     Option[String]                                             = None,
   snapshotPluginId:    Option[String]                                             = None,
-  recoveryCompleted:   State ⇒ Unit                                               = ConstantFun.scalaAnyToUnit,
-  postStop:            () ⇒ Unit                                                  = ConstantFun.unitToUnit,
-  preRestart:          () ⇒ Unit                                                  = ConstantFun.unitToUnit,
-  tagger:              Event ⇒ Set[String]                                        = (_: Event) ⇒ Set.empty[String],
+  recoveryCompleted:   State => Unit                                               = ConstantFun.scalaAnyToUnit,
+  postStop:            () => Unit                                                  = ConstantFun.unitToUnit,
+  preRestart:          () => Unit                                                  = ConstantFun.unitToUnit,
+  tagger:              Event => Set[String]                                        = (_: Event) => Set.empty[String],
   eventAdapter:        EventAdapter[Event, Any]                                   = NoOpEventAdapter.instance[Event],
-  snapshotWhen:        (State, Event, Long) ⇒ Boolean                             = ConstantFun.scalaAnyThreeToFalse,
+  snapshotWhen:        (State, Event, Long) => Boolean                             = ConstantFun.scalaAnyThreeToFalse,
   recovery:            Recovery                                                   = Recovery(),
   supervisionStrategy: SupervisorStrategy                                         = SupervisorStrategy.stop,
-  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
-  onRecoveryFailure:   Throwable ⇒ Unit                                           = ConstantFun.scalaAnyToUnit
+  onSnapshot:          (SnapshotMetadata, Try[Done]) => Unit                       = ConstantFun.scalaAnyTwoToUnit,
+  onRecoveryFailure:   Throwable => Unit                                           = ConstantFun.scalaAnyToUnit
 ) extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -91,11 +91,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     val stashState = new StashState(settings)
 
     Behaviors.supervise {
-      Behaviors.setup[Command] { _ ⇒
+      Behaviors.setup[Command] { _ =>
 
         // the default impl needs context which isn't available until here, so we
         // use the anyTwoToUnit as a marker to use the default
-        val actualOnSnapshot: (SnapshotMetadata, Try[Done]) ⇒ Unit =
+        val actualOnSnapshot: (SnapshotMetadata, Try[Done]) => Unit =
           if (onSnapshot == ConstantFun.scalaAnyTwoToUnit) EventSourcedBehaviorImpl.defaultOnSnapshot[Command](ctx, _, _)
           else onSnapshot
 
@@ -140,11 +140,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           }
         }
         val widened = RequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
-          case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
-          case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
-          case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
-          case internal: InternalProtocol              ⇒ internal // such as RecoveryTickEvent
-          case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
+          case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
+          case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
+          case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
+          case internal: InternalProtocol              => internal // such as RecoveryTickEvent
+          case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
         }
         Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
       }
@@ -154,33 +154,33 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   def signalPostStop(log: Logger): Unit = {
     try postStop() catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.warning("Exception in postStop: {}", e)
     }
   }
 
   def signalPreRestart(log: Logger): Unit = {
     try preRestart() catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.warning("Exception in preRestart: {}", e)
     }
   }
 
-  override def onRecoveryCompleted(callback: State ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
+  override def onRecoveryCompleted(callback: State => Unit): EventSourcedBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
-  override def onPostStop(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
+  override def onPostStop(callback: () => Unit): EventSourcedBehavior[Command, Event, State] =
     copy(postStop = callback)
 
-  override def onPreRestart(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
+  override def onPreRestart(callback: () => Unit): EventSourcedBehavior[Command, Event, State] =
     copy(preRestart = callback)
 
-  override def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): EventSourcedBehavior[Command, Event, State] =
+  override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
     copy(snapshotWhen = predicate)
 
   override def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State] = {
     require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
-    copy(snapshotWhen = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
+    copy(snapshotWhen = (_, _, seqNr) => seqNr % numberOfEvents == 0)
   }
 
   override def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
@@ -197,19 +197,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = Recovery(selection))
   }
 
-  override def withTagger(tagger: Event ⇒ Set[String]): EventSourcedBehavior[Command, Event, State] =
+  override def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State] =
     copy(tagger = tagger)
 
   override def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State] =
     copy(eventAdapter = adapter.asInstanceOf[EventAdapter[Event, Any]])
 
-  override def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
+  override def onSnapshot(callback: (SnapshotMetadata, Try[Done]) => Unit): EventSourcedBehavior[Command, Event, State] =
     copy(onSnapshot = callback)
 
   override def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
 
-  override def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
+  override def onRecoveryFailure(callback: Throwable => Unit): EventSourcedBehavior[Command, Event, State] =
     copy(onRecoveryFailure = callback)
 }
 

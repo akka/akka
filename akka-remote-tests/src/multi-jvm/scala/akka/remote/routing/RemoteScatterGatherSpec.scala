@@ -53,7 +53,7 @@ class ArteryRemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new
 object RemoteScatterGatherSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender() ! self
+      case "hit" => sender() ! self
     }
   }
 }
@@ -85,14 +85,14 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         // let them start
         Thread.sleep(2000)
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5.seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+          case ref: ActorRef => ref.path.address
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")

@@ -39,7 +39,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
 
   def currentThreadIds(): Set[Long] = {
     val threads = Thread.getAllStackTraces().keySet()
-    threads.asScala.collect({ case t: Thread if (!t.isDaemon()) ⇒ t.getId() })
+    threads.asScala.collect({ case t: Thread if (!t.isDaemon()) => t.getId() })
   }
 
   "Remoting" must {
@@ -49,7 +49,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
         ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=OFF").withFallback(conf))
         fail("initialization should fail due to invalid IP address")
       } catch {
-        case NonFatal(e) ⇒ {
+        case NonFatal(e) => {
           eventually(timeout(30 seconds), interval(800 milliseconds)) {
             val current = currentThreadIds()
             // no new threads should remain compared to the start state

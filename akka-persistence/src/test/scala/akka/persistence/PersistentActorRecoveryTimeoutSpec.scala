@@ -26,7 +26,7 @@ object PersistentActorRecoveryTimeoutSpec {
     override def receiveRecover: Receive = Actor.emptyBehavior
 
     override def receiveCommand: Receive = {
-      case x ⇒ persist(x) { _ ⇒
+      case x => persist(x) { _ =>
         sender() ! x
       }
     }
@@ -43,12 +43,12 @@ object PersistentActorRecoveryTimeoutSpec {
     }
 
     override def receiveRecover: Receive = {
-      case RecoveryCompleted ⇒ probe ! context.receiveTimeout
-      case _                 ⇒ // we don't care
+      case RecoveryCompleted => probe ! context.receiveTimeout
+      case _                 => // we don't care
     }
 
     override def receiveCommand: Receive = {
-      case x ⇒ persist(x) { _ ⇒
+      case x => persist(x) { _ =>
         sender() ! x
       }
     }

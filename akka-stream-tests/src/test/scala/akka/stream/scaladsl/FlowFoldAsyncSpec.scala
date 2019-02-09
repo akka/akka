@@ -28,14 +28,14 @@ class FlowFoldAsyncSpec extends StreamSpec {
     val input = 1 to 100
     val expected = input.sum
     val inputSource = Source(input)
-    val foldSource = inputSource.foldAsync[Int](0) { (a, b) ⇒
+    val foldSource = inputSource.foldAsync[Int](0) { (a, b) =>
       Future(a + b)
     }
     val flowDelayMS = 100L
     val foldFlow = Flow[Int].foldAsync(0) {
-      (a, b) ⇒ Future { Thread.sleep(flowDelayMS); a + b }
+      (a, b) => Future { Thread.sleep(flowDelayMS); a + b }
     }
-    val foldSink = Sink.foldAsync[Int, Int](0) { (a, b) ⇒ Future(a + b) }
+    val foldSink = Sink.foldAsync[Int, Int](0) { (a, b) => Future(a + b) }
 
     "work when using Source.foldAsync" in assertAllStagesStopped {
       foldSource.runWith(Sink.head).futureValue(timeout) should ===(expected)
@@ -60,13 +60,13 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "propagate an error" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
+      val future = inputSource.map(x => if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "complete future with failure when folding function throws" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = inputSource.runFoldAsync(0) { (x, y) ⇒
+      val future = inputSource.runFoldAsync(0) { (x, y) =>
         if (x > 50) Future.failed(error) else Future(x + y)
       }
 
@@ -77,8 +77,8 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val probe = TestSubscriber.manualProbe[Long]()
       var i = 0
 
-      Source.fromIterator(() ⇒ Iterator.fill[Int](10000) { i += 1; i }).
-        foldAsync(1L) { (a, b) ⇒ Future(a + b) }.
+      Source.fromIterator(() => Iterator.fill[Int](10000) { i += 1; i }).
+        foldAsync(1L) { (a, b) => Future(a + b) }.
         runWith(Sink.asPublisher(true)).subscribe(probe)
 
       val subscription = probe.expectSubscription()
@@ -91,7 +91,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "signal future failure" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       implicit val ec = system.dispatcher
-      Source(1 to 5).foldAsync(0) { (_, n) ⇒
+      Source(1 to 5).foldAsync(0) { (_, n) =>
         Future(if (n == 3) throw TE("err1") else n)
       }.to(Sink.fromSubscriber(probe)).run()
 
@@ -103,7 +103,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "signal error from foldAsync" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       implicit val ec = system.dispatcher
-      Source(1 to 5).foldAsync(0) { (_, n) ⇒
+      Source(1 to 5).foldAsync(0) { (_, n) =>
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
         Future(n + 1)
       }.to(Sink.fromSubscriber(probe)).run()
@@ -116,36 +116,36 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "resume after future failure" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      Source(1 to 5).foldAsync(0 → 1) {
-        case ((i, res), n) ⇒
+      Source(1 to 5).foldAsync(0 -> 1) {
+        case ((i, res), n) =>
           Future {
             if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-            else n → (i + (res * n))
+            else n -> (i + (res * n))
           }
       }.withAttributes(supervisionStrategy(resumingDecider)).
         to(Sink.fromSubscriber(probe)).run()
 
       val sub = probe.expectSubscription()
       sub.request(10)
-      probe.expectNext(5 → 74)
+      probe.expectNext(5 -> 74)
       probe.expectComplete()
     }
 
     "restart after future failure" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      Source(1 to 5).foldAsync(0 → 1) {
-        case ((i, res), n) ⇒
+      Source(1 to 5).foldAsync(0 -> 1) {
+        case ((i, res), n) =>
           Future {
             if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-            else n → (i + (res * n))
+            else n -> (i + (res * n))
           }
       }.withAttributes(supervisionStrategy(restartingDecider)).
         to(Sink.fromSubscriber(probe)).run()
 
       val sub = probe.expectSubscription()
       sub.request(10)
-      probe.expectNext(5 → 24)
+      probe.expectNext(5 -> 24)
       probe.expectComplete()
     }
 
@@ -158,13 +158,13 @@ class FlowFoldAsyncSpec extends StreamSpec {
         Future.failed(Utils.TE("failure5")),
         Future.successful("happy!"))
 
-      Source(futures).foldAsync("") { (_, s) ⇒ s }.
+      Source(futures).foldAsync("") { (_, s) => s }.
         withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.head).
         futureValue(timeout) should ===("happy!")
     }
 
     "finish after future failure" in assertAllStagesStopped {
-      Source(1 to 3).foldAsync(1) { (_, n) ⇒
+      Source(1 to 3).foldAsync(1) { (_, n) =>
         Future {
           if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
           else n
@@ -177,36 +177,36 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "resume when foldAsync throws" in {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).foldAsync(0 → 1) {
-        case ((i, res), n) ⇒
+      val p = Source(1 to 5).foldAsync(0 -> 1) {
+        case ((i, res), n) =>
           if (n == 3) throw new RuntimeException("err4") with NoStackTrace
-          else Future(n → (i + (res * n)))
+          else Future(n -> (i + (res * n)))
       }.withAttributes(supervisionStrategy(resumingDecider)).
         to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectNext(5 → 74)
+      c.expectNext(5 -> 74)
       c.expectComplete()
     }
 
     "restart when foldAsync throws" in {
       val c = TestSubscriber.manualProbe[(Int, Int)]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).foldAsync(0 → 1) {
-        case ((i, res), n) ⇒
+      val p = Source(1 to 5).foldAsync(0 -> 1) {
+        case ((i, res), n) =>
           if (n == 3) throw new RuntimeException("err4") with NoStackTrace
-          else Future(n → (i + (res * n)))
+          else Future(n -> (i + (res * n)))
       }.withAttributes(supervisionStrategy(restartingDecider)).
         to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectNext(5 → 24)
+      c.expectNext(5 -> 24)
       c.expectComplete()
     }
 
     "signal NPE when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b")).foldAsync("") { (_, elem) ⇒
+      val p = Source(List("a", "b")).foldAsync("") { (_, elem) =>
         Future.successful(null.asInstanceOf[String])
       }.to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
@@ -216,7 +216,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "resume when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c")).foldAsync("") { (str, elem) ⇒
+      val p = Source(List("a", "b", "c")).foldAsync("") { (str, elem) =>
         if (elem == "b") Future.successful(null.asInstanceOf[String])
         else Future.successful(str + elem)
       }.withAttributes(supervisionStrategy(resumingDecider)).
@@ -229,7 +229,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "restart when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c")).foldAsync("") { (str, elem) ⇒
+      val p = Source(List("a", "b", "c")).foldAsync("") { (str, elem) =>
         if (elem == "b") Future.successful(null.asInstanceOf[String])
         else Future.successful(str + elem)
       }.withAttributes(supervisionStrategy(restartingDecider)).
@@ -245,7 +245,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       val sub = TestSubscriber.manualProbe[Int]()
 
       Source.fromPublisher(pub).
-        foldAsync(0) { (_, n) ⇒ Future.successful(n) }.
+        foldAsync(0) { (_, n) => Future.successful(n) }.
         runWith(Sink.fromSubscriber(sub))
 
       val upstream = pub.expectSubscription()
@@ -258,8 +258,8 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
     "complete future and return zero given an empty stream" in assertAllStagesStopped {
       val futureValue =
-        Source.fromIterator[Int](() ⇒ Iterator.empty)
-          .runFoldAsync(0)((acc, elem) ⇒ Future.successful(acc + elem))
+        Source.fromIterator[Int](() => Iterator.empty)
+          .runFoldAsync(0)((acc, elem) => Future.successful(acc + elem))
 
       Await.result(futureValue, remainingOrDefault) should be(0)
     }
@@ -267,15 +267,15 @@ class FlowFoldAsyncSpec extends StreamSpec {
     "complete future and return zero + item given a stream of one item" in assertAllStagesStopped {
       val futureValue =
         Source.single(100)
-          .runFoldAsync(5)((acc, elem) ⇒ Future.successful(acc + elem))
+          .runFoldAsync(5)((acc, elem) => Future.successful(acc + elem))
 
       Await.result(futureValue, remainingOrDefault) should be(105)
     }
   }
 
   // Keep
-  def noneAsync[L, R]: (L, R) ⇒ Future[NotUsed] = { (_: Any, _: Any) ⇒
+  def noneAsync[L, R]: (L, R) => Future[NotUsed] = { (_: Any, _: Any) =>
     Future.successful(NotUsed)
-  }.asInstanceOf[(L, R) ⇒ Future[NotUsed]]
+  }.asInstanceOf[(L, R) => Future[NotUsed]]
 
 }

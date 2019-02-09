@@ -58,7 +58,7 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
 
     val newTime = currentTime.get + amount.toMillis
     if (log.isDebugEnabled)
-      log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item ⇒ s"\n- $item"))
+      log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item => s"\n- $item"))
 
     executeTasks(newTime)
     currentTime.set(newTime)
@@ -75,17 +75,17 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
   @tailrec
   private[testkit] final def executeTasks(runTo: Long): Unit = {
     scheduledTasks(runTo).headOption match {
-      case Some(task) ⇒
+      case Some(task) =>
         currentTime.set(task.time)
         val runResult = Try(task.runnable.run())
         scheduled.remove(task)
 
         if (runResult.isSuccess)
-          task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
+          task.interval.foreach(i => scheduled.put(task.copy(time = task.time + i.toMillis), ()))
 
         // running the runnable might have scheduled new events
         executeTasks(runTo)
-      case _ ⇒ // Done
+      case _ => // Done
     }
   }
 

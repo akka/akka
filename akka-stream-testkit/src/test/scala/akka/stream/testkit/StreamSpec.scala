@@ -28,7 +28,7 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {
-      case failed: Failed ⇒
+      case failed: Failed =>
         implicit val ec = system.dispatcher
         val probe = TestProbe()(system)
         // FIXME I don't think it always runs under /user anymore (typed)
@@ -36,20 +36,20 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
         val streamSupervisors = system.actorSelection("/user/" + StreamSupervisor.baseName + "*")
         streamSupervisors.tell(StreamSupervisor.GetChildren, probe.ref)
         val children: Seq[ActorRef] = probe.receiveWhile(2.seconds) {
-          case StreamSupervisor.Children(children) ⇒ children
+          case StreamSupervisor.Children(children) => children
         }.flatten
         println("--- Stream actors debug dump ---")
         if (children.isEmpty) println("Stream is completed. No debug information is available")
         else {
           println("Stream actors alive: " + children)
           Future.sequence(children.map(MaterializerState.requestFromChild))
-            .foreach(snapshots ⇒
-              snapshots.foreach(s ⇒
+            .foreach(snapshots =>
+              snapshots.foreach(s =>
                 akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
             )
         }
         failed
-      case other ⇒ other
+      case other => other
     }
   }
 }

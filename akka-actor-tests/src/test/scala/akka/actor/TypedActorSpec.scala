@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ CountDownLatch, TimeUnit, TimeoutException }
 
 import akka.actor.TypedActor._
-import akka.japi.{ Option ⇒ JOption }
+import akka.japi.{ Option => JOption }
 import akka.pattern.ask
 import akka.routing.RoundRobinGroup
 import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
@@ -48,8 +48,8 @@ object TypedActorSpec {
       def findNext: T = {
         val currentItems = current.get
         val newItems = currentItems match {
-          case Nil ⇒ items
-          case xs  ⇒ xs
+          case Nil => items
+          case xs  => xs
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
@@ -59,7 +59,7 @@ object TypedActorSpec {
       findNext
     }
 
-    override def exists(f: T ⇒ Boolean): Boolean = items exists f
+    override def exists(f: T => Boolean): Boolean = items exists f
   }
 
   trait Foo {
@@ -179,25 +179,25 @@ object TypedActorSpec {
 
   class LifeCyclesImpl(val latch: CountDownLatch) extends PreStart with PostStop with PreRestart with PostRestart with LifeCycles with Receiver {
 
-    private def ensureContextAvailable[T](f: ⇒ T): T = TypedActor.context match {
-      case null ⇒ throw new IllegalStateException("TypedActor.context is null!")
-      case some ⇒ f
+    private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
+      case null => throw new IllegalStateException("TypedActor.context is null!")
+      case some => f
     }
 
     override def crash(): Unit = throw new IllegalStateException("Crash!")
 
     override def preStart(): Unit = ensureContextAvailable(latch.countDown())
 
-    override def postStop(): Unit = ensureContextAvailable(for (i ← 1 to 3) latch.countDown())
+    override def postStop(): Unit = ensureContextAvailable(for (i <- 1 to 3) latch.countDown())
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = ensureContextAvailable(for (i ← 1 to 5) latch.countDown())
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = ensureContextAvailable(for (i <- 1 to 5) latch.countDown())
 
-    override def postRestart(reason: Throwable): Unit = ensureContextAvailable(for (i ← 1 to 7) latch.countDown())
+    override def postRestart(reason: Throwable): Unit = ensureContextAvailable(for (i <- 1 to 7) latch.countDown())
 
     override def onReceive(msg: Any, sender: ActorRef): Unit = {
       ensureContextAvailable(
         msg match {
-          case "pigdog" ⇒ sender ! "dogpig"
+          case "pigdog" => sender ! "dogpig"
         })
     }
   }
@@ -219,13 +219,13 @@ object TypedActorSpec {
     override def manifest(o: AnyRef): String = manifest
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
-      case _: WithStringSerializedClass ⇒ Array(255.toByte)
-      case _                            ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
+      case _: WithStringSerializedClass => Array(255.toByte)
+      case _                            => throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
     }
 
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case manifest if bytes.length == 1 && bytes(0) == 255.toByte ⇒ WithStringSerializedClass()
-      case _ ⇒ throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
+      case manifest if bytes.length == 1 && bytes(0) == 255.toByte => WithStringSerializedClass()
+      case _ => throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
     }
   }
 
@@ -336,8 +336,8 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to call multiple Future-returning methods non-blockingly" in within(timeout.duration) {
       val t = newFooBar
-      val futures = for (i ← 1 to 20) yield (i, t.futurePigdog(20 millis, i))
-      for ((i, f) ← futures) {
+      val futures = for (i <- 1 to 20) yield (i, t.futurePigdog(20 millis, i))
+      for ((i, f) <- futures) {
         Await.result(f, remaining) should ===("Pigdog" + i)
       }
       mustStop(t)
@@ -376,10 +376,10 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       filterEvents(EventFilter[IllegalStateException]("expected")) {
         val boss = system.actorOf(Props(new Actor {
           override val supervisorStrategy = OneForOneStrategy() {
-            case e: IllegalStateException if e.getMessage == "expected" ⇒ SupervisorStrategy.Resume
+            case e: IllegalStateException if e.getMessage == "expected" => SupervisorStrategy.Resume
           }
           def receive = {
-            case p: TypedProps[_] ⇒ context.sender() ! TypedActor(context).typedActorOf(p)
+            case p: TypedProps[_] => context.sender() ! TypedActor(context).typedActorOf(p)
           }
         }))
         val t = Await.result((boss ? TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(2 seconds)).mapTo[Foo], timeout.duration)
@@ -442,14 +442,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     }
 
     "be able to use balancing dispatcher" in within(timeout.duration) {
-      val thais = for (i ← 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
+      val thais = for (i <- 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
-      val results = for (i ← 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))
+      val results = for (i <- 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))
 
-      for ((i, r) ← results) Await.result(r, remaining) should ===("Pigdog" + i)
+      for ((i, r) <- results) Await.result(r, remaining) should ===("Pigdog" + i)
 
-      for (t ← thais) mustStop(t)
+      for (t <- thais) mustStop(t)
     }
 
     "be able to serialize and deserialize invocations" in {
@@ -564,7 +564,7 @@ class TypedActorRouterSpec extends AkkaSpec(TypedActorSpec.config)
       val t2 = newFooBar
       val t3 = newFooBar
       val t4 = newFooBar
-      val routees = List(t1, t2, t3, t4) map { t ⇒ TypedActor(system).getActorRefFor(t).path.toStringWithoutAddress }
+      val routees = List(t1, t2, t3, t4) map { t => TypedActor(system).getActorRefFor(t).path.toStringWithoutAddress }
 
       TypedActor(system).isTypedActor(t1) should ===(true)
       TypedActor(system).isTypedActor(t2) should ===(true)

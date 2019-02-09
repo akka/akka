@@ -33,14 +33,14 @@ object DispatchersDocSpec {
 
   case class WhichDispatcher(replyTo: ActorRef[Dispatcher])
 
-  val giveMeYourDispatcher = Behaviors.receive[WhichDispatcher] { (context, message) ⇒
+  val giveMeYourDispatcher = Behaviors.receive[WhichDispatcher] { (context, message) =>
     message.replyTo ! context.executionContext.asInstanceOf[Dispatcher]
     Behaviors.same
   }
 
   val yourBehavior: Behavior[String] = Behaviors.same
 
-  val example = Behaviors.receive[Any] { (context, message) ⇒
+  val example = Behaviors.receive[Any] { (context, message) =>
 
     //#spawn-dispatcher
     import akka.actor.typed.DispatcherSelector

@@ -77,20 +77,20 @@ import org.reactivestreams.Subscriber
   }
 
   protected def waitingExposedPublisher: Actor.Receive = {
-    case ExposedPublisher(publisher) ⇒
+    case ExposedPublisher(publisher) =>
       exposedPublisher = publisher
       subreceive.become(downstreamRunning)
-    case other ⇒
+    case other =>
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
 
   protected def downstreamRunning: Actor.Receive = {
-    case SubscribePending ⇒
+    case SubscribePending =>
       subscribePending()
-    case RequestMore(subscription, elements) ⇒
+    case RequestMore(subscription, elements) =>
       moreRequested(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]], elements)
       pump.pump()
-    case Cancel(subscription) ⇒
+    case Cancel(subscription) =>
       unregisterSubscription(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]])
       pump.pump()
   }
@@ -117,7 +117,7 @@ import org.reactivestreams.Subscriber
     }
   }
 
-  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
+  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () =>
     primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
   }
 

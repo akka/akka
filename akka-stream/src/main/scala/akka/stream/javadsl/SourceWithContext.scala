@@ -52,7 +52,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Flow.via]]
    */
   def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Pair[Out2, Ctx2]], Mat2]): SourceWithContext[Out2, Ctx2, Mat] =
-    viaScala(_.via(akka.stream.scaladsl.Flow[(Out, Ctx)].map { case (o, c) ⇒ Pair(o, c) }.via(viaFlow).map(_.toScala)))
+    viaScala(_.via(akka.stream.scaladsl.Flow[(Out, Ctx)].map { case (o, c) => Pair(o, c) }.via(viaFlow).map(_.toScala)))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.withAttributes]].
@@ -67,7 +67,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * stream of a pair of (data, context).
    */
   def asSource(): Source[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Mat @uncheckedVariance] =
-    delegate.asSource.map { case (o, c) ⇒ Pair(o, c) }.asJava
+    delegate.asSource.map { case (o, c) => Pair(o, c) }.asJava
 
   // remaining operations in alphabetic order
 
@@ -120,7 +120,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
     viaScala(_.map(f.apply))
 
   def mapAsync[Out2](parallelism: Int, f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.mapAsync[Out2](parallelism)(o ⇒ f.apply(o).toScala))
+    viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.mapConcat]].
@@ -151,7 +151,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Source.mapConcat]]
    */
   def mapConcat[Out2](f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
+    viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).
@@ -175,7 +175,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Source.log]]
    */
   def log(name: String, extract: function.Function[Out, Any], log: LoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.log(name, e ⇒ extract.apply(e))(log))
+    viaScala(_.log(name, e => extract.apply(e))(log))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.log]].
@@ -206,14 +206,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * concatenating the processing steps of both.
    */
   def to[Mat2](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2]): javadsl.RunnableGraph[Mat] =
-    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) ⇒ Pair(o, e) }.to(sink))
+    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) => Pair(o, e) }.to(sink))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
    * concatenating the processing steps of both.
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2], combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
-    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) ⇒ Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
+    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) => Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
@@ -224,6 +224,6 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
 
   def asScala: scaladsl.SourceWithContext[Out, Ctx, Mat] = delegate
 
-  private[this] def viaScala[Out2, Ctx2, Mat2](f: scaladsl.SourceWithContext[Out, Ctx, Mat] ⇒ scaladsl.SourceWithContext[Out2, Ctx2, Mat2]): SourceWithContext[Out2, Ctx2, Mat2] =
+  private[this] def viaScala[Out2, Ctx2, Mat2](f: scaladsl.SourceWithContext[Out, Ctx, Mat] => scaladsl.SourceWithContext[Out2, Ctx2, Mat2]): SourceWithContext[Out2, Ctx2, Mat2] =
     new SourceWithContext(f(delegate))
 }

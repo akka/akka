@@ -39,7 +39,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
   override val includeManifest: Boolean = false
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
+    case DaemonMsgCreate(props, deploy, path, supervisor) =>
 
       def deployProto(d: Deploy): DeployData = {
         val builder = DeployData.newBuilder.setPath(d.path)
@@ -75,7 +75,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         val builder = PropsData.newBuilder
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
-        props.args.foreach { arg ⇒
+        props.args.foreach { arg =>
           val (serializerId, hasManifest, manifest, bytes) = serialize(arg)
           builder.addArgs(ByteString.copyFrom(bytes))
           builder.addManifests(manifest)
@@ -92,7 +92,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         setSupervisor(serializeActorRef(supervisor)).
         build.toByteArray
 
-    case _ ⇒
+    case _ =>
       throw new IllegalArgumentException(
         "Can't serialize a non-DaemonMsgCreate message using DaemonMsgCreateSerializer [%s]".format(obj))
   }
@@ -154,7 +154,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         // message from a newer node always contains serializer ids and possibly a string manifest for each position
         if (protoProps.getSerializerIdsCount > 0) {
           for {
-            idx ← (0 until protoProps.getSerializerIdsCount).toVector
+            idx <- (0 until protoProps.getSerializerIdsCount).toVector
           } yield {
             val manifest =
               if (protoProps.getHasManifest(idx)) protoProps.getManifests(idx)
@@ -188,9 +188,9 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     // allowing for usage of serializers with string manifests
     val hasManifest = serializer.includeManifest
     val manifest = serializer match {
-      case ser: SerializerWithStringManifest ⇒
+      case ser: SerializerWithStringManifest =>
         ser.manifest(m)
-      case _ ⇒
+      case _ =>
         // we do include class name regardless to retain wire compatibility
         // with older nodes who expect manifest to be the class name
         if (m eq null) {
@@ -222,17 +222,17 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
   private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
-      case Success(x: T)  ⇒ x
-      case Success(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
-      case Failure(e) ⇒
+      case Success(x: T)  => x
+      case Success(other) => throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
+      case Failure(e) =>
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
         // but the impl instance does. This could be optimized by adding java serializers in reference.conf:
         // com.typesafe.config.Config
         // akka.routing.RouterConfig
         // akka.actor.Scope
         serialization.deserialize(bytes, classOf[java.io.Serializable]) match {
-          case Success(x: T) ⇒ x
-          case _             ⇒ throw e // the first exception
+          case Success(x: T) => x
+          case _             => throw e // the first exception
         }
     }
   }

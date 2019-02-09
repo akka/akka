@@ -63,9 +63,9 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       val p = TestPublisher.manualProbe[Int]()
       import system.dispatcher // for the Future.onComplete
       val foreachSink = Sink.foreach[Int] {
-        x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
+        x => onCompleteProbe.ref ! ("foreach-" + x)
       }
-      val future = Source.fromPublisher(p).map { x ⇒
+      val future = Source.fromPublisher(p).map { x =>
         onCompleteProbe.ref ! ("map-" + x)
         x
       }.runWith(foreachSink)

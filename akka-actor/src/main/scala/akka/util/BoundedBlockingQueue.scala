@@ -19,12 +19,12 @@ class BoundedBlockingQueue[E <: AnyRef](
   val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
 
   backing match {
-    case null ⇒ throw new IllegalArgumentException("Backing Queue may not be null")
-    case b: BlockingQueue[_] ⇒
+    case null => throw new IllegalArgumentException("Backing Queue may not be null")
+    case b: BlockingQueue[_] =>
       require(maxCapacity > 0)
       require(b.size() == 0)
       require(b.remainingCapacity >= maxCapacity)
-    case b: Queue[_] ⇒
+    case b: Queue[_] =>
       require(b.size() == 0)
       require(maxCapacity > 0)
   }
@@ -107,9 +107,9 @@ class BoundedBlockingQueue[E <: AnyRef](
     try {
       @tailrec def pollElement(remainingNanos: Long): E = {
         backing.poll() match {
-          case null if remainingNanos <= 0 ⇒ null.asInstanceOf[E]
-          case null                        ⇒ pollElement(notEmpty.awaitNanos(remainingNanos))
-          case e ⇒ {
+          case null if remainingNanos <= 0 => null.asInstanceOf[E]
+          case null                        => pollElement(notEmpty.awaitNanos(remainingNanos))
+          case e => {
             notFull.signal()
             e
           }
@@ -123,8 +123,8 @@ class BoundedBlockingQueue[E <: AnyRef](
     lock.lock()
     try {
       backing.poll() match {
-        case null ⇒ null.asInstanceOf[E]
-        case e ⇒
+        case null => null.asInstanceOf[E]
+        case e =>
           notFull.signal()
           e
       }
@@ -186,8 +186,8 @@ class BoundedBlockingQueue[E <: AnyRef](
         @tailrec def drainOne(n: Int = 0): Int = {
           if (n < maxElements) {
             backing.poll() match {
-              case null ⇒ n
-              case e    ⇒ c add e; drainOne(n + 1)
+              case null => n
+              case e    => c add e; drainOne(n + 1)
             }
           } else n
         }

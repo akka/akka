@@ -62,7 +62,7 @@ private[remote] trait InboundEnvelope extends NoSerializationVerificationNeeded 
 private[remote] object ReusableInboundEnvelope {
   def createObjectPool(capacity: Int) = new ObjectPool[ReusableInboundEnvelope](
     capacity,
-    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
+    create = () => new ReusableInboundEnvelope, clear = inEnvelope => inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 }
 
 /**

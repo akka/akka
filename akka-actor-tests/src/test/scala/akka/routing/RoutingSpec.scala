@@ -36,12 +36,12 @@ object RoutingSpec {
     """
 
   class TestActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
   class Echo extends Actor {
     def receive = {
-      case _ ⇒ sender() ! self
+      case _ => sender() ! self
     }
   }
 
@@ -69,7 +69,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         router ! ""
         router ! ""
         val res = receiveWhile(100 millis, messages = 2) {
-          case x: ActorRef ⇒ x
+          case x: ActorRef => x
         }
         res == Seq(c1, c1)
       }
@@ -135,7 +135,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       //#supervision
       val escalator = OneForOneStrategy() {
         //#custom-strategy
-        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
+        case e => testActor ! e; SupervisorStrategy.Escalate
         //#custom-strategy
       }
       val router = system.actorOf(RoundRobinPool(1, supervisorStrategy = escalator).props(
@@ -158,7 +158,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "set supplied supervisorStrategy for FromConfig" in {
       val escalator = OneForOneStrategy() {
-        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
+        case e => testActor ! e; SupervisorStrategy.Escalate
       }
       val router = system.actorOf(FromConfig.withSupervisorStrategy(escalator).props(
         routeeProps = Props[TestActor]), "router1")
@@ -171,12 +171,12 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "default to all-for-one-always-escalate strategy" in {
       val restarter = OneForOneStrategy() {
-        case e ⇒ testActor ! e; SupervisorStrategy.Restart
+        case e => testActor ! e; SupervisorStrategy.Restart
       }
       val supervisor = system.actorOf(Props(new Supervisor(restarter)))
       supervisor ! RoundRobinPool(3).props(routeeProps = Props(new Actor {
         def receive = {
-          case x: String ⇒ throw new Exception(x)
+          case x: String => throw new Exception(x)
         }
         override def postRestart(reason: Throwable): Unit = testActor ! "restarted"
       }))
@@ -193,9 +193,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     "start in-line for context.actorOf()" in {
       system.actorOf(Props(new Actor {
         def receive = {
-          case "start" ⇒
+          case "start" =>
             context.actorOf(RoundRobinPool(2).props(routeeProps = Props(new Actor {
-              def receive = { case x ⇒ sender() ! x }
+              def receive = { case x => sender() ! x }
             }))) ? "hello" pipeTo sender()
         }
       })) ! "start"
@@ -209,7 +209,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     "send message to connection" in {
       class Actor1 extends Actor {
         def receive = {
-          case msg ⇒ testActor forward msg
+          case msg => testActor forward msg
         }
       }
 

@@ -6,7 +6,7 @@ package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.NoSerializationVerificationNeeded
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.actor.typed.ActorRef
@@ -49,8 +49,8 @@ object Replicator {
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] ⇒ Get[A] =
-      replyTo ⇒ Get(key, consistency, replyTo, None)
+    def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] => Get[A] =
+      replyTo => Get(key, consistency, replyTo, None)
   }
 
   /**
@@ -94,19 +94,19 @@ object Replicator {
      */
     def apply[A <: ReplicatedData](
       key: Key[A], initial: A, writeConsistency: WriteConsistency, replyTo: ActorRef[UpdateResponse[A]],
-      request: Option[Any] = None)(modify: A ⇒ A): Update[A] =
+      request: Option[Any] = None)(modify: A => A): Update[A] =
       Update(key, writeConsistency, replyTo, request)(modifyWithInitial(initial, modify))
 
     /**
      * Convenience for `ask`.
      */
     def apply[A <: ReplicatedData](key: Key[A], initial: A,
-                                   writeConsistency: WriteConsistency)(modify: A ⇒ A): ActorRef[UpdateResponse[A]] ⇒ Update[A] =
-      (replyTo ⇒ Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
+                                   writeConsistency: WriteConsistency)(modify: A => A): ActorRef[UpdateResponse[A]] => Update[A] =
+      (replyTo => Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
 
-    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
-      case Some(data) ⇒ modify(data)
-      case None       ⇒ modify(initial)
+    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
+      case Some(data) => modify(data)
+      case None       => modify(initial)
     }
   }
 
@@ -128,7 +128,7 @@ object Replicator {
    */
   final case class Update[A <: ReplicatedData](key: Key[A], writeConsistency: WriteConsistency,
                                                replyTo: ActorRef[UpdateResponse[A]],
-                                               request: Option[Any])(val modify: Option[A] ⇒ A)
+                                               request: Option[Any])(val modify: Option[A] => A)
     extends Command with NoSerializationVerificationNeeded {
   }
 
@@ -201,8 +201,8 @@ object Replicator {
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency): ActorRef[DeleteResponse[A]] ⇒ Delete[A] =
-      (replyTo ⇒ Delete(key, consistency, replyTo, None))
+    def apply[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
+      (replyTo => Delete(key, consistency, replyTo, None))
   }
   /**
    * Send this message to the local `Replicator` to delete a data value for the
@@ -225,8 +225,8 @@ object Replicator {
     /**
      * Convenience for `ask`.
      */
-    def apply(): ActorRef[ReplicaCount] ⇒ GetReplicaCount =
-      (replyTo ⇒ GetReplicaCount(replyTo))
+    def apply(): ActorRef[ReplicaCount] => GetReplicaCount =
+      (replyTo => GetReplicaCount(replyTo))
   }
 
   /**

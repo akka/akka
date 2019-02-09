@@ -123,7 +123,7 @@ abstract class AeronStreamConsistencySpec
         val startMsg = "0".getBytes("utf-8")
         Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
           .via(killSwitch.flow)
-          .runForeach { envelope ⇒
+          .runForeach { envelope =>
             val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
             if (bytes.length == 1 && bytes(0) == startMsg(0))
               started.ref ! Done
@@ -140,7 +140,7 @@ abstract class AeronStreamConsistencySpec
           }.failed.foreach { _.printStackTrace }
 
         within(10.seconds) {
-          Source(1 to 100).map { _ ⇒
+          Source(1 to 100).map { _ =>
             val envelope = pool.acquire()
             envelope.byteBuffer.put(startMsg)
             envelope.byteBuffer.flip()
@@ -153,7 +153,7 @@ abstract class AeronStreamConsistencySpec
 
         Source(1 to totalMessages)
           .throttle(10000, 1.second, 1000, ThrottleMode.Shaping)
-          .map { n ⇒
+          .map { n =>
             val envelope = pool.acquire()
             envelope.byteBuffer.put(n.toString.getBytes("utf-8"))
             envelope.byteBuffer.flip()

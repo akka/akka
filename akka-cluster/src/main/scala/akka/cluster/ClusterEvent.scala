@@ -186,19 +186,19 @@ object ClusterEvent {
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
     override def equals(other: Any): Boolean = other match {
-      case that: CurrentClusterState ⇒
+      case that: CurrentClusterState =>
         (this eq that) || (
           members == that.members &&
           unreachable == that.unreachable &&
           seenBy == that.seenBy &&
           leader == that.leader &&
           roleLeaderMap == that.roleLeaderMap)
-      case _ ⇒ false
+      case _ => false
     }
 
     override def hashCode(): Int = {
       val state = Seq(members, unreachable, seenBy, leader, roleLeaderMap)
-      state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
     }
 
     // Product5
@@ -381,7 +381,7 @@ object ClusterEvent {
       val newGossip = newState.latestGossip
       val oldUnreachableNodes = oldState.dcReachabilityNoOutsideNodes.allUnreachableOrTerminated
       newState.dcReachabilityNoOutsideNodes.allUnreachableOrTerminated.iterator.collect {
-        case node if !oldUnreachableNodes.contains(node) && node != newState.selfUniqueAddress ⇒
+        case node if !oldUnreachableNodes.contains(node) && node != newState.selfUniqueAddress =>
           UnreachableMember(newGossip.member(node))
       }.to(immutable.IndexedSeq)
     }
@@ -394,7 +394,7 @@ object ClusterEvent {
     else {
       val newGossip = newState.latestGossip
       oldState.dcReachabilityNoOutsideNodes.allUnreachable.iterator.collect {
-        case node if newGossip.hasMember(node) && newState.dcReachabilityNoOutsideNodes.isReachable(node) && node != newState.selfUniqueAddress ⇒
+        case node if newGossip.hasMember(node) && newState.dcReachabilityNoOutsideNodes.isReachable(node) && node != newState.selfUniqueAddress =>
           ReachableMember(newGossip.member(node))
       }.to(immutable.IndexedSeq)
     }
@@ -404,7 +404,7 @@ object ClusterEvent {
    */
   private[cluster] def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(otherDc: DataCenter): Boolean = {
     val unrelatedDcNodes = state.latestGossip.members.collect {
-      case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc ⇒ m.uniqueAddress
+      case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc => m.uniqueAddress
     }
 
     val reachabilityForOtherDc = state.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
@@ -448,22 +448,22 @@ object ClusterEvent {
       val newMembers = newGossip.members diff oldGossip.members
       val membersGroupedByAddress = List(newGossip.members, oldGossip.members).flatten.groupBy(_.uniqueAddress)
       val changedMembers = membersGroupedByAddress collect {
-        case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber ⇒
+        case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber =>
           newMember
       }
       import akka.util.ccompat.imm._
       val memberEvents = (newMembers ++ changedMembers).unsorted collect {
-        case m if m.status == Joining  ⇒ MemberJoined(m)
-        case m if m.status == WeaklyUp ⇒ MemberWeaklyUp(m)
-        case m if m.status == Up       ⇒ MemberUp(m)
-        case m if m.status == Leaving  ⇒ MemberLeft(m)
-        case m if m.status == Exiting  ⇒ MemberExited(m)
-        case m if m.status == Down     ⇒ MemberDowned(m)
+        case m if m.status == Joining  => MemberJoined(m)
+        case m if m.status == WeaklyUp => MemberWeaklyUp(m)
+        case m if m.status == Up       => MemberUp(m)
+        case m if m.status == Leaving  => MemberLeft(m)
+        case m if m.status == Exiting  => MemberExited(m)
+        case m if m.status == Down     => MemberDowned(m)
         // no events for other transitions
       }
 
       val removedMembers = oldGossip.members diff newGossip.members
-      val removedEvents = removedMembers.unsorted.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
+      val removedEvents = removedMembers.unsorted.map(m => MemberRemoved(m.copy(status = Removed), m.status))
 
       (new VectorBuilder[MemberEvent]() ++= removedEvents ++= memberEvents).result()
     }
@@ -484,7 +484,7 @@ object ClusterEvent {
   @InternalApi
   private[cluster] def diffRolesLeader(oldState: MembershipState, newState: MembershipState): Set[RoleLeaderChanged] = {
     for {
-      role ← oldState.latestGossip.allRoles union newState.latestGossip.allRoles
+      role <- oldState.latestGossip.allRoles union newState.latestGossip.allRoles
       newLeader = newState.roleLeader(role)
       if newLeader != oldState.roleLeader(role)
     } yield RoleLeaderChanged(role, newLeader.map(_.address))
@@ -544,12 +544,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def receive = {
-    case PublishChanges(newState)            ⇒ publishChanges(newState)
-    case currentStats: CurrentInternalStats  ⇒ publishInternalStats(currentStats)
-    case SendCurrentClusterState(receiver)   ⇒ sendCurrentClusterState(receiver)
-    case Subscribe(subscriber, initMode, to) ⇒ subscribe(subscriber, initMode, to)
-    case Unsubscribe(subscriber, to)         ⇒ unsubscribe(subscriber, to)
-    case PublishEvent(event)                 ⇒ publish(event)
+    case PublishChanges(newState)            => publishChanges(newState)
+    case currentStats: CurrentInternalStats  => publishInternalStats(currentStats)
+    case SendCurrentClusterState(receiver)   => sendCurrentClusterState(receiver)
+    case Subscribe(subscriber, initMode, to) => subscribe(subscriber, initMode, to)
+    case Unsubscribe(subscriber, to)         => unsubscribe(subscriber, to)
+    case PublishEvent(event)                 => publish(event)
   }
 
   def eventStream: EventStream = context.system.eventStream
@@ -561,7 +561,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   def sendCurrentClusterState(receiver: ActorRef): Unit = {
     val unreachable: Set[Member] =
       membershipState.dcReachabilityNoOutsideNodes.allUnreachableOrTerminated.collect {
-        case node if node != selfUniqueAddress ⇒ membershipState.latestGossip.member(node)
+        case node if node != selfUniqueAddress => membershipState.latestGossip.member(node)
       }
 
     val unreachableDataCenters: Set[DataCenter] =
@@ -573,21 +573,21 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       unreachable = unreachable,
       seenBy = membershipState.latestGossip.seenBy.map(_.address),
       leader = membershipState.leader.map(_.address),
-      roleLeaderMap = membershipState.latestGossip.allRoles.iterator.map(r ⇒
-        r → membershipState.roleLeader(r).map(_.address)).toMap,
+      roleLeaderMap = membershipState.latestGossip.allRoles.iterator.map(r =>
+        r -> membershipState.roleLeader(r).map(_.address)).toMap,
       unreachableDataCenters)
     receiver ! state
   }
 
   def subscribe(subscriber: ActorRef, initMode: SubscriptionInitialStateMode, to: Set[Class[_]]): Unit = {
     initMode match {
-      case InitialStateAsEvents ⇒
+      case InitialStateAsEvents =>
         def pub(event: AnyRef): Unit = {
           if (to.exists(_.isAssignableFrom(event.getClass)))
             subscriber ! event
         }
         publishDiff(emptyMembershipState, membershipState, pub)
-      case InitialStateAsSnapshot ⇒
+      case InitialStateAsSnapshot =>
         sendCurrentClusterState(subscriber)
     }
 
@@ -595,8 +595,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def unsubscribe(subscriber: ActorRef, to: Option[Class[_]]): Unit = to match {
-    case None    ⇒ eventStream.unsubscribe(subscriber)
-    case Some(c) ⇒ eventStream.unsubscribe(subscriber, c)
+    case None    => eventStream.unsubscribe(subscriber)
+    case Some(c) => eventStream.unsubscribe(subscriber, c)
   }
 
   def publishChanges(newState: MembershipState): Unit = {
@@ -606,7 +606,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     publishDiff(oldState, newState, publish)
   }
 
-  def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef ⇒ Unit): Unit = {
+  def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef => Unit): Unit = {
     diffMemberEvents(oldState, newState) foreach pub
     diffUnreachable(oldState, newState) foreach pub
     diffReachable(oldState, newState) foreach pub

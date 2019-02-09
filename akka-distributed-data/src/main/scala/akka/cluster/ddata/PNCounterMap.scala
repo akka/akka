@@ -47,12 +47,12 @@ final class PNCounterMap[A] private[akka] (
   type D = ORMap.DeltaOp
 
   /** Scala API */
-  def entries: Map[A, BigInt] = underlying.entries.map { case (k, c) ⇒ k → c.value }
+  def entries: Map[A, BigInt] = underlying.entries.map { case (k, c) => k -> c.value }
 
   /** Java API */
   def getEntries: java.util.Map[A, BigInteger] = {
     import scala.collection.JavaConverters._
-    underlying.entries.map { case (k, c) ⇒ k → c.value.bigInteger }.asJava
+    underlying.entries.map { case (k, c) => k -> c.value.bigInteger }.asJava
   }
 
   /**
@@ -186,8 +186,8 @@ final class PNCounterMap[A] private[akka] (
   override def toString: String = s"PNCounter$entries"
 
   override def equals(o: Any): Boolean = o match {
-    case other: PNCounterMap[A] ⇒ underlying == other.underlying
-    case _                      ⇒ false
+    case other: PNCounterMap[A] => underlying == other.underlying
+    case _                      => false
   }
 
   override def hashCode: Int = underlying.hashCode

@@ -88,7 +88,7 @@ class SourceRefBenchmark {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    sourceRef.source.runWith(Sink.onComplete(_ ⇒ lock.release()))
+    sourceRef.source.runWith(Sink.onComplete(_ => lock.release()))
 
     lock.acquire()
   }

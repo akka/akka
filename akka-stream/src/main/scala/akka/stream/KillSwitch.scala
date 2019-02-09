@@ -56,16 +56,16 @@ object KillSwitches {
   abstract class KillableGraphStageLogic(val terminationSignal: Future[Done], _shape: Shape) extends GraphStageLogic(_shape) {
     override def preStart(): Unit = {
       terminationSignal.value match {
-        case Some(status) ⇒ onSwitch(status)
-        case _ ⇒
+        case Some(status) => onSwitch(status)
+        case _ =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
           terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
       }
     }
 
     private def onSwitch(mode: Try[Done]): Unit = mode match {
-      case Success(_)  ⇒ completeStage()
-      case Failure(ex) ⇒ failStage(ex)
+      case Success(_)  => completeStage()
+      case Failure(ex) => failStage(ex)
     }
   }
 
@@ -161,18 +161,18 @@ private[stream] final class TerminationSignal {
 
   def tryComplete(result: Try[Done]): Unit = {
     if (_completedWith.compareAndSet(None, Some(result))) {
-      for ((listener, _) ← _listeners) listener.promise.tryComplete(result)
+      for ((listener, _) <- _listeners) listener.promise.tryComplete(result)
     }
   }
 
   def createListener(): Listener = {
     val listener = new Listener
     if (_completedWith.get.isEmpty) {
-      _listeners += (listener → NotUsed)
+      _listeners += (listener -> NotUsed)
     }
     _completedWith.get match {
-      case Some(result) ⇒ listener.promise.tryComplete(result)
-      case None         ⇒ // Ignore.
+      case Some(result) => listener.promise.tryComplete(result)
+      case None         => // Ignore.
     }
     listener
   }

@@ -39,7 +39,7 @@ class InterpreterBenchmark {
           .connect(identities.last.out, sink)
 
         // FIXME: This should not be here, this is pure setup overhead
-        for (i ← (0 until identities.size - 1)) {
+        for (i <- (0 until identities.size - 1)) {
           b.connect(identities(i).out, identities(i + 1).in)
         }
 

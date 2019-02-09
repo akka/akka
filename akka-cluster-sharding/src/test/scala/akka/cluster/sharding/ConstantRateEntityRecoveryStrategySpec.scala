@@ -19,10 +19,10 @@ class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()
       val resultWithTimes = strategy.recoverEntities(entities).map(
-        _.map(entityIds ⇒ entityIds → (System.nanoTime() - startTime).nanos))
+        _.map(entityIds => entityIds -> (System.nanoTime() - startTime).nanos))
 
       val result = Await.result(Future.sequence(resultWithTimes), 6.seconds)
-        .toVector.sortBy { case (_, duration) ⇒ duration }
+        .toVector.sortBy { case (_, duration) => duration }
       result.size should ===(3)
 
       val scheduledEntities = result.map(_._1)

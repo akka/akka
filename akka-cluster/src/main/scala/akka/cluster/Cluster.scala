@@ -16,7 +16,7 @@ import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
 import akka.pattern._
-import akka.remote.{ UniqueAddress ⇒ _, _ }
+import akka.remote.{ UniqueAddress => _, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.varargs
 import scala.collection.immutable
@@ -41,8 +41,8 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
    */
   private[cluster] final val isAssertInvariantsEnabled: Boolean =
     System.getProperty("akka.cluster.assert", "off").toLowerCase match {
-      case "on" | "true" ⇒ true
-      case _             ⇒ false
+      case "on" | "true" => true
+      case _             => false
     }
 }
 
@@ -70,9 +70,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * incarnations of a member with same hostname and port.
    */
   val selfUniqueAddress: UniqueAddress = system.provider match {
-    case c: ClusterActorRefProvider ⇒
+    case c: ClusterActorRefProvider =>
       UniqueAddress(c.transport.defaultAddress, AddressUidExtension(system).longAddressUid)
-    case other ⇒ throw new ConfigurationException(
+    case other => throw new ConfigurationException(
       s"ActorSystem [${system}] needs to have 'akka.actor.provider' set to 'cluster' in the configuration, currently uses [${other.getClass.getName}]")
   }
 
@@ -103,14 +103,14 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   logInfo("Starting up, Akka version [{}] ...", system.settings.ConfigVersion)
 
   val failureDetector: FailureDetectorRegistry[Address] = {
-    val createFailureDetector = () ⇒
+    val createFailureDetector = () =>
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
 
     new DefaultFailureDetectorRegistry(createFailureDetector)
   }
 
   val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
-    val createFailureDetector = () ⇒
+    val createFailureDetector = () =>
       FailureDetectorLoader.load(
         settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
         settings.MultiDataCenter.CrossDcFailureDetectorSettings.config, system)
@@ -140,13 +140,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms").withFallback(
           system.settings.config)
       val threadFactory = system.threadFactory match {
-        case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
-        case tf                           ⇒ tf
+        case tf: MonitorableThreadFactory => tf.withName(tf.name + "-cluster-scheduler")
+        case tf                           => tf
       }
       system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
-        classOf[Config] → cfg,
-        classOf[LoggingAdapter] → log,
-        classOf[ThreadFactory] → threadFactory)).get
+        classOf[Config] -> cfg,
+        classOf[LoggingAdapter] -> log,
+        classOf[ThreadFactory] -> threadFactory)).get
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
@@ -181,7 +181,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     try {
       Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
         // don't re-throw, that would cause the extension to be re-recreated
@@ -355,7 +355,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
    */
-  def registerOnMemberUp[T](code: ⇒ T): Unit =
+  def registerOnMemberUp[T](code: => T): Unit =
     registerOnMemberUp(new Runnable { def run() = code })
 
   /**
@@ -372,7 +372,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
    * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
    */
-  def registerOnMemberRemoved[T](code: ⇒ T): Unit =
+  def registerOnMemberRemoved[T](code: => T): Unit =
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
 
   /**
@@ -431,8 +431,8 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
   private def closeScheduler(): Unit = scheduler match {
-    case x: Closeable ⇒ x.close()
-    case _            ⇒ // ignore, this is fine
+    case x: Closeable => x.close()
+    case _            => // ignore, this is fine
   }
 
   /**

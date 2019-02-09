@@ -82,18 +82,18 @@ object ConfiguredLocalRoutingSpec {
 
   class EchoProps extends Actor {
     def receive = {
-      case "get" ⇒ sender() ! context.props
+      case "get" => sender() ! context.props
     }
   }
 
   class SendRefAtStartup(testActor: ActorRef) extends Actor {
     testActor ! self
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
   class Parent extends Actor {
     def receive = {
-      case (p: Props, name: String) ⇒
+      case (p: Props, name: String) =>
         sender() ! context.actorOf(p, name)
     }
   }
@@ -104,15 +104,15 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
   import ConfiguredLocalRoutingSpec._
 
   def routerConfig(ref: ActorRef): akka.routing.RouterConfig = ref match {
-    case r: RoutedActorRef ⇒
+    case r: RoutedActorRef =>
       r.underlying match {
-        case c: RoutedActorCell ⇒ c.routerConfig
-        case _: UnstartedCell   ⇒ awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case c: RoutedActorCell => c.routerConfig
+        case _: UnstartedCell   => awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
       }
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {
-    for (i ← 1 to n) yield {
+    for (i <- 1 to n) yield {
       val msg = i.toString
       router.tell(msg, probe.ref)
       probe.expectMsg(msg)
@@ -162,8 +162,8 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
     "not get confused when trying to wildcard-configure children" in {
       system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
-      val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
-      val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
+      val recv = Set() ++ (for (_ <- 1 to 3) yield expectMsgType[ActorRef])
+      val expc = Set('a', 'b', 'c') map (i => system.actorFor("/user/weird/$" + i))
       recv should ===(expc)
       expectNoMessage(1 second)
     }

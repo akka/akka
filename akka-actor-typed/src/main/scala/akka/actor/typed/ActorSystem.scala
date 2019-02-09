@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ThreadFactory
 
@@ -36,7 +36,7 @@ import com.typesafe.config.ConfigFactory
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] ⇒
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
   /**
    * The name of this actor system, used to distinguish multiple ones within
    * the same JVM & class loader.
@@ -231,7 +231,7 @@ object ActorSystem {
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
     val system = new untyped.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps, isGuardian = true)), setup)
+      Some(PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)), setup)
     system.start()
 
     system.guardian ! GuardianActorAdapter.Start

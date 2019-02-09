@@ -60,8 +60,8 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       val restarts = new AtomicInteger(0)
 
       class FailingActor extends Actor {
-        override def receive = msg ⇒ msg match {
-          case _ ⇒
+        override def receive = msg => msg match {
+          case _ =>
             throw new RuntimeException("simulated failure")
         }
 
@@ -79,16 +79,16 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       }
     }
 
-    def assertFailureMessageContains(expectedHint: String)(block: ⇒ Unit): Unit = {
+    def assertFailureMessageContains(expectedHint: String)(block: => Unit): Unit = {
       Try {
         block
       } match {
-        case scala.util.Failure(e: AssertionError) ⇒
+        case scala.util.Failure(e: AssertionError) =>
           if (!(e.getMessage contains expectedHint))
             fail(s"failure message did not contain hint! Was: ${e.getMessage}, expected to contain $expectedHint")
-        case scala.util.Failure(oth) ⇒
+        case scala.util.Failure(oth) =>
           fail(s"expected AssertionError but got: $oth")
-        case scala.util.Success(result) ⇒
+        case scala.util.Success(result) =>
           fail(s"expected failure but got: $result")
       }
     }
@@ -118,8 +118,8 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.setAutoPilot(new TestActor.AutoPilot {
         def run(sender: ActorRef, msg: Any): TestActor.AutoPilot =
           msg match {
-            case "stop" ⇒ TestActor.NoAutoPilot
-            case x      ⇒ testActor.tell(x, sender); TestActor.KeepRunning
+            case "stop" => TestActor.NoAutoPilot
+            case x      => testActor.tell(x, sender); TestActor.KeepRunning
           }
       })
       //#autopilot
@@ -138,7 +138,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
     }
 
     "be able to expect primitive types" in {
-      for (_ ← 1 to 7) testActor ! 42
+      for (_ <- 1 to 7) testActor ! 42
       expectMsgType[Int] should ===(42)
       expectMsgAnyClassOf(classOf[Int]) should ===(42)
       expectMsgAllClassOf(classOf[Int]) should ===(Seq(42))
@@ -156,8 +156,8 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.ref ! "done"
 
       probe.fishForMessage() {
-        case "fishForMe" ⇒ true
-        case _           ⇒ false
+        case "fishForMe" => true
+        case _           => false
       }
 
       probe.expectMsg(1 second, "done")
@@ -171,7 +171,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.ref ! "done"
 
       val msg: String = probe.fishForSpecificMessage() {
-        case msg @ "fishForMe" ⇒ msg
+        case msg @ "fishForMe" => msg
       }
 
       msg should be("fishForMe")
@@ -180,7 +180,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
     }
 
     "be able to ignore primitive types" in {
-      ignoreMsg { case 42 ⇒ true }
+      ignoreMsg { case 42 => true }
       testActor ! 42
       testActor ! "pigdog"
       expectMsg("pigdog")

@@ -37,7 +37,7 @@ class HelloWorldEventSourcedEntityExampleSpec extends ScalaTestWithActorTestKit(
 
     sharding.init(Entity(
       HelloWorld.entityTypeKey,
-      ctx ⇒ HelloWorld.persistentEntity(ctx.entityId)))
+      ctx => HelloWorld.persistentEntity(ctx.entityId)))
   }
 
   "HelloWorld example" must {

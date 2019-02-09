@@ -33,37 +33,37 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val EmptyConfig = ConfigFactory.empty()
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case identify: Identify                   ⇒ serializeIdentify(identify)
-    case identity: ActorIdentity              ⇒ serializeActorIdentity(identity)
-    case Some(value)                          ⇒ serializeSome(value)
-    case None                                 ⇒ ParameterlessSerializedMessage
-    case o: Optional[_]                       ⇒ serializeOptional(o)
-    case r: ActorRef                          ⇒ serializeActorRef(r)
-    case s: Status.Success                    ⇒ serializeStatusSuccess(s)
-    case f: Status.Failure                    ⇒ serializeStatusFailure(f)
-    case ex: ActorInitializationException     ⇒ serializeActorInitializationException(ex)
-    case t: Throwable                         ⇒ throwableSupport.serializeThrowable(t)
-    case PoisonPill                           ⇒ ParameterlessSerializedMessage
-    case Kill                                 ⇒ ParameterlessSerializedMessage
-    case RemoteWatcher.Heartbeat              ⇒ ParameterlessSerializedMessage
-    case Done                                 ⇒ ParameterlessSerializedMessage
-    case NotUsed                              ⇒ ParameterlessSerializedMessage
-    case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
-    case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
-    case LocalScope                           ⇒ ParameterlessSerializedMessage
-    case a: Address                           ⇒ serializeAddressData(a)
-    case u: UniqueAddress                     ⇒ serializeClassicUniqueAddress(u)
-    case c: Config                            ⇒ serializeConfig(c)
-    case dr: DefaultResizer                   ⇒ serializeDefaultResizer(dr)
-    case fc: FromConfig                       ⇒ serializeFromConfig(fc)
-    case bp: BalancingPool                    ⇒ serializeBalancingPool(bp)
-    case bp: BroadcastPool                    ⇒ serializeBroadcastPool(bp)
-    case rp: RandomPool                       ⇒ serializeRandomPool(rp)
-    case rrp: RoundRobinPool                  ⇒ serializeRoundRobinPool(rrp)
-    case sgp: ScatterGatherFirstCompletedPool ⇒ serializeScatterGatherFirstCompletedPool(sgp)
-    case tp: TailChoppingPool                 ⇒ serializeTailChoppingPool(tp)
-    case rrc: RemoteRouterConfig              ⇒ serializeRemoteRouterConfig(rrc)
-    case _                                    ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case identify: Identify                   => serializeIdentify(identify)
+    case identity: ActorIdentity              => serializeActorIdentity(identity)
+    case Some(value)                          => serializeSome(value)
+    case None                                 => ParameterlessSerializedMessage
+    case o: Optional[_]                       => serializeOptional(o)
+    case r: ActorRef                          => serializeActorRef(r)
+    case s: Status.Success                    => serializeStatusSuccess(s)
+    case f: Status.Failure                    => serializeStatusFailure(f)
+    case ex: ActorInitializationException     => serializeActorInitializationException(ex)
+    case t: Throwable                         => throwableSupport.serializeThrowable(t)
+    case PoisonPill                           => ParameterlessSerializedMessage
+    case Kill                                 => ParameterlessSerializedMessage
+    case RemoteWatcher.Heartbeat              => ParameterlessSerializedMessage
+    case Done                                 => ParameterlessSerializedMessage
+    case NotUsed                              => ParameterlessSerializedMessage
+    case hbrsp: RemoteWatcher.HeartbeatRsp    => serializeHeartbeatRsp(hbrsp)
+    case rs: RemoteScope                      => serializeRemoteScope(rs)
+    case LocalScope                           => ParameterlessSerializedMessage
+    case a: Address                           => serializeAddressData(a)
+    case u: UniqueAddress                     => serializeClassicUniqueAddress(u)
+    case c: Config                            => serializeConfig(c)
+    case dr: DefaultResizer                   => serializeDefaultResizer(dr)
+    case fc: FromConfig                       => serializeFromConfig(fc)
+    case bp: BalancingPool                    => serializeBalancingPool(bp)
+    case bp: BroadcastPool                    => serializeBroadcastPool(bp)
+    case rp: RandomPool                       => serializeRandomPool(rp)
+    case rrp: RoundRobinPool                  => serializeRoundRobinPool(rrp)
+    case sgp: ScatterGatherFirstCompletedPool => serializeScatterGatherFirstCompletedPool(sgp)
+    case tp: TailChoppingPool                 => serializeTailChoppingPool(tp)
+    case rrc: RemoteRouterConfig              => serializeRemoteRouterConfig(rrc)
+    case _                                    => throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
@@ -77,7 +77,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       ContainerFormats.ActorIdentity.newBuilder()
         .setCorrelationId(payloadSupport.payloadBuilder(actorIdentity.correlationId))
 
-    actorIdentity.ref.foreach { actorRef ⇒
+    actorIdentity.ref.foreach { actorRef =>
       builder.setRef(actorRefBuilder(actorRef))
     }
 
@@ -142,23 +142,23 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def protoForAddressData(address: Address): AddressData.Builder =
     address match {
-      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+      case Address(protocol, actorSystem, Some(host), Some(port)) =>
         WireFormats.AddressData.newBuilder()
           .setSystem(actorSystem)
           .setHostname(host)
           .setPort(port)
           .setProtocol(protocol)
-      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+      case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
     }
   private def protoForAddress(address: Address): ArteryControlFormats.Address.Builder =
     address match {
-      case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
+      case Address(protocol, actorSystem, Some(host), Some(port)) =>
         ArteryControlFormats.Address.newBuilder()
           .setSystem(actorSystem)
           .setHostname(host)
           .setPort(port)
           .setProtocol(protocol)
-      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+      case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
     }
   private def serializeAddressData(address: Address): Array[Byte] =
     protoForAddressData(address).build().toByteArray
@@ -248,13 +248,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   }
 
   private def timeUnitToWire(unit: TimeUnit): WireFormats.TimeUnit = unit match {
-    case TimeUnit.NANOSECONDS  ⇒ WireFormats.TimeUnit.NANOSECONDS
-    case TimeUnit.MICROSECONDS ⇒ WireFormats.TimeUnit.MICROSECONDS
-    case TimeUnit.MILLISECONDS ⇒ WireFormats.TimeUnit.MILLISECONDS
-    case TimeUnit.SECONDS      ⇒ WireFormats.TimeUnit.SECONDS
-    case TimeUnit.MINUTES      ⇒ WireFormats.TimeUnit.MINUTES
-    case TimeUnit.HOURS        ⇒ WireFormats.TimeUnit.HOURS
-    case TimeUnit.DAYS         ⇒ WireFormats.TimeUnit.DAYS
+    case TimeUnit.NANOSECONDS  => WireFormats.TimeUnit.NANOSECONDS
+    case TimeUnit.MICROSECONDS => WireFormats.TimeUnit.MICROSECONDS
+    case TimeUnit.MILLISECONDS => WireFormats.TimeUnit.MILLISECONDS
+    case TimeUnit.SECONDS      => WireFormats.TimeUnit.SECONDS
+    case TimeUnit.MINUTES      => WireFormats.TimeUnit.MINUTES
+    case TimeUnit.HOURS        => WireFormats.TimeUnit.HOURS
+    case TimeUnit.DAYS         => WireFormats.TimeUnit.DAYS
   }
 
   private def buildFiniteDuration(duration: FiniteDuration): WireFormats.FiniteDuration = {
@@ -267,14 +267,14 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def buildAddressData(address: Address): WireFormats.AddressData = {
     val builder = WireFormats.AddressData.newBuilder()
     address match {
-      case Address(protocol, system, Some(host), Some(port)) ⇒
+      case Address(protocol, system, Some(host), Some(port)) =>
         builder.setProtocol(protocol)
         builder.setSystem(system)
         builder.setHostname(host)
         builder.setPort(port)
         builder.build()
 
-      case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+      case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
     }
   }
 
@@ -308,77 +308,77 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val TailChoppingPoolManifest = "ROTCP"
   private val RemoteRouterConfigManifest = "RORRC"
 
-  private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
-    IdentifyManifest → deserializeIdentify,
-    ActorIdentityManifest → deserializeActorIdentity,
-    StatusSuccessManifest → deserializeStatusSuccess,
-    StatusFailureManifest → deserializeStatusFailure,
-    ThrowableManifest → throwableSupport.deserializeThrowable,
-    ActorRefManifest → deserializeActorRefBytes,
-    OptionManifest → deserializeOption,
-    OptionalManifest → deserializeOptional,
-    PoisonPillManifest → ((_) ⇒ PoisonPill),
-    KillManifest → ((_) ⇒ Kill),
-    RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
-    DoneManifest → ((_) ⇒ Done),
-    NotUsedManifest → ((_) ⇒ NotUsed),
-    AddressManifest → deserializeAddressData,
-    UniqueAddressManifest → deserializeUniqueAddress,
-    RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
-    ActorInitializationExceptionManifest → deserializeActorInitializationException,
-    LocalScopeManifest → ((_) ⇒ LocalScope),
-    RemoteScopeManifest → deserializeRemoteScope,
-    ConfigManifest → deserializeConfig,
-    FromConfigManifest → deserializeFromConfig,
-    DefaultResizerManifest → deserializeDefaultResizer,
-    BalancingPoolManifest → deserializeBalancingPool,
-    BroadcastPoolManifest → deserializeBroadcastPool,
-    RandomPoolManifest → deserializeRandomPool,
-    RoundRobinPoolManifest → deserializeRoundRobinPool,
-    ScatterGatherPoolManifest → deserializeScatterGatherPool,
-    TailChoppingPoolManifest → deserializeTailChoppingPool,
-    RemoteRouterConfigManifest → deserializeRemoteRouterConfig
+  private val fromBinaryMap = Map[String, Array[Byte] => AnyRef](
+    IdentifyManifest -> deserializeIdentify,
+    ActorIdentityManifest -> deserializeActorIdentity,
+    StatusSuccessManifest -> deserializeStatusSuccess,
+    StatusFailureManifest -> deserializeStatusFailure,
+    ThrowableManifest -> throwableSupport.deserializeThrowable,
+    ActorRefManifest -> deserializeActorRefBytes,
+    OptionManifest -> deserializeOption,
+    OptionalManifest -> deserializeOptional,
+    PoisonPillManifest -> ((_) => PoisonPill),
+    KillManifest -> ((_) => Kill),
+    RemoteWatcherHBManifest -> ((_) => RemoteWatcher.Heartbeat),
+    DoneManifest -> ((_) => Done),
+    NotUsedManifest -> ((_) => NotUsed),
+    AddressManifest -> deserializeAddressData,
+    UniqueAddressManifest -> deserializeUniqueAddress,
+    RemoteWatcherHBRespManifest -> deserializeHeartbeatRsp,
+    ActorInitializationExceptionManifest -> deserializeActorInitializationException,
+    LocalScopeManifest -> ((_) => LocalScope),
+    RemoteScopeManifest -> deserializeRemoteScope,
+    ConfigManifest -> deserializeConfig,
+    FromConfigManifest -> deserializeFromConfig,
+    DefaultResizerManifest -> deserializeDefaultResizer,
+    BalancingPoolManifest -> deserializeBalancingPool,
+    BroadcastPoolManifest -> deserializeBroadcastPool,
+    RandomPoolManifest -> deserializeRandomPool,
+    RoundRobinPoolManifest -> deserializeRoundRobinPool,
+    ScatterGatherPoolManifest -> deserializeScatterGatherPool,
+    TailChoppingPoolManifest -> deserializeTailChoppingPool,
+    RemoteRouterConfigManifest -> deserializeRemoteRouterConfig
   )
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify                        ⇒ IdentifyManifest
-      case _: ActorIdentity                   ⇒ ActorIdentityManifest
-      case _: Option[Any]                     ⇒ OptionManifest
-      case _: Optional[_]                     ⇒ OptionalManifest
-      case _: ActorRef                        ⇒ ActorRefManifest
-      case _: Status.Success                  ⇒ StatusSuccessManifest
-      case _: Status.Failure                  ⇒ StatusFailureManifest
-      case _: ActorInitializationException    ⇒ ActorInitializationExceptionManifest
-      case _: Throwable                       ⇒ ThrowableManifest
-      case PoisonPill                         ⇒ PoisonPillManifest
-      case Kill                               ⇒ KillManifest
-      case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
-      case Done                               ⇒ DoneManifest
-      case NotUsed                            ⇒ NotUsedManifest
-      case _: Address                         ⇒ AddressManifest
-      case _: UniqueAddress                   ⇒ UniqueAddressManifest
-      case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
-      case LocalScope                         ⇒ LocalScopeManifest
-      case _: RemoteScope                     ⇒ RemoteScopeManifest
-      case _: Config                          ⇒ ConfigManifest
-      case _: FromConfig                      ⇒ FromConfigManifest
-      case _: DefaultResizer                  ⇒ DefaultResizerManifest
-      case _: BalancingPool                   ⇒ BalancingPoolManifest
-      case _: BroadcastPool                   ⇒ BroadcastPoolManifest
-      case _: RandomPool                      ⇒ RandomPoolManifest
-      case _: RoundRobinPool                  ⇒ RoundRobinPoolManifest
-      case _: ScatterGatherFirstCompletedPool ⇒ ScatterGatherPoolManifest
-      case _: TailChoppingPool                ⇒ TailChoppingPoolManifest
-      case _: RemoteRouterConfig              ⇒ RemoteRouterConfigManifest
-      case _ ⇒
+      case _: Identify                        => IdentifyManifest
+      case _: ActorIdentity                   => ActorIdentityManifest
+      case _: Option[Any]                     => OptionManifest
+      case _: Optional[_]                     => OptionalManifest
+      case _: ActorRef                        => ActorRefManifest
+      case _: Status.Success                  => StatusSuccessManifest
+      case _: Status.Failure                  => StatusFailureManifest
+      case _: ActorInitializationException    => ActorInitializationExceptionManifest
+      case _: Throwable                       => ThrowableManifest
+      case PoisonPill                         => PoisonPillManifest
+      case Kill                               => KillManifest
+      case RemoteWatcher.Heartbeat            => RemoteWatcherHBManifest
+      case Done                               => DoneManifest
+      case NotUsed                            => NotUsedManifest
+      case _: Address                         => AddressManifest
+      case _: UniqueAddress                   => UniqueAddressManifest
+      case _: RemoteWatcher.HeartbeatRsp      => RemoteWatcherHBRespManifest
+      case LocalScope                         => LocalScopeManifest
+      case _: RemoteScope                     => RemoteScopeManifest
+      case _: Config                          => ConfigManifest
+      case _: FromConfig                      => FromConfigManifest
+      case _: DefaultResizer                  => DefaultResizerManifest
+      case _: BalancingPool                   => BalancingPoolManifest
+      case _: BroadcastPool                   => BroadcastPoolManifest
+      case _: RandomPool                      => RandomPoolManifest
+      case _: RoundRobinPool                  => RoundRobinPoolManifest
+      case _: ScatterGatherFirstCompletedPool => ScatterGatherPoolManifest
+      case _: TailChoppingPool                => TailChoppingPoolManifest
+      case _: RemoteRouterConfig              => RemoteRouterConfigManifest
+      case _ =>
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
-      case Some(deserializer) ⇒ deserializer(bytes)
-      case None ⇒ throw new NotSerializableException(
+      case Some(deserializer) => deserializer(bytes)
+      case None => throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 
@@ -594,13 +594,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   }
 
   private def deserializeTimeUnit(unit: WireFormats.TimeUnit): TimeUnit = unit match {
-    case WireFormats.TimeUnit.NANOSECONDS  ⇒ TimeUnit.NANOSECONDS
-    case WireFormats.TimeUnit.MICROSECONDS ⇒ TimeUnit.MICROSECONDS
-    case WireFormats.TimeUnit.MILLISECONDS ⇒ TimeUnit.MILLISECONDS
-    case WireFormats.TimeUnit.SECONDS      ⇒ TimeUnit.SECONDS
-    case WireFormats.TimeUnit.MINUTES      ⇒ TimeUnit.MINUTES
-    case WireFormats.TimeUnit.HOURS        ⇒ TimeUnit.HOURS
-    case WireFormats.TimeUnit.DAYS         ⇒ TimeUnit.DAYS
+    case WireFormats.TimeUnit.NANOSECONDS  => TimeUnit.NANOSECONDS
+    case WireFormats.TimeUnit.MICROSECONDS => TimeUnit.MICROSECONDS
+    case WireFormats.TimeUnit.MILLISECONDS => TimeUnit.MILLISECONDS
+    case WireFormats.TimeUnit.SECONDS      => TimeUnit.SECONDS
+    case WireFormats.TimeUnit.MINUTES      => TimeUnit.MINUTES
+    case WireFormats.TimeUnit.HOURS        => TimeUnit.HOURS
+    case WireFormats.TimeUnit.DAYS         => TimeUnit.DAYS
   }
 
   private def deserializeFiniteDuration(duration: WireFormats.FiniteDuration): FiniteDuration =

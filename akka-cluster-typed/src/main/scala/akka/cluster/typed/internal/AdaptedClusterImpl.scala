@@ -25,7 +25,7 @@ private[akka] object AdapterClusterImpl {
   private case object Up extends SeenState
   private case class Removed(previousStatus: MemberStatus) extends SeenState
 
-  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.setup[ClusterStateSubscription] { ctx ⇒
+  private def subscriptionsBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.setup[ClusterStateSubscription] { ctx =>
     var seenState: SeenState = BeforeUp
     var upSubscribers: List[ActorRef[SelfUp]] = Nil
     var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil
@@ -36,67 +36,67 @@ private[akka] object AdapterClusterImpl {
     lazy val cluster = Cluster(ctx.system)
     def onSelfMemberEvent(event: MemberEvent): Unit = {
       event match {
-        case ClusterEvent.MemberUp(_) ⇒
+        case ClusterEvent.MemberUp(_) =>
           seenState = Up
           val upMessage = SelfUp(cluster.state)
           upSubscribers.foreach(_ ! upMessage)
           upSubscribers = Nil
 
-        case ClusterEvent.MemberRemoved(_, previousStatus) ⇒
+        case ClusterEvent.MemberRemoved(_, previousStatus) =>
           seenState = Removed(previousStatus)
           val removedMessage = SelfRemoved(previousStatus)
           removedSubscribers.foreach(_ ! removedMessage)
           removedSubscribers = Nil
 
-        case _ ⇒ // This is fine.
+        case _ => // This is fine.
       }
     }
 
-    Behaviors.receive[AnyRef] { (ctx, msg) ⇒
+    Behaviors.receive[AnyRef] { (ctx, msg) =>
 
       msg match {
-        case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] ⇒
+        case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] =>
           seenState match {
-            case Up ⇒ subscriber ! SelfUp(adaptedCluster.state)
-            case BeforeUp ⇒
+            case Up => subscriber ! SelfUp(adaptedCluster.state)
+            case BeforeUp =>
               ctx.watch(subscriber)
               upSubscribers = subscriber :: upSubscribers
-            case _: Removed ⇒
+            case _: Removed =>
             // self did join, but is now no longer up, we want to avoid subscribing
             // to not get a memory leak, but also not signal anything
           }
           Behaviors.same
 
-        case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] ⇒
+        case Subscribe(subscriber: ActorRef[SelfRemoved] @unchecked, clazz) if clazz == classOf[SelfRemoved] =>
           seenState match {
-            case BeforeUp | Up ⇒ removedSubscribers = subscriber :: removedSubscribers
-            case Removed(s)    ⇒ subscriber ! SelfRemoved(s)
+            case BeforeUp | Up => removedSubscribers = subscriber :: removedSubscribers
+            case Removed(s)    => subscriber ! SelfRemoved(s)
           }
           Behaviors.same
 
-        case Subscribe(subscriber, eventClass) ⇒
+        case Subscribe(subscriber, eventClass) =>
           adaptedCluster.subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
           Behaviors.same
 
-        case Unsubscribe(subscriber) ⇒
+        case Unsubscribe(subscriber) =>
           adaptedCluster.unsubscribe(subscriber.toUntyped)
           Behaviors.same
 
-        case GetCurrentState(sender) ⇒
+        case GetCurrentState(sender) =>
           adaptedCluster.sendCurrentClusterState(sender.toUntyped)
           Behaviors.same
 
-        case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress ⇒
+        case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress =>
           onSelfMemberEvent(evt)
           Behaviors.same
 
-        case _: MemberEvent ⇒
+        case _: MemberEvent =>
           Behaviors.same
 
       }
     }.receiveSignal {
 
-      case (_, Terminated(ref)) ⇒
+      case (_, Terminated(ref)) =>
         upSubscribers = upSubscribers.filterNot(_ == ref)
         removedSubscribers = removedSubscribers.filterNot(_ == ref)
         Behaviors.same
@@ -104,21 +104,21 @@ private[akka] object AdapterClusterImpl {
     }.narrow[ClusterStateSubscription]
   }
 
-  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((_, msg) ⇒
+  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((_, msg) =>
     msg match {
-      case Join(address) ⇒
+      case Join(address) =>
         adaptedCluster.join(address)
         Behaviors.same
 
-      case Leave(address) ⇒
+      case Leave(address) =>
         adaptedCluster.leave(address)
         Behaviors.same
 
-      case Down(address) ⇒
+      case Down(address) =>
         adaptedCluster.down(address)
         Behaviors.same
 
-      case JoinSeedNodes(addresses) ⇒
+      case JoinSeedNodes(addresses) =>
         adaptedCluster.joinSeedNodes(addresses)
         Behaviors.same
 

@@ -37,7 +37,7 @@ private[akka] final class ArterySettings private (config: Config) {
     val config: Config = getConfig("canonical")
     import config._
 
-    val Port: Int = getInt("port").requiring(port ⇒
+    val Port: Int = getInt("port").requiring(port =>
       0 to 65535 contains port, "canonical.port must be 0 through 65535")
     val Hostname: String = getHostname("hostname", config)
   }
@@ -47,12 +47,12 @@ private[akka] final class ArterySettings private (config: Config) {
     import config._
 
     val Port: Int = getString("port") match {
-      case "" ⇒ Canonical.Port
-      case _  ⇒ getInt("port").requiring(port ⇒ 0 to 65535 contains port, "bind.port must be 0 through 65535")
+      case "" => Canonical.Port
+      case _  => getInt("port").requiring(port => 0 to 65535 contains port, "bind.port must be 0 through 65535")
     }
     val Hostname: String = getHostname("hostname", config) match {
-      case ""    ⇒ Canonical.Hostname
-      case other ⇒ other
+      case ""    => Canonical.Hostname
+      case other => other
     }
 
     val BindTimeout: FiniteDuration = config.getMillisDuration("bind-timeout").requiring(
@@ -60,7 +60,7 @@ private[akka] final class ArterySettings private (config: Config) {
   }
 
   val LargeMessageDestinations: WildcardIndex[NotUsed] =
-    config.getStringList("large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) ⇒
+    config.getStringList("large-message-destinations").asScala.foldLeft(WildcardIndex[NotUsed]()) { (tree, entry) =>
       val segments = entry.split('/').tail
       tree.insert(segments, NotUsed)
     }
@@ -75,10 +75,10 @@ private[akka] final class ArterySettings private (config: Config) {
   val LogAeronCounters: Boolean = config.getBoolean("log-aeron-counters")
 
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
-    case AeronUpd.configName ⇒ AeronUpd
-    case Tcp.configName      ⇒ Tcp
-    case TlsTcp.configName   ⇒ TlsTcp
-    case other ⇒ throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
+    case AeronUpd.configName => AeronUpd
+    case Tcp.configName      => Tcp
+    case TlsTcp.configName   => TlsTcp
+    case other => throw new IllegalArgumentException(s"Unknown transport [$other], possible values: " +
       s""""${AeronUpd.configName}", "${Tcp.configName}", or "${TlsTcp.configName}"""")
   }
 
@@ -109,14 +109,14 @@ private[akka] final class ArterySettings private (config: Config) {
     }
 
     val EmbeddedMediaDriver: Boolean = getBoolean("embedded-media-driver")
-    val AeronDirectoryName: String = getString("aeron-dir") requiring (dir ⇒
+    val AeronDirectoryName: String = getString("aeron-dir") requiring (dir =>
       EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")
     val DeleteAeronDirectory: Boolean = getBoolean("delete-aeron-dir")
-    val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level ⇒
+    val IdleCpuLevel: Int = getInt("idle-cpu-level").requiring(level =>
       1 <= level && level <= 10, "idle-cpu-level must be between 1 and 10")
-    val OutboundLanes: Int = getInt("outbound-lanes").requiring(n ⇒
+    val OutboundLanes: Int = getInt("outbound-lanes").requiring(n =>
       n > 0, "outbound-lanes must be greater than zero")
-    val InboundLanes: Int = getInt("inbound-lanes").requiring(n ⇒
+    val InboundLanes: Int = getInt("inbound-lanes").requiring(n =>
       n > 0, "inbound-lanes must be greater than zero")
     val SysMsgBufferSize: Int = getInt("system-message-buffer-size").requiring(
       _ > 0, "system-message-buffer-size must be more than zero")
@@ -127,56 +127,56 @@ private[akka] final class ArterySettings private (config: Config) {
     val OutboundLargeMessageQueueSize: Int = getInt("outbound-large-message-queue-size").requiring(
       _ > 0, "outbound-large-message-queue-size must be more than zero")
     val SystemMessageResendInterval: FiniteDuration =
-      config.getMillisDuration("system-message-resend-interval").requiring(interval ⇒
+      config.getMillisDuration("system-message-resend-interval").requiring(interval =>
         interval > Duration.Zero, "system-message-resend-interval must be more than zero")
-    val HandshakeTimeout: FiniteDuration = config.getMillisDuration("handshake-timeout").requiring(interval ⇒
+    val HandshakeTimeout: FiniteDuration = config.getMillisDuration("handshake-timeout").requiring(interval =>
       interval > Duration.Zero, "handshake-timeout must be more than zero")
     val HandshakeRetryInterval: FiniteDuration =
-      config.getMillisDuration("handshake-retry-interval").requiring(interval ⇒
+      config.getMillisDuration("handshake-retry-interval").requiring(interval =>
         interval > Duration.Zero, "handshake-retry-interval must be more than zero")
     val InjectHandshakeInterval: FiniteDuration =
-      config.getMillisDuration("inject-handshake-interval").requiring(interval ⇒
+      config.getMillisDuration("inject-handshake-interval").requiring(interval =>
         interval > Duration.Zero, "inject-handshake-interval must be more than zero")
-    val ConnectionTimeout: FiniteDuration = config.getMillisDuration("connection-timeout").requiring(interval ⇒
+    val ConnectionTimeout: FiniteDuration = config.getMillisDuration("connection-timeout").requiring(interval =>
       interval > Duration.Zero, "connection-timeout must be more than zero")
-    val GiveUpMessageAfter: FiniteDuration = config.getMillisDuration("give-up-message-after").requiring(interval ⇒
+    val GiveUpMessageAfter: FiniteDuration = config.getMillisDuration("give-up-message-after").requiring(interval =>
       interval > Duration.Zero, "give-up-message-after must be more than zero")
     val GiveUpSystemMessageAfter: FiniteDuration =
-      config.getMillisDuration("give-up-system-message-after").requiring(interval ⇒
+      config.getMillisDuration("give-up-system-message-after").requiring(interval =>
         interval > Duration.Zero, "give-up-system-message-after must be more than zero")
     val StopIdleOutboundAfter: FiniteDuration = config.getMillisDuration("stop-idle-outbound-after")
-      .requiring(interval ⇒ interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
+      .requiring(interval => interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
     val QuarantineIdleOutboundAfter: FiniteDuration = config.getMillisDuration("quarantine-idle-outbound-after")
       .requiring(
-        interval ⇒ interval > StopIdleOutboundAfter,
+        interval => interval > StopIdleOutboundAfter,
         "quarantine-idle-outbound-after must be greater than stop-idle-outbound-after")
     val StopQuarantinedAfterIdle: FiniteDuration =
-      config.getMillisDuration("stop-quarantined-after-idle").requiring(interval ⇒
+      config.getMillisDuration("stop-quarantined-after-idle").requiring(interval =>
         interval > Duration.Zero, "stop-quarantined-after-idle must be more than zero")
     val RemoveQuarantinedAssociationAfter: FiniteDuration =
-      config.getMillisDuration("remove-quarantined-association-after").requiring(interval ⇒
+      config.getMillisDuration("remove-quarantined-association-after").requiring(interval =>
         interval > Duration.Zero, "remove-quarantined-association-after must be more than zero")
     val ShutdownFlushTimeout: FiniteDuration =
-      config.getMillisDuration("shutdown-flush-timeout").requiring(interval ⇒
+      config.getMillisDuration("shutdown-flush-timeout").requiring(interval =>
         interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
     val InboundRestartTimeout: FiniteDuration =
-      config.getMillisDuration("inbound-restart-timeout").requiring(interval ⇒
+      config.getMillisDuration("inbound-restart-timeout").requiring(interval =>
         interval > Duration.Zero, "inbound-restart-timeout must be more than zero")
     val InboundMaxRestarts: Int = getInt("inbound-max-restarts")
     val OutboundRestartBackoff: FiniteDuration =
-      config.getMillisDuration("outbound-restart-backoff").requiring(interval ⇒
+      config.getMillisDuration("outbound-restart-backoff").requiring(interval =>
         interval > Duration.Zero, "outbound-restart-backoff must be more than zero")
     val OutboundRestartTimeout: FiniteDuration =
-      config.getMillisDuration("outbound-restart-timeout").requiring(interval ⇒
+      config.getMillisDuration("outbound-restart-timeout").requiring(interval =>
         interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts: Int = getInt("outbound-max-restarts")
     val ClientLivenessTimeout: FiniteDuration =
-      config.getMillisDuration("client-liveness-timeout").requiring(interval ⇒
+      config.getMillisDuration("client-liveness-timeout").requiring(interval =>
         interval > Duration.Zero, "client-liveness-timeout must be more than zero")
-    val ImageLivenessTimeout: FiniteDuration = config.getMillisDuration("image-liveness-timeout").requiring(interval ⇒
+    val ImageLivenessTimeout: FiniteDuration = config.getMillisDuration("image-liveness-timeout").requiring(interval =>
       interval > Duration.Zero, "image-liveness-timeout must be more than zero")
     require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
-    val DriverTimeout: FiniteDuration = config.getMillisDuration("driver-timeout").requiring(interval ⇒
+    val DriverTimeout: FiniteDuration = config.getMillisDuration("driver-timeout").requiring(interval =>
       interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
     val FlightRecorderDestination: String = getString("flight-recorder.destination")
@@ -225,9 +225,9 @@ private[akka] object ArterySettings {
   }
 
   def getHostname(key: String, config: Config): String = config.getString(key) match {
-    case "<getHostAddress>" ⇒ InetAddress.getLocalHost.getHostAddress
-    case "<getHostName>"    ⇒ InetAddress.getLocalHost.getHostName
-    case other              ⇒ other
+    case "<getHostAddress>" => InetAddress.getLocalHost.getHostAddress
+    case "<getHostName>"    => InetAddress.getLocalHost.getHostName
+    case other              => other
   }
 
   sealed trait Transport {

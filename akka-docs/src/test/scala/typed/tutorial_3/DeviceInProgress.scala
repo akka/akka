@@ -33,7 +33,7 @@ object DeviceInProgress2 {
 
   object Device {
     def apply(groupId: String, deviceId: String): Behavior[DeviceMessage] =
-      Behaviors.setup(context ⇒ new Device(context, groupId, deviceId))
+      Behaviors.setup(context => new Device(context, groupId, deviceId))
 
     //#read-protocol-2
     sealed trait DeviceMessage
@@ -53,14 +53,14 @@ object DeviceInProgress2 {
 
     override def onMessage(msg: DeviceMessage): Behavior[DeviceMessage] = {
       msg match {
-        case ReadTemperature(id, replyTo) ⇒
+        case ReadTemperature(id, replyTo) =>
           replyTo ! RespondTemperature(id, lastTemperatureReading)
           this
       }
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[DeviceMessage]] = {
-      case PostStop ⇒
+      case PostStop =>
         context.log.info("Device actor {}-{} stopped", groupId, deviceId)
         this
     }

@@ -30,19 +30,19 @@ protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: B
   }
 
   def receive = {
-    case Register(actor) ⇒
+    case Register(actor) =>
       if (debug) eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
       context watch actor
 
-    case UnregisterIfNoMoreSubscribedChannels(actor) if eventStream.hasSubscriptions(actor) ⇒
+    case UnregisterIfNoMoreSubscribedChannels(actor) if eventStream.hasSubscriptions(actor) =>
     // do nothing
     // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
 
-    case UnregisterIfNoMoreSubscribedChannels(actor) ⇒
+    case UnregisterIfNoMoreSubscribedChannels(actor) =>
       if (debug) eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
       context unwatch actor
 
-    case Terminated(actor) ⇒
+    case Terminated(actor) =>
       if (debug) eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $eventStream, because it was terminated"))
       eventStream unsubscribe actor
   }

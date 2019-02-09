@@ -79,9 +79,9 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def firstOrElse[T <: Props: ClassTag](default: T): T = {
     @tailrec def rec(d: Props): T = {
       d match {
-        case EmptyProps ⇒ default
-        case t: T       ⇒ t
-        case _          ⇒ rec(d.next)
+        case EmptyProps => default
+        case t: T       => t
+        case _          => rec(d.next)
       }
     }
     rec(this)
@@ -98,9 +98,9 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def allOf[T <: Props: ClassTag]: List[Props] = {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyProps ⇒ acc.reverse
-        case _: T       ⇒ select(d.next, (d withNext EmptyProps) :: acc)
-        case _          ⇒ select(d.next, acc)
+        case EmptyProps => acc.reverse
+        case _: T       => select(d.next, (d withNext EmptyProps) :: acc)
+        case _          => select(d.next, acc)
       }
     select(this, Nil)
   }
@@ -113,14 +113,14 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def filterNot[T <: Props: ClassTag]: Props = {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyProps ⇒ acc
-        case _: T       ⇒ select(d.next, acc)
-        case _          ⇒ select(d.next, d :: acc)
+        case EmptyProps => acc
+        case _: T       => select(d.next, acc)
+        case _          => select(d.next, d :: acc)
       }
     @tailrec def link(l: List[Props], acc: Props): Props =
       l match {
-        case d :: ds ⇒ link(ds, d withNext acc)
-        case Nil     ⇒ acc
+        case d :: ds => link(ds, d withNext acc)
+        case Nil     => acc
       }
     link(select(this, Nil), EmptyProps)
   }

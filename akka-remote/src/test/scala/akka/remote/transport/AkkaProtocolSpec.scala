@@ -13,7 +13,7 @@ import akka.remote.transport.Transport._
 import akka.remote.{ WireFormats, FailureDetector }
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.util.ByteString
-import akka.protobuf.{ ByteString ⇒ PByteString }
+import akka.protobuf.{ ByteString => PByteString }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
@@ -93,33 +93,33 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
   def lastActivityIsHeartbeat(registry: AssociationRegistry) =
     if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
         codec.decodePdu(payload) match {
-          case Heartbeat ⇒ true
-          case _         ⇒ false
+          case Heartbeat => true
+          case _         => false
         }
-      case _ ⇒ false
+      case _ => false
     }
 
   def lastActivityIsAssociate(registry: AssociationRegistry, uid: Long, cookie: Option[String]) =
     if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
         codec.decodePdu(payload) match {
-          case Associate(info) ⇒
+          case Associate(info) =>
             info.cookie == cookie && info.origin == localAddress && info.uid == uid
-          case _ ⇒ false
+          case _ => false
         }
-      case _ ⇒ false
+      case _ => false
     }
 
   def lastActivityIsDisassociate(registry: AssociationRegistry) =
     if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
+      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
         codec.decodePdu(payload) match {
-          case Disassociate(_) ⇒ true
-          case _               ⇒ false
+          case Disassociate(_) => true
+          case _               => false
         }
-      case _ ⇒ false
+      case _ => false
     }
 
   "ProtocolStateActor" must {
@@ -154,7 +154,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       awaitCond(failureDetector.called)
 
       val wrappedHandle = expectMsgPF() {
-        case InboundAssociation(h: AkkaProtocolHandle) ⇒
+        case InboundAssociation(h: AkkaProtocolHandle) =>
           h.handshakeInfo.uid should ===(33)
           h
       }
@@ -169,7 +169,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testPayload
 
       expectMsgPF() {
-        case InboundPayload(p) ⇒ p should ===(testEnvelope)
+        case InboundPayload(p) => p should ===(testEnvelope)
       }
     }
 
@@ -191,8 +191,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, cookie = None)
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case DisassociateAttempt(requester, remote) => true
+        case _                                      => false
       })
     }
 
@@ -224,12 +224,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(33, None)
 
       Await.result(statusPromise.future, 3.seconds) match {
-        case h: AkkaProtocolHandle ⇒
+        case h: AkkaProtocolHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h.handshakeInfo.uid should ===(33)
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
     }
@@ -248,8 +248,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, Some("xyzzy"))
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case DisassociateAttempt(requester, remote) => true
+        case _                                      => false
       })
     }
 
@@ -268,7 +268,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, Some("abcde"))
 
       val wrappedHandle = expectMsgPF() {
-        case InboundAssociation(h: AkkaProtocolHandle) ⇒
+        case InboundAssociation(h: AkkaProtocolHandle) =>
           h.handshakeInfo.uid should ===(33)
           h.handshakeInfo.cookie should ===(Some("abcde"))
           h
@@ -322,12 +322,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -358,12 +358,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -394,12 +394,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       stateActor ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -433,12 +433,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       stateActor ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       stateActor ! Disassociated(AssociationHandle.Unknown)

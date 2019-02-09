@@ -14,7 +14,7 @@ import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervis
  * Implements basic backoff handling for [[BackoffOnRestartSupervisor]] and [[BackoffOnStopSupervisor]].
  */
 @InternalApi private[akka] trait HandleBackoff {
-  this: Actor ⇒
+  this: Actor =>
   def childProps: Props
   def childName: String
   def reset: BackoffReset
@@ -34,36 +34,36 @@ import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervis
   }
 
   def handleBackoff: Actor.Receive = {
-    case StartChild ⇒
+    case StartChild =>
       startChild()
       reset match {
-        case AutoReset(resetBackoff) ⇒
+        case AutoReset(resetBackoff) =>
           context.system.scheduler.scheduleOnce(resetBackoff, self, ResetRestartCount(restartCount))
-        case _ ⇒ // ignore
+        case _ => // ignore
       }
 
-    case Reset ⇒
+    case Reset =>
       reset match {
-        case ManualReset ⇒ restartCount = 0
-        case msg         ⇒ unhandled(msg)
+        case ManualReset => restartCount = 0
+        case msg         => unhandled(msg)
       }
 
-    case ResetRestartCount(current) ⇒
+    case ResetRestartCount(current) =>
       if (current == restartCount) {
         restartCount = 0
       }
 
-    case GetRestartCount ⇒
+    case GetRestartCount =>
       sender() ! RestartCount(restartCount)
 
-    case GetCurrentChild ⇒
+    case GetCurrentChild =>
       sender() ! CurrentChild(child)
 
-    case msg if child.contains(sender()) ⇒
+    case msg if child.contains(sender()) =>
       // use the BackoffSupervisor as sender
       context.parent ! msg
 
-    case msg ⇒
+    case msg =>
       handleMessageToChild(msg)
   }
 }

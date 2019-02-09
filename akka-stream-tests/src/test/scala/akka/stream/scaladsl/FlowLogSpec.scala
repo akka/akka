@@ -80,11 +80,11 @@ class FlowLogSpec extends StreamSpec("""
         var finishCounter = 0
         import scala.concurrent.duration._
         logProbe.fishForMessage(3.seconds) {
-          case Logging.Debug(_, _, msg: String) if msg contains "Element: 1" ⇒
+          case Logging.Debug(_, _, msg: String) if msg contains "Element: 1" =>
             counter += 1
             counter == 4 && finishCounter == 4
 
-          case Logging.Debug(_, _, msg: String) if msg contains "Upstream finished" ⇒
+          case Logging.Debug(_, _, msg: String) if msg contains "Upstream finished" =>
             finishCounter += 1
             counter == 4 && finishCounter == 4
         }
@@ -152,7 +152,7 @@ class FlowLogSpec extends StreamSpec("""
 
       "follow supervision strategy when exception thrown" in {
         val ex = new RuntimeException() with NoStackTrace
-        val future = Source(1 to 5).log("hi", n ⇒ throw ex)
+        val future = Source(1 to 5).log("hi", n => throw ex)
           .withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.fold(0)(_ + _))
         Await.result(future, 500.millis) shouldEqual 0
       }
@@ -172,11 +172,11 @@ class FlowLogSpec extends StreamSpec("""
         var counter = 1
         import scala.concurrent.duration._
         logProbe.fishForMessage(3.seconds) {
-          case Logging.Debug(_, _, msg: String) if msg contains "Element: 1" ⇒
+          case Logging.Debug(_, _, msg: String) if msg contains "Element: 1" =>
             counter += 1
             counter == 4
 
-          case Logging.Debug(_, _, msg: String) if msg contains "Upstream finished" ⇒
+          case Logging.Debug(_, _, msg: String) if msg contains "Upstream finished" =>
             false
         }
       }

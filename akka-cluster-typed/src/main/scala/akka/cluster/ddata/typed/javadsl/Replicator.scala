@@ -6,7 +6,7 @@ package akka.cluster.ddata.typed.javadsl
 
 import java.time.Duration
 import java.util.Optional
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import scala.util.control.NoStackTrace
 
@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 import akka.util.JavaDurationConverters._
 
 /**
@@ -161,9 +161,9 @@ object Replicator {
 
   object Update {
 
-    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
-      case Some(data) ⇒ modify(data)
-      case None       ⇒ modify(initial)
+    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
+      case Some(data) => modify(data)
+      case None       => modify(initial)
     }
   }
   /**
@@ -180,7 +180,7 @@ object Replicator {
    * for example not access `sender()` reference of an enclosing actor.
    */
   final case class Update[A <: ReplicatedData] private (key: Key[A], writeConsistency: WriteConsistency,
-                                                        replyTo: ActorRef[UpdateResponse[A]], request: Optional[Any])(val modify: Option[A] ⇒ A)
+                                                        replyTo: ActorRef[UpdateResponse[A]], request: Optional[Any])(val modify: Option[A] => A)
     extends Command with NoSerializationVerificationNeeded {
 
     /**
@@ -193,7 +193,7 @@ object Replicator {
     def this(
       key: Key[A], initial: A, writeConsistency: WriteConsistency, replyTo: ActorRef[UpdateResponse[A]], modify: JFunction[A, A]) =
       this(key, writeConsistency, replyTo, Optional.empty[Any])(
-        Update.modifyWithInitial(initial, data ⇒ modify.apply(data)))
+        Update.modifyWithInitial(initial, data => modify.apply(data)))
 
     /**
      * Modify value of local `Replicator` and replicate with given `writeConsistency`.
@@ -209,7 +209,7 @@ object Replicator {
     def this(
       key: Key[A], initial: A, writeConsistency: WriteConsistency, replyTo: ActorRef[UpdateResponse[A]],
       request: Optional[Any], modify: JFunction[A, A]) =
-      this(key, writeConsistency, replyTo, request)(Update.modifyWithInitial(initial, data ⇒ modify.apply(data)))
+      this(key, writeConsistency, replyTo, request)(Update.modifyWithInitial(initial, data => modify.apply(data)))
 
   }
 

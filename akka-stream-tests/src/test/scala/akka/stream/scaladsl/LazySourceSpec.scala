@@ -25,7 +25,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   "A lazy source" should {
     "work like a normal source, happy path" in assertAllStagesStopped {
-      val result = Source.fromGraph(LazySource(() ⇒ Source(List(1, 2, 3)))).runWith(Sink.seq)
+      val result = Source.fromGraph(LazySource(() => Source(List(1, 2, 3)))).runWith(Sink.seq)
 
       result.futureValue should ===(Seq(1, 2, 3))
     }
@@ -33,14 +33,14 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val result = Source.fromGraph(LazySource { () ⇒ constructed.set(true); Source(List(1, 2, 3)) }).runWith(Sink.fromSubscriber(probe))
+      val result = Source.fromGraph(LazySource { () => constructed.set(true); Source(List(1, 2, 3)) }).runWith(Sink.fromSubscriber(probe))
       probe.cancel()
 
       constructed.get() should ===(false)
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-      val matF = Source.fromGraph(LazySource(() ⇒ Source(List(1, 2, 3))))
+      val matF = Source.fromGraph(LazySource(() => Source(List(1, 2, 3))))
         .toMat(Sink.cancelled)(Keep.left)
         .run()
 
@@ -53,7 +53,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
-      Source.fromGraph(LazySource(() ⇒ Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
+      Source.fromGraph(LazySource(() => Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
 
       outProbe.request(1)
       inProbe.expectRequest()
@@ -66,8 +66,8 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "materialize when the source has been created" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
 
-      val matF: Future[Done] = Source.fromGraph(LazySource { () ⇒
-        Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ Done)
+      val matF: Future[Done] = Source.fromGraph(LazySource { () =>
+        Source(List(1, 2, 3)).mapMaterializedValue(_ => Done)
       }).to(Sink.fromSubscriber(probe))
         .run()
 
@@ -83,7 +83,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val outProbe = TestSubscriber.probe[Int]()
       val inProbe = TestPublisher.probe[Int]()
 
-      Source.fromGraph(LazySource(() ⇒ Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
+      Source.fromGraph(LazySource(() => Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
 
       outProbe.request(1)
       inProbe.expectRequest()
@@ -103,7 +103,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         }
       }
 
-      val result = Source.lazily(() ⇒ Source.fromGraph(FailingInnerMat)).to(Sink.ignore).run()
+      val result = Source.lazily(() => Source.fromGraph(FailingInnerMat)).to(Sink.ignore).run()
 
       result.failed.futureValue should ===(matFail)
 

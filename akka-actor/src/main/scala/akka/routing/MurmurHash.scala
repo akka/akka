@@ -20,7 +20,7 @@
 
 package akka.routing
 
-import java.lang.Integer.{ rotateLeft ⇒ rotl }
+import java.lang.Integer.{ rotateLeft => rotl }
 import akka.util.ccompat._
 
 /**
@@ -134,7 +134,7 @@ object MurmurHash {
   def symmetricHash[T](xs: IterableOnce[T], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.foreach(i ⇒ {
+    xs.foreach(i => {
       val h = i.##
       a += h
       b ^= h

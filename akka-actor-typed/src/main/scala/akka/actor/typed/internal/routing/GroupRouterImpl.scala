@@ -19,16 +19,16 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
   key:          ServiceKey[T],
-  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RandomLogic[T]()
+  logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RandomLogic[T]()
 ) extends javadsl.GroupRouter[T]
   with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] = new GroupRouterImpl[T](ctx.asScala, key, logicFactory())
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
 }
 
@@ -48,12 +48,12 @@ private final class GroupRouterImpl[T](
   private var routeesEmpty = true
 
   def onMessage(msg: T): Behavior[T] = msg match {
-    case serviceKey.Listing(update) ⇒
+    case serviceKey.Listing(update) =>
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
       routeesEmpty = update.isEmpty
       this
-    case msg: T @unchecked ⇒
+    case msg: T @unchecked =>
       if (!routeesEmpty) routingLogic.selectRoutee() ! msg
       else ctx.system.deadLetters ! Dropped(msg, ctx.self)
       this

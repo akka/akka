@@ -17,7 +17,7 @@ import scala.collection.JavaConverters.{ asScalaIteratorConverter, collectionAsS
  */
 class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
-  def this(mapSize: Int, cmp: (V, V) ⇒ Int) = this(mapSize, new Comparator[V] {
+  def this(mapSize: Int, cmp: (V, V) => Int) = this(mapSize, new Comparator[V] {
     def compare(a: V, b: V): Int = cmp(a, b)
   })
 
@@ -72,10 +72,10 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
    * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
-  def findValue(key: K)(f: (V) ⇒ Boolean): Option[V] =
+  def findValue(key: K)(f: (V) => Boolean): Option[V] =
     container get key match {
-      case null ⇒ None
-      case set  ⇒ set.iterator.asScala find f
+      case null => None
+      case set  => set.iterator.asScala find f
     }
 
   /**
@@ -83,16 +83,16 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
    */
   def valueIterator(key: K): scala.Iterator[V] = {
     container.get(key) match {
-      case null ⇒ Iterator.empty
-      case some ⇒ some.iterator.asScala
+      case null => Iterator.empty
+      case some => some.iterator.asScala
     }
   }
 
   /**
    * Applies the supplied function to all keys and their values
    */
-  def foreach(fun: (K, V) ⇒ Unit): Unit =
-    container.entrySet.iterator.asScala foreach { e ⇒ e.getValue.iterator.asScala.foreach(fun(e.getKey, _)) }
+  def foreach(fun: (K, V) => Unit): Unit =
+    container.entrySet.iterator.asScala foreach { e => e.getValue.iterator.asScala.foreach(fun(e.getKey, _)) }
 
   /**
    * Returns the union of all value sets.
@@ -100,8 +100,8 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   def values: Set[V] = {
     val builder = Set.newBuilder[V]
     for {
-      values ← container.values.iterator.asScala
-      v ← values.iterator.asScala
+      values <- container.values.iterator.asScala
+      v <- values.iterator.asScala
     } builder += v
     builder.result()
   }

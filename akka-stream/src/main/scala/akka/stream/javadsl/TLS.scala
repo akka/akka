@@ -100,7 +100,7 @@ object TLS {
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def create(sslContext: SSLContext, sslConfig: Optional[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e => (e.first, e.second))))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -119,7 +119,7 @@ object TLS {
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e => (e.first, e.second))))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]]. This is a low-level interface.
@@ -134,8 +134,8 @@ object TLS {
    */
   def create(sslEngineCreator: Supplier[SSLEngine], sessionVerifier: Consumer[SSLSession], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new javadsl.BidiFlow(scaladsl.TLS.apply(
-      () ⇒ sslEngineCreator.get(),
-      session ⇒ Try(sessionVerifier.accept(session)),
+      () => sslEngineCreator.get(),
+      session => Try(sessionVerifier.accept(session)),
       closing))
 
   /**
@@ -148,7 +148,7 @@ object TLS {
    */
   def create(sslEngineCreator: Supplier[SSLEngine], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new javadsl.BidiFlow(scaladsl.TLS.apply(
-      () ⇒ sslEngineCreator.get(),
+      () => sslEngineCreator.get(),
       closing))
 }
 

@@ -37,10 +37,10 @@ final class RemoteSettings(val config: Config) {
     immutableSeq(getStringList("akka.remote.trusted-selection-paths")).toSet
 
   val RemoteLifecycleEventsLogLevel: LogLevel = toRootLowerCase(getString("akka.remote.log-remote-lifecycle-events")) match {
-    case "on" ⇒ Logging.DebugLevel
-    case other ⇒ Logging.levelFor(other) match {
-      case Some(level) ⇒ level
-      case None        ⇒ throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
+    case "on" => Logging.DebugLevel
+    case other => Logging.levelFor(other) match {
+      case Some(level) => level
+      case None        => throw new ConfigurationException("Logging level must be one of (on, off, debug, info, warning, error)")
     }
   }
 
@@ -73,8 +73,8 @@ final class RemoteSettings(val config: Config) {
   val LogBufferSizeExceeding: Int = {
     val key = "akka.remote.log-buffer-size-exceeding"
     config.getString(key).toLowerCase match {
-      case "off" | "false" ⇒ Int.MaxValue
-      case _               ⇒ config.getInt(key)
+      case "off" | "false" => Int.MaxValue
+      case _               => config.getInt(key)
     }
   }
 
@@ -124,7 +124,7 @@ final class RemoteSettings(val config: Config) {
     WatchFailureDetectorConfig.getMillisDuration("expected-response-after")
   } requiring (_ > Duration.Zero, "watch-failure-detector.expected-response-after > 0")
 
-  val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name ⇒
+  val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name =>
     val transportConfig = transportConfigFor(name)
     (
       transportConfig.getString("transport-class"),
@@ -139,6 +139,6 @@ final class RemoteSettings(val config: Config) {
   private def transportConfigFor(transportName: String): Config = getConfig(transportName)
 
   private def configToMap(cfg: Config): Map[String, String] =
-    cfg.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
+    cfg.root.unwrapped.asScala.toMap.map { case (k, v) => (k, v.toString) }
 
 }

@@ -67,12 +67,12 @@ object PersistenceQueryDocSpec {
      */
     override def eventsByTag(
       tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = offset match {
-      case Sequence(offsetValue) ⇒
+      case Sequence(offsetValue) =>
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
-          .mapMaterializedValue(_ ⇒ NotUsed)
-      case NoOffset ⇒ eventsByTag(tag, Sequence(0L)) //recursive
-      case _ ⇒
+          .mapMaterializedValue(_ => NotUsed)
+      case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
+      case _ =>
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
 
@@ -166,7 +166,7 @@ object PersistenceQueryDocSpec {
     // Using an example (Reactive Streams) Database driver
     readJournal
       .eventsByPersistenceId("user-1337", fromSequenceNr = 0L, toSequenceNr = Long.MaxValue)
-      .map(envelope ⇒ envelope.event)
+      .map(envelope => envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
       .runWith(Sink.fromSubscriber(dbBatchWriter)) // write batches to read-side database
@@ -180,7 +180,7 @@ object PersistenceQueryDocSpec {
     var state: ComplexState = ComplexState()
 
     def receive = {
-      case m ⇒
+      case m =>
         state = updateState(state, m)
         if (state.readyToSave) store.save(Record(state))
     }
@@ -223,7 +223,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
 
     // materialize stream, consuming events
     implicit val mat = ActorMaterializer()
-    source.runForeach { event ⇒ println("Event: " + event) }
+    source.runForeach { event => println("Event: " + event) }
     //#basic-usage
 
     //#all-persistence-ids-live
@@ -261,12 +261,12 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
       readJournal.byTagsWithMeta(Set("red", "blue"))
 
     query
-      .mapMaterializedValue { meta ⇒
+      .mapMaterializedValue { meta =>
         println(s"The query is: " +
           s"ordered deterministically: ${meta.deterministicOrder}, " +
           s"infinite: ${meta.infinite}")
       }
-      .map { event ⇒ println(s"Event payload: ${event.payload}") }
+      .map { event => println(s"Event payload: ${event.payload}") }
       .runWith(Sink.ignore)
 
     //#advanced-journal-query-usage
@@ -293,11 +293,11 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     val writerProps = Props(classOf[TheOneWhoWritesToQueryJournal], "bid")
     val writer = system.actorOf(writerProps, "bid-projection-writer")
 
-    bidProjection.latestOffset.foreach { startFromOffset ⇒
+    bidProjection.latestOffset.foreach { startFromOffset =>
       readJournal
         .eventsByTag("bid", Sequence(startFromOffset))
-        .mapAsync(8) { envelope ⇒ (writer ? envelope.event).map(_ ⇒ envelope.offset) }
-        .mapAsync(1) { offset ⇒ bidProjection.saveProgress(offset) }
+        .mapAsync(8) { envelope => (writer ? envelope.event).map(_ => envelope.offset) }
+        .mapAsync(1) { offset => bidProjection.saveProgress(offset) }
         .runWith(Sink.ignore)
     }
     //#projection-into-different-store-actor-run
@@ -319,7 +319,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
 
     readJournal
       .eventsByTag("bid", NoOffset)
-      .mapAsync(1) { e ⇒ store.save(e) }
+      .mapAsync(1) { e => store.save(e) }
       .runWith(Sink.ignore)
     //#projection-into-different-store-simple
   }

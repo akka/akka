@@ -27,7 +27,7 @@ class SeqSinkSpec extends StreamSpec {
 
     "return an empty Seq[T] from an empty Source" in {
       val input: immutable.Seq[Int] = Nil
-      val future: Future[immutable.Seq[Int]] = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.seq)
+      val future: Future[immutable.Seq[Int]] = Source.fromIterator(() => input.iterator).runWith(Sink.seq)
       val result: immutable.Seq[Int] = Await.result(future, remainingOrDefault)
       result should be(input)
     }

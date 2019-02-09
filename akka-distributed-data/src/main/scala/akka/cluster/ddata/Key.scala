@@ -27,8 +27,8 @@ object Key {
 abstract class Key[+T <: ReplicatedData](val id: Key.KeyId) extends Serializable {
 
   override final def equals(o: Any): Boolean = o match {
-    case k: Key[_] ⇒ id == k.id
-    case _         ⇒ false
+    case k: Key[_] => id == k.id
+    case _         => false
   }
 
   override final def hashCode: Int = id.hashCode

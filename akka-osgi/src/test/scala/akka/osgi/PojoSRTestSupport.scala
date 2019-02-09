@@ -49,7 +49,7 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     try {
       ServiceLoader.load(classOf[PojoServiceRegistryFactory]).iterator.next.newPojoServiceRegistry(config).getBundleContext
     } catch {
-      case e: Throwable ⇒ oldErr.write(bufferedLoadingErrors.toByteArray); throw e
+      case e: Throwable => oldErr.write(bufferedLoadingErrors.toByteArray); throw e
     } finally {
       System.setErr(oldErr)
     }
@@ -76,13 +76,13 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   def awaitReference[T](serviceType: Class[T], wait: FiniteDuration): ServiceReference[T] = {
 
     @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference[T] = context.getServiceReference(serviceType.getName) match {
-      case null ⇒
+      case null =>
         if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
         else {
           Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
           poll(step, deadline)
         }
-      case some ⇒ some.asInstanceOf[ServiceReference[T]]
+      case some => some.asInstanceOf[ServiceReference[T]]
     }
 
     poll(wait, Deadline.now + MaxWaitDuration)
@@ -91,8 +91,8 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   protected def buildTestBundles(builders: immutable.Seq[BundleDescriptorBuilder]): immutable.Seq[BundleDescriptor] =
     builders map (_.build)
 
-  def filterErrors()(block: ⇒ Unit): Unit =
-    try block catch { case e: Throwable ⇒ System.err.write(bufferedLoadingErrors.toByteArray); throw e }
+  def filterErrors()(block: => Unit): Unit =
+    try block catch { case e: Throwable => System.err.write(bufferedLoadingErrors.toByteArray); throw e }
 }
 
 object PojoSRTestSupport {
@@ -148,7 +148,7 @@ class BundleDescriptorBuilder(name: String) {
     val headers = new HashMap[String, String]()
     val jis = new JarInputStream(new FileInputStream(file))
     try {
-      for (entry ← jis.getManifest.getMainAttributes.entrySet.asScala)
+      for (entry <- jis.getManifest.getMainAttributes.entrySet.asScala)
         headers.put(entry.getKey.toString, entry.getValue.toString)
     } finally jis.close()
 

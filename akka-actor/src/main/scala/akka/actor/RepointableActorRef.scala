@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import java.util.{ LinkedList ⇒ JLinkedList }
+import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
@@ -73,13 +73,13 @@ private[akka] class RepointableActorRef(
    */
   def initialize(async: Boolean): this.type =
     underlying match {
-      case null ⇒
+      case null =>
         swapCell(new UnstartedCell(system, this, props, supervisor))
         swapLookup(underlying)
         supervisor.sendSystemMessage(Supervise(this, async))
         if (!async) point(false)
         this
-      case _ ⇒ throw new IllegalStateException("initialize called more than once!")
+      case _ => throw new IllegalStateException("initialize called more than once!")
     }
 
   /**
@@ -90,11 +90,11 @@ private[akka] class RepointableActorRef(
    */
   def point(catchFailures: Boolean): this.type =
     underlying match {
-      case u: UnstartedCell ⇒
+      case u: UnstartedCell =>
         val cell =
           try newCell(u)
           catch {
-            case NonFatal(ex) if catchFailures ⇒
+            case NonFatal(ex) if catchFailures =>
               val safeDispatcher = system.dispatchers.defaultGlobalDispatcher
               new ActorCell(system, this, props, safeDispatcher, supervisor).initWithFailure(ex)
           }
@@ -109,8 +109,8 @@ private[akka] class RepointableActorRef(
         cell.start()
         u.replaceWith(cell)
         this
-      case null ⇒ throw new IllegalStateException("underlying cell is null")
-      case _    ⇒ this // this happens routinely for things which were created async=false
+      case null => throw new IllegalStateException("underlying cell is null")
+      case _    => this // this happens routinely for things which were created async=false
     }
 
   /**
@@ -131,9 +131,9 @@ private[akka] class RepointableActorRef(
   def restart(cause: Throwable): Unit = underlying.restart(cause)
 
   def isStarted: Boolean = underlying match {
-    case _: UnstartedCell ⇒ false
-    case null             ⇒ throw new IllegalStateException("isStarted called before initialized")
-    case _                ⇒ true
+    case _: UnstartedCell => false
+    case null             => throw new IllegalStateException("isStarted called before initialized")
+    case _                => true
   }
 
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") def isTerminated: Boolean = underlying.isTerminated
@@ -147,16 +147,16 @@ private[akka] class RepointableActorRef(
   def getChild(name: Iterator[String]): InternalActorRef =
     if (name.hasNext) {
       name.next match {
-        case ".." ⇒ getParent.getChild(name)
-        case ""   ⇒ getChild(name)
-        case other ⇒
+        case ".." => getParent.getChild(name)
+        case ""   => getChild(name)
+        case other =>
           val (childName, uid) = ActorCell.splitNameAndUid(other)
           lookup.getChildByName(childName) match {
-            case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid ⇒
+            case Some(crs: ChildRestartStats) if uid == ActorCell.undefinedUid || uid == crs.uid =>
               crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case _ ⇒ lookup match {
-              case ac: ActorCell ⇒ ac.getFunctionRefOrNobody(childName, uid)
-              case _             ⇒ Nobody
+            case _ => lookup match {
+              case ac: ActorCell => ac.getFunctionRefOrNobody(childName, uid)
+              case _             => Nobody
             }
           }
       }
@@ -196,7 +196,7 @@ private[akka] class UnstartedCell(
   // ACCESS MUST BE PROTECTED BY THE LOCK
   private[this] var sysmsgQueue: LatestFirstSystemMessageList = SystemMessageList.LNil
 
-  import systemImpl.settings.UnstartedPushTimeout.{ duration ⇒ timeout }
+  import systemImpl.settings.UnstartedPushTimeout.{ duration => timeout }
 
   def replaceWith(cell: Cell): Unit = locked {
     try {
@@ -285,7 +285,7 @@ private[akka] class UnstartedCell(
     if (cellIsReady(cell)) cell.numberOfMessages else queue.size
   }
 
-  private[this] final def locked[T](body: ⇒ T): T = {
+  private[this] final def locked[T](body: => T): T = {
     lock.lock()
     try body finally lock.unlock()
   }

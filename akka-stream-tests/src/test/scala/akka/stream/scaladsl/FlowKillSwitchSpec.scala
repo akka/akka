@@ -49,7 +49,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val (((upstream, switch1), switch2), downstream) =
         TestSource.probe[Int]
           .viaMat(KillSwitches.single)(Keep.both)
-          .recover { case TE(_) ⇒ -1 }
+          .recover { case TE(_) => -1 }
           .viaMat(KillSwitches.single)(Keep.both)
           .toMat(TestSink.probe)(Keep.both).run()
 
@@ -274,7 +274,7 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch1 = KillSwitches.shared("switch")
       val switch2 = KillSwitches.shared("switch")
 
-      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b ⇒ snk ⇒
+      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b => snk =>
         import GraphDSL.Implicits._
         val merge = b.add(Merge[Int](2))
 

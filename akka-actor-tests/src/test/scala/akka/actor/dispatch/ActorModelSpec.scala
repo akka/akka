@@ -80,21 +80,21 @@ object ActorModelSpec {
     }
 
     def receive = {
-      case AwaitLatch(latch)            ⇒ { ack(); latch.await(); busy.switchOff(()) }
-      case Meet(sign, wait)             ⇒ { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
-      case Wait(time)                   ⇒ { ack(); Thread.sleep(time); busy.switchOff(()) }
-      case WaitAck(time, l)             ⇒ { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
-      case Reply(msg)                   ⇒ { ack(); sender() ! msg; busy.switchOff(()) }
-      case TryReply(msg)                ⇒ { ack(); sender().tell(msg, null); busy.switchOff(()) }
-      case Forward(to, msg)             ⇒ { ack(); to.forward(msg); busy.switchOff(()) }
-      case CountDown(latch)             ⇒ { ack(); latch.countDown(); busy.switchOff(()) }
-      case Increment(count)             ⇒ { ack(); count.incrementAndGet(); busy.switchOff(()) }
-      case CountDownNStop(l)            ⇒ { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
-      case Restart                      ⇒ { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
-      case Interrupt                    ⇒ { ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
-      case InterruptNicely(msg)         ⇒ { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
-      case ThrowException(e: Throwable) ⇒ { ack(); busy.switchOff(()); throw e }
-      case DoubleStop                   ⇒ { ack(); context.stop(self); context.stop(self); busy.switchOff }
+      case AwaitLatch(latch)            => { ack(); latch.await(); busy.switchOff(()) }
+      case Meet(sign, wait)             => { ack(); sign.countDown(); wait.await(); busy.switchOff(()) }
+      case Wait(time)                   => { ack(); Thread.sleep(time); busy.switchOff(()) }
+      case WaitAck(time, l)             => { ack(); Thread.sleep(time); l.countDown(); busy.switchOff(()) }
+      case Reply(msg)                   => { ack(); sender() ! msg; busy.switchOff(()) }
+      case TryReply(msg)                => { ack(); sender().tell(msg, null); busy.switchOff(()) }
+      case Forward(to, msg)             => { ack(); to.forward(msg); busy.switchOff(()) }
+      case CountDown(latch)             => { ack(); latch.countDown(); busy.switchOff(()) }
+      case Increment(count)             => { ack(); count.incrementAndGet(); busy.switchOff(()) }
+      case CountDownNStop(l)            => { ack(); l.countDown(); context.stop(self); busy.switchOff(()) }
+      case Restart                      => { ack(); busy.switchOff(()); throw new Exception("Restart requested") }
+      case Interrupt                    => { ack(); sender() ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(()); throw new InterruptedException("Ping!") }
+      case InterruptNicely(msg)         => { ack(); sender() ! msg; busy.switchOff(()); Thread.currentThread().interrupt() }
+      case ThrowException(e: Throwable) => { ack(); busy.switchOff(()); throw e }
+      case DoubleStop                   => { ack(); context.stop(self); context.stop(self); busy.switchOff }
     }
   }
 
@@ -117,13 +117,13 @@ object ActorModelSpec {
 
     def getStats(actorRef: ActorRef) = {
       stats.get(actorRef) match {
-        case null ⇒
+        case null =>
           val is = new InterceptorStats
           stats.putIfAbsent(actorRef, is) match {
-            case null  ⇒ is
-            case other ⇒ other
+            case null  => is
+            case other => other
           }
-        case existing ⇒ existing
+        case existing => existing
       }
 
     }
@@ -166,7 +166,7 @@ object ActorModelSpec {
     try {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
         system.eventStream.publish(Error(e, dispatcher.toString, dispatcher.getClass, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
@@ -223,7 +223,7 @@ object ActorModelSpec {
       await(deadline)(stats.msgsProcessed.get() == msgsProcessed)
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
         system.eventStream.publish(Error(
           e,
           Option(dispatcher).toString,
@@ -235,14 +235,14 @@ object ActorModelSpec {
     }
   }
 
-  @tailrec def await(until: Long)(condition: ⇒ Boolean): Unit =
+  @tailrec def await(until: Long)(condition: => Boolean): Unit =
     if (System.currentTimeMillis() <= until) {
       var done = false
       try {
         done = condition
         if (!done) Thread.sleep(25)
       } catch {
-        case _: InterruptedException ⇒
+        case _: InterruptedException =>
       }
       if (!done) await(until)(condition)
     } else throw new AssertionError("await failed")
@@ -256,8 +256,8 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
   def awaitStarted(ref: ActorRef): Unit = {
     awaitCond(ref match {
-      case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
+      case r: RepointableRef => r.isStarted
+      case _                 => true
     }, 1 second, 10 millis)
   }
 
@@ -282,11 +282,11 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         msgsProcessed = 0,
         restarts = 0)
 
-      for (i ← 1 to 10) yield Future { i }
+      for (i <- 1 to 10) yield Future { i }
       assertDispatcher(dispatcher)(stops = 2)
 
       val a2 = newTestActor(dispatcher.id)
-      for (i ← 1 to 10) yield Future { i }
+      for (i <- 1 to 10) yield Future { i }
 
       assertDispatcher(dispatcher)(stops = 2)
 
@@ -319,9 +319,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val counter = new CountDownLatch(200)
       val a = newTestActor(dispatcher.id)
 
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         spawn {
-          for (_ ← 1 to 20) {
+          for (_ <- 1 to 20) {
             a ! WaitAck(1, counter)
           }
         }
@@ -332,11 +332,11 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       system.stop(a)
     }
 
-    def spawn(f: ⇒ Unit): Unit = {
+    def spawn(f: => Unit): Unit = {
       (new Thread {
         override def run(): Unit =
           try f catch {
-            case e: Throwable ⇒ system.eventStream.publish(Error(e, "spawn", this.getClass, "error in spawned thread"))
+            case e: Throwable => system.eventStream.publish(Error(e, "spawn", this.getClass, "error in spawned thread"))
           }
       }).start()
     }
@@ -372,8 +372,8 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val waitTime = (20 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
-            case "run"         ⇒ for (_ ← 1 to num) context.watch(context.actorOf(props)) ! cachedMessage
-            case Terminated(_) ⇒ stopLatch.countDown()
+            case "run"         => for (_ <- 1 to num) context.watch(context.actorOf(props)) ! cachedMessage
+            case Terminated(_) => stopLatch.countDown()
           }
         }).withDispatcher("boss"))
         try {
@@ -389,9 +389,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           try {
             assertCountDown(cachedMessage.latch, waitTime, "Counting down from " + num)
           } catch {
-            case e: Throwable ⇒
+            case e: Throwable =>
               dispatcher match {
-                case dispatcher: BalancingDispatcher ⇒
+                case dispatcher: BalancingDispatcher =>
                   val team = dispatcher.team
                   val mq = dispatcher.messageQueue
 
@@ -400,14 +400,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                   import scala.collection.JavaConverters._
                   team.asScala.toList
                     .sortBy(_.self.path)
-                    .foreach { cell: ActorCell ⇒
+                    .foreach { cell: ActorCell =>
                       System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
                         + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
                     }
 
                   System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
                   Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println
-                case _ ⇒
+                case _ =>
               }
 
               throw e
@@ -418,7 +418,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           system.stop(boss)
         }
       }
-      for (run ← 1 to 3) {
+      for (run <- 1 to 3) {
         flood(10000)
         assertDispatcher(dispatcher)(stops = run)
       }
@@ -443,9 +443,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           val c = system.scheduler.scheduleOnce(2.seconds) {
             import collection.JavaConverters._
             Thread.getAllStackTraces().asScala foreach {
-              case (thread, stack) ⇒
+              case (thread, stack) =>
                 println(s"$thread:")
-                stack foreach (s ⇒ println(s"\t$s"))
+                stack foreach (s => println(s"\t$s"))
             }
           }
           assert(Await.result(f1, timeout.duration) === "foo")
@@ -503,7 +503,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "not double-deregister" in {
       implicit val dispatcher = interceptedDispatcher()
-      for (_ ← 1 to 1000) system.actorOf(Props.empty)
+      for (_ <- 1 to 1000) system.actorOf(Props.empty)
       val a = newTestActor(dispatcher.id)
       a ! DoubleStop
       awaitCond(statsFor(a, dispatcher).registers.get == 1)
@@ -523,7 +523,7 @@ object DispatcherModelSpec {
       }
     """ +
       // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
-      (for (n ← 1 to 30) yield """
+      (for (n <- 1 to 30) yield """
         test-dispatcher-%s {
           type = "akka.actor.dispatch.DispatcherModelSpec$MessageDispatcherInterceptorConfigurator"
         }""".format(n)).mkString
@@ -596,7 +596,7 @@ object BalancingDispatcherModelSpec {
       }
     """ +
       // use unique dispatcher id for each test, since MessageDispatcherInterceptor holds state
-      (for (n ← 1 to 30) yield """
+      (for (n <- 1 to 30) yield """
         test-balancing-dispatcher-%s {
           type = "akka.actor.dispatch.BalancingDispatcherModelSpec$BalancingMessageDispatcherInterceptorConfigurator"
           throughput=1

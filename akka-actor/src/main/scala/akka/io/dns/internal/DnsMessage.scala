@@ -135,17 +135,17 @@ private[internal] object Message {
     val nsCount = it.getShort
     val arCount = it.getShort
 
-    val qs = (0 until qdCount).map { _ ⇒ Try(Question.parse(it, msg)) }
-    val ans = (0 until anCount).map { _ ⇒ Try(ResourceRecord.parse(it, msg)) }
-    val nss = (0 until nsCount).map { _ ⇒ Try(ResourceRecord.parse(it, msg)) }
-    val ars = (0 until arCount).map { _ ⇒ Try(ResourceRecord.parse(it, msg)) }
+    val qs = (0 until qdCount).map { _ => Try(Question.parse(it, msg)) }
+    val ans = (0 until anCount).map { _ => Try(ResourceRecord.parse(it, msg)) }
+    val nss = (0 until nsCount).map { _ => Try(ResourceRecord.parse(it, msg)) }
+    val ars = (0 until arCount).map { _ => Try(ResourceRecord.parse(it, msg)) }
 
     import scala.language.implicitConversions
     implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
       if (flags.isTruncated) tried.toOption
       else tried match {
-        case Success(value)  ⇒ Some(value)
-        case Failure(reason) ⇒ throw reason
+        case Success(value)  => Some(value)
+        case Failure(reason) => throw reason
       }
 
     new Message(id, flags, qs.flatten, ans.flatten, nss.flatten, ars.flatten)

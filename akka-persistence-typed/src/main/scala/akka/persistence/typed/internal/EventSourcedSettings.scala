@@ -25,9 +25,9 @@ import com.typesafe.config.Config
     val typedConfig = config.getConfig("akka.persistence.typed")
 
     val stashOverflowStrategy = typedConfig.getString("stash-overflow-strategy").toLowerCase match {
-      case "drop" ⇒ StashOverflowStrategy.Drop
-      case "fail" ⇒ StashOverflowStrategy.Fail
-      case unknown ⇒
+      case "drop" => StashOverflowStrategy.Drop
+      case "fail" => StashOverflowStrategy.Fail
+      case unknown =>
         throw new IllegalArgumentException(s"Unknown value for stash-overflow-strategy: [$unknown]")
     }
 

@@ -17,13 +17,13 @@ private[persistence] object LeveldbCompaction {
  * Exposure of LevelDB compaction capability to reduce journal size upon message deletions.
  */
 private[persistence] trait LeveldbCompaction extends Actor with ActorLogging with CompactionSegmentManagement {
-  this: LeveldbStore ⇒
+  this: LeveldbStore =>
 
   import Key._
   import LeveldbCompaction._
 
   def receiveCompactionInternal: Receive = {
-    case TryCompactLeveldb(persistenceId, toSeqNr) ⇒
+    case TryCompactLeveldb(persistenceId, toSeqNr) =>
       tryCompactOnDelete(persistenceId, toSeqNr)
   }
 
@@ -68,7 +68,7 @@ private[persistence] trait CompactionSegmentManagement {
   def compactionIntervals: Map[String, Long]
 
   def updateCompactionSegment(persistenceId: String, compactionSegment: Long): Unit = {
-    latestCompactionSegments += persistenceId → compactionSegment
+    latestCompactionSegments += persistenceId -> compactionSegment
   }
 
   def compactionLimit(persistenceId: String, toSeqNr: Long): Long = {

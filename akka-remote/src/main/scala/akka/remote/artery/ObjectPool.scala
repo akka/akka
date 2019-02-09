@@ -9,7 +9,7 @@ import org.agrona.concurrent.ManyToManyConcurrentArrayQueue
 /**
  * INTERNAL API
  */
-private[remote] class ObjectPool[A <: AnyRef](capacity: Int, create: () ⇒ A, clear: A ⇒ Unit) {
+private[remote] class ObjectPool[A <: AnyRef](capacity: Int, create: () => A, clear: A => Unit) {
   private val pool = new ManyToManyConcurrentArrayQueue[A](capacity)
 
   def acquire(): A = {

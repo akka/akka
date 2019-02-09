@@ -75,7 +75,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
       } else config
 
     super.parseConfig(path, config2) match {
-      case d @ Some(deploy) ⇒
+      case d @ Some(deploy) =>
         if (deploy.config.getBoolean("cluster.enabled")) {
           if (deploy.scope != NoScopeGiven)
             throw new ConfigurationException("Cluster deployment can't be combined with scope [%s]".format(deploy.scope))
@@ -83,17 +83,17 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
           deploy.routerConfig match {
-            case r: Pool ⇒
+            case r: Pool =>
               Some(deploy.copy(
                 routerConfig = ClusterRouterPool(r, ClusterRouterPoolSettings.fromConfig(deploy.config)), scope = ClusterScope))
-            case r: Group ⇒
+            case r: Group =>
               Some(deploy.copy(
                 routerConfig = ClusterRouterGroup(r, ClusterRouterGroupSettings.fromConfig(deploy.config)), scope = ClusterScope))
-            case other ⇒
+            case other =>
               throw new IllegalArgumentException(s"Cluster aware router can only wrap Pool or Group, got [${other.getClass.getName}]")
           }
         } else d
-      case None ⇒ None
+      case None => None
     }
   }
 

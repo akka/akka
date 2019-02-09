@@ -34,10 +34,10 @@ class SimpleService extends Actor with ActorLogging {
   context.system.scheduler.schedule(1.second, 1.second, self, ResetCount)
 
   override def receive = {
-    case ResetCount ⇒
+    case ResetCount =>
       messageCount = 0
 
-    case Request(content) ⇒
+    case Request(content) =>
       messageCount += 1
       // simulate workload
       Thread.sleep(100 * messageCount)
@@ -66,30 +66,30 @@ class CircuitBreaker(potentiallyFailingService: ActorRef) extends Actor with Act
         .copy(
           failureDetector = {
             _ match {
-              case Response(Left(_)) ⇒ true
-              case _                 ⇒ false
+              case Response(Left(_)) => true
+              case _                 => false
             }
           })
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
   override def receive: Receive = {
-    case AskFor(requestToForward) ⇒
+    case AskFor(requestToForward) =>
       serviceCircuitBreaker ! Request(requestToForward)
 
-    case Right(Response(content)) ⇒
+    case Right(Response(content)) =>
       //handle response
       log.info("Got successful response {}", content)
 
-    case Response(Right(content)) ⇒
+    case Response(Right(content)) =>
       //handle response
       log.info("Got successful response {}", content)
 
-    case Response(Left(content)) ⇒
+    case Response(Left(content)) =>
       //handle response
       log.info("Got failed response {}", content)
 
-    case CircuitOpenFailure(failedMsg) ⇒
+    case CircuitOpenFailure(failedMsg) =>
       log.warning("Unable to send message {}", failedMsg)
   }
 }
@@ -108,12 +108,12 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
         .copy(
           failureDetector = {
             _ match {
-              case Response(Left(_)) ⇒ true
-              case _                 ⇒ false
+              case Response(Left(_)) => true
+              case _                 => false
             }
           })
         .copy(
-          openCircuitFailureConverter = { failure ⇒
+          openCircuitFailureConverter = { failure =>
             Left(s"Circuit open when processing ${failure.failedMsg}")
           })
         .props(potentiallyFailingService),
@@ -122,17 +122,17 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
   import context.dispatcher
 
   override def receive: Receive = {
-    case AskFor(requestToForward) ⇒
+    case AskFor(requestToForward) =>
       (serviceCircuitBreaker ? Request(requestToForward)).mapTo[Either[String, String]].onComplete {
-        case Success(Right(successResponse)) ⇒
+        case Success(Right(successResponse)) =>
           //handle response
           log.info("Got successful response {}", successResponse)
 
-        case Success(Left(failureResponse)) ⇒
+        case Success(Left(failureResponse)) =>
           //handle response
           log.info("Got successful response {}", failureResponse)
 
-        case Failure(exception) ⇒
+        case Failure(exception) =>
           //handle response
           log.info("Got successful response {}", exception)
 
@@ -158,13 +158,13 @@ class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends 
   import context.dispatcher
 
   override def receive: Receive = {
-    case AskFor(requestToForward) ⇒
+    case AskFor(requestToForward) =>
       (serviceCircuitBreaker ? Request(requestToForward)).failForOpenCircuit.mapTo[String].onComplete {
-        case Success(successResponse) ⇒
+        case Success(successResponse) =>
           //handle response
           log.info("Got successful response {}", successResponse)
 
-        case Failure(exception) ⇒
+        case Failure(exception) =>
           //handle response
           log.info("Got successful response {}", exception)
 
@@ -189,13 +189,13 @@ class CircuitBreakerAskWithCircuitBreaker(potentiallyFailingService: ActorRef) e
   import context.dispatcher
 
   override def receive: Receive = {
-    case AskFor(requestToForward) ⇒
+    case AskFor(requestToForward) =>
       serviceCircuitBreaker.askWithCircuitBreaker(Request(requestToForward)).mapTo[String].onComplete {
-        case Success(successResponse) ⇒
+        case Success(successResponse) =>
           //handle response
           log.info("Got successful response {}", successResponse)
 
-        case Failure(exception) ⇒
+        case Failure(exception) =>
           //handle response
           log.info("Got successful response {}", exception)
 

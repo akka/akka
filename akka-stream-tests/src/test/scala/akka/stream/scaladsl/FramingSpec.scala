@@ -85,11 +85,11 @@ class FramingSpec extends StreamSpec {
         .named("lineFraming")
 
     def completeTestSequences(delimiter: ByteString): immutable.Iterable[ByteString] =
-      for (prefix ← delimiter.indices; s ← baseTestSequences)
+      for (prefix <- delimiter.indices; s <- baseTestSequences)
         yield delimiter.take(prefix) ++ s
 
     "work with various delimiters and test sequences" in {
-      for (delimiter ← delimiterBytes; _ ← 1 to 5) {
+      for (delimiter <- delimiterBytes; _ <- 1 to 5) {
         val testSequence = completeTestSequences(delimiter)
         val f = Source(testSequence)
           .map(_ ++ delimiter)
@@ -167,8 +167,8 @@ class FramingSpec extends StreamSpec {
       val header = {
         val h = (new ByteStringBuilder).putInt(payload.size)(byteOrder).result()
         byteOrder match {
-          case ByteOrder.LITTLE_ENDIAN ⇒ h.take(fieldLength)
-          case ByteOrder.BIG_ENDIAN    ⇒ h.drop(4 - fieldLength)
+          case ByteOrder.LITTLE_ENDIAN => h.take(fieldLength)
+          case ByteOrder.BIG_ENDIAN    => h.drop(4 - fieldLength)
         }
       }
       offset ++ header ++ payload ++ tail
@@ -176,12 +176,12 @@ class FramingSpec extends StreamSpec {
 
     "work with various byte orders, frame lengths and offsets" taggedAs LongRunningTest in {
       for {
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
       } {
 
-        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length ⇒
+        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length =>
           val payload = referenceChunk.take(length)
           encode(payload, fieldOffset, fieldLength, byteOrder)
         }
@@ -198,9 +198,9 @@ class FramingSpec extends StreamSpec {
 
     "work with various byte orders, frame lengths and offsets using computeFrameSize" taggedAs LongRunningTest in {
       for {
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
       } {
 
         def computeFrameSize(offset: Array[Byte], length: Int): Int = {
@@ -214,7 +214,7 @@ class FramingSpec extends StreamSpec {
           arr
         }
 
-        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length ⇒
+        val encodedFrames = frameLengths.filter(_ < (1L << (fieldLength * 8))).map { length =>
           val payload = referenceChunk.take(length)
           val offsetBytes = offset()
           val tailBytes = if (offsetBytes.length > 0) new Array[Byte](offsetBytes(0)) else Array.empty[Byte]
@@ -241,8 +241,8 @@ class FramingSpec extends StreamSpec {
       val groupSize = 5
       val single = encode(referenceChunk.take(100), 0, 1, ByteOrder.BIG_ENDIAN)
       val groupedFrames = (1 to groupSize)
-        .map(_ ⇒ single)
-        .fold(ByteString.empty)((result, bs) ⇒ result ++ bs)
+        .map(_ => single)
+        .fold(ByteString.empty)((result, bs) => result ++ bs)
 
       val publisher = TestPublisher.probe[ByteString]()
       val substriber = TestSubscriber.manualProbe[ByteString]()
@@ -256,7 +256,7 @@ class FramingSpec extends StreamSpec {
 
       publisher.sendNext(groupedFrames)
       publisher.sendComplete()
-      for (_ ← 1 to groupSize) {
+      for (_ <- 1 to groupSize) {
         subscription.request(1)
         substriber.expectNext(single)
       }
@@ -278,11 +278,11 @@ class FramingSpec extends StreamSpec {
 
     "report truncated frames" taggedAs LongRunningTest in {
       for {
-        //_ ← 1 to 10
-        byteOrder ← byteOrders
-        fieldOffset ← fieldOffsets
-        fieldLength ← fieldLengths
-        frameLength ← frameLengths if frameLength < (1 << (fieldLength * 8)) && (frameLength != 0)
+        //_ <- 1 to 10
+        byteOrder <- byteOrders
+        fieldOffset <- fieldOffsets
+        fieldLength <- fieldLengths
+        frameLength <- frameLengths if frameLength < (1 << (fieldLength * 8)) && (frameLength != 0)
       } {
 
         val fullFrame = encode(referenceChunk.take(frameLength), fieldOffset, fieldLength, byteOrder)

@@ -95,7 +95,7 @@ final class MessageBuffer private (
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: (Any, ActorRef) ⇒ Unit): Unit = {
+  def foreach(f: (Any, ActorRef) => Unit): Unit = {
     var node = _head
     while (node ne null) {
       node(f)
@@ -110,12 +110,12 @@ final class MessageBuffer private (
    *
    * @param f the function to apply to each element
    */
-  def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) ⇒ f(message, ref) }
+  def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) => f(message, ref) }
 }
 
 object MessageBuffer {
   private final class Node(var next: Node, val message: Any, val ref: ActorRef) {
-    def apply(f: (Any, ActorRef) ⇒ Unit): Unit = {
+    def apply(f: (Any, ActorRef) => Unit): Unit = {
       f(message, ref)
     }
   }
@@ -134,7 +134,7 @@ object MessageBuffer {
  * @tparam I (Id type)
  */
 final class MessageBufferMap[I] {
-  import java.{ util ⇒ jutil }
+  import java.{ util => jutil }
 
   private val bufferMap = new jutil.HashMap[I, MessageBuffer]
 
@@ -236,7 +236,7 @@ final class MessageBufferMap[I] {
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: (I, MessageBuffer) ⇒ Unit): Unit = {
+  def foreach(f: (I, MessageBuffer) => Unit): Unit = {
     val entries = bufferMap.entrySet().iterator()
     while (entries.hasNext) {
       val entry = entries.next()
@@ -251,5 +251,5 @@ final class MessageBufferMap[I] {
    *
    * @param f the function to apply to each element
    */
-  def forEach(f: Procedure2[I, MessageBuffer]): Unit = foreach { case (id, buffer) ⇒ f(id, buffer) }
+  def forEach(f: Procedure2[I, MessageBuffer]): Unit = foreach { case (id, buffer) => f(id, buffer) }
 }

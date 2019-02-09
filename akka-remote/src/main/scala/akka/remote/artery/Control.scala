@@ -101,10 +101,10 @@ private[remote] class InboundControlJunction
       private var observers: Vector[ControlMessageObserver] = Vector.empty
 
       private val callback = getAsyncCallback[CallbackMessage] {
-        case Attach(observer, done) ⇒
+        case Attach(observer, done) =>
           observers :+= observer
           done.success(Done)
-        case Dettach(observer) ⇒
+        case Dettach(observer) =>
           observers = observers.filterNot(_ == observer)
       }
 
@@ -116,10 +116,10 @@ private[remote] class InboundControlJunction
       // InHandler
       override def onPush(): Unit = {
         grab(in) match {
-          case env: InboundEnvelope if env.message.isInstanceOf[ControlMessage] ⇒
+          case env: InboundEnvelope if env.message.isInstanceOf[ControlMessage] =>
             observers.foreach(_.notify(env))
             pull(in)
-          case env ⇒
+          case env =>
             push(out, env)
         }
       }

@@ -94,7 +94,7 @@ object SerializationTests {
 
   class FooActor extends Actor {
     def receive = {
-      case s: String ⇒ sender() ! s
+      case s: String => sender() ! s
     }
   }
 
@@ -105,7 +105,7 @@ object SerializationTests {
 
   class NonSerializableActor(system: ActorSystem) extends Actor {
     def receive = {
-      case s: String ⇒ sender() ! s
+      case s: String => sender() ! s
     }
   }
 
@@ -157,8 +157,8 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   "Serialization" must {
 
     "have correct bindings" in {
-      ser.bindings.collectFirst { case (c, s) if c == address.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
-      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should ===(Some(classOf[NoopSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == address.getClass => s.getClass } should ===(Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] => s.getClass } should ===(Some(classOf[NoopSerializer]))
     }
 
     "serialize Address" in {
@@ -177,8 +177,8 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     "not serialize ActorCell" in {
       val a = system.actorOf(Props(new Actor {
         def receive = {
-          case o: ObjectOutputStream ⇒
-            try o.writeObject(this) catch { case _: NotSerializableException ⇒ testActor ! "pass" }
+          case o: ObjectOutputStream =>
+            try o.writeObject(this) catch { case _: NotSerializableException => testActor ! "pass" }
         }
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
@@ -263,7 +263,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
       val byteSerializer = ser.serializerFor(classOf[Array[Byte]])
       byteSerializer.getClass should be theSameInstanceAs classOf[ByteArraySerializer]
 
-      for (a ← Seq("foo".getBytes("UTF-8"), null: Array[Byte], Array[Byte]()))
+      for (a <- Seq("foo".getBytes("UTF-8"), null: Array[Byte], Array[Byte]()))
         byteSerializer.fromBinary(byteSerializer.toBinary(a)) should be theSameInstanceAs a
 
       intercept[IllegalArgumentException] {
@@ -342,7 +342,7 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
     "declare Serializable classes to be use JavaSerializer" in {
       serializerMustBe(classOf[Serializable], classOf[JavaSerializer])
       serializerMustBe(classOf[String], classOf[JavaSerializer])
-      for (smc ← systemMessageClasses) {
+      for (smc <- systemMessageClasses) {
         serializerMustBe(smc, classOf[JavaSerializer])
       }
     }
@@ -356,7 +356,7 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
     }
 
     "serialize function with JavaSerializer" in {
-      val f = (i: Int) ⇒ i + 1
+      val f = (i: Int) => i + 1
       val serializer = ser.serializerFor(f.getClass)
       serializer.getClass should ===(classOf[JavaSerializer])
       val bytes = ser.serialize(f).get
@@ -463,7 +463,7 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
 
     "resolve to a single serializer" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 0) intercept {
-        for (smc ← systemMessageClasses) {
+        for (smc <- systemMessageClasses) {
           ser.serializerFor(smc).getClass should ===(classOf[NoopSerializer])
         }
       }

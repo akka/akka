@@ -23,8 +23,8 @@ object BidiFlow {
    */
   def fromGraph[I1, O1, I2, O2, M](g: Graph[BidiShape[I1, O1, I2, O2], M]): BidiFlow[I1, O1, I2, O2, M] =
     g match {
-      case bidi: BidiFlow[I1, O1, I2, O2, M] ⇒ bidi
-      case other                             ⇒ new BidiFlow(scaladsl.BidiFlow.fromGraph(other))
+      case bidi: BidiFlow[I1, O1, I2, O2, M] => bidi
+      case other                             => new BidiFlow(scaladsl.BidiFlow.fromGraph(other))
     }
 
   /**

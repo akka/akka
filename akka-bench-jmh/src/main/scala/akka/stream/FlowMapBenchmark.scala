@@ -122,15 +122,15 @@ class FlowMapBenchmark {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    flow.runWith(Sink.onComplete(_ ⇒ lock.release()))(materializer)
+    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
 
     lock.acquire()
   }
 
   // source setup
-  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: ⇒ Graph[FlowShape[O, O], _]): Source[O, Mat] = {
+  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
-    for (i ← 1 to count)
+    for (i <- 1 to count)
       f = f.via(flow)
     f
   }

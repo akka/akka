@@ -66,8 +66,8 @@ trait RouterConfig extends Serializable {
    * [[#routingLogicController]] actor.
    */
   def isManagementMessage(msg: Any): Boolean = msg match {
-    case _: AutoReceivedMessage | _: Terminated | _: RouterManagementMesssage ⇒ true
-    case _ ⇒ false
+    case _: AutoReceivedMessage | _: Terminated | _: RouterManagementMesssage => true
+    case _ => false
   }
 
   /*
@@ -106,7 +106,7 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
     else {
 
       other match {
-        case p: Pool ⇒
+        case p: Pool =>
           val wssConf: PoolOverrideUnsetConfig[T] =
             if ((this.supervisorStrategy eq Pool.defaultSupervisorStrategy)
               && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
@@ -117,7 +117,7 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
             wssConf.withResizer(p.resizer.get)
           else
             wssConf
-        case _ ⇒ this
+        case _ => this
       }
     }
 
@@ -166,7 +166,7 @@ trait Group extends RouterConfig {
 
 object Pool {
   val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case _ ⇒ SupervisorStrategy.Escalate
+    case _ => SupervisorStrategy.Escalate
   }
 }
 
@@ -240,8 +240,8 @@ trait Pool extends RouterConfig {
    */
   private[akka] override def createRouterActor(): RouterActor =
     resizer match {
-      case None    ⇒ new RouterPoolActor(supervisorStrategy)
-      case Some(_) ⇒ new ResizablePoolActor(supervisorStrategy)
+      case None    => new RouterPoolActor(supervisorStrategy)
+      case Some(_) => new ResizablePoolActor(supervisorStrategy)
     }
 
 }

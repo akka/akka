@@ -70,7 +70,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     "init sharding" in {
       val sharding = ClusterSharding(typedSystem)
       val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.init(
-        Entity(typeKey, _ ⇒ multiDcPinger))
+        Entity(typeKey, _ => multiDcPinger))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(max = 10.seconds, Pong(cluster.selfMember.dataCenter))
@@ -99,7 +99,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
       val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).init(
         Entity(
           typeKey,
-          _ ⇒ multiDcPinger)
+          _ => multiDcPinger)
           .withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
       val probe = TestProbe[Pong]
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))

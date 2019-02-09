@@ -29,7 +29,7 @@ object Compression {
    * @param level Compression level (0-9)
    */
   def gzip(level: Int): Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorFlow(() ⇒ new GzipCompressor(level))
+    CompressionUtils.compressorFlow(() => new GzipCompressor(level))
 
   /**
    * Creates a Flow that decompresses a gzip-compressed stream of data.
@@ -58,7 +58,7 @@ object Compression {
    *
    */
   def deflate(level: Int, nowrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorFlow(() ⇒ new DeflateCompressor(level, nowrap))
+    CompressionUtils.compressorFlow(() => new DeflateCompressor(level, nowrap))
 
   /**
    * Creates a Flow that decompresses a deflate-compressed stream of data.

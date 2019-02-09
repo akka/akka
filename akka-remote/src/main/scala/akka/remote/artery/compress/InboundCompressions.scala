@@ -92,8 +92,8 @@ private[remote] final class InboundCompressionsImpl(
 
   override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _actorRefsIns.get(originUid) match {
-      case null ⇒ // ignore
-      case a    ⇒ a.confirmAdvertisement(tableVersion, gaveUp = false)
+      case null => // ignore
+      case a    => a.confirmAdvertisement(tableVersion, gaveUp = false)
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -103,10 +103,10 @@ private[remote] final class InboundCompressionsImpl(
     while (vs.hasNext) {
       val inbound = vs.next()
       inboundContext.association(inbound.originUid) match {
-        case OptionVal.Some(a) if !a.associationState.isQuarantined(inbound.originUid) ⇒
+        case OptionVal.Some(a) if !a.associationState.isQuarantined(inbound.originUid) =>
           eventSink.hiFreq(FlightRecorderEvents.Compression_Inbound_RunActorRefAdvertisement, inbound.originUid)
           inbound.runNextTableAdvertisement()
-        case _ ⇒ remove :+= inbound.originUid
+        case _ => remove :+= inbound.originUid
       }
     }
     if (remove.nonEmpty) remove.foreach(close)
@@ -123,8 +123,8 @@ private[remote] final class InboundCompressionsImpl(
   }
   override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _classManifestsIns.get(originUid) match {
-      case null ⇒ // ignore
-      case a    ⇒ a.confirmAdvertisement(tableVersion, gaveUp = false)
+      case null => // ignore
+      case a    => a.confirmAdvertisement(tableVersion, gaveUp = false)
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -134,10 +134,10 @@ private[remote] final class InboundCompressionsImpl(
     while (vs.hasNext) {
       val inbound = vs.next()
       inboundContext.association(inbound.originUid) match {
-        case OptionVal.Some(a) if !a.associationState.isQuarantined(inbound.originUid) ⇒
+        case OptionVal.Some(a) if !a.associationState.isQuarantined(inbound.originUid) =>
           eventSink.hiFreq(FlightRecorderEvents.Compression_Inbound_RunClassManifestAdvertisement, inbound.originUid)
           inbound.runNextTableAdvertisement()
-        case _ ⇒ remove :+= inbound.originUid
+        case _ => remove :+= inbound.originUid
       }
     }
     if (remove.nonEmpty) remove.foreach(close)
@@ -242,8 +242,8 @@ private[remote] object InboundCompression {
       } else {
         @tailrec def find(tables: List[DecompressionTable[T]]): OptionVal[DecompressionTable[T]] = {
           tables match {
-            case Nil ⇒ OptionVal.None
-            case t :: tail ⇒
+            case Nil => OptionVal.None
+            case t :: tail =>
               if (t.version == version) OptionVal.Some(t)
               else find(tail)
           }
@@ -252,9 +252,9 @@ private[remote] object InboundCompression {
 
         if (ArterySettings.Compression.Debug) {
           found match {
-            case OptionVal.Some(t) ⇒
+            case OptionVal.Some(t) =>
               println(s"[compress] Found table [version: ${version}], was [OLD][${t}], old tables: [${oldTables.map(_.version)}]")
-            case OptionVal.None ⇒
+            case OptionVal.None =>
               println(s"[compress] Did not find table [version: ${version}], old tables: [${oldTables.map(_.version)}], activeTable: ${activeTable}, nextTable: ${nextTable}")
           }
         }
@@ -329,12 +329,12 @@ private[remote] abstract class InboundCompression[T >: Null](
       OptionVal.None
     } else {
       current.selectTable(version = incomingTableVersion) match {
-        case OptionVal.Some(selectedTable) ⇒
+        case OptionVal.Some(selectedTable) =>
           val value: T = selectedTable.get(idx)
           if (value != null) OptionVal.Some[T](value)
           else throw new UnknownCompressedIdException(idx)
 
-        case _ if incomingVersionIsAdvertisementInProgress(incomingTableVersion) ⇒
+        case _ if incomingVersionIsAdvertisementInProgress(incomingTableVersion) =>
           log.debug(
             "Received first value from originUid [{}] compressed using the advertised compression table, " +
               "flipping to it (version: {})",
@@ -342,7 +342,7 @@ private[remote] abstract class InboundCompression[T >: Null](
           confirmAdvertisement(incomingTableVersion, gaveUp = false)
           decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse
 
-        case _ ⇒
+        case _ =>
           // which means that incoming version was > nextTable.version, which likely that
           // it is using a table that was built for previous incarnation of this system
           log.warning(
@@ -357,16 +357,16 @@ private[remote] abstract class InboundCompression[T >: Null](
 
   final def confirmAdvertisement(tableVersion: Byte, gaveUp: Boolean): Unit = {
     tables.advertisementInProgress match {
-      case Some(inProgress) if tableVersion == inProgress.version ⇒
+      case Some(inProgress) if tableVersion == inProgress.version =>
         tables = tables.startUsingNextTable()
         log.debug(
           "{} compression table version [{}] for originUid [{}]",
           if (gaveUp) "Gave up" else "Confirmed", tableVersion, originUid)
-      case Some(inProgress) if tableVersion != inProgress.version ⇒
+      case Some(inProgress) if tableVersion != inProgress.version =>
         log.debug(
           "{} compression table version [{}] for originUid [{}] but other version in progress [{}]",
           if (gaveUp) "Gave up" else "Confirmed", tableVersion, originUid, inProgress.version)
-      case None ⇒
+      case None =>
       // already confirmed
     }
 
@@ -402,9 +402,9 @@ private[remote] abstract class InboundCompression[T >: Null](
   private[remote] def runNextTableAdvertisement(): Unit = {
     if (ArterySettings.Compression.Debug) println(s"[compress] runNextTableAdvertisement, tables = $tables")
     tables.advertisementInProgress match {
-      case None ⇒
+      case None =>
         inboundContext.association(originUid) match {
-          case OptionVal.Some(association) ⇒
+          case OptionVal.Some(association) =>
             if (alive && association.isOrdinaryMessageStreamActive()) {
               val table = prepareCompressionAdvertisement(tables.nextTable.version)
               // TODO expensive, check if building the other way wouldn't be faster?
@@ -417,24 +417,24 @@ private[remote] abstract class InboundCompression[T >: Null](
               log.debug("{} for originUid [{}] not changed, no need to advertise same.", Logging.simpleName(tables.activeTable), originUid)
             }
 
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             // otherwise it's too early, association not ready yet.
             // so we don't build the table since we would not be able to send it anyway.
             log.debug("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
         }
 
-      case Some(inProgress) ⇒
+      case Some(inProgress) =>
         resendCount += 1
         if (resendCount <= maxResendCount) {
           // The ActorRefCompressionAdvertisement message is resent because it can be lost
 
           inboundContext.association(originUid) match {
-            case OptionVal.Some(association) ⇒
+            case OptionVal.Some(association) =>
               log.debug(
                 "Advertisement in progress for originUid [{}] version [{}], resending [{}:{}]",
                 originUid, inProgress.version, resendCount, maxResendCount)
               advertiseCompressionTable(association, inProgress) // resend
-            case OptionVal.None ⇒
+            case OptionVal.None =>
           }
         } else {
           // give up, it might be dead

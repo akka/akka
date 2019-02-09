@@ -20,7 +20,7 @@ import scala.concurrent.Future
  */
 object FileIO {
 
-  import Sink.{ shape ⇒ sinkShape }
+  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from a files contents.

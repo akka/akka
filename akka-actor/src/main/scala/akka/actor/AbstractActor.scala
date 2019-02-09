@@ -333,7 +333,7 @@ abstract class UntypedAbstractActor extends AbstractActor {
   final override def createReceive(): AbstractActor.Receive =
     throw new UnsupportedOperationException("createReceive should not be used by UntypedAbstractActor")
 
-  override def receive: PartialFunction[Any, Unit] = { case msg ⇒ onReceive(msg) }
+  override def receive: PartialFunction[Any, Unit] = { case msg => onReceive(msg) }
 
   /**
    * To be implemented by concrete UntypedAbstractActor, this defines the behavior of the

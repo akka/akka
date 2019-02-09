@@ -32,10 +32,10 @@ import akka.annotation.InternalApi
 
   def merge(that: PruningState): PruningState =
     (this, that) match {
-      case (p1: PruningPerformed, p2: PruningPerformed) ⇒ if (p1.obsoleteTime >= p2.obsoleteTime) this else that
-      case (_: PruningPerformed, _)                     ⇒ this
-      case (_, _: PruningPerformed)                     ⇒ that
-      case (PruningInitialized(thisOwner, thisSeen), PruningInitialized(thatOwner, thatSeen)) ⇒
+      case (p1: PruningPerformed, p2: PruningPerformed) => if (p1.obsoleteTime >= p2.obsoleteTime) this else that
+      case (_: PruningPerformed, _)                     => this
+      case (_, _: PruningPerformed)                     => that
+      case (PruningInitialized(thisOwner, thisSeen), PruningInitialized(thatOwner, thatSeen)) =>
         if (thisOwner == thatOwner)
           PruningInitialized(thisOwner, thisSeen union thatSeen)
         else if (Member.addressOrdering.compare(thisOwner.address, thatOwner.address) > 0)

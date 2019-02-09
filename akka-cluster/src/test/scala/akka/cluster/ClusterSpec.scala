@@ -164,8 +164,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
         val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
+          case _: MemberExited  => false
+          case _: MemberRemoved => true
         }.asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
       } finally {
@@ -194,8 +194,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
         val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
+          case _: MemberExited  => false
+          case _: MemberRemoved => true
         }.asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
 
@@ -225,8 +225,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
         val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
+          case _: MemberExited  => false
+          case _: MemberRemoved => true
         }.asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
       } finally {
@@ -252,8 +252,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
         val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
+          case _: MemberExited  => false
+          case _: MemberRemoved => true
         }.asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
         Await.result(sys2.whenTerminated, 10.seconds)
@@ -291,7 +291,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "register multiple cluster JMX MBeans with akka.cluster.jmx.multi-mbeans-in-same-jvm = on" in {
-      def getConfig = (port: Int) ⇒ ConfigFactory.parseString(
+      def getConfig = (port: Int) => ConfigFactory.parseString(
         s"""
              akka.cluster.jmx.multi-mbeans-in-same-jvm = on
              akka.remote.netty.tcp.port = ${port}

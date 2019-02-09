@@ -18,7 +18,7 @@ object FlowWatchSpec {
 
   class Replier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒ sender() ! Reply(msg)
+      case msg: Int => sender() ! Reply(msg)
     }
   }
 

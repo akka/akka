@@ -44,7 +44,7 @@ final class TestKitSettings(val config: Config) {
   import akka.util.Helpers._
 
   val TestTimeFactor = config.getDouble("timefactor").
-    requiring(tf ⇒ !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
+    requiring(tf => !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
 
   /** dilated with `TestTimeFactor` */
   val SingleExpectDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("single-expect-default"))

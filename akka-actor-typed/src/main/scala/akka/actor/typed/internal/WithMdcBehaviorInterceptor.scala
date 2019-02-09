@@ -14,11 +14,11 @@ import scala.collection.immutable.HashMap
  * INTERNAL API
  */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
-  val noMdcPerMessage = (_: Any) ⇒ Map.empty[String, Any]
+  val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
 
   def apply[T](
     staticMdc:     Map[String, Any],
-    mdcForMessage: T ⇒ Map[String, Any],
+    mdcForMessage: T => Map[String, Any],
     behavior:      Behavior[T]): Behavior[T] = {
 
     val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
@@ -34,7 +34,7 @@ import scala.collection.immutable.HashMap
  */
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
   staticMdc:     Map[String, Any],
-  mdcForMessage: T ⇒ Map[String, Any]) extends BehaviorInterceptor[T, T] {
+  mdcForMessage: T => Map[String, Any]) extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
@@ -49,17 +49,17 @@ import scala.collection.immutable.HashMap
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) ⇒
+        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case w: WrappingBehavior[T, T] ⇒
+        case w: WrappingBehavior[T, T] =>
           val nested = w.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) w
           else w.replaceNested(inner)
 
-        case b ⇒ b
+        case b => b
       }
     }
 
@@ -68,8 +68,8 @@ import scala.collection.immutable.HashMap
 
   // in the normal case, a new withMDC replaces the previous one
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case _: WithMdcBehaviorInterceptor[_] ⇒ true
-    case _                                ⇒ false
+    case _: WithMdcBehaviorInterceptor[_] => true
+    case _                                => false
   }
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {

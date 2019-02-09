@@ -72,8 +72,8 @@ object CapturedLogEvent {
    * Helper method to convert [[OptionVal]] to [[Option]]
    */
   private def toOption[A](optionVal: OptionVal[A]): Option[A] = optionVal match {
-    case OptionVal.Some(x) ⇒ Some(x)
-    case _                 ⇒ None
+    case OptionVal.Some(x) => Some(x)
+    case _                 => None
   }
 
   def apply(

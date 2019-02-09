@@ -28,46 +28,46 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
 
   override def manifest(o: AnyRef): String = o match {
     // protocol
-    case _: StreamRefsProtocol.SequencedOnNext[_]    ⇒ SequencedOnNextManifest
-    case _: StreamRefsProtocol.CumulativeDemand      ⇒ CumulativeDemandManifest
+    case _: StreamRefsProtocol.SequencedOnNext[_]    => SequencedOnNextManifest
+    case _: StreamRefsProtocol.CumulativeDemand      => CumulativeDemandManifest
     // handshake
-    case _: StreamRefsProtocol.OnSubscribeHandshake  ⇒ OnSubscribeHandshakeManifest
+    case _: StreamRefsProtocol.OnSubscribeHandshake  => OnSubscribeHandshakeManifest
     // completion
-    case _: StreamRefsProtocol.RemoteStreamFailure   ⇒ RemoteSinkFailureManifest
-    case _: StreamRefsProtocol.RemoteStreamCompleted ⇒ RemoteSinkCompletedManifest
+    case _: StreamRefsProtocol.RemoteStreamFailure   => RemoteSinkFailureManifest
+    case _: StreamRefsProtocol.RemoteStreamCompleted => RemoteSinkCompletedManifest
     // refs
-    case _: SourceRefImpl[_]                         ⇒ SourceRefManifest
-    //    case _: MaterializedSourceRef[_]                 ⇒ SourceRefManifest
-    case _: SinkRefImpl[_]                           ⇒ SinkRefManifest
-    //    case _: MaterializedSinkRef[_]                   ⇒ SinkRefManifest
+    case _: SourceRefImpl[_]                         => SourceRefManifest
+    //    case _: MaterializedSourceRef[_]                 => SourceRefManifest
+    case _: SinkRefImpl[_]                           => SinkRefManifest
+    //    case _: MaterializedSinkRef[_]                   => SinkRefManifest
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     // protocol
-    case o: StreamRefsProtocol.SequencedOnNext[_]    ⇒ serializeSequencedOnNext(o).toByteArray
-    case d: StreamRefsProtocol.CumulativeDemand      ⇒ serializeCumulativeDemand(d).toByteArray
+    case o: StreamRefsProtocol.SequencedOnNext[_]    => serializeSequencedOnNext(o).toByteArray
+    case d: StreamRefsProtocol.CumulativeDemand      => serializeCumulativeDemand(d).toByteArray
     // handshake
-    case h: StreamRefsProtocol.OnSubscribeHandshake  ⇒ serializeOnSubscribeHandshake(h).toByteArray
+    case h: StreamRefsProtocol.OnSubscribeHandshake  => serializeOnSubscribeHandshake(h).toByteArray
     // termination
-    case d: StreamRefsProtocol.RemoteStreamFailure   ⇒ serializeRemoteSinkFailure(d).toByteArray
-    case d: StreamRefsProtocol.RemoteStreamCompleted ⇒ serializeRemoteSinkCompleted(d).toByteArray
+    case d: StreamRefsProtocol.RemoteStreamFailure   => serializeRemoteSinkFailure(d).toByteArray
+    case d: StreamRefsProtocol.RemoteStreamCompleted => serializeRemoteSinkCompleted(d).toByteArray
     // refs
-    case ref: SinkRefImpl[_]                         ⇒ serializeSinkRef(ref).toByteArray
-    //    case ref: MaterializedSinkRef[_]                 ⇒ ??? // serializeSinkRef(ref).toByteArray
-    case ref: SourceRefImpl[_]                       ⇒ serializeSourceRef(ref).toByteArray
-    //    case ref: MaterializedSourceRef[_]               ⇒ serializeSourceRef(ref.).toByteArray
+    case ref: SinkRefImpl[_]                         => serializeSinkRef(ref).toByteArray
+    //    case ref: MaterializedSinkRef[_]                 => ??? // serializeSinkRef(ref).toByteArray
+    case ref: SourceRefImpl[_]                       => serializeSourceRef(ref).toByteArray
+    //    case ref: MaterializedSourceRef[_]               => serializeSourceRef(ref.).toByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     // protocol
-    case OnSubscribeHandshakeManifest ⇒ deserializeOnSubscribeHandshake(bytes)
-    case SequencedOnNextManifest      ⇒ deserializeSequencedOnNext(bytes)
-    case CumulativeDemandManifest     ⇒ deserializeCumulativeDemand(bytes)
-    case RemoteSinkCompletedManifest  ⇒ deserializeRemoteStreamCompleted(bytes)
-    case RemoteSinkFailureManifest    ⇒ deserializeRemoteStreamFailure(bytes)
+    case OnSubscribeHandshakeManifest => deserializeOnSubscribeHandshake(bytes)
+    case SequencedOnNextManifest      => deserializeSequencedOnNext(bytes)
+    case CumulativeDemandManifest     => deserializeCumulativeDemand(bytes)
+    case RemoteSinkCompletedManifest  => deserializeRemoteStreamCompleted(bytes)
+    case RemoteSinkFailureManifest    => deserializeRemoteStreamFailure(bytes)
     // refs
-    case SinkRefManifest              ⇒ deserializeSinkRef(bytes)
-    case SourceRefManifest            ⇒ deserializeSourceRef(bytes)
+    case SinkRefManifest              => deserializeSinkRef(bytes)
+    case SourceRefManifest            => deserializeSourceRef(bytes)
   }
 
   // -----

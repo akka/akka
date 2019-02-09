@@ -55,9 +55,9 @@ abstract class ActorSystemActivator extends BundleActivator {
     val logServiceListner = new ServiceListener {
       def serviceChanged(event: ServiceEvent): Unit = {
         event.getType match {
-          case ServiceEvent.REGISTERED ⇒
+          case ServiceEvent.REGISTERED =>
             system.eventStream.publish(serviceForReference[LogService](context, event.getServiceReference))
-          case ServiceEvent.UNREGISTERING ⇒ system.eventStream.publish(UnregisteringLogService)
+          case ServiceEvent.UNREGISTERING => system.eventStream.publish(UnregisteringLogService)
         }
       }
     }
@@ -65,7 +65,7 @@ abstract class ActorSystemActivator extends BundleActivator {
     context.addServiceListener(logServiceListner, filter)
 
     //Small trick to create an event if the service is registered before this start listing for
-    Option(context.getServiceReference(classOf[LogService].getName)).foreach(x ⇒ {
+    Option(context.getServiceReference(classOf[LogService].getName)).foreach(x => {
       logServiceListner.serviceChanged(new ServiceEvent(ServiceEvent.REGISTERED, x))
     })
   }

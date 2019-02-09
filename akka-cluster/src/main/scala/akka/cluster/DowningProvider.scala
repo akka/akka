@@ -24,7 +24,7 @@ private[cluster] object DowningProvider {
     eas.dynamicAccess.createInstanceFor[DowningProvider](
       fqcn,
       List((classOf[ActorSystem], system))).recover {
-        case e ⇒ throw new ConfigurationException(
+        case e => throw new ConfigurationException(
           s"Could not create cluster downing provider [$fqcn]", e)
       }.get
   }

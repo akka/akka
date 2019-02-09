@@ -44,7 +44,7 @@ object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeC
    */
   case class TellAndEcho(ref: ActorRef) extends Actor {
     override def receive = {
-      case msg ⇒
+      case msg =>
         ref ! msg
         val reply = s"${self.path.name}-$msg"
         sender() ! reply
@@ -93,10 +93,10 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
       val sendToB = expectMsgType[ActorIdentity].ref.get
 
       runOn(second) {
-        1 to 100 foreach { i ⇒ pingPong(sendToA, s"a$i") }
+        1 to 100 foreach { i => pingPong(sendToA, s"a$i") }
         info("done sending to A, first round")
 
-        1 to 100 foreach { i ⇒ pingPong(sendToB, s"a$i") }
+        1 to 100 foreach { i => pingPong(sendToB, s"a$i") }
         info("done sending to B, first round")
       }
       enterBarrier("sender-started")
@@ -129,8 +129,8 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
 
         // we continue sending messages using the "old table".
         // if a new table was being built, it would cause the b to be compressed as 1 causing a wrong reply to come back
-        1 to 100 foreach { i ⇒ pingPong(sendToB, s"b$i") }
-        1 to 100 foreach { i ⇒ pingPong(sendToA, s"a$i") }
+        1 to 100 foreach { i => pingPong(sendToB, s"b$i") }
+        1 to 100 foreach { i => pingPong(sendToA, s"a$i") }
 
         info("received correct replies from restarted system!")
       }

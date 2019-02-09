@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
  * This class is a hybrid data structure containing a hashmap and a heap pointing to slots in the hashmap. The capacity
  * of the hashmap is twice that of the heap to reduce clumping of entries on collisions.
  */
-private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self ⇒
+private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self =>
 
   require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 

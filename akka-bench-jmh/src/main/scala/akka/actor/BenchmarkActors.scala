@@ -20,7 +20,7 @@ object BenchmarkActors {
   class PingPong(val messagesPerPair: Int, latch: CountDownLatch) extends Actor {
     var left = messagesPerPair / 2
     def receive = {
-      case Message ⇒
+      case Message =>
 
         if (left == 0) {
           latch.countDown()
@@ -38,7 +38,7 @@ object BenchmarkActors {
 
   class Echo extends Actor {
     def receive = {
-      case Message ⇒
+      case Message =>
         sender() ! Message
     }
   }
@@ -55,7 +55,7 @@ object BenchmarkActors {
     private var batch = 0
 
     def receive = {
-      case Message ⇒
+      case Message =>
         batch -= 1
         if (batch <= 0) {
           if (!sendBatch()) {
@@ -82,9 +82,9 @@ object BenchmarkActors {
 
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
-      case Message ⇒
+      case Message =>
         if (next.isDefined) next.get forward Message
-      case Stop ⇒
+      case Stop =>
         context stop self
         if (next.isDefined) next.get forward Stop
     }
@@ -98,7 +98,7 @@ object BenchmarkActors {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs * 2)
     val actors = for {
-      i ← (1 to numPairs).toVector
+      i <- (1 to numPairs).toVector
     } yield {
       val ping = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
       val pong = system.actorOf(PingPong.props(messagesPerPair, latch).withDispatcher(fullPathToDispatcher))
@@ -109,8 +109,8 @@ object BenchmarkActors {
 
   private def initiatePingPongForPairs(refs: Vector[(ActorRef, ActorRef)], inFlight: Int) = {
     for {
-      (ping, pong) ← refs
-      _ ← 1 to inFlight
+      (ping, pong) <- refs
+      _ <- 1 to inFlight
     } {
       ping.tell(Message, pong)
     }
@@ -121,7 +121,7 @@ object BenchmarkActors {
 
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs)
-    val actors = (1 to numPairs).map { _ ⇒
+    val actors = (1 to numPairs).map { _ =>
       system.actorOf(EchoSender.props(messagesPerPair, latch, batchSize).withDispatcher(fullPathToDispatcher))
     }.toVector
     (actors, latch)

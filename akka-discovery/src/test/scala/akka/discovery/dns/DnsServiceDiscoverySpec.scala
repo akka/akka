@@ -12,7 +12,7 @@ import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 
 class DnsServiceDiscoverySpec extends WordSpec with Matchers {

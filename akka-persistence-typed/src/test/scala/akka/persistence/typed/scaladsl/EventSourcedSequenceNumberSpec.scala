@@ -23,21 +23,21 @@ object EventSourcedSequenceNumberSpec {
 class EventSourcedSequenceNumberSpec extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf) with WordSpecLike {
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.setup(ctx ⇒
+    Behaviors.setup(ctx =>
       EventSourcedBehavior[String, String, String](
         pid,
         "",
-        { (_, command) ⇒
+        { (_, command) =>
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
-          Effect.persist(command).thenRun(_ ⇒
+          Effect.persist(command).thenRun(_ =>
             probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun")
           )
         },
-        { (state, evt) ⇒
+        { (state, evt) =>
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
           state + evt
         }
-      ).onRecoveryCompleted(_ ⇒
+      ).onRecoveryCompleted(_ =>
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
         )
     )

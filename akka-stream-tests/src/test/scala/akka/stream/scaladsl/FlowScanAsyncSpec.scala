@@ -25,7 +25,7 @@ class FlowScanAsyncSpec extends StreamSpec {
 
   "A ScanAsync" must {
 
-    val sumScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
+    val sumScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) =>
       Future(accumulator + next)
     }
 
@@ -40,7 +40,7 @@ class FlowScanAsyncSpec extends StreamSpec {
     "complete after zero-element has been consumed" in {
       val (pub, sub) =
         TestSource.probe[Int]
-          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
           .toMat(TestSink.probe)(Keep.both)
           .run()
 
@@ -53,7 +53,7 @@ class FlowScanAsyncSpec extends StreamSpec {
     "complete after stream has been consumed and pending futures resolved" in {
       val (pub, sub) =
         TestSource.probe[Int]
-          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
           .toMat(TestSink.probe)(Keep.both)
           .run()
 
@@ -68,7 +68,7 @@ class FlowScanAsyncSpec extends StreamSpec {
     "fail after zero-element has been consumed" in {
       val (pub, sub) =
         TestSource.probe[Int]
-          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .via(Flow[Int].scanAsync(0)((acc, in) => Future.successful(acc + in)))
           .toMat(TestSink.probe)(Keep.both)
           .run()
 
@@ -93,12 +93,12 @@ class FlowScanAsyncSpec extends StreamSpec {
       val eventualActual: Future[Int] = Source(elements)
         .via(sumScanFlow)
         .runWith(Sink.last)
-      whenReady(eventualActual) { actual ⇒ assert(actual === expectedSum) }
+      whenReady(eventualActual) { actual => assert(actual === expectedSum) }
     }
 
     "work with slow futures" in {
       val delay = 500.milliseconds
-      val delayedFutureScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
+      val delayedFutureScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) =>
         pattern.after(delay, system.scheduler)(Future.successful(accumulator + next))
       }
       val elements = 1 :: 1 :: Nil
@@ -227,7 +227,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       zero:      Int,
       throwable: Throwable           = new Exception("non fatal exception"),
       decider:   Supervision.Decider = Supervision.stoppingDecider): Probe[Int] = {
-      val failedScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) ⇒
+      val failedScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) =>
         if (next >= 0) Future(accumulator + next)
         else throw throwable
       }
@@ -245,7 +245,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       decider:  Supervision.Decider         = Supervision.stoppingDecider
     ): (TestPublisher.Probe[Int], TestSubscriber.Probe[Int]) = {
       require(promises.nonEmpty, "must be at least one promise")
-      val promiseScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) ⇒
+      val promiseScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) =>
         promises(next).future
       }
 
@@ -265,7 +265,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       zero:      Int,
       throwable: Throwable           = new Exception("non fatal exception"),
       decider:   Supervision.Decider = Supervision.stoppingDecider): Probe[Int] = {
-      val failedFutureScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) ⇒
+      val failedFutureScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) =>
         if (next >= 0) Future(accumulator + next)
         else Future.failed(throwable)
       }
@@ -281,7 +281,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       elements: immutable.Seq[String],
       zero:     String,
       decider:  Supervision.Decider   = Supervision.stoppingDecider): Probe[String] = {
-      val nullFutureScanFlow: Flow[String, String, _] = Flow[String].scanAsync(zero) { (_: String, next: String) ⇒
+      val nullFutureScanFlow: Flow[String, String, _] = Flow[String].scanAsync(zero) { (_: String, next: String) =>
         if (next != "null") Future(next)
         else Future(null)
       }

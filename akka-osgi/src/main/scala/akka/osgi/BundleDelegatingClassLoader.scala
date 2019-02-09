@@ -40,8 +40,8 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
     @tailrec def find(remaining: List[Bundle]): Class[_] = {
       if (remaining.isEmpty) throw new ClassNotFoundException(name)
       else Try { remaining.head.loadClass(name) } match {
-        case Success(cls) ⇒ cls
-        case Failure(_)   ⇒ find(remaining.tail)
+        case Success(cls) => cls
+        case Failure(_)   => find(remaining.tail)
       }
     }
     find(bundles)
@@ -51,8 +51,8 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
     @tailrec def find(remaining: List[Bundle]): URL = {
       if (remaining.isEmpty) getParent.getResource(name)
       else Option { remaining.head.getResource(name) } match {
-        case Some(r) ⇒ r
-        case None    ⇒ find(remaining.tail)
+        case Some(r) => r
+        case None    => find(remaining.tail)
       }
     }
     find(bundles)
@@ -60,7 +60,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
 
   override def findResources(name: String): Enumeration[URL] = {
     val resources = bundles.flatMap {
-      bundle ⇒ Option(bundle.getResources(name)).map { _.asScala.toList }.getOrElse(Nil)
+      bundle => Option(bundle.getResources(name)).map { _.asScala.toList }.getOrElse(Nil)
     }
     java.util.Collections.enumeration(resources.asJava)
   }
@@ -81,7 +81,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, fallBackClassLoader: ClassLoad
               val requiredWires: List[BundleWire] =
                 wiring.getRequiredWires(BundleRevision.PACKAGE_NAMESPACE).asScala.toList
               requiredWires.flatMap {
-                wire ⇒ Option(wire.getProviderWiring) map { _.getBundle }
+                wire => Option(wire.getProviderWiring) map { _.getBundle }
               }.toSet
             }
           process(processed + b, rest ++ (direct diff processed))

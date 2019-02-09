@@ -272,7 +272,7 @@ class AckedDeliverySpec extends AkkaSpec {
     "correctly cooperate with each other" in {
       val MsgCount = 1000
       val DeliveryProbability = 0.5
-      val referenceList: Seq[Sequenced] = (0 until MsgCount).toSeq map { i ⇒ msg(i.toLong) }
+      val referenceList: Seq[Sequenced] = (0 until MsgCount).toSeq map { i => msg(i.toLong) }
 
       var toSend = referenceList
       var received = Seq.empty[Sequenced]
@@ -292,7 +292,7 @@ class AckedDeliverySpec extends AkkaSpec {
           tmp
         } else Seq.empty[Sequenced]
 
-        (resends ++ sends) foreach { msg ⇒
+        (resends ++ sends) foreach { msg =>
           if (sends.contains(msg)) sndBuf = sndBuf.buffer(msg)
           if (happened(p)) {
             val (updatedRcvBuf, delivers, ack) = rcvBuf.receive(msg).extractDeliverable
@@ -325,7 +325,7 @@ class AckedDeliverySpec extends AkkaSpec {
       info("Entering reliable phase")
 
       // Finalizing phase
-      for (_ ← 1 to MsgCount) {
+      for (_ <- 1 to MsgCount) {
         senderSteps(1, 1.0)
         receiverStep(1.0)
       }

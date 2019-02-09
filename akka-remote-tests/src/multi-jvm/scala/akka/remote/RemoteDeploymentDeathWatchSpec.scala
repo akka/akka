@@ -93,7 +93,7 @@ abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentD
 
         val timeout = remainingOrDefault
         try Await.ready(system.whenTerminated, timeout) catch {
-          case _: TimeoutException ⇒
+          case _: TimeoutException =>
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
               system.asInstanceOf[ActorSystemImpl].printTree))
         }

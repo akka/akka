@@ -25,14 +25,14 @@ object StreamTestKit {
    * This assertion is useful to check that all of the stages have
    * terminated successfully.
    */
-  def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: Materializer): T =
+  def assertAllStagesStopped[T](block: => T)(implicit materializer: Materializer): T =
     materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         stopAllChildren(impl.system, impl.supervisor)
         val result = block
         assertNoChildren(impl.system, impl.supervisor)
         result
-      case _ ⇒ block
+      case _ => block
     }
 
   /** INTERNAL API */
@@ -55,7 +55,7 @@ object StreamTestKit {
           children.isEmpty,
           s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
       } catch {
-        case ex: Throwable ⇒
+        case ex: Throwable =>
           import sys.dispatcher
           printDebugDump(supervisor)
           throw ex
@@ -66,8 +66,8 @@ object StreamTestKit {
   /** INTERNAL API */
   @InternalApi private[akka] def printDebugDump(streamSupervisor: ActorRef)(implicit ec: ExecutionContext): Unit = {
     val doneDumping = MaterializerState.requestFromSupervisor(streamSupervisor)
-      .map(snapshots ⇒
-        snapshots.foreach(s ⇒ println(snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
+      .map(snapshots =>
+        snapshots.foreach(s => println(snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
         ))
     Await.result(doneDumping, 5.seconds)
   }
@@ -76,7 +76,7 @@ object StreamTestKit {
   @InternalApi private[testkit] def snapshotString(snapshot: StreamSnapshotImpl): String = {
     val builder = StringBuilder.newBuilder
     builder.append(s"activeShells (actor: ${snapshot.self}):\n")
-    snapshot.activeInterpreters.foreach { shell ⇒
+    snapshot.activeInterpreters.foreach { shell =>
       builder.append("  ")
       appendShellSnapshot(builder, shell)
       builder.append("\n")
@@ -84,7 +84,7 @@ object StreamTestKit {
       builder.append("\n")
     }
     builder.append(s"newShells:\n")
-    snapshot.newShells.foreach { shell ⇒
+    snapshot.newShells.foreach { shell =>
       builder.append("  ")
       appendShellSnapshot(builder, shell)
       builder.append("\n")
@@ -97,7 +97,7 @@ object StreamTestKit {
   private def appendShellSnapshot(builder: StringBuilder, shell: InterpreterSnapshot): Unit = {
     builder.append("GraphInterpreterShell(\n  logics: [\n")
     val logicsToPrint = shell.logics
-    logicsToPrint.foreach { logic ⇒
+    logicsToPrint.foreach { logic =>
       builder.append("    ")
         .append(logic.label)
         .append(" attrs: [")
@@ -106,9 +106,9 @@ object StreamTestKit {
     }
     builder.setLength(builder.length - 2)
     shell match {
-      case running: RunningInterpreter ⇒
+      case running: RunningInterpreter =>
         builder.append("\n  ],\n  connections: [\n")
-        running.connections.foreach { connection ⇒
+        running.connections.foreach { connection =>
           builder.append("    ")
             .append("Connection(")
             .append(connection.asInstanceOf[ConnectionSnapshotImpl].id)
@@ -122,7 +122,7 @@ object StreamTestKit {
         }
         builder.setLength(builder.length - 2)
 
-      case _ ⇒
+      case _ =>
     }
     builder.append("\n  ]\n)")
     builder.toString()
@@ -134,24 +134,24 @@ object StreamTestKit {
       builder.append("================================================================\n")
       builder.append("digraph waits {\n")
 
-      for (i ← snapshot.logics.indices) {
+      for (i <- snapshot.logics.indices) {
         val logic = snapshot.logics(i)
         builder.append(s"""  N$i [label="${logic.label}"];""").append('\n')
       }
 
-      for (connection ← snapshot.connections) {
+      for (connection <- snapshot.connections) {
         val inName = "N" + connection.in.asInstanceOf[LogicSnapshotImpl].index
         val outName = "N" + connection.out.asInstanceOf[LogicSnapshotImpl].index
 
         builder.append(s"  $inName -> $outName ")
         connection.state match {
-          case ConnectionSnapshot.ShouldPull ⇒
+          case ConnectionSnapshot.ShouldPull =>
             builder.append("[label=shouldPull, color=blue];")
-          case ConnectionSnapshot.ShouldPush ⇒
+          case ConnectionSnapshot.ShouldPush =>
             builder.append(s"[label=shouldPush, color=red];")
-          case ConnectionSnapshot.Closed ⇒
+          case ConnectionSnapshot.Closed =>
             builder.append("[style=dotted, label=closed, dir=both];")
-          case _ ⇒
+          case _ =>
         }
         builder.append("\n")
       }
@@ -160,7 +160,7 @@ object StreamTestKit {
       builder.append(s"// ${snapshot.queueStatus} (running=${snapshot.runningLogicsCount}, shutdown=${snapshot.stoppedLogics.mkString(",")})")
       builder.toString()
     } catch {
-      case _: NoSuchElementException ⇒ builder.append("Not all logics has a stage listed, cannot create graph")
+      case _: NoSuchElementException => builder.append("Not all logics has a stage listed, cannot create graph")
     }
   }
 

@@ -144,7 +144,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
 }
 
 trait BindBehavior {
-  this: WordSpec with Matchers ⇒
+  this: WordSpec with Matchers =>
 
   import akka.remote.transport.netty.NettyTransportSpec._
 
@@ -175,7 +175,7 @@ trait BindBehavior {
       val bindAddress =
         try SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
         catch {
-          case e: java.net.BindException ⇒
+          case e: java.net.BindException =>
             info(s"skipping test due to [${e.getMessage}], you probably have to use `ifconfig lo0 alias 127.0.1.1`")
             pending
             null

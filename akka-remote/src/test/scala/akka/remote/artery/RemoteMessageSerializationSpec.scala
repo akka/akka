@@ -17,8 +17,8 @@ import scala.concurrent.duration._
 object RemoteMessageSerializationSpec {
   class ProxyActor(val one: ActorRef, val another: ActorRef) extends Actor {
     def receive = {
-      case s if sender().path == one.path     ⇒ another ! s
-      case s if sender().path == another.path ⇒ one ! s
+      case s if sender().path == one.path     => another ! s
+      case s if sender().path == another.path => one ! s
     }
   }
 }
@@ -82,19 +82,19 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
 
   }
 
-  private def verifySend(msg: Any)(afterSend: ⇒ Unit): Unit = {
+  private def verifySend(msg: Any)(afterSend: => Unit): Unit = {
     val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {
-        case x: Int ⇒ sender() ! byteStringOfSize(x)
-        case x      ⇒ sender() ! x
+        case x: Int => sender() ! byteStringOfSize(x)
+        case x      => sender() ! x
       }
     }), bigBounceId)
     val bigBounceHere = localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 
     val eventForwarder = localSystem.actorOf(Props(new Actor {
       def receive = {
-        case x ⇒ testActor ! x
+        case x => testActor ! x
       }
     }))
     localSystem.eventStream.subscribe(eventForwarder, classOf[AssociationErrorEvent])

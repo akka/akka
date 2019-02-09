@@ -13,7 +13,7 @@ object RemoteWatcherSpec {
 
   class TestActorProxy(testActor: ActorRef) extends Actor {
     def receive = {
-      case msg ⇒ testActor forward msg
+      case msg => testActor forward msg
     }
   }
 
@@ -33,7 +33,7 @@ object RemoteWatcherSpec {
         acceptableHeartbeatPause = 3.seconds,
         firstHeartbeatEstimate = 1.second)
 
-    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
+    new DefaultFailureDetectorRegistry(() => createFailureDetector())
   }
 
   object TestRemoteWatcher {

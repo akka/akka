@@ -59,7 +59,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
           numbers(numbersPos) = segments(segmentPos).toInt
           segmentPos += 1
         } catch {
-          case _: NumberFormatException ⇒
+          case _: NumberFormatException =>
             // This means that we have a trailing part on the version string and
             // less than 3 numbers, so we assume that this is a "newer" version
             numbers(numbersPos) = Integer.MAX_VALUE
@@ -90,8 +90,8 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
     }
 
     override def equals(o: Any): Boolean = o match {
-      case v: Version ⇒ compareTo(v) == 0
-      case _          ⇒ false
+      case v: Version => compareTo(v) == 0
+      case _          => false
     }
 
     override def hashCode(): Int = {
@@ -130,16 +130,16 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           val manifest = new Manifest(ios)
           val attributes = manifest.getMainAttributes
           val title = attributes.getValue(new Attributes.Name(ImplTitle)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleName))
-            case t    ⇒ t
+            case null => attributes.getValue(new Attributes.Name(BundleName))
+            case t    => t
           }
           val version = attributes.getValue(new Attributes.Name(ImplVersion)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleVersion))
-            case v    ⇒ v
+            case null => attributes.getValue(new Attributes.Name(BundleVersion))
+            case v    => v
           }
           val vendor = attributes.getValue(new Attributes.Name(ImplVendor)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleVendor))
-            case v    ⇒ v
+            case null => attributes.getValue(new Attributes.Name(BundleVendor))
+            case v    => v
           }
 
           if (title != null
@@ -153,7 +153,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
         }
       }
     } catch {
-      case ioe: IOException ⇒
+      case ioe: IOException =>
         Logging(system, getClass).warning("Could not read manifest information. {}", ioe)
     }
     manifests
@@ -168,7 +168,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
     if (values.size > 1) {
       if (logWarning) {
         val conflictingVersions = values.mkString(", ")
-        val fullInfo = filteredVersions.map { case (k, v) ⇒ s"$k:$v" }.mkString(", ")
+        val fullInfo = filteredVersions.map { case (k, v) => s"$k:$v" }.mkString(", ")
         val highestVersion = values.max
         Logging(system, getClass).warning(
           "Detected possible incompatible versions on the classpath. " +

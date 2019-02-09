@@ -54,7 +54,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   def startTarget(): Unit = {
     target = system.actorOf(Props(new Actor {
       def receive = {
-        case x ⇒ testActor ! x
+        case x => testActor ! x
       }
     }).withDeploy(Deploy.local), "echo")
   }
@@ -71,7 +71,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   def expectTransition(max: FiniteDuration, s1: State, s2: State) = expectMsg(max, FSM.Transition(proxy, s1, s2))
 
   def sendN(n: Int) = (1 to n) foreach (proxy ! _)
-  def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender should ===(target) }
+  def expectN(n: Int) = (1 to n) foreach { n => expectMsg(n); lastSender should ===(target) }
 
   // avoid too long timeout for expectNoMsg when using dilated timeouts, because
   // blackhole will trigger failure detection
@@ -365,7 +365,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         within(5 * 2.seconds) {
           val proxyTerm = expectMsgType[ProxyTerminated]
           // Validate that the unsent messages are 50 ints
-          val unsentInts = proxyTerm.outstanding.queue collect { case Message(i: Int, _, _) if i > 0 && i <= 50 ⇒ i }
+          val unsentInts = proxyTerm.outstanding.queue collect { case Message(i: Int, _, _) if i > 0 && i <= 50 => i }
           unsentInts should have size 50
           expectTerminated(proxy)
         }

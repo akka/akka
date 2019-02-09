@@ -41,7 +41,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       connectUdp(localAddress = None, serverAddress, testActor) ! UdpConnected.Send(data1)
 
       val clientAddress = expectMsgPF() {
-        case Udp.Received(d, a) ⇒
+        case Udp.Received(d, a) =>
           d should ===(data1)
           a
       }
@@ -60,7 +60,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       connectUdp(Some(clientAddress), serverAddress, testActor) ! UdpConnected.Send(data1)
 
       expectMsgPF() {
-        case Udp.Received(d, a) ⇒
+        case Udp.Received(d, a) =>
           d should ===(data1)
           a should ===(clientAddress)
       }
