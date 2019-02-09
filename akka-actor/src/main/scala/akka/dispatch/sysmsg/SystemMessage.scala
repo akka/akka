@@ -158,7 +158,7 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
    *
    * The cost of this operation is linear in the size of the list that is to be prepended.
    */
-  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
+  final def reversePrepend(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
     var remaining = other
     var result = this
     while (remaining.nonEmpty) {
@@ -168,6 +168,9 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
     }
     result
   }
+
+  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList =
+    reversePrepend(other)
 
 }
 

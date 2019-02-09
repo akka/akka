@@ -157,7 +157,7 @@ private[typed] class EarliestFirstSystemMessageList(val head: SystemMessage) ext
    *
    * The cost of this operation is linear in the size of the list that is to be prepended.
    */
-  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
+  final def reversePrepend(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
     var remaining = other
     var result = this
     while (remaining.nonEmpty) {

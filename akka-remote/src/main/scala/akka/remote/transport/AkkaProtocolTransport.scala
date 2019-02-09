@@ -514,7 +514,7 @@ private[transport] class ProtocolStateActor(
       stop()
 
     case Event(HandleListenerRegistered(listener), AssociatedWaitHandler(_, wrappedHandle, queue)) =>
-      queue.foreach { listener notify InboundPayload(_) }
+      queue.foreach {p => listener notify InboundPayload(p) }
       stay() using ListenerReady(listener, wrappedHandle)
   }
 

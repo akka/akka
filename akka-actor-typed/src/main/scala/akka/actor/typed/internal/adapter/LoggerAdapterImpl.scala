@@ -323,7 +323,7 @@ private[akka] abstract class AbstractLogger extends Logger {
    */
   private def format(t: String, arg1: Any): String = arg1 match {
     case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatArray(t, a: _*)
-    case a: Array[_] => formatArray(t, (a map (_.asInstanceOf[AnyRef]): _*))
+    case a: Array[_] => formatArray(t, a.map(_.asInstanceOf[AnyRef]): _*)
     case x => formatArray(t, x)
   }
   private def format(t: String, arg1: Any, arg2: Any): String = formatArray(t, arg1, arg2)

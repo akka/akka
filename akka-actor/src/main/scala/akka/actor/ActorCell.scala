@@ -540,7 +540,7 @@ private[akka] class ActorCell(
       val newState = calculateState
       // As each state accepts a strict subset of another state, it is enough to unstash if we "walk up" the state
       // chain
-      val todo = if (newState < currentState) unstashAll() reverse_::: rest else rest
+      val todo = if (newState < currentState) rest.reversePrepend(unstashAll()) else rest
 
       if (isTerminated) sendAllToDeadLetters(todo)
       else if (todo.nonEmpty) invokeAll(todo, newState)

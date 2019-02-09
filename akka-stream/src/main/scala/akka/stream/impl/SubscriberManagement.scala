@@ -250,7 +250,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   private def unregisterSubscriptionInternal(subscription: S): Unit = {
     @tailrec def removeFrom(remaining: Subscriptions, result: Subscriptions = Nil): Subscriptions =
       remaining match {
-        case head :: tail => if (head eq subscription) tail reverse_::: result else removeFrom(tail, head :: result)
+        case head :: tail => if (head eq subscription) result.reverse_:::(tail) else removeFrom(tail, head :: result)
         case _            => throw new IllegalStateException("Subscription to unregister not found")
       }
     if (subscription.active) {
