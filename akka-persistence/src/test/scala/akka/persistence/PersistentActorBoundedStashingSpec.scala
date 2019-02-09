@@ -122,7 +122,7 @@ class DiscardStrategyPersistentActorBoundedStashingSpec
       //internal stash overflow after 10
       1 to (2 * capacity) foreach (persistentActor ! Cmd(_))
       //so, 11 to 20 discard to deadletter
-      (1 + capacity) to (2 * capacity) foreach (i => expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
+      ((1 + capacity) to (2 * capacity)).foreach (i => expectMsg(DeadLetter(Cmd(i), testActor, persistentActor)))
       //allow "a" and 1 to 10 write complete
       1 to (1 + capacity) foreach (i => SteppingInmemJournal.step(journal))
 
@@ -150,7 +150,7 @@ class ReplyToStrategyPersistentActorBoundedStashingSpec
       //internal stash overflow after 10
       1 to (2 * capacity) foreach (persistentActor ! Cmd(_))
       //so, 11 to 20 reply to with "Reject" String
-      (1 + capacity) to (2 * capacity) foreach (i => expectMsg("RejectToStash"))
+      ((1 + capacity) to (2 * capacity)).foreach (i => expectMsg("RejectToStash"))
       //allow "a" and 1 to 10 write complete
       1 to (1 + capacity) foreach (i => SteppingInmemJournal.step(journal))
 

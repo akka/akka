@@ -258,7 +258,7 @@ private[netty] abstract class ServerHandler(
         val remoteAddress = NettyTransport.addressFromSocketAddress(remoteSocketAddress, transport.schemeIdentifier,
           transport.system.name, hostName = None, port = None).getOrElse(
             throw new NettyTransportException(s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
-        init(channel, remoteSocketAddress, remoteAddress, msg) { listener notify InboundAssociation(_) }
+        init(channel, remoteSocketAddress, remoteAddress, msg) {a => listener notify InboundAssociation(a) }
     }
   }
 

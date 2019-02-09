@@ -240,7 +240,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
             case (a, _) if a > 10000000 => throw t
             case (a, b)                 => Some((b, a + b) -> a)
           }.runFold(List.empty[Int]) { case (xs, x) => x :: xs }.failed) {
-            _ should be theSameInstanceAs (t)
+            x => (x should be).theSameInstanceAs(t)
           }
     }
 

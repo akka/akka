@@ -272,11 +272,12 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       val maybeMsg = receiveOne_internal(timeout)
       maybeMsg match {
         case Some(message) =>
-          val outcome = try fisher(message) catch {
-            case ex: MatchError => throw new AssertionError(
-              s"Unexpected message $message while fishing for messages, " +
-                s"seen messages ${seen.reverse}, hint: $hint", ex)
-          }
+          val outcome =
+            try fisher(message) catch {
+              case ex: MatchError => throw new AssertionError(
+                s"Unexpected message $message while fishing for messages, " +
+                  s"seen messages ${seen.reverse}, hint: $hint", ex)
+            }
           outcome match {
             case FishingOutcome.Complete    => (message :: seen).reverse
             case FishingOutcome.Fail(error) => assertFail(s"$error, hint: $hint")
