@@ -6,12 +6,12 @@ package akka
 
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
-import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
+import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt.{ Def, _ }
 import sbt.Keys._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings
 
 object MultiNode extends AutoPlugin {
 
@@ -57,10 +57,9 @@ object MultiNode extends AutoPlugin {
 
   private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
-      inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
+      inConfig(MultiJvm)(scalafmtConfigSettings) ++
       Seq(
         jvmOptions in MultiJvm := defaultMultiJvmOptions,
-        compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
         scalacOptions in MultiJvm := (scalacOptions in Test).value,
         logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
         multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
