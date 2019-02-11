@@ -131,7 +131,6 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-
     val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
       val n = snapshotEvery()
       if (n > 0)
@@ -147,11 +146,12 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       else tags.asScala.toSet
     }
 
-    val behavior = scaladsl.EventSourcedBehavior[Command, Event, State](
+    val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
-      eventHandler()(_, _))
+      eventHandler()(_, _),
+      getClass)
       .onRecoveryCompleted(onRecoveryCompleted)
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
