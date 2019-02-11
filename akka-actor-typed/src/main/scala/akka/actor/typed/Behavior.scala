@@ -282,6 +282,46 @@ object Behavior {
   }
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final class UnstashingBehavior[T](
+    private var currentBehavior: Behavior[T],
+    stashIterator:               Iterator[T]
+  ) extends Behavior[T] {
+
+    def unstash(previousBehavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
+      @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
+        val b2 = Behavior.start(b, ctx)
+        if (!Behavior.isAlive(b2) || !stashIterator.hasNext) b2
+        else {
+          val nextMessage = stashIterator.next()
+          val nextB = interpret(b2, ctx, nextMessage)
+          // must make sure that we don't have Same if starting fails
+          currentBehavior = Behavior.canonicalize(nextB, currentBehavior, ctx)
+          currentBehavior = Behavior.canonicalize(Behavior.start(nextB, ctx), currentBehavior, ctx)
+          interpretOne(currentBehavior) // recursive
+        }
+      }
+
+      // make sure we don't start with `same`
+      currentBehavior = Behavior.canonicalize(currentBehavior, previousBehavior, ctx)
+      interpretOne(currentBehavior)
+      currentBehavior
+    }
+
+    def receiveSignal(ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
+      signal match {
+        case PreRestart | PostStop ⇒
+          interpretSignal(currentBehavior, ctx, signal)
+        case _ ⇒
+          Behavior.unhandled
+      }
+    }
+
+  }
+
+  /**
    * Given a possibly special behavior (same or unhandled) and a
    * “current” behavior (which defines the meaning of encountering a `same`
    * behavior) this method computes the next behavior, suitable for passing a
@@ -412,9 +452,16 @@ object Behavior {
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ Behavior.same[T]
-      case s: StoppedBehavior[T]  ⇒ s
-      case f: FailedBehavior      ⇒ f
-      case EmptyBehavior          ⇒ Behavior.unhandled[T]
+      case u: UnstashingBehavior[T] ⇒
+        msg match {
+          case s: Signal ⇒
+            u.receiveSignal(ctx, s)
+          case _ ⇒
+            throw new InvalidMessageException(s"Unstashing behavior should never receive messages but got [$msg]")
+        }
+      case s: StoppedBehavior[T] ⇒ s
+      case f: FailedBehavior     ⇒ f
+      case EmptyBehavior         ⇒ Behavior.unhandled[T]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)

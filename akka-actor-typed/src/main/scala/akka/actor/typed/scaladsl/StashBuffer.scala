@@ -94,7 +94,7 @@ object StashBuffer {
    * messages will not be processed by this call and have to be unstashed
    * in another call.
    */
-  def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
+  def unstashAll(behavior: Behavior[T]): Behavior[T]
 
   /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`
@@ -115,7 +115,7 @@ object StashBuffer {
    * messages will not be processed by this call and have to be unstashed
    * in another call.
    */
-  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T]
+  def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T]
 
 }
 

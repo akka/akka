@@ -10,13 +10,12 @@ import java.lang.reflect.InvocationTargetException
 
 import akka.actor.ActorInitializationException
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
-import akka.actor.typed.javadsl.UnstashingBehavior
 
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import akka.{actor => untyped}
+import akka.{ actor ⇒ untyped }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
@@ -86,6 +85,7 @@ import akka.util.OptionVal
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
+      // note - the same logic is present in the InterceptorImpl, changes here likely needs changes there as well
       b match {
         case s: StoppedBehavior[T] ⇒
           // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
@@ -103,13 +103,16 @@ import akka.util.OptionVal
         case f: FailedBehavior ⇒
           // For the parent untyped supervisor to pick up the exception
           throw new TypedActorFailedException(f.cause)
-        case u: UnstashingBehavior[T] =>
+        case u: UnstashingBehavior[T] ⇒
+          // keep the unstashing behavior as current, so that intermediate failures while unstashing
+          // can be handled correctly
+          val previousBehavior = behavior
           behavior = u
-          u.unstash(context)
-
+          behavior = u.unstash(previousBehavior, ctx)
 
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
+
       }
     }
   }

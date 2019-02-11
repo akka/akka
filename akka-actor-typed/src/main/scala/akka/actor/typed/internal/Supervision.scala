@@ -323,12 +323,10 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
         case OptionVal.None ⇒ newBehavior
         case OptionVal.Some((stashBuffer, _)) ⇒
           restartingInProgress = OptionVal.None
-          stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], newBehavior.unsafeCast)
+          stashBuffer.unstashAll(newBehavior.unsafeCast)
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = () ⇒ ())
-    // FIXME signal Restart is not done if unstashAll throws, unstash of each message may return a new behavior and
-    //      it's the failing one that should receive the signal
   }
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {
