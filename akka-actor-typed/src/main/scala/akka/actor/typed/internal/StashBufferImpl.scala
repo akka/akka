@@ -5,9 +5,10 @@
 package akka.actor.typed.internal
 
 import java.util.function.Consumer
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{Function => JFunction}
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
 import akka.annotation.InternalApi
@@ -100,6 +101,7 @@ import akka.util.ConstantFun
       override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
       override def next(): T = wrap(StashBufferImpl.this.dropHead())
     }.take(numberOfMessages)
+    new UnstashingBehavior[T](ite, behavior)
     Behavior.interpretMessages[T](behavior, ctx, iter)
   }
 
@@ -111,3 +113,18 @@ import akka.util.ConstantFun
     s"StashBuffer($size/$capacity)"
 }
 
+
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final class UnstashingBehavior[T](var currentBehavior: Behavior[T]) extends Behavior[T] {
+
+  def unstash(ctz: TypedActorContext[T]): Behavior[T] = {
+
+    currentBehavior
+  }
+
+
+}

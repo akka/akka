@@ -10,12 +10,13 @@ import java.lang.reflect.InvocationTargetException
 
 import akka.actor.ActorInitializationException
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.actor.typed.javadsl.UnstashingBehavior
 
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import akka.{ actor ⇒ untyped }
+import akka.{actor => untyped}
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
@@ -102,6 +103,11 @@ import akka.util.OptionVal
         case f: FailedBehavior ⇒
           // For the parent untyped supervisor to pick up the exception
           throw new TypedActorFailedException(f.cause)
+        case u: UnstashingBehavior[T] =>
+          behavior = u
+          u.unstash(context)
+
+
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }
