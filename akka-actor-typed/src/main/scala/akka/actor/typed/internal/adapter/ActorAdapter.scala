@@ -85,6 +85,7 @@ import akka.util.OptionVal
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
+      // note - the same logic is present in the InterceptorImpl, changes here likely needs changes there as well
       b match {
         case s: StoppedBehavior[T] ⇒
           // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
@@ -102,8 +103,16 @@ import akka.util.OptionVal
         case f: FailedBehavior ⇒
           // For the parent untyped supervisor to pick up the exception
           throw new TypedActorFailedException(f.cause)
+        case u: UnstashingBehavior[T] ⇒
+          // keep the unstashing behavior as current, so that intermediate failures while unstashing
+          // can be handled correctly
+          val previousBehavior = behavior
+          behavior = u
+          behavior = u.unstash(previousBehavior, ctx)
+
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
+
       }
     }
   }

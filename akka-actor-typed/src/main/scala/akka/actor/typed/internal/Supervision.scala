@@ -12,7 +12,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import akka.actor.DeadLetterSuppression
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
 import akka.actor.typed.BehaviorInterceptor.ReceiveTarget
@@ -327,8 +326,6 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = () ⇒ ())
-    // FIXME signal Restart is not done if unstashAll throws, unstash of each message may return a new behavior and
-    //      it's the failing one that should receive the signal
   }
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {

@@ -5,11 +5,12 @@
 package akka.actor.typed
 package scaladsl
 
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.WordSpecLike
 
-object StashSpec {
+object AbstractStashSpec {
   sealed trait Command
   final case class Msg(s: String) extends Command
   final case class Unstashed(cmd: Command) extends Command
@@ -25,7 +26,7 @@ object StashSpec {
       val buffer = StashBuffer[Command](capacity = 10)
 
       def active(processed: Vector[String]): Behavior[Command] =
-        Behaviors.receive { (context, cmd) ⇒
+        Behaviors.receive { (_, cmd) ⇒
           cmd match {
             case message: Msg ⇒
               active(processed :+ message.s)
@@ -176,20 +177,20 @@ object StashSpec {
 
 }
 
-class ImmutableStashSpec extends StashSpec {
-  import StashSpec._
+class ImmutableStashSpec extends AbstractStashSpec {
+  import AbstractStashSpec._
   def testQualifier: String = "immutable behavior"
   def behaviorUnderTest: Behavior[Command] = immutableStash
 }
 
-class MutableStashSpec extends StashSpec {
-  import StashSpec._
+class MutableStashSpec extends AbstractStashSpec {
+  import AbstractStashSpec._
   def testQualifier: String = "mutable behavior"
   def behaviorUnderTest: Behavior[Command] = Behaviors.setup(context ⇒ new MutableStash(context))
 }
 
-abstract class StashSpec extends ScalaTestWithActorTestKit with WordSpecLike {
-  import StashSpec._
+abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+  import AbstractStashSpec._
 
   def testQualifier: String
   def behaviorUnderTest: Behavior[Command]
@@ -241,4 +242,204 @@ abstract class StashSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   }
 
+}
+
+class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+
+  def stashingBehavior(probe: ActorRef[String]) =
+    Behaviors.setup[String] { ctx ⇒
+      val stash = StashBuffer[String](10)
+      def unstashing(n: Int): Behavior[String] =
+        Behaviors.receiveMessage[String] {
+          case "stash" ⇒
+            probe.ref ! s"unstashing-$n"
+            unstashing(n + 1)
+          case "stash-fail" ⇒
+            probe.ref ! s"stash-fail-$n"
+            throw new TestException("unstash-fail")
+          case "get-current" ⇒
+            probe.ref ! s"current-$n"
+            Behaviors.same
+        }.receiveSignal {
+          case (_, PreRestart) ⇒
+            probe.ref ! s"pre-restart-$n"
+            Behaviors.same
+          case (_, PostStop) ⇒
+            probe.ref ! s"post-stop-$n"
+            Behaviors.same
+        }
+
+      Behaviors.receiveMessage[String] {
+        case msg if msg.startsWith("stash") ⇒
+          stash.stash(msg)
+          Behavior.same
+        case "unstash" ⇒
+          stash.unstashAll(ctx, unstashing(0))
+      }
+    }
+
+  "Unstashing" must {
+
+    "work with initial Behaviors.same" in {
+      val probe = TestProbe[String]()
+      // unstashing is inside setup
+      val ref = spawn(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
+          val stash = StashBuffer[String](10)
+          stash.stash("one")
+          stash.unstashAll(ctx, Behavior.same)
+
+        case (ctx, msg) ⇒
+          probe.ref ! msg
+          Behaviors.same
+      })
+
+      ref ! "unstash"
+      probe.expectMessage("one")
+    }
+
+    "work with intermediate Behaviors.same" in {
+      val probe = TestProbe[String]()
+      // unstashing is inside setup
+      val ref = spawn(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
+          val stash = StashBuffer[String](10)
+          stash.stash("one")
+          stash.stash("two")
+          stash.unstashAll(ctx, Behaviors.receiveMessage {
+            case msg ⇒
+              probe.ref ! msg
+              Behaviors.same
+          })
+      })
+
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectMessage("two")
+      ref ! "three"
+      probe.expectMessage("three")
+    }
+
+    "work with supervised initial Behaviors.same" in {
+      val probe = TestProbe[String]()
+      // unstashing is inside setup
+      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
+          val stash = StashBuffer[String](10)
+          stash.stash("one")
+          stash.unstashAll(ctx, Behavior.same)
+
+        case (_, msg) ⇒
+          probe.ref ! msg
+          Behaviors.same
+      }).onFailure[TestException](SupervisorStrategy.stop))
+
+      ref ! "unstash"
+      probe.expectMessage("one")
+      ref ! "two"
+      probe.expectMessage("two")
+    }
+
+    "work with supervised intermediate Behaviors.same" in {
+      val probe = TestProbe[String]()
+      // unstashing is inside setup
+      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
+          val stash = StashBuffer[String](10)
+          stash.stash("one")
+          stash.stash("two")
+          stash.unstashAll(ctx, Behaviors.receiveMessage {
+            case msg ⇒
+              probe.ref ! msg
+              Behaviors.same
+          })
+      }).onFailure[TestException](SupervisorStrategy.stop))
+
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectMessage("two")
+      ref ! "three"
+      probe.expectMessage("three")
+    }
+
+    "signal PostStop to the latest unstashed behavior on failure" in {
+      val probe = TestProbe[Any]()
+      val ref =
+        spawn(stashingBehavior(probe.ref))
+
+      ref ! "stash"
+      ref ! "stash-fail"
+      ref ! "unstash"
+      probe.expectMessage("unstashing-0")
+      probe.expectMessage("stash-fail-1")
+      probe.expectMessage("post-stop-1")
+    }
+
+    "signal PostStop to the latest unstashed behavior on failure with supervision" in {
+      val probe = TestProbe[Any]()
+      val ref =
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
+          .onFailure[TestException](SupervisorStrategy.stop))
+
+      ref ! "stash"
+      ref ! "stash-fail"
+      ref ! "unstash"
+      probe.expectMessage("unstashing-0")
+      probe.expectMessage("stash-fail-1")
+      probe.expectMessage("post-stop-1")
+    }
+
+    "signal PreRestart to the latest unstashed behavior on failure" in {
+      val probe = TestProbe[Any]()
+      val ref =
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
+          .onFailure[TestException](SupervisorStrategy.restart))
+
+      ref ! "stash"
+      ref ! "stash-fail"
+      ref ! "unstash"
+      probe.expectMessage("unstashing-0")
+      probe.expectMessage("stash-fail-1")
+      probe.expectMessage("pre-restart-1")
+    }
+
+    "handle resume correctly on failure unstashing" in {
+      val probe = TestProbe[Any]()
+      val ref =
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
+          .onFailure[TestException](SupervisorStrategy.resume))
+
+      ref ! "stash"
+      ref ! "stash-fail"
+      ref ! "unstash"
+      ref ! "get-current"
+
+      probe.expectMessage("unstashing-0")
+      probe.expectMessage("stash-fail-1")
+      probe.expectMessage("current-1")
+    }
+
+    "be possible in combination with setup" in {
+      val probe = TestProbe[String]()
+      val ref = spawn(Behaviors.setup[String] { _ ⇒
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+
+        // unstashing is inside setup
+        Behaviors.receiveMessage {
+          case "unstash" ⇒
+            Behaviors.setup { ctx ⇒
+              stash.unstashAll(ctx, Behavior.same)
+            }
+          case msg ⇒
+            probe.ref ! msg
+            Behavior.same
+        }
+      })
+
+      ref ! "unstash"
+      probe.expectMessage("one")
+    }
+
+  }
 }

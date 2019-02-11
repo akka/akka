@@ -5,11 +5,14 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed
+import akka.actor.typed.Behavior.UnstashingBehavior
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
+
+import scala.util.control.NonFatal
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -33,8 +36,10 @@ private[akka] object InterceptorImpl {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I], val nestedBehavior: Behavior[I])
+private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I], private var _nestedBehavior: Behavior[I])
   extends ExtensibleBehavior[O] with WrappingBehavior[O, I] {
+
+  override def nestedBehavior: Behavior[I] = _nestedBehavior
 
   import BehaviorInterceptor._
 
@@ -45,16 +50,34 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   }
 
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
-    override def apply(ctx: TypedActorContext[_], msg: I): Behavior[I] =
-      Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], msg)
+    override def apply(ctx: TypedActorContext[_], msg: I): Behavior[I] = {
+      try {
+        val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
+        val nextB = Behavior.interpretMessage(nestedBehavior, ctxI, msg)
+        next(ctxI, nextB)
+      } catch {
+        case NonFatal(ex) ⇒
+          // unstashing is aborted on failure
+          nestedBehavior match {
+            case u: UnstashingBehavior[I] ⇒
+              _nestedBehavior = u.currentBehavior
+            case _ ⇒
+          }
+          throw ex
+
+      }
+    }
 
     override def signalRestart(ctx: TypedActorContext[_]): Unit =
       Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], PreRestart)
   }
 
   private val signalTarget = new SignalTarget[I] {
-    override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], signal)
+    override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] = {
+      val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
+      val nextB = Behavior.interpretSignal(nestedBehavior, ctxI, signal)
+      next(ctxI, nextB)
+    }
   }
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
@@ -80,6 +103,22 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
     deduplicate(interceptedResult, ctx)
   }
+
+  // invoked from the interceptor targets, so that unstashing happens when the interceptor
+  // passes the message/signal to it
+  private def next(ctx: TypedActorContext[I], b: Behavior[I]): Behavior[I] =
+    b match {
+      case u: UnstashingBehavior[I] ⇒
+        // keep the unstashing behavior as current, so that intermediate failures while unstashing
+        // can be handled correctly
+        val previousBehavior = nestedBehavior
+        _nestedBehavior = u
+        _nestedBehavior = u.unstash(previousBehavior, ctx)
+        _nestedBehavior
+
+      case other ⇒
+        Behavior.canonicalize(other, other, ctx)
+    }
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])

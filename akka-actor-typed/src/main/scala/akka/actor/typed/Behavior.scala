@@ -282,6 +282,48 @@ object Behavior {
   }
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final class UnstashingBehavior[T](
+    private var _currentBehavior: Behavior[T],
+    stashIterator:                Iterator[T]
+  ) extends Behavior[T] {
+
+    def currentBehavior: Behavior[T] = _currentBehavior
+
+    def unstash(previousBehavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
+      @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
+        val b2 = Behavior.start(b, ctx)
+        if (!Behavior.isAlive(b2) || !stashIterator.hasNext) b2
+        else {
+          val nextMessage = stashIterator.next()
+          val nextB = interpret(b2, ctx, nextMessage)
+          // must make sure that we don't have Same if starting fails
+          _currentBehavior = Behavior.canonicalize(nextB, _currentBehavior, ctx)
+          _currentBehavior = Behavior.canonicalize(Behavior.start(nextB, ctx), _currentBehavior, ctx)
+          interpretOne(_currentBehavior) // recursive
+        }
+      }
+
+      // make sure we don't start with `same`
+      _currentBehavior = Behavior.canonicalize(_currentBehavior, previousBehavior, ctx)
+      interpretOne(_currentBehavior)
+      _currentBehavior
+    }
+
+    def receiveSignal(ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
+      signal match {
+        case PreRestart | PostStop ⇒
+          interpretSignal(_currentBehavior, ctx, signal)
+        case _ ⇒
+          Behavior.unhandled
+      }
+    }
+
+  }
+
+  /**
    * Given a possibly special behavior (same or unhandled) and a
    * “current” behavior (which defines the meaning of encountering a `same`
    * behavior) this method computes the next behavior, suitable for passing a
@@ -412,9 +454,16 @@ object Behavior {
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ Behavior.same[T]
-      case s: StoppedBehavior[T]  ⇒ s
-      case f: FailedBehavior      ⇒ f
-      case EmptyBehavior          ⇒ Behavior.unhandled[T]
+      case u: UnstashingBehavior[T] ⇒
+        msg match {
+          case s: Signal ⇒
+            u.receiveSignal(ctx, s)
+          case _ ⇒
+            throw new IllegalArgumentException(s"Unstashing behavior should never receive messages but got [$msg]")
+        }
+      case s: StoppedBehavior[T] ⇒ s
+      case f: FailedBehavior     ⇒ f
+      case EmptyBehavior         ⇒ Behavior.unhandled[T]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
@@ -422,28 +471,6 @@ object Behavior {
         }
         start(possiblyDeferredResult, ctx)
     }
-  }
-
-  /**
-   * INTERNAL API
-   *
-   * Execute the behavior with the given messages (or signals).
-   * The returned [[Behavior]] from each processed message is used for the next message.
-   */
-  @InternalApi private[akka] def interpretMessages[T](behavior: Behavior[T], ctx: TypedActorContext[T], messages: Iterator[T]): Behavior[T] = {
-    @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
-      val b2 = Behavior.start(b, ctx)
-      if (!Behavior.isAlive(b2) || !messages.hasNext) b2
-      else {
-        val nextB = messages.next() match {
-          case sig: Signal ⇒ Behavior.interpretSignal(b2, ctx, sig)
-          case msg         ⇒ Behavior.interpretMessage(b2, ctx, msg)
-        }
-        interpretOne(Behavior.canonicalize(nextB, b, ctx)) // recursive
-      }
-    }
-
-    interpretOne(Behavior.start(behavior, ctx))
   }
 
 }
