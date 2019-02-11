@@ -284,7 +284,7 @@ object AskableActorRef {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def recipientTerminatedExcpetion(recipient: Any, message: Any, sender: ActorRef): AskTimeoutException = {
+  @InternalApi private[akka] def recipientTerminatedException(recipient: Any, message: Any, sender: ActorRef): AskTimeoutException = {
     new AskTimeoutException(s"Recipient [$recipient] had already been terminated. " +
       messagePartOfException(message, sender))
   }
@@ -327,7 +327,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   private[pattern] def internalAsk(message: Any, timeout: Timeout, sender: ActorRef) = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef ! message
-      Future.failed[Any](AskableActorRef.recipientTerminatedExcpetion(actorRef, message, sender))
+      Future.failed[Any](AskableActorRef.recipientTerminatedException(actorRef, message, sender))
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
@@ -359,7 +359,7 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
     case ref: InternalActorRef if ref.isTerminated ⇒
       val message = messageFactory(ref.provider.deadLetters)
       actorRef ! message
-      Future.failed[Any](AskableActorRef.recipientTerminatedExcpetion(actorRef, message, sender))
+      Future.failed[Any](AskableActorRef.recipientTerminatedException(actorRef, message, sender))
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0) {
         val message = messageFactory(ref.provider.deadLetters)

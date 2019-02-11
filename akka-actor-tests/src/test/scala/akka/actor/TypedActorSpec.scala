@@ -269,7 +269,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       TypedActor(system).stop(null) should ===(false)
     }
 
-    "throw an IllegalStateExcpetion when TypedActor.self is called in the wrong scope" in {
+    "throw an IllegalStateException when TypedActor.self is called in the wrong scope" in {
       filterEvents(EventFilter[IllegalStateException]("Calling")) {
         (intercept[IllegalStateException] {
           TypedActor.self[Foo]

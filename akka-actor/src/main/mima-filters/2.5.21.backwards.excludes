@@ -1,0 +1,2 @@
+# Typo in Akka internal method - PR #26352
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.recipientTerminatedExcpetion")
