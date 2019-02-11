@@ -16,6 +16,7 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
+import akka.stream.snapshot._
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
@@ -31,6 +32,7 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] object ActorGraphInterpreter {
 
   object Resume extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  object Snapshot extends NoSerializationVerificationNeeded
 
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
@@ -512,8 +514,6 @@ import scala.util.control.NonFatal
   private var inputs: List[BatchingActorInputBoundary] = Nil
   private var outputs: List[ActorOutputBoundary] = Nil
 
-  def dumpWaits(): Unit = interpreter.dumpWaits()
-
   /*
    * Limits the number of events processed by the interpreter before scheduling
    * a self-message for fairness with other actors. The basic assumption here is
@@ -637,30 +637,15 @@ import scala.util.control.NonFatal
     }
   }
 
-  override def toString: String = {
-    val builder = StringBuilder.newBuilder
-    builder.append("GraphInterpreterShell(\n  logics: [\n")
-    val logicsToPrint = if (isInitialized) interpreter.logics else logics
-    logicsToPrint.foreach { logic ⇒
-      builder.append("    ")
-        .append(logic.originalStage.getOrElse(logic).toString)
-        .append(" attrs: [")
-        .append(logic.attributes.attributeList.mkString(", "))
-        .append("],\n")
-    }
-    builder.setLength(builder.length - 2)
-    if (isInitialized) {
-      builder.append("\n  ],\n  connections: [\n")
-      interpreter.connections.foreach { connection ⇒
-        builder
-          .append("    ")
-          .append(if (connection == null) "null" else connection.toString)
-          .append(",\n")
-      }
-      builder.setLength(builder.length - 2)
-    }
-    builder.append("\n  ]\n)")
-    builder.toString()
+  def toSnapshot: InterpreterSnapshot = {
+    if (!isInitialized)
+      UninitializedInterpreterImpl(
+        logics.zipWithIndex.map {
+          case (logic, idx) ⇒
+            LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+        }.toVector
+      )
+    else interpreter.toSnapshot
   }
 }
 
@@ -764,32 +749,12 @@ import scala.util.control.NonFatal
       currentLimit = eventLimit
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
-    case StreamSupervisor.PrintDebugDump ⇒
-      val builder = new java.lang.StringBuilder(s"activeShells (actor: $self):\n")
-      activeInterpreters.foreach { shell ⇒
-        builder.append("  ")
-          .append(shell.toString.replace("\n", "\n  "))
-          .append("\n")
-        if (shell.isInitialized) {
-          builder.append(shell.interpreter.toString)
-        } else {
-          builder.append("    Not initialized")
-        }
-        builder.append("\n")
-      }
-      builder.append(s"newShells:\n")
-      newShells.foreach { shell ⇒
-        builder.append("  ")
-          .append(shell.toString.replace("\n", "\n  "))
-          .append("\n")
-        if (shell.isInitialized) {
-          builder.append(shell.interpreter.toString)
-        } else {
-          builder.append("    Not initialized")
-        }
-        builder.append("\n")
-      }
-      println(builder)
+    case Snapshot ⇒
+      sender() ! StreamSnapshotImpl(
+        self.path,
+        activeInterpreters.map(shell ⇒ shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
+        newShells.map(shell ⇒ shell.toSnapshot.asInstanceOf[UninitializedInterpreter])
+      )
   }
 
   override def postStop(): Unit = {
