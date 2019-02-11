@@ -168,8 +168,6 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   case object StopChildren
   /** Testing purpose */
   case object StoppedChildren
-  /** Testing purpose */
-  case object PrintDebugDump
 }
 
 /**
