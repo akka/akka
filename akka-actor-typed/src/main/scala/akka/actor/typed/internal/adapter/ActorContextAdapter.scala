@@ -83,17 +83,25 @@ import scala.concurrent.duration._
     ActorRefAdapter[U](ref)
   }
 
+  private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
+    val logSource = self.path.toString
+    val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
+    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+    actorLogger = OptionVal.Some(logger)
+    logger
+  }
+
   override def log: Logger = {
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        val logSource = self.path.toString
-        val logClass = classOf[Behavior[_]] // FIXME figure out untyped better class somehow
-        val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-        val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
-        actorLogger = OptionVal.Some(logger)
-        logger
+        val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
+        initLoggerWithClass(logClass)
     }
+  }
+
+  override def setLoggerClass(clazz: Class[_]): Unit = {
+    initLoggerWithClass(clazz)
   }
 }
 

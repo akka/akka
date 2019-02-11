@@ -84,6 +84,10 @@ private[akka] final class FunctionRef[-T](
     withMdc.mdc = mdc
     withMdc
   }
+
+  // we don't care about log class and source here as we only track message, level and marker
+  def withLoggerClass(clazz: Class[_]): Logger = this
+  def withLogSource(logSource: String): Logger = this
 }
 
 @InternalApi private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends AbstractLogger {
@@ -121,6 +125,9 @@ private[akka] final class FunctionRef[-T](
     actual.mdc = original
   }
 
+  // we don't care about log class and source here as we only track message, level and marker
+  def withLoggerClass(clazz: Class[_]): Logger = this
+  def withLogSource(logSource: String): Logger = this
 }
 
 /**
@@ -243,6 +250,8 @@ private[akka] final class FunctionRef[-T](
   override def toString: String = s"Inbox($self)"
 
   override def log: Logger = loggingAdapter
+
+  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we dont track logger class
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through

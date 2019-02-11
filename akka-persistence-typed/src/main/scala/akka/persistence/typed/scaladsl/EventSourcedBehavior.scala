@@ -9,6 +9,7 @@ import scala.util.Try
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.internal.LoggerClass
 import akka.annotation.DoNotInherit
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -43,8 +44,10 @@ object EventSourcedBehavior {
     persistenceId:  PersistenceId,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
-    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
+    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
+  }
 
   /**
    * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
@@ -55,8 +58,10 @@ object EventSourcedBehavior {
     persistenceId:  PersistenceId,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
-    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
+    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
+  }
 
   /**
    * The `CommandHandler` defines how to act on commands. A `CommandHandler` is

@@ -371,6 +371,18 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
     mdcAdapter
   }
 
+  def withLoggerClass(clazz: Class[_]): Logger = {
+    val withClass = new LoggerAdapterImpl(bus, clazz, logSource, loggingFilter)
+    withClass.mdc = mdc
+    withClass
+  }
+
+  def withLogSource(logSource: String): Logger = {
+    val withSource = new LoggerAdapterImpl(bus, logClass, logSource, loggingFilter)
+    withSource.mdc = mdc
+    withSource
+  }
+
   private[akka] def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val error = cause match {
       case OptionVal.Some(cause) ⇒

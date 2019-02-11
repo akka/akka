@@ -22,6 +22,11 @@ private[akka] trait ReceptionistBehaviorProvider {
   def behavior: Behavior[Command]
 }
 
+// just to provide a log class
+/** INTERNAL API */
+@InternalApi
+private[akka] final class LocalReceptionist
+
 /** INTERNAL API */
 @InternalApi
 private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
@@ -35,10 +40,13 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends InternalCommand
   final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]]) extends InternalCommand
 
-  override def behavior: Behavior[Command] = behavior(
-    TypedMultiMap.empty[AbstractServiceKey, KV],
-    TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
-  ).narrow[Command]
+  override def behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
+    ctx.setLoggerClass(classOf[LocalReceptionist])
+    behavior(
+      TypedMultiMap.empty[AbstractServiceKey, KV],
+      TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
+    ).narrow[Command]
+  }
 
   private def behavior(
     serviceRegistry: LocalServiceRegistry,

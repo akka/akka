@@ -65,12 +65,26 @@ trait ActorContext[T] extends TypedActorContext[T] { this: akka.actor.typed.java
   def system: ActorSystem[Nothing]
 
   /**
-   * An actor specific logger
+   * An actor specific logger.
+   *
+   * The logger will have the actor path as `logSource` and will an estimated source class for the actor
+   * which is calculated when the logger is first used (the logger is lazily created upon first use). If this
+   * yields the wrong class or another class is preferred this can be achieved through `Logger.withLoggerClass`
+   * or `setLoggerClass`.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def log: Logger
+
+  /**
+   * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
+   * has ghe given class as logging class. Logger source will be actor path.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   */
+  def setLoggerClass(clazz: Class[_]): Unit
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
