@@ -31,9 +31,9 @@ abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with Impl
 
   protected val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
-  protected val upLogMessage = " - event MemberUp"
+  protected val upLogMessage = "event MemberUp"
 
-  protected val downLogMessage = " - event MemberDowned"
+  protected val downLogMessage = "event MemberDowned"
 
   protected val cluster = Cluster(system)
 
