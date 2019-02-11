@@ -286,9 +286,11 @@ object Behavior {
    */
   @InternalApi
   private[akka] final class UnstashingBehavior[T](
-    private var currentBehavior: Behavior[T],
-    stashIterator:               Iterator[T]
+    private var _currentBehavior: Behavior[T],
+    stashIterator:                Iterator[T]
   ) extends Behavior[T] {
+
+    def currentBehavior: Behavior[T] = _currentBehavior
 
     def unstash(previousBehavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
       @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
@@ -298,22 +300,22 @@ object Behavior {
           val nextMessage = stashIterator.next()
           val nextB = interpret(b2, ctx, nextMessage)
           // must make sure that we don't have Same if starting fails
-          currentBehavior = Behavior.canonicalize(nextB, currentBehavior, ctx)
-          currentBehavior = Behavior.canonicalize(Behavior.start(nextB, ctx), currentBehavior, ctx)
-          interpretOne(currentBehavior) // recursive
+          _currentBehavior = Behavior.canonicalize(nextB, _currentBehavior, ctx)
+          _currentBehavior = Behavior.canonicalize(Behavior.start(nextB, ctx), _currentBehavior, ctx)
+          interpretOne(_currentBehavior) // recursive
         }
       }
 
       // make sure we don't start with `same`
-      currentBehavior = Behavior.canonicalize(currentBehavior, previousBehavior, ctx)
-      interpretOne(currentBehavior)
-      currentBehavior
+      _currentBehavior = Behavior.canonicalize(_currentBehavior, previousBehavior, ctx)
+      interpretOne(_currentBehavior)
+      _currentBehavior
     }
 
     def receiveSignal(ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
       signal match {
         case PreRestart | PostStop ⇒
-          interpretSignal(currentBehavior, ctx, signal)
+          interpretSignal(_currentBehavior, ctx, signal)
         case _ ⇒
           Behavior.unhandled
       }
@@ -457,7 +459,7 @@ object Behavior {
           case s: Signal ⇒
             u.receiveSignal(ctx, s)
           case _ ⇒
-            throw new InvalidMessageException(s"Unstashing behavior should never receive messages but got [$msg]")
+            throw new IllegalArgumentException(s"Unstashing behavior should never receive messages but got [$msg]")
         }
       case s: StoppedBehavior[T] ⇒ s
       case f: FailedBehavior     ⇒ f

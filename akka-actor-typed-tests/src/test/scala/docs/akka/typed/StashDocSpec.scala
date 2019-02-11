@@ -42,7 +42,7 @@ object StashDocSpec {
             message match {
               case InitialState(value) ⇒
                 // now we are ready to handle stashed messages if any
-                buffer.unstashAll(active(value))
+                buffer.unstashAll(context, active(value))
               case DBError(cause) ⇒
                 throw cause
               case other ⇒
@@ -72,7 +72,7 @@ object StashDocSpec {
             message match {
               case SaveSuccess ⇒
                 replyTo ! Done
-                buffer.unstashAll(active(state))
+                buffer.unstashAll(context, active(state))
               case DBError(cause) ⇒
                 throw cause
               case other ⇒

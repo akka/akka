@@ -7,11 +7,12 @@ package akka.actor.typed.internal
 import akka.actor.typed
 import akka.actor.typed.Behavior.UnstashingBehavior
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
-import akka.actor.typed.LogOptions.LogOptionsImpl
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
+
+import scala.util.control.NonFatal
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -50,9 +51,21 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
     override def apply(ctx: TypedActorContext[_], msg: I): Behavior[I] = {
-      val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
-      val nextB = Behavior.interpretMessage(nestedBehavior, ctxI, msg)
-      next(ctxI, nextB)
+      try {
+        val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
+        val nextB = Behavior.interpretMessage(nestedBehavior, ctxI, msg)
+        next(ctxI, nextB)
+      } catch {
+        case NonFatal(ex) ⇒
+          // unstashing is aborted on failure
+          nestedBehavior match {
+            case u: UnstashingBehavior[I] ⇒
+              _nestedBehavior = u.currentBehavior
+            case _ ⇒
+          }
+          throw ex
+
+      }
     }
 
     override def signalRestart(ctx: TypedActorContext[_]): Unit =

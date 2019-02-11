@@ -60,7 +60,7 @@ object AbstractStashSpec {
               replyTo ! buffer.size
               Behaviors.same
             case UnstashAll ⇒
-              buffer.unstashAll(active(processed))
+              buffer.unstashAll(context, active(processed))
             case Unstash ⇒
               context.log.debug(s"Unstash ${buffer.size}")
               if (buffer.isEmpty)
@@ -69,7 +69,7 @@ object AbstractStashSpec {
                 context.self ! Unstash // continue unstashing until buffer is empty
                 val numberOfMessages = 2
                 context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-                buffer.unstash(unstashing(processed), numberOfMessages, Unstashed)
+                buffer.unstash(context, unstashing(processed), numberOfMessages, Unstashed)
               }
             case Stash ⇒
               Behaviors.unhandled
@@ -106,7 +106,7 @@ object AbstractStashSpec {
                 context.self ! Unstash // continue unstashing until buffer is empty
                 val numberOfMessages = 2
                 context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-                buffer.unstash(unstashing(processed), numberOfMessages, Unstashed)
+                buffer.unstash(context, unstashing(processed), numberOfMessages, Unstashed)
               }
             case GetStashSize(replyTo) ⇒
               replyTo ! buffer.size
@@ -149,7 +149,7 @@ object AbstractStashSpec {
           this
         case UnstashAll ⇒
           stashing = false
-          buffer.unstashAll(this)
+          buffer.unstashAll(context, this)
         case Unstash ⇒
           if (buffer.isEmpty) {
             stashing = false
@@ -158,7 +158,7 @@ object AbstractStashSpec {
             context.self ! Unstash // continue unstashing until buffer is empty
             val numberOfMessages = 2
             context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-            buffer.unstash(this, numberOfMessages, Unstashed)
+            buffer.unstash(context, this, numberOfMessages, Unstashed)
           }
         case Unstashed(message: Msg) ⇒
           context.log.debug(s"unstashed $message")
@@ -244,10 +244,10 @@ abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpec
 
 }
 
-class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   def stashingBehavior(probe: ActorRef[String]) =
-    Behaviors.setup[String] { _ ⇒
+    Behaviors.setup[String] { ctx ⇒
       val stash = StashBuffer[String](10)
       def unstashing(n: Int): Behavior[String] =
         Behaviors.receiveMessage[String] {
@@ -274,7 +274,7 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           stash.stash(msg)
           Behavior.same
         case "unstash" ⇒
-          stash.unstashAll(unstashing(0))
+          stash.unstashAll(ctx, unstashing(0))
       }
     }
 
@@ -283,13 +283,13 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with initial Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.receiveMessage[String] {
-        case "unstash" ⇒
+      val ref = spawn(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
-          stash.unstashAll(Behavior.same)
+          stash.unstashAll(ctx, Behavior.same)
 
-        case msg ⇒
+        case (ctx, msg) ⇒
           probe.ref ! msg
           Behaviors.same
       })
@@ -301,12 +301,12 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.receiveMessage[String] {
-        case "unstash" ⇒
+      val ref = spawn(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
           stash.stash("two")
-          stash.unstashAll(Behaviors.receiveMessage {
+          stash.unstashAll(ctx, Behaviors.receiveMessage {
             case msg ⇒
               probe.ref ! msg
               Behaviors.same
@@ -323,13 +323,13 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with supervised initial Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receiveMessage[String] {
-        case "unstash" ⇒
+      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
-          stash.unstashAll(Behavior.same)
+          stash.unstashAll(ctx, Behavior.same)
 
-        case msg ⇒
+        case (_, msg) ⇒
           probe.ref ! msg
           Behaviors.same
       }).onFailure[TestException](SupervisorStrategy.stop))
@@ -343,12 +343,12 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with supervised intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receiveMessage[String] {
-        case "unstash" ⇒
+      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+        case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
           stash.stash("two")
-          stash.unstashAll(Behaviors.receiveMessage {
+          stash.unstashAll(ctx, Behaviors.receiveMessage {
             case msg ⇒
               probe.ref ! msg
               Behaviors.same
@@ -413,6 +413,7 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       ref ! "stash-fail"
       ref ! "unstash"
       ref ! "get-current"
+
       probe.expectMessage("unstashing-0")
       probe.expectMessage("stash-fail-1")
       probe.expectMessage("current-1")
@@ -427,8 +428,8 @@ class UnstashFailureSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         // unstashing is inside setup
         Behaviors.receiveMessage {
           case "unstash" ⇒
-            Behaviors.setup { _ ⇒
-              stash.unstashAll(Behavior.same)
+            Behaviors.setup { ctx ⇒
+              stash.unstashAll(ctx, Behavior.same)
             }
           case msg ⇒
             probe.ref ! msg
