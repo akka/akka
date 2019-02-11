@@ -446,13 +446,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       logAtLevel(Logging.DebugLevel, message)
 
     def logDebug(template: String, arg1: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1)
+      logAtLevel(Logging.DebugLevel, template, arg1)
 
     def logDebug(template: String, arg1: Any, arg2: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1, arg2)
+      logAtLevel(Logging.DebugLevel, template, arg1, arg2)
 
     def logDebug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1, arg2, arg3)
+      logAtLevel(Logging.DebugLevel, template, arg1, arg2, arg3)
 
     def logInfo(message: String): Unit =
       logAtLevel(Logging.InfoLevel, message)
