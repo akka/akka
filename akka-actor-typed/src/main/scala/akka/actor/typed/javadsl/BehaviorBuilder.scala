@@ -109,7 +109,10 @@ final class BehaviorBuilder[T] private (
    * @return a new behavior builder with the specified handling appended
    */
   def onSignal[M <: Signal](`type`: Class[M], handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(`type`, OptionVal.None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M]))
+    withSignal(
+      `type`,
+      OptionVal.None,
+      handler.asInstanceOf[JFunction2[ActorContext[T], Signal, Behavior[T]]])
 
   /**
    * Add a new predicated case to the signal handling.
@@ -124,7 +127,7 @@ final class BehaviorBuilder[T] private (
     withSignal(
       `type`,
       OptionVal.Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])),
-      (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])
+      handler.asInstanceOf[JFunction2[ActorContext[T], Signal, Behavior[T]]]
     )
 
   /**
@@ -135,7 +138,14 @@ final class BehaviorBuilder[T] private (
    * @return a new behavior builder with the specified handling appended
    */
   def onSignalEquals(signal: Signal, handler: Function[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(signal.getClass, OptionVal.Some(_.equals(signal)), (ctx: ActorContext[T], _: Signal) ⇒ handler.apply(ctx))
+    withSignal(
+      signal.getClass,
+      OptionVal.Some(_.equals(signal)),
+      new JFunction2[ActorContext[T], Signal, Behavior[T]] {
+        override def apply(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+          handler.apply(ctx)
+        }
+      })
 
   private def withMessage[M <: T](clazz: OptionVal[Class[M]], test: OptionVal[M ⇒ Boolean], handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] = {
     val newCase = Case(
