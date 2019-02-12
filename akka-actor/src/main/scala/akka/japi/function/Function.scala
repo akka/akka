@@ -7,6 +7,7 @@ package akka.japi.function
 /**
  * A Function interface. Used to create first-class-functions is Java.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.Function` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Function[-T, +R] extends java.io.Serializable {
@@ -17,6 +18,7 @@ trait Function[-T, +R] extends java.io.Serializable {
 /**
  * A Function interface. Used to create 2-arg first-class-functions is Java.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.BiFunction` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Function2[-T1, -T2, +R] extends java.io.Serializable {
@@ -27,6 +29,7 @@ trait Function2[-T1, -T2, +R] extends java.io.Serializable {
 /**
  * A Procedure is like a Function, but it doesn't produce a return value.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.Consumer` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Procedure[-T] extends java.io.Serializable {
@@ -37,9 +40,11 @@ trait Procedure[-T] extends java.io.Serializable {
 /**
  * An executable piece of code that takes no parameters and doesn't return any value.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.Effect` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Effect extends java.io.Serializable {
+
   @throws(classOf[Exception])
   def apply(): Unit
 }
@@ -47,6 +52,7 @@ trait Effect extends java.io.Serializable {
 /**
  * Java API: Defines a criteria and determines whether the parameter meets this criteria.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.Predicate` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Predicate[-T] extends java.io.Serializable {
@@ -55,6 +61,7 @@ trait Predicate[-T] extends java.io.Serializable {
 
 /**
  * A constructor/factory, takes no parameters but creates a new value of type T every call.
+ * Supports throwing `Exception` in the apply, which the `java.util.function.Creator` counterpart does not.
  */
 @SerialVersionUID(1L)
 trait Creator[+T] extends Serializable {

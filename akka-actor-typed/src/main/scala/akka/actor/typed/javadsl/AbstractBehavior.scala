@@ -42,13 +42,13 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
 
   /**
    * Implement this to define how messages and signals are processed. Use the
-   * [[AbstractBehavior.receiveBuilder]] to define the message dispatch.
+   * [[AbstractBehavior.newReceiveBuilder]] to define the message dispatch.
    */
   def createReceive: Receive[T]
 
   /**
-   * Create a [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
+   * Create a new [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
    * Typically used from [[AbstractBehavior.createReceive]].
    */
-  def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
+  def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
 }

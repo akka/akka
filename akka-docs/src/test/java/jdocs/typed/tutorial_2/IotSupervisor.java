@@ -28,7 +28,7 @@ public class IotSupervisor extends AbstractBehavior<Void> {
   // No need to handle any messages
   @Override
   public Receive<Void> createReceive() {
-    return receiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
+    return newReceiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
   }
 
   private IotSupervisor postStop() {
