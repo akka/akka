@@ -7,7 +7,7 @@ package akka.io.dns
 import collection.JavaConverters._
 import akka.testkit.AkkaSpec
 import com.spotify.docker.client.DefaultDockerClient
-import com.spotify.docker.client.DockerClient.LogsParam
+import com.spotify.docker.client.DockerClient.{ ListContainersParam, LogsParam }
 import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
 
@@ -53,7 +53,15 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
       )
       .build()
 
-    val creation = client.createContainer(containerConfig, "akka-test-dns-" + getClass.getCanonicalName)
+    val containerName = "akka-test-dns-" + getClass.getCanonicalName
+
+    client.listContainers().asScala.filter(_.names().contains(containerName))
+      .foreach(c ⇒ {
+        log.debug("Removing container id: {} from previous test run", c.id())
+        client.removeContainer(c.id())
+      })
+
+    val creation = client.createContainer(containerConfig, containerName)
     creation.warnings() should be(null)
     id = Some(creation.id())
 
