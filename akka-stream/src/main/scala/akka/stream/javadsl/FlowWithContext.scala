@@ -26,8 +26,11 @@ object FlowWithContext {
     new FlowWithContext(scaladsl.FlowWithContext[In, Ctx])
   }
 
+  /**
+   * Creates a FlowWithContext from a regular flow that operates on `Pair<data, context>` elements.
+   */
   def fromPairs[In, CtxIn, Out, CtxOut, Mat](under: Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] = {
-    new FlowWithContext(scaladsl.FlowWithContext.from(scaladsl.Flow[(In, CtxIn)].map { case (i, c) ⇒ Pair(i, c) }.viaMat(under.asScala.map(_.toScala))(scaladsl.Keep.right)))
+    new FlowWithContext(scaladsl.FlowWithContext.fromPairs(scaladsl.Flow[(In, CtxIn)].map { case (i, c) ⇒ Pair(i, c) }.viaMat(under.asScala.map(_.toScala))(scaladsl.Keep.right)))
   }
 }
 

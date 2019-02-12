@@ -17,6 +17,20 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 
 /**
+ * API MAY CHANGE
+ */
+@ApiMayChange
+object SourceWithContext {
+
+  /**
+   * Creates a SourceWithContext from a regular flow that operates on `Pair<data, context>` elements.
+   */
+  def fromPairs[Out, CtxOut, Mat](under: Source[Pair[Out, CtxOut], Mat]): SourceWithContext[Out, CtxOut, Mat] = {
+    new SourceWithContext(scaladsl.SourceWithContext.fromPairs(under.asScala.map(_.toScala)))
+  }
+}
+
+/**
  * A source that provides operations which automatically propagate the context of an element.
  * Only a subset of common operations from [[Source]] is supported. As an escape hatch you can
  * use [[SourceWithContext.via]] to manually provide the context propagation for otherwise unsupported

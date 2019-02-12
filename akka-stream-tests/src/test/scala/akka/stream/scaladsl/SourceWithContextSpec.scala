@@ -28,6 +28,16 @@ class SourceWithContextSpec extends StreamSpec {
         .expectComplete()
     }
 
+    "get created from a source of tuple2" in {
+      val msg = Message("a", 1L)
+      SourceWithContext.fromPairs(Source(Vector((msg, msg.offset))))
+        .endContextPropagation
+        .runWith(TestSink.probe[(Message, Long)])
+        .request(1)
+        .expectNext((msg, 1L))
+        .expectComplete()
+    }
+
     "be able to get turned back into a normal Source" in {
       val msg = Message("a", 1L)
       Source(Vector(msg))

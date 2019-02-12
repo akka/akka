@@ -25,7 +25,7 @@ object FlowWithContext {
   /**
    * Creates a FlowWithContext from a regular flow that operates on a pair of `(data, context)` elements.
    */
-  def from[In, CtxIn, Out, CtxOut, Mat](flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+  def fromPairs[In, CtxIn, Out, CtxOut, Mat](flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     new FlowWithContext(flow)
 }
 
@@ -46,10 +46,10 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
   override type ReprMat[+O, +C, +M] = FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
-    FlowWithContext.from(delegate.via(viaFlow))
+    new FlowWithContext(delegate.via(viaFlow))
 
   override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
-    FlowWithContext.from(delegate.viaMat(flow)(combine))
+    new FlowWithContext(delegate.viaMat(flow)(combine))
 
   def asFlow: Flow[(In, CtxIn), (Out, CtxOut), Mat] = delegate
 
