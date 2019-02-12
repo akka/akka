@@ -6,7 +6,6 @@ package akka.actor.typed.internal
 
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
-import akka.actor.typed.LogOptions.LogOptionsImpl
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi

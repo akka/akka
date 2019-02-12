@@ -127,6 +127,9 @@ private[io] final class AsyncDnsResolver(
           if (resolved.records.isEmpty) resolveFirst(remaining, requestType, resolver)
           else Future.successful(resolved)
         }
+      case Nil ⇒
+        // This can't happen
+        Future.failed(new IllegalStateException("Failed to 'resolveFirst': 'searchNames' must not be empty"))
     }
   }
 
