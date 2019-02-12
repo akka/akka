@@ -511,7 +511,7 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
+    cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved], classOf[MemberDowned])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
 
@@ -573,6 +573,10 @@ class ClusterSingletonManager(
         stay using YoungerData(oldestOption)
       }
 
+    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      logInfo("Self downed, stopping ClusterSingletonManager")
+      stop()
+
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
@@ -611,6 +615,10 @@ class ClusterSingletonManager(
           sender().path.address, previousOldest.address)
         stay
       }
+
+    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      logInfo("Self downed, stopping ClusterSingletonManager")
+      stop()
 
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
@@ -722,6 +730,15 @@ class ClusterSingletonManager(
       // complete memberExitingProgress when handOverDone
       sender() ! Done // reply to ask
       stay
+
+    case Event(MemberDowned(m), OldestData(singleton, singletonTerminated)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      if (singletonTerminated) {
+        logInfo("Self downed, stopping ClusterSingletonManager")
+        stop()
+      } else {
+        logInfo("Self downed, stopping")
+        gotoStopping(singleton)
+      }
   }
 
   when(WasOldest) {
@@ -760,6 +777,15 @@ class ClusterSingletonManager(
       // complete memberExitingProgress when handOverDone
       sender() ! Done // reply to ask
       stay
+
+    case Event(MemberDowned(m), OldestData(singleton, singletonTerminated)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      if (singletonTerminated) {
+        logInfo("Self downed, stopping ClusterSingletonManager")
+        stop()
+      } else {
+        logInfo("Self downed, stopping")
+        gotoStopping(singleton)
+      }
 
   }
 
@@ -852,6 +878,10 @@ class ClusterSingletonManager(
       stay
     case Event(Cleanup, _) ⇒
       cleanupOverdueNotMemberAnyMore()
+      stay
+    case Event(MemberDowned(m), _) ⇒
+      if (m.uniqueAddress == cluster.selfUniqueAddress)
+        logInfo("Self downed, waiting for removal")
       stay
   }
 
