@@ -286,6 +286,7 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 private[cluster] object ClusterCoreDaemon {
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
   val MaxGossipsBeforeShuttingDownMyself = 5
+  val MaxTicksBeforeShuttingDownMyself = 4
 
 }
 
@@ -333,6 +334,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   var seedNodeProcessCounter = 0 // for unique names
   var joinSeedNodesDeadline: Option[Deadline] = None
   var leaderActionCounter = 0
+  var selfDownCounter = 0
 
   var exitingTasksInProgress = false
   val selfExiting = Promise[Done]()
@@ -1112,7 +1114,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       // status Down. The down commands should spread before we shutdown.
       val unreachable = membershipState.dcReachability.allUnreachableOrTerminated
       val downed = membershipState.dcMembers.collect { case m if m.status == Down ⇒ m.uniqueAddress }
-      if (downed.forall(node ⇒ unreachable(node) || latestGossip.seenByNode(node))) {
+      if (selfDownCounter >= MaxTicksBeforeShuttingDownMyself || downed.forall(node ⇒ unreachable(node) || latestGossip.seenByNode(node))) {
         // the reason for not shutting down immediately is to give the gossip a chance to spread
         // the downing information to other downed nodes, so that they can shutdown themselves
         logInfo("Shutting down myself")
@@ -1120,6 +1122,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         // if other downed know that this node has seen the version
         gossipRandomN(MaxGossipsBeforeShuttingDownMyself)
         shutdown()
+      } else {
+        selfDownCounter += 1
       }
     }
   }

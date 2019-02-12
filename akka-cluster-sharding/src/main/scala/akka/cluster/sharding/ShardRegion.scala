@@ -516,6 +516,12 @@ private[akka] class ShardRegion(
       else if (matchingRole(m))
         changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
 
+    case MemberDowned(m) ⇒
+      if (m.uniqueAddress == cluster.selfUniqueAddress) {
+        log.info("Self downed, stopping ShardRegion [{}]", self.path)
+        context.stop(self)
+      }
+
     case _: MemberEvent ⇒ // these are expected, no need to warn about them
 
     case _              ⇒ unhandled(evt)
