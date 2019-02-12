@@ -22,7 +22,7 @@ import scala.compat.java8.FutureConverters._
  * use [[SourceWithContext.via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
- * Can be created by calling [[Source.startContextPropagation()]]
+ * Can be created by calling [[Source.asSourceWithContext()]]
  *
  * API MAY CHANGE
  */

@@ -17,7 +17,7 @@ class SourceWithContextSpec extends StreamSpec {
 
   "A SourceWithContext" must {
 
-    "get created from Source.startContextPropagation" in {
+    "get created from Source.asSourceWithContext" in {
       val msg = Message("a", 1L)
       Source(Vector(msg))
         .asSourceWithContext(_.offset)
