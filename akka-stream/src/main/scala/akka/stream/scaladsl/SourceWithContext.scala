@@ -10,6 +10,19 @@ import akka.annotation.ApiMayChange
 import akka.stream._
 
 /**
+ * API MAY CHANGE
+ */
+@ApiMayChange
+object SourceWithContext {
+
+  /**
+   * Creates a SourceWithContext from a regular source that operates on a tuple of `(data, context)` elements.
+   */
+  def fromTuples[Out, CtxOut, Mat](source: Source[(Out, CtxOut), Mat]): SourceWithContext[Out, CtxOut, Mat] =
+    new SourceWithContext(source)
+}
+
+/**
  * A source that provides operations which automatically propagate the context of an element.
  * Only a subset of common operations from [[FlowOps]] is supported. As an escape hatch you can
  * use [[FlowWithContextOps.via]] to manually provide the context propagation for otherwise unsupported
