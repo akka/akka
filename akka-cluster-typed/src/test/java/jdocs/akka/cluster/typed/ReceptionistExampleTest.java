@@ -50,7 +50,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
 
       @Override
       public Receive<Object> createReceive() {
-        return receiveBuilder()
+        return newReceiveBuilder()
             .onMessage(
                 Receptionist.Listing.class,
                 listing -> listing.isForKey(serviceKey),
@@ -131,7 +131,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
 
       @Override
       public Receive<Object> createReceive() {
-        return receiveBuilder()
+        return newReceiveBuilder()
             .onMessage(
                 Receptionist.Listing.class,
                 listing -> listing.isForKey(serviceKey),

@@ -141,7 +141,7 @@ The console output may look like this:
 
 The next example is more realistic and demonstrates some important patterns:
 
-* Using a sealed trait and case class/objects to represent multiple messages an actor can receive
+* Using @scala[a sealed trait and case class/objects]@java[an interface and classes implementing that interface] to represent multiple messages an actor can receive
 * Handle sessions by using child actors
 * Handling state by changing behavior
 * Using multiple typed actors to represent different parts of a protocol in a type safe way
@@ -356,6 +356,10 @@ The state is managed through fields in the class, just like with a regular objec
 As the state is mutable, we never return a different behavior from the message logic, but can return
 the `AbstractBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
 We could also return `Behavior.same` to achieve the same.
+
+@java[In this sample we make separate statements for creating the behavior builder, but it also returns the builder
+itself from each step so a more fluent behavior definition style is also possible. What you should prefer depends on
+how big the set of messages the actor accepts is.]
 
 It is also possible to return a new different `AbstractBehavior`, for example to represent a different state in a
 finite state machine (FSM), or use one of the functional behavior factories to combine the object oriented 

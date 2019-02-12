@@ -83,7 +83,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManagerMessage> {
   }
 
   public Receive<DeviceManagerMessage> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessage(RequestTrackDevice.class, this::onTrackDevice)
         .onMessage(RequestDeviceList.class, this::onRequestDeviceList)
         .onMessage(RequestAllTemperatures.class, this::onRequestAllTemperatures)

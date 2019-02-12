@@ -95,7 +95,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   // #query-state
   @Override
   public Receive<DeviceGroupQueryMessage> createReceive() {
-    return receiveBuilder()
+    return newReceiveBuilder()
         .onMessage(WrappedRespondTemperature.class, this::onRespondTemperature)
         .onMessage(DeviceTerminated.class, this::onDeviceTerminated)
         .onMessage(CollectionTimeout.class, this::onCollectionTimeout)
