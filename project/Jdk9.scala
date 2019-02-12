@@ -8,17 +8,9 @@ import sbt._
 import sbt.Keys._
 
 object Jdk9 extends AutoPlugin {
+  import akka.Versions.{notOnJdk8, notOnScala211}
 
   lazy val CompileJdk9 = config("CompileJdk9").extend(Compile)
-
-  def notOnScala211[T](scalaBinaryVersion: String, values: Seq[T]): Seq[T] = scalaBinaryVersion match {
-    case "2.11" => Seq()
-    case _ => values
-  }
-
-  def notOnJdk8[T](values: Seq[T]): Seq[T] =
-    if (System.getProperty("java.version").startsWith("1.")) Seq()
-    else values
 
   val SCALA_SOURCE_DIRECTORY = "scala-jdk-9"
   val SCALA_TEST_SOURCE_DIRECTORY = "scala-jdk9-only"
@@ -31,8 +23,8 @@ object Jdk9 extends AutoPlugin {
       (Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY,
       (Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY
     ))),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "9"))),
-    javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "9")))
+    scalacOptions := CommonOptions.commonScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "9"))),
+    javacOptions := CommonOptions.commonJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "9")))
   )
 
   val compileSettings = Seq(

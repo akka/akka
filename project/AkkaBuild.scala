@@ -18,7 +18,7 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Dependencies.Versions ++ Seq(
+  lazy val buildSettings = Versions.versionSettings ++ Seq(
     organization := "com.typesafe.akka",
     // use the same value as in the build scope, so it can be overriden by stampVersion
     version := (version in ThisBuild).value)
@@ -81,96 +81,84 @@ object AkkaBuild {
     pomIncludeRepository := (_ ⇒ false) // do not leak internal repositories during staging
   )
 
-  private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
+  // Probably going away with: https://github.com/akka/akka/issues/26088
+  lazy val deprecationWarnings = {
+    if (sys.props.getOrElse("akka.allwarnings", "false").toBoolean)
+      Nil
+    else
+      Seq(scalacOptions in Compile --= {
+          streams.value.log.warn("Running with -deprecation warnings disabled")
+          Seq("-deprecation")
+        },
+        javacOptions in compile --= {
+          streams.value.log.warn("Running with -Xlint:deprecation warnings disabled")
+          Seq("-Xlint:deprecation")
+        })
+  }
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint", "-Ywarn-unused")
+  lazy val defaultSettings =
+    deprecationWarnings ++
+      testSettings ++
+      mavenLocalResolverSettings ++
+      docLintingSettings ++ // compilerSettings had: javacOptions in doc ++= Seq(),
+      CrossJava.crossJavaSettings ++
+      Protobuf.settings ++
+      resolverSettings ++
+      Seq[Setting[_]](
+        crossVersion := CrossVersion.binary,
 
-  // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-  final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
+        scalacOptions := CommonOptions.commonScalacOptions,
 
-  lazy val defaultSettings = resolverSettings ++
-    TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq[Setting[_]](
-      // compile options
-      scalacOptions in Compile ++= DefaultScalacOptions,
-      // On 2.13, adding -Ywarn-unused breaks 'sbt ++2.13.0-M5 akka-actor/doc'
-      // https://github.com/akka/akka/issues/26119
-      scalacOptions in Compile --= (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 13)) => Seq("-Ywarn-unused")
-        case _             => Seq.empty
-      }),
-      // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
-      // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
-      // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
-      // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
-      scalacOptions in Compile ++= (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq("-target:jvm-1.8")
-        else
-          if (scalaBinaryVersion.value == "2.11")
-            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-          else
-            // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
-      scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
-        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")) ++ Seq(
-        "-Ywarn-unused"),
-      javacOptions in compile ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
-      javacOptions in test ++= DefaultJavacOptions ++ (
-        if (System.getProperty("java.version").startsWith("1."))
-          Seq()
-        else
-          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
-      ),
-      javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-      javacOptions in doc ++= Seq(),
+        scalacOptions in Compile ++= CommonOptions.javaTarget(
+            scalaBinaryVersion.value, CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
 
-      crossVersion := CrossVersion.binary,
+        javacOptions := CommonOptions.commonJavacOptions,
 
-      // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-      // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-      unmanagedSourceDirectories in Compile += {
-        val sourceDir = (sourceDirectory in Compile).value
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
-          case _                       => sourceDir / "scala-2.13-"
-        }
-      },
+        javacOptions in compile ++= CommonOptions.javaSource(
+          CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
 
-      ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+        // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
+        // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
+        unmanagedSourceDirectories in Compile += {
+          val sourceDir = (sourceDirectory in Compile).value
+          sourceDir / (if (Versions.isScalaMinor(">=", 13, scalaVersion.value)) "scala-2.13+" else "scala-2.13-")
+        },
 
-      licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-      homepage := Some(url("http://akka.io/")),
+        ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-      apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+        licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
-      initialCommands :=
-        """|import language.postfixOps
-         |import akka.actor._
-         |import ActorDSL._
-         |import scala.concurrent._
-         |import com.typesafe.config.ConfigFactory
-         |import scala.concurrent.duration._
-         |import akka.util.Timeout
-         |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
-         |var remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
-         |var system: ActorSystem = null
-         |implicit def _system = system
-         |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
-         |implicit def ec = system.dispatcher
-         |implicit val timeout = Timeout(5 seconds)
-         |""".stripMargin,
+        homepage := Some(url("http://akka.io/")),
 
-      /**
-       * Test settings
-       */
+        apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+
+        initialCommands :=
+          """|import language.postfixOps
+           |import akka.actor._
+           |import ActorDSL._
+           |import scala.concurrent._
+           |import com.typesafe.config.ConfigFactory
+           |import scala.concurrent.duration._
+           |import akka.util.Timeout
+           |var config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
+           |var remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=remote").withFallback(config)
+           |var system: ActorSystem = null
+           |implicit def _system = system
+           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
+           |implicit def ec = system.dispatcher
+           |implicit val timeout = Timeout(5 seconds)
+           |""".stripMargin
+      )
+
+  val testSettings =
+    TestExtras.Filter.settings ++ Seq(
       fork in Test := true,
+
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")) ++ Seq("-Ywarn-unused"),
+
+      javacOptions in test ++= CommonOptions.commonJavacOptions ++ CommonOptions.javaSource(
+        CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
 
       // default JVM config for tests
       javaOptions in Test ++= {
@@ -230,10 +218,7 @@ object AkkaBuild {
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
       // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF")) ++
-      mavenLocalResolverSettings ++
-      docLintingSettings ++
-      CrossJava.crossJavaSettings
+      testOptions in Test += Tests.Argument("-oDF"))
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
