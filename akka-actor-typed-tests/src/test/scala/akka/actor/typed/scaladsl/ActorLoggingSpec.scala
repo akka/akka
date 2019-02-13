@@ -6,6 +6,8 @@ package akka.actor.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.util.Properties
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.adapter._
@@ -41,6 +43,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     """) with WordSpecLike {
 
+  private val isScala211 = Properties.versionNumberString.startsWith("2.11")
+
   val marker = LogMarker("marker")
   val cause = new TestException("böö")
 
@@ -68,6 +72,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "contain the class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
         case l: LogEvent if l.logClass == classOf[ActorLoggingSpec] ⇒ true
+        case l: LogEvent if isScala211 ⇒
+          // TODO remove in Akka 2.6 when we drop Scala 2.11
+          // the class with 2.11 is like
+          // ActorLoggingSpec$$anonfun$1$$anonfun$apply$mcV$sp$26$$anonfun$apply$6$$anonfun$apply$7
+          l.logClass.getName.startsWith(classOf[ActorLoggingSpec].getName)
         case l: LogEvent ⇒
           println(l.logClass)
           false
@@ -88,6 +97,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "contain the object class name where the first log was called" in {
       val eventFilter = EventFilter.custom({
         case l: LogEvent if l.logClass == WhereTheBehaviorIsDefined.getClass ⇒ true
+        case l: LogEvent if isScala211 ⇒
+          // TODO remove in Akka 2.6 when we drop Scala 2.11
+          // the class with 2.11 is like
+          // WhereTheBehaviorIsDefined$$anonfun$behavior$1
+          l.logClass.getName.startsWith(WhereTheBehaviorIsDefined.getClass.getName)
         case l: LogEvent ⇒
           println(l.logClass)
           false
