@@ -87,7 +87,7 @@ import akka.util.ConstantFun
     }
   }
 
-  override def forEach(f: Consumer[T]): Unit = foreach(f.accept(_))
+  override def forEach(f: Consumer[T]): Unit = foreach(f.accept)
 
   override def unstashAll(ctx: scaladsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstash(ctx, behavior, size, ConstantFun.scalaIdentityFunction[T])
@@ -97,11 +97,17 @@ import akka.util.ConstantFun
 
   override def unstash(ctx: scaladsl.ActorContext[T], behavior: Behavior[T],
                        numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {
-    val iter = new Iterator[T] {
-      override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-      override def next(): T = wrap(StashBufferImpl.this.dropHead())
-    }.take(numberOfMessages)
-    new UnstashingBehavior[T](behavior, iter)
+    // FIXME #26148 try without this optimization
+    if (isEmpty)
+      behavior // optimization
+    else {
+      val iter = new Iterator[T] {
+        override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
+
+        override def next(): T = wrap(StashBufferImpl.this.dropHead())
+      }.take(numberOfMessages)
+      new UnstashingBehavior[T](behavior, iter)
+    }
   }
 
   override def unstash(ctx: javadsl.ActorContext[T], behavior: Behavior[T],

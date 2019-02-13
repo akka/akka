@@ -62,6 +62,7 @@ import akka.util.OptionVal
           failures -= ref
           ChildFailed(ActorRefAdapter(ref), ex)
         } else Terminated(ActorRefAdapter(ref))
+      println(s"# ActorAdapter receive Terminated [$ref]") // FIXME
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case untyped.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
@@ -85,6 +86,7 @@ import akka.util.OptionVal
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
+      println(s"# ActorAdapter next behavior [$b], previousBehavior [$behavior], msg [$msg]") // FIXME
       // note - the same logic is present in the InterceptorImpl, changes here likely needs changes there as well
       b match {
         case s: StoppedBehavior[T] ⇒
@@ -104,6 +106,19 @@ import akka.util.OptionVal
           // For the parent untyped supervisor to pick up the exception
           throw new TypedActorFailedException(f.cause)
         case u: UnstashingBehavior[T] ⇒
+          // keep the unstashing behavior as current, so that intermediate failures while unstashing
+          // can be handled correctly
+          val previousBehavior = behavior
+          behavior = u
+          behavior = u.unstash(previousBehavior, ctx)
+
+        case w: WrappingBehavior[_, _] if w.nestedBehavior.isInstanceOf[UnstashingBehavior[_]] ⇒
+          // this is needed to pass UnstashingSpec:
+          // "signal PreRestart to the latest unstashed behavior on failure with slow stopping child"
+          println(s"# ActorAdapter WrappingBehavior nestedBehavior [${w.nestedBehavior}]") // FIXME
+          val u = w.nestedBehavior.asInstanceOf[UnstashingBehavior[T]]
+          // FIXME DRY with above case UnstashingBehavior
+
           // keep the unstashing behavior as current, so that intermediate failures while unstashing
           // can be handled correctly
           val previousBehavior = behavior

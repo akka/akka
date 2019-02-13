@@ -275,6 +275,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
           case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
         }
 
+        println(s"# RestartSupervisor handleException restart") // FIXME
         prepareRestart(ctx, t)
       }
   }
@@ -286,6 +287,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     updateRestartCount()
 
     val childrenToStop = if (strategy.stopChildren) ctx.asScala.children.toSet else Set.empty[ActorRef[Nothing]]
+    println(s"# RestartSupervisor prepareRestart childrenToStop [${childrenToStop.size}]") // FIXME
     stopChildren(ctx, childrenToStop)
 
     val stashCapacity =
@@ -318,10 +320,12 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
 
     try {
       val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
+      println(s"# RestartSupervisor restartCompleted newBehavior [$newBehavior] restartingInProgress [$restartingInProgress]") // FIXME
       val nextBehavior = restartingInProgress match {
         case OptionVal.None ⇒ newBehavior
         case OptionVal.Some((stashBuffer, _)) ⇒
           restartingInProgress = OptionVal.None
+          // FIXME #26148 this doesn't work. When this unstashing has been completed the newBehavior is used without wrapping it in the original RestartSupervisor
           stashBuffer.unstashAll(ctx.asScala.asInstanceOf[scaladsl.ActorContext[Any]], newBehavior.unsafeCast)
       }
       nextBehavior.narrow

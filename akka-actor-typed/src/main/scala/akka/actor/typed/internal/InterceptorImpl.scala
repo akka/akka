@@ -75,6 +75,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   private val catchFromUnstashing: Catcher[Behavior[I]] = {
     case NonFatal(e) ⇒
+      println(s"# interceptor catchFromUnstashing [${e.getMessage}] nestedBehavior [$nestedBehavior]") // FIXME
       // unstashing is aborted on failure
       nestedBehavior match {
         case u: UnstashingBehavior[I] ⇒

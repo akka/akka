@@ -295,9 +295,10 @@ object Behavior {
     def unstash(previousBehavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
       @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
         val b2 = Behavior.start(b, ctx)
-        if (!Behavior.isAlive(b2) || !stashIterator.hasNext) b2
+        if (!Behavior.isAlive(b2) || stashIterator.isEmpty) b2
         else {
           val nextMessage = stashIterator.next()
+          println(s"# unstash interpretOne [$nextMessage] b2 [$b2]") // FIXME
           val nextB = interpret(b2, ctx, nextMessage)
           // must make sure that we don't have Same if starting fails
           _currentBehavior = Behavior.canonicalize(nextB, _currentBehavior, ctx)
@@ -320,6 +321,9 @@ object Behavior {
           Behavior.unhandled
       }
     }
+
+    override def toString: String =
+      s"UnstashingBehavior($currentBehavior, ${stashIterator.nonEmpty})"
 
   }
 
