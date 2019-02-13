@@ -10,6 +10,8 @@ To use Remoting (codename Artery), you must add the following dependency in your
   version=$akka.version$
 }
 
+If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
+
 ## Configuration
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
@@ -18,12 +20,12 @@ to your `application.conf` file:
 ```
 akka {
   actor {
-    provider = remote
+    provider = cluster 
   }
   remote {
     artery {
       enabled = on
-      transport = aeron-udp
+      transport = aeron-udp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -33,7 +35,7 @@ akka {
 
 As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `remote`
+ * Change provider from `local` to `cluster`
  * Enable Artery to use it as the remoting implementation
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
@@ -80,29 +82,7 @@ Remoting is not a server-client technology. All systems using remoting can conta
 if they possess an `ActorRef` pointing to those system. This means that every system that is remoting enabled
 acts as a "server" to which arbitrary systems on the same network can connect to.
 
-## What is new in Artery
-
-Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
-source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
-of Artery compared to the previous implementation:
-
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
- * Focused on high-throughput, low-latency communication
- * Isolation of internal control messages from user messages improving stability and reducing false failure detection
-in case of heavy traffic by using a dedicated subchannel.
- * Mostly allocation-free operation
- * Support for a separate subchannel for large messages to avoid interference with smaller messages
- * Compression of actor paths on the wire to reduce overhead for smaller messages
- * Support for faster serialization/deserialization using ByteBuffers directly
- * Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
-specific events
- * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
-
-The main incompatible change from the previous implementation that the protocol field of the string representation of an
-`ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
-are also different.
-
-### Selecting transport
+## Selecting a transport
 
 There are three alternatives of which underlying transport to use. It is configured by property
 `akka.remote.artery.transport` with the possible values:
@@ -112,7 +92,7 @@ There are three alternatives of which underlying transport to use. It is configu
 * `tls-tcp` - Same as `tcp` with encryption using @ref:[Akka Streams TLS](stream/stream-io.md#tls)
 
 The Aeron (UDP) transport is a high performance transport and should be used for systems
-that require high throughput and low latency. It is using more CPU than TCP when the system
+that require high throughput and low latency. It uses more CPU than TCP when the system
 is idle or at low message rates. There is no encryption for Aeron.
 
 The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the choice
@@ -129,6 +109,8 @@ officially supported. If you're on a Big Endian processor, such as Sparc, it is 
  TCP.
 
 @@@
+
+
 
 ### Canonical address
 
@@ -234,109 +216,6 @@ the very same actor system, such messages will (perhaps counterintuitively)
 be delivered just fine.
 
 @@@
-
-### Creating Actors Remotely
-
-If you want to use the creation functionality in Akka remoting you have to further amend the
-`application.conf` file in the following way (only showing deployment section):
-
-```
-akka {
-  actor {
-    deployment {
-      /sampleActor {
-        remote = "akka://sampleActorSystem@127.0.0.1:2553"
-      }
-    }
-  }
-}
-```
-
-The configuration above instructs Akka to react when an actor with path `/sampleActor` is created, i.e.
-using `system.actorOf(Props(...), "sampleActor")`. This specific actor will not be directly instantiated,
-but instead the remote daemon of the remote system will be asked to create the actor,
-which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
-
-Once you have configured the properties above you would do the following in code:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
-
-The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
-actor systems has to have a JAR containing the class.
-
-@@@ note
-
-In order to ensure serializability of `Props` when passing constructor
-arguments to the actor being created, do not make the factory an inner class:
-this will inherently capture a reference to its enclosing object, which in
-most cases is not serializable. It is best to create a factory method in the
-companion object of the actor’s class.
-
-Serializability of all Props can be tested by setting the configuration item
-`akka.actor.serialize-creators=on`. Only Props whose `deploy` has
-`LocalScope` are exempt from this check.
-
-@@@
-
-You can use asterisks as wildcard matches for the actor paths, so you could specify:
-`/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
-You can also use wildcard in the last position to match all actors at a certain level:
-`/someParent/*`. Non-wildcard matches always have higher priority to match than wildcards, so:
-`/foo/bar` is considered **more specific** than `/foo/*` and only the highest priority match is used.
-Please note that it **cannot** be used to partially match section, like this: `/foo*/bar`, `/f*o/bar` etc.
-
-### Programmatic Remote Deployment
-
-To allow dynamically deployed systems, it is also possible to include
-deployment configuration in the `Props` which are used to create an
-actor: this information is the equivalent of a deployment section from the
-configuration file, and if both are given, the external configuration takes
-precedence.
-
-With these imports:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
-
-and a remote address like this:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
-
-you can advise the system to create a child on that remote node like so:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
-
-### Remote deployment whitelist
-
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
-is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
-is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
-remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
-
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
-The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
-others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
-should not allow others to remote deploy onto it. The full settings section may for example look like this:
-
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
-
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
 ## Remote Security
 
@@ -705,6 +584,29 @@ A group of remote actors can be configured as:
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
+
+## What is new in Artery
+
+Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
+source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
+of Artery compared to the previous implementation:
+
+ * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
+ * Focused on high-throughput, low-latency communication
+ * Isolation of internal control messages from user messages improving stability and reducing false failure detection
+in case of heavy traffic by using a dedicated subchannel.
+ * Mostly allocation-free operation
+ * Support for a separate subchannel for large messages to avoid interference with smaller messages
+ * Compression of actor paths on the wire to reduce overhead for smaller messages
+ * Support for faster serialization/deserialization using ByteBuffers directly
+ * Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
+specific events
+ * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
+
+The main incompatible change from the previous implementation that the protocol field of the string representation of an
+`ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
+are also different.
+
 
 ## Performance tuning
 
