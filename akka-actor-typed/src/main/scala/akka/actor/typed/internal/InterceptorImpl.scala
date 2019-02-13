@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal
 
+import scala.util.control.Exception.Catcher
+
 import akka.actor.typed
 import akka.actor.typed.Behavior.UnstashingBehavior
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
@@ -11,7 +13,6 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
-
 import scala.util.control.NonFatal
 
 /**
@@ -55,17 +56,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
         val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
         val nextB = Behavior.interpretMessage(nestedBehavior, ctxI, msg)
         next(ctxI, nextB)
-      } catch {
-        case NonFatal(ex) ⇒
-          // unstashing is aborted on failure
-          nestedBehavior match {
-            case u: UnstashingBehavior[I] ⇒
-              _nestedBehavior = u.currentBehavior
-            case _ ⇒
-          }
-          throw ex
-
-      }
+      } catch catchFromUnstashing
     }
 
     override def signalRestart(ctx: TypedActorContext[_]): Unit =
@@ -74,10 +65,23 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   private val signalTarget = new SignalTarget[I] {
     override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] = {
-      val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
-      val nextB = Behavior.interpretSignal(nestedBehavior, ctxI, signal)
-      next(ctxI, nextB)
+      try {
+        val ctxI = ctx.asInstanceOf[TypedActorContext[I]]
+        val nextB = Behavior.interpretSignal(nestedBehavior, ctxI, signal)
+        next(ctxI, nextB)
+      } catch catchFromUnstashing
     }
+  }
+
+  private val catchFromUnstashing: Catcher[Behavior[I]] = {
+    case NonFatal(e) ⇒
+      // unstashing is aborted on failure
+      nestedBehavior match {
+        case u: UnstashingBehavior[I] ⇒
+          _nestedBehavior = u.currentBehavior
+        case _ ⇒
+      }
+      throw e
   }
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
