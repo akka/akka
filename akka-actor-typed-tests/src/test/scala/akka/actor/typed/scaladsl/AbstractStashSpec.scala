@@ -8,6 +8,7 @@ package scaladsl
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object AbstractStashSpec {
@@ -244,9 +245,17 @@ abstract class AbstractStashSpec extends ScalaTestWithActorTestKit with WordSpec
 
 }
 
-class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class UnstashingSpec extends ScalaTestWithActorTestKit("""
+  akka.loggers = ["akka.testkit.TestEventListener"]
+  """) with WordSpecLike {
 
-  def stashingBehavior(probe: ActorRef[String]) =
+  // needed for EventFilter
+  private implicit val untypedSys: akka.actor.ActorSystem = {
+    import akka.actor.typed.scaladsl.adapter._
+    system.toUntyped
+  }
+
+  private def stashingBehavior(probe: ActorRef[String]) =
     Behaviors.setup[String] { ctx ⇒
       val stash = StashBuffer[String](10)
       def unstashing(n: Int): Behavior[String] =
@@ -256,7 +265,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
             unstashing(n + 1)
           case "stash-fail" ⇒
             probe.ref ! s"stash-fail-$n"
-            throw new TestException("unstash-fail")
+            throw TestException("unstash-fail")
           case "get-current" ⇒
             probe.ref ! s"current-$n"
             Behaviors.same
@@ -289,7 +298,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           stash.stash("one")
           stash.unstashAll(ctx, Behavior.same)
 
-        case (ctx, msg) ⇒
+        case (_, msg) ⇒
           probe.ref ! msg
           Behaviors.same
       })
@@ -301,15 +310,14 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.receive[String] {
+      val ref = spawn(Behaviors.receivePartial[String] {
         case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
           stash.stash("two")
-          stash.unstashAll(ctx, Behaviors.receiveMessage {
-            case msg ⇒
-              probe.ref ! msg
-              Behaviors.same
+          stash.unstashAll(ctx, Behaviors.receiveMessage { msg ⇒
+            probe.ref ! msg
+            Behaviors.same
           })
       })
 
@@ -323,7 +331,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with supervised initial Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+      val ref = spawn(Behaviors.supervise(Behaviors.receivePartial[String] {
         case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
@@ -343,15 +351,15 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "work with supervised intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receive[String] {
+      val ref = spawn(Behaviors.supervise(Behaviors.receivePartial[String] {
         case (ctx, "unstash") ⇒
           val stash = StashBuffer[String](10)
           stash.stash("one")
           stash.stash("two")
-          stash.unstashAll(ctx, Behaviors.receiveMessage {
-            case msg ⇒
-              probe.ref ! msg
-              Behaviors.same
+          // FIXME #26148: do we need then ctx param in unstashAll?
+          stash.unstashAll(ctx, Behaviors.receiveMessage { msg ⇒
+            probe.ref ! msg
+            Behaviors.same
           })
       }).onFailure[TestException](SupervisorStrategy.stop))
 
@@ -369,10 +377,12 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       ref ! "stash"
       ref ! "stash-fail"
-      ref ! "unstash"
-      probe.expectMessage("unstashing-0")
-      probe.expectMessage("stash-fail-1")
-      probe.expectMessage("post-stop-1")
+      EventFilter[TestException](start = "unstash-fail", occurrences = 1).intercept {
+        ref ! "unstash"
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("stash-fail-1")
+        probe.expectMessage("post-stop-1")
+      }
     }
 
     "signal PostStop to the latest unstashed behavior on failure with supervision" in {
@@ -383,10 +393,12 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       ref ! "stash"
       ref ! "stash-fail"
-      ref ! "unstash"
-      probe.expectMessage("unstashing-0")
-      probe.expectMessage("stash-fail-1")
-      probe.expectMessage("post-stop-1")
+      EventFilter[TestException](start = "Supervisor StopSupervisor saw failure: unstash-fail", occurrences = 1).intercept {
+        ref ! "unstash"
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("stash-fail-1")
+        probe.expectMessage("post-stop-1")
+      }
     }
 
     "signal PreRestart to the latest unstashed behavior on failure" in {
@@ -397,10 +409,13 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       ref ! "stash"
       ref ! "stash-fail"
-      ref ! "unstash"
-      probe.expectMessage("unstashing-0")
-      probe.expectMessage("stash-fail-1")
-      probe.expectMessage("pre-restart-1")
+      EventFilter[TestException](start = "Supervisor RestartSupervisor saw failure: unstash-fail", occurrences = 1).intercept {
+
+        ref ! "unstash"
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("stash-fail-1")
+        probe.expectMessage("pre-restart-1")
+      }
     }
 
     "handle resume correctly on failure unstashing" in {
@@ -411,12 +426,14 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       ref ! "stash"
       ref ! "stash-fail"
-      ref ! "unstash"
-      ref ! "get-current"
+      EventFilter[TestException](start = "Supervisor ResumeSupervisor saw failure: unstash-fail", occurrences = 1).intercept {
+        ref ! "unstash"
+        ref ! "get-current"
 
-      probe.expectMessage("unstashing-0")
-      probe.expectMessage("stash-fail-1")
-      probe.expectMessage("current-1")
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("stash-fail-1")
+        probe.expectMessage("current-1")
+      }
     }
 
     "be possible in combination with setup" in {
