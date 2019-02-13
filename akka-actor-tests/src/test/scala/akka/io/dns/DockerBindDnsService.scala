@@ -53,7 +53,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
       )
       .build()
 
-    val containerName = "akka-test-dns-" + getClass.getCanonicalName
+    val containerName = s"akka-test-dns-${getClass.getCanonicalName}-${System.nanoTime}"
 
     client.listContainers().asScala.filter(_.names().contains(containerName))
       .foreach(c ⇒ {
