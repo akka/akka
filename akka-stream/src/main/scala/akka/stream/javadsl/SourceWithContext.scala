@@ -7,6 +7,8 @@ package akka.stream.javadsl
 import akka.annotation.ApiMayChange
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
+import akka.event.LoggingAdapter
+import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
@@ -178,6 +180,38 @@ final class SourceWithContext[+Ctx, +Out, +Mat](delegate: scaladsl.SourceWithCon
       val fun = f.create()
       elem ⇒ Util.immutableSeq(fun(elem))
     })
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.log]].
+   *
+   * @see [[akka.stream.javadsl.Source.log]]
+   */
+  def log(name: String, extract: function.Function[Out, Any], log: LoggingAdapter): SourceWithContext[Ctx, Out, Mat] =
+    viaScala(_.log(name, e ⇒ extract.apply(e))(log))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.log]].
+   *
+   * @see [[akka.stream.javadsl.Flow.log]]
+   */
+  def log(name: String, extract: function.Function[Out, Any]): SourceWithContext[Ctx, Out, Mat] =
+    this.log(name, extract, null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.log]].
+   *
+   * @see [[akka.stream.javadsl.Flow.log]]
+   */
+  def log(name: String, log: LoggingAdapter): SourceWithContext[Ctx, Out, Mat] =
+    this.log(name, ConstantFun.javaIdentityFunction[Out], log)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.log]].
+   *
+   * @see [[akka.stream.javadsl.Flow.log]]
+   */
+  def log(name: String): SourceWithContext[Ctx, Out, Mat] =
+    this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
   def asScala: scaladsl.SourceWithContext[Ctx, Out, Mat] = delegate
 
