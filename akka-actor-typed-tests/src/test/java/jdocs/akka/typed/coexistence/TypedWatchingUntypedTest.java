@@ -15,7 +15,7 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.testkit.javadsl.TestKit;
 import akka.testkit.TestProbe;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 import static akka.actor.typed.javadsl.Behaviors.same;

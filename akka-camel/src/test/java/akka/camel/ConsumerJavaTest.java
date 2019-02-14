@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec;
 import akka.testkit.javadsl.EventFilter;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.util.Timeout;

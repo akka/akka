@@ -17,7 +17,7 @@ import org.junit.Test;
 import akka.japi.Creator;
 import akka.japi.pf.ReceiveBuilder;
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class ActorCreationTest extends JUnitSuite {
 

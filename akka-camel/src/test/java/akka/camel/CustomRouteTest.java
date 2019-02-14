@@ -11,7 +11,7 @@ import akka.camel.javaapi.UntypedProducerActor;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.Timeout;
 import org.junit.*;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.Duration;
