@@ -55,10 +55,12 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
 
     val containerName = "akka-test-dns-" + getClass.getCanonicalName
 
-    client.listContainers().asScala.filter(_.names().contains(containerName))
-      .foreach(c ⇒ {
-        log.debug("Removing container id: {} from previous test run", c.id())
-        client.removeContainer(c.id())
+    client.listContainers(ListContainersParam.allContainers()).asScala
+      .find(_.names().asScala.exists(_.contains(containerName))).foreach(c ⇒ {
+        if ("running" == c.state()) {
+          client.killContainer(c.id)
+        }
+        client.removeContainer(c.id)
       })
 
     val creation = client.createContainer(containerConfig, containerName)
