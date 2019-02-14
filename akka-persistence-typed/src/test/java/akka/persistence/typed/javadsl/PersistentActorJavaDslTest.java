@@ -627,7 +627,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     new EventFilter(Logging.Error.class, Adapter.toUntyped(testKit.system()))
         .occurrences(1)
-        .message("java.lang.Integer cannot be cast to java.lang.String")
+        // the error messages slightly changed in later JDKs
+        .matches("(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
         .intercept(
             () -> {
               c.tell("expect wrong type");
