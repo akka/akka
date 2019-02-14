@@ -1,3 +1,9 @@
+# #26353 Rename start/endContextPropagation functions to asFlow/Source
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.startContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SourceWithContext.endContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.startContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.SourceWithContext.endContextPropagation")
+
 # FlowWithContextOps.log() #26386
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.log")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.log$default$2")
