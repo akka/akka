@@ -76,7 +76,7 @@ lazy val actor = akkaModule("akka-actor")
     }
   )
   .settings(VersionGenerator.settings)
-  .enablePlugins(BoilerplatePlugin)
+  .enablePlugins(BoilerplatePlugin, AkkaDisciplinePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
   .dependsOn(testkit % "compile->compile;test->test")

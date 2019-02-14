@@ -98,7 +98,8 @@ class ExtensionSpec extends WordSpec with Matchers {
         """
           akka.extensions = ["akka.actor.MissingExtension"]
         """))
-      EventFilter.error("While trying to load extension [akka.actor.MissingExtension], skipping...").intercept()(system)
+      val t = ()
+      EventFilter.error("While trying to load extension [akka.actor.MissingExtension], skipping...").intercept(t)(system)
       shutdownActorSystem(system)
 
     }

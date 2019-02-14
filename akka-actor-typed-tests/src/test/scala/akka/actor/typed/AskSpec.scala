@@ -44,7 +44,8 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       foo.replyTo ! "foo"
       Behaviors.same
     case (_, Stop(r)) ⇒
-      r ! ()
+      val x = ()
+      r ! x
       Behaviors.stopped
   }
 
