@@ -509,13 +509,13 @@ def akkaModule(name: String): Project =
   - the assumption is the user has already run tests, hence the test:compile. */
 def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
-  s";${p.id}/clean;${test.id}/test:compile;${p.id}/mimaReportBinaryIssues;${docs.id}/paradox"
+  s"${test.id}/test:compile;${p.id}/mimaReportBinaryIssues;${docs.id}/paradox"
 }
-addCommandAlias("actorAll", commandValue(actor, Some(actorTests)))
-addCommandAlias("remoteAll", commandValue(remote, Some(remoteTests)))
-addCommandAlias("clusterAll", commandValue(cluster))
-addCommandAlias("distributedDataAll", commandValue(distributedData))
-addCommandAlias("clusterShardingAll", commandValue(clusterSharding))
-addCommandAlias("persistenceAll", commandValue(persistence))
-addCommandAlias("streamAll", commandValue(stream, Some(streamTests)))
-addCommandAlias("discoveryAll", commandValue(discovery))
+addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
+addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
+addCommandAlias("allCluster", commandValue(cluster))
+addCommandAlias("allDistributedData", commandValue(distributedData))
+addCommandAlias("allClusterSharding", commandValue(clusterSharding))
+addCommandAlias("allPersistence", commandValue(persistence))
+addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
+addCommandAlias("allDiscovery", commandValue(discovery))
