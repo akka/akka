@@ -87,7 +87,7 @@ class ClusterSingletonManagerDownedSpec extends MultiNodeSpec(ClusterSingletonMa
       within(15.seconds) {
         awaitAssert {
           cluster.state.members.size should ===(3)
-          cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }
       runOn(first) {
