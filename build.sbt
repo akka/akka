@@ -509,7 +509,8 @@ def akkaModule(name: String): Project =
   - the assumption is the user has already run tests, hence the test:compile. */
 def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
-  s"${test.id}/test:compile;${p.id}/mimaReportBinaryIssues;${docs.id}/paradox"
+  val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
+  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
@@ -519,3 +520,10 @@ addCommandAlias("allClusterSharding", commandValue(clusterSharding))
 addCommandAlias("allPersistence", commandValue(persistence))
 addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
 addCommandAlias("allDiscovery", commandValue(discovery))
+addCommandAlias("allTyped", Seq(
+  commandValue(actorTyped, Some(actorTypedTests)),
+  commandValue(actorTestkitTyped),
+  commandValue(clusterTyped),
+  commandValue(clusterShardingTyped),
+  commandValue(persistenceTyped),
+  commandValue(streamTyped)).mkString)
