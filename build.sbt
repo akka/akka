@@ -502,3 +502,20 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
+
+/* Command aliases one can run locally against a module
+  - where three or more tasks should be checked for faster turnaround
+  - to avoid another push and CI cycle should mima or paradox fail.
+  - the assumption is the user has already run tests, hence the test:compile. */
+def commandValue(p: Project, externalTest: Option[Project] = None) = {
+  val test = externalTest.getOrElse(p)
+  s";${p.id}/clean;${test.id}/test:compile;${p.id}/mimaReportBinaryIssues;${docs.id}/paradox"
+}
+addCommandAlias("actorAll", commandValue(actor, Some(actorTests)))
+addCommandAlias("remoteAll", commandValue(remote, Some(remoteTests)))
+addCommandAlias("clusterAll", commandValue(cluster))
+addCommandAlias("distributedDataAll", commandValue(distributedData))
+addCommandAlias("clusterShardingAll", commandValue(clusterSharding))
+addCommandAlias("persistenceAll", commandValue(persistence))
+addCommandAlias("streamAll", commandValue(stream, Some(streamTests)))
+addCommandAlias("discoveryAll", commandValue(discovery))
