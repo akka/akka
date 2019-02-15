@@ -502,3 +502,28 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
+
+/* Command aliases one can run locally against a module
+  - where three or more tasks should be checked for faster turnaround
+  - to avoid another push and CI cycle should mima or paradox fail.
+  - the assumption is the user has already run tests, hence the test:compile. */
+def commandValue(p: Project, externalTest: Option[Project] = None) = {
+  val test = externalTest.getOrElse(p)
+  val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
+  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+}
+addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
+addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
+addCommandAlias("allCluster", commandValue(cluster))
+addCommandAlias("allDistributedData", commandValue(distributedData))
+addCommandAlias("allClusterSharding", commandValue(clusterSharding))
+addCommandAlias("allPersistence", commandValue(persistence))
+addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
+addCommandAlias("allDiscovery", commandValue(discovery))
+addCommandAlias("allTyped", Seq(
+  commandValue(actorTyped, Some(actorTypedTests)),
+  commandValue(actorTestkitTyped),
+  commandValue(clusterTyped),
+  commandValue(clusterShardingTyped),
+  commandValue(persistenceTyped),
+  commandValue(streamTyped)).mkString)
