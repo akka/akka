@@ -530,6 +530,60 @@ object Sink {
     Sink.fromGraph(new QueueSink())
 
   /**
+   * Start a new `Sink` from some resource which can be opened, written to, and closed.
+   * Interaction with resource happens in a blocking way.
+   *
+   * Example:
+   * {{{
+   * Sink.unfoldResource(
+   *   () -> new BufferedWriter(new FileWriter("...")),
+   *   (reader, line) -> reader.write(line),
+   *   reader -> reader.close())
+   * }}}
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param write - function that writes data to an opened resource. It is called each time a push signal
+   *                is received. Stream calls close and completes when upstream closes.
+   * @param close - function that closes resource
+   */
+  def unfoldResource[T, S](create: () ⇒ S, write: (S, T) ⇒ Unit, close: (S) ⇒ Unit): Sink[T, Future[Done]] =
+    Sink.fromGraph(new UnfoldResourceSink(create, write, close))
+
+  /**
+   * Start a new `Sink` from some resource which can be opened, written to, and closed.
+   * It's similar to `unfoldResource` but takes functions that return `Futures` instead of plain values.
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param write - function that writes data to an opened resource. It is called each time a push signal
+   *                is received. Stream calls close and completes when upstream closes.
+   * @param close - function that closes resource
+   */
+  def unfoldResourceAsync[T, S](create: () ⇒ Future[S], write: (S, T) ⇒ Future[Unit], close: (S) ⇒ Future[Unit]): Sink[T, Future[Done]] =
+    Sink.fromGraph(new UnfoldResourceSinkAsync(create, write, close))
+
+  /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
    * because of completion or error.
    *

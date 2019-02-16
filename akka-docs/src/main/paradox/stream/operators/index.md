@@ -65,6 +65,8 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
 |Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` values emitted from the stream into a collection.|
+|Sink|<a name="unfoldresource"></a>@ref[unfoldResource](Sink/unfoldResource.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
+|Sink|<a name="unfoldresourceasync"></a>@ref[unfoldResourceAsync](Sink/unfoldResourceAsync.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
 
 ## Additional Sink and Source converters
 
@@ -409,6 +411,8 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRef](Sink/actorRef.md)
 * [actorRefWithAck](Sink/actorRefWithAck.md)
 * [queue](Sink/queue.md)
+* [unfoldResource](Sink/unfoldResource.md)
+* [unfoldResourceAsync](Sink/unfoldResourceAsync.md)
 * [lazyInitAsync](Sink/lazyInitAsync.md)
 * [fromInputStream](StreamConverters/fromInputStream.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)

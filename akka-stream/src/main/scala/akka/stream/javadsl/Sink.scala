@@ -18,6 +18,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
+
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -285,6 +286,72 @@ object Sink {
    */
   def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
     new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(new SinkQueueAdapter(_)))
+
+  /**
+   * Start a new `Sink` from some resource which can be opened, written to, and closed.
+   * Interaction with resource happens in a blocking way.
+   *
+   * Example:
+   * {{{
+   * Sink.unfoldResource(
+   *   () -> new BufferedWriter(new FileWriter("...")),
+   *   (reader, line) -> reader.write(line),
+   *   reader -> reader.close())
+   * }}}
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param write - function that writes data to an opened resource. It is called each time a push signal
+   *                is received. Stream calls close and completes when upstream closes.
+   * @param close - function that closes resource
+   */
+  def unfoldResource[T, S](
+    create: function.Creator[S],
+    write:  function.Procedure2[S, T],
+    close:  function.Procedure[S]): javadsl.Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.unfoldResource[T, S](
+      create.create _,
+      (s: S, t: T) ⇒ write.apply(s, t),
+      close.apply)).mapMaterializedValue(_.toJava)
+
+  /**
+   * Start a new `Sink` from some resource which can be opened, written to, and closed.
+   * It's similar to `unfoldResource` but takes functions that return `Futures` instead of plain values.
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.materializer.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * @param create - function that is called on stream start and creates/opens resource.
+   * @param write - function that writes data to an opened resource. It is called each time a push signal
+   *                is received. Stream calls close and completes when upstream closes.
+   * @param close - function that closes resource
+   */
+  def unfoldResourceAsync[T, S](
+    create: function.Creator[CompletionStage[S]],
+    write:  function.Function2[S, T, CompletionStage[Unit]],
+    close:  function.Function[S, CompletionStage[Unit]]): javadsl.Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.unfoldResourceAsync[T, S](
+      () ⇒ create.create().toScala,
+      (s: S, t: T) ⇒ write.apply(s, t).toScala,
+      (s: S) ⇒ close.apply(s).toScala)).mapMaterializedValue(_.toJava)
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,

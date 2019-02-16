@@ -113,6 +113,8 @@ import akka.stream._
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
     val fileSource = name("fileSource") and IODispatcher
+    val unfoldResourceSink = name("unfoldResourceSink") and IODispatcher
+    val unfoldResourceSinkAsync = name("unfoldResourceSinkAsync") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
     val asJavaStream = name("asJavaStream") and IODispatcher
