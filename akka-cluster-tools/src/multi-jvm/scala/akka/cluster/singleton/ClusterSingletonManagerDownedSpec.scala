@@ -5,7 +5,6 @@
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
@@ -18,6 +17,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit._
+import akka.util.ccompat.imm._
 import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
