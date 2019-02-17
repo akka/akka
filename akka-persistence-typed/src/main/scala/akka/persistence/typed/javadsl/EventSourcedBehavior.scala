@@ -52,6 +52,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
    * of the command handling such as stopping the behavior or others.
    *
+   * Use [[EventSourcedBehavior#newCommandHandlerBuilder]] to define the command handlers.
+   *
    * The command handlers are only invoked when the actor is running (i.e. not replaying).
    * While the actor is persisting events, the incoming messages are stashed and only
    * delivered to the handler once persisting them has completed.
@@ -61,6 +63,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   /**
    * Implement by applying the event to the current state in order to return a new state.
    *
+   * Use [[EventSourcedBehavior#newEventHandlerBuilder]] to define the event handlers.
+   *
    * The event handlers are invoked during recovery as well as running operation of this behavior,
    * in order to keep updating the state state.
    *
@@ -69,7 +73,10 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected def eventHandler(): EventHandler[State, Event]
 
-  protected final def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
+  /**
+   * @return A new, mutable, command handler builder
+   */
+  protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
     CommandHandlerBuilder.builder[Command, Event, State]()
   }
 
@@ -180,8 +187,6 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
 }
 
 /**
- * FIXME This is not completed for javadsl yet. The compiler is not enforcing the replies yet.
- *
  * A [[EventSourcedBehavior]] that is enforcing that replies to commands are not forgotten.
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
@@ -198,6 +203,32 @@ abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: 
     this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
   }
 
-  // FIXME override commandHandler and commandHandlerBuilder to require the ReplyEffect return type,
-  // which is unfortunately intrusive to the CommandHandlerBuilder
+  /**
+   * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
+   * of the command handling such as stopping the behavior or others.
+   *
+   * Use [[EventSourcedBehaviorWithEnforcedReplies#newCommandHandlerWithReplyBuilder]] to define the command handlers.
+   *
+   * The command handlers are only invoked when the actor is running (i.e. not replaying).
+   * While the actor is persisting events, the incoming messages are stashed and only
+   * delivered to the handler once persisting them has completed.
+   */
+  override protected def commandHandler(): CommandHandlerWithReply[Command, Event, State]
+
+  /**
+   * @return A new, mutable, command handler builder
+   */
+  protected def newCommandHandlerWithReplyBuilder(): CommandHandlerWithReplyBuilder[Command, Event, State] = {
+    CommandHandlerWithReplyBuilder.builder[Command, Event, State]()
+  }
+
+  /**
+   * Use [[EventSourcedBehaviorWithEnforcedReplies#newCommandHandlerWithReplyBuilder]] instead, or
+   * extend [[EventSourcedBehavior]] instead of [[EventSourcedBehaviorWithEnforcedReplies]].
+   *
+   * @throws UnsupportedOperationException use newCommandHandlerWithReplyBuilder instead
+   */
+  override protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] =
+    throw new UnsupportedOperationException("Use newCommandHandlerWithReplyBuilder instead")
+
 }
