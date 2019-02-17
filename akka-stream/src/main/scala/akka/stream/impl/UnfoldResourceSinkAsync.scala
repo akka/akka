@@ -37,20 +37,20 @@ import scala.util.control.NonFatal
 
       private var blockingStream: Option[S] = None
 
+      private var writeFail: Option[Throwable] = None
+
       private val createdCallback = getAsyncCallback[Try[S]] {
         case Success(resource) ⇒
           blockingStream = Some(resource)
+          pull(in)
 
-          if (!isClosed(in)) {
-            pull(in)
-          }
         case Failure(t) ⇒ failStage(t)
       }.invokeWithFeedback _
 
       private val errorHandler: PartialFunction[Throwable, Unit] = {
         case NonFatal(ex) ⇒ decider(ex) match {
           case Supervision.Stop ⇒
-            promise.tryFailure(ex)
+            writeFail = Some(ex)
             failStage(ex)
           case Supervision.Restart ⇒ restartResource()
           case Supervision.Resume  ⇒ pull(in)
@@ -81,16 +81,28 @@ import scala.util.control.NonFatal
         blockingStream = None
         o match {
           case Some(s) ⇒
+            writeFail.foreach(failStage)
+
             try {
-              val f = close(s).map(_ ⇒ Done)
-              f.failed.foreach(failStage)
-              promise.tryCompleteWith(f)
+              val f = close(s)
+              writeFail match {
+                case Some(ex) ⇒ promise.tryCompleteWith(f.flatMap { _ ⇒ Future.failed(ex) })
+                case None ⇒ promise.tryCompleteWith(f.map(_ ⇒ Done).recoverWith {
+                  case NonFatal(ex) ⇒
+                    failStage(ex)
+                    Future.failed(ex)
+                })
+              }
             } catch {
               case NonFatal(ex) ⇒
-                promise.tryFailure(ex)
-                failStage(ex)
+                if (writeFail.isEmpty) failStage(ex)
+                promise.tryFailure(writeFail.getOrElse(ex))
             }
-          case None ⇒ promise.trySuccess(Done)
+
+          case None ⇒ writeFail match {
+            case None     ⇒ promise.trySuccess(Done)
+            case Some(ex) ⇒ promise.tryFailure(ex)
+          }
         }
       }
 
@@ -134,8 +146,8 @@ import scala.util.control.NonFatal
           }
         } catch {
           case NonFatal(ex) ⇒
-            promise.tryFailure(ex)
             failStage(ex)
+            promise.tryFailure(ex)
         }
       }
 
