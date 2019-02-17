@@ -13,7 +13,7 @@ import scala.concurrent.Await
 import akka.pattern.ask
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.junit.JUnitSuiteLike
+import org.scalatestplus.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 

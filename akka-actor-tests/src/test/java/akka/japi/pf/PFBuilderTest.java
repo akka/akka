@@ -5,7 +5,7 @@
 package akka.japi.pf;
 
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.PartialFunction;
 
 import static org.junit.Assert.*;

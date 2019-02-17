@@ -13,7 +13,7 @@ import akka.testkit.CustomEventFilter;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;

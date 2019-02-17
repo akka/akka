@@ -9,7 +9,7 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Optional;
 

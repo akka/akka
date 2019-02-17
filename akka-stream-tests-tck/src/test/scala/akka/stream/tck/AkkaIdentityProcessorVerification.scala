@@ -11,7 +11,7 @@ import akka.stream.testkit.TestPublisher
 import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
 import org.reactivestreams.tck.IdentityProcessorVerification
 import org.reactivestreams.tck.TestEnvironment
-import org.scalatest.testng.TestNGSuiteLike
+import org.scalatestplus.testng.TestNGSuiteLike
 import org.testng.annotations.AfterClass
 
 abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publisherShutdownTimeout: Long)

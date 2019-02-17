@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.testkit.TestPublisher
 import org.reactivestreams.Publisher
 import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment }
-import org.scalatest.testng.TestNGSuiteLike
+import org.scalatestplus.testng.TestNGSuiteLike
 
 abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherShutdownTimeout: Long)
   extends PublisherVerification[T](env, publisherShutdownTimeout)

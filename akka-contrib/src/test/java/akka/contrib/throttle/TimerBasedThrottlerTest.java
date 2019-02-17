@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 import com.typesafe.config.ConfigFactory;
 import akka.actor.ActorRef;

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import org.junit.Test;
 
 import akka.actor.typed.*;

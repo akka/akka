@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import org.reactivestreams.tck.SubscriberBlackboxVerification
 import org.reactivestreams.tck.SubscriberWhiteboxVerification
 import org.reactivestreams.tck.TestEnvironment
-import org.scalatest.testng.TestNGSuiteLike
+import org.scalatestplus.testng.TestNGSuiteLike
 
 abstract class AkkaSubscriberBlackboxVerification[T](env: TestEnvironment)
   extends SubscriberBlackboxVerification[T](env) with TestNGSuiteLike

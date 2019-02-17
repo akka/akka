@@ -11,7 +11,7 @@ import akka.actor.typed.Props;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

@@ -10,7 +10,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class InboxJavaAPITest extends JUnitSuite {
 
