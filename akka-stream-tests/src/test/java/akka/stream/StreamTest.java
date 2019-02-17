@@ -7,7 +7,7 @@ package akka.stream;
 import akka.stream.testkit.javadsl.StreamTestKit;
 import org.junit.After;
 import org.junit.Before;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;

@@ -11,7 +11,7 @@ import org.apache.camel.NoTypeConversionAvailableException;
 import org.apache.camel.converter.stream.InputStreamCache;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.io.InputStream;
 import java.util.*;

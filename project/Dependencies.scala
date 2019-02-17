@@ -29,7 +29,7 @@ object Dependencies {
         case Some((2, n)) if n >= 12 ⇒ "1.14.0" // does not work for 2.11
         case _                       ⇒ "1.13.2"
       }),
-    scalaTestVersion := "3.0.6-SNAP5",
+    scalaTestVersion := "3.0.6-SNAP6",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 ⇒ "0.9.0"

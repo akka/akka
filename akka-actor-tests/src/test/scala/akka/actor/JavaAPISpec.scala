@@ -4,6 +4,6 @@
 
 package akka.actor
 
-import org.scalatest.junit.JUnitSuiteLike
+import org.scalatestplus.junit.JUnitSuiteLike
 
 class JavaAPISpec extends JavaAPI with JUnitSuiteLike
