@@ -29,7 +29,7 @@ package object ccompat {
    * @tparam A Type of elements (e.g. `Int`, `Boolean`, etc.)
    * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
    */
-  private[akka] type Factory[-A, +C] <: CanBuildFrom[Nothing, A, C] // Ideally, this would be an opaque type
+  private[akka] type Factory[-A, +C] = CanBuildFrom[Nothing, A, C]
 
   private[akka] implicit class FactoryOps[-A, +C](private val factory: Factory[A, C]) {
 
@@ -46,9 +46,6 @@ package object ccompat {
      */
     def newBuilder: m.Builder[A, C] = factory()
   }
-
-  private[akka] implicit def fromCanBuildFrom[A, C](implicit cbf: CanBuildFrom[Nothing, A, C]): Factory[A, C] =
-    cbf.asInstanceOf[Factory[A, C]]
 
   private[akka] implicit def genericCompanionToCBF[A, CC[X] <: GenTraversable[X]](
     fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =
