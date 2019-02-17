@@ -12,6 +12,8 @@ import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.stream._
+import akka.util.ConstantFun
+import akka.event.LoggingAdapter
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
@@ -209,6 +211,16 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    */
   def mapContext[Ctx2](f: Ctx ⇒ Ctx2): Repr[Ctx2, Out] =
     via(flow.map { case (e, ctx) ⇒ (e, f(ctx)) })
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.log]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.log]]
+   */
+  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Ctx, Out] = {
+    val extractWithContext: ((Out, Ctx)) ⇒ Any = { case (e, _) ⇒ extract(e) }
+    via(flow.log(name, extractWithContext)(log))
+  }
 
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
 }
