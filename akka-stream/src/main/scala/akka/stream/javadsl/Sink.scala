@@ -322,7 +322,7 @@ object Sink {
     new Sink(scaladsl.Sink.unfoldResource[T, S](
       create.create _,
       (s: S, t: T) ⇒ write.apply(s, t),
-      close.apply)).mapMaterializedValue(_.toJava)
+      close.apply).toCompletionStage())
 
   /**
    * Start a new `Sink` from some resource which can be opened, written to, and closed.
@@ -351,7 +351,7 @@ object Sink {
     new Sink(scaladsl.Sink.unfoldResourceAsync[T, S](
       () ⇒ create.create().toScala,
       (s: S, t: T) ⇒ write.apply(s, t).toScala,
-      (s: S) ⇒ close.apply(s).toScala)).mapMaterializedValue(_.toJava)
+      (s: S) ⇒ close.apply(s).toScala).toCompletionStage())
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
