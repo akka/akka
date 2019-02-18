@@ -15,6 +15,11 @@ import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 
 object MultiNode extends AutoPlugin {
 
+  object autoImport {
+    val validateCompile = taskKey[Unit]("Validates compile for any project it is enabled")
+  }
+  import autoImport._
+
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
   val multiNodeTestInTest: Boolean =
@@ -54,6 +59,10 @@ object MultiNode extends AutoPlugin {
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
   }
+
+  private val anyConfigsInThisProject = ScopeFilter(
+    configurations = inAnyConfiguration
+  )
 
   private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
@@ -101,7 +110,8 @@ object MultiNode extends AutoPlugin {
       (compile in MultiJvm).value
     }) ++ headerSettings(MultiJvm) ++ Seq(
       // only works if I put it here ¯\_(ツ)_/¯
-      compile in MultiJvm := ((compile in MultiJvm).triggeredBy(compile in Test)).value
+      validateCompile := compile.?.all(anyConfigsInThisProject).value
+//      compile in MultiJvm := ((compile in MultiJvm).triggeredBy(compile in Test)).value
     )
 
 
