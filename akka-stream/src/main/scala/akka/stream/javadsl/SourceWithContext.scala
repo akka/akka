@@ -213,6 +213,20 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   def log(name: String): SourceWithContext[Out, Ctx, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def to[Mat2](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2]): javadsl.RunnableGraph[Mat] =
+    RunnableGraph.fromGraph(asScala.endContextPropagation.map { case (o, e) ⇒ Pair(o, e) }.to(sink))
+
+  /**
+   * Connect this [[akka.stream.javaadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2], combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
+    RunnableGraph.fromGraph(asScala.endContextPropagation.map { case (o, e) ⇒ Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
+
   def asScala: scaladsl.SourceWithContext[Out, Ctx, Mat] = delegate
 
   private[this] def viaScala[Out2, Ctx2, Mat2](f: scaladsl.SourceWithContext[Out, Ctx, Mat] ⇒ scaladsl.SourceWithContext[Out2, Ctx2, Mat2]): SourceWithContext[Out2, Ctx2, Mat2] =
