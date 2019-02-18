@@ -626,7 +626,7 @@ final class IOSettings private (val tcpWriteBufferSize: Int) {
 
   def withTcpWriteBufferSize(value: Int): IOSettings = copy(tcpWriteBufferSize = value)
 
-  private def copy(tcpWriteBufferSize: Int = tcpWriteBufferSize): IOSettings = new IOSettings(
+  private def copy(tcpWriteBufferSize: Int): IOSettings = new IOSettings(
     tcpWriteBufferSize = tcpWriteBufferSize)
 
   override def equals(other: Any): Boolean = other match {

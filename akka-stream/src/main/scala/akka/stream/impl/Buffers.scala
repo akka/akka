@@ -176,7 +176,7 @@ private[akka] object Buffer {
 
     override def enqueue(elem: T): Unit =
       if (tail - head == FixedQueueSize) {
-        val queue = new DynamicQueue(head)
+        val queue = new DynamicQueue()
         while (nonEmpty) {
           queue.enqueue(dequeue())
         }
@@ -208,7 +208,7 @@ private[akka] object Buffer {
     }
   }
 
-  private final class DynamicQueue(startIdx: Int) extends ju.LinkedList[T] with Buffer[T] {
+  private final class DynamicQueue() extends ju.LinkedList[T] with Buffer[T] {
     override def capacity = BoundedBuffer.this.capacity
     override def used = size
     override def isFull = size == capacity

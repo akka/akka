@@ -84,7 +84,7 @@ import scala.util.{ Failure, Success, Try }
     } catch {
       case closingException: Exception ⇒ result match {
         case Success(ioResult) ⇒
-          val statusWithClosingException = ioResult.status.transform(d ⇒ Failure(closingException), ex ⇒ Failure(closingException.initCause(ex)))
+          val statusWithClosingException = ioResult.status.transform(_ ⇒ Failure(closingException), ex ⇒ Failure(closingException.initCause(ex)))
           completionPromise.trySuccess(ioResult.copy(status = statusWithClosingException))
         case Failure(ex) ⇒ completionPromise.tryFailure(closingException.initCause(ex))
       }

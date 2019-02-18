@@ -493,7 +493,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def grab[T](in: Inlet[T]): T = {
     val connection = conn(in)
-    val it = interpreter
     val elem = connection.slot
 
     // Fast path
@@ -1145,8 +1144,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // is used for two purposes: keep track of running callbacks and signal that the
   // stage has stopped to fail incoming async callback invocations by being set to null
   private val asyncCallbacksInProgress = new AtomicReference[List[Promise[Done]]](Nil)
-
-  private def stopped = asyncCallbacksInProgress.get() == null
 
   private var _stageActor: StageActor = _
   final def stageActor: StageActor = _stageActor match {

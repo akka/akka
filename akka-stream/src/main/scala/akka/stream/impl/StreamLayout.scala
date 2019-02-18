@@ -275,7 +275,7 @@ import scala.util.control.NonFatal
       case s: Subscription ⇒
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> EmptyPublisher")
         if (!compareAndSet(s, EmptyPublisher)) onComplete()
-      case b @ Both(s) ⇒
+      case _@ Both(s) ⇒
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> Inert")
         set(Inert)
         tryOnComplete(s)
