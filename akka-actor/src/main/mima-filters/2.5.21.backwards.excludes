@@ -1,2 +1,4 @@
 # Typo in Akka internal method - PR #26352
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.recipientTerminatedExcpetion")
+# No longer needed, package private implicit #26350
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ccompat.package.fromCanBuildFrom")
