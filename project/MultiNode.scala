@@ -109,9 +109,7 @@ object MultiNode extends AutoPlugin {
       (headerCreate in MultiJvm).value
       (compile in MultiJvm).value
     }) ++ headerSettings(MultiJvm) ++ Seq(
-      // only works if I put it here ¯\_(ツ)_/¯
       validateCompile := compile.?.all(anyConfigsInThisProject).value
-//      compile in MultiJvm := ((compile in MultiJvm).triggeredBy(compile in Test)).value
     )
 
 
