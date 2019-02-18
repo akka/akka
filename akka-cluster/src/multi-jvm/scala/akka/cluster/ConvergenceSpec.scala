@@ -45,6 +45,8 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
   import multiNodeConfig._
 
+  cats
+
   muteMarkingAsUnreachable()
 
   "A cluster of 3 members" must {
