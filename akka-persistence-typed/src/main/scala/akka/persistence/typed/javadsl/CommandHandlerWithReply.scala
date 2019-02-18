@@ -210,11 +210,11 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
   /**
    * Matches any command which the given `predicate` returns true for.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+  def onCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), handler)
     this
   }
@@ -225,11 +225,11 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+  def onCommand(predicate: Predicate[Command], handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, ReplyEffect[Event, State]] {
       override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
     })
@@ -239,11 +239,11 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
   /**
    * Matches commands that are of the given `commandClass` or subclass thereof
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+  def onCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, ReplyEffect[Event, State]]])
     this
   }
@@ -254,12 +254,12 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    * Use this when the `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
    * the state in a `BiFunction`.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
+  def onCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    onCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
       override def apply(state: S, cmd: C): ReplyEffect[Event, State] = handler(cmd)
     })
   }
@@ -269,12 +269,12 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    *
    * Use this when you just need to initialize the `State` without using any data from the command.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    */
-  def matchCommand[C <: Command](commandClass: Class[C], handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
-    matchCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
+  def onCommand[C <: Command](commandClass: Class[C], handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
+    onCommand[C](commandClass, new BiFunction[S, C, ReplyEffect[Event, State]] {
       override def apply(state: S, cmd: C): ReplyEffect[Event, State] = handler.get()
     })
   }
@@ -285,16 +285,16 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    * Use this to declare a command handler that will match any command. This is particular useful when encoding
    * a finite state machine in which the final state is not supposed to handle any new command.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
+  def onAnyCommand(handler: BiFunction[S, Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
     addCase(_ ⇒ true, handler)
     build()
   }
@@ -307,16 +307,16 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    *
    * Use this when you just need to return an [[ReplyEffect]] without using any data from the state.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
+  def onAnyCommand(handler: JFunction[Command, ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
     addCase(_ ⇒ true, new BiFunction[S, Command, ReplyEffect[Event, State]] {
       override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
     })
@@ -330,16 +330,16 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    *
    * Use this when you just need to return an [[ReplyEffect]] without using any data from the command or from the state.
    *
-   * Note: command handlers are matched in the order they are added. Once a matching is found, it's selected for handling the command
+   * Note: command handlers are selected in the order they are added. Once a matching is found, it's selected for handling the command
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your command handlers.
    *
-   * Extra care should be taken when using [[matchAny]] as it will match any command.
+   * Extra care should be taken when using [[onAnyCommand]] as it will match any command.
    * This method builds and returns the command handler since this will not let through any states to subsequent match statements.
    *
    * @return A CommandHandlerWithReply from the appended states.
    */
-  def matchAny(handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
+  def onAnyCommand(handler: Supplier[ReplyEffect[Event, State]]): CommandHandlerWithReply[Command, Event, State] = {
     addCase(_ ⇒ true, new BiFunction[S, Command, ReplyEffect[Event, State]] {
       override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler.get()
     })
