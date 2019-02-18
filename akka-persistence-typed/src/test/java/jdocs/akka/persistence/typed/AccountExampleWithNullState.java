@@ -10,8 +10,8 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
+import akka.persistence.typed.javadsl.CommandHandlerWithReply;
+import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventHandlerBuilder;
 import akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies;
@@ -201,9 +201,9 @@ public interface AccountExampleWithNullState {
     }
 
     @Override
-    public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
-      CommandHandlerBuilder<AccountCommand, AccountEvent, Account> builder =
-          newCommandHandlerBuilder();
+    public CommandHandlerWithReply<AccountCommand, AccountEvent, Account> commandHandler() {
+      CommandHandlerWithReplyBuilder<AccountCommand, AccountEvent, Account> builder =
+          newCommandHandlerWithReplyBuilder();
 
       builder.forNullState().onCommand(CreateAccount.class, this::createAccount);
 
@@ -214,7 +214,9 @@ public interface AccountExampleWithNullState {
           .onCommand(GetBalance.class, this::getBalance)
           .onCommand(CloseAccount.class, this::closeAccount);
 
-      builder.forStateType(ClosedAccount.class).onAnyCommand(() -> Effect().unhandled());
+      builder
+          .forStateType(ClosedAccount.class)
+          .onAnyCommand(() -> Effect().unhandled().thenNoReply());
 
       return builder.build();
     }
