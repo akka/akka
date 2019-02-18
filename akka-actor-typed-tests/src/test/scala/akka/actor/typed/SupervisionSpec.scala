@@ -613,6 +613,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         childProbe.expectMessage(GotSignal(PostStop)) // child2
       }
 
+      parentProbe.expectMessage(GotSignal(PreRestart))
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
     }
