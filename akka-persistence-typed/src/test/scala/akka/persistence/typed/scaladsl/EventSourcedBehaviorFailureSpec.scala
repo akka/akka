@@ -78,6 +78,8 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
     EventSourcedBehavior[String, String, String](
       pid, "",
       (_, cmd) ⇒ {
+        if (cmd == "wrong")
+          throw new TestException("wrong command")
         probe.tell("persisting")
         Effect.persist(cmd)
       },
@@ -87,18 +89,22 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       }
     ).onRecoveryCompleted { _ ⇒
         probe.tell("starting")
-      }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
+      }
+      .onPostStop(() ⇒ probe.tell("stopped"))
+      .onPreRestart(() ⇒ probe.tell("restarting"))
+      .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
         .withLoggingEnabled(enabled = false))
 
   "A typed persistent actor (failures)" must {
 
     "call onRecoveryFailure when replay fails" in {
-      val notUsedProbe = TestProbe[String]()
-      val probe = TestProbe[Throwable]()
-      spawn(failingPersistentActor(PersistenceId("fail-recovery"), notUsedProbe.ref)
-        .onRecoveryFailure(t ⇒ probe.ref ! t))
+      val probe = TestProbe[String]()
+      val excProbe = TestProbe[Throwable]()
+      spawn(failingPersistentActor(PersistenceId("fail-recovery"), probe.ref)
+        .onRecoveryFailure(t ⇒ excProbe.ref ! t))
 
-      probe.expectMessageType[TestException].message shouldEqual "Nope"
+      excProbe.expectMessageType[TestException].message shouldEqual "Nope"
+      probe.expectMessage("restarting")
     }
 
     "handle exceptions in onRecoveryFailure" in {
@@ -120,11 +126,13 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       c ! "one"
       probe.expectMessage("persisting")
       probe.expectMessage("one")
+      probe.expectMessage("restarting")
       probe.expectMessage("starting")
       // fail
       c ! "two"
       probe.expectMessage("persisting")
       probe.expectMessage("two")
+      probe.expectMessage("restarting")
       probe.expectMessage("starting")
       // work!
       c ! "three"
@@ -139,6 +147,7 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       val behav = failingPersistentActor(PersistenceId("fail-recovery-once"), probe.ref)
       spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete
+      probe.expectMessage("restarting")
       probe.expectMessage("starting")
       probe.expectNoMessage()
     }
@@ -156,12 +165,32 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       c ! "one"
       probe.expectMessage("persisting")
       probe.expectMessage("one")
+      probe.expectMessage("restarting")
       probe.expectMessage("starting")
       c ! "two"
       probe.expectMessage("persisting")
       probe.expectMessage("two")
       // no restart
       probe.expectNoMessage()
+    }
+
+    "stop (default supervisor strategy) if command handler throws" in {
+      val probe = TestProbe[String]()
+      val behav = failingPersistentActor(PersistenceId("wrong-command-1"), probe.ref)
+      val c = spawn(behav)
+      probe.expectMessage("starting")
+      c ! "wrong"
+      probe.expectMessage("stopped")
+    }
+
+    "restart supervisor strategy if command handler throws" in {
+      val probe = TestProbe[String]()
+      val behav = Behaviors.supervise(failingPersistentActor(PersistenceId("wrong-command-2"), probe.ref))
+        .onFailure[TestException](SupervisorStrategy.restart)
+      val c = spawn(behav)
+      probe.expectMessage("starting")
+      c ! "wrong"
+      probe.expectMessage("restarting")
     }
   }
 }
