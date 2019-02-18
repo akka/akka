@@ -510,7 +510,7 @@ def akkaModule(name: String): Project =
 def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
   val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
-  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox;validateCompile"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
