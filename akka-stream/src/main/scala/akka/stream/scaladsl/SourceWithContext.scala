@@ -40,6 +40,20 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (
     new SourceWithContext(delegate.withAttributes(attr))
 
   /**
+   * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def to[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2]): RunnableGraph[Mat] =
+    delegate.toMat(sink)(Keep.left)
+
+  /**
+   * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] =
+    delegate.toMat(sink)(combine)
+
+  /**
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */
