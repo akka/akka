@@ -39,7 +39,7 @@ abstract class InitialHeartbeatSpec
   muteMarkingAsUnreachable()
 
   "A member" must {
-    
+
     "detect failure even though no heartbeats have been received" taggedAs LongRunningTest in {
       val firstAddress = address(first)
       val secondAddress = address(second)
