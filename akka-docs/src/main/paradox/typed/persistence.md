@@ -87,8 +87,8 @@ mutable the event handler may update the state instance and return the same inst
 
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-It is not recommended to perform side effects in the event handler, as those are also executed during recovery of
-an persistent actor
+The event handler should only update the state and it mustn't perform side effects, as those would also be
+executed during recovery of the persistent actor.
 
 ### Completing the example
 

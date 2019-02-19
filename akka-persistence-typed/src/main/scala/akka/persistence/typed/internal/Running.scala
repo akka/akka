@@ -313,7 +313,7 @@ private[akka] object Running {
         case SaveSnapshotFailure(meta, ex) ⇒
           setup.onSnapshot(meta, Failure(ex))
 
-        // FIXME not implemented
+        // FIXME #24698 not implemented yet
         case DeleteSnapshotFailure(_, _)  ⇒ ???
         case DeleteSnapshotSuccess(_)     ⇒ ???
         case DeleteSnapshotsFailure(_, _) ⇒ ???

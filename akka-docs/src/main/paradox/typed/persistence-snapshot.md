@@ -61,4 +61,4 @@ restart.
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, `onRecoveryFailure` is called (logging the error by default), and the actor will be stopped.
 Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
-if you for example know that serialization format has changed in an incompatible way..
+if you for example know that serialization format has changed in an incompatible way.

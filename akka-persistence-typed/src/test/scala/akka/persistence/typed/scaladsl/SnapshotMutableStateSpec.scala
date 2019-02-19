@@ -11,7 +11,6 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
-import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -37,13 +36,16 @@ object SnapshotMutableStateSpec {
     }
 
     def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
-      val value1 = snapshot.asInstanceOf[MutableState].value
+      val snapshotState = snapshot.asInstanceOf[MutableState]
+      val value1 = snapshotState.value
       Thread.sleep(50)
-      val value2 = snapshot.asInstanceOf[MutableState].value
+      val value2 = snapshotState.value
+      // it mustn't have been modified by another command/event
       if (value1 != value2)
         Future.failed(new IllegalStateException(s"State changed from $value1 to $value2"))
       else {
-        state = state.updated(metadata.persistenceId, (snapshot, metadata))
+        // copy to simulate serialization, and subsequent recovery shouldn't get same instance
+        state = state.updated(metadata.persistenceId, (new MutableState(snapshotState.value), metadata))
         Future.successful(())
       }
     }
@@ -63,7 +65,7 @@ object SnapshotMutableStateSpec {
     """)
 
   sealed trait Command
-  final case object Increment extends Command
+  case object Increment extends Command
   final case class GetValue(replyTo: ActorRef[Int]) extends Command
 
   sealed trait Event
@@ -73,7 +75,7 @@ object SnapshotMutableStateSpec {
 
   def counter(
     persistenceId: PersistenceId,
-    snapshotProbe: ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
+    probe:         ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
     EventSourcedBehavior[Command, Event, MutableState](
       persistenceId,
       emptyState = new MutableState(0),
@@ -88,10 +90,11 @@ object SnapshotMutableStateSpec {
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented ⇒
           state.value += 1
+          probe ! s"incremented-${state.value}"
           state
       }).onSnapshot {
-        case (meta, Success(_)) ⇒ snapshotProbe ! s"snapshot-success-${meta.sequenceNr}"
-        case (meta, Failure(_)) ⇒ snapshotProbe ! s"snapshot-failure-${meta.sequenceNr}"
+        case (meta, Success(_)) ⇒ probe ! s"snapshot-success-${meta.sequenceNr}"
+        case (meta, Failure(_)) ⇒ probe ! s"snapshot-failure-${meta.sequenceNr}"
       }
   }
 
@@ -101,8 +104,6 @@ class SnapshotMutableStateSpec extends ScalaTestWithActorTestKit(SnapshotMutable
 
   import SnapshotMutableStateSpec._
 
-  private implicit val testSettings = TestKitSettings(system)
-
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
 
@@ -110,18 +111,30 @@ class SnapshotMutableStateSpec extends ScalaTestWithActorTestKit(SnapshotMutable
 
     "support mutable state by stashing commands while storing snapshot" in {
       val pid = nextPid()
-      val snapshotProbe = TestProbe[String]()
-      val snapshotState3: Behavior[Command] =
-        counter(pid, snapshotProbe.ref).snapshotWhen { (state, _, _) ⇒ state.value == 3 }
+      val probe = TestProbe[String]()
+      def snapshotState3: Behavior[Command] =
+        counter(pid, probe.ref).snapshotWhen { (state, _, _) ⇒ state.value == 3 }
       val c = spawn(snapshotState3)
 
-      (1 to 5).foreach { _ ⇒
+      (1 to 5).foreach { n ⇒
         c ! Increment
+        probe.expectMessage(s"incremented-$n")
+        if (n == 3) {
+          // incremented-4 shouldn't be before the snapshot-success-3, because Increment 4 is stashed
+          probe.expectMessage(s"snapshot-success-3")
+        }
       }
-      snapshotProbe.expectMessage(s"snapshot-success-3")
 
       val replyProbe = TestProbe[Int]()
       c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(5)
+
+      // recover new instance
+      val c2 = spawn(snapshotState3)
+      // starting from snapshot 3
+      probe.expectMessage(s"incremented-4")
+      probe.expectMessage(s"incremented-5")
+      c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(5)
     }
   }
