@@ -32,7 +32,7 @@ object IntroSpec {
       context.log.info("Hello {}!", message.whom)
   //#fiddle_code
   //#hello-world-actor
-      println(s"Hello ${message.whom}!")
+      context.log.info("Hello {}", message.whom)
   //#hello-world-actor
       message.replyTo ! Greeted(message.whom, context.self)
       Behaviors.same
@@ -50,7 +50,7 @@ object IntroSpec {
         context.log.info("Greeting {} for {}", n, message.whom)
   //#fiddle_code
   //#hello-world-bot
-        println(s"Greeting ${n} for ${message.whom}")
+        context.log.info(s"Greeting {} for {}", n, message.whom)
   //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
@@ -196,19 +196,21 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler: Behavior[SessionEvent] =
-        Behaviors.receiveMessage {
-          //#chatroom-gabbler
-          // We document that the compiler warns about the missing handler for `SessionDenied`
-          case SessionDenied(reason) ⇒
-            println(s"cannot start chat room session: $reason")
-            Behaviors.stopped
-          //#chatroom-gabbler
-          case SessionGranted(handle) ⇒
-            handle ! PostMessage("Hello World!")
-            Behaviors.same
-          case MessagePosted(screenName, message) ⇒
-            println(s"message has been posted by '$screenName': $message")
-            Behaviors.stopped
+        Behaviors.setup { context =>
+          Behaviors.receiveMessage {
+            //#chatroom-gabbler
+            // We document that the compiler warns about the missing handler for `SessionDenied`
+            case SessionDenied(reason) ⇒
+              context.log.info("cannot start chat room session: {}", reason)
+              Behaviors.stopped
+            //#chatroom-gabbler
+            case SessionGranted(handle) ⇒
+              handle ! PostMessage("Hello World!")
+              Behaviors.same
+            case MessagePosted(screenName, message) ⇒
+              context.log.info("message has been posted by '{}': {}", screenName, message)
+              Behaviors.stopped
+          }
         }
       //#chatroom-gabbler
 
