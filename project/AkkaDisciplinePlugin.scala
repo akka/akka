@@ -21,20 +21,18 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   override lazy val projectSettings = disciplineSettings
 
-  lazy val scalaFixSettings = {
-    import scalafix.sbt.ScalafixPlugin.autoImport._
-    Seq(scalacOptions in Compile ++= Seq("-Yrangepos"))
-  }
+  lazy val scalaFixSettings = Seq(
+    Compile / scalacOptions += "-Yrangepos")
 
   lazy val disciplineSettings = scalaFixSettings ++ Seq(
-    scalacOptions in Compile ++= disciplineScalacOptions,
-    scalacOptions in Compile --= undisciplineScalacOptions,
-    scalacOptions in (Compile, console) --= Seq("-Ywarn-unused:imports", "-deprecation"),
-    scalacOptions in Compile --=(CrossVersion.partialVersion(scalaVersion.value) match {
+    Compile / scalacOptions ++= disciplineScalacOptions,
+    Compile / scalacOptions --= undisciplineScalacOptions,
+    Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
+    Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 13)) =>
         Seq("-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ypartial-unification", "-Yno-adapted-args")
       case Some((2, 12)) =>
-        Nil//Seq("-Xfatal-warnings")    // "-Yno-adapted-args"
+        Nil
       case Some((2, 11)) =>
         Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
       case _             =>
