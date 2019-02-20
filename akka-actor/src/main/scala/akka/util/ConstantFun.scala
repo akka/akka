@@ -44,6 +44,8 @@ import akka.japi.{ Pair ⇒ JPair }
 
   val oneInt = (_: Any) ⇒ 1
 
+  val unitToUnit = () ⇒ ()
+
   private val _nullFun = (_: Any) ⇒ null
 
   private val conforms = (a: Any) ⇒ a
