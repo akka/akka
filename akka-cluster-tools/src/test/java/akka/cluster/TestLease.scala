@@ -1,18 +1,19 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.cluster
 
-
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.concurrent.{Future, Promise}
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.event.Logging
 import akka.lease.LeaseSettings
 import akka.lease.scaladsl.Lease
+import akka.testkit.TestProbe
+
+import scala.concurrent.{ Future, Promise }
 
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseExt = super.get(system)
@@ -22,16 +23,16 @@ object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
 
 class TestLeaseExt(val system: ExtendedActorSystem) extends Extension {
 
-  private val testLease = new AtomicReference[TestLease]()
+  private val testLeases = new ConcurrentHashMap[String, TestLease]()
 
-  def getTestLease(): TestLease = {
-    val lease = testLease.get
-    if (lease == null) throw new IllegalStateException("TestLease must be set first")
+  def getTestLease(name: String): TestLease = {
+    val lease = testLeases.get(name)
+    if (lease == null) throw new IllegalStateException(s"Test lease $name has not been set yet")
     lease
   }
 
-  def setTestLease(lease: TestLease): Unit =
-    testLease.set(lease)
+  def setTestLease(name: String, lease: TestLease): Unit =
+    testLeases.put(name, lease)
 
 }
 
@@ -46,31 +47,27 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
   import TestLease._
 
   val log = Logging(system, getClass)
+  val probe = TestProbe()(system)
 
   log.info("Creating lease {}", settings)
 
-  TestLeaseExt(system).setTestLease(this)
+  TestLeaseExt(system).setTestLease(settings.leaseName, this)
 
   val initialPromise = Promise[Boolean]
 
   private val nextAcquireResult = new AtomicReference[Future[Boolean]](initialPromise.future)
 
-  private val probe = new AtomicReference[Option[ActorRef]](None)
-
   def setNextAcquireResult(next: Future[Boolean]): Unit =
     nextAcquireResult.set(next)
 
-  def setProbe(ref: ActorRef): Unit =
-    probe.set(Some(ref))
-
   override def acquire(): Future[Boolean] = {
     println("acquire, current response " + nextAcquireResult)
-    probe.get().foreach(_ ! AcquireReq(settings.ownerName))
+    probe.ref ! AcquireReq(settings.ownerName)
     nextAcquireResult.get()
   }
 
   override def release(): Future[Boolean] = {
-    probe.get().foreach(_ ! ReleaseReq(settings.ownerName))
+    probe.ref ! ReleaseReq(settings.ownerName)
     Future.successful(true)
   }
 

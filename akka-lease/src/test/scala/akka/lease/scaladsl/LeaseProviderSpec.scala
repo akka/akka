@@ -1,11 +1,14 @@
-package akka.lease.scaladsl
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
 
+package akka.lease.scaladsl
 
 import scala.concurrent.Future
 import akka.actor.ExtendedActorSystem
 import akka.lease.LeaseSettings
-import akka.testkit.{AkkaSpec, EventFilter}
-import com.typesafe.config.{ConfigException, ConfigFactory}
+import akka.testkit.{ AkkaSpec, EventFilter }
+import com.typesafe.config.{ ConfigException, ConfigFactory }
 
 object LeaseProviderSpec {
   class LeaseA(settings: LeaseSettings) extends Lease(settings) {
@@ -21,7 +24,7 @@ object LeaseProviderSpec {
   }
 
   val config = ConfigFactory.parseString(
-   s"""
+    s"""
   lease-a {
     lease-class = "${classOf[LeaseProviderSpec.LeaseA].getName}"
     key1 = value1
@@ -48,7 +51,7 @@ object LeaseProviderSpec {
   }
 
   """
-   )
+  )
 
 }
 

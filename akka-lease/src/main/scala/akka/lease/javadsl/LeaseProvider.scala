@@ -1,9 +1,13 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.lease.javadsl
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.ApiMayChange
 import akka.lease.internal.LeaseAdapter
-import akka.lease.scaladsl.{LeaseProvider => ScalaLeaseProvider}
+import akka.lease.scaladsl.{ LeaseProvider ⇒ ScalaLeaseProvider }
 
 @ApiMayChange
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
@@ -35,6 +39,4 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
     new LeaseAdapter(scalaLease)
   }
 }
-
-
 

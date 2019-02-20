@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.lease
 
 import akka.annotation.ApiMayChange

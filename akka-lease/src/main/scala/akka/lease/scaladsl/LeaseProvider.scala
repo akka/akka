@@ -1,7 +1,11 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.lease.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{Function => JFunction}
+import java.util.function.{ Function ⇒ JFunction }
 
 import scala.collection.immutable
 import scala.util.Failure
@@ -61,15 +65,15 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
       immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system))
     )
       .recoverWith {
-        case _: NoSuchMethodException =>
+        case _: NoSuchMethodException ⇒
           dynamicAccess.createInstanceFor[Lease](
             fqcn,
             immutable.Seq((classOf[LeaseSettings], leaseSettings))
           )
 
       } match {
-        case Success(value) => value
-        case Failure(e) =>
+        case Success(value) ⇒ value
+        case Failure(e) ⇒
           log.error(
             e,
             "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +

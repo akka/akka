@@ -1,7 +1,11 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.lease
 
 import akka.annotation.ApiMayChange
-import com.typesafe.config.{Config, ConfigValueType}
+import com.typesafe.config.{ Config, ConfigValueType }
 import akka.util.JavaDurationConverters._
 import scala.concurrent.duration._
 
@@ -10,8 +14,8 @@ object TimeoutSettings {
   def apply(config: Config): TimeoutSettings = {
     val heartBeatTimeout = config.getDuration("heartbeat-timeout").asScala
     val heartBeatInterval = config.getValue("heartbeat-interval").valueType() match {
-      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty => (heartBeatTimeout / 10).max(5.seconds)
-      case _ => config.getDuration("heartbeat-interval").asScala
+      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty ⇒ (heartBeatTimeout / 10).max(5.seconds)
+      case _ ⇒ config.getDuration("heartbeat-interval").asScala
     }
     require(heartBeatInterval < (heartBeatTimeout / 2), "heartbeat-interval must be less than half heartbeat-timeout")
     new TimeoutSettings(
@@ -41,5 +45,4 @@ final class TimeoutSettings(
    */
   def getOperationTimeout(): java.time.Duration = operationTimeout.asJava
 }
-
 
