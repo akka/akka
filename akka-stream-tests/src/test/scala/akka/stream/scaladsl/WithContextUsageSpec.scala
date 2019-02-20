@@ -163,7 +163,7 @@ class WithContextUsageSpec extends StreamSpec {
     def genValue(ix: Int) = s"v$ix"
   }
 
-  def createSourceWithContext(committableMessages: Vector[Consumer.CommittableMessage[Record]]): SourceWithContext[Offset, Record, NotUsed] =
+  def createSourceWithContext(committableMessages: Vector[Consumer.CommittableMessage[Record]]): SourceWithContext[Record, Offset, NotUsed] =
     Consumer
       .committableSource(committableMessages)
       .startContextPropagation(m ⇒ Offset(m.committableOffset.offset))
