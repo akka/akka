@@ -738,7 +738,7 @@ class ClusterSingletonManager(
     }
   }
 
-  // TODO deal with any event that could stop us being the Oldest
+  // FIXME release the lease unless we're waiting for retry
   when(AcquiringLease) {
     case Event(AcquireLeaseResult(result), _) ⇒
       logInfo("Acquire lease result {}", result)
@@ -996,6 +996,14 @@ class ClusterSingletonManager(
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         logInfo("Self downed, waiting for removal")
       stay
+    case Event(ReleaseLeaseResult(result), _) =>
+      // TODO we could retry if false
+      logInfo("Lease release result [{}] in state [{}]", result, stateName)
+      stay
+    case Event(Failure(t), _) =>
+      // TODO we could retry
+      log.error(t, "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
+      stay
   }
 
   onTransition {
@@ -1009,6 +1017,18 @@ class ClusterSingletonManager(
   onTransition {
     case BecomingOldest → _ ⇒ cancelTimer(HandOverRetryTimer)
     case WasOldest → _      ⇒ cancelTimer(TakeOverRetryTimer)
+  }
+
+  onTransition {
+    case Oldest -> _ =>
+      lease match {
+        case Some(l) =>
+          logInfo("Releasing lease as leaving Oldest")
+          import context.dispatcher
+          // FIXME, deal with the response in all states
+          pipe(l.release().map(ReleaseLeaseResult)).to(self)
+        case None =>
+      }
   }
 
   onTransition {
