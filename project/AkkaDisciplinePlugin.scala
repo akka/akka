@@ -13,7 +13,8 @@ import sbt.plugins.JvmPlugin
   * `akka-actor` 151 errors with `-Xfatal-warnings`, 6 without the flag
   */
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
- 
+
+  import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageHighlighting, coverageMinimum}
   import scalafix.sbt.ScalafixPlugin
 
   override def trigger: PluginTrigger = allRequirements
@@ -24,20 +25,27 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
 
-  lazy val disciplineSettings = scalaFixSettings ++ Seq(
-    Compile / scalacOptions ++= disciplineScalacOptions,
-    Compile / scalacOptions --= undisciplineScalacOptions,
-    Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
-    Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 13)) =>
-        Seq("-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ypartial-unification", "-Yno-adapted-args")
-      case Some((2, 12)) =>
-        Nil
-      case Some((2, 11)) =>
-        Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
-      case _             =>
-        Nil
-    }))
+  lazy val scoverageSettings = Seq(
+    coverageMinimum := 60, // TODO set during review, may need tuning per module as well
+    coverageFailOnMinimum := false,
+    coverageHighlighting := true)
+
+  lazy val disciplineSettings =
+    scalaFixSettings ++
+      scoverageSettings ++ Seq(
+      Compile / scalacOptions ++= disciplineScalacOptions,
+      Compile / scalacOptions --= undisciplineScalacOptions,
+      Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
+      Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) =>
+          Seq("-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ypartial-unification", "-Yno-adapted-args")
+        case Some((2, 12)) =>
+          Nil
+        case Some((2, 11)) =>
+          Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
+        case _             =>
+          Nil
+      }))
 
   /**
     * Remain visibly filtered for future code quality work and removing.
