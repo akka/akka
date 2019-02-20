@@ -12,7 +12,7 @@ import scala.util.Random
 import scala.math._
 import scala.concurrent.duration._
 import scala.collection.immutable
-import akka.testkit.{AkkaSpec, TestLatch}
+import akka.testkit.{ AkkaSpec, TestLatch }
 
 import scala.concurrent.Await
 
