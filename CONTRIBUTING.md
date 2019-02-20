@@ -184,7 +184,7 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
-If you dont want to run all tests and just want to check that everything is formatted/mima passes there
+If you have already run all tests and now just need to check that everything is formatted and or mima passes there
 are a set of `all*` commands aliases for running `test:compile` (also formats), `mimaReportBinaryIssues`, and `validateCompile` 
 (compiles `multi-jvm` if enabled for that project). See `build.sbt` or use completion to find the most appropriate one 
 e.g. `allCluster`, `allTyped`.
