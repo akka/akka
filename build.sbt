@@ -514,9 +514,16 @@ def commandValue(p: Project, externalTest: Option[Project] = None) = {
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
-addCommandAlias("allCluster", commandValue(cluster))
+addCommandAlias("allClusterCore", commandValue(cluster))
+addCommandAlias("allClusterMetrics", commandValue(clusterMetrics))
 addCommandAlias("allDistributedData", commandValue(distributedData))
 addCommandAlias("allClusterSharding", commandValue(clusterSharding))
+addCommandAlias("allClusterTools", commandValue(clusterTools))
+addCommandAlias("allCluster", Seq(
+  commandValue(cluster),
+  commandValue(distributedData),
+  commandValue(clusterSharding),
+  commandValue(clusterTools)).mkString)
 addCommandAlias("allPersistence", commandValue(persistence))
 addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
 addCommandAlias("allDiscovery", commandValue(discovery))
