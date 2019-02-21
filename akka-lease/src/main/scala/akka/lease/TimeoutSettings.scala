@@ -44,5 +44,7 @@ final class TimeoutSettings(
    * Java API
    */
   def getOperationTimeout(): java.time.Duration = operationTimeout.asJava
+
+  override def toString = s"TimeoutSettings($heartbeatInterval, $heartbeatTimeout, $operationTimeout)"
 }
 

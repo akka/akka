@@ -26,4 +26,5 @@ final class LeaseSettings(
   val timeoutSettings: TimeoutSettings,
   val leaseConfig:     Config) {
 
+  override def toString = s"LeaseSettings($leaseName, $ownerName, $timeoutSettings)"
 }
