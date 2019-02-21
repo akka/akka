@@ -95,7 +95,7 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.setup { context =>
+        Behaviors.setup[SessionEvent] { context ⇒
           Behaviors.receiveMessage[SessionEvent] {
             case SessionDenied(reason) ⇒
               context.log.info("cannot start chat room session: {}", reason)

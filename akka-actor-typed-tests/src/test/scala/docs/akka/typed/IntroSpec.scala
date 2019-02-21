@@ -151,15 +151,15 @@ object IntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receive { (context, message) ⇒
+      Behaviors.receiveMessage { message ⇒
         message match {
-          case PostMessage(message) ⇒
+          case PostMessage(m) ⇒
             // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, message)
+            room ! PublishSessionMessage(screenName, m)
             Behaviors.same
-          case NotifyClient(message) ⇒
+          case NotifyClient(m) ⇒
             // published from the room
-            client ! message
+            client ! m
             Behaviors.same
         }
       }
@@ -196,7 +196,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler: Behavior[SessionEvent] =
-        Behaviors.setup { context =>
+        Behaviors.setup { context ⇒
           Behaviors.receiveMessage {
             //#chatroom-gabbler
             // We document that the compiler warns about the missing handler for `SessionDenied`
@@ -223,13 +223,14 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
           Behaviors.receiveSignal {
-            case (_, Terminated(ref)) ⇒
+            case (_, Terminated(_)) ⇒
               Behaviors.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
       //#chatroom-main
+      system.terminate() // remove compiler warnings
     }
   }
 
