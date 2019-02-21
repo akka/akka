@@ -57,7 +57,7 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
       probe.expectTerminated(ref1)
 
       val ref2 = testKit.spawn(b)
-      // eventHandler from reply
+      // eventHandler from replay
       probe.expectMessage("eventHandler:0:1")
       probe.expectMessage("eventHandler:1:2")
       probe.expectMessage("onRecoveryCompleted:3")
