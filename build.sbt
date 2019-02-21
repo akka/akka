@@ -102,14 +102,27 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
     Seq(
       actor,
       stream, streamTests,
-      persistence, persistenceTyped,
-      distributedData, clusterTyped,
+      persistence, distributedData,
       testkit
     ).map(_ % "compile->compile;compile->test"): _*
   )
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
+
+lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
+  .dependsOn(
+    Seq(
+      persistenceTyped,
+      distributedData, clusterTyped,
+      testkit
+    ).map(_ % "compile->compile;compile->test"): _*
+  )
+  .settings(Dependencies.benchJmh)
+  .settings(AkkaBuild.noScala211)
+  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
+  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
+
 
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")
@@ -247,6 +260,7 @@ lazy val docs = akkaModule("akka-docs")
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
+  .settings(AkkaBuild.noScala211)
   .enablePlugins(
     AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
@@ -395,6 +409,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
+  .settings(AkkaBuild.noScala211)
   .settings(
     initialCommands := """
       import akka.actor.typed._
@@ -417,6 +432,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   )
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
@@ -435,6 +451,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
@@ -451,6 +468,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
@@ -467,6 +485,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
   .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
@@ -475,6 +494,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
+  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
@@ -483,6 +503,7 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
     actorTestkitTyped % "compile->compile;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 

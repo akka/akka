@@ -240,6 +240,11 @@ object AkkaBuild {
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
 
+
+  lazy val noScala211 = Seq(
+    crossScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("2.11"))
+  )
+
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
     val file = new File(fileName)
