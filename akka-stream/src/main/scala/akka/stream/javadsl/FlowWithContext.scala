@@ -58,6 +58,14 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: scaladsl
   }
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.withAttributes]].
+   *
+   * @see [[akka.stream.javadsl.Flow.withAttributes]]
+   */
+  override def withAttributes(attr: Attributes): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.withAttributes(attr))
+
+  /**
    * Creates a regular flow of pairs (data, context).
    */
   def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] @uncheckedVariance =

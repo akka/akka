@@ -51,6 +51,14 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
   override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
     FlowWithContext.from(delegate.viaMat(flow)(combine))
 
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Flow.withAttributes]].
+   *
+   * @see [[akka.stream.scaladsl.Flow.withAttributes]]
+   */
+  override def withAttributes(attr: Attributes): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    new FlowWithContext(delegate.withAttributes(attr))
+
   def asFlow: Flow[(In, CtxIn), (Out, CtxOut), Mat] = delegate
 
   def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]: javadsl.FlowWithContext[JIn, JCtxIn, JOut, JCtxOut, JMat] =
