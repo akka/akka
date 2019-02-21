@@ -22,11 +22,11 @@ import akka.event.LoggingAdapter
  * API MAY CHANGE
  */
 @ApiMayChange
-trait FlowWithContextOps[+Ctx, +Out, +Mat] {
-  type ReprMat[+C, +O, +M] <: FlowWithContextOps[C, O, M] {
-    type ReprMat[+CC, +OO, +MatMat] = FlowWithContextOps.this.ReprMat[CC, OO, MatMat]
+trait FlowWithContextOps[+Out, +Ctx, +Mat] {
+  type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
+    type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
   }
-  type Repr[+C, +O] = ReprMat[C, O, Mat @uncheckedVariance]
+  type Repr[+O, +C] = ReprMat[O, C, Mat @uncheckedVariance]
 
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
@@ -37,7 +37,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.via]]
    */
-  def via[Ctx2, Out2, Mat2](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Ctx2, Out2]
+  def via[Out2, Ctx2, Mat2](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2]
 
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
@@ -51,14 +51,14 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.viaMat]]
    */
-  def viaMat[Ctx2, Out2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[Ctx2, Out2, Mat3]
+  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[Out2, Ctx2, Mat3]
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.map]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.map]]
    */
-  def map[Out2](f: Out ⇒ Out2): Repr[Ctx, Out2] =
+  def map[Out2](f: Out ⇒ Out2): Repr[Out2, Ctx] =
     via(flow.map { case (e, ctx) ⇒ (f(e), ctx) })
 
   /**
@@ -66,7 +66,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapAsync]]
    */
-  def mapAsync[Out2](parallelism: Int)(f: Out ⇒ Future[Out2]): Repr[Ctx, Out2] =
+  def mapAsync[Out2](parallelism: Int)(f: Out ⇒ Future[Out2]): Repr[Out2, Ctx] =
     via(flow.mapAsync(parallelism) { case (e, ctx) ⇒ f(e).map(o ⇒ (o, ctx))(ExecutionContexts.sameThreadExecutionContext) })
 
   /**
@@ -76,7 +76,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.collect]]
    */
-  def collect[Out2](f: PartialFunction[Out, Out2]): Repr[Ctx, Out2] =
+  def collect[Out2](f: PartialFunction[Out, Out2]): Repr[Out2, Ctx] =
     via(flow.collect {
       case (e, ctx) if f.isDefinedAt(e) ⇒ (f(e), ctx)
     })
@@ -88,7 +88,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.filter]]
    */
-  def filter(pred: Out ⇒ Boolean): Repr[Ctx, Out] =
+  def filter(pred: Out ⇒ Boolean): Repr[Out, Ctx] =
     collect { case e if pred(e) ⇒ e }
 
   /**
@@ -98,7 +98,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.filterNot]]
    */
-  def filterNot(pred: Out ⇒ Boolean): Repr[Ctx, Out] =
+  def filterNot(pred: Out ⇒ Boolean): Repr[Out, Ctx] =
     collect { case e if !pred(e) ⇒ e }
 
   /**
@@ -108,7 +108,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.grouped]]
    */
-  def grouped(n: Int): Repr[immutable.Seq[Ctx], immutable.Seq[Out]] =
+  def grouped(n: Int): Repr[immutable.Seq[Out], immutable.Seq[Ctx]] =
     via(flow.grouped(n).map { elsWithContext ⇒
       val (els, ctxs) = elsWithContext.unzip
       (els, ctxs)
@@ -121,7 +121,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.sliding]]
    */
-  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Ctx], immutable.Seq[Out]] =
+  def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out], immutable.Seq[Ctx]] =
     via(flow.sliding(n, step).map { elsWithContext ⇒
       val (els, ctxs) = elsWithContext.unzip
       (els, ctxs)
@@ -155,7 +155,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out ⇒ immutable.Iterable[Out2]): Repr[Ctx, Out2] = statefulMapConcat(() ⇒ f)
+  def mapConcat[Out2](f: Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = statefulMapConcat(() ⇒ f)
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.statefulMapConcat]].
@@ -195,7 +195,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.statefulMapConcat]]
    */
-  def statefulMapConcat[Out2](f: () ⇒ Out ⇒ immutable.Iterable[Out2]): Repr[Ctx, Out2] = {
+  def statefulMapConcat[Out2](f: () ⇒ Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = {
     val fCtx: () ⇒ ((Out, Ctx)) ⇒ immutable.Iterable[(Out2, Ctx)] = () ⇒ {
       val plainFun = f()
       elWithContext ⇒ {
@@ -209,7 +209,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).
    */
-  def mapContext[Ctx2](f: Ctx ⇒ Ctx2): Repr[Ctx2, Out] =
+  def mapContext[Ctx2](f: Ctx ⇒ Ctx2): Repr[Out, Ctx2] =
     via(flow.map { case (e, ctx) ⇒ (e, f(ctx)) })
 
   /**
@@ -217,7 +217,7 @@ trait FlowWithContextOps[+Ctx, +Out, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Ctx, Out] = {
+  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) ⇒ Any = { case (e, _) ⇒ extract(e) }
     via(flow.log(name, extractWithContext)(log))
   }

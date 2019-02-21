@@ -32,7 +32,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
     "on FlowWithContext" must {
 
       "log each element" in {
-        val logging = FlowWithContext[Long, Message].log("my-log")
+        val logging = FlowWithContext[Message, Long].log("my-log")
         Source(List(Message("a", 1L), Message("b", 2L)))
           .startContextPropagation(m ⇒ m.offset)
           .via(logging)
@@ -45,7 +45,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
       }
 
       "allow extracting value to be logged" in {
-        val logging = FlowWithContext[Long, Message].log("my-log2", m ⇒ m.data)
+        val logging = FlowWithContext[Message, Long].log("my-log2", m ⇒ m.data)
         Source(List(Message("a", 1L)))
           .startContextPropagation(m ⇒ m.offset)
           .via(logging)
@@ -62,7 +62,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
           onFinish = Logging.DebugLevel,
           onFailure = Logging.DebugLevel)
 
-        val logging = FlowWithContext[Long, Message].log("my-log3")
+        val logging = FlowWithContext[Message, Long].log("my-log3")
         Source(List(Message("a", 1L), Message("b", 2L)))
           .startContextPropagation(m ⇒ m.offset)
           .via(logging)

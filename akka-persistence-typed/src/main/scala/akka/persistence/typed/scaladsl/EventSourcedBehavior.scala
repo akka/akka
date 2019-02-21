@@ -108,6 +108,16 @@ object EventSourcedBehavior {
   def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State]
 
   /**
+   * The `callback` function is called to notify that the actor has stopped.
+   */
+  def onPostStop(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * The `callback` function is called to notify that the actor is restarted.
+   */
+  def onPreRestart(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State]
+
+  /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
   def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): EventSourcedBehavior[Command, Event, State]

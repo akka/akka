@@ -13,17 +13,20 @@ import akka.stream._
  */
 @ApiMayChange
 object FlowWithContext {
+
   /**
    * Creates an "empty" FlowWithContext that passes elements through with their context unchanged.
    */
-  def apply[Ctx, In]: FlowWithContext[Ctx, In, Ctx, In, akka.NotUsed] = {
+  def apply[In, Ctx]: FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] = {
     val under = Flow[(In, Ctx)]
-    new FlowWithContext[Ctx, In, Ctx, In, akka.NotUsed](under)
+    new FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed](under)
   }
+
   /**
    * Creates a FlowWithContext from a regular flow that operates on a pair of `(data, context)` elements.
    */
-  def from[CI, I, CO, O, M](flow: Flow[(I, CI), (O, CO), M]): FlowWithContext[CI, I, CO, O, M] = new FlowWithContext(flow)
+  def from[In, CtxIn, Out, CtxOut, Mat](flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    new FlowWithContext(flow)
 }
 
 /**
@@ -37,19 +40,19 @@ object FlowWithContext {
  * API MAY CHANGE
  */
 @ApiMayChange
-final class FlowWithContext[-CtxIn, -In, +CtxOut, +Out, +Mat](
+final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
   delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat]
-) extends GraphDelegate(delegate) with FlowWithContextOps[CtxOut, Out, Mat] {
-  override type ReprMat[+C, +O, +M] = FlowWithContext[CtxIn @uncheckedVariance, In @uncheckedVariance, C, O, M @uncheckedVariance]
+) extends GraphDelegate(delegate) with FlowWithContextOps[Out, CtxOut, Mat] {
+  override type ReprMat[+O, +C, +M] = FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
 
-  override def via[Ctx2, Out2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Ctx2, Out2] =
+  override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     FlowWithContext.from(delegate.via(viaFlow))
 
-  override def viaMat[Ctx2, Out2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): FlowWithContext[CtxIn, In, Ctx2, Out2, Mat3] =
+  override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
     FlowWithContext.from(delegate.viaMat(flow)(combine))
 
   def asFlow: Flow[(In, CtxIn), (Out, CtxOut), Mat] = delegate
 
-  def asJava[JCtxIn <: CtxIn, JIn <: In, JCtxOut >: CtxOut, JOut >: Out, JMat >: Mat]: javadsl.FlowWithContext[JCtxIn, JIn, JCtxOut, JOut, JMat] =
+  def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]: javadsl.FlowWithContext[JIn, JCtxIn, JOut, JCtxOut, JMat] =
     new javadsl.FlowWithContext(this)
 }
