@@ -20,15 +20,15 @@ import akka.stream._
  * API MAY CHANGE
  */
 @ApiMayChange
-final class SourceWithContext[+Ctx, +Out, +Mat] private[stream] (
+final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (
   delegate: Source[(Out, Ctx), Mat]
-) extends GraphDelegate(delegate) with FlowWithContextOps[Ctx, Out, Mat] {
-  override type ReprMat[+C, +O, +M] = SourceWithContext[C, O, M @uncheckedVariance]
+) extends GraphDelegate(delegate) with FlowWithContextOps[Out, Ctx, Mat] {
+  override type ReprMat[+O, +C, +M] = SourceWithContext[O, C, M @uncheckedVariance]
 
-  override def via[Ctx2, Out2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Ctx2, Out2] =
+  override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new SourceWithContext(delegate.via(viaFlow))
 
-  override def viaMat[Ctx2, Out2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): SourceWithContext[Ctx2, Out2, Mat3] =
+  override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): SourceWithContext[Out2, Ctx2, Mat3] =
     new SourceWithContext(delegate.viaMat(flow)(combine))
 
   /**
@@ -37,7 +37,7 @@ final class SourceWithContext[+Ctx, +Out, +Mat] private[stream] (
    */
   def endContextPropagation: Source[(Out, Ctx), Mat] = delegate
 
-  def asJava[JCtx >: Ctx, JOut >: Out, JMat >: Mat]: javadsl.SourceWithContext[JCtx, JOut, JMat] =
+  def asJava[JOut >: Out, JCtx >: Ctx, JMat >: Mat]: javadsl.SourceWithContext[JOut, JCtx, JMat] =
     new javadsl.SourceWithContext(this)
 }
 
