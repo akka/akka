@@ -58,7 +58,7 @@ class SourceWithContextSpec extends StreamSpec {
 
     "pass through contexts via a FlowWithContext" in {
 
-      def flowWithContext[T] = FlowWithContext[Long, T]
+      def flowWithContext[T] = FlowWithContext[T, Long]
 
       Source(Vector(Message("a", 1L)))
         .startContextPropagation(_.offset)
