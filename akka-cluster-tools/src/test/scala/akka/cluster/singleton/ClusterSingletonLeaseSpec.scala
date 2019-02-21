@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Status.Failure
 import akka.actor.{ Actor, ActorRef, ExtendedActorSystem, PoisonPill, Props }
-import akka.cluster.TestLease.AcquireReq
+import akka.cluster.TestLease.{ AcquireReq, ReleaseReq }
 import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
 import akka.lease.scaladsl.LeaseProvider
 import akka.lease.{ LeaseSettings, TimeoutSettings }
@@ -147,5 +147,26 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
       nextResponse.complete(Success(true))
       singletonProbe.expectMsg("preStart")
     }
+
+    "release lease when leaving oldest" in {
+      val singletonProbe = TestProbe()
+      val name = nextName()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val testLease = awaitAssert {
+        testLeaseExt.getTestLease(s"singleton-$name")
+      } // allow singleton manager to create the lease
+      singletonProbe.expectNoMessage(shortDuration)
+      testLease.probe.expectMsg(AcquireReq(leaseOwner))
+      testLease.initialPromise.complete(Success(true))
+      singletonProbe.expectMsg("preStart")
+      cluster.leave(cluster.selfAddress)
+      testLease.probe.expectMsg(ReleaseReq(leaseOwner))
+    }
+
+    /*
+    TODO:
+    - Periodic check of the lease or add callback to interface
+     */
+
   }
 }

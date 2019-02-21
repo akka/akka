@@ -996,11 +996,11 @@ class ClusterSingletonManager(
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         logInfo("Self downed, waiting for removal")
       stay
-    case Event(ReleaseLeaseResult(result), _) =>
+    case Event(ReleaseLeaseResult(result), _) ⇒
       // TODO we could retry if false
       logInfo("Lease release result [{}] in state [{}]", result, stateName)
       stay
-    case Event(Failure(t), _) =>
+    case Event(Failure(t), _) ⇒
       // TODO we could retry
       log.error(t, "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       stay
@@ -1020,14 +1020,14 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case Oldest -> _ =>
+    case Oldest -> _ ⇒
       lease match {
-        case Some(l) =>
+        case Some(l) ⇒
           logInfo("Releasing lease as leaving Oldest")
           import context.dispatcher
           // FIXME, deal with the response in all states
           pipe(l.release().map(ReleaseLeaseResult)).to(self)
-        case None =>
+        case None ⇒
       }
   }
 
