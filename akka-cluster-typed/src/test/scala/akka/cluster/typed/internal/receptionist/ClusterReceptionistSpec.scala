@@ -18,9 +18,12 @@ import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, FishingOutcomes, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.cluster.typed.Down
+import akka.cluster.typed.JoinSeedNodes
+import akka.cluster.typed.Leave
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""
@@ -42,9 +45,17 @@ object ClusterReceptionistSpec {
       akka.remote.netty.tcp.host = 127.0.0.1
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
+
+      akka.remote.retry-gate-closed-for = 1 s
+
+      akka.cluster.typed.receptionist {
+        pruning-interval = 1 s
+      }
+
       akka.cluster {
-        auto-down-unreachable-after = 0s
+        #auto-down-unreachable-after = 0s
         jmx.multi-mbeans-in-same-jvm = on
+        failure-detector.acceptable-heartbeat-pause = 3s
       }
     """)
 
@@ -109,7 +120,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         val regProbe1 = TestProbe[Any]()(system1)
         val regProbe2 = TestProbe[Any]()(system2)
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
 
         system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
         regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
@@ -132,7 +143,15 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "remove registrations when node dies" in {
-      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-2", ClusterReceptionistSpec.config)
+      testNodeRemoval(down = true)
+    }
+
+    "remove registrations when node leaves" in {
+      testNodeRemoval(down = false)
+    }
+
+    def testNodeRemoval(down: Boolean): Unit = {
+      val testKit1 = ActorTestKit(s"ClusterReceptionistSpec-test-3-$down", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
@@ -146,72 +165,47 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         val regProbe1 = TestProbe[Any]()(system1)
         val regProbe2 = TestProbe[Any]()(system2)
 
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
 
         system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
         regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val service1 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+
+        regProbe1.expectMessage(Listing(PingKey, Set(service1)))
 
         val service2 = testKit2.spawn(pingPongBehavior)
         system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
         regProbe2.expectMessage(Registered(PingKey, service2))
 
-        val remoteServiceRefs = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
-        val theRef = remoteServiceRefs.head
-        theRef ! Ping(regProbe1.ref)
-        regProbe1.expectMessage(Pong)
+        val serviceRefs2 = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
+        serviceRefs2.size should ===(2)
 
-        // abrupt termination
-        system2.terminate()
-        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+        if (down) {
+          // abrupt termination
+          Await.ready(system2.terminate(), 10.seconds)
+          clusterNode1.manager ! Down(clusterNode2.selfMember.address)
+        } else {
+          clusterNode1.manager ! Leave(clusterNode2.selfMember.address)
+        }
+
+        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
+
+        // register another after removal
+        val service1b = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1b, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1b))
+        regProbe1.expectMessage(Listing(PingKey, Set(service1, service1b)))
+
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
       }
     }
 
-    "work with services registered before node joins cluster" in {
-      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-3", ClusterReceptionistSpec.config)
-      val system1 = testKit1.system
-      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
-      val system2 = testKit2.system
-      try {
-
-        val clusterNode1 = Cluster(system1)
-        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
-
-        val regProbe1 = TestProbe[Any]()(system1)
-        val regProbe2 = TestProbe[Any]()(system2)
-
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
-
-        system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
-        regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-
-        val service2 = testKit2.spawn(pingPongBehavior)
-        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
-        regProbe2.expectMessage(Registered(PingKey, service2))
-
-        // then we join the cluster
-        val clusterNode2 = Cluster(system2)
-        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up))
-
-        // and the subscriber on node1 should see the service
-        val remoteServiceRefs = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
-        val theRef = remoteServiceRefs.head
-        theRef ! Ping(regProbe1.ref)
-        regProbe1.expectMessage(Pong)
-
-        // abrupt termination
-        system2.terminate()
-        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-      } finally {
-        testKit1.shutdownTestKit()
-        testKit2.shutdownTestKit()
-      }
-    }
-
-    "handle a new incarnation of the same node well" in {
+    "not remove registrations when self is shutdown" in {
       val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-4", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
@@ -226,7 +220,107 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         val regProbe1 = TestProbe[Any]()(system1)
         val regProbe2 = TestProbe[Any]()(system2)
 
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val service1 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+
+        val service2 = testKit2.spawn(pingPongBehavior)
+        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
+        regProbe2.expectMessage(Registered(PingKey, service2))
+
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
+
+        akka.cluster.Cluster(system1.toUntyped).shutdown()
+
+        regProbe2.expectNoMessage(3.seconds)
+
+        clusterNode2.manager ! Down(clusterNode1.selfMember.address)
+        // service1 removed
+        regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+
+    }
+
+    "work with services registered before node joins cluster" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
+        regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val service2 = testKit2.spawn(pingPongBehavior)
+        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
+        regProbe2.expectMessage(Registered(PingKey, service2))
+
+        val reply2 = TestProbe[Listing]()(system2)
+        // awaitAssert because it is not immediately included in the registry (round trip to ddata)
+        reply2.awaitAssert {
+          system2.receptionist ! Find(PingKey, reply2.ref)
+          reply2.receiveMessage().serviceInstances(PingKey) should ===(Set(service2))
+        }
+
+        // and it shouldn't be removed (wait longer than pruning-interval)
+        Thread.sleep(2000)
+        system2.receptionist ! Find(PingKey, reply2.ref)
+        reply2.receiveMessage().serviceInstances(PingKey) should ===(Set(service2))
+
+        // then we join the cluster
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        // and the subscriber on node1 should see the service
+        val remoteServiceRefs = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
+        val theRef = remoteServiceRefs.head
+        theRef ! Ping(regProbe1.ref)
+        regProbe1.expectMessage(Pong)
+
+        // abrupt termination
+        Await.ready(system2.terminate(), 10.seconds)
+        clusterNode1.manager ! Down(clusterNode2.selfMember.address)
+
+        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+    }
+
+    "handle a new incarnation of the same node well" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-6", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
 
         system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
         regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
@@ -241,42 +335,46 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         theRef ! Ping(regProbe1.ref)
         regProbe1.expectMessage(Pong)
 
-        // FIXME do we need to blackhole the connection to system2 before terminating
-        // right now it doesn't work anyways though ;D
-
         // abrupt termination but then a node with the same host:port comes online quickly
-        system1.log.debug("Terminating system2, uid: [{}]", clusterNode2.selfMember.uniqueAddress.longUid)
+        system1.log.debug("Terminating system2: [{}]", clusterNode2.selfMember.uniqueAddress)
         Await.ready(system2.terminate(), 10.seconds)
 
-        val testKit3 = ActorTestKit(system1.name, testKit1.config)
+        val testKit3 = ActorTestKit(
+          system1.name,
+          ConfigFactory.parseString(s"""
+            akka.remote.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
+            akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
+            # retry joining when existing member removed
+            akka.cluster.retry-unsuccessful-join-after = 1s
+          """).withFallback(config))
 
         try {
           val system3 = testKit3.system
-          system1.log.debug(
-            "Starting system3 at same hostname port as system2, uid: [{}]",
-            Cluster(system3).selfMember.uniqueAddress.longUid)
           val clusterNode3 = Cluster(system3)
-          clusterNode3.manager ! Join(clusterNode1.selfMember.address)
+          system1.log
+            .debug("Starting system3 at same hostname port as system2: [{}]", clusterNode3.selfMember.uniqueAddress)
+          // using JoinSeedNodes instead of Join to retry the join when existing member removed
+          clusterNode3.manager ! JoinSeedNodes(List(clusterNode1.selfMember.address))
           val regProbe3 = TestProbe[Any]()(system3)
 
           // and registers the same service key
           val service3 = testKit3.spawn(pingPongBehavior, "instance")
-          system3.log.debug(
-            "Spawning/registering ping service in new incarnation {}#{}",
-            service3.path,
-            service3.path.uid)
+          val service3Uid = service3.path.uid
+          system3.log.debug("Spawning/registering ping service in new incarnation {}", service3)
           system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
           regProbe3.expectMessage(Registered(PingKey, service3))
-          system3.log.debug("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
+          system3.log.debug("Registered actor [{}] for system3", service3)
 
           // make sure it joined fine and node1 has upped it
-          regProbe1.awaitAssert {
-            clusterNode1.state.members.exists(
-              m =>
-                m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
-                m.status == MemberStatus.Up &&
-                !clusterNode1.state.unreachable(m))
-          }
+          regProbe1.awaitAssert(
+            {
+              clusterNode1.state.members.exists(
+                m =>
+                  m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
+                  m.status == MemberStatus.Up &&
+                  !clusterNode1.state.unreachable(m)) should ===(true)
+            },
+            10.seconds)
 
           // we should get either empty message and then updated with the new incarnation actor
           // or just updated with the new service directly
@@ -289,8 +387,114 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
           val ref = entries.head
           val service3RemotePath = RootActorPath(clusterNode3.selfMember.address) / "user" / "instance"
           ref.path should ===(service3RemotePath)
+          ref.path.uid should ===(service3Uid)
+
           ref ! Ping(regProbe1.ref)
           regProbe1.expectMessage(Pong)
+
+        } finally {
+          testKit3.shutdownTestKit()
+        }
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+    }
+
+    // reproducer of issue #26284
+    "handle a new incarnation of the same node that is no longer part of same cluster" in {
+      val testKit1 = ActorTestKit(
+        "ClusterReceptionistSpec-test-7",
+        ConfigFactory.parseString("""
+          akka.cluster {
+            failure-detector.acceptable-heartbeat-pause = 20s
+          }
+          akka.cluster.typed.receptionist {
+            # it can be stressed more by using all
+            write-consistency = all
+          }
+          """).withFallback(ClusterReceptionistSpec.config))
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+        val reply1 = TestProbe[Listing]()(system1)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
+        regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val service1 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+        regProbe1.expectMessage(Listing(PingKey, Set(service1)))
+
+        val service2 = testKit2.spawn(pingPongBehavior, "instance")
+        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
+        regProbe2.expectMessage(Registered(PingKey, service2))
+
+        // make sure we saw the first incarnation on node1
+        regProbe1.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
+
+        // abrupt termination but then a node with the same host:port comes online quickly
+        system1.log.debug("Terminating system2: [{}]", clusterNode2.selfMember.uniqueAddress)
+        Await.ready(system2.terminate(), 10.seconds)
+
+        val testKit3 = ActorTestKit(
+          system1.name,
+          ConfigFactory.parseString(s"""
+            akka.remote.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
+            akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
+          """).withFallback(config))
+
+        try {
+          val system3 = testKit3.system
+          val regProbe3 = TestProbe[Any]()(system3)
+          val clusterNode3 = Cluster(system3)
+          system1.log
+            .debug("Starting system3 at same hostname port as system2 [{}]", clusterNode3.selfMember.uniqueAddress)
+          // joining itself, i.e. not same cluster
+          clusterNode3.manager ! Join(clusterNode3.selfMember.address)
+          regProbe3.awaitAssert(clusterNode3.state.members.count(_.status == MemberStatus.Up) should ===(1))
+
+          // register another
+          Thread.sleep(2000)
+          val service1b = testKit1.spawn(pingPongBehavior)
+          system1.receptionist ! Register(PingKey, service1b, regProbe1.ref)
+
+          val service1c = testKit1.spawn(pingPongBehavior)
+          system1.receptionist ! Register(PingKey, service1c, regProbe1.ref)
+
+          system3.receptionist ! Subscribe(PingKey, regProbe3.ref)
+          // shouldn't get anything from the other cluster
+          regProbe3.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+          // and registers the same service key
+          val service3 = testKit3.spawn(pingPongBehavior, "instance")
+          system3.log.debug("Spawning/registering ping service in new incarnation {}", service3)
+          system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
+          regProbe3.expectMessage(Registered(PingKey, service3))
+          system3.log.debug("Registered actor [{}] for system3", service3)
+
+          // shouldn't get anything from the other cluster
+          regProbe3.expectMessage(Listing(PingKey, Set(service3)))
+
+          reply1.expectNoMessage(1.second)
+          system1.receptionist ! Find(PingKey, reply1.ref)
+          (reply1.receiveMessage().serviceInstances(PingKey) should contain).allOf(service1, service1b, service1c)
+
+          reply1.expectNoMessage(1.second)
+          system1.receptionist ! Find(PingKey, reply1.ref)
+          (reply1.receiveMessage().serviceInstances(PingKey) should contain).allOf(service1, service1b, service1c)
 
         } finally {
           testKit3.shutdownTestKit()
@@ -307,7 +511,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
           # without delta reaching between nodes already
           akka.cluster.distributed-data.delta-crdt.enabled=false
         """).withFallback(ClusterReceptionistSpec.config)
-      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", config)
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-8", config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
@@ -322,7 +526,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         val regProbe1 = TestProbe[AnyRef]()(system1)
         val regProbe2 = TestProbe[AnyRef]()(system2)
 
-        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2))
 
         // one actor on each node up front
         val actor1 = testKit1.spawn(Behaviors.receive[AnyRef] {

@@ -50,14 +50,14 @@ private object ReplicatedDataSerializer {
     @silent
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
-      case (k1: String, k2)                     => -1
-      case (k1, k2: String)                     => 1
+      case (_: String, _)                       => -1
+      case (_, _: String)                       => 1
       case (k1: Int, k2: Int)                   => k1.compareTo(k2)
-      case (k1: Int, k2)                        => -1
-      case (k1, k2: Int)                        => 1
+      case (_: Int, _)                          => -1
+      case (_, _: Int)                          => 1
       case (k1: Long, k2: Long)                 => k1.compareTo(k2)
-      case (k1: Long, k2)                       => -1
-      case (k1, k2: Long)                       => 1
+      case (_: Long, _)                         => -1
+      case (_, _: Long)                         => 1
       case (k1: OtherMessage, k2: OtherMessage) => OtherMessageComparator.compare(k1, k2)
       case (k1, k2) =>
         throw new IllegalStateException(

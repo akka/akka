@@ -23,23 +23,26 @@ import scala.concurrent.duration.Deadline
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
-    new ShardedServiceRegistry(emptyRegistries, Map.empty)
+    new ShardedServiceRegistry(emptyRegistries, Map.empty, Set.empty)
   }
 
 }
 
 /**
+ * INTERNAL API
+ *
  * Two level structure for keeping service registry to be able to shard entries over multiple ddata keys (to not
  * get too large ddata messages)
  *
  * @param tombstones Local actors that were stopped and should not be re-added to the available set of actors
  *                   for a key. Since the only way to unregister is to stop, we don't need to keep track of
  *                   the service key
- * INTERNAL API
+ *
  */
 @InternalApi private[akka] final case class ShardedServiceRegistry(
     serviceRegistries: Map[DDataKey, ServiceRegistry],
-    tombstones: Map[ActorRef[_], Deadline]) {
+    tombstones: Map[ActorRef[_], Deadline],
+    nodes: Set[UniqueAddress]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -56,22 +59,32 @@ import scala.concurrent.duration.Deadline
   def allEntries: Iterator[Entry] = allServices.flatMap(_._2)
 
   def actorRefsFor[T](key: ServiceKey[T]): Set[ActorRef[T]] = {
-    val dDataKey = ddataKeyFor(key)
-    serviceRegistries(dDataKey).actorRefsFor(key)
+    val ddataKey = ddataKeyFor(key)
+    serviceRegistries(ddataKey).actorRefsFor(key)
   }
 
-  def withServiceRegistry(dDataKey: DDataKey, registry: ServiceRegistry): ShardedServiceRegistry =
-    copy(serviceRegistries + (dDataKey -> registry), tombstones)
+  def activeActorRefsFor[T](key: ServiceKey[T], selfUniqueAddress: UniqueAddress): Set[ActorRef[T]] = {
+    val ddataKey = ddataKeyFor(key)
+    val entries = serviceRegistries(ddataKey).entriesFor(key)
+    val selfAddress = selfUniqueAddress.address
+    entries.collect {
+      case entry if nodes.contains(entry.uniqueAddress(selfAddress)) && !hasTombstone(entry.ref) =>
+        entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+    }
+  }
+
+  def withServiceRegistry(ddataKey: DDataKey, registry: ServiceRegistry): ShardedServiceRegistry =
+    copy(serviceRegistries + (ddataKey -> registry), tombstones)
 
   def allUniqueAddressesInState(selfUniqueAddress: UniqueAddress): Set[UniqueAddress] =
     allEntries.collect {
       // we don't care about local (empty host:port addresses)
       case entry if entry.ref.path.address.hasGlobalScope =>
-        entry.uniqueAddress(selfUniqueAddress)
+        entry.uniqueAddress(selfUniqueAddress.address)
     }.toSet
 
-  def collectChangedKeys(dDataKey: DDataKey, newRegistry: ServiceRegistry): Set[AbstractServiceKey] = {
-    val previousRegistry = registryFor(dDataKey)
+  def collectChangedKeys(ddataKey: DDataKey, newRegistry: ServiceRegistry): Set[AbstractServiceKey] = {
+    val previousRegistry = registryFor(ddataKey)
     ServiceRegistry.collectChangedKeys(previousRegistry, newRegistry)
   }
 
@@ -88,13 +101,19 @@ import scala.concurrent.duration.Deadline
     copy(tombstones = tombstones + (actorRef -> deadline))
 
   def hasTombstone(actorRef: ActorRef[_]): Boolean =
-    tombstones.contains(actorRef)
+    tombstones.nonEmpty && tombstones.contains(actorRef)
 
   def pruneTombstones(): ShardedServiceRegistry = {
     copy(tombstones = tombstones.filter {
       case (_, deadline) => deadline.hasTimeLeft
     })
   }
+
+  def addNode(node: UniqueAddress): ShardedServiceRegistry =
+    copy(nodes = nodes + node)
+
+  def removeNode(node: UniqueAddress): ShardedServiceRegistry =
+    copy(nodes = nodes - node)
 
 }
 
