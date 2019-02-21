@@ -6,14 +6,15 @@ package docs.stream
 
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
+
 import scala.util.Random
 import scala.math._
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.testkit.{ AkkaSpec, TestLatch }
+
+import scala.concurrent.Await
 
 class RateTransformationDocSpec extends AkkaSpec {
 
@@ -88,7 +89,7 @@ class RateTransformationDocSpec extends AkkaSpec {
       .grouped(10)
       .runWith(Sink.head)
 
-    val extrapolated = Await.result(fut, 100.millis)
+    val extrapolated = fut.futureValue
     extrapolated.size shouldBe 10
     extrapolated.sum shouldBe 10 * initial
   }
