@@ -402,9 +402,8 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 
 #### Trying it out
 
-In order to see this chat room in action we need to write a client Actor that can use it, for this 
-stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the
-functional style gabbler from the sample above:
+In order to see this chat room in action we need to write a client Actor that can use it
+@scala[, for this stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the functional style gabbler from the sample above]:
 
 Scala
 :  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-gabbler }
