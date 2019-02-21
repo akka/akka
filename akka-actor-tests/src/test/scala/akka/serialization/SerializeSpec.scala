@@ -290,7 +290,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "log warning if non-Akka serializer is configured for Akka message" in {
-      EventFilter.warning(pattern = ".*not a serializer implemented by Akka.*", occurrences = 1) intercept {
+      EventFilter.warning(pattern = ".*not implemented by Akka.*", occurrences = 1) intercept {
         ser.serialize(new Other).get
       }
     }
