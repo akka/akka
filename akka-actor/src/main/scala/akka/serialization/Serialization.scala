@@ -354,7 +354,10 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'", clazz.getName)
             }
-            log.debug("Using serializer [{}] for message [{}]", ser.getClass.getName, clazz.getName)
+
+            if (!warnUnexpectedNonAkkaSerializer(clazz, ser))
+              log.debug("Using serializer [{}] for message [{}]", ser.getClass.getName, clazz.getName)
+
             ser
           case some ⇒ some
         }
@@ -424,6 +427,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
     val result = sort(fromConfig ++ fromSettings)
     ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) ⇒ ser })
+    result.foreach { case (clazz, ser) ⇒ warnUnexpectedNonAkkaSerializer(clazz, ser) }
     result
   }
 
@@ -431,6 +435,15 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     if (!system.settings.AllowJavaSerialization) {
       require(iter.forall(!isDisallowedJavaSerializer(_)), "Disallowed JavaSerializer binding.")
     }
+  }
+
+  private def warnUnexpectedNonAkkaSerializer(clazz: Class[_], ser: Serializer): Boolean = {
+    if (clazz.getName.startsWith("akka.") && !ser.getClass.getName.startsWith("akka.")) {
+      log.warning("Using serializer [{}] for message [{}]. Note that this serializer " +
+        "is not implemented by Akka. It's not recommended to replace serializers for messages " +
+        "provided by Akka.", ser.getClass.getName, clazz.getName)
+      true
+    } else false
   }
 
   // com.google.protobuf serialization binding is only used if the class can be loaded,
