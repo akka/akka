@@ -82,4 +82,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * FIXME motivate when to use it
    */
   def withRoundRobinRouting(): PoolRouter[T]
+
+  /**
+   * Set a new pool size from the one set at construction
+   */
+  def withPoolSize(poolSize: Int): PoolRouter[T]
 }

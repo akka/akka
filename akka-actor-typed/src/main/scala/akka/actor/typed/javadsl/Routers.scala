@@ -5,9 +5,11 @@
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.routing.GroupRouterBuilder
 import akka.actor.typed.internal.routing.PoolRouterBuilder
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.PoolRouter
 import akka.annotation.DoNotInherit
 
 object Routers {
@@ -24,7 +26,6 @@ object Routers {
    * until the deregistration is complete to minimize the risk of lost messages.
    */
   def group[T](key: ServiceKey[T]): GroupRouter[T] =
-    // fixme: potential detection of cluster and selecting a different impl
     new GroupRouterBuilder[T](key)
 
   /**
@@ -47,7 +48,7 @@ object Routers {
  * Not for user extension. Use [[Routers#group]] to create
  */
 @DoNotInherit
-trait GroupRouter[T] extends Behavior[T] {
+abstract class GroupRouter[T] extends DeferredBehavior[T] {
 
   /**
    * Route messages by randomly selecting the routee from the available routees.
@@ -74,7 +75,7 @@ trait GroupRouter[T] extends Behavior[T] {
  * Not for user extension. Use [[Routers#pool]] to create
  */
 @DoNotInherit
-trait PoolRouter[T] extends Behavior[T] {
+abstract class PoolRouter[T] extends DeferredBehavior[T] {
 
   /**
    * Route messages by randomly selecting the routee from the available routees.
@@ -92,4 +93,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * This is the default for pool routers.
    */
   def withRoundRobinRouting(): PoolRouter[T]
+
+  /**
+   * Set a new pool size from the one set at construction
+   */
+  def withPoolSize(poolSize: Int): PoolRouter[T]
 }

@@ -5,13 +5,13 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.typed.scaladsl.adapter._
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
@@ -134,15 +134,16 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "pass messages to dead letters when there are no routees available" in {
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
+      val probe = TestProbe[DeadLetter]()
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
 
       (0 to 3).foreach { n ⇒
         val msg = s"message-$n"
-        EventFilter.warning(s"received dead letter without sender: $msg", occurrences = 1).intercept {
-          // FIXME why are there two log entries per dead letter?
-          EventFilter.info(start = "Message [java.lang.String] without sender to Actor[akka://RouterSpec/deadLetters] was not delivered.", occurrences = 1).intercept {
-            group ! msg
-          }
-        }
+        /* FIXME cant watch log events until #26432 is fixed
+         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
+        group ! msg
+        probe.expectMessageType[DeadLetter]
+        /* } */
       }
 
       testKit.stop(group)

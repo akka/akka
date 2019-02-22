@@ -51,8 +51,7 @@ object RoutingLogics {
         var idx = 0
         while (idx < originalRoutees.length &&
           idx < newRoutees.length &&
-          originalRoutees(idx) == newRoutees(idx)
-        ) {
+          originalRoutees(idx) == newRoutees(idx)) {
           idx += 1
         }
         idx

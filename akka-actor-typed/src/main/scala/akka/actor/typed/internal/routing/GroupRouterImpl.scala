@@ -3,13 +3,11 @@
  */
 
 package akka.actor.typed.internal.routing
-import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.dispatch.forkjoin.ThreadLocalRandom
 
@@ -22,26 +20,16 @@ import akka.dispatch.forkjoin.ThreadLocalRandom
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
   key:          ServiceKey[T],
   logicFactory: () ⇒ RoutingLogic[T] = () ⇒ RoutingLogics.randomLogic[T]()
-) extends DeferredBehavior[T]
-  with scaladsl.GroupRouter[T]
-  with javadsl.GroupRouter[T] {
+) extends javadsl.GroupRouter[T]
+  with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
-  def apply(ctx: TypedActorContext[T]): Behavior[T] = GroupRouterImpl[T](key, logicFactory)
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = new GroupRouterImpl[T](ctx.asScala, key, logicFactory())
 
   def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
 
   def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
 
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object GroupRouterImpl {
-  def apply[T](serviceKey: ServiceKey[T], logicFactory: () ⇒ RoutingLogic[T]): Behavior[T] =
-    Behaviors.setup(ctx ⇒ new GroupRouterImpl[T](ctx, serviceKey, logicFactory()))
 }
 
 /**
@@ -56,7 +44,8 @@ private final class GroupRouterImpl[T](
 
   private var routees: Array[ActorRef[T]] = Array.empty[ActorRef[T]]
 
-  // casting trix to avoid having to wrap incoming messages
+  // casting trix to avoid having to wrap incoming messages - note that this will cause problems if intercepting
+  // messages to a router
   ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
 
   def onMessage(msg: T): Behavior[T] = msg match {
@@ -80,5 +69,4 @@ private final class GroupRouterImpl[T](
       }
       this
   }
-
 }

@@ -19,9 +19,8 @@ private[akka] final case class PoolRouterBuilder[T](
   poolSize:     Int,
   behavior:     Behavior[T],
   logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RoundRobinLogic[T]
-) extends DeferredBehavior[T]
-  with scaladsl.PoolRouter[T]
-  with javadsl.PoolRouter[T] {
+) extends javadsl.PoolRouter[T]
+  with scaladsl.PoolRouter[T] {
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   // deferred creation of the actual router
@@ -30,6 +29,8 @@ private[akka] final case class PoolRouterBuilder[T](
   def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
 
   def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+
+  def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
 }
 
 /**
