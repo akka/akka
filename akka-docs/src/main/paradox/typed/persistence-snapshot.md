@@ -23,11 +23,11 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshottingPredicate }
 
-When a snapshot is triggered incoming commands are stashed until the snapshot has been saved. This means that
-the state can safely be mutable although the serialization and storage of the state is performed asynchronously,
-since the state instance will not be updated by new events until after the snapshot has been saved.
+When a snapshot is triggered, incoming commands are stashed until the snapshot has been saved. This means that
+the state can safely be mutable although the serialization and storage of the state is performed asynchronously.
+The state instance will not be updated by new events until after the snapshot has been saved.
 
-During recovery, the persistent actor is using the previously saved snapshot to initialize the state and then events
+During recovery, the persistent actor is using the latest saved snapshot to initialize the state. Thereafter the events
 after the snapshot are replayed using the event handler to recover the persistent actor to its current (i.e. latest)
 state.
 
@@ -38,7 +38,7 @@ recovery like this:
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotSelection }
 
-TODO include corresponding example in Java
+TODO #26273 include corresponding example in Java
 
 To disable snapshot-based recovery, applications can use @scala[`SnapshotSelectionCriteria.None`]@java[`SnapshotSelectionCriteria.none()`].
 A recovery where no saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all journaled
@@ -48,14 +48,14 @@ not be used when events have been deleted.
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
 or the @scala[`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
 
-Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
+Because some use cases may not benefit from or need snapshots, it is perfectly valid not to not configure a snapshot store.
 However, Akka will log a warning message when this situation is detected and then continue to operate until
 an actor tries to store a snapshot, at which point the operation will fail.
 
 ## Snapshot failures
 
 Saving snapshots can either succeed or fail – this information is reported back to the persistent actor via
-the `onSnapshot` callback. Snapshot failures are by default logged but don't cause the actor to stop or
+the `onSnapshot` callback. Snapshot failures are, by default, logged but do not cause the actor to stop or
 restart.
 
 If there is a problem with recovering the state of the actor from the journal when the actor is

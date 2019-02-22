@@ -82,12 +82,13 @@ are executed sequentially after successful execution of the persist statement (o
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
 
-The state is typically immutable and then the event handler returns a new instance of the state. If the state is
-mutable the event handler may update the state instance and return the same instance.
+The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
+You may choose to use a mutable class for the state, and then the event handler may update the state instance and
+return the same instance. Both immutable and mutable state is supported.
 
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-The event handler should only update the state and it mustn't perform side effects, as those would also be
+The event handler should only update the state and never perform side effects, as those would also be
 executed during recovery of the persistent actor.
 
 ### Completing the example
