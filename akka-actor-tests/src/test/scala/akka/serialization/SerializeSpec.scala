@@ -29,6 +29,7 @@ object SerializationTests {
         serializers {
           test = "akka.serialization.NoopSerializer"
           test2 = "akka.serialization.NoopSerializer2"
+          other = "other.SerializerOutsideAkkaPackage"
         }
 
         serialization-bindings {
@@ -40,6 +41,7 @@ object SerializationTests {
           "akka.serialization.SerializationTests$$B" = test
           "akka.serialization.SerializationTests$$D" = test
           "akka.serialization.TestSerializable2" = test2
+          "akka.serialization.SerializationTests$$AbstractOther" = other
         }
       }
     }
@@ -74,6 +76,12 @@ object SerializationTests {
   class C extends B with A
   class D extends A
   class E extends D
+
+  abstract class AbstractOther
+
+  final class Other extends AbstractOther {
+    override def toString: String = "Other"
+  }
 
   val verifySerializabilityConf = """
     akka {
@@ -279,6 +287,12 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
       intercept[IllegalArgumentException] {
         byteSerializer.toBinary("pigdog", byteBuffer)
       }.getMessage should ===(s"${classOf[ByteArraySerializer].getName} only serializes byte arrays, not [java.lang.String]")
+    }
+
+    "log warning if non-Akka serializer is configured for Akka message" in {
+      EventFilter.warning(pattern = ".*not implemented by Akka.*", occurrences = 1) intercept {
+        ser.serialize(new Other).get
+      }
     }
   }
 }
