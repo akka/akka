@@ -227,6 +227,48 @@ public class BasicPersistentBehaviorTest {
               };
             });
     // #wrapPersistentBehavior
+
+    public static class BookingCompleted implements Event {}
+
+    public static class Snapshotting extends EventSourcedBehavior<Command, Event, State> {
+      public Snapshotting(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      @Override
+      public CommandHandler<Command, Event, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      @Override
+      public EventHandler<State, Event> eventHandler() {
+        return (state, event) -> {
+          throw new RuntimeException("TODO: process the event return the next state");
+        };
+      }
+
+      // #snapshottingEveryN
+      @Override // override snapshotEvery in EventSourcedBehavior
+      public long snapshotEvery() {
+        return 100;
+      }
+      // #snapshottingEveryN
+
+      // #snapshottingPredicate
+      @Override // override shouldSnapshot in EventSourcedBehavior
+      public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+        return event instanceof BookingCompleted;
+      }
+      // #snapshottingPredicate
+
+    }
   }
 
   interface WithActorContext {
