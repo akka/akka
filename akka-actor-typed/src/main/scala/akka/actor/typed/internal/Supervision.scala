@@ -49,9 +49,8 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
-  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean = {
+  protected def isInstanceOfTheThrowableClass(t: Throwable): Boolean =
     throwableClass.isAssignableFrom(UnstashException.unwrap(t).getClass)
-  }
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
     other match {

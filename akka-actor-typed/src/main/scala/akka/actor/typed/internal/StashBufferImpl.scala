@@ -126,7 +126,7 @@ import akka.util.ConstantFun
           case NonFatal(e) ⇒ throw UnstashException(e, b2)
         }
 
-        interpretOne(Behavior.canonicalize(nextB, b, ctx)) // recursive
+        interpretOne(Behavior.canonicalize(nextB, b2, ctx)) // recursive
       }
     }
 
@@ -155,9 +155,9 @@ import akka.util.ConstantFun
 /**
  * INTERNAL API:
  *
- * When unstashing the exception is wrapped in UnstashException because supervisor strategy
- * and ActorAdapter need the behavior that thrown to emit the PreRestart and PostStop to the right
- * behavior and install the latest for resume strategy.
+ * When unstashing, the exception is wrapped in UnstashException because supervisor strategy
+ * and ActorAdapter need the behavior that threw. It will use the behavior in the `UnstashException`
+ * to emit the PreRestart and PostStop to the right behavior and install the latest behavior for resume strategy.
  */
 @InternalApi private[akka] final case class UnstashException[T](cause: Throwable, behavior: Behavior[T])
   extends RuntimeException(s"[$cause] when unstashing in [$behavior]", cause)

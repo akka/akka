@@ -33,7 +33,7 @@ object SupervisionSpec {
 
   sealed trait Event
   final case class Pong(n: Int) extends Event
-  final case class GotSignal(signal: Signal) extends Event
+  final case class ReceivedSignal(signal: Signal) extends Event
   final case class State(n: Int, children: Map[String, ActorRef[Command]]) extends Event
   case object Started extends Event
   case object StartFailed extends Event
@@ -67,7 +67,7 @@ object SupervisionSpec {
       case (_, sig) ⇒
         if (sig == PostStop)
           slowStop.foreach(latch ⇒ latch.await(10, TimeUnit.SECONDS))
-        monitor ! GotSignal(sig)
+        monitor ! ReceivedSignal(sig)
         Behaviors.same
     }
 
@@ -102,7 +102,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc3] {
         testkit.run(Throw(new Exc3))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "stop when unhandled exception" in {
@@ -112,7 +112,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc3] {
         testkit.run(Throw(new Exc3))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "restart when handled exception" in {
@@ -124,7 +124,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       inbox.receiveMessage() should ===(State(1, Map.empty))
 
       testkit.run(Throw(new Exc2))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(GetState)
       inbox.receiveMessage() should ===(State(0, Map.empty))
     }
@@ -162,7 +162,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
       // restart
       testkit.run(Throw(new Exc3))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(GetState)
       inbox.receiveMessage() should ===(State(0, Map.empty))
 
@@ -170,7 +170,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "not catch fatal error" in {
@@ -190,13 +190,13 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
       val testkit = BehaviorTestKit(behv)
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "reset retry limit after withinTimeRange" in {
@@ -206,19 +206,19 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
       val testkit = BehaviorTestKit(behv)
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       Thread.sleep((2.seconds + 100.millis).toMillis)
 
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "stop at first exception when restart retries limit is 0" in {
@@ -230,7 +230,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "create underlying deferred behavior immediately" in {
@@ -317,7 +317,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -345,12 +345,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[IOException](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -366,7 +366,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exception](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       // verify that it's still alive and not stopped, IllegalStateException would stop it
       ref ! Ping(1)
@@ -374,7 +374,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       // verify that it's still alive and not stopped, IllegalStateException would stop it
@@ -394,7 +394,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exception](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       // verify that it's still alive and not stopped, IllegalStateException would stop it
       ref ! Ping(1)
@@ -402,7 +402,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       // verify that it's still alive and not stopped, IllegalStateException would stop it
@@ -416,7 +416,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -427,7 +427,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -442,7 +442,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 1).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
@@ -460,11 +460,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 3).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
       EventFilter.warning(start = "received dead letter", occurrences = 1).intercept {
         ref ! GetState
@@ -484,14 +484,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 3).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
 
         probe.expectNoMessage(resetTimeout + 50.millis)
 
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
@@ -525,7 +525,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         anotherProbe.stop()
       }
@@ -534,11 +534,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       parentProbe.expectNoMessage()
       slowStop.countDown()
 
-      childProbe.expectMessage(GotSignal(PostStop))
-      childProbe.expectMessage(GotSignal(PostStop))
+      childProbe.expectMessage(ReceivedSignal(PostStop))
+      childProbe.expectMessage(ReceivedSignal(PostStop))
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
       // anotherProbe was stopped, Terminated signal stashed and delivered to new behavior
-      parentProbe.expectMessage(GotSignal(Terminated(anotherProbe.ref)))
+      parentProbe.expectMessage(ReceivedSignal(Terminated(anotherProbe.ref)))
     }
 
     "optionally NOT stop children when restarting" in {
@@ -564,7 +564,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
       }
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
@@ -597,7 +597,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         ref ! CreateChild(targetBehavior(childProbe.ref), child2Name)
         ref ! GetState
@@ -606,14 +606,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         slowStop.countDown()
-        childProbe.expectMessage(GotSignal(PostStop)) // child1
+        childProbe.expectMessage(ReceivedSignal(PostStop)) // child1
         parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
         parentProbe.expectMessageType[State].children.keySet should ===(Set(child2Name))
         // the stashed Throw is causing another restart and stop of child2
-        childProbe.expectMessage(GotSignal(PostStop)) // child2
+        childProbe.expectMessage(ReceivedSignal(PostStop)) // child2
       }
 
-      parentProbe.expectMessage(GotSignal(PreRestart))
+      parentProbe.expectMessage(ReceivedSignal(PreRestart))
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
     }
@@ -651,10 +651,10 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[TestException](occurrences = 1).intercept {
         val ref = spawn(behv)
         slowStop1.countDown()
-        child1Probe.expectMessage(GotSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
         throwFromSetup.set(false)
         slowStop2.countDown()
-        child2Probe.expectMessage(GotSignal(PostStop))
+        child2Probe.expectMessage(ReceivedSignal(PostStop))
 
         ref ! GetState
         parentProbe.expectMessageType[State].children.keySet should ===(Set("child1"))
@@ -700,16 +700,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       EventFilter[TestException](occurrences = 1).intercept {
         slowStop1.countDown()
-        child1Probe.expectMessage(GotSignal(PostStop))
-        child1Probe.expectMessage(GotSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
         throwFromSetup.set(false)
         slowStop2.countDown()
-        child2Probe.expectMessage(GotSignal(PostStop))
+        child2Probe.expectMessage(ReceivedSignal(PostStop))
       }
 
       ref ! GetState
@@ -753,7 +753,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // restart
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         probe.expectMessage(State(0, Map.empty))
       }
@@ -761,7 +761,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // stop
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -782,7 +782,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         startedProbe.expectMessage(Started)
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! Ping(1)
       ref ! Ping(2)
@@ -812,7 +812,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         startedProbe.expectMessage(Started)
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(1) // dropped due to backoff, no stashing
       }
 
@@ -826,7 +826,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(2) // dropped due to backoff, no stashing
       }
 
@@ -879,7 +879,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(1) // dropped due to backoff, no stash
       }
 
@@ -892,7 +892,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(2) // dropped due to backoff
       }
 
