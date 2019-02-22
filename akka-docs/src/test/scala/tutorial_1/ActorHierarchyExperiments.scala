@@ -66,7 +66,6 @@ object SupervisingActor {
     Props(new SupervisingActor)
 }
 
-
 class SupervisingActor extends Actor {
   val child = context.actorOf(SupervisedActor.props, "supervised-actor")
 
