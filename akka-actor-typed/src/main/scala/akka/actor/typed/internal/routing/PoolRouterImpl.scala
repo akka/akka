@@ -22,22 +22,14 @@ private[akka] final case class PoolRouterBuilder[T](
 ) extends DeferredBehavior[T]
   with scaladsl.PoolRouter[T]
   with javadsl.PoolRouter[T] {
+  if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   // deferred creation of the actual router
-  def apply(ctx: TypedActorContext[T]): Behavior[T] = PoolRouterImpl[T](poolSize, behavior, logicFactory)
+  def apply(ctx: TypedActorContext[T]): Behavior[T] = new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
 
   def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
 
   def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object PoolRouterImpl {
-  def apply[T](poolSize: Int, behavior: Behavior[T], logicFactory: () ⇒ RoutingLogic[T]): Behavior[T] =
-    Behaviors.setup(ctx ⇒ new PoolRouterImpl[T](ctx, poolSize, behavior, logicFactory()))
 }
 
 /**
@@ -50,8 +42,6 @@ private final class PoolRouterImpl[T](
   behavior: Behavior[T],
   logic:    RoutingLogic[T]
 ) extends AbstractBehavior[T] {
-
-  if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   private var routees = (1 to poolSize).map { _ ⇒
     val child = ctx.spawnAnonymous(behavior)

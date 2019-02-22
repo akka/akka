@@ -49,9 +49,10 @@ object RoutingLogics {
     override def routeesUpdated(originalRoutees: Array[ActorRef[T]], newRoutees: Array[ActorRef[T]]): Unit = {
       val firstDiffIndex = {
         var idx = 0
-        while (idx < originalRoutees.length && idx < newRoutees.length && originalRoutees(
-          idx
-        ) == newRoutees(idx)) {
+        while (idx < originalRoutees.length &&
+          idx < newRoutees.length &&
+          originalRoutees(idx) == newRoutees(idx)
+        ) {
           idx += 1
         }
         idx
