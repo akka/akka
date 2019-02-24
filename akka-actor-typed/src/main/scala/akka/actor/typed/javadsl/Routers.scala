@@ -53,9 +53,6 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
   /**
    * Route messages by randomly selecting the routee from the available routees.
    *
-   * Random routing makes it less likely that every `poolsize` message from a single producer ends up in the same
-   * mailbox of a slow actor
-   *
    * This is the default for group routers.
    */
   def withRandomRouting(): GroupRouter[T]
@@ -63,7 +60,8 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
   /**
    * Route messages by using round robin.
    *
-   * Round robin gives fair routing where every available routee gets the same amount of messages
+   * Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
+   * of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
    */
   def withRoundRobinRouting(): GroupRouter[T]
 

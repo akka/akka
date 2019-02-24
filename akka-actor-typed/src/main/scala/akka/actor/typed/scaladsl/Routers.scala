@@ -50,13 +50,14 @@ trait GroupRouter[T] extends Behavior[T] {
 
   /**
    * Route messages by randomly selecting the routee from the available routees. This is the default for group routers.
-   * FIXME motivate when to use it
    */
   def withRandomRouting(): GroupRouter[T]
 
   /**
    * Route messages by using round robin.
-   * FIXME motivate when to use it
+   *
+   * Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
+   * of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
    */
   def withRoundRobinRouting(): GroupRouter[T]
 
@@ -72,14 +73,18 @@ trait PoolRouter[T] extends Behavior[T] {
 
   /**
    * Route messages by randomly selecting the routee from the available routees.
-   * FIXME motivate when to use it
+   *
+   * Random routing makes it less likely that every `poolsize` message from a single producer ends up in the same
+   * mailbox of a slow actor.
    */
   def withRandomRouting(): PoolRouter[T]
 
   /**
    * Route messages through round robin, providing a fair distribution of messages across the routees.
+   *
+   * Round robin gives fair routing where every available routee gets the same amount of messages
+   *
    * This is the default for pool routers.
-   * FIXME motivate when to use it
    */
   def withRoundRobinRouting(): PoolRouter[T]
 
