@@ -1,29 +1,32 @@
 /*
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.typed
 
 // #pool
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Routers
 import org.scalatest.WordSpecLike
 
 // #pool
 
-class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+object RouterSpec {
 
   // #pool
   object Worker {
     sealed trait Command
     case class DoLog(text: String) extends Command
 
-    val behavior: Behavior[Command] = Behaviors.setup { ctx =>
+    val behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
       ctx.log.info("Starting worker")
 
       Behaviors.receiveMessage {
-        case DoLog(text) =>
+        case DoLog(text) ⇒
           ctx.log.info("Got message {}", text)
           Behaviors.same
       }
@@ -32,17 +35,53 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   // #pool
 
+  val serviceKey = ServiceKey[Worker.Command]("log-worker")
+}
+
+class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+  import RouterSpec._
+
   "The routing sample" must {
 
     "show pool routing" in {
-      spawn(Behaviors.setup { ctx =>
-  // #pool
-        val router = ctx.spawn(Routers.pool(poolSize = 4)(Worker.behavior), "worker-pool")
+      spawn(Behaviors.setup[Unit] { ctx ⇒
+        // #pool
+        val pool = Routers.pool(poolSize = 4)(Worker.behavior)
+        val router = ctx.spawn(pool, "worker-pool")
 
-        (0 to 10).foreach { n =>
+        (0 to 10).foreach { n ⇒
           router ! Worker.DoLog(s"msg $n")
         }
-  // #pool
+        // #pool
+
+        // #strategy
+        val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
+        // #strategy
+
+        Behaviors.empty
+      })
+    }
+
+    "show group routing" in {
+
+      spawn(Behaviors.setup[Unit] { ctx ⇒
+        // this would likely happen elsewhere - if we create it local we can just as well use a pool
+        val worker = ctx.spawn(Worker.behavior, "worker")
+        ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
+
+        // #group
+        val group = Routers.group(serviceKey);
+        val router = ctx.spawn(group, "worker-group");
+
+        // note that since registration of workers goes through the receptionist there is no
+        // guarantee the router has seen any workers yet if we hit it directly like this and
+        // these messages may end up in dead letters - in a real application you would not use
+        // a group router like this - it is to keep the sample simple
+        (0 to 10).foreach { n ⇒
+          router ! Worker.DoLog(s"msg $n")
+        }
+        // #group
+
         Behaviors.empty
       })
     }
