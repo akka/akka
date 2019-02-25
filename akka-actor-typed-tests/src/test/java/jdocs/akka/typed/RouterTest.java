@@ -65,8 +65,7 @@ public class RouterTest {
           // #pool
 
           // #strategy
-          PoolRouter<Worker.Command> alternativePool =
-              pool.withPoolSize(2).withRoundRobinRouting();
+          PoolRouter<Worker.Command> alternativePool = pool.withPoolSize(2).withRoundRobinRouting();
           // #strategy
 
           return Behaviors.empty();
