@@ -173,8 +173,10 @@ abstract class ClusterDeathWatchSpec
       }
       enterBarrier("remote-watch")
 
-      // second and third are already removed
-      awaitClusterUp(first, fourth, fifth)
+      runOn(fifth) {
+        cluster.join(first)
+      }
+      enterBarrier("fifth-joined")
 
       runOn(first) {
         // fifth is member, so the node is handled by the ClusterRemoteWatcher,
