@@ -26,9 +26,12 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     Compile / scalacOptions += "-Yrangepos")
 
   lazy val scoverageSettings = Seq(
-    coverageMinimum := 60, // TODO set during review, may need tuning per module as well
+    coverageMinimum := 70,
     coverageFailOnMinimum := false,
-    coverageHighlighting := true)
+    coverageHighlighting := {
+      import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
+      !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
+    })
 
   lazy val disciplineSettings =
     scalaFixSettings ++
@@ -67,7 +70,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     "-Ywarn-numeric-widen",
     // end
-    "-Xcheckinit",
     "-Xfuture",
     "-Ywarn-dead-code",
     "-Ywarn-inaccessible",

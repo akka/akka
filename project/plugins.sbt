@@ -20,7 +20,7 @@ addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.13")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0") // for maintenance of copyright file header
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0-M3")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0-M5")
 
 // used for @unidoc directive
 libraryDependencies += "io.github.classgraph" % "classgraph" % "4.4.12"
