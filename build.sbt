@@ -21,7 +21,7 @@ initialize := {
   initialize.value
 }
 
-akka.AkkaBuild.buildSettings
+// akka.AkkaBuild.buildSettings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
@@ -59,7 +59,8 @@ lazy val root = Project(
    (CrossVersion.partialVersion(scalaVersion.value) match {
      case Some((2, n)) if n == 11 ⇒ aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
      case _                       ⇒ Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs)
-   })
+   }),
+   crossScalaVersions := Nil, // Allows some modules (typed) to be only for 2.12 sbt/sbt#3465
  )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
