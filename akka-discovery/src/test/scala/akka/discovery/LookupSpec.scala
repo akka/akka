@@ -10,13 +10,13 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
 
   // SRV strings with invalid domain names
   // should fail to build lookups
-  val srvWithInvalidServiceNames = List(
+  val srvWithInvalidDomainNames = List(
     "_portName._protocol.service_name.local",
     "_portName._protocol.servicename,local",
     "_portName._protocol.servicename.local-",
     "_portName._protocol.-servicename.local")
 
-  val srvWithValidServiceNames = List(
+  val srvWithValidDomainNames = List(
     "_portName._protocol.service-name",
     "_portName._protocol.service-name.local",
     "_portName._protocol.service-name.svc.cluster.local")
@@ -34,7 +34,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
   "Lookup.parseSrv" should {
 
     "generate a SRV Lookup from a valid SRV String" in {
-      srvWithValidServiceNames.foreach { str ⇒
+      srvWithValidDomainNames.foreach { str ⇒
         withClue(s"parsing '$str'") {
           val lookup = Lookup.parseSrv(str)
           lookup.portName.value shouldBe "portName"
@@ -74,7 +74,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any SRV with invalid domain names" in {
-      srvWithInvalidServiceNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str ⇒
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -100,7 +100,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false if domain name part in SRV String is an invalid domain name" in {
-      srvWithInvalidServiceNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str ⇒
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }
@@ -116,7 +116,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return true for a SRV with valid domain name" in {
-      srvWithValidServiceNames.foreach { str ⇒
+      srvWithValidDomainNames.foreach { str ⇒
         withClue(s"parsing '$str'") {
           Lookup.isValidSrv(str) shouldBe true
         }
