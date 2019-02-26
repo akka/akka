@@ -14,7 +14,7 @@ import sbt.plugins.JvmPlugin
   */
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
-  import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageHighlighting, coverageMinimum}
+  import scoverage.ScoverageKeys._
   import scalafix.sbt.ScalafixPlugin
 
   override def trigger: PluginTrigger = allRequirements
@@ -28,6 +28,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   lazy val scoverageSettings = Seq(
     coverageMinimum := 70,
     coverageFailOnMinimum := false,
+    coverageOutputHTML := true,
     coverageHighlighting := {
       import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
