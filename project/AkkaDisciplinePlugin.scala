@@ -41,7 +41,17 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
-          Seq("-Ywarn-inaccessible", "-Ywarn-infer-any", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ypartial-unification", "-Yno-adapted-args")
+          Seq(
+            "-Ywarn-inaccessible",
+            "-Ywarn-infer-any",
+            "-Ywarn-nullary-override",
+            "-Ywarn-nullary-unit",
+            "-Ypartial-unification",
+            "-Yno-adapted-args",
+            // -Ywarn-unused:_ breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+            // https://github.com/akka/akka/issues/26119
+            "-Ywarn-unused:_",
+          )
         case Some((2, 12)) =>
           Nil
         case Some((2, 11)) =>
