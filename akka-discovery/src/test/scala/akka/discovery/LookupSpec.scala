@@ -16,21 +16,23 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     val char64 = char63 + "abc"
 
     val invalidDomainNames = Seq(
+      portnameAndProtocol + "1" + char10,
       portnameAndProtocol + "." + char10,
       portnameAndProtocol + char10 + ".",
       portnameAndProtocol + "-" + char10,
+      portnameAndProtocol + char10 + "_" + char10,
+      portnameAndProtocol + char10 + "#" + char10,
+      portnameAndProtocol + char10 + "$" + char10,
       portnameAndProtocol + char10 + "-",
       portnameAndProtocol + char10 + "." + char64,
-      portnameAndProtocol + char64 + "." + char10
-    )
+      portnameAndProtocol + char64 + "." + char10)
 
     val validDomainNames = Seq(
       portnameAndProtocol + char10 + "." + char10,
       portnameAndProtocol + char10 + "-" + char10,
       portnameAndProtocol + char10 + "." + char63,
       portnameAndProtocol + char63 + "." + char10,
-      portnameAndProtocol + char63 + "." + char63 + "." + char63
-    )
+      portnameAndProtocol + char63 + "." + char63 + "." + char63)
 
     (invalidDomainNames, validDomainNames)
   }
