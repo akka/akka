@@ -1471,7 +1471,7 @@ private[stream] object Collect {
     override def genString(t: Materializer): String = {
       try s"$DefaultLoggerName(${ActorMaterializerHelper.downcast(t).supervisor.path})"
       catch {
-        case ex: Exception ⇒ LogSource.fromString.genString(DefaultLoggerName)
+        case _: Exception ⇒ LogSource.fromString.genString(DefaultLoggerName)
       }
     }
 

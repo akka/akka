@@ -148,7 +148,7 @@ import akka.event.Logging
   }
 
   protected def completed: Actor.Receive = {
-    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("onSubscribe called after onError or onComplete")
+    case OnSubscribe(_) ⇒ throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
   protected def inputOnError(e: Throwable): Unit = {
@@ -229,7 +229,7 @@ import akka.event.Logging
   protected def downstreamRunning: Actor.Receive = {
     case SubscribePending ⇒
       subscribePending(exposedPublisher.takePendingSubscribers())
-    case RequestMore(subscription, elements) ⇒
+    case RequestMore(_, elements) ⇒
       if (elements < 1) {
         error(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
@@ -238,7 +238,7 @@ import akka.event.Logging
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
         pump.pump()
       }
-    case Cancel(subscription) ⇒
+    case Cancel(_) ⇒
       downstreamCompleted = true
       exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
       pump.pump()

@@ -10,9 +10,9 @@ import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
+
 import scala.language.existentials
 import scala.collection.immutable.Map.Map1
-
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.SingleSource
 
@@ -277,7 +277,6 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
    */
   @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
     var current: Traversal = t
-    var slot = 0
 
     def prindent(s: String): Unit = println(" | " * indent + s)
 
@@ -1019,7 +1018,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
               islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
 
-          case OptionVal.Some(composite) ⇒
+          case OptionVal.Some(_) ⇒
             /*
              * In this case we need to assemble as much as we can, and create a new "sandwich" of
              *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
@@ -1089,8 +1088,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
    */
   override def makeIsland(islandTag: IslandTag): LinearTraversalBuilder =
     this.islandTag match {
-      case OptionVal.Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
-      case OptionVal.None      ⇒ copy(islandTag = OptionVal.Some(islandTag))
+      case OptionVal.Some(_) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case OptionVal.None    ⇒ copy(islandTag = OptionVal.Some(islandTag))
     }
 }
 
