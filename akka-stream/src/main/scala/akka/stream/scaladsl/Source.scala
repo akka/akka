@@ -438,18 +438,16 @@ object Source {
     lazily(() ⇒ fromFuture(create()))
 
   /**
-    * Creates a real `Source` upon receiving the first demand. Internal `Source` will not be created if there is no
-    * demand because of cancellation.
-    *
-    * If upstream completes before an element was received then the `Future` is completed with `None`.
-    * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
-    * sink fails then the `Future` is completed with the exception.
-    * Otherwise the `Future` is completed with the materialized value of the internal sink.
-    */
+   * Creates a real `Source` upon receiving the first demand. Internal `Source` will not be created if downstream
+   * finishes without any demand.
+   *
+   * If downstream finishes without any demand the materialized `Future` is completed with `None`.
+   * If the future of the real source or the materialization of the real source fails then the
+   * materialized `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with `Some` of the materialized value of the internal source.
+   */
   def lazyInitAsync[T, M](sourceFactory: () ⇒ Future[Source[T, M]]): Source[T, Future[Option[M]]] =
-    Source.fromGraph(new LazySourceAsync[T, M](_ ⇒ sourceFactory()))
-
-
+    Source.fromGraph(new LazySourceAsync[T, M](sourceFactory))
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]

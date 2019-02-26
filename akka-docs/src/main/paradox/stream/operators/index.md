@@ -22,6 +22,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="fromsourcecompletionstage"></a>@ref[fromSourceCompletionStage](Source/fromSourceCompletionStage.md)|Streams the elements of an asynchronous source once its given *completion* operator completes.|
 |Source|<a name="lazily"></a>@ref[lazily](Source/lazily.md)|Defers creation and materialization of a `Source` until there is demand.|
 |Source|<a name="lazilyasync"></a>@ref[lazilyAsync](Source/lazilyAsync.md)|Defers creation and materialization of a `CompletionStage` until there is demand.|
+|Source|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Source/lazyInitAsync.md)|Creates a real `Source` upon receiving the first demand. |
 |Source|<a name="maybe"></a>@ref[maybe](Source/maybe.md)|Materialize a @scala[`Promise[Option[T]]`] @java[`CompletionStage`] that if completed with a @scala[`Some[T]`] @java[`Optional`] will emit that *T* and then complete the stream, or if completed with @scala[`None`] @java[`empty Optional`] complete the stream right away.|
 |Source|<a name="queue"></a>@ref[queue](Source/queue.md)|Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source. |
 |Source|<a name="range"></a>@ref[range](Source/range.md)|Emit each integer in a range, with an option to take bigger steps than 1.|
@@ -304,6 +305,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [failed](Source/failed.md)
 * [lazily](Source/lazily.md)
 * [lazilyAsync](Source/lazilyAsync.md)
+* [lazyInitAsync](Source/lazyInitAsync.md)
 * [asSubscriber](Source/asSubscriber.md)
 * [actorRef](Source/actorRef.md)
 * [zipN](Source/zipN.md)

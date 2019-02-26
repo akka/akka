@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 
+import akka.dispatch.ExecutionContexts
+
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
@@ -278,6 +280,21 @@ object Source {
    */
   def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
     scaladsl.Source.lazilyAsync[T](() ⇒ create.create().toScala).asJava
+
+  /**
+   * Creates a real `Source` upon receiving the first demand. Internal `Source` will not be created if downstream
+   * finishes without any demand.
+   *
+   * If downstream finishes without any demand the materialized `Future` is completed with `None`.
+   * If the future of the real source or the materialization of the real source fails then the
+   * materialized `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with `Some` of the materialized value of the real source.
+   */
+  def lazyInitAsync[T, M](create: function.Creator[CompletionStage[Source[T, M]]]): Source[T, CompletionStage[Optional[M]]] = {
+    val sSource = scaladsl.Source.lazyInitAsync[T, M](() ⇒ create.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(fut ⇒ fut.map(_.fold(Optional.empty[M]())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    new Source(sSource)
+  }
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]

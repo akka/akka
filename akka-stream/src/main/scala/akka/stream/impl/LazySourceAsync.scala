@@ -8,13 +8,12 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.scaladsl.{ Keep, Source }
 import akka.stream.stage._
 
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-
 
 /**
  * INTERNAL API

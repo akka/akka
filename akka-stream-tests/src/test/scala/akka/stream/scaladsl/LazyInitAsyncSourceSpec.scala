@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
 import akka.stream.impl.LazySource
-import akka.stream.stage.{GraphStage, GraphStageLogic}
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
-import akka.stream.{ActorMaterializer, Attributes, Outlet, SourceShape}
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 
@@ -23,91 +23,94 @@ class LazyInitAsyncSourceSpec extends StreamSpec with DefaultTimeout with ScalaF
 
   implicit val materializer = ActorMaterializer()
 
-  "A lazy source" should {
+  "A lazy async source" should {
     "work like a normal source, happy path" in assertAllStagesStopped {
       val result = Source.lazyInitAsync(() ⇒ Future.successful(Source(List(1, 2, 3)))).runWith(Sink.seq)
 
-      result.futureValue should ===(Seq(1, 2, 3))
+      result.futureValue shouldEqual Seq(1, 2, 3)
     }
 
-//    "never construct the source when there was no demand" in assertAllStagesStopped {
-//      val probe = TestSubscriber.probe[Int]()
-//      val constructed = new AtomicBoolean(false)
-//      val result = Source.fromGraph(LazySource { () ⇒ constructed.set(true); Source(List(1, 2, 3)) }).runWith(Sink.fromSubscriber(probe))
-//      probe.cancel()
-//
-//      constructed.get() should ===(false)
-//    }
-//
-//    "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-//      val matF = Source.fromGraph(LazySource(() ⇒ Source(List(1, 2, 3))))
-//        .toMat(Sink.cancelled)(Keep.left)
-//        .run()
-//
-//      intercept[RuntimeException] {
-//        matF.futureValue
-//      }
-//    }
-//
-//    "stop consuming when downstream has cancelled" in assertAllStagesStopped {
-//      val outProbe = TestSubscriber.probe[Int]()
-//      val inProbe = TestPublisher.probe[Int]()
-//
-//      Source.fromGraph(LazySource(() ⇒ Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
-//
-//      outProbe.request(1)
-//      inProbe.expectRequest()
-//      inProbe.sendNext(27)
-//      outProbe.expectNext(27)
-//      outProbe.cancel()
-//      inProbe.expectCancellation()
-//    }
-//
-//    "materialize when the source has been created" in assertAllStagesStopped {
-//      val probe = TestSubscriber.probe[Int]()
-//
-//      val matF: Future[Done] = Source.fromGraph(LazySource { () ⇒
-//        Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ Done)
-//      }).to(Sink.fromSubscriber(probe))
-//        .run()
-//
-//      matF.value shouldEqual None
-//      probe.request(1)
-//      probe.expectNext(1)
-//      matF.futureValue should ===(Done)
-//
-//      probe.cancel()
-//    }
-//
-//    "fail stage when upstream fails" in assertAllStagesStopped {
-//      val outProbe = TestSubscriber.probe[Int]()
-//      val inProbe = TestPublisher.probe[Int]()
-//
-//      Source.fromGraph(LazySource(() ⇒ Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
-//
-//      outProbe.request(1)
-//      inProbe.expectRequest()
-//      inProbe.sendNext(27)
-//      outProbe.expectNext(27)
-//      inProbe.sendError(TE("OMG Who set that on fire!?!"))
-//      outProbe.expectError() shouldEqual TE("OMG Who set that on fire!?!")
-//    }
-//
-//    "fail correctly when materialization of inner source fails" in assertAllStagesStopped {
-//      val matFail = TE("fail!")
-//      object FailingInnerMat extends GraphStage[SourceShape[String]] {
-//        val out = Outlet[String]("out")
-//        val shape = SourceShape(out)
-//        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-//          throw matFail
-//        }
-//      }
-//
-//      val result = Source.lazily(() ⇒ Source.fromGraph(FailingInnerMat)).to(Sink.ignore).run()
-//
-//      result.failed.futureValue should ===(matFail)
-//
-//    }
+    "never construct the source when there was no demand" in assertAllStagesStopped {
+      val probe = TestSubscriber.probe[Int]()
+      val constructed = new AtomicBoolean(false)
+      val result = Source.lazyInitAsync(() ⇒ { constructed.set(true); Future.successful(Source(List(1, 2, 3))) }).toMat(Sink.fromSubscriber(probe))(Keep.left).run
+      probe.cancel()
+
+      result.futureValue shouldEqual None
+
+      constructed.get() shouldEqual false
+    }
+
+    "stop consuming when downstream has cancelled" in assertAllStagesStopped {
+      val outProbe = TestSubscriber.probe[Int]()
+      val inProbe = TestPublisher.probe[Int]()
+
+      Source.lazyInitAsync(() ⇒ Future.successful(Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
+
+      outProbe.request(1)
+      inProbe.expectRequest()
+      inProbe.sendNext(27)
+      outProbe.expectNext(27)
+      outProbe.cancel()
+      inProbe.expectCancellation()
+    }
+
+    "materialize when the source has been created" in assertAllStagesStopped {
+      val probe = TestSubscriber.probe[Int]()
+
+      object X
+
+      val matF: Future[Option[X.type]] = Source.lazyInitAsync(
+        () ⇒ Future.successful(Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ X)))
+        .to(Sink.fromSubscriber(probe))
+        .run()
+
+      probe.request(1)
+      probe.expectNext(1)
+      matF.futureValue shouldEqual Some(X)
+
+      probe.cancel()
+    }
+
+    "fail stage when upstream fails" in assertAllStagesStopped {
+      val outProbe = TestSubscriber.probe[Int]()
+      val inProbe = TestPublisher.probe[Int]()
+
+      Source.lazyInitAsync(() ⇒ Future.successful(Source.fromPublisher(inProbe))).runWith(Sink.fromSubscriber(outProbe))
+
+      val ex = TE("OMG Who set that on fire!?!")
+      outProbe.request(1)
+      inProbe.expectRequest()
+      inProbe.sendNext(27)
+      outProbe.expectNext(27)
+      inProbe.sendError(ex)
+      outProbe.expectError() shouldEqual ex
+    }
+
+    "fail correctly when materialization of inner source fails" in assertAllStagesStopped {
+      val ex = TE("failed materialzation")
+      object FailingInnerMat extends GraphStage[SourceShape[String]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          throw ex
+        }
+      }
+
+      val result = Source.lazily(() ⇒ Source.fromGraph(FailingInnerMat)).to(Sink.ignore).run()
+
+      result.failed.futureValue shouldEqual ex
+
+    }
+
+    "fail correctly when future of creating the inner source fails" in assertAllStagesStopped {
+      val ex = TE("failed future")
+
+      val result = Source.lazyInitAsync(() ⇒ Future.failed(ex)).to(Sink.ignore).run()
+
+      result.failed.futureValue shouldEqual ex
+
+    }
   }
 
 }
