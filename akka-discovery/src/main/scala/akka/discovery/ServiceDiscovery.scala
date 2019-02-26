@@ -208,6 +208,7 @@ case object Lookup {
 
   /**
    * Validates domain name:
+   * (as defined in https://tools.ietf.org/html/rfc1034)
    * - a node name has 1 to 63 chars
    * - valid chars for a node name are: a-z, A-Z, 0-9 and -
    * - a node name can't start with - character
@@ -235,6 +236,7 @@ case object Lookup {
    *
    * If the passed string conforms with this format, a SRV Lookup is returned.
    * The serviceName part must be a valid domain name.
+   * (as defined in https://tools.ietf.org/html/rfc1034)
    *
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
