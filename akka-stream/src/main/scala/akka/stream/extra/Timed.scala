@@ -166,7 +166,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
       override def onPush(): Unit = {
         val elem = grab(in)
         if (matching(elem)) {
-          val d = updateInterval(elem)
+          val d = updateInterval()
 
           if (matched > 1)
             onInterval(d)
@@ -176,7 +176,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
 
       override def onPull(): Unit = pull(in)
 
-      private def updateInterval(in: T): FiniteDuration = {
+      private def updateInterval(): FiniteDuration = {
         matched += 1
         val nowNanos = System.nanoTime()
         val d = nowNanos - prevNanos

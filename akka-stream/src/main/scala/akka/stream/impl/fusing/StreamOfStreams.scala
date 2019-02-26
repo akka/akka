@@ -695,7 +695,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           else
             setCallback(callback)
 
-        case m: /* Materialized */ AsyncCallback[Command @unchecked] ⇒
+        case _: /* Materialized */ AsyncCallback[Command @unchecked] ⇒
           failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
       }
 
