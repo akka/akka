@@ -25,7 +25,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "Additional Sink and Source converters",
     "File IO Sinks and Sources",
     "Simple operators",
-    "Flow operators composed of Sinks and Sources",
+    "Flow operators",
     "Asynchronous operators",
     "Timer driven operators",
     "Backpressure aware operators",
@@ -74,6 +74,10 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "orElseGraph",
     "divertToGraph",
     "zipWithGraph"
+  )
+
+  val distinguishSourceAndFlow = Set(
+    "lazyInitAsync"
   )
 
   // FIXME document these methods as well
@@ -176,7 +180,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
 
     val groupedDefs =
       defs.map {
-        case (element @ ("Source" | "Flow"), method) if sourceAndFlow.contains(method) =>
+        case (element @ ("Source" | "Flow"), method) if sourceAndFlow.contains(method) && !distinguishSourceAndFlow.contains(method) =>
           ("Source/Flow", method, s"Source-or-Flow/$method.md")
         case (element, method) =>
           (element, method, s"$element/$method.md")

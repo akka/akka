@@ -2,7 +2,7 @@
 
 Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Flow operators](../index.md#flow-operators)
 
 @@@div { .group-scala }
 

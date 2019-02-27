@@ -2,7 +2,7 @@
 
 Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
 
-@ref[Flow operators composed of Sinks and Sources](../index.md#flow-operators-composed-of-sinks-and-sources)
+@ref[Flow operators](../index.md#flow-operators)
 
 @@@div { .group-scala }
 
