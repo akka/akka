@@ -59,7 +59,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="ignore"></a>@ref[ignore](Sink/ignore.md)|Consume all elements but discards them.|
 |Sink|<a name="last"></a>@ref[last](Sink/last.md)|Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with the last value emitted when the stream completes.|
 |Sink|<a name="lastoption"></a>@ref[lastOption](Sink/lastOption.md)|Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the last value emitted wrapped in an @scala[`Some`] @java[`Optional`] when the stream completes.|
-|Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|Defers creation and materialization of `Sink` until receiving an element. |
+|Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|Creates a real `Sink` upon receiving the first element. |
 |Sink|<a name="oncomplete"></a>@ref[onComplete](Sink/onComplete.md)|Invoke a callback when the stream has completed or failed.|
 |Sink|<a name="prematerialize"></a>@ref[preMaterialize](Sink/preMaterialize.md)|Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink that can be consume elements 'into' the pre-materialized one.|
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
@@ -165,7 +165,7 @@ These built-in flows are available from @scala[`akka.stream.scaladsl.Flow`] @jav
 |--|--|--|
 |Flow|<a name="fromsinkandsource"></a>@ref[fromSinkAndSource](Flow/fromSinkAndSource.md)|Creates a `Flow` from a `Sink` and a `Source` where the Flow's input will be sent to the `Sink` and the `Flow` 's output will come from the Source.|
 |Flow|<a name="fromsinkandsourcecoupled"></a>@ref[fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)|Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.|
-|Flow|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Flow/lazyInitAsync.md)|Defers creation and materialization of a `Flow` until receiving an element.|
+|Flow|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Flow/lazyInitAsync.md)|Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.|
 
 ## Asynchronous operators
 
