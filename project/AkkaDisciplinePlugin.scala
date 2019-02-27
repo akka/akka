@@ -39,6 +39,12 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / scalacOptions ++= disciplineScalacOptions,
       Compile / scalacOptions --= undisciplineScalacOptions,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
+      // -Ywarn-unused:_ breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+      // https://github.com/akka/akka/issues/26119
+      Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) => Seq("-Ywarn-unused:_,-explicits")
+        case _ => Nil
+      }),
       Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
           Seq(
@@ -48,9 +54,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
             "-Ywarn-nullary-unit",
             "-Ypartial-unification",
             "-Yno-adapted-args",
-            // -Ywarn-unused:_ breaks 'sbt ++2.13.0-M5 akka-actor/doc'
-            // https://github.com/akka/akka/issues/26119
-            "-Ywarn-unused:_",
           )
         case Some((2, 12)) =>
           Nil
@@ -69,10 +72,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     "-Xfatal-warnings")
 
-  /** Optimistic, this is desired over time.
-    * -Xlint and -Ywarn-unused: are included in commonScalaOptions.
-    * If eventually all modules use this plugin, we could migrate them here.
-    */
+  /** These options are desired, but some are excluded for the time being*/
   val disciplineScalacOptions = Seq(
     // start: must currently remove, version regardless
     "-Xfatal-warnings",
@@ -81,6 +81,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-numeric-widen",
     // end
     "-Xfuture",
+    "-Xlint",
     "-Ywarn-dead-code",
     "-Ywarn-inaccessible",
     "-Ywarn-infer-any",
