@@ -17,7 +17,6 @@ import akka.util.{ Helpers, Timeout }
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -58,8 +57,8 @@ private[io] final class AsyncDnsResolver(
         case None ⇒
           resolveWithResolvers(name, mode, resolvers).map { resolved ⇒
             if (resolved.records.nonEmpty) {
-              val minTtl = resolved.records.minBy[Duration](_.ttl.value).ttl
-              cache.put((name, mode), resolved, minTtl)
+              val minCachePolicy = resolved.records.minBy(_.cachePolicy).cachePolicy
+              cache.put((name, mode), resolved, minCachePolicy)
             }
             resolved
           } pipeTo sender()
