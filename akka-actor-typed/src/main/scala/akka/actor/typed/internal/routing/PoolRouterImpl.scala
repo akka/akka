@@ -4,11 +4,9 @@
 
 package akka.actor.typed.internal.routing
 
-import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 
 /**
@@ -26,7 +24,7 @@ private[akka] final case class PoolRouterBuilder[T](
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] = new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
 
-  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
+  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T] _)
 
   def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
 
@@ -59,7 +57,7 @@ private final class PoolRouterImpl[T](
   override def onSignal: PartialFunction[Signal, Behavior[T]] = {
     case Terminated(child) ⇒
       ctx.log.warning(s"Pool child stopped [${child.path}]")
-      val childIdx = routees.indexOf(child)
+      val childIdx = routees.indexOf(child.unsafeUpcast[T])
       if (childIdx == -1)
         throw new IllegalStateException(s"Got termination message for [${child.path}] which isn't a routee of this router")
       val originalRoutees = routees

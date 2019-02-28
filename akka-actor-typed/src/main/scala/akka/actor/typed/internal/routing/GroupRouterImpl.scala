@@ -26,7 +26,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] = new GroupRouterImpl[T](ctx.asScala, key, logicFactory())
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T])
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T] _)
 
   def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
 
