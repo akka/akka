@@ -18,6 +18,8 @@ import scala.util.Success
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
+import scala.concurrent.Future
+
 object AskSpec {
   sealed trait Msg
   final case class Foo(s: String, replyTo: ActorRef[String]) extends Msg
@@ -51,10 +53,12 @@ class AskSpec extends ScalaTestWithActorTestKit("""
   "Ask pattern" must {
     "fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
-      (ref.ask(Stop)).futureValue
+      val stopResult: Future[Unit] = ref.ask(Stop)
+      stopResult.futureValue
+
       val probe = createTestProbe()
       probe.expectTerminated(ref, probe.remainingOrDefault)
-      val answer =
+      val answer: Future[String] =
         EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
           ref.ask(Foo("bar", _))
         }
@@ -65,13 +69,13 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
     "succeed when the actor is alive" in {
       val ref = spawn(behavior)
-      val response = ref.ask(Foo("bar", _))
+      val response: Future[String] = ref.ask(Foo("bar", _))
       response.futureValue should ===("foo")
     }
 
     "provide a symbolic alias that works the same" in {
       val ref = spawn(behavior)
-      val response = ref ? (Foo("bar", _))
+      val response: Future[String] = ref ? (Foo("bar", _))
       response.futureValue should ===("foo")
     }
 
@@ -79,7 +83,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
       EventFilter.warning(pattern = ".*unhandled message.*", occurrences = 1).intercept {
-        val answer = actor.ask(Foo("bar", _))
+        val answer: Future[String] = actor.ask(Foo("bar", _))
         val result = answer.failed.futureValue
         result shouldBe a[TimeoutException]
         result.getMessage should startWith("Ask timed out on")
@@ -96,7 +100,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val answer =
+      val answer: Future[String] =
         EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
           noSuchActor.ask(Foo("bar", _))
         }

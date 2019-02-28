@@ -6,12 +6,13 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SideEffect
+
+import scala.concurrent.Future
 
 object PersistentActorCompileOnlyTest {
 
@@ -67,8 +68,10 @@ object PersistentActorCompileOnlyTest {
       implicit val scheduler: akka.actor.Scheduler = ???
       implicit val ec: ExecutionContext = ???
 
-      sideEffectProcessor.ask(Request(correlationId, data, _))
-        .map(response ⇒ AcknowledgeSideEffect(response.correlationId))
+      val response: Future[RecoveryComplete.Response] =
+        sideEffectProcessor.ask(Request(correlationId, data, _))
+
+      response.map(response ⇒ AcknowledgeSideEffect(response.correlationId))
         .foreach(sender ! _)
     }
 
