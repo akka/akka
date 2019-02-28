@@ -39,12 +39,11 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / scalacOptions ++= disciplineScalacOptions,
       Compile / scalacOptions --= undisciplineScalacOptions,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
-      // -Ywarn-unused:_ breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+      // Discipline is not needed for the docs compilation run (which uses
+      // different compiler phases from the regular run), and in particular
+      // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
       // https://github.com/akka/akka/issues/26119
-      Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 13)) => Seq("-Ywarn-unused:_,-explicits")
-        case _ => Nil
-      }),
+      Compile / doc / scalacOptions --= disciplineScalacOptions,
       Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
           Seq(
