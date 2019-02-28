@@ -291,7 +291,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
      * to deadLetters (this is essential for DeathWatch)
      */
     val dlm: Mailbox =
-      // MICRO-OPT: access of deadLetterMailbox is slow enough to avoid if not needed
+      // MICRO-OPT: `actor` is volatile, so the access is slow enough to avoid if not needed
       if (messageList.nonEmpty) actor.dispatcher.mailboxes.deadLetterMailbox
       else null
     while (messageList.nonEmpty) {
