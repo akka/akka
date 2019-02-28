@@ -35,9 +35,6 @@ import java.lang.annotation.*;
 })
 public @interface ApiMayChange {
 
-  /**
-   * Reference to issue discussing the future evolvement of this API
-   */
+  /** Reference to issue discussing the future evolvement of this API */
   String issue() default "";
-
 }
