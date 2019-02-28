@@ -54,6 +54,9 @@ object AskPattern {
      * val target: ActorRef[Request] = ...
      * val f: Future[Reply] = target ? (replyTo => (Request("hello", replyTo)))
      * }}}
+     *
+     * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
+     * the `ActorRef`.
      */
     def ?[U](replyTo: ActorRef[U] ⇒ T)(implicit timeout: Timeout, @unused scheduler: Scheduler): Future[U] = {
       ask(replyTo)(timeout, scheduler)
@@ -80,7 +83,11 @@ object AskPattern {
      * implicit val scheduler = system.scheduler
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
-     * val f: Future[Reply] = target ? replyTo => (Request("hello", replyTo))
+     * val f: Future[Reply] = target.ask(replyTo => (Request("hello", replyTo)))
+     * // alternatively
+     * val f2: Future[Reply] = target.ask(Request("hello", _))
+     * // note that the explicit type on f2 is important for the compiler
+     * // to understand the type of the wildcard
      * }}}
      */
     def ask[U](replyTo: ActorRef[U] ⇒ T)(implicit timeout: Timeout, @unused scheduler: Scheduler): Future[U] = {
