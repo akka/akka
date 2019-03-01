@@ -46,6 +46,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
+  benchJmhTyped,
   streamTyped,
   discovery
 )
@@ -58,7 +59,7 @@ lazy val root = Project(
  .settings(unidocRootIgnoreProjects :=
    (CrossVersion.partialVersion(scalaVersion.value) match {
      case Some((2, n)) if n == 11 ⇒ aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
-     case _                       ⇒ Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs)
+     case _                       ⇒ Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs)
    }),
    crossScalaVersions := Nil, // Allows some modules (typed) to be only for 2.12 sbt/sbt#3465
  )
@@ -111,12 +112,13 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
+// typed benchmarks only on 2.12+
 lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
   .dependsOn(
     Seq(
       persistenceTyped,
       distributedData, clusterTyped,
-      testkit
+      testkit, benchJmh
     ).map(_ % "compile->compile;compile->test"): _*
   )
   .settings(Dependencies.benchJmh)
