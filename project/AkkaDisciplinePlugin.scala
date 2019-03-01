@@ -22,6 +22,15 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   override lazy val projectSettings = disciplineSettings
 
+  /** If we need to add any further tuning around disabling,
+    * this way we can add in one place vs in each module.
+    * TODO fix remoteTests in job conf and add remote coverage back.
+    * Exclude
+    * - planned removals in 2.6 https://github.com/akka/akka/milestone/119
+    * - docs?, protobuf, benchJmh
+    */
+  val coverageExclude = Seq(coverageEnabled := false)
+
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
 
