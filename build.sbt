@@ -50,29 +50,10 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   discovery
 )
 
-/** TODO fix remoteTests in job conf and add remote coverage back.
-  * Does not include
-  * - planned removals in 2.6 https://github.com/akka/akka/milestone/119
-  * - docs?, protobuf, benchJmh
-  */
-lazy val aggregatedCoverage: Seq[ProjectReference] = Seq(
-  actor, actorTests,
-  cluster, clusterMetrics, clusterSharding, clusterTools, contrib,
-  discovery, distributedData, multiNodeTestkit, osgi,
-  persistence, persistenceQuery, persistenceShared, persistenceTck,
-  slf4j, stream, streamTestkit, streamTests, streamTestsTck, testkit,
-  actorTyped, actorTypedTests, actorTestkitTyped,
-  persistenceTyped, clusterTyped, clusterShardingTyped,
-  streamTyped)
-
-lazy val aggregated: Seq[ProjectReference] =
-  if (AkkaDisciplinePlugin.coverageJobEnabled) aggregatedCoverage
-  else aggregatedProjects
-
 lazy val root = Project(
   id = "akka",
   base = file(".")
-).aggregate(aggregated: _*)
+).aggregate(aggregatedProjects: _*)
  .settings(rootSettings: _*)
  .settings(unidocRootIgnoreProjects :=
    (CrossVersion.partialVersion(scalaVersion.value) match {
