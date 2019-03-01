@@ -8,7 +8,7 @@ Combine the elements of multiple pre-sorted streams into a single sorted stream.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #mergeSortedN }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #mergeSortedN }
 
 @@@
 
