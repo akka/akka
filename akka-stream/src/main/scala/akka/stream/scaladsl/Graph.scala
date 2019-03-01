@@ -653,7 +653,7 @@ final class MergeSortedN[T: Ordering](inputPorts: Int) extends GraphStage[Unifor
     setHandler(out, this)
   }
 
-  override def toString = "MergeSortedN"
+  override def toString = s"MergeSortedN($inputPorts)"
 }
 
 object Broadcast {
