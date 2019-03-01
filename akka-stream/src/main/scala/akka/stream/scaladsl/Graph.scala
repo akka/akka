@@ -569,16 +569,16 @@ final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
 }
 
 /**
-  * Merge multiple pre-sorted streams such that the resulting stream is sorted.
-  *
-  * '''Emits when''' all inputs have an element available
-  *
-  * '''Backpressures when''' downstream backpressures
-  *
-  * '''Completes when''' all upstreams complete
-  *
-  * '''Cancels when''' downstream cancels
-  */
+ * Merge multiple pre-sorted streams such that the resulting stream is sorted.
+ *
+ * '''Emits when''' all inputs have an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
 object MergeSortedN {
   /**
    * Create a new `MergeSortedN`.
@@ -586,7 +586,10 @@ object MergeSortedN {
   def apply[A: Ordering](n: Int) = new MergeSortedN[A](n)
 }
 
-final class MergeSortedN[T: Ordering](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class MergeSortedN[T: Ordering](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
   val inlets: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergeSortedN.in" + i))
   val out: Outlet[T] = Outlet[T]("MergeSortedN.out")
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, inlets: _*)

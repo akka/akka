@@ -173,20 +173,20 @@ object MergePrioritized {
 }
 
 /**
-  * Merge multiple pre-sorted streams such that the resulting stream is sorted.
-  *
-  * '''Emits when''' all inputs have an element available
-  *
-  * '''Backpressures when''' downstream backpressures
-  *
-  * '''Completes when''' all upstreams complete
-  *
-  * '''Cancels when''' downstream cancels
-  */
+ * Merge multiple pre-sorted streams such that the resulting stream is sorted.
+ *
+ * '''Emits when''' all inputs have an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
 object MergeSortedN {
   /**
-    * Create a new `MergeSortedN`.
-    */
+   * Create a new `MergeSortedN`.
+   */
   def create[T](n: Int, comp: Comparator[T]) = scaladsl.MergeSortedN(n)(Ordering.comparatorToOrdering(comp))
 }
 
