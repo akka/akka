@@ -4,15 +4,17 @@
 
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import org.scalacheck.Gen
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class GraphMergeSortedNSpec extends TwoStreamsSetup {
+class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropertyChecks {
   import GraphDSL.Implicits._
 
   override type Outputs = Int
@@ -133,6 +135,38 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       downstream.expectNext(1, 2)
       downstream.expectComplete()
     }
+
+    "work with generated booleans" in {
+      val gen = Gen.listOf(Gen.oneOf(false, true))
+
+      forAll(gen) { picks ⇒
+        val N = picks.size
+        val (left, right) = picks.zipWithIndex.partition(_._1)
+        Source.mergeSortedN(List(Source(left.map(_._2)), Source(right.map(_._2))))
+          .grouped(N max 1)
+          .concat(Source.single(Nil))
+          .runWith(Sink.head)
+          .futureValue should ===(0 until N)
+      }
+    }
+
+    "work when created directly as a source" in {
+      val leftSource: Source[Int, NotUsed] = Source(List(0, 2))
+      val rightSource: Source[Int, NotUsed] = Source(List(1))
+
+      val underTest: Source[Int, NotUsed] = Source.mergeSortedN(List(leftSource, rightSource))
+
+      val grouped: Source[immutable.Seq[Int], NotUsed] = underTest
+        .grouped(4)
+
+      val sortedResult: immutable.Seq[Int] = grouped
+        .concat(Source.single(Nil))
+        .runWith(Sink.head)
+        .futureValue
+
+      sortedResult shouldBe List(0, 1, 2)
+    }
+
     commonTests()
 
     "work with one immediately completed and one nonempty publisher" in assertAllStagesStopped {

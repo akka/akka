@@ -9,7 +9,7 @@ import java.util.Comparator
 
 import akka.NotUsed
 import akka.stream._
-import akka.japi.{Pair, function}
+import akka.japi.{ Pair, function }
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
