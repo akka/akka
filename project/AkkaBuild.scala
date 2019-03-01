@@ -83,7 +83,7 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint", "-Ywarn-unused")
+  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls")
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -93,12 +93,6 @@ object AkkaBuild {
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= DefaultScalacOptions,
-      // On 2.13, adding -Ywarn-unused breaks 'sbt ++2.13.0-M5 akka-actor/doc'
-      // https://github.com/akka/akka/issues/26119
-      scalacOptions in Compile --= (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 13)) => Seq("-Ywarn-unused")
-        case _             => Seq.empty
-      }),
       // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
       // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
@@ -114,8 +108,7 @@ object AkkaBuild {
             Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
-        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")) ++ Seq(
-        "-Ywarn-unused"),
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       javacOptions in compile ++= DefaultJavacOptions ++ (
         if (System.getProperty("java.version").startsWith("1."))
           Seq()
