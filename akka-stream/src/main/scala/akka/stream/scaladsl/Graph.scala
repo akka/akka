@@ -18,7 +18,6 @@ import akka.util.ConstantFun
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -569,6 +568,17 @@ final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
   }
 }
 
+/**
+  * Merge multiple pre-sorted streams such that the resulting stream is sorted.
+  *
+  * '''Emits when''' all inputs have an element available
+  *
+  * '''Backpressures when''' downstream backpressures
+  *
+  * '''Completes when''' all upstreams complete
+  *
+  * '''Cancels when''' downstream cancels
+  */
 object MergeSortedN {
   /**
    * Create a new `MergeSortedN`.
@@ -576,17 +586,6 @@ object MergeSortedN {
   def apply[A: Ordering](n: Int) = new MergeSortedN[A](n)
 }
 
-/**
- * Merge multiple pre-sorted streams such that the resulting stream is sorted.
- *
- * '''Emits when''' all inputs have an element available
- *
- * '''Backpressures when''' downstream backpressures
- *
- * '''Completes when''' all upstreams complete
- *
- * '''Cancels when''' downstream cancels
- */
 final class MergeSortedN[T: Ordering](inputPorts: Int) extends GraphStage[UniformFanInShape[T, T]] {
   val inlets: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergeSortedN.in" + i))
   val out: Outlet[T] = Outlet[T]("MergeSortedN.out")

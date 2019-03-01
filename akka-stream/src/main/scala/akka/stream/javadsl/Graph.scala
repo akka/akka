@@ -5,10 +5,11 @@
 package akka.stream.javadsl
 
 import java.util
+import java.util.Comparator
 
 import akka.NotUsed
 import akka.stream._
-import akka.japi.{ function, Pair }
+import akka.japi.{Pair, function}
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -169,6 +170,24 @@ object MergePrioritized {
       eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities, eagerComplete)
 
+}
+
+/**
+  * Merge multiple pre-sorted streams such that the resulting stream is sorted.
+  *
+  * '''Emits when''' all inputs have an element available
+  *
+  * '''Backpressures when''' downstream backpressures
+  *
+  * '''Completes when''' all upstreams complete
+  *
+  * '''Cancels when''' downstream cancels
+  */
+object MergeSortedN {
+  /**
+    * Create a new `MergeSortedN`.
+    */
+  def create[T](n: Int, comp: Comparator[T]) = scaladsl.MergeSortedN(n)(Ordering.comparatorToOrdering(comp))
 }
 
 /**
