@@ -178,6 +178,13 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
     }
 
+    "never emit if a source does not emit" in {
+      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 2))
+
+      subscriber1.expectSubscription()
+      subscriber1.expectNoMessage(100 millis)
+    }
+
   }
 
 }
