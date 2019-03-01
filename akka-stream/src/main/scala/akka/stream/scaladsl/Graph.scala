@@ -571,6 +571,10 @@ final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
 /**
  * Merge multiple pre-sorted streams such that the resulting stream is sorted.
  *
+ * The stage pulls and buffers one element from each of the given inlets. It does not emit until
+ * all inlets have an available element (or have been closed) at which point it will emit the smallest
+ * element and pull the corresponding inlet.
+ *
  * '''Emits when''' all inputs have an element available
  *
  * '''Backpressures when''' downstream backpressures
