@@ -54,7 +54,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       probe.expectComplete()
     }
 
-    "not complete if one side is available but other completed" in {
+    "not complete if one side is available but other completed" in assertAllStagesStopped {
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
@@ -78,9 +78,11 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       downstream.requestNext(2)
       downstream.requestNext(2)
       downstream.expectNoMessage(200.millis)
+
+      upstream2.sendComplete()
     }
 
-    "complete even if no pending demand" in {
+    "complete even if no pending demand" in assertAllStagesStopped {
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
@@ -106,7 +108,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       downstream.expectComplete()
     }
 
-    "complete if both sides complete before requested with elements pending" in {
+    "complete if both sides complete before requested with elements pending" in assertAllStagesStopped {
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
@@ -178,11 +180,31 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
       val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
     }
 
-    "never emit if a source does not emit" in {
-      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 2))
+    "never emit if a source does not emit" in assertAllStagesStopped {
+      val upstream1 = TestPublisher.probe[Int]()
+      val upstream2 = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.probe[Int]()
 
-      subscriber1.expectSubscription()
-      subscriber1.expectNoMessage(100 millis)
+      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
+        val mergeSortedN = b.add(MergeSortedN[Int](2))
+
+        Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
+        Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
+        mergeSortedN.out ~> out
+
+        ClosedShape
+      }).run()
+
+      upstream2.sendNext(2)
+
+      val subscription = downstream.expectSubscription()
+      subscription.request(1)
+      downstream.expectNoMessage(200.millis)
+
+      upstream1.sendComplete()
+      upstream2.sendComplete()
+      downstream.expectNext(2)
+      downstream.expectComplete()
     }
 
   }

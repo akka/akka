@@ -602,13 +602,19 @@ object MergeSortedN {
     private val bufferedElements = new mutable.TreeSet[(T, Int)]()
     private val inletsBeingPulled = new mutable.HashSet[Inlet[T]]
     private var runningInlets = inputPorts
-    private def canPush = inletsBeingPulled.isEmpty && bufferedElements.nonEmpty
+    private def canPush = inletsBeingPulled.isEmpty && bufferedElements.nonEmpty && isAvailable(out)
     private def upstreamsClosed = runningInlets == 0
 
     override def preStart(): Unit = {
       for (i ← inlets) {
         tryPull(i)
         inletsBeingPulled.add(i)
+      }
+    }
+
+    private def maybeCompleteStage(): Unit = {
+      if (bufferedElements.isEmpty && upstreamsClosed) {
+        completeStage()
       }
     }
 
@@ -624,9 +630,7 @@ object MergeSortedN {
         }
       }
 
-      if (bufferedElements.isEmpty && upstreamsClosed) {
-        completeStage()
-      }
+      maybeCompleteStage()
     }
 
     for (i ← inlets.indices) {
@@ -637,17 +641,13 @@ object MergeSortedN {
           val element = grab(inlet)
           bufferedElements.add((element, index))
           inletsBeingPulled.remove(inlet)
-          if (isAvailable(out)) {
-            maybePush()
-          }
+          maybePush()
         }
 
         override def onUpstreamFinish(): Unit = {
           inletsBeingPulled.remove(inlet)
           runningInlets -= 1
-          if (isAvailable(out)) {
-            maybePush()
-          }
+          maybePush()
         }
       })
     }
