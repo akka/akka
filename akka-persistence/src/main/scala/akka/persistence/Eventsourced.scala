@@ -443,6 +443,29 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
+   * INTERNAL API.
+   * An [[Eventsourced]] actor can request cleanup by deleting either a range of, or all persistent events.
+   * For example, on successful snapshot completion, delete messages within a configurable `snapshotAfter`
+   * range that are less than or equal to the given [[SnapshotMetadata.sequenceNr]]
+   * (provided the [[SnapshotMetadata.sequenceNr]] is <= to [[Eventsourced#lastSequenceNr]]).
+   *
+   * Or delete all by using `Long.MaxValue` as the `toSequenceNr`
+   * {{{ m.copy(sequenceNr = Long.MaxValue) }}}
+   */
+  private[akka] def deleteMessages(
+    e:               SaveSnapshotSuccess,
+    keepNrOfBatches: Int,
+    snapshotAfter:   Int): Unit = {
+    /* Delete old events but keep the latest around
+      1. It's not safe to delete all events immediately because snapshots are typically stored with
+         a weaker consistency level. A replay might "see" the deleted events before it sees the stored
+         snapshot, i.e. it could use an older snapshot and not replay the full sequence of events
+      2. If there is a production failure, it's useful to be able to inspect the events while debugging */
+    val sequenceId = e.metadata.sequenceNr - keepNrOfBatches * snapshotAfter
+    if (sequenceId > 0) deleteMessages(sequenceId)
+  }
+
+  /**
    * Returns `true` if this persistent actor is currently recovering.
    */
   def recoveryRunning: Boolean = {
