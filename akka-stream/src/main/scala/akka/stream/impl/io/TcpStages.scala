@@ -218,11 +218,11 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _, _, registerCallback) ⇒
+        case Inbound(conn, halfClose, _, registerCallback) ⇒
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
-          connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
+          connection ! Register(self, keepOpenOnPeerClosed = halfClose, useResumeWriting = false)
           registerCallback()
           pull(bytesIn)
         case ob @ Outbound(manager, cmd, _, _, _) ⇒
