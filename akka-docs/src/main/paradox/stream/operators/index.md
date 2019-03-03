@@ -49,6 +49,8 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
+|Sink|<a name="foldresource"></a>@ref[foldResource](Sink/foldResource.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
+|Sink|<a name="foldresourceasync"></a>@ref[foldResourceAsync](Sink/foldResourceAsync.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
 |Sink|<a name="foreach"></a>@ref[foreach](Sink/foreach.md)|Invoke a given procedure for each element received.|
 |Sink|<a name="foreachasync"></a>@ref[foreachAsync](Sink/foreachAsync.md)|Invoke a given procedure asynchronously for each element received.|
 |Sink|<a name="foreachparallel"></a>@ref[foreachParallel](Sink/foreachParallel.md)|Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.|
@@ -65,8 +67,6 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
 |Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` values emitted from the stream into a collection.|
-|Sink|<a name="unfoldresource"></a>@ref[unfoldResource](Sink/unfoldResource.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
-|Sink|<a name="unfoldresourceasync"></a>@ref[unfoldResourceAsync](Sink/unfoldResourceAsync.md)|Wrap any resource that can be opened, written to, and closed using three distinct functions into a sink.|
 
 ## Additional Sink and Source converters
 
@@ -411,8 +411,8 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRef](Sink/actorRef.md)
 * [actorRefWithAck](Sink/actorRefWithAck.md)
 * [queue](Sink/queue.md)
-* [unfoldResource](Sink/unfoldResource.md)
-* [unfoldResourceAsync](Sink/unfoldResourceAsync.md)
+* [foldResource](Sink/foldResource.md)
+* [foldResourceAsync](Sink/foldResourceAsync.md)
 * [lazyInitAsync](Sink/lazyInitAsync.md)
 * [fromInputStream](StreamConverters/fromInputStream.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)

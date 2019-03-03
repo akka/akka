@@ -293,7 +293,7 @@ object Sink {
    *
    * Example:
    * {{{
-   * Sink.unfoldResource(
+   * Sink.foldResource(
    *   () -> new BufferedWriter(new FileWriter("...")),
    *   (reader, line) -> reader.write(line),
    *   reader -> reader.close())
@@ -315,18 +315,18 @@ object Sink {
    *                is received. Stream calls close and completes when upstream closes.
    * @param close - function that closes resource
    */
-  def unfoldResource[T, S](
+  def foldResource[T, S](
     create: function.Creator[S],
     write:  function.Procedure2[S, T],
     close:  function.Procedure[S]): javadsl.Sink[T, CompletionStage[Done]] =
-    new Sink(scaladsl.Sink.unfoldResource[T, S](
+    new Sink(scaladsl.Sink.foldResource[T, S](
       create.create _,
       (s: S, t: T) ⇒ write.apply(s, t),
       close.apply).toCompletionStage())
 
   /**
    * Start a new `Sink` from some resource which can be opened, written to, and closed.
-   * It's similar to `unfoldResource` but takes functions that return `Futures` instead of plain values.
+   * It's similar to `foldResource` but takes functions that return `Futures` instead of plain values.
    *
    * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
    * or `close` will fail the stream.
@@ -344,11 +344,11 @@ object Sink {
    *                is received. Stream calls close and completes when upstream closes.
    * @param close - function that closes resource
    */
-  def unfoldResourceAsync[T, S](
+  def foldResourceAsync[T, S](
     create: function.Creator[CompletionStage[S]],
     write:  function.Function2[S, T, CompletionStage[Unit]],
     close:  function.Function[S, CompletionStage[Unit]]): javadsl.Sink[T, CompletionStage[Done]] =
-    new Sink(scaladsl.Sink.unfoldResourceAsync[T, S](
+    new Sink(scaladsl.Sink.foldResourceAsync[T, S](
       () ⇒ create.create().toScala,
       (s: S, t: T) ⇒ write.apply(s, t).toScala,
       (s: S) ⇒ close.apply(s).toScala).toCompletionStage())

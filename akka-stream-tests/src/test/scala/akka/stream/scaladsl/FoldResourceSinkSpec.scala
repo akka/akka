@@ -25,32 +25,29 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.JavaConverters._
 import scala.concurrent.{ Await, Future }
 
-class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
+class FoldResourceSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
 
-  implicit val ec = materializer.system.dispatcher
-
-  private val fs = Jimfs.newFileSystem("UnfoldResourceSinkAsyncSpec", Configuration.unix())
+  private val fs = Jimfs.newFileSystem("UnfoldResourceSinkSpec", Configuration.unix())
 
   private val r = Range(1, 100)
   private val manyLines = r.map(i ⇒ s"Link $i").toVector
 
   private def tmpPath = Files.createTempFile(fs.getPath("/"), "tmp", ".txt")
-  private def newBufferedWriter(path: Path) = Future.successful(Files.newBufferedWriter(path, StandardCharsets.UTF_8))
+  private def newBufferedWriter(path: Path) = Files.newBufferedWriter(path, StandardCharsets.UTF_8)
 
-  "Unfold Async Resource Sink" must {
+  "Unfold Resource Sink" must {
     "write contents to a file" in assertAllStagesStopped {
       val path = tmpPath
       val closedCount = new LongAdder
 
-      val sink: Sink[String, Future[Done]] = Sink.unfoldResourceAsync[String, BufferedWriter](
+      val sink: Sink[String, Future[Done]] = Sink.foldResource[String, BufferedWriter](
         () ⇒ newBufferedWriter(path),
-        (writer, line) ⇒ Future.successful(writer.write(s"$line\n")),
+        (writer, line) ⇒ writer.write(s"$line\n"),
         writer ⇒ {
           closedCount.increment()
           writer.close()
-          Future.successful()
         })
 
       val future = Source(manyLines).runWith(sink)
@@ -66,13 +63,12 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val path = tmpPath
       val closedCount = new LongAdder
 
-      val sink: Sink[String, Future[Done]] = Sink.unfoldResourceAsync[String, BufferedWriter](
+      val sink: Sink[String, Future[Done]] = Sink.foldResource[String, BufferedWriter](
         () ⇒ newBufferedWriter(path),
-        (writer, line) ⇒ Future.successful(writer.write(s"$line\n")),
+        (writer, line) ⇒ writer.write(s"$line\n"),
         writer ⇒ {
           closedCount.increment()
           writer.close()
-          Future.successful()
         })
 
       val future = Source.empty.runWith(sink)
@@ -82,66 +78,13 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       Files.readAllBytes(path).length shouldBe 0
     }
 
-    "stop when Strategy is Stop and exception happened" when {
-      "throwing an exception in the future" in assertAllStagesStopped {
-        val path = tmpPath
-        val closedCount = new LongAdder
-
-        val sink = Sink.unfoldResourceAsync[String, BufferedWriter](
-          () ⇒ newBufferedWriter(path),
-          (writer, line) ⇒ Future {
-            if (line.endsWith("89")) {
-              throw TE("Skip Line")
-            }
-            writer.write(s"$line\n")
-          },
-          writer ⇒ {
-            closedCount.increment()
-            writer.close()
-            Future.successful()
-          }).withAttributes(supervisionStrategy(stoppingDecider))
-
-        val future = Source(manyLines).runWith(sink)
-        Await.result(future.failed, remainingOrDefault).getMessage shouldEqual "Skip Line"
-
-        closedCount.sum() shouldBe 1
-        Files.newBufferedReader(path).lines().iterator().asScala.zip(r.iterator.take(88)).foreach {
-          case (line, want) ⇒
-            line shouldEqual s"Link $want"
-        }
-      }
-
-      "throwing an exception outside the future" in assertAllStagesStopped {
-        val path = tmpPath
-        val closedCount = new LongAdder
-
-        val sink = Sink.unfoldResourceAsync[String, BufferedWriter](
-          () ⇒ newBufferedWriter(path),
-          (_, _) ⇒ throw TE("Skip Line"),
-          writer ⇒ {
-            closedCount.increment()
-            writer.close()
-            Future.successful()
-          }).withAttributes(supervisionStrategy(stoppingDecider))
-
-        val future = Source(manyLines).runWith(sink)
-        Await.result(future.failed, remainingOrDefault).getMessage shouldEqual "Skip Line"
-
-        closedCount.sum() shouldBe 1
-        Files.newBufferedReader(path).lines().iterator().asScala.zip(r.iterator.take(88)).foreach {
-          case (line, want) ⇒
-            line shouldEqual s"Link $want"
-        }
-      }
-    }
-
-    "continue when Strategy is Resume and exception happened" in assertAllStagesStopped {
+    "stop when Strategy is Stop and exception happened" in assertAllStagesStopped {
       val path = tmpPath
       val closedCount = new LongAdder
 
-      val sink = Sink.unfoldResourceAsync[String, BufferedWriter](
+      val sink = Sink.foldResource[String, BufferedWriter](
         () ⇒ newBufferedWriter(path),
-        (writer, line) ⇒ Future {
+        (writer, line) ⇒ {
           if (line.endsWith("89")) {
             throw TE("Skip Line")
           }
@@ -150,7 +93,33 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         writer ⇒ {
           closedCount.increment()
           writer.close()
-          Future.successful()
+        }).withAttributes(supervisionStrategy(stoppingDecider))
+
+      val future = Source(manyLines).runWith(sink)
+      Await.result(future.failed, remainingOrDefault).getMessage shouldEqual "Skip Line"
+
+      closedCount.sum() shouldBe 1
+      Files.newBufferedReader(path).lines().iterator().asScala.zip(r.iterator.take(88)).foreach {
+        case (line, want) ⇒
+          line shouldEqual s"Link $want"
+      }
+    }
+
+    "continue when Strategy is Resume and exception happened" in assertAllStagesStopped {
+      val path = tmpPath
+      val closedCount = new LongAdder
+
+      val sink = Sink.foldResource[String, BufferedWriter](
+        () ⇒ newBufferedWriter(path),
+        (writer, line) ⇒ {
+          if (line.endsWith("89")) {
+            throw TE("Skip Line")
+          }
+          writer.write(s"$line\n")
+        },
+        writer ⇒ {
+          closedCount.increment()
+          writer.close()
         }).withAttributes(supervisionStrategy(resumingDecider))
 
       val future = Source(manyLines).runWith(sink)
@@ -168,9 +137,9 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val path = tmpPath
       val closedCount = new LongAdder
 
-      val sink = Sink.unfoldResourceAsync[String, BufferedWriter](
+      val sink = Sink.foldResource[String, BufferedWriter](
         () ⇒ newBufferedWriter(path),
-        (writer, line) ⇒ Future {
+        (writer, line) ⇒ {
           if (line.endsWith("89")) {
             throw TE("Skip Line")
           }
@@ -179,7 +148,6 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         writer ⇒ {
           closedCount.increment()
           writer.close()
-          Future.successful()
         }).withAttributes(supervisionStrategy(restartingDecider))
 
       val future = Source(manyLines).runWith(sink)
@@ -196,10 +164,10 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
-        val p = Sink.unfoldResourceAsync[String, Integer](
-          () ⇒ Future.successful(1),
-          (_, _) ⇒ Future.successful(),
-          _ ⇒ Future.successful()).runWith(TestSource.probe(sys))(materializer)
+        val p = Sink.foldResource[String, Integer](
+          () ⇒ 1,
+          (_, _) ⇒ (),
+          _ ⇒ ()).runWith(TestSource.probe(sys))(materializer)
 
         materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString.contains("unfoldResourceSink")).get
@@ -210,12 +178,11 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when create throws exception" in assertAllStagesStopped {
       val closedCount = new LongAdder
 
-      val sink: Sink[String, Future[Done]] = Sink.unfoldResourceAsync[String, Int](
+      val sink: Sink[String, Future[Done]] = Sink.foldResource[String, Int](
         () ⇒ throw TE("Test"),
-        (_, _) ⇒ Future.successful(),
+        (_, _) ⇒ (),
         _ ⇒ {
           closedCount.increment()
-          Future.successful()
         })
 
       val future = Source(manyLines).runWith(sink)
@@ -227,9 +194,9 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when close throws exception" in assertAllStagesStopped {
       val closedCount = new LongAdder
 
-      val sink: Sink[String, Future[Done]] = Sink.unfoldResourceAsync[String, Int](
-        () ⇒ Future.successful(1),
-        (_, _) ⇒ Future.successful(),
+      val sink: Sink[String, Future[Done]] = Sink.foldResource[String, Int](
+        () ⇒ 1,
+        (_, _) ⇒ (),
         _ ⇒ {
           closedCount.increment()
           throw TE("Test")
@@ -244,8 +211,8 @@ class UnfoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     "not close the resource twice when read fails and then close fails" in {
       val closedCount = new LongAdder
 
-      val sink: Sink[String, Future[Done]] = Sink.unfoldResourceAsync[String, Int](
-        () ⇒ Future.successful(1),
+      val sink: Sink[String, Future[Done]] = Sink.foldResource[String, Int](
+        () ⇒ 1,
         (_, _) ⇒ throw TE("Test Write"),
         _ ⇒ {
           closedCount.increment()

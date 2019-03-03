@@ -535,7 +535,7 @@ object Sink {
    *
    * Example:
    * {{{
-   * Sink.unfoldResource(
+   * Sink.foldResource(
    *   () -> new BufferedWriter(new FileWriter("...")),
    *   (reader, line) -> reader.write(line),
    *   reader -> reader.close())
@@ -557,12 +557,12 @@ object Sink {
    *                is received. Stream calls close and completes when upstream closes.
    * @param close - function that closes resource
    */
-  def unfoldResource[T, S](create: () ⇒ S, write: (S, T) ⇒ Unit, close: (S) ⇒ Unit): Sink[T, Future[Done]] =
-    Sink.fromGraph(new UnfoldResourceSink(create, write, close))
+  def foldResource[T, S](create: () ⇒ S, write: (S, T) ⇒ Unit, close: (S) ⇒ Unit): Sink[T, Future[Done]] =
+    Sink.fromGraph(new FoldResourceSink(create, write, close))
 
   /**
    * Start a new `Sink` from some resource which can be opened, written to, and closed.
-   * It's similar to `unfoldResource` but takes functions that return `Futures` instead of plain values.
+   * It's similar to `foldResource` but takes functions that return `Futures` instead of plain values.
    *
    * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
    * or `close` will fail the stream.
@@ -580,8 +580,8 @@ object Sink {
    *                is received. Stream calls close and completes when upstream closes.
    * @param close - function that closes resource
    */
-  def unfoldResourceAsync[T, S](create: () ⇒ Future[S], write: (S, T) ⇒ Future[Unit], close: (S) ⇒ Future[Unit]): Sink[T, Future[Done]] =
-    Sink.fromGraph(new UnfoldResourceSinkAsync(create, write, close))
+  def foldResourceAsync[T, S](create: () ⇒ Future[S], write: (S, T) ⇒ Future[Unit], close: (S) ⇒ Future[Unit]): Sink[T, Future[Done]] =
+    Sink.fromGraph(new FoldResourceSinkAsync(create, write, close))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,

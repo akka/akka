@@ -19,13 +19,13 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldResourceSinkAsync[T, S](
+@InternalApi private[akka] final class FoldResourceSinkAsync[T, S](
   create: () ⇒ Future[S],
   write:  (S, T) ⇒ Future[Unit],
   close:  (S) ⇒ Future[Unit]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Done]] {
-  val in = Inlet[T]("UnfoldResourceSinkAsync.in")
+  val in = Inlet[T]("FoldResourceSinkAsync.in")
   override val shape = SinkShape(in)
-  override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSinkAsync
+  override def initialAttributes: Attributes = DefaultAttributes.foldResourceSinkAsync
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
     val promise = Promise[Done]()
@@ -157,6 +157,6 @@ import scala.util.control.NonFatal
     (createLogic, promise.future)
   }
 
-  override def toString = "UnfoldResourceSinkAsync"
+  override def toString = "FoldResourceSinkAsync"
 
 }
