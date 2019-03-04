@@ -21,9 +21,9 @@ class FlowWithContextSpec extends StreamSpec {
 
       val msg = Message("a", 1L)
       Source(Vector(msg))
-        .startContextPropagation(_.offset)
+        .asSourceWithContext(_.offset)
         .via(flowWithContext)
-        .endContextPropagation
+        .asSource
         .runWith(TestSink.probe[(Message, Long)])
         .request(1)
         .expectNext(((Message("az", 1L), 1L)))
