@@ -1339,6 +1339,12 @@ trait LoggingAdapter {
  * `logLevel` of the `EventStream` before applying more fine grained filters.
  */
 trait LoggingFilter {
+  // for backward-compatibility reason implementation of method without marker only must work
+  def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isErrorEnabled(logClass, logSource)
+  def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isWarningEnabled(logClass, logSource)
+  def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isInfoEnabled(logClass, logSource)
+  def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isDebugEnabled(logClass, logSource)
+
   def isErrorEnabled(logClass: Class[_], logSource: String): Boolean
   def isWarningEnabled(logClass: Class[_], logSource: String): Boolean
   def isInfoEnabled(logClass: Class[_], logSource: String): Boolean
@@ -1466,13 +1472,18 @@ class MarkerLoggingAdapter(
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
     this(bus, logSource, logClass, new DefaultLoggingFilter(() ⇒ bus.logLevel))
 
+  def isErrorEnabled(marker: LogMarker) = loggingFilter.isErrorEnabled(logClass, logSource, marker)
+  def isWarningEnabled(marker: LogMarker) = loggingFilter.isWarningEnabled(logClass, logSource, marker)
+  def isInfoEnabled(marker: LogMarker) = loggingFilter.isInfoEnabled(logClass, logSource, marker)
+  def isDebugEnabled(marker: LogMarker) = loggingFilter.isDebugEnabled(logClass, logSource, marker)
+
   /**
    * Log message at error level, including the exception that caused the error.
    * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, message, mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1483,7 +1494,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1491,7 +1502,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1499,7 +1510,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1507,7 +1518,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at error level, without providing the exception that caused the error.
@@ -1515,7 +1526,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1526,7 +1537,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1534,7 +1545,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1542,7 +1553,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1550,7 +1561,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at warning level.
@@ -1558,7 +1569,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, message: String): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, message, mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1569,7 +1580,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1577,7 +1588,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1585,7 +1596,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1593,7 +1604,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at info level.
@@ -1601,7 +1612,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, message: String): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, message, mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1612,7 +1623,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1620,7 +1631,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1628,7 +1639,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1636,7 +1647,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at debug level.
@@ -1644,7 +1655,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, message: String): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, message, mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1655,7 +1666,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1663,7 +1674,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1671,7 +1682,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1679,7 +1690,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
