@@ -145,6 +145,22 @@ class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStrea
     (eventStream.logLevel >= InfoLevel) && Logger(logClass, logSource).isInfoEnabled
   def isDebugEnabled(logClass: Class[_], logSource: String) =
     (eventStream.logLevel >= DebugLevel) && Logger(logClass, logSource).isDebugEnabled
+
+  private def slf4jMarker(marker: LogMarker) = marker match {
+    case null                        ⇒ null
+    case slf4jMarker: Slf4jLogMarker ⇒ slf4jMarker.marker
+    case marker                      ⇒ MarkerFactory.getMarker(marker.name)
+  }
+
+  override def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled(slf4jMarker(marker))
+  override def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    (eventStream.logLevel >= WarningLevel) && Logger(logClass, logSource).isWarnEnabled(slf4jMarker(marker))
+  override def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    (eventStream.logLevel >= InfoLevel) && Logger(logClass, logSource).isInfoEnabled(slf4jMarker(marker))
+  override def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    (eventStream.logLevel >= DebugLevel) && Logger(logClass, logSource).isDebugEnabled(slf4jMarker(marker))
+
 }
 
 /** Wraps [[org.slf4j.Marker]] */
