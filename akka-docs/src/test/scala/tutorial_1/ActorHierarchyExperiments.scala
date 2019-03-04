@@ -60,12 +60,12 @@ class StartStopActor2 extends Actor {
 }
 //#start-stop
 
+//#supervise
 object SupervisingActor {
   def props: Props =
     Props(new SupervisingActor)
 }
 
-//#supervise
 class SupervisingActor extends Actor {
   val child = context.actorOf(SupervisedActor.props, "supervised-actor")
 
