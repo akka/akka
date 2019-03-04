@@ -22,7 +22,7 @@ import scala.compat.java8.FutureConverters._
  * use [[SourceWithContext.via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
- * Can be created by calling [[Source.startContextPropagation()]]
+ * Can be created by calling [[Source.asSourceWithContext()]]
  *
  * API MAY CHANGE
  */
@@ -44,8 +44,8 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */
-  def endContextPropagation(): Source[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Mat @uncheckedVariance] =
-    delegate.endContextPropagation.map { case (o, c) ⇒ Pair(o, c) }.asJava
+  def asSource(): Source[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Mat @uncheckedVariance] =
+    delegate.asSource.map { case (o, c) ⇒ Pair(o, c) }.asJava
 
   // remaining operations in alphabetic order
 
