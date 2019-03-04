@@ -15,7 +15,7 @@ import akka.stream._
  * use [[FlowWithContextOps.via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
- * Can be created by calling [[Source.startContextPropagation()]]
+ * Can be created by calling [[Source.asSourceWithContext()]]
  *
  * API MAY CHANGE
  */
@@ -35,7 +35,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */
-  def endContextPropagation: Source[(Out, Ctx), Mat] = delegate
+  def asSource: Source[(Out, Ctx), Mat] = delegate
 
   def asJava[JOut >: Out, JCtx >: Ctx, JMat >: Mat]: javadsl.SourceWithContext[JOut, JCtx, JMat] =
     new javadsl.SourceWithContext(this)

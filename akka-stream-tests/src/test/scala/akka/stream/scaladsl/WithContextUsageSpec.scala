@@ -28,7 +28,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       val src = createSourceWithContext(input)
         .map(f)
-        .endContextPropagation
+        .asSource
 
       src.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[Record])
@@ -54,7 +54,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       val src = createSourceWithContext(input)
         .filter(f)
-        .endContextPropagation
+        .asSource
 
       src.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[Record])
@@ -80,7 +80,7 @@ class WithContextUsageSpec extends StreamSpec {
 
       val src = createSourceWithContext(input)
         .mapConcat(f)
-        .endContextPropagation
+        .asSource
 
       src.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[Record])
@@ -108,7 +108,7 @@ class WithContextUsageSpec extends StreamSpec {
         .grouped(groupSize)
         .map(l ⇒ MultiRecord(l))
         .mapContext(_.last)
-        .endContextPropagation
+        .asSource
 
       src.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[MultiRecord])
@@ -141,7 +141,7 @@ class WithContextUsageSpec extends StreamSpec {
         .grouped(groupSize)
         .map(l ⇒ MultiRecord(l))
         .mapContext(_.last)
-        .endContextPropagation
+        .asSource
 
       src.map { case (e, _) ⇒ e }
         .runWith(TestSink.probe[MultiRecord])
@@ -166,7 +166,7 @@ class WithContextUsageSpec extends StreamSpec {
   def createSourceWithContext(committableMessages: Vector[Consumer.CommittableMessage[Record]]): SourceWithContext[Record, Offset, NotUsed] =
     Consumer
       .committableSource(committableMessages)
-      .startContextPropagation(m ⇒ Offset(m.committableOffset.offset))
+      .asSourceWithContext(m ⇒ Offset(m.committableOffset.offset))
       .map(_.record)
 
   def commitOffsets = commit[Offset](Offset.Uninitialized)
