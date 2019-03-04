@@ -64,6 +64,11 @@ private[akka] final class FunctionRef[-T](
   override def isInfoEnabled: Boolean = true
   override def isDebugEnabled: Boolean = true
 
+  override def isErrorEnabled(marker: LogMarker): Boolean = true
+  override def isWarningEnabled(marker: LogMarker): Boolean = true
+  override def isInfoEnabled(marker: LogMarker): Boolean = true
+  override def isDebugEnabled(marker: LogMarker): Boolean = true
+
   override private[akka] def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit =
     logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker, mdc) :: logBuffer
   override private[akka] def notifyWarning(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit =
@@ -96,6 +101,12 @@ private[akka] final class FunctionRef[-T](
   override def isInfoEnabled: Boolean = actual.isInfoEnabled
   override def isDebugEnabled: Boolean = actual.isDebugEnabled
   override def withMdc(mdc: Map[String, Any]): Logger = actual.withMdc(mdc)
+
+
+  override def isErrorEnabled(marker: LogMarker): Boolean = actual.isErrorEnabled(marker)
+  override def isWarningEnabled(marker: LogMarker): Boolean = actual.isWarningEnabled(marker)
+  override def isInfoEnabled(marker: LogMarker): Boolean = actual.isInfoEnabled(marker)
+  override def isDebugEnabled(marker: LogMarker): Boolean = actual.isDebugEnabled(marker)
 
   override private[akka] def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val original = actual.mdc
