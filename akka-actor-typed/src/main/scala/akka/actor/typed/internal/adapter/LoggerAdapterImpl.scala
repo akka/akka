@@ -365,6 +365,12 @@ private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_],
   override def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   override def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
+  override def isErrorEnabled(marker: LogMarker): Boolean = loggingFilter.isErrorEnabled(logClass,logSource,marker.asInstanceOf[UntypedLM])
+  override def isWarningEnabled(marker: LogMarker): Boolean = loggingFilter.isWarningEnabled(logClass,logSource,marker.asInstanceOf[UntypedLM])
+  override def isInfoEnabled(marker: LogMarker): Boolean = loggingFilter.isInfoEnabled(logClass,logSource,marker.asInstanceOf[UntypedLM])
+  override def isDebugEnabled(marker: LogMarker): Boolean = loggingFilter.isDebugEnabled(logClass,logSource,marker.asInstanceOf[UntypedLM])
+
+
   override def withMdc(mdc: Map[String, Any]): Logger = {
     val mdcAdapter = new LoggerAdapterImpl(bus, logClass, logSource, loggingFilter)
     mdcAdapter.mdc = mdc
