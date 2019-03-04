@@ -876,7 +876,7 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
   def receiveSnapshotResult: Receive = {
     case e: SaveSnapshotSuccess ⇒
       log.debug("Persistent snapshot saved successfully")
-      deleteMessages(e, keepNrOfBatches, snapshotAfter)
+      internalDeleteMessagesBeforeSnapshot(e, keepNrOfBatches, snapshotAfter)
 
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("Persistent snapshot failure: {}", reason.getMessage)

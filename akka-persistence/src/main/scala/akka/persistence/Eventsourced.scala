@@ -452,7 +452,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * Or delete all by using `Long.MaxValue` as the `toSequenceNr`
    * {{{ m.copy(sequenceNr = Long.MaxValue) }}}
    */
-  private[akka] def deleteMessages(
+  @InternalApi private[akka] def internalDeleteMessagesBeforeSnapshot(
     e:               SaveSnapshotSuccess,
     keepNrOfBatches: Int,
     snapshotAfter:   Int): Unit = {
@@ -461,8 +461,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
          a weaker consistency level. A replay might "see" the deleted events before it sees the stored
          snapshot, i.e. it could use an older snapshot and not replay the full sequence of events
       2. If there is a production failure, it's useful to be able to inspect the events while debugging */
-    val sequenceId = e.metadata.sequenceNr - keepNrOfBatches * snapshotAfter
-    if (sequenceId > 0) deleteMessages(sequenceId)
+    val sequenceNr = e.metadata.sequenceNr - keepNrOfBatches * snapshotAfter
+    if (sequenceNr > 0) deleteMessages(sequenceNr)
   }
 
   /**

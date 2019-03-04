@@ -564,7 +564,7 @@ private[akka] class PersistentShard(
   override def receiveCommand: Receive = ({
     case e: SaveSnapshotSuccess ⇒
       log.debug("PersistentShard snapshot saved successfully")
-      deleteMessages(e, keepNrOfBatches, snapshotAfter)
+      internalDeleteMessagesBeforeSnapshot(e, keepNrOfBatches, snapshotAfter)
 
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("PersistentShard snapshot failure: [{}]", reason.getMessage)
