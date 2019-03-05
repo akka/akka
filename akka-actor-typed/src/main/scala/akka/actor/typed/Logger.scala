@@ -147,12 +147,11 @@ abstract class Logger private[akka] () {
    */
   def isErrorEnabled: Boolean
 
-
   /**
-    * Whether error logging with this marker is enabled on the actor system level, may not represent the setting all
-    * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
-    * entries that will not actually end up in any logger output.
-    */
+   * Whether error logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
   def isErrorEnabled(marker: LogMarker): Boolean
 
   /**
@@ -163,10 +162,10 @@ abstract class Logger private[akka] () {
   def isWarningEnabled: Boolean
 
   /**
-    * Whether warning logging with this marker is enabled on the actor system level, may not represent the setting all
-    * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
-    * entries that will not actually end up in any logger output.
-    */
+   * Whether warning logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
   def isWarningEnabled(marker: LogMarker): Boolean
 
   /**
@@ -177,10 +176,10 @@ abstract class Logger private[akka] () {
   def isInfoEnabled: Boolean
 
   /**
-    * Whether info logging with this marker is enabled on the actor system level, may not represent the setting all
-    * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
-    * entries that will not actually end up in any logger output.
-    */
+   * Whether info logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
   def isInfoEnabled(marker: LogMarker): Boolean
 
   /**
@@ -191,10 +190,10 @@ abstract class Logger private[akka] () {
   def isDebugEnabled: Boolean
 
   /**
-    * Whether debug logging with this marker is enabled on the actor system level, may not represent the setting all
-    * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
-    * entries that will not actually end up in any logger output.
-    */
+   * Whether debug logging with this marker is enabled on the actor system level, may not represent the setting all
+   * the way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log
+   * entries that will not actually end up in any logger output.
+   */
   def isDebugEnabled(marker: LogMarker): Boolean
 
   /**
@@ -211,10 +210,10 @@ abstract class Logger private[akka] () {
   }
 
   /**
-    * Whether a log level with this marker is enabled on the actor system level, may not represent the setting all the
-    * way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries
-    * that will not actually end up in any logger output.
-    */
+   * Whether a log level with this marker is enabled on the actor system level, may not represent the setting all the
+   * way to the logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries
+   * that will not actually end up in any logger output.
+   */
   def isLevelEnabled(logLevel: LogLevel, marker: LogMarker): Boolean = logLevel match {
     case ErrorLevel   ⇒ isErrorEnabled(marker)
     case WarningLevel ⇒ isWarningEnabled(marker)

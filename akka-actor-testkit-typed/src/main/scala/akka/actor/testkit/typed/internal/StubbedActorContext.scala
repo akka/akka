@@ -102,7 +102,6 @@ private[akka] final class FunctionRef[-T](
   override def isDebugEnabled: Boolean = actual.isDebugEnabled
   override def withMdc(mdc: Map[String, Any]): Logger = actual.withMdc(mdc)
 
-
   override def isErrorEnabled(marker: LogMarker): Boolean = actual.isErrorEnabled(marker)
   override def isWarningEnabled(marker: LogMarker): Boolean = actual.isWarningEnabled(marker)
   override def isInfoEnabled(marker: LogMarker): Boolean = actual.isInfoEnabled(marker)
