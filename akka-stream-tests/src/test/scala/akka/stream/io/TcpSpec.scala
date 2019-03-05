@@ -434,7 +434,7 @@ class TcpSpec extends StreamSpec("""
         val path = akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*"
 
         // Some more verbose info when #21839 happens again
-        system2.actorSelection(path).tell(Identify(), probe.ref)
+        system2.actorSelection(path).tell(Identify(()), probe.ref)
         try {
           probe.expectMsgType[ActorIdentity].ref.get
         } catch {

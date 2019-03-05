@@ -459,6 +459,23 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   @Test
+  public void postStop() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    Behavior<Command> counter =
+        Behaviors.setup(
+            ctx ->
+                new CounterBehavior(new PersistenceId("c5"), ctx) {
+                  @Override
+                  public void onPostStop() {
+                    probe.ref().tell("stopped");
+                  }
+                });
+    ActorRef<Command> c = testKit.spawn(counter);
+    c.tell(StopThenLog.INSTANCE);
+    probe.expectMessage("stopped");
+  }
+
+  @Test
   public void tapPersistentActor() {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();

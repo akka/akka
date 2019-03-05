@@ -215,21 +215,6 @@ import scala.concurrent.{ Future, Promise }
   def monitor[T]: GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] =
     new MonitorFlow[T]
 
-  private object TickSource {
-    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Done]()
-
-      def cancelFuture: Future[Done] = cancelPromise.future
-
-      override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(Done)
-        true
-      }
-
-      override def isCancelled: Boolean = cancelled.get()
-    }
-  }
-
   final class TickSource[T](val initialDelay: FiniteDuration, val interval: FiniteDuration, val tick: T)
     extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
@@ -440,7 +425,6 @@ import scala.concurrent.{ Future, Promise }
 
       (logic, promise.future)
     }
-
   }
 
   /**

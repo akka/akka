@@ -286,7 +286,7 @@ their exposed semantics as well as handled query scenarios.
 
 A read journal plugin must implement `akka.persistence.query.ReadJournalProvider` which
 creates instances of `akka.persistence.query.scaladsl.ReadJournal` and
-`akka.persistence.query.javaadsl.ReadJournal`. The plugin must implement both the `scaladsl`
+`akka.persistence.query.javadsl.ReadJournal`. The plugin must implement both the `scaladsl`
 and the `javadsl` @scala[traits]@java[interfaces] because the `akka.stream.scaladsl.Source` and 
 `akka.stream.javadsl.Source` are different types and even though those types can be converted
 to each other it is most convenient for the end user to get access to the Java or Scala `Source` directly.

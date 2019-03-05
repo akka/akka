@@ -61,7 +61,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system ? SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) ⇒
         context.log.info("Greeting for {} from {}", message.whom, message.from)
@@ -69,7 +69,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
 
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
-        system ? SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty))
 
       for (greeterRef ← greeter; replyToRef ← greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)

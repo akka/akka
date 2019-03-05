@@ -43,7 +43,7 @@ object AsyncTestingExampleSpec {
     }
 
     private def publish(i: Int)(implicit timeout: Timeout): Future[Try[Int]] = {
-      publisher ? (ref ⇒ Message(i, ref))
+      publisher.ask(ref ⇒ Message(i, ref))
     }
 
   }

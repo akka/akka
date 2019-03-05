@@ -20,6 +20,7 @@ import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
+import akka.annotation.ApiMayChange
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
@@ -3283,6 +3284,19 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def toProcessor: RunnableGraph[Processor[In, Out]] = {
     RunnableGraph.fromGraph(delegate.toProcessor)
   }
+
+  /**
+   * Turns a Flow into a FlowWithContext which manages a context per element along a stream.
+   *
+   * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
+   * @param extractContext turn each outgoing element of this Flow into an outgoing context value
+   *
+   * API MAY CHANGE
+   */
+  @ApiMayChange
+  def asFlowWithContext[U, CtxU, CtxOut](collapseContext: function.Function2[U, CtxU, In], extractContext: function.Function[Out, CtxOut]): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
+    this.asScala.asFlowWithContext((x: U, c: CtxU) ⇒ collapseContext.apply(x, c))(x ⇒ extractContext.apply(x)).asJava
+
 }
 
 object RunnableGraph {

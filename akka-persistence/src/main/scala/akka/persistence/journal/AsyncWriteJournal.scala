@@ -243,7 +243,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * (inclusive).
    *
    * This call is protected with a circuit-breaker.
-   * Message deletion doesn't affect the highest sequence number of messages, journal must maintain the highest sequence number and never decrease it.
+   * Message deletion doesn't affect the highest sequence number of messages,
+   * journal must maintain the highest sequence number and never decrease it.
    */
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit]
 

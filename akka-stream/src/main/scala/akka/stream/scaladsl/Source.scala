@@ -220,7 +220,7 @@ final class Source[+Out, +Mat](
    * API MAY CHANGE
    */
   @ApiMayChange
-  def startContextPropagation[Ctx](f: Out ⇒ Ctx): SourceWithContext[Ctx, Out, Mat] = new SourceWithContext(this.map(e ⇒ (e, f(e))))
+  def asSourceWithContext[Ctx](f: Out ⇒ Ctx): SourceWithContext[Out, Ctx, Mat] = new SourceWithContext(this.map(e ⇒ (e, f(e))))
 }
 
 object Source {

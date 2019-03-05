@@ -151,7 +151,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
  */
 @InternalApi private[akka] object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
-    Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
+    Props(new StreamSupervisor(haveShutDown)).withDeploy(Deploy.local)
       .withDispatcher(settings.dispatcher)
   private[stream] val baseName = "StreamSupervisor"
   private val actorName = SeqActorName(baseName)
@@ -173,7 +173,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
+@InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy

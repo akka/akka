@@ -159,7 +159,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -173,7 +173,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
   /**
    * Stop the actor under test and wait until it terminates.
@@ -181,7 +181,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * Other actors will not be stopped by this method.
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit = try {
-    Await.result(internalSystem ? { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, max)
+    Await.result(internalSystem.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] ⇒ ActorTestKitGuardian.StopActor(ref, x) }, max)
   } catch {
     case _: TimeoutException ⇒
       assert(false, s"timeout ($max) during stop() waiting for actor [${ref.path}] to stop")

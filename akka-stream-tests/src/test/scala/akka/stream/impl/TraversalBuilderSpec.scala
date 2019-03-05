@@ -463,7 +463,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     //TODO: Dummy test cases just for smoke-testing. Should be removed.
 
     "foo" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       import scala.concurrent.duration._
 
       val graph = Source.repeat(1).take(10).toMat(Sink.fold(0)(_ + _))(Keep.right)
@@ -472,7 +472,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "islands 1" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       val sub = TestSubscriber.probe[Int]()
       val graph = Source.repeat(1).take(10).toMat(Sink.asPublisher(false))(Keep.right)
 
@@ -484,7 +484,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "islands 2" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       val pub = TestPublisher.probe[Int]()
       import scala.concurrent.duration._
 
@@ -503,7 +503,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "islands 3" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       val sub = TestSubscriber.probe[Int]()
       Source
         .repeat(1)
@@ -516,7 +516,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "islands 4" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       val pub = TestPublisher.probe[Int]()
       import scala.concurrent.duration._
 
@@ -531,9 +531,9 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "bidiflow1" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
-      val flow1 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
-      val flow2 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
+      implicit val mat = PhasedFusingActorMaterializer()
+      val flow1 = Flow.fromGraph(fusing.Map((x: Int) ⇒ x + 1))
+      val flow2 = Flow.fromGraph(fusing.Map((x: Int) ⇒ x + 1))
 
       val bidi = BidiFlow.fromFlowsMat(flow1, flow2)(Keep.none)
 
@@ -543,7 +543,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     }
 
     "bidiflow reverse" in {
-      implicit val mat = PhasedFusingActorMaterializer(ActorMaterializerSettings(system).withSyncProcessingLimit(5000))
+      implicit val mat = PhasedFusingActorMaterializer()
       val flow1 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
       val flow2 = Flow.fromGraph(new fusing.Map((x: Int) ⇒ x + 1))
 
