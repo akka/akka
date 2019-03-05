@@ -19,7 +19,7 @@ import scala.compat.java8.FutureConverters._
 /**
  * A source that provides operations which automatically propagate the context of an element.
  * Only a subset of common operations from [[Source]] is supported. As an escape hatch you can
- * use [[SourceWithContext.via]] to manually provide the context propagation for otherwise unsupported
+ * use [[SourceWithContext#via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
  * Can be created by calling [[Source.asSourceWithContext()]]
@@ -220,6 +220,27 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def log(name: String): SourceWithContext[Out, Ctx, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def to[Mat2](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2]): javadsl.RunnableGraph[Mat] =
+    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) ⇒ Pair(o, e) }.to(sink))
+
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
+   * concatenating the processing steps of both.
+   */
+  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2], combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
+    RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) ⇒ Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
+
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
+   * The returned value is the materialized value of the `Sink`.
+   */
+  def runWith[M](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M], materializer: Materializer): M =
+    toMat(sink, Keep.right[Mat, M]).run(materializer)
 
   def asScala: scaladsl.SourceWithContext[Out, Ctx, Mat] = delegate
 
