@@ -11,6 +11,7 @@ import akka.actor.typed.ActorSystem;
 // #pool
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.GroupRouter;
 import akka.actor.typed.javadsl.PoolRouter;
@@ -56,7 +57,10 @@ public class RouterTest {
     return Behaviors.setup(
         context -> {
           // #pool
-          PoolRouter<Worker.Command> pool = Routers.pool(4, Worker.behavior);
+          // make sure the workers are restarted if they fail
+          Behavior<Worker.Command> supervisedWorker = Behaviors.supervise(Worker.behavior)
+              .onFailure(SupervisorStrategy.restart());
+          PoolRouter<Worker.Command> pool = Routers.pool(4, supervisedWorker);
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
           for (int i = 0; i < 10; i++) {
@@ -76,12 +80,12 @@ public class RouterTest {
     ServiceKey<Worker.Command> serviceKey = ServiceKey.create(Worker.Command.class, "log-worker");
     return Behaviors.setup(
         context -> {
-          // this would likely happen elsewhere - if we create it local we can just as well use a
-          // pool
+          // #group
+          // this would likely happen elsewhere - if we create it locally we
+          // can just as well use a pool
           ActorRef<Worker.Command> worker = context.spawn(Worker.behavior, "worker");
           context.getSystem().receptionist().tell(Receptionist.register(serviceKey, worker));
 
-          // #group
           GroupRouter<Worker.Command> group = Routers.group(serviceKey);
           ActorRef<Worker.Command> router = context.spawn(group, "worker-group");
 

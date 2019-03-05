@@ -62,10 +62,10 @@ private final class GroupRouterImpl[T](
       this
     case msg: T @unchecked ⇒
       if (routees.nonEmpty) {
-        val selectedIdx = ThreadLocalRandom.current().nextInt(routees.length)
-        routees(selectedIdx) ! msg
+        val routee = routingLogic.selectRoutee(routees)
+        routee ! msg
       } else {
-        ctx.system.deadLetters ! msg
+        ctx.system.deadLetters ! Dropped(msg, ctx.self)
       }
       this
   }

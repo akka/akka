@@ -7,6 +7,7 @@ package docs.akka.typed
 // #pool
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
@@ -46,7 +47,10 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "show pool routing" in {
       spawn(Behaviors.setup[Unit] { ctx ⇒
         // #pool
-        val pool = Routers.pool(poolSize = 4)(Worker.behavior)
+        // make sure the workers are restarted if they fail
+        val supervisedWorker = Behaviors.supervise(Worker.behavior)
+          .onFailure[Exception](SupervisorStrategy.restart)
+        val pool = Routers.pool(poolSize = 4)(supervisedWorker)
         val router = ctx.spawn(pool, "worker-pool")
 
         (0 to 10).foreach { n ⇒
@@ -65,11 +69,12 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "show group routing" in {
 
       spawn(Behaviors.setup[Unit] { ctx ⇒
-        // this would likely happen elsewhere - if we create it local we can just as well use a pool
+        // #group
+        // this would likely happen elsewhere - if we create it locally we
+        // can just as well use a pool
         val worker = ctx.spawn(Worker.behavior, "worker")
         ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
 
-        // #group
         val group = Routers.group(serviceKey);
         val router = ctx.spawn(group, "worker-group");
 
