@@ -1340,10 +1340,6 @@ trait LoggingAdapter {
  */
 trait LoggingFilter {
   // for backward-compatibility reason implementation of method without marker only must work
-  def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isErrorEnabled(logClass, logSource)
-  def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isWarningEnabled(logClass, logSource)
-  def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isInfoEnabled(logClass, logSource)
-  def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isDebugEnabled(logClass, logSource)
 
   def isErrorEnabled(logClass: Class[_], logSource: String): Boolean
   def isWarningEnabled(logClass: Class[_], logSource: String): Boolean
@@ -1351,12 +1347,32 @@ trait LoggingFilter {
   def isDebugEnabled(logClass: Class[_], logSource: String): Boolean
 }
 
+trait LoggingFilterWithMarker extends LoggingFilter {
+  def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isErrorEnabled(logClass, logSource)
+
+  def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isWarningEnabled(logClass, logSource)
+
+  def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isInfoEnabled(logClass, logSource)
+
+  def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isDebugEnabled(logClass, logSource)
+}
+
+class LoggingFilterWithMarkerWrapper(loggingFilter: LoggingFilter) extends LoggingFilterWithMarker {
+  override def isErrorEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isErrorEnabled(logClass, logSource)
+
+  override def isWarningEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isWarningEnabled(logClass, logSource)
+
+  override def isInfoEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isInfoEnabled(logClass, logSource)
+
+  override def isDebugEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isDebugEnabled(logClass, logSource)
+}
+
 /**
  * Default [[LoggingFilter]] that uses the logLevel of the `eventStream`, which
  * initial value is defined in configuration. The logLevel `eventStream` can be
  * changed while the system is running.
  */
-class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFilter {
+class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFilterWithMarker {
 
   def this(settings: Settings, eventStream: EventStream) = this(() ⇒ eventStream.logLevel)
 
@@ -1463,7 +1479,7 @@ class MarkerLoggingAdapter(
   override val bus:       LoggingBus,
   override val logSource: String,
   override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
+  loggingFilter:          LoggingFilterWithMarker)
   extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
@@ -1704,7 +1720,7 @@ final class DiagnosticMarkerBusLoggingAdapter(
   override val bus:       LoggingBus,
   override val logSource: String,
   override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
+  loggingFilter:          LoggingFilterWithMarker)
   extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**
