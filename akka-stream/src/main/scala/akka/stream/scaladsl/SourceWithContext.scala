@@ -54,6 +54,13 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (
     delegate.toMat(sink)(combine)
 
   /**
+   * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]] and run it.
+   * The returned value is the materialized value of the `Sink`.
+   */
+  def runWith[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(implicit materializer: Materializer): Mat2 =
+    delegate.runWith(sink)
+
+  /**
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */
