@@ -110,7 +110,7 @@ object ClusterSingletonManagerSettings {
  *   over has started or the previous oldest member is removed from the cluster
  *   (+ `removalMargin`).
  *
- * @param lease Lease to acquire before creating the singleton actor
+ * @param leaseSettings LeaseSettings for acquiring before creating the singleton actor
  */
 final class ClusterSingletonManagerSettings(
   val singletonName:         String,
@@ -215,7 +215,7 @@ object ClusterSingletonManager {
 
     final case class HandOverRetry(count: Int)
     final case class TakeOverRetry(count: Int)
-    final case class LeaseRetry() // not sure it makes any sense to give up? TTL could be very long
+    final case object LeaseRetry
     case object Cleanup
     case object StartOldestChangedBuffer
 
@@ -241,6 +241,7 @@ object ClusterSingletonManager {
     case object EndData extends Data
     final case class DelayedMemberRemoved(member: Member)
     case object SelfExiting
+    case class AcquiringLeaseData(leaseRequestInProgress: Boolean) extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
     val TakeOverRetryTimer = "take-over-retry"
@@ -731,29 +732,29 @@ class ClusterSingletonManager(
     lease match {
       case None ⇒
         goToOldest()
-      case Some(l) ⇒
+      case Some(_) ⇒
         logInfo("Trying to acquire lease before starting singleton")
         tryAcquireLease()
-        goto(AcquiringLease)
+        goto(AcquiringLease) using AcquiringLeaseData(false)
     }
   }
 
-  // FIXME release the lease unless we're waiting for retry
   when(AcquiringLease) {
     case Event(AcquireLeaseResult(result), _) ⇒
       logInfo("Acquire lease result {}", result)
       if (result) {
         goToOldest()
       } else {
-        setTimer(LeaseRetryTimer, LeaseRetry(), leaseRetryInterval)
-        stay
+        setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+        stay using AcquiringLeaseData(false)
       }
     case Event(Failure(t), _) ⇒
-      setTimer(LeaseRetryTimer, LeaseRetry(), leaseRetryInterval)
-      stay
-    case Event(LeaseRetry(), _) ⇒
+      log.error(t, "failed to get lease (will be retried)")
+      setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
+      stay using AcquiringLeaseData(false)
+    case Event(LeaseRetry, _) ⇒
       tryAcquireLease()
-      stay
+      stay using AcquiringLeaseData(true)
     case Event(OldestChanged(oldestOption), _) ⇒
       oldestChangedReceived = true
       logInfo("AcquiringLease observed OldestChanged: [{} -> {}]", cluster.selfAddress, oldestOption.map(_.address))
@@ -917,7 +918,7 @@ class ClusterSingletonManager(
     case Event(Terminated(ref), HandingOverData(singleton, handOverTo)) if ref == singleton ⇒
       handOverDone(handOverTo)
 
-    case Event(HandOverToMe, HandingOverData(singleton, handOverTo)) if handOverTo.contains(sender()) ⇒
+    case Event(HandOverToMe, HandingOverData(_, handOverTo)) if handOverTo.contains(sender()) ⇒
       // retry
       sender() ! HandOverInProgress
       stay
@@ -1028,11 +1029,21 @@ class ClusterSingletonManager(
   }
 
   onTransition {
+    case (AcquiringLease, to) if to != Oldest ⇒
+      stateData match {
+        case AcquiringLeaseData(true) ⇒
+          logInfo("Releasing lease as leaving AcquiringLease going to {}", to)
+          import context.dispatcher
+          lease.foreach(l ⇒ pipe(l.release().map(ReleaseLeaseResult)).to(self))
+        case _ ⇒
+      }
+  }
+
+  onTransition {
     case Oldest -> _ ⇒
       lease.foreach { l ⇒
         logInfo("Releasing lease as leaving Oldest")
         import context.dispatcher
-        // FIXME, deal with the response in all states
         pipe(l.release().map(ReleaseLeaseResult)).to(self)
       }
   }

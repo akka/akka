@@ -41,8 +41,6 @@ object TestLease {
   final case class ReleaseReq(owner: String)
 }
 
-// TODO update to allow getting all leases
-
 class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
   import TestLease._
 

@@ -573,7 +573,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle → Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Idle → Waiting ⇒
+      setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
     case Waiting → Idle ⇒ cancelTimer("Timeout")
   }
 
