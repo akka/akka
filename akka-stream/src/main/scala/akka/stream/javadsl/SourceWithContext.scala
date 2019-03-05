@@ -235,6 +235,13 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2], combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
     RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) ⇒ Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
 
+  /**
+   * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
+   * The returned value is the materialized value of the `Sink`.
+   */
+  def runWith[M](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M], materializer: Materializer): M =
+    toMat(sink, Keep.right[Mat, M]).run(materializer)
+
   def asScala: scaladsl.SourceWithContext[Out, Ctx, Mat] = delegate
 
   private[this] def viaScala[Out2, Ctx2, Mat2](f: scaladsl.SourceWithContext[Out, Ctx, Mat] ⇒ scaladsl.SourceWithContext[Out2, Ctx2, Mat2]): SourceWithContext[Out2, Ctx2, Mat2] =

@@ -64,8 +64,7 @@ class SourceWithContextSpec extends StreamSpec {
         .asSourceWithContext(_.offset)
         .map(_.data)
         .via(flowWithContext.map(s ⇒ s + "b"))
-        .toMat(TestSink.probe[(String, Long)])(Keep.right)
-        .run
+        .runWith(TestSink.probe[(String, Long)])
         .request(1)
         .expectNext(("ab", 1L))
         .expectComplete()
@@ -78,8 +77,7 @@ class SourceWithContextSpec extends StreamSpec {
         .mapConcat { str ⇒
           List(1, 2, 3).map(i ⇒ s"$str-$i")
         }
-        .toMat(TestSink.probe[(String, Long)])(Keep.right)
-        .run
+        .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a-1", 1L), ("a-2", 1L), ("a-3", 1L))
         .expectComplete()
@@ -112,8 +110,7 @@ class SourceWithContextSpec extends StreamSpec {
         .asSourceWithContext(_.offset)
         .map(_.data)
         .statefulMapConcat(statefulFunction)
-        .toMat(TestSink.probe[(String, Long)])(Keep.right)
-        .run
+        .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a", 1L), ("z", 2L), ("z", 2L))
         .expectComplete()
