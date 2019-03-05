@@ -246,7 +246,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     cluster.join(joinNode)
     awaitCond({
       clusterView.refreshCurrentState()
-      if (memberInState(joinNode, List(MemberStatus.up)) &&
+      if (memberInState(joinNode, List(MemberStatus.Up)) &&
         memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
         true
       else {

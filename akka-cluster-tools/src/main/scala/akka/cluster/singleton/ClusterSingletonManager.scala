@@ -1004,6 +1004,14 @@ class ClusterSingletonManager(
       // TODO we could retry
       log.error(t, "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       stay
+    case Event(ReleaseLeaseResult(released), _) ⇒
+      if (released) {
+        logInfo("Lease released")
+      } else {
+        // TODO we could retry
+        log.error("Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
+      }
+      stay
   }
 
   onTransition {
@@ -1021,13 +1029,11 @@ class ClusterSingletonManager(
 
   onTransition {
     case Oldest -> _ ⇒
-      lease match {
-        case Some(l) ⇒
-          logInfo("Releasing lease as leaving Oldest")
-          import context.dispatcher
-          // FIXME, deal with the response in all states
-          pipe(l.release().map(ReleaseLeaseResult)).to(self)
-        case None ⇒
+      lease.foreach { l ⇒
+        logInfo("Releasing lease as leaving Oldest")
+        import context.dispatcher
+        // FIXME, deal with the response in all states
+        pipe(l.release().map(ReleaseLeaseResult)).to(self)
       }
   }
 

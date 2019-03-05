@@ -25,54 +25,46 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 object TestLeaseActor {
-  def props: Props =
-    Props(new TestLeaseActor)
+  def props(probe: ActorRef): Props =
+    Props(new TestLeaseActor(probe))
 
-  final case class Acquire(owner: String)
-  final case class Release(owner: String)
-  final case class Create(lesaeName: String, ownerName: String)
+  sealed trait LeaseRequest
+  final case class Acquire(owner: String) extends LeaseRequest
+  final case class Release(owner: String) extends LeaseRequest
+  final case class Create(leaseName: String, ownerName: String)
+
+  final case object GetRequests
+  final case class LeaseRequests(requests: List[LeaseRequest])
+  final case class ActionRequest(request: LeaseRequest, result: Any) // boolean of Failure
 }
 
-class TestLeaseActor extends Actor with ActorLogging {
+class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
   import TestLeaseActor._
 
-  // TODO support multiple named leases
-  var owner: Option[String] = None
-  var leaseName: Option[String] = None
+  var requests: List[(ActorRef, LeaseRequest)] = Nil
 
   override def receive = {
 
-    case Create(name, ownerName) ⇒
-      log.info("Lease created with name {} ownerName {}", name, ownerName)
-      leaseName = Some(name)
+    case c: Create ⇒
+      log.info("Lease created with name {} ownerName {}", c.leaseName, c.ownerName)
 
-    case Acquire(o) ⇒
-      owner match {
+    case request: LeaseRequest ⇒
+      log.info("Lease request {} from {}", request, sender())
+      requests = (sender(), request) :: requests
+
+    case GetRequests ⇒
+      sender() ! LeaseRequests(requests.map(_._2))
+
+    case ActionRequest(request, result) ⇒
+      requests.find(_._2 == request) match {
+        case Some(r) ⇒
+          log.info("Actioning request {} to {}", r._2, result)
+          r._1 ! result
+          requests = requests.filterNot(_._2 == request)
         case None ⇒
-          log.info("ActorLease: acquired by [{}]", o)
-          owner = Some(o)
-          sender() ! true
-        case Some(`o`) ⇒
-          log.info("ActorLease: renewed by [{}]", o)
-          sender() ! true
-        case Some(existingOwner) ⇒
-          log.info("ActorLease: requested by [{}], but already held by [{}]", o, existingOwner)
-          sender() ! false
+          throw new RuntimeException(s"unknown request to action: ${request}. Requests: ${requests}")
       }
 
-    case Release(o) ⇒
-      owner match {
-        case None ⇒
-          log.info("ActorLease: released by [{}] but no owner", o)
-          owner = Some(o)
-          sender() ! true
-        case Some(`o`) ⇒
-          log.info("ActorLease: released by [{}]", o)
-          sender() ! true
-        case Some(existingOwner) ⇒
-          log.info("ActorLease: release attempt by [{}], but held by [{}]", o, existingOwner)
-          sender() ! false
-      }
   }
 
 }
@@ -86,7 +78,6 @@ object TestLeaseActorClientExt extends ExtensionId[TestLeaseActorClientExt] with
 class TestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension {
 
   private val leaseActor = new AtomicReference[ActorRef]()
-  private val log = Logging(system, getClass)
 
   def getLeaseActor(): ActorRef = {
     val lease = leaseActor.get
@@ -107,7 +98,7 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
   log.info("lease created {}", settings)
   leaseActor ! Create(settings.leaseName, settings.ownerName)
 
-  private implicit val timeout = Timeout(3.seconds)
+  private implicit val timeout = Timeout(100.seconds)
 
   override def acquire(): Future[Boolean] = {
     (leaseActor ? Acquire(settings.ownerName)).mapTo[Boolean]
