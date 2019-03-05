@@ -21,3 +21,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.snapshot.Materia
 
 # Sets correct return type for withAttributes on Source/FlowWithContext #26411
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.GraphDelegate.withAttributes")
+
+# rename `from` to `fromTuples` in WithContext Scala dsl #26370
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.from")
