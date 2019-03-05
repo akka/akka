@@ -874,21 +874,9 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
   }: Receive).orElse[Any, Unit](receiveTerminated).orElse[Any, Unit](receiveSnapshotResult)
 
   def receiveSnapshotResult: Receive = {
-    case SaveSnapshotSuccess(m) ⇒
+    case e: SaveSnapshotSuccess ⇒
       log.debug("Persistent snapshot saved successfully")
-      /*
-       * delete old events but keep the latest around because
-       *
-       * it's not safe to delete all events immediate because snapshots are typically stored with a weaker consistency
-       * level which means that a replay might "see" the deleted events before it sees the stored snapshot,
-       * i.e. it will use an older snapshot and then not replay the full sequence of events
-       *
-       * for debugging if something goes wrong in production it's very useful to be able to inspect the events
-       */
-      val deleteToSequenceNr = m.sequenceNr - keepNrOfBatches * snapshotAfter
-      if (deleteToSequenceNr > 0) {
-        deleteMessages(deleteToSequenceNr)
-      }
+      internalDeleteMessagesBeforeSnapshot(e, keepNrOfBatches, snapshotAfter)
 
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("Persistent snapshot failure: {}", reason.getMessage)
