@@ -1340,7 +1340,6 @@ trait LoggingAdapter {
  */
 trait LoggingFilter {
   // for backward-compatibility reason implementation of method without marker only must work
-
   def isErrorEnabled(logClass: Class[_], logSource: String): Boolean
   def isWarningEnabled(logClass: Class[_], logSource: String): Boolean
   def isInfoEnabled(logClass: Class[_], logSource: String): Boolean
@@ -1349,21 +1348,23 @@ trait LoggingFilter {
 
 trait LoggingFilterWithMarker extends LoggingFilter {
   def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isErrorEnabled(logClass, logSource)
-
   def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isWarningEnabled(logClass, logSource)
-
   def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isInfoEnabled(logClass, logSource)
-
   def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean = isDebugEnabled(logClass, logSource)
+}
+
+object LoggingFilterWithMarker {
+  def wrap(loggingFilter: LoggingFilter): LoggingFilterWithMarker =
+    loggingFilter match {
+      case lfwm: LoggingFilterWithMarker ⇒ lfwm
+      case _                             ⇒ new LoggingFilterWithMarkerWrapper(loggingFilter)
+    }
 }
 
 class LoggingFilterWithMarkerWrapper(loggingFilter: LoggingFilter) extends LoggingFilterWithMarker {
   override def isErrorEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isErrorEnabled(logClass, logSource)
-
   override def isWarningEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isWarningEnabled(logClass, logSource)
-
   override def isInfoEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isInfoEnabled(logClass, logSource)
-
   override def isDebugEnabled(logClass: Class[_], logSource: String): Boolean = loggingFilter.isDebugEnabled(logClass, logSource)
 }
 
@@ -1479,7 +1480,7 @@ class MarkerLoggingAdapter(
   override val bus:       LoggingBus,
   override val logSource: String,
   override val logClass:  Class[_],
-  loggingFilter:          LoggingFilterWithMarker)
+  loggingFilter:          LoggingFilter)
   extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
@@ -1488,10 +1489,12 @@ class MarkerLoggingAdapter(
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
     this(bus, logSource, logClass, new DefaultLoggingFilter(() ⇒ bus.logLevel))
 
-  def isErrorEnabled(marker: LogMarker) = loggingFilter.isErrorEnabled(logClass, logSource, marker)
-  def isWarningEnabled(marker: LogMarker) = loggingFilter.isWarningEnabled(logClass, logSource, marker)
-  def isInfoEnabled(marker: LogMarker) = loggingFilter.isInfoEnabled(logClass, logSource, marker)
-  def isDebugEnabled(marker: LogMarker) = loggingFilter.isDebugEnabled(logClass, logSource, marker)
+  val loggingFilterWithMarker: LoggingFilterWithMarker = LoggingFilterWithMarker.wrap(loggingFilter)
+
+  def isErrorEnabled(marker: LogMarker) = loggingFilterWithMarker.isErrorEnabled(logClass, logSource, marker)
+  def isWarningEnabled(marker: LogMarker) = loggingFilterWithMarker.isWarningEnabled(logClass, logSource, marker)
+  def isInfoEnabled(marker: LogMarker) = loggingFilterWithMarker.isInfoEnabled(logClass, logSource, marker)
+  def isDebugEnabled(marker: LogMarker) = loggingFilterWithMarker.isDebugEnabled(logClass, logSource, marker)
 
   /**
    * Log message at error level, including the exception that caused the error.
@@ -1720,7 +1723,7 @@ final class DiagnosticMarkerBusLoggingAdapter(
   override val bus:       LoggingBus,
   override val logSource: String,
   override val logClass:  Class[_],
-  loggingFilter:          LoggingFilterWithMarker)
+  loggingFilter:          LoggingFilter)
   extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**

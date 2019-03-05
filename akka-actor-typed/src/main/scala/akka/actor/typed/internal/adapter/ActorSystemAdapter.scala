@@ -12,15 +12,16 @@ import akka.actor
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ untyped }
+
 import scala.concurrent.ExecutionContextExecutor
-
 import akka.util.Timeout
+
 import scala.concurrent.Future
-
 import akka.annotation.InternalApi
-import scala.compat.java8.FutureConverters
 
+import scala.compat.java8.FutureConverters
 import akka.actor.ActorRefProvider
+import akka.event.LoggingFilterWithMarker
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -68,7 +69,7 @@ import akka.actor.ActorRefProvider
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(untypedSystem.eventStream, getClass, name, untypedSystem.logFilter)
+  override val log: Logger = new LoggerAdapterImpl(untypedSystem.eventStream, getClass, name, LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
   override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler
