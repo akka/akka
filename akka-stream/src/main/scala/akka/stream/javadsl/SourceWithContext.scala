@@ -41,6 +41,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
     viaScala(_.via(akka.stream.scaladsl.Flow[(Out, Ctx)].map { case (o, c) ⇒ Pair(o, c) }.via(viaFlow).map(_.toScala)))
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.withAttributes]].
+   *
+   * @see [[akka.stream.javadsl.Source.withAttributes]]
+   */
+  override def withAttributes(attr: Attributes): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.withAttributes(attr))
+
+  /**
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */

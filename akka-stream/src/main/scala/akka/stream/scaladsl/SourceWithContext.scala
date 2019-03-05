@@ -32,6 +32,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (
     new SourceWithContext(delegate.viaMat(flow)(combine))
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Source.withAttributes]].
+   *
+   * @see [[akka.stream.scaladsl.Source.withAttributes]]
+   */
+  override def withAttributes(attr: Attributes): SourceWithContext[Out, Ctx, Mat] =
+    new SourceWithContext(delegate.withAttributes(attr))
+
+  /**
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */

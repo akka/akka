@@ -62,12 +62,11 @@ class FlowWithContextLogSpec extends StreamSpec("""
           onFinish = Logging.DebugLevel,
           onFailure = Logging.DebugLevel)
 
-        val logging = FlowWithContext[Message, Long].log("my-log3")
+        val logging = FlowWithContext[Message, Long].log("my-log3").withAttributes(disableElementLogging)
         Source(List(Message("a", 1L), Message("b", 2L)))
           .asSourceWithContext(m ⇒ m.offset)
           .via(logging)
           .asSource
-          .withAttributes(disableElementLogging)
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log3] Upstream finished."))
@@ -98,6 +97,22 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log5] Element: a"))
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log5] Upstream finished."))
+      }
+
+      "allow disabling element logging" in {
+        val disableElementLogging = Attributes.logLevels(
+          onElement = LogLevels.Off,
+          onFinish = Logging.DebugLevel,
+          onFailure = Logging.DebugLevel)
+
+        Source(List(Message("a", 1L), Message("b", 2L)))
+          .asSourceWithContext(m ⇒ m.offset)
+          .log("my-log6")
+          .withAttributes(disableElementLogging)
+          .asSource
+          .runWith(Sink.ignore)
+
+        logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log6] Upstream finished."))
       }
 
     }
