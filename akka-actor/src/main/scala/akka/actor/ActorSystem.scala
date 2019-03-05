@@ -9,7 +9,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import akka.event._
+import akka.event.{ LoggingFilterWithMarker, _ }
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
@@ -652,7 +652,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * Filter of log events that is used by the LoggingAdapter before
    * publishing log events to the eventStream
    */
-  def logFilter: LoggingFilter
+  def logFilter: LoggingFilterWithMarker
 
   /**
    * For debugging: traverse actor hierarchy and make string representation.
@@ -775,9 +775,14 @@ private[akka] class ActorSystemImpl(
   val eventStream = new EventStream(this, DebugEventStream)
   eventStream.startStdoutLogger(settings)
 
-  val logFilter: LoggingFilter = {
+  val logFilter: LoggingFilterWithMarker = {
     val arguments = Vector(classOf[Settings] → settings, classOf[EventStream] → eventStream)
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
+    if (logFilter.isInstanceOf[LoggingFilterWithMarker]) {
+      logFilter
+    } else {
+      new LoggingFilterWithMarkerWrapper(logFilter)
+    }
   }
 
   private[this] val markerLogging = new MarkerLoggingAdapter(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)

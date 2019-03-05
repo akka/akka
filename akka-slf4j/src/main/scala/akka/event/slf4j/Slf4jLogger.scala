@@ -136,7 +136,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
  * backend configuration (e.g. logback.xml) to filter log events before publishing
  * the log events to the `eventStream`.
  */
-class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
+class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilterWithMarker {
   def isErrorEnabled(logClass: Class[_], logSource: String) =
     (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled
   def isWarningEnabled(logClass: Class[_], logSource: String) =
