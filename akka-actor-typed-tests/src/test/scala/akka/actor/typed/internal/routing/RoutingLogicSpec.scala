@@ -121,7 +121,8 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
       (0 to 10).foreach { _ ⇒
         // not much to verify here, but let's exercise it at least
-        logic.selectRoutee(routees)
+        val routee = logic.selectRoutee(routees)
+        routees should contain(routee)
       }
 
     }

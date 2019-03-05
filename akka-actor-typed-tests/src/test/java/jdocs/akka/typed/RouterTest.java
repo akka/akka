@@ -58,8 +58,8 @@ public class RouterTest {
         context -> {
           // #pool
           // make sure the workers are restarted if they fail
-          Behavior<Worker.Command> supervisedWorker = Behaviors.supervise(Worker.behavior)
-              .onFailure(SupervisorStrategy.restart());
+          Behavior<Worker.Command> supervisedWorker =
+              Behaviors.supervise(Worker.behavior).onFailure(SupervisorStrategy.restart());
           PoolRouter<Worker.Command> pool = Routers.pool(4, supervisedWorker);
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
