@@ -110,4 +110,6 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
 
   override def checkLease(): Boolean = false
 
+  override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] =
+    (leaseActor ? Acquire(settings.ownerName)).mapTo[Boolean]
 }

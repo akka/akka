@@ -4,6 +4,7 @@
 
 package akka.lease.javadsl
 
+import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import akka.annotation.ApiMayChange
@@ -31,6 +32,15 @@ abstract class Lease() {
    * [[Lease.checkLease]] can be used to verify that the owner still has the lease.
    */
   def acquire(): CompletionStage[Boolean]
+
+  /**
+   * Same as acquire with an additional callback
+   * that is called if the lease is lost. The lease can be lose due to being unable
+   * to communicate with the lease provider.
+   * Implementations should not call leaseLostCallback until after the returned future
+   * has been completed
+   */
+  def acquire(leaseLostCallback: Optional[Throwable] ⇒ Unit): CompletionStage[Boolean]
 
   /**
    * Release the lease so some other owner can acquire it.

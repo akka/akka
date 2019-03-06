@@ -22,13 +22,22 @@ abstract class Lease(val settings: LeaseSettings) {
    * with the lease resource.
    *
    * The lease will be held by the [[akka.lease.LeaseSettings.ownerName]] until it is released
-   * with [[Lease.release]]. A Lease implementation will typically also loose the ownership
+   * with [[Lease.release]]. A Lease implementation will typically also lose the ownership
    * if it can't maintain its authority, e.g. if it crashes or is partitioned from the lease
    * resource for too long.
    *
    * [[Lease.checkLease]] can be used to verify that the owner still has the lease.
    */
   def acquire(): Future[Boolean]
+
+  /**
+   * Same as acquire with an additional callback
+   * that is called if the lease is lost. The lease can be lose due to being unable
+   * to communicate with the lease provider.
+   * Implementations should not call leaseLostCallback until after the returned future
+   * has been completed
+   */
+  def acquire(leaseLostCallback: Option[Throwable] ⇒ Unit): Future[Boolean]
 
   /**
    * Release the lease so some other owner can acquire it.

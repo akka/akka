@@ -7,20 +7,22 @@ package akka.lease.scaladsl
 import scala.concurrent.Future
 import akka.actor.ExtendedActorSystem
 import akka.lease.LeaseSettings
-import akka.testkit.{ AkkaSpec, EventFilter }
-import com.typesafe.config.{ ConfigException, ConfigFactory }
+import akka.testkit.{AkkaSpec, EventFilter}
+import com.typesafe.config.{ConfigException, ConfigFactory}
 
 object LeaseProviderSpec {
   class LeaseA(settings: LeaseSettings) extends Lease(settings) {
     override def acquire(): Future[Boolean] = Future.successful(false)
     override def release(): Future[Boolean] = Future.successful(false)
     override def checkLease(): Boolean = false
+    override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] = Future.successful(false)
   }
 
   class LeaseB(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
     override def acquire(): Future[Boolean] = Future.successful(false)
     override def release(): Future[Boolean] = Future.successful(false)
     override def checkLease(): Boolean = false
+    override def acquire(callback: Option[Throwable] => Unit): Future[Boolean] = Future.successful(false)
   }
 
   val config = ConfigFactory.parseString(
