@@ -4,6 +4,8 @@
 
 package akka.stream.testkit.scaladsl
 
+import java.util.concurrent.TimeUnit.MILLISECONDS
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.annotation.InternalApi
 import akka.stream._
@@ -43,7 +45,9 @@ object StreamTestKit {
   /** INTERNAL API */
   @InternalApi private[testkit] def assertNoChildren(sys: ActorSystem, supervisor: ActorRef): Unit = {
     val probe = TestProbe()(sys)
-    probe.within(5.seconds) {
+    val c = sys.settings.config.getConfig("akka.test.stream")
+    val timeout = c.getDuration("timeout", MILLISECONDS).millis
+    probe.within(timeout) {
       try probe.awaitAssert {
         supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
         val children = probe.expectMsgType[StreamSupervisor.Children].children
