@@ -38,7 +38,7 @@ import akka.annotation.DoNotInherit
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.cluster.ClusterSettings
-import akka.lease.scaladsl.{ Lease, LeaseProvider }
+import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 
 object ClusterSingletonManagerSettings {
 
@@ -261,9 +261,9 @@ object ClusterSingletonManager {
       final case class OldestChanged(oldest: Option[UniqueAddress])
     }
 
-    final case class AcquireLeaseResult(holdingLease: Boolean)
-    final case class ReleaseLeaseResult(released: Boolean)
-    final case class LeaseLost(reason: Option[Throwable])
+    final case class AcquireLeaseResult(holdingLease: Boolean) extends DeadLetterSuppression
+    final case class ReleaseLeaseResult(released: Boolean) extends DeadLetterSuppression
+    final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
     /**
      * Notifications of member events that track oldest member are tunneled

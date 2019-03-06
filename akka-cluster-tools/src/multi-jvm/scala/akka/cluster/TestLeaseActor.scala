@@ -19,8 +19,8 @@ import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.cluster.TestLeaseActor.{ Acquire, Create, Release }
 import akka.event.Logging
-import akka.lease.LeaseSettings
-import akka.lease.scaladsl.Lease
+import akka.coordination.lease.LeaseSettings
+import akka.coordination.lease.scaladsl.Lease
 import akka.pattern.ask
 import akka.util.Timeout
 

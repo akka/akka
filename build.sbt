@@ -49,7 +49,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   clusterTyped, clusterShardingTyped,
   benchJmhTyped,
   streamTyped,
-  discovery
+  discovery,
+  coordination
 )
 
 lazy val root = Project(
@@ -181,7 +182,7 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(
     cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
-    lease
+    coordination 
   )
   .settings(Dependencies.clusterTools)
   .settings(AutomaticModuleName.settings("akka.cluster.tools"))
@@ -526,15 +527,15 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(AutomaticModuleName.settings("akka.discovery"))
   .settings(OSGi.discovery)
 
-lazy val lease = akkaModule("akka-lease")
+lazy val coordination = akkaModule("akka-coordination")
   .dependsOn(
     actor,
     testkit % "test->test",
     actorTests % "test->test"
   )
-  .settings(Dependencies.lease)
-  .settings(AutomaticModuleName.settings("akka.lease"))
-  .settings(OSGi.discovery)
+  .settings(Dependencies.coordination)
+  .settings(AutomaticModuleName.settings("akka.coordination"))
+  .settings(OSGi.coordination)
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
 

@@ -124,7 +124,7 @@ object OSGi {
 
   val discovery = exports(Seq("akka.discovery.*"))
 
-  val lease = exports(Seq("akka.lease.*"))
+  val coordination = exports(Seq("akka.coordination.*"))
 
   val osgiOptionalImports = Seq(
     // needed because testkit is normally not used in the application bundle,

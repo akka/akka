@@ -2,7 +2,7 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease
+package akka.coordination.lease
 
 import akka.annotation.ApiMayChange
 import com.typesafe.config.Config

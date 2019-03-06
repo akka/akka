@@ -2,7 +2,7 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease
+package akka.coordination.lease
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }

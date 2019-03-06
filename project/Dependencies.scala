@@ -150,7 +150,7 @@ object Dependencies {
 
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
 
-  val lease = l ++= Seq(Test.junit, Test.scalatest.value)
+  val coordination = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 

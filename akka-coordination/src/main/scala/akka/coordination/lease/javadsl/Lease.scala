@@ -2,13 +2,13 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease.javadsl
+package akka.coordination.lease.javadsl
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import akka.annotation.ApiMayChange
-import akka.lease.LeaseSettings
+import akka.coordination.lease.LeaseSettings
 
 @ApiMayChange
 abstract class Lease() {

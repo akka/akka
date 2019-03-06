@@ -2,10 +2,10 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease.scaladsl
+package akka.coordination.lease.scaladsl
 
 import akka.annotation.ApiMayChange
-import akka.lease.LeaseSettings
+import akka.coordination.lease.LeaseSettings
 
 import scala.concurrent.Future
 

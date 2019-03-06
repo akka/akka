@@ -2,7 +2,7 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease.scaladsl
+package akka.coordination.lease.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function ⇒ JFunction }
@@ -17,7 +17,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.ApiMayChange
 import akka.event.Logging
-import akka.lease.LeaseSettings
+import akka.coordination.lease.LeaseSettings
 
 @ApiMayChange
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {

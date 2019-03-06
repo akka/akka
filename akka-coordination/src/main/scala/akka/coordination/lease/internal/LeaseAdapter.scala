@@ -2,15 +2,15 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease.internal
+package akka.coordination.lease.internal
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import akka.annotation.InternalApi
-import akka.lease.LeaseSettings
-import akka.lease.javadsl.Lease
-import akka.lease.scaladsl.{ Lease ⇒ ScalaLease }
+import akka.coordination.lease.LeaseSettings
+import akka.coordination.lease.javadsl.Lease
+import akka.coordination.lease.scaladsl.{ Lease ⇒ ScalaLease }
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._

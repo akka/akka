@@ -853,7 +853,8 @@ private[akka] class ActorSystemImpl(
     "akka-slf4j",
     "akka-stream",
     "akka-stream-testkit",
-    "akka-stream-typed")
+    "akka-stream-typed",
+    "akka-coordination")
 
   @volatile private var _initialized = false
   /**

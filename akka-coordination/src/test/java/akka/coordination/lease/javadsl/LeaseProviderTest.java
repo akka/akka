@@ -2,10 +2,10 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.lease.javadsl;
+package akka.coordination.lease.javadsl;
 
 import akka.actor.ActorSystem;
-import akka.lease.scaladsl.LeaseProviderSpec;
+import akka.coordination.lease.scaladsl.LeaseProviderSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.Before;
 import org.junit.Rule;
