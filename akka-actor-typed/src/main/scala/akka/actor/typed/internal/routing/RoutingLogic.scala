@@ -7,8 +7,10 @@ import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.dispatch.forkjoin.ThreadLocalRandom
 
+import scala.collection.immutable
+
 /**
- * Kept in the behavior, not shared between instances so is allowed to be stateful/mutable.
+ * Kept in the behavior, not shared between instances, meant to be stateful.
  *
  * INTERNAL API
  */
@@ -17,56 +19,73 @@ sealed private[akka] trait RoutingLogic[T] {
   /**
    * @param routees available routees, will contain at least one element. Must not be mutated by select logic.
    */
-  def selectRoutee(routees: Array[ActorRef[T]]): ActorRef[T]
+  def selectRoutee(): ActorRef[T]
 
   /**
-   * Invoked when a routee is stopping and get removed from the router, in case the logic needs to update
-   * its state because of that. Will only be invoked as long as there are elements in `newRoutees`, but
-   * when used in a group router `originalRoutees` may be empty.
+   * Invoked an initial time before `selectRoutee` is ever called and then every time the set of available
+   * routees changes.
    *
-   * Neither array may be mutated by the logic.
+   * @param newRoutees The updated set of routees. For a group router this could be empty, in that case
+   *                   `selectRoutee()` will not be called before `routeesUpdated` is invoked again with at
+   *                   least one routee. For a pool the pool stops instead of ever calling `routeesUpdated`
+   *                   with an empty list of routees.
    */
-  def routeesUpdated(originalRoutees: Array[ActorRef[T]], newRoutees: Array[ActorRef[T]]): Unit = {}
+  def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-object RoutingLogics {
+private[akka] object RoutingLogics {
 
   final class RoundRobinLogic[T] extends RoutingLogic[T] {
 
+    private var currentRoutees: Array[ActorRef[T]] = _
+
     private var nextIdx = 0
 
-    def selectRoutee(routees: Array[ActorRef[T]]): ActorRef[T] = {
-      if (nextIdx >= routees.length) nextIdx = 0
-      val selected = routees(nextIdx)
+    def selectRoutee(): ActorRef[T] = {
+      if (nextIdx >= currentRoutees.length) nextIdx = 0
+      val selected = currentRoutees(nextIdx)
       nextIdx += 1
       selected
     }
 
-    override def routeesUpdated(originalRoutees: Array[ActorRef[T]], newRoutees: Array[ActorRef[T]]): Unit = {
-      val firstDiffIndex = {
-        var idx = 0
-        while (idx < originalRoutees.length &&
-          idx < newRoutees.length &&
-          originalRoutees(idx) == newRoutees(idx)) {
-          idx += 1
+    override def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit = {
+      // make sure we keep a somewhat similar order so we can potentially continue roundrobining
+      // from where we were unless the set of routees completely changed
+      // Also, avoid putting all entries from the same node next to each other in case of cluster
+      val sortedNewRoutees = newRoutees.toArray.sortBy(ref ⇒ (ref.path.toStringWithoutAddress, ref.path.address))
+
+      if (currentRoutees ne null) {
+        val firstDiffIndex = {
+          var idx = 0
+          while (idx < currentRoutees.length &&
+            idx < sortedNewRoutees.length &&
+            currentRoutees(idx) == sortedNewRoutees(idx)) {
+            idx += 1
+          }
+          idx
         }
-        idx
+        if (nextIdx > firstDiffIndex) nextIdx -= 1
       }
-
-      if (nextIdx > firstDiffIndex) nextIdx -= 1
+      currentRoutees = sortedNewRoutees
     }
   }
 
-  private object RandomLogic extends RoutingLogic[Nothing] {
-    def selectRoutee(routees: Array[ActorRef[Nothing]]): ActorRef[Nothing] = {
-      val selectedIdx = ThreadLocalRandom.current().nextInt(routees.length)
-      routees(selectedIdx)
+  final class RandomLogic[T] extends RoutingLogic[T] {
+
+    private var currentRoutees: Array[ActorRef[T]] = _
+
+    override def selectRoutee(): ActorRef[T] = {
+      val selectedIdx = ThreadLocalRandom.current().nextInt(currentRoutees.length)
+      currentRoutees(selectedIdx)
     }
+    override def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit = {
+      currentRoutees = newRoutees.toArray
+    }
+
   }
 
-  def randomLogic[T](): RoutingLogic[T] = RandomLogic.asInstanceOf[RoutingLogic[T]]
 }

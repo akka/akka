@@ -19,14 +19,14 @@ import akka.dispatch.forkjoin.ThreadLocalRandom
 @InternalApi
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
   key:          ServiceKey[T],
-  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ RoutingLogics.randomLogic[T]()
+  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RandomLogic[T]()
 ) extends javadsl.GroupRouter[T]
   with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] = new GroupRouterImpl[T](ctx.asScala, key, logicFactory())
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = RoutingLogics.randomLogic[T] _)
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RandomLogic[T]())
 
   def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
 
@@ -42,31 +42,20 @@ private final class GroupRouterImpl[T](
   routingLogic: RoutingLogic[T]
 ) extends AbstractBehavior[T] {
 
-  private var routees: Array[ActorRef[T]] = Array.empty[ActorRef[T]]
-
   // casting trix to avoid having to wrap incoming messages - note that this will cause problems if intercepting
   // messages to a router
   ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self.unsafeUpcast[Any].narrow[Receptionist.Listing])
+  private var routeesEmpty = true
 
   def onMessage(msg: T): Behavior[T] = msg match {
     case serviceKey.Listing(update) ⇒
       // we don't need to watch, because receptionist already does that
-      val newRoutees = update.toArray
-      if (newRoutees.nonEmpty) {
-        // make sure we keep a somewhat similar order, but don't put all entries from
-        // the same node next to each other
-        newRoutees.sortBy(ref ⇒ (ref.path.toStringWithoutAddress, ref.path.address))
-        routingLogic.routeesUpdated(routees, newRoutees)
-      }
-      routees = newRoutees
+      routingLogic.routeesUpdated(update.toList)
+      routeesEmpty = update.isEmpty
       this
     case msg: T @unchecked ⇒
-      if (routees.nonEmpty) {
-        val routee = routingLogic.selectRoutee(routees)
-        routee ! msg
-      } else {
-        ctx.system.deadLetters ! Dropped(msg, ctx.self)
-      }
+      if (!routeesEmpty) routingLogic.selectRoutee() ! msg
+      else ctx.system.deadLetters ! Dropped(msg, ctx.self)
       this
   }
 }

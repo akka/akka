@@ -90,12 +90,14 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         }
       }))
 
-      EventFilter.warning(start = "Pool child stopped", occurrences = 4).intercept {
-        (0 to 3).foreach { _ ⇒
-          pool ! "stop"
+      EventFilter.warning(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
+        EventFilter.warning(start = "Pool child stopped").intercept {
+          (0 to 3).foreach { _ ⇒
+            pool ! "stop"
+          }
         }
+        probe.expectTerminated(pool)
       }
-      probe.expectTerminated(pool)
     }
 
   }

@@ -16,42 +16,45 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
-      val allRoutees = Array(refA, refB, refC)
+      val allRoutees = Vector(refA, refB, refC)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
 
-      logic.selectRoutee(allRoutees) should ===(refA)
-      logic.selectRoutee(allRoutees) should ===(refB)
-      logic.selectRoutee(allRoutees) should ===(refC)
-      logic.selectRoutee(allRoutees) should ===(refA)
+      logic.routeesUpdated(allRoutees)
+      logic.selectRoutee() should ===(refA)
+      logic.selectRoutee() should ===(refB)
+      logic.selectRoutee() should ===(refC)
+      logic.selectRoutee() should ===(refA)
     }
 
     "not skip one on removal" in {
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
-      val allRoutees = Array(refA, refB, refC)
+      val allRoutees = Vector(refA, refB, refC)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
-      logic.selectRoutee(allRoutees) should ===(refA)
-      logic.selectRoutee(allRoutees) should ===(refB)
+      logic.routeesUpdated(allRoutees)
+      logic.selectRoutee() should ===(refA)
+      logic.selectRoutee() should ===(refB)
 
-      val bRemoved = Array(refA, refC)
-      logic.routeesUpdated(allRoutees, bRemoved)
-      logic.selectRoutee(bRemoved) should ===(refC)
+      val bRemoved = Vector(refA, refC)
+      logic.routeesUpdated(bRemoved)
+      logic.selectRoutee() should ===(refC)
     }
 
     "handle last one removed" in {
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
-      val allRoutees = Array(refA, refB)
+      val allRoutees = Vector(refA, refB)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
-      logic.selectRoutee(allRoutees) should ===(refA)
+      logic.routeesUpdated(allRoutees)
+      logic.selectRoutee() should ===(refA)
 
-      val bRemoved = Array(refA)
-      logic.routeesUpdated(allRoutees, bRemoved)
-      logic.selectRoutee(bRemoved) should ===(refA)
+      val bRemoved = Vector(refA)
+      logic.routeesUpdated(bRemoved)
+      logic.selectRoutee() should ===(refA)
     }
 
     "move on to next when several removed" in {
@@ -60,15 +63,16 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val allRoutees = Array(refA, refB, refC, refD)
+      val allRoutees = Vector(refA, refB, refC, refD)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
-      logic.selectRoutee(allRoutees) should ===(refA)
-      logic.selectRoutee(allRoutees) should ===(refB)
+      logic.routeesUpdated(allRoutees)
+      logic.selectRoutee() should ===(refA)
+      logic.selectRoutee() should ===(refB)
 
-      val severalRemoved = Array(refA, refC)
-      logic.routeesUpdated(allRoutees, severalRemoved)
-      logic.selectRoutee(severalRemoved) should ===(refC)
+      val severalRemoved = Vector(refA, refC)
+      logic.routeesUpdated(severalRemoved)
+      logic.selectRoutee() should ===(refC)
     }
 
     "wrap around when several removed" in {
@@ -77,16 +81,17 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val allRoutees = Array(refA, refB, refC, refD)
+      val allRoutees = Vector(refA, refB, refC, refD)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
-      logic.selectRoutee(allRoutees) should ===(refA)
-      logic.selectRoutee(allRoutees) should ===(refB)
-      logic.selectRoutee(allRoutees) should ===(refC)
+      logic.routeesUpdated(allRoutees)
+      logic.selectRoutee() should ===(refA)
+      logic.selectRoutee() should ===(refB)
+      logic.selectRoutee() should ===(refC)
 
-      val severalRemoved = Array(refA, refC)
-      logic.routeesUpdated(allRoutees, severalRemoved)
-      logic.selectRoutee(severalRemoved) should ===(refA)
+      val severalRemoved = Vector(refA, refC)
+      logic.routeesUpdated(severalRemoved)
+      logic.selectRoutee() should ===(refA)
     }
 
     "pick first in with a completely new set of routees" in {
@@ -95,16 +100,17 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val initialRoutees = Array(refA, refB)
+      val initialRoutees = Vector(refA, refB)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
-      logic.selectRoutee(initialRoutees) should ===(refA)
-      logic.selectRoutee(initialRoutees) should ===(refB)
-      logic.selectRoutee(initialRoutees) should ===(refA)
+      logic.routeesUpdated(initialRoutees)
+      logic.selectRoutee() should ===(refA)
+      logic.selectRoutee() should ===(refB)
+      logic.selectRoutee() should ===(refA)
 
-      val severalRemoved = Array(refC, refD)
-      logic.routeesUpdated(initialRoutees, severalRemoved)
-      logic.selectRoutee(severalRemoved) should ===(refC)
+      val severalRemoved = Vector(refC, refD)
+      logic.routeesUpdated(severalRemoved)
+      logic.selectRoutee() should ===(refC)
     }
 
   }
@@ -115,13 +121,14 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val routees = Array(refA, refB, refC, refD)
+      val routees = Vector(refA, refB, refC, refD)
 
-      val logic = RoutingLogics.randomLogic[Any]
+      val logic = new RoutingLogics.RandomLogic[Any]()
+      logic.routeesUpdated(routees)
 
       (0 to 10).foreach { _ ⇒
         // not much to verify here, but let's exercise it at least
-        val routee = logic.selectRoutee(routees)
+        val routee = logic.selectRoutee()
         routees should contain(routee)
       }
 
