@@ -16,7 +16,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
-      val allRoutees = Vector(refA, refB, refC)
+      val allRoutees = Set(refA, refB, refC)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
 
@@ -31,14 +31,14 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
-      val allRoutees = Vector(refA, refB, refC)
+      val allRoutees = Set(refA, refB, refC)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
       logic.routeesUpdated(allRoutees)
       logic.selectRoutee() should ===(refA)
       logic.selectRoutee() should ===(refB)
 
-      val bRemoved = Vector(refA, refC)
+      val bRemoved = Set(refA, refC)
       logic.routeesUpdated(bRemoved)
       logic.selectRoutee() should ===(refC)
     }
@@ -46,13 +46,13 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
     "handle last one removed" in {
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
-      val allRoutees = Vector(refA, refB)
+      val allRoutees = Set(refA, refB)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
       logic.routeesUpdated(allRoutees)
       logic.selectRoutee() should ===(refA)
 
-      val bRemoved = Vector(refA)
+      val bRemoved = Set(refA)
       logic.routeesUpdated(bRemoved)
       logic.selectRoutee() should ===(refA)
     }
@@ -63,14 +63,14 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val allRoutees = Vector(refA, refB, refC, refD)
+      val allRoutees = Set(refA, refB, refC, refD)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
       logic.routeesUpdated(allRoutees)
       logic.selectRoutee() should ===(refA)
       logic.selectRoutee() should ===(refB)
 
-      val severalRemoved = Vector(refA, refC)
+      val severalRemoved = Set(refA, refC)
       logic.routeesUpdated(severalRemoved)
       logic.selectRoutee() should ===(refC)
     }
@@ -81,7 +81,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val allRoutees = Vector(refA, refB, refC, refD)
+      val allRoutees = Set(refA, refB, refC, refD)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
       logic.routeesUpdated(allRoutees)
@@ -89,7 +89,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       logic.selectRoutee() should ===(refB)
       logic.selectRoutee() should ===(refC)
 
-      val severalRemoved = Vector(refA, refC)
+      val severalRemoved = Set(refA, refC)
       logic.routeesUpdated(severalRemoved)
       logic.selectRoutee() should ===(refA)
     }
@@ -100,7 +100,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val initialRoutees = Vector(refA, refB)
+      val initialRoutees = Set(refA, refB)
 
       val logic = new RoutingLogics.RoundRobinLogic[Any]
       logic.routeesUpdated(initialRoutees)
@@ -108,7 +108,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       logic.selectRoutee() should ===(refB)
       logic.selectRoutee() should ===(refA)
 
-      val severalRemoved = Vector(refC, refD)
+      val severalRemoved = Set(refC, refD)
       logic.routeesUpdated(severalRemoved)
       logic.selectRoutee() should ===(refC)
     }
@@ -121,7 +121,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
       val refD = TestProbe("d").ref
-      val routees = Vector(refA, refB, refC, refD)
+      val routees = Set(refA, refB, refC, refD)
 
       val logic = new RoutingLogics.RandomLogic[Any]()
       logic.routeesUpdated(routees)

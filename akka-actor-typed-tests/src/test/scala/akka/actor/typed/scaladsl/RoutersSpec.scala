@@ -18,6 +18,7 @@ import org.scalatest.WordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loglevel=debug
   """) with WordSpecLike with Matchers {
 
   // needed for the event filter
@@ -58,7 +59,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "keeps routing to the rest of the children if one child stops" in {
+    "keep routing to the rest of the children if some children stops" in {
       val probe = createTestProbe[String]()
       val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ ⇒
         Behaviors.receiveMessage {
@@ -70,16 +71,22 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         }
       }))
 
-      EventFilter.warning(start = "Pool child stopped", occurrences = 2).intercept {
+      EventFilter.debug(start = "Pool child stopped", occurrences = 2).intercept {
         pool ! "stop"
         pool ! "stop"
       }
 
-      (0 to 4).foreach { n ⇒
+      // there is a race here where the child stopped but the router did not see that message yet, and may
+      // deliver messages to it, which will end up in dead letters.
+      // this test protects against that by waiting for the log entry to show up
+
+      val responses = (0 to 4).map { n ⇒
         val msg = s"message-$n"
         pool ! msg
-        probe.expectMessage(msg)
+        probe.expectMessageType[String]
       }
+
+      responses should contain allOf ("message-0", "message-1", "message-2", "message-3", "message-4")
     }
 
     "stops if all children stops" in {
@@ -90,11 +97,9 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         }
       }))
 
-      EventFilter.warning(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
-        EventFilter.warning(start = "Pool child stopped").intercept {
-          (0 to 3).foreach { _ ⇒
-            pool ! "stop"
-          }
+      EventFilter.info(start = "Last pool child stopped, stopping pool", occurrences = 1).intercept {
+        (0 to 3).foreach { _ ⇒
+          pool ! "stop"
         }
         probe.expectTerminated(pool)
       }

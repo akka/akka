@@ -3,13 +3,13 @@
  */
 
 package akka.actor.typed.internal.routing
+
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
-import akka.dispatch.forkjoin.ThreadLocalRandom
 
 /**
  * Provides builder style configuration options for group routers while still being a behavior that can be spawned
@@ -50,7 +50,7 @@ private final class GroupRouterImpl[T](
   def onMessage(msg: T): Behavior[T] = msg match {
     case serviceKey.Listing(update) ⇒
       // we don't need to watch, because receptionist already does that
-      routingLogic.routeesUpdated(update.toList)
+      routingLogic.routeesUpdated(update)
       routeesEmpty = update.isEmpty
       this
     case msg: T @unchecked ⇒

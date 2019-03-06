@@ -3,11 +3,10 @@
  */
 
 package akka.actor.typed.internal.routing
+
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.dispatch.forkjoin.ThreadLocalRandom
-
-import scala.collection.immutable
 
 /**
  * Kept in the behavior, not shared between instances, meant to be stateful.
@@ -30,7 +29,7 @@ sealed private[akka] trait RoutingLogic[T] {
    *                   least one routee. For a pool the pool stops instead of ever calling `routeesUpdated`
    *                   with an empty list of routees.
    */
-  def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit
+  def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit
 }
 
 /**
@@ -52,7 +51,7 @@ private[akka] object RoutingLogics {
       selected
     }
 
-    override def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit = {
+    override def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit = {
       // make sure we keep a somewhat similar order so we can potentially continue roundrobining
       // from where we were unless the set of routees completely changed
       // Also, avoid putting all entries from the same node next to each other in case of cluster
@@ -82,7 +81,7 @@ private[akka] object RoutingLogics {
       val selectedIdx = ThreadLocalRandom.current().nextInt(currentRoutees.length)
       currentRoutees(selectedIdx)
     }
-    override def routeesUpdated(newRoutees: immutable.Seq[ActorRef[T]]): Unit = {
+    override def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit = {
       currentRoutees = newRoutees.toArray
     }
 
