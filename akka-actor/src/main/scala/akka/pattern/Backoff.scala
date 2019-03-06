@@ -517,7 +517,7 @@ object Backoff {
  */
 @DoNotInherit
 @Deprecated
-@deprecated("Use new API from BackoffOptions object instead", since = "2.5.20")
+@deprecated("Use new API from BackoffOptions object instead", since = "2.5.22")
 trait BackoffOptions {
 
   /**
