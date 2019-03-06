@@ -11,16 +11,12 @@ import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 object CachePolicy {
 
   sealed trait CachePolicy
-
   case object Never extends CachePolicy
-
   case object Forever extends CachePolicy
 
   final class Ttl private (val value: FiniteDuration) extends CachePolicy {
     if (value < Duration.Zero) throw new IllegalArgumentException(s"TTL values must be a positive value.")
-
     import akka.util.JavaDurationConverters._
-
     def getValue: java.time.Duration = value.asJava
 
     override def equals(other: Any): Boolean = other match {
@@ -35,11 +31,9 @@ object CachePolicy {
 
   object Ttl {
     def unapply(ttl: Ttl): Option[FiniteDuration] = Some(ttl.value)
-
     def fromPositive(value: FiniteDuration): Ttl = {
       new Ttl(value)
     }
-
     def fromPositive(value: java.time.Duration): Ttl = fromPositive(value.asScala)
 
     // There's places where only a Ttl makes sense (DNS RFC says TTL is a positive 32 bit integer)
@@ -48,25 +42,6 @@ object CachePolicy {
 
     implicit object TtlIsOrdered extends Ordering[Ttl] {
       def compare(a: Ttl, b: Ttl): Int = a.value.compare(b.value)
-    }
-
-  }
-
-  implicit object CachePolicyIsOrdered extends Ordering[CachePolicy] {
-    override def compare(a: CachePolicy, b: CachePolicy): Int = (a, b) match {
-      case (Never, Never)             ⇒ 0
-
-      case (Forever, Forever)         ⇒ 0
-
-      case (_, Forever)               ⇒ -1
-
-      case (Never, _)                 ⇒ -1
-
-      case (Forever, _)               ⇒ 1
-
-      case (_, Never)                 ⇒ 1
-
-      case (Ttl(valueA), Ttl(valueB)) ⇒ valueA.compare(valueB)
     }
   }
 
