@@ -170,40 +170,6 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
     viaScala(_.sliding(n, step).map(_.asJava).mapContext(_.asJava))
 
   /**
-   * Context-preserving variant of [[akka.stream.javadsl.Source.statefulMapConcat]].
-   *
-   * The context of the input element will be associated with each of the output elements calculated from
-   * this input element.
-   *
-   * Example:
-   *
-   * ```
-   * def dup(element: String) = Seq(element, element)
-   *
-   * Input:
-   *
-   * ("a", 1)
-   * ("b", 2)
-   *
-   * inputElements.statefulMapConcat(() => dup)
-   *
-   * Output:
-   *
-   * ("a", 1)
-   * ("a", 1)
-   * ("b", 2)
-   * ("b", 2)
-   * ```
-   *
-   * @see [[akka.stream.javadsl.Source.statefulMapConcat]]
-   */
-  def statefulMapConcat[Out2](f: function.Creator[function.Function[Out, java.lang.Iterable[Out2]]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.statefulMapConcat { () ⇒
-      val fun = f.create()
-      elem ⇒ Util.immutableSeq(fun(elem))
-    })
-
-  /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.log]].
    *
    * @see [[akka.stream.javadsl.Source.log]]

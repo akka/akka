@@ -155,56 +155,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = statefulMapConcat(() ⇒ f)
-
-  /**
-   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.statefulMapConcat]].
-   *
-   * The context of the input element will be associated with each of the output elements calculated from
-   * this input element.
-   *
-   * Example:
-   *
-   * ```
-   * val statefulRepeat: () ⇒ String ⇒ collection.immutable.Iterable[String] = () ⇒ {
-   *   var counter = 0
-   *   str ⇒ {
-   *     counter = counter + 1
-   *     (1 to counter).map(_ ⇒ str)
-   *   }
-   * }
-   * ```
-   *
-   * Input:
-   *
-   * ("a", 4)
-   * ("b", 5)
-   * ("c", 6)
-   *
-   * inputElements.statefulMapConcat(statefulRepeat)
-   *
-   * Output:
-   *
-   * ("a", 4)
-   * ("b", 5)
-   * ("b", 5)
-   * ("c", 6)
-   * ("c", 6)
-   * ("c", 6)
-   * ```
-   *
-   * @see [[akka.stream.scaladsl.FlowOps.statefulMapConcat]]
-   */
-  def statefulMapConcat[Out2](f: () ⇒ Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = {
-    val fCtx: () ⇒ ((Out, Ctx)) ⇒ immutable.Iterable[(Out2, Ctx)] = () ⇒ {
-      val plainFun = f()
-      elWithContext ⇒ {
-        val (el, ctx) = elWithContext
-        plainFun(el).map(o ⇒ (o, ctx))
-      }
-    }
-    via(flow.statefulMapConcat(fCtx))
-  }
+  def mapConcat[Out2](f: Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] =
+    via(flow.mapConcat {
+      case (e, ctx) ⇒ f(e).map(_ -> ctx)
+    })
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

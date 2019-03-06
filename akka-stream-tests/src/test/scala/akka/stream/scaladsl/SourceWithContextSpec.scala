@@ -107,23 +107,5 @@ class SourceWithContextSpec extends StreamSpec {
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
         .expectComplete()
     }
-
-    "pass through context via statefulMapConcat" in {
-      val statefulFunction: () ⇒ String ⇒ collection.immutable.Iterable[String] = () ⇒ {
-        var counter = 0
-        str ⇒ {
-          counter = counter + 1
-          (1 to counter).map(_ ⇒ str)
-        }
-      }
-      Source(Vector(Message("a", 1L), Message("z", 2L)))
-        .asSourceWithContext(_.offset)
-        .map(_.data)
-        .statefulMapConcat(statefulFunction)
-        .runWith(TestSink.probe[(String, Long)])
-        .request(3)
-        .expectNext(("a", 1L), ("z", 2L), ("z", 2L))
-        .expectComplete()
-    }
   }
 }
