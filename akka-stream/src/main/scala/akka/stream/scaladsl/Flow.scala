@@ -7,15 +7,7 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl.{
-  fusing,
-  LinearTraversalBuilder,
-  ProcessorModule,
-  SubFlowImpl,
-  Throttle,
-  Timers,
-  TraversalBuilder
-}
+import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }
@@ -386,6 +378,14 @@ object Flow {
 
       case _ => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
     }
+
+  /**
+   * Defers the creation of a [[Flow]] until materialization. The `factory` function
+   * exposes [[ActorMaterializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Flow]] returned by this method.
+   */
+  def setup[T, U, M](factory: ActorMaterializer ⇒ Attributes ⇒ Flow[T, U, M]): Flow[T, U, Future[M]] =
+    Flow.fromGraph(new SetupFlowStage(factory))
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
