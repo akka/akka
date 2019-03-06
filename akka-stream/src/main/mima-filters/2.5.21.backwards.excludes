@@ -24,3 +24,10 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.GraphDelegate.wi
 
 # rename `from` to `fromTuples` in WithContext Scala dsl #26370
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.from")
+
+# Remove statefulMapConcat from @ApiMayChange {Source,Flow}WithContext #26330
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.FlowWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SourceWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.SourceWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.statefulMapConcat")
