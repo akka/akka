@@ -5,11 +5,16 @@
 package akka.persistence.typed.scaladsl
 
 import scala.util.Try
+import scala.annotation.tailrec
 
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
+import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.LoggerClass
+import akka.actor.typed.internal.InterceptorImpl
+import akka.actor.typed.internal.adapter.ActorContextAdapter
+import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -84,6 +89,27 @@ object EventSourcedBehavior {
     def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
       (_, cmd) ⇒ commandHandler(cmd)
 
+  }
+
+  /**
+   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
+   */
+  def lastSequenceNumber(context: ActorContext[_]): Long = {
+    @tailrec
+    def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
+      beh match {
+        case interceptor: InterceptorImpl[_, _] ⇒ extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           ⇒ concrete
+      }
+
+    context match {
+      case impl: ActorContextAdapter[_] ⇒
+        extractConcreteBehavior(impl.currentBehavior) match {
+          case w: Running.WithSeqNrAccessible ⇒ w.currentSequenceNumber
+          case s                              ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
+        }
+      case c ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
+    }
   }
 
 }

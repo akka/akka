@@ -9,11 +9,11 @@ import java.util.Optional
 
 import scala.util.Failure
 import scala.util.Success
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotMetadata
@@ -194,6 +194,13 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       behavior.onPersistFailure(onPersistFailure.get)
     else
       behavior
+  }
+
+  /**
+   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
+   */
+  def lastSequenceNumber(ctx: ActorContext[_]): Long = {
+    scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
   }
 
 }
