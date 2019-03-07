@@ -234,8 +234,7 @@ object ClusterSingletonManager {
     case object Uninitialized extends Data
     final case class YoungerData(oldestOption: Option[UniqueAddress]) extends Data
     final case class BecomingOldestData(previousOldestOption: Option[UniqueAddress]) extends Data
-    final case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
-    // singleton is None if already terminated
+    final case class OldestData(singleton: Option[ActorRef]) extends Data
     final case class WasOldestData(singleton: Option[ActorRef], newOldestOption: Option[UniqueAddress]) extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     final case class StoppingData(singleton: ActorRef) extends Data
@@ -799,7 +798,7 @@ class ClusterSingletonManager(
   def goToOldest(): State = {
     val singleton = context watch context.actorOf(singletonProps, singletonName)
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
-    goto(Oldest) using OldestData(singleton)
+    goto(Oldest) using OldestData(Some(singleton))
   }
 
   def handleOldestChanged(singleton: Option[ActorRef], oldestOption: Option[UniqueAddress]) = {
@@ -827,18 +826,18 @@ class ClusterSingletonManager(
   }
 
   when(Oldest) {
-    case Event(OldestChanged(oldestOption), OldestData(singleton, singletonTerminated)) ⇒
-      handleOldestChanged(if (singletonTerminated) None else Some(singleton), oldestOption)
-    case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
-      gotoHandingOver(if (singletonTerminated) None else Some(singleton), Some(sender()))
+    case Event(OldestChanged(oldestOption), OldestData(singleton)) ⇒
+      handleOldestChanged(singleton, oldestOption)
+    case Event(HandOverToMe, OldestData(singleton)) ⇒
+      gotoHandingOver(singleton, Some(sender()))
     case Event(TakeOverFromMe, _) ⇒
       // already oldest, so confirm and continue like that
       sender() ! HandOverToMe
       stay
 
-    case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
+    case Event(Terminated(ref), d @ OldestData(Some(singleton))) if ref == singleton ⇒
       logInfo("Singleton actor [{}] was terminated", singleton.path)
-      stay using d.copy(singletonTerminated = true)
+      stay using d.copy(singleton = None)
 
     case Event(SelfExiting, _) ⇒
       selfMemberExited()
@@ -846,22 +845,24 @@ class ClusterSingletonManager(
       sender() ! Done // reply to ask
       stay
 
-    case Event(MemberDowned(m), OldestData(singleton, singletonTerminated)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
-      if (singletonTerminated) {
-        logInfo("Self downed, stopping ClusterSingletonManager")
-        stop()
-      } else {
-        logInfo("Self downed, stopping")
-        gotoStopping(singleton)
+    case Event(MemberDowned(m), OldestData(singleton)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      singleton match {
+        case Some(s) ⇒
+          logInfo("Self downed, stopping")
+          gotoStopping(s)
+        case None ⇒
+          logInfo("Self downed, stopping ClusterSingletonManager")
+          stop()
       }
 
-    case Event(LeaseLost(reason), OldestData(singleton, singletonTerminated)) ⇒
+    case Event(LeaseLost(reason), OldestData(singleton)) ⇒
       log.warning("Lease has been lost. Reason: {}. Terminating singleton and trying to re-acquire lease", reason)
-      if (singletonTerminated) {
-        tryAcquireLease()
-      } else {
-        singleton ! terminationMessage
-        goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = false, Some(singleton))
+      singleton match {
+        case Some(s) ⇒
+          s ! terminationMessage
+          goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = false, singleton)
+        case None ⇒
+          tryAcquireLease()
       }
   }
 
@@ -903,15 +904,16 @@ class ClusterSingletonManager(
       sender() ! Done // reply to ask
       stay
 
-    case Event(MemberDowned(m), OldestData(singleton, singletonTerminated)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
-      if (singletonTerminated) {
-        logInfo("Self downed, stopping ClusterSingletonManager")
-        stop()
-      } else {
-        logInfo("Self downed, stopping")
-        gotoStopping(singleton)
+    // TODO his looks wrong, check history to see if this should be WasOldestData
+    case Event(MemberDowned(m), OldestData(singleton)) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+      singleton match {
+        case None ⇒
+          logInfo("Self downed, stopping ClusterSingletonManager")
+          stop()
+        case Some(s) ⇒
+          logInfo("Self downed, stopping")
+          gotoStopping(s)
       }
-
   }
 
   def gotoHandingOver(singleton: Option[ActorRef], handOverTo: Option[ActorRef]): State = {
@@ -1008,10 +1010,6 @@ class ClusterSingletonManager(
     case Event(MemberDowned(m), _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         logInfo("Self downed, waiting for removal")
-      stay
-    case Event(ReleaseLeaseResult(result), _) ⇒
-      // TODO we could retry if false
-      logInfo("Lease release result [{}] in state [{}]", result, stateName)
       stay
     case Event(ReleaseLeaseFailure(t), _) ⇒
       // TODO we could retry
