@@ -13,14 +13,14 @@ import akka.coordination.lease.LeaseSettings
 @ApiMayChange
 abstract class Lease() {
 
-  def getSetting: LeaseSettings
+  def getSettings(): LeaseSettings
 
   /**
    * Try to acquire the lease. The returned `Future` will be completed with `true`
    * if the lease could be acquired, i.e. no other owner is holding the lease.
    *
    * The returned `Future` will be completed with `false` if the lease for certain couldn't be
-   * acquired, e.g. because some other owner is holding it. It's completed with [[akka.lease.LeaseException]]
+   * acquired, e.g. because some other owner is holding it. It's completed with [[akka.coordination.lease.LeaseException]]
    * failure if it might not have been able to acquire the lease, e.g. communication timeout
    * with the lease resource.
    *

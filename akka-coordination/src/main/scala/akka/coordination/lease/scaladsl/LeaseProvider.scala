@@ -40,7 +40,7 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   /**
    * The configuration define at `configPath` must have a property `lease-class` that defines
    * the fully qualified class name of the Lease implementation.
-   * The class must implement [[Lease]] and have constructor with [[akka.lease.LeaseSettings]] parameter and
+   * The class must implement [[Lease]] and have constructor with [[akka.coordination.lease.LeaseSettings]] parameter and
    * optionally ActorSystem parameter.
    *
    * @param leaseName the name of the lease resource
@@ -85,6 +85,5 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   }
 
   // TODO how to clean up a lease? Not important for this use case as we'll only have one lease
-  // but should be removed from k8s as it uses storage
 }
 

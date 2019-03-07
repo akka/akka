@@ -15,19 +15,17 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
-object ImportantSingleton {
-
-}
-
 class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLogging {
 
-  override def preStart(): Unit =
+  override def preStart(): Unit = {
     log.info("Important Singleton Starting")
-  lifeCycleProbe ! "preStart"
+    lifeCycleProbe ! "preStart"
+  }
 
-  override def postStop(): Unit =
+  override def postStop(): Unit = {
     log.info("Important Singleton Stopping")
-  lifeCycleProbe ! "postStop"
+    lifeCycleProbe ! "postStop"
+  }
 
   override def receive: Receive = {
     case msg ⇒

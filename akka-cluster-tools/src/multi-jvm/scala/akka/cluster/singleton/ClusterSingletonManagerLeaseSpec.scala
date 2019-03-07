@@ -122,7 +122,7 @@ class ClusterSingletonManagerLeaseSpec extends MultiNodeSpec(ClusterSingletonMan
     "find the lease on every node" in {
       system.actorSelection(node(controller) / "user" / s"lease-${system.name}") ! Identify(None)
       val leaseRef: ActorRef = expectMsgType[ActorIdentity].ref.get
-      TestLeaseActorClientExt(system).setActorActor(leaseRef)
+      TestLeaseActorClientExt(system).setActorLease(leaseRef)
       enterBarrier("singleton-started")
     }
 
@@ -192,7 +192,7 @@ class ClusterSingletonManagerLeaseSpec extends MultiNodeSpec(ClusterSingletonMan
       runOn(second, third, fourth) {
         proxy ! "Ping"
         // lease has not been granted so now allowed to come up
-        expectNoMessage()
+        expectNoMessage(2.seconds)
       }
       enterBarrier("singleton-not-migrated")
 

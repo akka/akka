@@ -17,11 +17,11 @@ abstract class Lease(val settings: LeaseSettings) {
    * if the lease could be acquired, i.e. no other owner is holding the lease.
    *
    * The returned `Future` will be completed with `false` if the lease for certain couldn't be
-   * acquired, e.g. because some other owner is holding it. It's completed with [[akka.lease.LeaseException]]
+   * acquired, e.g. because some other owner is holding it. It's completed with [[akka.coordination.lease.LeaseException]]
    * failure if it might not have been able to acquire the lease, e.g. communication timeout
    * with the lease resource.
    *
-   * The lease will be held by the [[akka.lease.LeaseSettings.ownerName]] until it is released
+   * The lease will be held by the [[akka.coordination.lease.LeaseSettings.ownerName]] until it is released
    * with [[Lease.release]]. A Lease implementation will typically also lose the ownership
    * if it can't maintain its authority, e.g. if it crashes or is partitioned from the lease
    * resource for too long.
