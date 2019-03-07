@@ -458,7 +458,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
 
     startRemoveQuarantinedAssociationTask()
-    
+
     if (localAddress.address == bindAddress.address)
       log.info(
         "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
@@ -468,7 +468,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         s"Remoting started with transport [Artery ${settings.Transport}]; listening on address [{}] with UID [{}] and bound to [{}] with UID [{}]",
         localAddress.address, localAddress.uid, bindAddress.address, bindAddress.uid)
     }
-    
+
   }
 
   protected def startTransport(): Unit
