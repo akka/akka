@@ -779,8 +779,8 @@ class ClusterSingletonManager(
       tryAcquireLease()
     case Event(OldestChanged(oldestOption), AcquiringLeaseData(_, singleton)) ⇒
       handleOldestChanged(singleton, oldestOption)
-    case Event(HandOverToMe, _) ⇒
-      gotoHandingOver(None, Some(sender()))
+    case Event(HandOverToMe, AcquiringLeaseData(_, singleton)) ⇒
+      gotoHandingOver(singleton, Some(sender()))
     case Event(TakeOverFromMe, _) ⇒
       // already oldest, so confirm and continue like that
       sender() ! HandOverToMe
@@ -1042,10 +1042,10 @@ class ClusterSingletonManager(
     case (AcquiringLease, to) if to != Oldest ⇒
       stateData match {
         case AcquiringLeaseData(true, _) ⇒
-          logInfo("Releasing lease as leaving AcquiringLease going to {}", to)
+          logInfo("Releasing lease as leaving AcquiringLease going to [{}]", to)
           import context.dispatcher
           lease.foreach(l ⇒ pipe(l.release().map[Any](ReleaseLeaseResult).recover {
-            case NonFatal(t) ⇒ ReleaseLeaseFailure(t)
+            case t ⇒ ReleaseLeaseFailure(t)
           }).to(self))
         case _ ⇒
       }
