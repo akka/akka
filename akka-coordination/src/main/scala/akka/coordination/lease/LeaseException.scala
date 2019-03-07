@@ -10,5 +10,5 @@ import akka.annotation.ApiMayChange
 class LeaseException(message: String) extends RuntimeException(message)
 
 @ApiMayChange
-class LeaseTimeoutException(message: String) extends LeaseException(message)
+final class LeaseTimeoutException(message: String) extends LeaseException(message)
 
