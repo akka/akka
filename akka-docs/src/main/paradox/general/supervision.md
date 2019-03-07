@@ -207,6 +207,7 @@ to recover before the persistent actor is started.
 
 > <a id="1" href="#^1">[1]</a> A failure can be indicated in two different ways; by an actor stopping or crashing.
 
+<a id="supervision-strategies"></a>
 #### Supervision strategies
 
 There are two basic supervision strategies available for backoff:

@@ -245,6 +245,9 @@ object BackoffOpts {
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
 }
 
+/**
+ * Not for user extension
+ */
 @DoNotInherit
 private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]] {
 
