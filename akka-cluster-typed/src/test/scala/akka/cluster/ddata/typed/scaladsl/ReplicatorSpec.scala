@@ -72,7 +72,7 @@ object ReplicatorSpec {
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Behaviors.same
 
-            case GetCachedValue(replyTo: ActorRef[Int] @unchecked) ⇒
+            case GetCachedValue(replyTo) ⇒
               replyTo ! cachedValue
               Behaviors.same
 
