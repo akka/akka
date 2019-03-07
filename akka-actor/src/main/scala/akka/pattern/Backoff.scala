@@ -11,10 +11,10 @@ import akka.util.JavaDurationConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
- * @deprecated This API is superseded by the [[BackoffOptions]] object.
+ * @deprecated This API is superseded by the [[BackoffOpts]] object.
  */
 @Deprecated
-@deprecated("Use new API from BackoffOptions object instead", since = "2.5.20")
+@deprecated("Use new API from BackoffOpts object instead", since = "2.5.22")
 object Backoff {
   /**
    * Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
@@ -66,7 +66,7 @@ object Backoff {
    *                       In order to restart infinitely pass in `-1`.
    *
    */
-  @deprecated("Use BackoffOptions.onFailure instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
   def onFailure(
     childProps:     Props,
     childName:      String,
@@ -122,7 +122,7 @@ object Backoff {
    *                     random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *                     In order to skip this additional delay pass in `0`.
    */
-  @deprecated("Use BackoffOptions.onFailure instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
   def onFailure(
     childProps:   Props,
     childName:    String,
@@ -181,7 +181,7 @@ object Backoff {
    *                       In order to restart infinitely pass in `-1`.
    */
   @Deprecated
-  @deprecated("Use BackoffOptions.onFailure instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
   def onFailure(
     childProps:     Props,
     childName:      String,
@@ -303,7 +303,7 @@ object Backoff {
    *                       The supervisor will terminate itself after the maxNoOfRetries is reached.
    *                       In order to restart infinitely pass in `-1`.
    */
-  @deprecated("Use BackoffOptions.onStop instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
   def onStop(
     childProps:     Props,
     childName:      String,
@@ -366,7 +366,7 @@ object Backoff {
    *                     random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *                     In order to skip this additional delay pass in `0`.
    */
-  @deprecated("Use BackoffOptions.onStop instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
   def onStop(
     childProps:   Props,
     childName:    String,
@@ -432,7 +432,7 @@ object Backoff {
    *                       In order to restart infinitely pass in `-1`.
    */
   @Deprecated
-  @deprecated("Use BackoffOptions.onStop instead", "2.5.20")
+  @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
   def onStop(
     childProps:     Props,
     childName:      String,
@@ -517,7 +517,7 @@ object Backoff {
  */
 @DoNotInherit
 @Deprecated
-@deprecated("Use new API from BackoffOptions object instead", since = "2.5.22")
+@deprecated("Use new API from BackoffOpts object instead", since = "2.5.22")
 trait BackoffOptions {
 
   /**
