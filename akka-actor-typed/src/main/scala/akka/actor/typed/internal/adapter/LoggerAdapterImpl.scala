@@ -7,7 +7,7 @@ package akka.actor.typed.internal.adapter
 import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilter, LogMarker ⇒ UntypedLM }
+import akka.event.{ LoggingBus, LoggingFilter, LoggingFilterWithMarker, LogMarker ⇒ UntypedLM }
 import akka.util.OptionVal
 
 import scala.collection.JavaConverters._
@@ -358,12 +358,17 @@ private[akka] abstract class AbstractLogger extends Logger {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilter) extends AbstractLogger {
+private[akka] final class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSource: String, loggingFilter: LoggingFilterWithMarker) extends AbstractLogger {
 
   override def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)
   override def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource)
   override def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   override def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
+
+  override def isErrorEnabled(marker: LogMarker): Boolean = loggingFilter.isErrorEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+  override def isWarningEnabled(marker: LogMarker): Boolean = loggingFilter.isWarningEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+  override def isInfoEnabled(marker: LogMarker): Boolean = loggingFilter.isInfoEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+  override def isDebugEnabled(marker: LogMarker): Boolean = loggingFilter.isDebugEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
 
   override def withMdc(mdc: Map[String, Any]): Logger = {
     val mdcAdapter = new LoggerAdapterImpl(bus, logClass, logSource, loggingFilter)
