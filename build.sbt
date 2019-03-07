@@ -69,6 +69,7 @@ lazy val root = Project(
  ).enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
+  .dependsOn(jcTools)
   .settings(Dependencies.actor)
   .settings(OSGi.actor)
   .settings(AutomaticModuleName.settings("akka.actor"))
