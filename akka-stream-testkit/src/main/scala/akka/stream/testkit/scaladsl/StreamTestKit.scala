@@ -45,8 +45,8 @@ object StreamTestKit {
   /** INTERNAL API */
   @InternalApi private[testkit] def assertNoChildren(sys: ActorSystem, supervisor: ActorRef): Unit = {
     val probe = TestProbe()(sys)
-    val c = sys.settings.config.getConfig("akka.test.stream")
-    val timeout = c.getDuration("timeout", MILLISECONDS).millis
+    val c = sys.settings.config.getConfig("akka.stream.testkit")
+    val timeout = c.getDuration("all-stages-stopped-timeout", MILLISECONDS).millis
     probe.within(timeout) {
       try probe.awaitAssert {
         supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
