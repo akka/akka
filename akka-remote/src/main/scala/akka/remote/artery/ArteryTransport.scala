@@ -461,7 +461,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     log.info(
       "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
-      settings.Transport, localAddress.address, localAddress.uid)
+      settings.Transport, bindAddress.address, bindAddress.uid)
   }
 
   protected def startTransport(): Unit
