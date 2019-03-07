@@ -2,11 +2,12 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.pattern
+package akka.pattern.internal
 
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.annotation.InternalApi
+import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -17,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
  * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
  * with `BackoffOpts.onStop`.
  */
-@InternalApi private[akka] class BackoffOnStopSupervisor(
+@InternalApi private[pattern] class BackoffOnStopSupervisor(
   val childProps:    Props,
   val childName:     String,
   minBackoff:        FiniteDuration,

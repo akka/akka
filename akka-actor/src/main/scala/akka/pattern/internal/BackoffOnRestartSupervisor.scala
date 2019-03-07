@@ -2,11 +2,12 @@
  * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.pattern
+package akka.pattern.internal
 
 import akka.actor.SupervisorStrategy._
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.annotation.InternalApi
+import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
 
 import scala.concurrent.duration._
 
@@ -17,7 +18,7 @@ import scala.concurrent.duration._
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
  * with ``akka.pattern.BackoffOpts.onFailure``.
  */
-@InternalApi private class BackoffOnRestartSupervisor(
+@InternalApi private[pattern] class BackoffOnRestartSupervisor(
   val childProps:    Props,
   val childName:     String,
   minBackoff:        FiniteDuration,
