@@ -10,6 +10,7 @@ import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 
 /** Internal Api */
 @InternalApi private[stream] final class SetupSinkStage[T, M](factory: ActorMaterializer ⇒ Attributes ⇒ Sink[T, M])
@@ -31,10 +32,16 @@ import scala.concurrent.{ Future, Promise }
     setHandler(in, delegateToSubOutlet(() ⇒ grab(in), subOutlet))
 
     override def preStart(): Unit = {
-      val sink = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
+      try {
+        val sink = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
 
-      val mat = Source.fromGraph(subOutlet.source).runWith(sink.withAttributes(attributes))(subFusingMaterializer)
-      matPromise.success(mat)
+        val mat = Source.fromGraph(subOutlet.source).runWith(sink.withAttributes(attributes))(subFusingMaterializer)
+        matPromise.success(mat)
+      } catch {
+        case NonFatal(ex) ⇒
+          matPromise.failure(ex)
+          throw ex
+      }
     }
   }
 
@@ -66,14 +73,20 @@ import scala.concurrent.{ Future, Promise }
     setHandler(out, delegateToSubInlet(subInlet))
 
     override def preStart(): Unit = {
-      val flow = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
+      try {
+        val flow = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
 
-      val mat = Source
-        .fromGraph(subOutlet.source)
-        .viaMat(flow.withAttributes(attributes))(Keep.right)
-        .to(Sink.fromGraph(subInlet.sink))
-        .run()(subFusingMaterializer)
-      matPromise.success(mat)
+        val mat = Source
+          .fromGraph(subOutlet.source)
+          .viaMat(flow.withAttributes(attributes))(Keep.right)
+          .to(Sink.fromGraph(subInlet.sink))
+          .run()(subFusingMaterializer)
+        matPromise.success(mat)
+      } catch {
+        case NonFatal(ex) ⇒
+          matPromise.failure(ex)
+          throw ex
+      }
     }
   }
 }
@@ -98,13 +111,19 @@ import scala.concurrent.{ Future, Promise }
     setHandler(out, delegateToSubInlet(subInlet))
 
     override def preStart(): Unit = {
-      val source = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
+      try {
+        val source = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
 
-      val mat = source
-        .withAttributes(attributes)
-        .to(Sink.fromGraph(subInlet.sink))
-        .run()(subFusingMaterializer)
-      matPromise.success(mat)
+        val mat = source
+          .withAttributes(attributes)
+          .to(Sink.fromGraph(subInlet.sink))
+          .run()(subFusingMaterializer)
+        matPromise.success(mat)
+      } catch {
+        case NonFatal(ex) ⇒
+          matPromise.failure(ex)
+          throw ex
+      }
     }
   }
 }

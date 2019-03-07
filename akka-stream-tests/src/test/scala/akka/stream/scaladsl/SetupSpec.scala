@@ -59,6 +59,28 @@ class SetupSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
 
+    "handle factory failure" in {
+      val error = new Error("boom")
+      val source = Source.setup { _ ⇒ _ ⇒
+        throw error
+      }
+
+      val (materialized, completion) = source.toMat(Sink.head)(Keep.both).run()
+      materialized.failed.futureValue.getCause shouldBe error
+      completion.failed.futureValue.getCause shouldBe error
+    }
+
+    "handle materialization failure" in {
+      val error = new Error("boom")
+      val source = Source.setup { _ ⇒ _ ⇒
+        Source.empty.mapMaterializedValue(_ ⇒ throw error)
+      }
+
+      val (materialized, completion) = source.toMat(Sink.head)(Keep.both).run()
+      materialized.failed.futureValue.getCause shouldBe error
+      completion.failed.futureValue.getCause shouldBe error
+    }
+
   }
 
   "Flow.setup" should {
@@ -107,6 +129,28 @@ class SetupSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
     }
 
+    "handle factory failure" in {
+      val error = new Error("boom")
+      val flow = Flow.setup { _ ⇒ _ ⇒
+        throw error
+      }
+
+      val (materialized, completion) = Source.empty.viaMat(flow)(Keep.right).toMat(Sink.head)(Keep.both).run()
+      materialized.failed.futureValue.getCause shouldBe error
+      completion.failed.futureValue.getCause shouldBe error
+    }
+
+    "handle materialization failure" in {
+      val error = new Error("boom")
+      val flow = Flow.setup { _ ⇒ _ ⇒
+        Flow[NotUsed].mapMaterializedValue(_ ⇒ throw error)
+      }
+
+      val (materialized, completion) = Source.empty.viaMat(flow)(Keep.right).toMat(Sink.head)(Keep.both).run()
+      materialized.failed.futureValue.getCause shouldBe error
+      completion.failed.futureValue.getCause shouldBe error
+    }
+
   }
 
   "Sink.setup" should {
@@ -151,6 +195,24 @@ class SetupSpec extends StreamSpec {
       }.named("my-name")
 
       Source.empty.runWith(sink).flatMap(identity).flatMap(identity).futureValue shouldBe Some("my-name")
+    }
+
+    "handle factory failure" in {
+      val error = new Error("boom")
+      val sink = Sink.setup { _ ⇒ _ ⇒
+        throw error
+      }
+
+      Source.empty.runWith(sink).failed.futureValue.getCause shouldBe error
+    }
+
+    "handle materialization failure" in {
+      val error = new Error("boom")
+      val sink = Sink.setup { _ ⇒ _ ⇒
+        Sink.ignore.mapMaterializedValue(_ ⇒ throw error)
+      }
+
+      Source.empty.runWith(sink).failed.futureValue.getCause shouldBe error
     }
 
   }
