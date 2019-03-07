@@ -57,7 +57,7 @@ class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
 
     case ActionRequest(request, result) ⇒
       requests.find(_._2 == request) match {
-        case Some((snd, req)) =>
+        case Some((snd, req)) ⇒
           log.info("Actioning request {} to {}", req, result)
           snd ! result
           requests = requests.filterNot(_._2 == request)

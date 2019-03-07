@@ -46,20 +46,20 @@ final class TimeoutSettings(
   def getOperationTimeout(): java.time.Duration = operationTimeout.asJava
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def withHeartbeatInterval(heartbeatInterval: java.time.Duration): TimeoutSettings = {
     copy(heartbeatInterval = heartbeatInterval.asScala)
   }
   /**
-    * Java API
-    */
+   * Java API
+   */
   def withHeartbeatTimeout(heartbeatTimeout: java.time.Duration): TimeoutSettings = {
     copy(heartbeatTimeout = heartbeatTimeout.asScala)
   }
   /**
-    * Java API
-    */
+   * Java API
+   */
   def withOperationTimeout(operationTimeout: java.time.Duration): TimeoutSettings = {
     copy(operationTimeout = operationTimeout.asScala)
   }
@@ -75,10 +75,10 @@ final class TimeoutSettings(
   }
 
   private def copy(
-          heartbeatInterval: FiniteDuration = heartbeatInterval,
-          heartbeatTimeout: FiniteDuration = heartbeatTimeout,
-          operationTimeout: FiniteDuration = operationTimeout
-          ): TimeoutSettings = {
+    heartbeatInterval: FiniteDuration = heartbeatInterval,
+    heartbeatTimeout:  FiniteDuration = heartbeatTimeout,
+    operationTimeout:  FiniteDuration = operationTimeout
+  ): TimeoutSettings = {
     new TimeoutSettings(heartbeatInterval, heartbeatTimeout, operationTimeout)
   }
 

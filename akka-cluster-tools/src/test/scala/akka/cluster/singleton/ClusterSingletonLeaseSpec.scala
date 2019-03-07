@@ -70,14 +70,19 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
   val leaseOwner = cluster.selfMember.address.hostPort
 
+  def nextSettings() = ClusterSingletonManagerSettings(system).withSingletonName(nextName())
+
+  def leaseNameFor(settings: ClusterSingletonManagerSettings): String = s"singleton-ClusterSingletonLeaseSpec-${settings.singletonName}"
+
   "A singleton with lease" should {
 
     "not start until lease is available" in {
       val probe = TestProbe()
-      val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(
+        Props(new ImportantSingleton(probe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       probe.expectNoMessage(shortDuration)
       testLease.initialPromise.complete(Success(true))
@@ -86,10 +91,11 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "do not start if lease acquire returns false" in {
       val probe = TestProbe()
-      val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill,
+        settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       probe.expectNoMessage(shortDuration)
       testLease.initialPromise.complete(Success(false))
@@ -98,10 +104,12 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "retry trying to get lease if acquire returns false" in {
       val singletonProbe = TestProbe()
+      val settings = nextSettings()
       val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill,
+        settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
@@ -116,10 +124,10 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "do not start if lease acquire fails" in {
       val probe = TestProbe()
-      val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       probe.expectNoMessage(shortDuration)
       testLease.initialPromise.failure(new RuntimeException("no lease for you"))
@@ -128,10 +136,11 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "retry trying to get lease if acquire returns fails" in {
       val singletonProbe = TestProbe()
-      val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill,
+        settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
@@ -146,11 +155,10 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "stop singleton if the lease fails periodic check" in {
       val lifecycleProbe = TestProbe()
-      val name = nextName()
-      println("Name: " + name)
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(lifecycleProbe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(lifecycleProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       }
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       testLease.initialPromise.complete(Success(true))
@@ -167,10 +175,10 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
     "release lease when leaving oldest" in {
       val singletonProbe = TestProbe()
-      val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, ClusterSingletonManagerSettings(system)), name)
+      val settings = nextSettings()
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
-        testLeaseExt.getTestLease(s"singleton-$name")
+        testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
       singletonProbe.expectNoMessage(shortDuration)
       testLease.probe.expectMsg(AcquireReq(leaseOwner))

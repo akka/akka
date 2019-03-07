@@ -33,7 +33,6 @@ import akka.util.JavaDurationConverters._
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
-import akka.actor.Status.Failure
 import akka.annotation.DoNotInherit
 import akka.pattern.ask
 import akka.util.Timeout
@@ -489,7 +488,14 @@ class ClusterSingletonManager(
     role.forall(cluster.selfRoles.contains),
     s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
-  val lease: Option[Lease] = settings.leaseSettings.map(settings ⇒ LeaseProvider(context.system).getLease(s"singleton-${self.path.name}", settings.leaseImplementation, cluster.selfUniqueAddress.address.hostPort))
+  private val singletonLeaseName = s"singleton-${context.system.name}-${settings.singletonName}"
+
+  val lease: Option[Lease] = settings.leaseSettings.map(settings ⇒
+    LeaseProvider(context.system).getLease(
+      singletonLeaseName,
+      settings.leaseImplementation,
+      cluster.selfUniqueAddress.address.hostPort)
+  )
   val leaseRetryInterval: FiniteDuration = settings.leaseSettings match {
     case Some(s) ⇒ s.leaseRetryInterval
     case None    ⇒ 5.seconds // won't be used
@@ -553,6 +559,9 @@ class ClusterSingletonManager(
 
   def logInfo(template: String, arg1: Any, arg2: Any): Unit =
     if (LogInfo) log.info(template, arg1, arg2)
+
+  def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
+    if (LogInfo) log.info(template, arg1, arg2, arg3)
 
   override def preStart(): Unit = {
     super.preStart()
@@ -731,6 +740,14 @@ class ClusterSingletonManager(
       self ! DelayedMemberRemoved(m)
   }
 
+  def tryAcquireLease() = {
+    import context.dispatcher
+    pipe(lease.get.acquire(reason ⇒ self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
+      case NonFatal(t) ⇒ AcquireLeaseFailure(t)
+    }).to(self)
+    goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = true, None)
+  }
+
   // Try and go to oldest, taking the lease if needed
   def tryGoToOldest(): State = {
     // check if lease
@@ -761,25 +778,8 @@ class ClusterSingletonManager(
       stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
     case Event(LeaseRetry, _) ⇒
       tryAcquireLease()
-    case Event(OldestChanged(oldestOption), _) ⇒
-      oldestChangedReceived = true
-      logInfo("AcquiringLease observed OldestChanged: [{} -> {}]", cluster.selfAddress, oldestOption.map(_.address))
-      oldestOption match {
-        case Some(a) if a == cluster.selfUniqueAddress ⇒
-          // already oldest
-          stay
-        case Some(a) if !selfExited && removed.contains(a) ⇒
-          handOverDone(None)
-        case Some(a) ⇒
-          // send TakeOver request in case the new oldest doesn't know previous oldest
-          peer(a.address) ! TakeOverFromMe
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(None, newOldestOption = Some(a))
-        case None ⇒
-          // new oldest will initiate the hand-over
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(None, newOldestOption = None)
-      }
+    case Event(OldestChanged(oldestOption), AcquiringLeaseData(_, singleton)) ⇒
+      handleOldestChanged(singleton, oldestOption)
     case Event(HandOverToMe, _) ⇒
       gotoHandingOver(None, Some(sender()))
     case Event(TakeOverFromMe, _) ⇒
@@ -796,47 +796,41 @@ class ClusterSingletonManager(
       stop()
   }
 
-  def tryAcquireLease() = {
-    import context.dispatcher
-    pipe(lease.get.acquire(reason ⇒ self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
-      case NonFatal(t) ⇒ AcquireLeaseFailure(t)
-    }).to(self)
-    goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = true, None)
-  }
-
   def goToOldest(): State = {
     val singleton = context watch context.actorOf(singletonProps, singletonName)
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
     goto(Oldest) using OldestData(singleton)
   }
 
+  def handleOldestChanged(singleton: Option[ActorRef], oldestOption: Option[UniqueAddress]) = {
+    oldestChangedReceived = true
+    logInfo("{} observed OldestChanged: [{} -> {}]", stateName, cluster.selfAddress, oldestOption.map(_.address))
+    oldestOption match {
+      case Some(a) if a == cluster.selfUniqueAddress ⇒
+        // already oldest
+        stay
+      case Some(a) if !selfExited && removed.contains(a) ⇒
+        // The member removal was not completed and the old removed node is considered
+        // oldest again. Safest is to terminate the singleton instance and goto Younger.
+        // This node will become oldest again when the other is removed again.
+        gotoHandingOver(singleton, None)
+      case Some(a) ⇒
+        // send TakeOver request in case the new oldest doesn't know previous oldest
+        peer(a.address) ! TakeOverFromMe
+        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        goto(WasOldest) using WasOldestData(singleton, newOldestOption = Some(a))
+      case None ⇒
+        // new oldest will initiate the hand-over
+        setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
+        goto(WasOldest) using WasOldestData(singleton, newOldestOption = None)
+    }
+  }
+
   when(Oldest) {
     case Event(OldestChanged(oldestOption), OldestData(singleton, singletonTerminated)) ⇒
-      oldestChangedReceived = true
-      logInfo("Oldest observed OldestChanged: [{} -> {}]", cluster.selfAddress, oldestOption.map(_.address))
-      oldestOption match {
-        case Some(a) if a == cluster.selfUniqueAddress ⇒
-          // already oldest
-          stay
-        case Some(a) if !selfExited && removed.contains(a) ⇒
-          // The member removal was not completed and the old removed node is considered
-          // oldest again. Safest is to terminate the singleton instance and goto Younger.
-          // This node will become oldest again when the other is removed again.
-          gotoHandingOver(Some(singleton), None)
-        case Some(a) ⇒
-          // send TakeOver request in case the new oldest doesn't know previous oldest
-          peer(a.address) ! TakeOverFromMe
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(if (singletonTerminated) None else Some(singleton), newOldestOption = Some(a))
-        case None ⇒
-          // new oldest will initiate the hand-over
-          setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-          goto(WasOldest) using WasOldestData(if (singletonTerminated) None else Some(singleton), newOldestOption = None)
-      }
-
+      handleOldestChanged(if (singletonTerminated) None else Some(singleton), oldestOption)
     case Event(HandOverToMe, OldestData(singleton, singletonTerminated)) ⇒
       gotoHandingOver(if (singletonTerminated) None else Some(singleton), Some(sender()))
-
     case Event(TakeOverFromMe, _) ⇒
       // already oldest, so confirm and continue like that
       sender() ! HandOverToMe
