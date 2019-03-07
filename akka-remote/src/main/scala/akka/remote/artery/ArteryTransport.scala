@@ -467,7 +467,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       log.info(
         "Remoting started with transport [Artery {}];", settings.Transport)
       log.info(
-        "Remoting is listening on address [{}] with UID [{}] and bind to [{}] with UID [{}]",
+        "Remoting is listening on address [{}] with UID [{}] and binded to [{}] with UID [{}]",
         localAddress.address, localAddress.uid, bindAddress.address, bindAddress.uid)
     }
     
