@@ -7,8 +7,6 @@ package akka.persistence.typed.javadsl
 import java.util.Collections
 import java.util.Optional
 
-import scala.util.Failure
-import scala.util.Success
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -16,7 +14,6 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
@@ -77,6 +74,19 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   protected def eventHandler(): EventHandler[State, Event]
 
   /**
+   * Override to react on general lifecycle signals and persistence specific signals (subtypes of
+   * [[akka.persistence.typed.EventSourcedSignal]]).
+   *
+   * Use [[EventSourcedBehavior#newSignalHandlerBuilder]] to define the signal handler.
+   */
+  protected def signalHandler(): SignalHandler = SignalHandler.Empty
+
+  /**
+   * @return A new, mutable signal handler builder
+   */
+  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder = new SignalHandlerBuilder
+
+  /**
    * @return A new, mutable, command handler builder
    */
   protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
@@ -88,35 +98,6 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected final def newEventHandlerBuilder(): EventHandlerBuilder[State, Event] =
     EventHandlerBuilder.builder[State, Event]()
-
-  /**
-   * The callback is invoked to notify the actor that the recovery process
-   * is finished.
-   */
-  def onRecoveryCompleted(state: State): Unit = ()
-
-  /**
-   * The callback is invoked to notify the actor that the recovery process
-   * has failed
-   */
-  def onRecoveryFailure(failure: Throwable): Unit = ()
-
-  /**
-   * The callback is invoked to notify that the actor has stopped.
-   */
-  def onPostStop(): Unit = ()
-
-  /**
-   * The callback is invoked to notify that the actor is restarted.
-   */
-  def onPreRestart(): Unit = ()
-
-  /**
-   * Override to get notified when a snapshot is finished.
-   *
-   * @param result None if successful otherwise contains the exception thrown when snapshotting
-   */
-  def onSnapshot(meta: SnapshotMetadata, result: Optional[Throwable]): Unit = ()
 
   /**
    * Override and define that snapshot should be saved every N events.
@@ -172,37 +153,25 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
       getClass)
-      .onRecoveryCompleted(onRecoveryCompleted)
-      .onPostStop(() => onPostStop())
-      .onPreRestart(() => onPreRestart())
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
-      .onSnapshot((meta, result) => {
-        result match {
-          case Success(_) =>
-            context.asScala.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          case Failure(e) =>
-            context.asScala.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
-        }
-
-        onSnapshot(meta, result match {
-          case Success(_) => Optional.empty()
-          case Failure(t) => Optional.of(t)
-        })
-      })
       .eventAdapter(eventAdapter())
-      .onRecoveryFailure(onRecoveryFailure)
+
+    val handler = signalHandler()
+    val behaviorWithSignalHandler =
+      if (handler.isEmpty) behavior
+      else behavior.receiveSignal(handler.handler)
 
     if (onPersistFailure.isPresent)
-      behavior.onPersistFailure(onPersistFailure.get)
+      behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
     else
-      behavior
+      behaviorWithSignalHandler
   }
 
   /**
    * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
    */
-  def lastSequenceNumber(ctx: ActorContext[_]): Long = {
+  final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
     scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
   }
 

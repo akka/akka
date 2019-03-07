@@ -35,11 +35,16 @@ import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.SnapshotCompleted
+import akka.persistence.typed.SnapshotFailed
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
+
+import scala.util.Failure
 
 object EventSourcedBehaviorSpec {
 
@@ -195,7 +200,7 @@ object EventSourcedBehaviorSpec {
                                                           Behaviors.receive((_, msg) =>
                                                             msg match {
                                                               case Tick => Behaviors.stopped
-                                                            })
+                                                          })
                                                       })
                                                       ctx.watchWith(delay, DelayFinished)
                                                       Effect.none
@@ -247,15 +252,18 @@ object EventSourcedBehaviorSpec {
                                                     case StopIt =>
                                                       Effect.none.thenStop()
 
-                                                  },
-                                                eventHandler = (state, evt) =>
+                                                },
+                                                eventHandler = (state, evt) ⇒
                                                   evt match {
-                                                    case Incremented(delta) =>
+                                                    case Incremented(delta) ⇒
                                                       probe ! ((state, evt))
                                                       State(state.value + delta, state.history :+ state.value)
-                                                  }).onRecoveryCompleted(_ => ()).onSnapshot {
-      case (_, result) =>
-        snapshotProbe ! result
+                                                }).receiveSignal {
+      case RecoveryCompleted(_) ⇒ ()
+      case SnapshotCompleted(_) ⇒
+        snapshotProbe ! Success(Done)
+      case SnapshotFailed(_, failure) ⇒
+        snapshotProbe ! Failure(failure)
     }
   }
 
@@ -464,7 +472,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val snapshotAtTwo = Behaviors.setup[Command](ctx =>
         counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (s, _, _) =>
           s.value == 2
-        })
+      })
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()

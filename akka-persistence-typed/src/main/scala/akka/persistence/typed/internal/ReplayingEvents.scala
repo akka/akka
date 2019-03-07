@@ -16,6 +16,8 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
+import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 
@@ -158,9 +160,9 @@ private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorS
                                   sequenceNr: Long,
                                   message: Option[Any]): Behavior[InternalProtocol] = {
     try {
-      setup.onRecoveryFailure(cause)
+      setup.onSignal(RecoveryFailed(cause))
     } catch {
-      case NonFatal(t) => setup.log.error(t, "onRecoveryFailure threw exception")
+      case NonFatal(t) => setup.log.error(t, "RecoveryFailed signal handler threw exception")
     }
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
@@ -176,10 +178,9 @@ private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorS
     throw new JournalFailureException(msg, cause)
   }
 
-  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
-    try {
-      tryReturnRecoveryPermit("replay completed successfully")
-      setup.recoveryCompleted(state.state)
+  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
+    tryReturnRecoveryPermit("replay completed successfully")
+    setup.onSignal(RecoveryCompleted(state.state))
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped

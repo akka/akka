@@ -6,10 +6,6 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.Failure
-import scala.util.Success
-
-import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -20,10 +16,14 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-
 import akka.persistence.typed.Callback
+import akka.persistence.typed.DeleteSnapshotCompleted
+import akka.persistence.typed.DeleteSnapshotFailed
+import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
+import akka.persistence.typed.SnapshotCompleted
+import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.Stop
 import akka.persistence.typed.UnstashAll
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
@@ -310,21 +310,23 @@ private[akka] object Running {
     }
 
     def onSnapshotterResponse(response: SnapshotProtocol.Response): Unit = {
-      response match {
+      val signal = response match {
         case SaveSnapshotSuccess(meta) =>
-          setup.onSnapshot(meta, Success(Done))
+          Some(SnapshotCompleted(meta))
         case SaveSnapshotFailure(meta, ex) =>
-          setup.onSnapshot(meta, Failure(ex))
-
-        // FIXME #24698 not implemented yet
-        case DeleteSnapshotFailure(_, _)  => ???
-        case DeleteSnapshotSuccess(_)     => ???
-        case DeleteSnapshotsFailure(_, _) => ???
-        case DeleteSnapshotsSuccess(_)    => ???
-
-        // ignore LoadSnapshot messages
-        case _ =>
+          Some(SnapshotFailed(meta, ex))
+        case DeleteSnapshotSuccess(meta) =>
+          Some(DeleteSnapshotCompleted(DeletionTarget.Individual(meta)))
+        case DeleteSnapshotFailure(meta, ex) =>
+          Some(DeleteSnapshotFailed(DeletionTarget.Individual(meta), ex))
+        case DeleteSnapshotsSuccess(criteria) =>
+          Some(DeleteSnapshotCompleted(DeletionTarget.Criteria(criteria)))
+        case DeleteSnapshotsFailure(criteria, failure) =>
+          Some(DeleteSnapshotFailed(DeletionTarget.Criteria(criteria), failure))
+        case _ => None
       }
+
+      signal.foreach(setup.onSignal _)
     }
 
     Behaviors
