@@ -24,8 +24,12 @@ import com.typesafe.config.Config
   def apply(config: Config, journalPluginId: String, snapshotPluginId: String): EventSourcedSettings = {
     val typedConfig = config.getConfig("akka.persistence.typed")
 
-    // StashOverflowStrategy
-    val stashOverflowStrategyConfigurator = typedConfig.getString("internal-stash-overflow-strategy")
+    val stashOverflowStrategy = typedConfig.getString("stash-overflow-strategy").toLowerCase match {
+      case "drop" ⇒ StashOverflowStrategy.Drop
+      case "fail" ⇒ StashOverflowStrategy.Fail
+      case unknown ⇒
+        throw new IllegalArgumentException(s"Unknown value for internal-stash-overflow-strategy: [$unknown]")
+    }
 
     val stashCapacity = typedConfig.getInt("stash-capacity")
     require(stashCapacity > 0, "stash-capacity MUST be > 0, unbounded buffering is not supported.")
@@ -38,7 +42,7 @@ import com.typesafe.config.Config
 
     EventSourcedSettings(
       stashCapacity = stashCapacity,
-      stashOverflowStrategyConfigurator,
+      stashOverflowStrategy,
       logOnStashing = logOnStashing,
       recoveryEventTimeout,
       journalPluginId,
@@ -46,9 +50,6 @@ import com.typesafe.config.Config
     )
   }
 
-  /**
-   * INTERNAL API
-   */
   private[akka] final def journalConfigFor(config: Config, journalPluginId: String): Config = {
     val defaultJournalPluginId = config.getString("akka.persistence.journal.plugin")
     val configPath = if (journalPluginId == "") defaultJournalPluginId else journalPluginId
@@ -58,17 +59,35 @@ import com.typesafe.config.Config
 
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] final case class EventSourcedSettings(
-  stashCapacity:                     Int,
-  stashOverflowStrategyConfigurator: String,
-  logOnStashing:                     Boolean,
-  recoveryEventTimeout:              FiniteDuration,
-  journalPluginId:                   String,
-  snapshotPluginId:                  String) {
+  stashCapacity:         Int,
+  stashOverflowStrategy: StashOverflowStrategy,
+  logOnStashing:         Boolean,
+  recoveryEventTimeout:  FiniteDuration,
+  journalPluginId:       String,
+  snapshotPluginId:      String) {
 
   require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
   require(snapshotPluginId != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] sealed trait StashOverflowStrategy
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object StashOverflowStrategy {
+  case object Drop extends StashOverflowStrategy
+  case object Fail extends StashOverflowStrategy
 }
 
