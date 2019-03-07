@@ -6,6 +6,7 @@ package akka.pattern
 
 import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
+import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }

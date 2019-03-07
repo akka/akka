@@ -6,6 +6,7 @@ package akka.pattern
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.annotation.InternalApi
+import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 
 /**
  * INTERNAL API
