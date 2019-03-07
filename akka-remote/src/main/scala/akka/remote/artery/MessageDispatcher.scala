@@ -26,7 +26,7 @@ private[remote] class MessageDispatcher(
 
   private val remoteDaemon = provider.remoteDaemon
   private val log = Logging.withMarker(system, getClass.getName)
-  private val debugLogEnabled = log.isDebugEnabled
+  private val debugLogEnabled: Boolean = log.isDebugEnabled
 
   def dispatch(inboundEnvelope: InboundEnvelope): Unit = {
     import provider.remoteSettings.Artery._
