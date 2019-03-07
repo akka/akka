@@ -40,6 +40,8 @@ import akka.util.Timeout
 import akka.cluster.ClusterSettings
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 
+import scala.util.control.NonFatal
+
 object ClusterSingletonManagerSettings {
 
   /**
@@ -263,6 +265,8 @@ object ClusterSingletonManager {
 
     final case class AcquireLeaseResult(holdingLease: Boolean) extends DeadLetterSuppression
     final case class ReleaseLeaseResult(released: Boolean) extends DeadLetterSuppression
+    final case class AcquireLeaseFailure(t: Throwable) extends DeadLetterSuppression
+    final case class ReleaseLeaseFailure(t: Throwable) extends DeadLetterSuppression
     final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
     /**
@@ -751,7 +755,7 @@ class ClusterSingletonManager(
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton ⇒
       logInfo("Singleton actor terminated. Trying to acquire lease again before re-creating.")
       tryAcquireLease()
-    case Event(Failure(t), _) ⇒
+    case Event(AcquireLeaseFailure(t), _) ⇒
       log.error(t, "failed to get lease (will be retried)")
       setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
       stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
@@ -794,7 +798,9 @@ class ClusterSingletonManager(
 
   def tryAcquireLease() = {
     import context.dispatcher
-    pipe(lease.get.acquire(reason ⇒ self ! LeaseLost(reason)).map(AcquireLeaseResult)).to(self)
+    pipe(lease.get.acquire(reason ⇒ self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
+      case NonFatal(t) ⇒ AcquireLeaseFailure(t)
+    }).to(self)
     goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = true, None)
   }
 
@@ -1013,7 +1019,7 @@ class ClusterSingletonManager(
       // TODO we could retry if false
       logInfo("Lease release result [{}] in state [{}]", result, stateName)
       stay
-    case Event(Failure(t), _) ⇒
+    case Event(ReleaseLeaseFailure(t), _) ⇒
       // TODO we could retry
       log.error(t, "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       stay
@@ -1046,7 +1052,9 @@ class ClusterSingletonManager(
         case AcquiringLeaseData(true, _) ⇒
           logInfo("Releasing lease as leaving AcquiringLease going to {}", to)
           import context.dispatcher
-          lease.foreach(l ⇒ pipe(l.release().map(ReleaseLeaseResult)).to(self))
+          lease.foreach(l ⇒ pipe(l.release().map[Any](ReleaseLeaseResult).recover {
+            case NonFatal(t) ⇒ ReleaseLeaseFailure(t)
+          }).to(self))
         case _ ⇒
       }
   }

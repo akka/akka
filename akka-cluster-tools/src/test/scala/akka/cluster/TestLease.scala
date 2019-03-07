@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
+import akka.event.Logging
 import akka.testkit.TestProbe
 
 import scala.concurrent.{ Future, Promise }
