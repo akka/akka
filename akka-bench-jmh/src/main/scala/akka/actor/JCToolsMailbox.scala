@@ -12,7 +12,7 @@ import akka.dispatch.MessageQueue
 import akka.dispatch.BoundedMessageQueueSemantics
 import scala.concurrent.duration.Duration
 import akka.dispatch.Envelope
-import org.jctools.queues.MpscGrowableArrayQueue
+import akka.jctools.queues.MpscGrowableArrayQueue
 import scala.annotation.tailrec
 
 case class JCToolsMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[BoundedNodeMessageQueue] {

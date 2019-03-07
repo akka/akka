@@ -35,6 +35,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   contrib,
   distributedData,
   docs,
+  jcTools,
   multiNodeTestkit,
   osgi,
   persistence, persistenceQuery, persistenceShared, persistenceTck,
@@ -108,6 +109,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       testkit
     ).map(_ % "compile->compile;compile->test"): _*
   )
+  .dependsOn(jcTools)
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
@@ -271,6 +273,26 @@ lazy val docs = akkaModule("akka-docs")
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
+
+// shaded jctools jar
+lazy val jcTools = Project("akka-jctools", file("akka-jctools"))
+  .settings(
+    libraryDependencies += Dependencies.Compile.jctools % "runtime",
+    assemblyShadeRules in assembly := Seq(
+      ShadeRule.rename("org.jctools.**" -> "akka.jctools.@1").inLibrary(Dependencies.Compile.jctools % "runtime")
+    ),
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
+    autoScalaLibrary := false, // do not include scala dependency in pom
+    exportJars := true, // in dependent projects, use assembled and shaded jar
+    publishArtifact in (Compile, packageDoc) := false, // no source files, no docs
+    publishArtifact in (Compile, packageSrc) := false,
+    makePomConfiguration := makePomConfiguration.value.withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
+    packageBin in Compile := (assembly in Compile).value, // package by running assembly
+    // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
+    fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
+    test in assembly := {} // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
+    // TODO: should we include author, git, etc. info from the original POM? Or at least a pointer
+  )
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)

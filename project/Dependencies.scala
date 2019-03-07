@@ -194,7 +194,7 @@ object Dependencies {
 
   val contrib = l ++= Seq(Test.commonsIo)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
+  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
   // akka stream
 
