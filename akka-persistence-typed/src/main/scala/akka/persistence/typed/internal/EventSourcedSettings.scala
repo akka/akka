@@ -28,7 +28,7 @@ import com.typesafe.config.Config
       case "drop" ⇒ StashOverflowStrategy.Drop
       case "fail" ⇒ StashOverflowStrategy.Fail
       case unknown ⇒
-        throw new IllegalArgumentException(s"Unknown value for internal-stash-overflow-strategy: [$unknown]")
+        throw new IllegalArgumentException(s"Unknown value for stash-overflow-strategy: [$unknown]")
     }
 
     val stashCapacity = typedConfig.getInt("stash-capacity")

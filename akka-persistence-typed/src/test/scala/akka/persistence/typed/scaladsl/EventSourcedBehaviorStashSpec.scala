@@ -515,6 +515,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
                   Effect.persist("unstash")
                     .thenUnstashAll()
                     // FIXME this is run before unstash, so not sequentially as the docs say
+                    // https://github.com/akka/akka/issues/26489
                     .thenRun(_ ⇒
                       probe.ref ! "done-unstashing"
                     )
