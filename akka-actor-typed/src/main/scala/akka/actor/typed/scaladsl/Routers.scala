@@ -23,7 +23,7 @@ object Routers {
    * until the deregistration is complete to minimize the risk of lost messages.
    */
   def group[T](key: ServiceKey[T]): GroupRouter[T] =
-    // fixme: potential detection of cluster and selecting a different impl
+    // fixme: potential detection of cluster and selecting a different impl https://github.com/akka/akka/issues/26355
     new GroupRouterBuilder[T](key)
 
   /**
