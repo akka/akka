@@ -514,14 +514,9 @@ object Source {
       overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     require(!overflowStrategy.isBackpressure, "Backpressure overflowStrategy not supported")
-    fromGraph(
-      new ActorRefSource(
-        completionMatcher,
-        failureMatcher,
-        bufferSize,
-        overflowStrategy,
-        DefaultAttributes.actorRefSource,
-        shape("ActorRefSource")))
+    Source
+      .fromGraph(new ActorRefSource(bufferSize, overflowStrategy, completionMatcher, failureMatcher))
+      .withAttributes(DefaultAttributes.actorRefSource)
   }
 
   /**

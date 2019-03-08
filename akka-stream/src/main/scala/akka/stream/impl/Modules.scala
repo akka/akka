@@ -112,7 +112,7 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSource[Out](
+@InternalApi private[akka] final class ActorRefPublisherSource[Out](
     completionMatcher: PartialFunction[Any, Unit],
     failureMatcher: PartialFunction[Any, Throwable],
     bufferSize: Int,
@@ -132,7 +132,7 @@ import akka.event.Logging
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
-    new ActorRefSource[Out](completionMatcher, failureMatcher, bufferSize, overflowStrategy, attributes, shape)
+    new ActorRefPublisherSource[Out](completionMatcher, failureMatcher, bufferSize, overflowStrategy, attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] =
-    new ActorRefSource(completionMatcher, failureMatcher, bufferSize, overflowStrategy, attr, amendShape(attr))
+    new ActorRefPublisherSource(completionMatcher, failureMatcher, bufferSize, overflowStrategy, attr, amendShape(attr))
 }
