@@ -133,7 +133,6 @@ object EventSourcedBehaviorStashSpec {
   private def inactive(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
       case _: Increment ⇒
-        // println(s"stashing ${i.id}")
         Effect.stash()
       case cmd @ UpdateValue(_, value, _) ⇒
         Effect.persist(ValueUpdated(value))
