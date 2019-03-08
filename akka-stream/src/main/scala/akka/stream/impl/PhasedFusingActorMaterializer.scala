@@ -671,7 +671,7 @@ private final case class SavedIslandData(
     // TODO: bail on unknown types
     val stageModule = mod.asInstanceOf[GraphStageModule[Shape, Any]]
     val stage = stageModule.stage
-    val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
+    val matAndLogic = stage.createLogicAndEagerMaterializedValue(attributes, materializer)
     val logic = matAndLogic._1
     logic.originalStage = OptionVal.Some(stage)
     logic.attributes = attributes

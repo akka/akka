@@ -31,7 +31,7 @@ import scala.concurrent.{ Future, Promise }
 @InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
     shape: S,
     attributes: Attributes,
-    stage: GraphStageWithMaterializedValue[S, M])
+    stage: GraphStageWithEagerMaterializedValue[S, M])
     extends AtomicModule[S, M] {
 
   override def withAttributes(attributes: Attributes): AtomicModule[S, M] =

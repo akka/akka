@@ -7,11 +7,11 @@ package akka.stream.stage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation._
 import akka.japi.function.{ Effect, Procedure }
-import akka.stream._
+import akka.stream.{ Materializer, _ }
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
+import akka.stream.impl.fusing._
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
@@ -23,25 +23,19 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 
 /**
- * Scala API: A GraphStage represents a reusable graph stream processing operator.
- *
- * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
- * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
- *
- * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
- * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
- *
- * See also [[AbstractGraphStageWithMaterializedValue]] for Java DSL for this operator.
+ * INTERNAL API
  */
-abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
+@InternalApi
+private[akka] abstract class GraphStageWithEagerMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
   @throws(classOf[Exception])
-  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
+  private[akka] def createLogicAndEagerMaterializedValue(
+      inheritedAttributes: Attributes,
+      materializer: Materializer): (GraphStageLogic, M)
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  private var _traversalBuilder: TraversalBuilder = null
+  private var _traversalBuilder: TraversalBuilder = _
 
   /**
    * INTERNAL API
@@ -56,7 +50,30 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
   }
 
   final override def withAttributes(attr: Attributes): Graph[S, M] =
-    new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
+    new GenericGraphWithChangedAttributes(shape, this.traversalBuilder, attr)
+}
+
+/**
+ * Scala API: A GraphStage represents a reusable graph stream processing operator.
+ *
+ * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
+ * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
+ * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ *
+ * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
+ * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
+ *
+ * See also [[AbstractGraphStageWithMaterializedValue]] for Java DSL for this operator.
+ */
+abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends GraphStageWithEagerMaterializedValue[S, M] {
+
+  @throws(classOf[Exception])
+  private[akka] final def createLogicAndEagerMaterializedValue(
+      inheritedAttributes: Attributes,
+      materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
+
+  @throws(classOf[Exception])
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 }
 
 /**
@@ -307,7 +324,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * If possible a link back to the operator that the logic was created with, used for debugging.
    */
-  private[stream] var originalStage: OptionVal[GraphStageWithMaterializedValue[_ <: Shape, _]] = OptionVal.None
+  private[stream] var originalStage: OptionVal[GraphStageWithEagerMaterializedValue[_ <: Shape, _]] = OptionVal.None
 
   /**
    * INTERNAL API
@@ -1206,6 +1223,18 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       case existing =>
         existing.become(receive)
         existing
+    }
+
+  @InternalApi
+  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer)(
+      receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
+    _stageActor match {
+      case null ⇒
+        val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
+        _stageActor
+      case _ ⇒
+        throw new IllegalStateException("Cannot become in eager initialization")
     }
 
   /**
