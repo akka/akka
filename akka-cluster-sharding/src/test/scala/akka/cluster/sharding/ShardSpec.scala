@@ -16,6 +16,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
+import scala.util.control.NoStackTrace
 
 object ShardSpec {
   val config =
@@ -51,6 +52,8 @@ object ShardSpec {
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
   }
+
+  case class BadLease(msg: String) extends RuntimeException(msg) with NoStackTrace
 }
 
 class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
@@ -77,7 +80,7 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
     }
 
     "retry if the lease acquire fails" in new Setup {
-      lease.initialPromise.failure(new RuntimeException("no lease for you"))
+      lease.initialPromise.failure(BadLease("no lease for you"))
       parent.expectNoMessage(shortDuration)
       lease.setNextAcquireResult(Future.successful(true))
       parent.expectMsg(ShardInitialized(shardId))
@@ -88,9 +91,8 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
       probe.watch(shard)
       lease.initialPromise.complete(Success(true))
       parent.expectMsg(ShardInitialized(shardId))
-      lease.getCurrentCallback().apply(Some(new RuntimeException("bye bye lease")))
-      probe.expectTerminated()
-
+      lease.getCurrentCallback().apply(Some(BadLease("bye bye lease")))
+      probe.expectTerminated(shard)
     }
   }
 

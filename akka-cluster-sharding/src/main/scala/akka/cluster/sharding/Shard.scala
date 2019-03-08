@@ -183,7 +183,7 @@ private[akka] class Shard(
 
   def tryGetLease(l: Lease) = {
     log.info("Acquiring lease {}", l.settings)
-    pipe(l.acquire().map(r ⇒ LeaseAcquireResult(r, None)).recover {
+    pipe(l.acquire(reason ⇒ self ! LeaseLost(reason)).map(r ⇒ LeaseAcquireResult(r, None)).recover {
       case t ⇒ LeaseAcquireResult(acquired = false, Some(t))
     }).to(self)
   }
@@ -208,6 +208,8 @@ private[akka] class Shard(
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseRetry ⇒
       tryGetLease(lease.get)
+    case ll: LeaseLost ⇒
+      receiveLeaseLost(ll)
   }
 
   def receiveCommand: Receive = {
@@ -219,9 +221,17 @@ private[akka] class Shard(
     case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
     case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
     case PassivateIdleTick                       ⇒ passivateIdleEntities()
+    case msg: LeaseLost                          ⇒ receiveLeaseLost(msg)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
+  def receiveLeaseLost(msg: LeaseLost): Unit = {
+    // The shard region will re-create this when it receives a message for this shard
+    log.error("Shard type [{}] id [{}] lease lost. Reason: {}", typeName, shardId, msg.reason)
+    // should we try and stop entities with the stop message or just stop ASAP?
+    context.stop(self)
+
+  }
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
     case RestartEntity(id)    ⇒ getOrCreateEntity(id)
     case RestartEntities(ids) ⇒ restartEntities(ids)
