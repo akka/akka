@@ -32,6 +32,10 @@ Nightly snapshot releases are created from master and published to
 https://repo.akka.io/snapshots by https://jenkins.akka.io:8498/job/akka-publish-nightly/
 
 To create snapshot versions manually, use `sbt clean stampVersion publish`.
+The release artifacts are created in `akka-*/target/repository` and can be
+copied over to a maven server. If you have access, the Jenkins job at
+https://jenkins.akka.io:8498/job/akka-publish-wip/ can be used to publish
+a snapshot to https://repo.akka.io/snapshots from any branch.
 
 ## Release steps
 
