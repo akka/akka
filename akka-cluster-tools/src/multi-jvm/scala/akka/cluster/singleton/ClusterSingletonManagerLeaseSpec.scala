@@ -166,6 +166,9 @@ class ClusterSingletonManagerLeaseSpec extends MultiNodeSpec(ClusterSingletonMan
       cluster.state.members.size shouldEqual 5
       runOn(controller) {
         cluster.down(address(first))
+        awaitAssert({
+          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up)
+        }, 20.seconds)
         val requests = awaitAssert({
           TestLeaseActorClientExt(system).getLeaseActor() ! GetRequests
           val msg = expectMsgType[LeaseRequests]
