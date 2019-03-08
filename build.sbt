@@ -167,11 +167,11 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   //      Scope "test" is alright in the pom.xml, but would have been nicer with
   //      provided.
   .dependsOn(
-  cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
-  distributedData,
-  persistence % "compile->compile",
-  clusterTools
-)
+    cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
+    distributedData,
+    persistence % "compile->compile",
+    clusterTools
+  )
   .settings(Dependencies.clusterSharding)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding"))
   .settings(OSGi.clusterSharding)
@@ -333,8 +333,8 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
   //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
   .settings(
-  fork in Test := true
-)
+    fork in Test := true
+  )
   .disablePlugins(MimaPlugin)
 
 lazy val protobuf = akkaModule("akka-protobuf")

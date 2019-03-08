@@ -57,9 +57,9 @@ class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
 
     case ActionRequest(request, result) ⇒
       requests.find(_._2 == request) match {
-        case Some(r) ⇒
-          log.info("Actioning request {} to {}", r._2, result)
-          r._1 ! result
+        case Some((snd, req)) ⇒
+          log.info("Actioning request {} to {}", req, result)
+          snd ! result
           requests = requests.filterNot(_._2 == request)
         case None ⇒
           throw new RuntimeException(s"unknown request to action: ${request}. Requests: ${requests}")
@@ -85,7 +85,7 @@ class TestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension
     lease
   }
 
-  def setActorActor(client: ActorRef): Unit =
+  def setActorLease(client: ActorRef): Unit =
     leaseActor.set(client)
 
 }

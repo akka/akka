@@ -27,7 +27,7 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   /**
    * The configuration define at `configPath` must have a property `lease-class` that defines
    * the fully qualified class name of the Lease implementation.
-   * The class must implement [[Lease]] and have constructor with [[akka.lease.LeaseSettings]] parameter and
+   * The class must implement [[Lease]] and have constructor with [[akka.coordination.lease.LeaseSettings]] parameter and
    * optionally ActorSystem parameter.
    *
    * @param leaseName the name of the lease resource
