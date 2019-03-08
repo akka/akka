@@ -761,22 +761,25 @@ class ClusterSingletonManager(
 
   when(AcquiringLease) {
     case Event(AcquireLeaseResult(result), _) ⇒
+      logInfo("Acquire lease result {}", result)
       if (result) {
-        logInfo("Acquired lease. Moving to Oldest")
         goToOldest()
       } else {
-        logInfo("Failed to acquire lease. Retrying in {}", leaseRetryInterval)
         setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
         stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton ⇒
       logInfo("Singleton actor terminated. Trying to acquire lease again before re-creating.")
+      // tryAcquireLease sets the state to None for singleton actor
       tryAcquireLease()
     case Event(AcquireLeaseFailure(t), _) ⇒
       log.error(t, "failed to get lease (will be retried)")
       setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
       stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
     case Event(LeaseRetry, _) ⇒
+      // If lease was lost (so previous state was oldest) then we don't try and get the lease
+      // until the old singleton instance has been terminated so we know there isn't an
+      // instance in this case
       tryAcquireLease()
     case Event(OldestChanged(oldestOption), AcquiringLeaseData(_, singleton)) ⇒
       handleOldestChanged(singleton, oldestOption)
