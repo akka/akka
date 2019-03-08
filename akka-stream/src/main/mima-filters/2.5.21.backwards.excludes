@@ -48,3 +48,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSou
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.create")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.this")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.ActorRefSource.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor")
