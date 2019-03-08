@@ -761,10 +761,11 @@ class ClusterSingletonManager(
 
   when(AcquiringLease) {
     case Event(AcquireLeaseResult(result), _) ⇒
-      logInfo("Acquire lease result {}", result)
       if (result) {
+        logInfo("Acquired lease. Moving to Oldest")
         goToOldest()
       } else {
+        logInfo("Failed to acquire lease. Retrying in {}", leaseRetryInterval)
         setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
         stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
       }
