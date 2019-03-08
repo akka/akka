@@ -5,10 +5,10 @@
 package docs.persistence
 
 import akka.actor._
-import akka.pattern.{ Backoff, BackoffSupervisor }
+import akka.pattern.{ Backoff, BackoffOpts, BackoffSupervisor }
 import akka.persistence._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink, Flow }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -96,15 +96,14 @@ object PersistenceDocSpec {
     abstract class MyActor extends Actor {
       import PersistAsync.MyPersistentActor
       //#backoff
-      val childProps = Props[MyPersistentActor]
+      val childProps = Props[MyPersistentActor]()
       val props = BackoffSupervisor.props(
-        Backoff.onStop(
+        BackoffOpts.onStop(
           childProps,
           childName = "myActor",
           minBackoff = 3.seconds,
           maxBackoff = 30.seconds,
-          randomFactor = 0.2,
-          maxNrOfRetries = -1))
+          randomFactor = 0.2))
       context.actorOf(props, name = "mySupervisor")
       //#backoff
     }

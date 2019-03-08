@@ -17,6 +17,20 @@ import java.util.concurrent.CompletionStage
 import scala.compat.java8.FutureConverters._
 
 /**
+ * API MAY CHANGE
+ */
+@ApiMayChange
+object SourceWithContext {
+
+  /**
+   * Creates a SourceWithContext from a regular flow that operates on `Pair<data, context>` elements.
+   */
+  def fromPairs[Out, CtxOut, Mat](under: Source[Pair[Out, CtxOut], Mat]): SourceWithContext[Out, CtxOut, Mat] = {
+    new SourceWithContext(scaladsl.SourceWithContext.fromTuples(under.asScala.map(_.toScala)))
+  }
+}
+
+/**
  * A source that provides operations which automatically propagate the context of an element.
  * Only a subset of common operations from [[Source]] is supported. As an escape hatch you can
  * use [[SourceWithContext#via]] to manually provide the context propagation for otherwise unsupported
@@ -154,40 +168,6 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def sliding(n: Int, step: Int = 1): SourceWithContext[java.util.List[Out @uncheckedVariance], java.util.List[Ctx @uncheckedVariance], Mat] =
     viaScala(_.sliding(n, step).map(_.asJava).mapContext(_.asJava))
-
-  /**
-   * Context-preserving variant of [[akka.stream.javadsl.Source.statefulMapConcat]].
-   *
-   * The context of the input element will be associated with each of the output elements calculated from
-   * this input element.
-   *
-   * Example:
-   *
-   * ```
-   * def dup(element: String) = Seq(element, element)
-   *
-   * Input:
-   *
-   * ("a", 1)
-   * ("b", 2)
-   *
-   * inputElements.statefulMapConcat(() => dup)
-   *
-   * Output:
-   *
-   * ("a", 1)
-   * ("a", 1)
-   * ("b", 2)
-   * ("b", 2)
-   * ```
-   *
-   * @see [[akka.stream.javadsl.Source.statefulMapConcat]]
-   */
-  def statefulMapConcat[Out2](f: function.Creator[function.Function[Out, java.lang.Iterable[Out2]]]): SourceWithContext[Out2, Ctx, Mat] =
-    viaScala(_.statefulMapConcat { () ⇒
-      val fun = f.create()
-      elem ⇒ Util.immutableSeq(fun(elem))
-    })
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.log]].

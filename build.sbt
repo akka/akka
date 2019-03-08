@@ -242,9 +242,9 @@ lazy val docs = akkaModule("akka-docs")
   .settings(
     name in(Compile, paradox) := "Akka",
     paradoxProperties ++= Map(
-      "akka.canonical.base_url" -> "http://doc.akka.io/docs/akka/current",
+      "akka.canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
       "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
-      "extref.akka.http.base_url" -> "http://doc.akka.io/docs/akka-http/current/%s",
+      "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
       "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
       "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
@@ -252,7 +252,7 @@ lazy val docs = akkaModule("akka-docs")
       "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
       "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
       "javadoc.akka.base_url" -> "https://doc.akka.io/japi/akka/2.5",
-      "javadoc.akka.http.base_url" -> "http://doc.akka.io/japi/akka-http/current",
+      "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
       "scala.version" -> scalaVersion.value,
       "scala.binary_version" -> scalaBinaryVersion.value,
       "akka.version" -> version.value,

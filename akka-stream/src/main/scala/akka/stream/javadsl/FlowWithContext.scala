@@ -26,8 +26,11 @@ object FlowWithContext {
     new FlowWithContext(scaladsl.FlowWithContext[In, Ctx])
   }
 
+  /**
+   * Creates a FlowWithContext from a regular flow that operates on `Pair<data, context>` elements.
+   */
   def fromPairs[In, CtxIn, Out, CtxOut, Mat](under: Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] = {
-    new FlowWithContext(scaladsl.FlowWithContext.from(scaladsl.Flow[(In, CtxIn)].map { case (i, c) ⇒ Pair(i, c) }.viaMat(under.asScala.map(_.toScala))(scaladsl.Keep.right)))
+    new FlowWithContext(scaladsl.FlowWithContext.fromTuples(scaladsl.Flow[(In, CtxIn)].map { case (i, c) ⇒ Pair(i, c) }.viaMat(under.asScala.map(_.toScala))(scaladsl.Keep.right)))
   }
 }
 
@@ -175,40 +178,6 @@ final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: scaladsl
    */
   def sliding(n: Int, step: Int = 1): FlowWithContext[In, CtxIn, java.util.List[Out @uncheckedVariance], java.util.List[CtxOut @uncheckedVariance], Mat] =
     viaScala(_.sliding(n, step).map(_.asJava).mapContext(_.asJava))
-
-  /**
-   * Context-preserving variant of [[akka.stream.javadsl.Flow.statefulMapConcat]].
-   *
-   * The context of the input element will be associated with each of the output elements calculated from
-   * this input element.
-   *
-   * Example:
-   *
-   * ```
-   * def dup(element: String) = Seq(element, element)
-   *
-   * Input:
-   *
-   * ("a", 1)
-   * ("b", 2)
-   *
-   * inputElements.statefulMapConcat(() => dup)
-   *
-   * Output:
-   *
-   * ("a", 1)
-   * ("a", 1)
-   * ("b", 2)
-   * ("b", 2)
-   * ```
-   *
-   * @see [[akka.stream.javadsl.Flow.statefulMapConcat]]
-   */
-  def statefulMapConcat[Out2](f: function.Creator[function.Function[Out, java.lang.Iterable[Out2]]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
-    viaScala(_.statefulMapConcat { () ⇒
-      val fun = f.create()
-      elem ⇒ Util.immutableSeq(fun(elem))
-    })
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.log]].
