@@ -1,6 +1,6 @@
 package akka.cluster.sharding
 
-import akka.actor.{Actor, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
 import akka.cluster.sharding.ShardSpec.EntityActor
 import akka.testkit.AkkaSpec
 
@@ -11,8 +11,23 @@ object ShardSpec {
   akka.remote.artery.canonical.port = 0
   """
 
-  class EntityActor extends Actor {
-    override def receive: Receive = ???
+  class EntityActor extends Actor with ActorLogging {
+    override def receive: Receive = {
+      case msg =>
+        log.info("Msg {}", msg)
+    }
+  }
+
+  val numberOfShards = 5
+
+  case class EntityEnvelope(entityId: Int, msg: Any)
+
+  val extractEntityId: ShardRegion.ExtractEntityId = {
+    case EntityEnvelope(id, payload) ⇒ (id.toString, payload)
+  }
+
+  val extractShardId: ShardRegion.ExtractShardId = {
+    case EntityEnvelope(id, _)               ⇒ (id % numberOfShards).toString
   }
 }
 
