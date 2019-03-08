@@ -409,8 +409,8 @@ private[stream] object ConnectionSourceStage {
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
   import TcpConnectionStage._
 
-  val bytesIn: Inlet[ByteString] = Inlet("IncomingTCP.in")
-  val bytesOut: Outlet[ByteString] = Outlet("IncomingTCP.out")
+  val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
+  val bytesOut: Outlet[ByteString] = Outlet("OutgoingTCP.out")
   override def initialAttributes = Attributes.name("OutgoingConnection")
   val shape: FlowShape[ByteString, ByteString] = FlowShape(bytesIn, bytesOut)
 

@@ -36,7 +36,7 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends TypedActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
+trait ActorContext[T] extends TypedActorContext[T] {
 
   /**
    * Get the `javadsl` of this `ActorContext`.

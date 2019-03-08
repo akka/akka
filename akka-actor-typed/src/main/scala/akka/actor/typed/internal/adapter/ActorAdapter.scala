@@ -40,6 +40,7 @@ import akka.util.OptionVal
   import Behavior._
 
   protected var behavior: Behavior[T] = _initialBehavior
+  final def currentBehavior: Behavior[T] = behavior
 
   private var _ctx: ActorContextAdapter[T] = _
   def ctx: ActorContextAdapter[T] =
@@ -211,7 +212,7 @@ import akka.util.OptionVal
   }
 
   protected def initializeContext(): Unit = {
-    _ctx = new ActorContextAdapter[T](context)
+    _ctx = new ActorContextAdapter[T](context, this)
   }
 }
 

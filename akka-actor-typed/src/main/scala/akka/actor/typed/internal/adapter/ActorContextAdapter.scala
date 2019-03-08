@@ -8,6 +8,7 @@ package adapter
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.event.LoggingFilterWithMarker
 import akka.util.OptionVal
 import akka.{ ConfigurationException, actor ⇒ untyped }
 
@@ -17,9 +18,11 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
-@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext, adapter: ActorAdapter[T]) extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
+
+  private[akka] def currentBehavior: Behavior[T] = adapter.currentBehavior
 
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
@@ -86,7 +89,7 @@ import scala.concurrent.duration._
   private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
     val logSource = self.path.toString
     val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
     actorLogger = OptionVal.Some(logger)
     logger
   }

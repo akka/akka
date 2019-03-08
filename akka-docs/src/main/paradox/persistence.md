@@ -466,6 +466,8 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #backoff }
 
+See @ref:[Supervision strategies](general/supervision.md#supervision-strategies) for more details about actor supervision.
+
 If persistence of an event is rejected before it is stored, e.g. due to serialization error,
 `onPersistRejected` will be invoked (logging a warning by default), and the actor continues with
 next message.

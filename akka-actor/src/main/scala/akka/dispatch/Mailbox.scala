@@ -290,7 +290,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
      * if we closed the mailbox, we must dump the remaining system messages
      * to deadLetters (this is essential for DeathWatch)
      */
-    val dlm = actor.dispatcher.mailboxes.deadLetterMailbox
+    val dlm: Mailbox =
+      // MICRO-OPT: `actor` is volatile, so the access is slow enough to avoid if not needed
+      if (messageList.nonEmpty) actor.dispatcher.mailboxes.deadLetterMailbox
+      else null
     while (messageList.nonEmpty) {
       val msg = messageList.head
       messageList = messageList.tail

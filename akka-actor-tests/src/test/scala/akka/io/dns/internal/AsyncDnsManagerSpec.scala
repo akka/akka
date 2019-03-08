@@ -43,6 +43,11 @@ class AsyncDnsManagerSpec extends AkkaSpec(
       resolved.ipv4 should be(Nil)
       resolved.ipv6.length should be(1)
     }
+
+    "provide access to cache" in {
+      dns ! AsyncDnsManager.GetCache
+      expectMsgType[AsyncDnsCache] should be theSameInstanceAs Dns(system).cache
+    }
   }
 
 }

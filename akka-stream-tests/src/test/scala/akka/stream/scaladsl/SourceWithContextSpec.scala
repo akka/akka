@@ -28,6 +28,16 @@ class SourceWithContextSpec extends StreamSpec {
         .expectComplete()
     }
 
+    "get created from a source of tuple2" in {
+      val msg = Message("a", 1L)
+      SourceWithContext.fromTuples(Source(Vector((msg, msg.offset))))
+        .asSource
+        .runWith(TestSink.probe[(Message, Long)])
+        .request(1)
+        .expectNext((msg, 1L))
+        .expectComplete()
+    }
+
     "be able to get turned back into a normal Source" in {
       val msg = Message("a", 1L)
       Source(Vector(msg))
@@ -95,24 +105,6 @@ class SourceWithContextSpec extends StreamSpec {
         .run
         .request(2)
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
-        .expectComplete()
-    }
-
-    "pass through context via statefulMapConcat" in {
-      val statefulFunction: () ⇒ String ⇒ collection.immutable.Iterable[String] = () ⇒ {
-        var counter = 0
-        str ⇒ {
-          counter = counter + 1
-          (1 to counter).map(_ ⇒ str)
-        }
-      }
-      Source(Vector(Message("a", 1L), Message("z", 2L)))
-        .asSourceWithContext(_.offset)
-        .map(_.data)
-        .statefulMapConcat(statefulFunction)
-        .runWith(TestSink.probe[(String, Long)])
-        .request(3)
-        .expectNext(("a", 1L), ("z", 2L), ("z", 2L))
         .expectComplete()
     }
   }
