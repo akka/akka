@@ -8,7 +8,7 @@ import akka.annotation.DoNotInherit
 
 /**
  * Envelope that is published on the eventStream for every message that is
- * dropped due to overfull queues.
+ * dropped due to overfull queues or routers with no routees.
  */
 final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
   /** Java API */
