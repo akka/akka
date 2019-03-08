@@ -106,14 +106,14 @@ object ReplicatorSpec {
       implicit val scheduler: Scheduler = ???
       implicit val cluster: Cluster = ???
 
-      val reply1: Future[GetResponse[GCounter]] = replicator ? Replicator.Get(Key, Replicator.ReadLocal)
+      val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
 
       val reply2: Future[UpdateResponse[GCounter]] =
-        replicator ? Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)
+        replicator.ask(Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1))
 
-      val reply3: Future[DeleteResponse[GCounter]] = replicator ? Replicator.Delete(Key, Replicator.WriteLocal)
+      val reply3: Future[DeleteResponse[GCounter]] = replicator.ask(Replicator.Delete(Key, Replicator.WriteLocal))
 
-      val reply4: Future[ReplicaCount] = replicator ? Replicator.GetReplicaCount()
+      val reply4: Future[ReplicaCount] = replicator.ask(Replicator.GetReplicaCount())
 
       // suppress unused compiler warnings
       println("" + reply1 + reply2 + reply3 + reply4)

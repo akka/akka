@@ -20,11 +20,13 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
+
 import akka.persistence.typed.Callback
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
 import akka.persistence.typed.Stop
 import akka.persistence.typed.UnstashAll
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
 /**
@@ -48,6 +50,10 @@ import akka.persistence.typed.scaladsl.Effect
 @InternalApi
 private[akka] object Running {
 
+  trait WithSeqNrAccessible {
+    def currentSequenceNumber: Long
+  }
+
   final case class RunningState[State](
     seqNr:              Long,
     state:              State,
@@ -66,14 +72,16 @@ private[akka] object Running {
     }
   }
 
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] =
-    new Running(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
+    val running = new Running(setup.setMdc(MDC.RunningCmds))
+    new running.HandlingCommands(state)
+  }
 }
 
 // ===============================================
 
 /** INTERNAL API */
-@InternalApi private[akka] class Running[C, E, S](
+@InternalApi private[akka] final class Running[C, E, S](
   override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
   import InternalProtocol._
@@ -81,8 +89,23 @@ private[akka] object Running {
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
+  private val storingSnapshotMdc = MDC.create(setup.persistenceId, MDC.StoringSnapshot)
 
-  def handlingCommands(state: RunningState[S]): Behavior[InternalProtocol] = {
+  final class HandlingCommands(state: RunningState[S]) extends AbstractBehavior[InternalProtocol] with WithSeqNrAccessible {
+
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r) ⇒
+        setup.log.warning("Unexpected SnapshotterResponse {}", r)
+        Behaviors.unhandled
+      case _ ⇒ Behaviors.unhandled
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill ⇒
+        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
+        else new HandlingCommands(state.copy(receivedPoisonPill = true))
+    }
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
@@ -169,16 +192,7 @@ private[akka] object Running {
 
     setup.setMdc(runningCmdsMdc)
 
-    Behaviors.receiveMessage[InternalProtocol] {
-      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
-      case _                                ⇒ Behaviors.unhandled
-    }.receiveSignal {
-      case (_, PoisonPill) ⇒
-        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
-        else handlingCommands(state.copy(receivedPoisonPill = true))
-    }
-
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
   // ===============================================
@@ -199,17 +213,19 @@ private[akka] object Running {
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     var sideEffects:            immutable.Seq[SideEffect[S]])
-    extends AbstractBehavior[InternalProtocol] {
+    extends AbstractBehavior[InternalProtocol] with WithSeqNrAccessible {
 
     private var eventCounter = 0
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
-        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
-        case RecoveryPermitGranted             ⇒ Behaviors.unhandled
+        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
+        case SnapshotterResponse(r) ⇒
+          setup.log.warning("Unexpected SnapshotterResponse {}", r)
+          Behaviors.unhandled
+        case RecoveryTickEvent(_)  ⇒ Behaviors.unhandled
+        case RecoveryPermitGranted ⇒ Behaviors.unhandled
       }
     }
 
@@ -235,10 +251,11 @@ private[akka] object Running {
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
-          if (shouldSnapshotAfterPersist)
+          if (shouldSnapshotAfterPersist && state.state != null) {
             internalSaveSnapshot(state)
-
-          tryUnstashOne(applySideEffects(sideEffects, state))
+            storingSnapshot(state, sideEffects)
+          } else
+            tryUnstashOne(applySideEffects(sideEffects, state))
         }
       }
 
@@ -279,35 +296,66 @@ private[akka] object Running {
         this
     }
 
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
-  private def onSnapshotterResponse(
-    response: SnapshotProtocol.Response,
-    outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    response match {
-      case SaveSnapshotSuccess(meta) ⇒
-        setup.onSnapshot(meta, Success(Done))
-        outer
-      case SaveSnapshotFailure(meta, ex) ⇒
-        setup.onSnapshot(meta, Failure(ex))
-        outer
+  // ===============================================
 
-      // FIXME not implemented
-      case DeleteSnapshotFailure(_, _)  ⇒ ???
-      case DeleteSnapshotSuccess(_)     ⇒ ???
-      case DeleteSnapshotsFailure(_, _) ⇒ ???
-      case DeleteSnapshotsSuccess(_)    ⇒ ???
+  def storingSnapshot(
+    state:       RunningState[S],
+    sideEffects: immutable.Seq[SideEffect[S]]
+  ): Behavior[InternalProtocol] = {
+    setup.setMdc(storingSnapshotMdc)
 
-      // ignore LoadSnapshot messages
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing) setup.log.debug(
+          "Discarding message [{}], because actor is to be stopped", cmd)
+        Behaviors.unhandled
+      } else {
+        stashUser(cmd)
+        storingSnapshot(state, sideEffects)
+      }
+    }
+
+    def onSnapshotterResponse(response: SnapshotProtocol.Response): Unit = {
+      response match {
+        case SaveSnapshotSuccess(meta) ⇒
+          setup.onSnapshot(meta, Success(Done))
+        case SaveSnapshotFailure(meta, ex) ⇒
+          setup.onSnapshot(meta, Failure(ex))
+
+        // FIXME #24698 not implemented yet
+        case DeleteSnapshotFailure(_, _)  ⇒ ???
+        case DeleteSnapshotSuccess(_)     ⇒ ???
+        case DeleteSnapshotsFailure(_, _) ⇒ ???
+        case DeleteSnapshotsSuccess(_)    ⇒ ???
+
+        // ignore LoadSnapshot messages
+        case _                            ⇒
+      }
+    }
+
+    Behaviors.receiveMessage[InternalProtocol] {
+      case cmd: IncomingCommand[C] @unchecked ⇒
+        onCommand(cmd)
+      case SnapshotterResponse(r) ⇒
+        onSnapshotterResponse(r)
+        tryUnstashOne(applySideEffects(sideEffects, state))
       case _ ⇒
         Behaviors.unhandled
+    }.receiveSignal {
+      case (_, PoisonPill) ⇒
+        // wait for snapshot response before stopping
+        storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects)
     }
+
   }
 
   // --------------------------
 
   def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: RunningState[S]): Behavior[InternalProtocol] = {
-    var behavior: Behavior[InternalProtocol] = handlingCommands(state)
+    var behavior: Behavior[InternalProtocol] = new HandlingCommands(state)
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop
@@ -345,3 +393,4 @@ private[akka] object Running {
   }
 
 }
+

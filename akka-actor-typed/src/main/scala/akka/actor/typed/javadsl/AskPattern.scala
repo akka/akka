@@ -31,5 +31,5 @@ import scala.compat.java8.FutureConverters._
  */
 object AskPattern {
   def ask[T, U](actor: RecipientRef[T], message: JFunction[ActorRef[U], T], timeout: Duration, scheduler: Scheduler): CompletionStage[U] =
-    (actor.?(message.apply)(timeout.asScala, scheduler)).toJava
+    (actor.ask(message.apply)(timeout.asScala, scheduler)).toJava
 }

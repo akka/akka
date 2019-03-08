@@ -52,7 +52,7 @@ object MaterializerState {
 
   /** INTERNAL API */
   @InternalApi
-  private[akka] def requestFromChild(child: ActorRef)(implicit ec: ExecutionContext): Future[StreamSnapshot] = {
+  private[akka] def requestFromChild(child: ActorRef): Future[StreamSnapshot] = {
     // FIXME arbitrary timeout
     implicit val timeout: Timeout = 10.seconds
     (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot]

@@ -57,16 +57,16 @@ import akka.util.OptionVal
       override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
                          materializer: PhasedFusingActorMaterializer,
                          islandName:   String): PhaseIsland[Any] =
-        new ProcessorModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
+        new ProcessorModulePhase().asInstanceOf[PhaseIsland[Any]]
     },
     TlsModuleIslandTag → new Phase[Any] {
       def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
                 materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
-        new TlsModulePhase(effectiveAttributes, materializer, islandName).asInstanceOf[PhaseIsland[Any]]
+        new TlsModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
     GraphStageTag → DefaultPhase)
 
-  @InternalApi private[akka] def apply(settings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer = {
+  @InternalApi private[akka] def apply()(implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
     val materializerSettings = ActorMaterializerSettings(system)
@@ -848,7 +848,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ProcessorModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
+@InternalApi private[akka] final class ProcessorModulePhase()
   extends PhaseIsland[Processor[Any, Any]] {
   override def name: String = "ProcessorModulePhase"
   private[this] var processor: Processor[Any, Any] = _
@@ -876,7 +876,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class TlsModulePhase(attributes: Attributes, materializer: PhasedFusingActorMaterializer, islandName: String) extends PhaseIsland[NotUsed] {
+@InternalApi private[akka] final class TlsModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String) extends PhaseIsland[NotUsed] {
   def name: String = "TlsModulePhase"
 
   var tlsActor: ActorRef = _

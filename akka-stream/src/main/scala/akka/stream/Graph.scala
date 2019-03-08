@@ -80,5 +80,4 @@ trait Graph[+S <: Shape, +M] {
 private[stream] abstract class GraphDelegate[+S <: Shape, +Mat](delegate: Graph[S, Mat]) extends Graph[S, Mat] {
   final override def shape: S = delegate.shape
   final override private[stream] def traversalBuilder: TraversalBuilder = delegate.traversalBuilder
-  final override def withAttributes(attr: Attributes): Graph[S, Mat] = delegate.withAttributes(attr)
 }

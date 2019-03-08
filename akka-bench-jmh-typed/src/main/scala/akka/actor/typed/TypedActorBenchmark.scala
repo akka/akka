@@ -99,7 +99,7 @@ class TypedActorBenchmark {
   @Benchmark
   @OperationsPerInvocation(totalMessages)
   def echo(): Unit = {
-    Await.result(system ? Start, timeout)
+    Await.result(system.ask(Start), timeout)
   }
 
 }

@@ -21,7 +21,7 @@ import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -307,6 +307,21 @@ final class Flow[-In, +Out, +Mat](
           override def subscribe(s: Subscriber[_ >: Out]): Unit = pub.subscribe(s)
         }
       }
+
+  /**
+   * Turns a Flow into a FlowWithContext which manages a context per element along a stream.
+   *
+   * @param collapseContext turn each incoming pair of element and context value into an element of this Flow
+   * @param extractContext turn each outgoing element of this Flow into an outgoing context value
+   *
+   * API MAY CHANGE
+   */
+  @ApiMayChange
+  def asFlowWithContext[U, CtxU, CtxOut](collapseContext: (U, CtxU) ⇒ In)(extractContext: Out ⇒ CtxOut): FlowWithContext[U, CtxU, Out, CtxOut, Mat] =
+    new FlowWithContext(Flow[(U, CtxU)].map {
+      case (e, ctx) ⇒
+        collapseContext(e, ctx)
+    }.viaMat(this)(Keep.right).map(e ⇒ (e, extractContext(e))))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
   def asJava[JIn <: In]: javadsl.Flow[JIn, Out @uncheckedVariance, Mat @uncheckedVariance] =

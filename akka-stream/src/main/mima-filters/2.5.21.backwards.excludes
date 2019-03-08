@@ -1,4 +1,33 @@
+# #26353 Rename start/endContextPropagation functions to asFlow/Source
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.startContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SourceWithContext.endContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.startContextPropagation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.SourceWithContext.endContextPropagation")
+
 # FlowWithContextOps.log() #26386
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.log")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.log$default$2")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.log$default$3")
+
+# Various compiler warnings in streams #26399
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.PhasedFusingActorMaterializer.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ProcessorModulePhase.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.BoundedBuffer#DynamicQueue.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.TlsModulePhase.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$TickSourceCancellable")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.snapshot.MaterializerState.requestFromChild")
+
+# Sets correct return type for withAttributes on Source/FlowWithContext #26411
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.GraphDelegate.withAttributes")
+
+# rename `from` to `fromTuples` in WithContext Scala dsl #26370
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.from")
+
+# Remove statefulMapConcat from @ApiMayChange {Source,Flow}WithContext #26330
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.FlowWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SourceWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.SourceWithContext.statefulMapConcat")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.statefulMapConcat")

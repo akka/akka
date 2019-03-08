@@ -24,7 +24,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.testkit.ErrorFilter;
 import akka.testkit.javadsl.EventFilter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -459,6 +458,23 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   @Test
+  public void postStop() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    Behavior<Command> counter =
+        Behaviors.setup(
+            ctx ->
+                new CounterBehavior(new PersistenceId("c5"), ctx) {
+                  @Override
+                  public void onPostStop() {
+                    probe.ref().tell("stopped");
+                  }
+                });
+    ActorRef<Command> c = testKit.spawn(counter);
+    c.tell(StopThenLog.INSTANCE);
+    probe.expectMessage("stopped");
+  }
+
+  @Test
   public void tapPersistentActor() {
     TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
@@ -636,5 +652,68 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             });
 
     probe.expectTerminated(c);
+  }
+
+  class SequenceNumberBehavior extends EventSourcedBehavior<String, String, String> {
+    private final ActorRef<String> probe;
+    private final ActorContext<String> context;
+
+    public SequenceNumberBehavior(
+        PersistenceId persistenceId, ActorRef<String> probe, ActorContext<String> context) {
+      super(persistenceId);
+      this.probe = probe;
+      this.context = context;
+    }
+
+    @Override
+    public String emptyState() {
+      return "";
+    }
+
+    @Override
+    public CommandHandler<String, String, String> commandHandler() {
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onAnyCommand(
+              (state, cmd) -> {
+                probe.tell(lastSequenceNumber(context) + " onCommand");
+                return Effect()
+                    .persist(cmd)
+                    .thenRun((newState) -> probe.tell(lastSequenceNumber(context) + " thenRun"));
+              });
+    }
+
+    @Override
+    public EventHandler<String, String> eventHandler() {
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .onAnyEvent(
+              (state, event) -> {
+                probe.tell(lastSequenceNumber(context) + " applyEvent");
+                return state + event;
+              });
+    }
+
+    @Override
+    public void onRecoveryCompleted(String s) {
+      probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
+    }
+  }
+
+  @Test
+  public void accessLastSequenceNumber() {
+    TestProbe<String> probe = testKit.createTestProbe(String.class);
+    ActorRef<String> ref =
+        testKit.spawn(
+            Behaviors.<String>setup(
+                context ->
+                    new SequenceNumberBehavior(
+                        new PersistenceId("seqnr1"), probe.getRef(), context)));
+
+    probe.expectMessage("0 onRecoveryCompleted");
+    ref.tell("cmd");
+    probe.expectMessage("0 onCommand");
+    probe.expectMessage("0 applyEvent");
+    probe.expectMessage("1 thenRun");
   }
 }

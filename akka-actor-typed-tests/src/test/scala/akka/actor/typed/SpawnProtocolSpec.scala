@@ -46,7 +46,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val parent = spawn(SpawnProtocol.behavior, "parent2")
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout = Timeout(5.seconds)
-      val parentReply = parent ? SpawnProtocol.Spawn(target, "child", Props.empty)
+      val parentReply = parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty))
       val child = parentReply.futureValue
       val childReply = TestProbe[Pong.type]()
       child ! Ping(childReply.ref)

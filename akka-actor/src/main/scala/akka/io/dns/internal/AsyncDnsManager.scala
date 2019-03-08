@@ -23,8 +23,10 @@ import scala.concurrent.duration.Duration
  * INTERNAL API
  */
 @InternalApi
-private[io] object AsyncDnsManager {
+private[akka] object AsyncDnsManager {
   private case object CacheCleanup
+
+  case object GetCache
 }
 
 /**
@@ -82,10 +84,14 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
           }
           Dns.Resolved(asyncResolved.name, ips)
         }
-      reply pipeTo sender
+      reply pipeTo sender()
 
     case CacheCleanup ⇒
       cacheCleanup.foreach(_.cleanup())
+
+    case AsyncDnsManager.GetCache ⇒
+      sender() ! cache
+
   }
 }
 

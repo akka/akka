@@ -70,7 +70,9 @@ object SnapshotSpec {
   final case class Delete1(metadata: SnapshotMetadata)
   final case class DeleteN(criteria: SnapshotSelectionCriteria)
 
-  class DeleteSnapshotTestPersistentActor(name: String, _recovery: Recovery, probe: ActorRef) extends LoadSnapshotTestPersistentActor(name, _recovery, probe) {
+  class DeleteSnapshotTestPersistentActor(name: String, _recovery: Recovery, probe: ActorRef)
+    extends LoadSnapshotTestPersistentActor(name, _recovery, probe) {
+
     override def receiveCommand = receiveDelete orElse super.receiveCommand
     def receiveDelete: Receive = {
       case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr)

@@ -56,7 +56,6 @@ import scala.annotation.switch
   private var trimFront = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
   private var depth = 0 // counter of object-nesting depth, once hits 0 an object should be emitted
 
-  private var charsInObject = 0
   private var completedObject = false
   private var inStringExpression = false
   private var isStartOfEscapeSequence = false
@@ -140,7 +139,6 @@ import scala.annotation.switch
       depth -= 1
       pos += 1
       if (depth == 0) {
-        charsInObject = 0
         completedObject = true
       }
     } else if (isWhitespace(input) && !inStringExpression) {

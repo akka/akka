@@ -2,34 +2,36 @@
  * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.pattern
+package akka.pattern.internal
+
+import akka.actor.SupervisorStrategy._
+import akka.actor.{ OneForOneStrategy, _ }
+import akka.annotation.InternalApi
+import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
 
 import scala.concurrent.duration._
 
-import akka.actor._
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy._
-
 /**
+ * INTERNAL API
+ *
  * Back-off supervisor that stops and starts a child actor when the child actor restarts.
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
- * with ``akka.pattern.Backoff.onFailure``.
+ * with ``akka.pattern.BackoffOpts.onFailure``.
  */
-private class BackoffOnRestartSupervisor(
-  val childProps:        Props,
-  val childName:         String,
-  minBackoff:            FiniteDuration,
-  maxBackoff:            FiniteDuration,
-  val reset:             BackoffReset,
-  randomFactor:          Double,
-  strategy:              OneForOneStrategy,
-  val replyWhileStopped: Option[Any],
-  val finalStopMessage:  Option[Any ⇒ Boolean])
+@InternalApi private[pattern] class BackoffOnRestartSupervisor(
+  val childProps:    Props,
+  val childName:     String,
+  minBackoff:        FiniteDuration,
+  maxBackoff:        FiniteDuration,
+  val reset:         BackoffReset,
+  randomFactor:      Double,
+  strategy:          OneForOneStrategy,
+  replyWhileStopped: Option[Any])
   extends Actor with HandleBackoff
   with ActorLogging {
 
-  import context._
   import BackoffSupervisor._
+  import context._
 
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
@@ -81,6 +83,15 @@ private class BackoffOnRestartSupervisor(
       stop(self)
   }
 
-  def receive = onTerminated orElse handleBackoff
+  def receive: Receive = onTerminated orElse handleBackoff
 
+  protected def handleMessageToChild(msg: Any): Unit = child match {
+    case Some(c) ⇒
+      c.forward(msg)
+    case None ⇒
+      replyWhileStopped match {
+        case None    ⇒ context.system.deadLetters.forward(msg)
+        case Some(r) ⇒ sender() ! r
+      }
+  }
 }
