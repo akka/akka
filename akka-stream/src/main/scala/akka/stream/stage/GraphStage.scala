@@ -201,14 +201,23 @@ object GraphStageLogic {
       materializer: ActorMaterializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      name: String) {
+      name: String,
+      poisonPillFallback: Boolean) { // internal fallback to support deprecated SourceActorRef implementation replacement
+
+    def this(
+        materializer: akka.stream.ActorMaterializer,
+        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
+        initialReceive: StageActorRef.Receive,
+        name: String) {
+      this(materializer, getAsyncCallback, initialReceive, name, false)
+    }
 
     // not really needed, but let's keep MiMa happy
     def this(
         materializer: akka.stream.ActorMaterializer,
         getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
         initialReceive: StageActorRef.Receive) {
-      this(materializer, getAsyncCallback, initialReceive, "")
+      this(materializer, getAsyncCallback, initialReceive, "", false)
     }
 
     private val callback = getAsyncCallback(internalReceive)
@@ -222,6 +231,8 @@ object GraphStageLogic {
     private val functionRef: FunctionRef =
       cell.addFunctionRef(
         {
+          case (r, PoisonPill) if poisonPillFallback ⇒
+            callback.invoke((r, PoisonPill))
           case (_, m @ (PoisonPill | Kill)) =>
             materializer.logger.warning(
               "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
@@ -1226,12 +1237,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
   @InternalApi
-  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer)(
+  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer, poisonPillFallback: Boolean = false)(
       receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
+        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillFallback)
         _stageActor
       case _ ⇒
         throw new IllegalStateException("Cannot become in eager initialization")

@@ -4,7 +4,7 @@
 
 package akka.stream.impl
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, PoisonPill }
 import akka.annotation.InternalApi
 import akka.stream.OverflowStrategies._
 import akka.stream._
@@ -40,25 +40,44 @@ object ActorRefSource {
     with ActorRefStage {
       override protected def logSource: Class[_] = classOf[ActorRefSource[_]]
 
-      private val buffer: Buffer[T] = Buffer(maxBuffer, eagerMaterializer)
+      private val buffer: Buffer[T] =
+        if (maxBuffer != 0)
+          Buffer(maxBuffer, eagerMaterializer)
+        else {
+          null // todo: for backwards compatibility only
+        }
       private var isCompleting: Boolean = false
 
-      override protected def stageActorName: String = "source-actor"
+      override def preStart(): Unit = {
+        super.preStart()
+        if (maxBuffer == 0)
+          log.warning("for backwards compatibility: maxBuffer of 0 will not be supported in the future") // warning for backwards compatibility
+      }
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer) {
+      override protected def stageActorName: String =
+        inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
+
+      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillFallback = true) {
         case (_, EagerComplete) ⇒
           completeStage()
+        case (_, PoisonPill) ⇒
+          log.warning("for backwards compatibility: PoisonPill will note be supported in the future")
+          isCompleting = true
+          pump()
         case (_, m) if failureMatcher.isDefinedAt(m) ⇒
           failStage(failureMatcher(m))
         case (_, m) if completionMatcher.isDefinedAt(m) ⇒
           isCompleting = true
-
-        case (_, m: T) ⇒
+          pump()
+        case (_, m: T) ⇒ // todo: requires classTag (breaks api)
           if (isCompleting) {
             log.warning(
               "Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}])",
               m,
               buffer.used)
+          } else if (buffer == null) { // todo: remove - for backwards compatibility only!
+            if (isAvailable(out)) push(out, m)
+            else log.debug("Dropping element because there is no downstream demand: [{}]", m)
           } else if (!buffer.isFull) {
             buffer.enqueue(m)
             pump()
@@ -108,7 +127,7 @@ object ActorRefSource {
           val msg = buffer.dequeue()
           push(out, msg)
           pump()
-        } else if (isCompleting) {
+        } else if (isCompleting && buffer.isEmpty) {
           completeStage()
         }
       }
