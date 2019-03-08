@@ -499,4 +499,20 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#source-queue
   }
 
+  "illustrate use of source actor ref" in {
+    //#source-actorRef
+    val bufferSize = 10
+
+    val ref = Source
+      .actorRef[Int](bufferSize, OverflowStrategy.fail) // note: backpressure is not supported
+      .map(x ⇒ x * x)
+      .toMat(Sink.foreach(x ⇒ println(s"completed $x")))(Keep.left)
+      .run()
+
+    ref ! 1
+    ref ! 2
+    ref ! 3
+    ref ! akka.actor.Status.Success("done")
+    //#source-actorRef
+  }
 }
