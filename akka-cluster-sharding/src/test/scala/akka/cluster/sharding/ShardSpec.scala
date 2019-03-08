@@ -1,20 +1,42 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.cluster.sharding
 
-import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
+import akka.cluster.TestLeaseExt
+import akka.cluster.sharding.ShardRegion.ShardInitialized
 import akka.cluster.sharding.ShardSpec.EntityActor
-import akka.testkit.AkkaSpec
+import akka.cluster.singleton.ClusterSingletonLeaseSettings
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Success
 
 object ShardSpec {
-  val config = """
+  val config =
+    """
+  akka.loglevel = INFO
   akka.actor.provider = "cluster"
   akka.remote.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
+  test-lease {
+      lease-class = akka.cluster.TestLease
+      heartbeat-interval = 1s
+      heartbeat-timeout = 120s
+      lease-operation-timeout = 3s
+  }
   """
 
   class EntityActor extends Actor with ActorLogging {
     override def receive: Receive = {
-      case msg =>
+      case msg ⇒
         log.info("Msg {}", msg)
+        sender() ! s"ack ${msg}"
     }
   }
 
@@ -27,26 +49,77 @@ object ShardSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case EntityEnvelope(id, _)               ⇒ (id % numberOfShards).toString
+    case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
   }
 }
 
-class ShardSpec extends AkkaSpec(ShardSpec.config) {
+class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
+
+  import ShardSpec._
+
+  val shortDuration = 100.millis
+  val testLeaseExt = TestLeaseExt(system)
+
+  def leaseNameForShard(typeName: String, shardId: String) = s"${system.name}-shard-${typeName}-${shardId}"
 
   "A Cluster Shard" should {
-    "" in {
-      val shard = system.actorOf(Shard.props(
-        "type1",
-        "shard-1",
-        _ => Props(new EntityActor()),
-        ClusterShardingSettings(system),
-        ???,
-        ???,
-        PoisonPill,
-        system.deadLetters,
-        1
-      ))
+    "not initialize the shard until the lease is acquired" in new Setup {
+      parent.expectNoMessage(shortDuration)
+      lease.initialPromise.complete(Success(true))
+      parent.expectMsg(ShardInitialized(shardId))
     }
+
+    "retry if lease acquire returns false" in new Setup {
+      lease.initialPromise.complete(Success(false))
+      parent.expectNoMessage(shortDuration)
+      lease.setNextAcquireResult(Future.successful(true))
+      parent.expectMsg(ShardInitialized(shardId))
+    }
+
+    "retry if the lease acquire fails" in new Setup {
+      lease.initialPromise.failure(new RuntimeException("no lease for you"))
+      parent.expectNoMessage(shortDuration)
+      lease.setNextAcquireResult(Future.successful(true))
+      parent.expectMsg(ShardInitialized(shardId))
+    }
+
+    "shutdown if lease is lost?" in new Setup {
+      val probe = TestProbe()
+      probe.watch(shard)
+      lease.initialPromise.complete(Success(true))
+      parent.expectMsg(ShardInitialized(shardId))
+      lease.getCurrentCallback().apply(Some(new RuntimeException("bye bye lease")))
+      probe.expectTerminated()
+
+    }
+  }
+
+  val shardIds = new AtomicInteger(0)
+  def nextShardId = s"${shardIds.getAndIncrement()}"
+
+  trait Setup {
+    val shardId = nextShardId
+    val parent = TestProbe()
+    val settings = ClusterShardingSettings(system)
+      .withLeaseSettings(
+        new ClusterSingletonLeaseSettings("test-lease", 2.seconds)
+      )
+    def lease = awaitAssert {
+      testLeaseExt.getTestLease(leaseNameForShard(typeName, shardId))
+    }
+
+    val typeName = "type1"
+    val shard = parent.childActorOf(Shard.props(
+      typeName,
+      shardId,
+      _ ⇒ Props(new EntityActor()),
+      settings,
+      extractEntityId,
+      extractShardId,
+      PoisonPill,
+      system.deadLetters,
+      1
+    ))
   }
 
 }

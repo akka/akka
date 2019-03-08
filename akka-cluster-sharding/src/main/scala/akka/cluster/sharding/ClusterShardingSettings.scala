@@ -8,10 +8,10 @@ import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.{ApiMayChange, InternalApi}
+import akka.annotation.{ ApiMayChange, InternalApi }
 import com.typesafe.config.Config
 import akka.cluster.Cluster
-import akka.cluster.singleton.{ClusterSingletonLeaseSettings, ClusterSingletonManagerSettings}
+import akka.cluster.singleton.{ ClusterSingletonLeaseSettings, ClusterSingletonManagerSettings }
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -214,20 +214,20 @@ final class ClusterShardingSettings(
   val passivateIdleEntityAfter:     FiniteDuration,
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-  val leaseSettings: Option[ClusterSingletonLeaseSettings])
+  val leaseSettings:                Option[ClusterSingletonLeaseSettings])
   extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
   def this(
-  role:                         Option[String],
-  rememberEntities:             Boolean,
-  journalPluginId:              String,
-  snapshotPluginId:             String,
-  stateStoreMode:               String,
-  passivateIdleEntityAfter:     FiniteDuration,
-  tuningParameters:             ClusterShardingSettings.TuningParameters,
-  coordinatorSingletonSettings: ClusterSingletonManagerSettings): ClusterShardingSettings
-          )
+    role:                         Option[String],
+    rememberEntities:             Boolean,
+    journalPluginId:              String,
+    snapshotPluginId:             String,
+    stateStoreMode:               String,
+    passivateIdleEntityAfter:     FiniteDuration,
+    tuningParameters:             ClusterShardingSettings.TuningParameters,
+    coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(role, rememberEntities, journalPluginId, snapshotPluginId, stateStoreMode, passivateIdleEntityAfter, tuningParameters, coordinatorSingletonSettings, None)
 
   // included for binary compatibility reasons
   @deprecated("Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead", "2.5.18")
@@ -296,7 +296,7 @@ final class ClusterShardingSettings(
     passivateIdleAfter:           FiniteDuration                           = passivateIdleEntityAfter,
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings,
-    leaseSettings:         Option[ClusterSingletonLeaseSettings] = leaseSettings): ClusterShardingSettings =
+    leaseSettings:                Option[ClusterSingletonLeaseSettings]    = leaseSettings): ClusterShardingSettings =
 
     new ClusterShardingSettings(
       role,
