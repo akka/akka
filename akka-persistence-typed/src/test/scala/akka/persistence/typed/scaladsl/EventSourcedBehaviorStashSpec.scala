@@ -9,16 +9,19 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.Dropped
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.javadsl.StashOverflowException
+import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.testkit.EventFilter
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -27,9 +30,12 @@ object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     #akka.loglevel = DEBUG
+    akka.loggers = [akka.testkit.TestEventListener]
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.plugin = "failure-journal"
+    # tune it down a bit so we can hit limit
+    akka.persistence.typed.stash-capacity = 500
     failure-journal = $${akka.persistence.journal.inmem}
     failure-journal {
       class = "akka.persistence.typed.scaladsl.ChaosJournal"
@@ -159,6 +165,9 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+
+  // Needed for the untyped event filter
+  implicit val untyped = system.toUntyped
 
   "A typed persistent actor that is stashing commands" must {
 
@@ -477,6 +486,114 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       c ! GetValue(stateProbe.ref)
       stateProbe.expectMessage(State(5, active = true))
+    }
+
+    "discard when stash has reached limit with default dropped setting" in {
+      val probe = TestProbe[AnyRef]()
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
+      val behavior = EventSourcedBehavior[String, String, Boolean](
+        PersistenceId("stash-is-full-drop"),
+        emptyState = false,
+        commandHandler = { (state, command) ⇒
+          state match {
+            case false ⇒
+              command match {
+                case "ping" ⇒
+                  probe.ref ! "pong"
+                  Effect.none
+                case "start-stashing" ⇒
+                  Effect.persist("start-stashing")
+                case msg ⇒
+                  probe.ref ! msg
+                  Effect.none
+              }
+
+            case true ⇒
+              command match {
+                case "unstash" ⇒
+                  Effect.persist("unstash")
+                    .thenUnstashAll()
+                    // FIXME this is run before unstash, so not sequentially as the docs say
+                    // https://github.com/akka/akka/issues/26489
+                    .thenRun(_ ⇒
+                      probe.ref ! "done-unstashing"
+                    )
+                case _ ⇒
+                  Effect.stash()
+              }
+          }
+        },
+        {
+          case (_, "start-stashing") ⇒ true
+          case (_, "unstash")        ⇒ false
+          case (_, _)                ⇒ throw new IllegalArgumentException()
+        }
+      )
+
+      val c = spawn(behavior)
+
+      // make sure it completed recovery, before we try to overfill the stash
+      c ! "ping"
+      probe.expectMessage("pong")
+
+      c ! "start-stashing"
+
+      val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+      EventFilter.warning(start = "Stash buffer is full, dropping message").intercept {
+        (0 to limit).foreach { n ⇒
+          c ! s"cmd-$n" // limit triggers overflow
+        }
+        probe.expectMessageType[Dropped]
+      }
+
+      // we can still unstash and continue interacting
+      c ! "unstash"
+      probe.expectMessage("done-unstashing") // before actually unstashing, see above
+      (0 to (limit - 1)).foreach { n ⇒
+        probe.expectMessage(s"cmd-$n")
+      }
+
+      c ! "ping"
+      probe.expectMessage("pong")
+    }
+
+    "fail when stash has reached limit if configured to fail" in {
+      // persistence settings is system wide, so we need to have a custom testkit/actorsystem here
+      val failStashTestKit = ActorTestKit(
+        "EventSourcedBehaviorStashSpec-stash-overflow-fail",
+        ConfigFactory.parseString("akka.persistence.typed.stash-overflow-strategy=fail").withFallback(EventSourcedBehaviorStashSpec.conf)
+      )
+      try {
+        val probe = failStashTestKit.createTestProbe[AnyRef]()
+        val behavior = EventSourcedBehavior[String, String, String](
+          PersistenceId("stash-is-full-fail"),
+          "",
+          commandHandler = {
+            case (_, "ping") ⇒
+              probe.ref ! "pong"
+              Effect.none
+            case (_, _) ⇒
+              Effect.stash()
+          },
+          (state, _) ⇒ state
+        )
+
+        val c = failStashTestKit.spawn(behavior)
+
+        // make sure recovery completed
+        c ! "ping"
+        probe.expectMessage("pong")
+
+        EventFilter[StashOverflowException](occurrences = 1).intercept {
+          val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+          (0 to limit).foreach { n ⇒
+            c ! s"cmd-$n" // limit triggers overflow
+          }
+          probe.expectTerminated(c, 10.seconds)
+        }(failStashTestKit.system.toUntyped)
+      } finally {
+        failStashTestKit.shutdownTestKit()
+      }
     }
   }
 

@@ -12,13 +12,11 @@ import akka.actor.Cancellable
 import akka.actor.typed.Logger
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
 
 /**
@@ -50,12 +48,6 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
-
-  val stashOverflowStrategy: StashOverflowStrategy = {
-    val system = context.system.toUntyped.asInstanceOf[ExtendedActorSystem]
-    system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](settings.stashOverflowStrategyConfigurator, EmptyImmutableSeq)
-      .map(_.create(system.settings.config)).get
-  }
 
   def selfUntyped = context.self.toUntyped
 

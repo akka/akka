@@ -4,23 +4,18 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.ActorRef
-import akka.actor.DeadLetter
-import akka.actor.StashOverflowException
 import akka.actor.typed.Behavior
+import akka.actor.typed.Dropped
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.StashOverflowException
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
-import akka.persistence.DiscardToDeadLetterStrategy
-import akka.persistence.ReplyToStrategy
-import akka.persistence.ThrowOverflowExceptionStrategy
 import akka.util.ConstantFun
-import akka.{ actor ⇒ untyped }
 
 /** INTERNAL API: Stash management for persistent behaviors */
 @InternalApi
 private[akka] trait StashManagement[C, E, S] {
-  import akka.actor.typed.scaladsl.adapter._
 
   def setup: BehaviorSetup[C, E, S]
 
@@ -47,15 +42,17 @@ private[akka] trait StashManagement[C, E, S] {
 
     try buffer.stash(msg) catch {
       case e: StashOverflowException ⇒
-        setup.stashOverflowStrategy match {
-          case DiscardToDeadLetterStrategy ⇒
-            val noSenderBecauseAkkaTyped: ActorRef = untyped.ActorRef.noSender
-            context.system.deadLetters.tell(DeadLetter(msg, noSenderBecauseAkkaTyped, context.self.toUntyped))
-
-          case ReplyToStrategy(_) ⇒
-            throw new RuntimeException("ReplyToStrategy does not make sense at all in Akka Typed, since there is no sender()!")
-
-          case ThrowOverflowExceptionStrategy ⇒
+        setup.settings.stashOverflowStrategy match {
+          case StashOverflowStrategy.Drop ⇒
+            if (context.log.isWarningEnabled) {
+              val dropName = msg match {
+                case InternalProtocol.IncomingCommand(actual) ⇒ actual.getClass.getName
+                case other                                    ⇒ other.getClass.getName
+              }
+              context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
+            }
+            context.system.toUntyped.eventStream.publish(Dropped(msg, context.self))
+          case StashOverflowStrategy.Fail ⇒
             throw e
         }
     }
