@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.Behavior
-import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.internal.InternalProtocol.IncomingCommand
 import akka.persistence.typed.internal.InternalProtocol.RecoveryPermitGranted
@@ -59,7 +58,7 @@ class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   private def dummySettings(capacity: Int = 42) =
     EventSourcedSettings(
       stashCapacity = capacity,
-      stashOverflowStrategyConfigurator = "akka.persistence.ThrowExceptionConfigurator",
+      stashOverflowStrategy = StashOverflowStrategy.Fail,
       logOnStashing = false,
       recoveryEventTimeout = 3.seconds,
       journalPluginId = "",
