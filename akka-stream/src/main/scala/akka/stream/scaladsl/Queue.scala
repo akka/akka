@@ -43,6 +43,7 @@ trait SourceQueue[T] {
  * This trait adds completion support to [[SourceQueue]].
  */
 trait SourceQueueWithComplete[T] extends SourceQueue[T] {
+
   /**
    * Complete the stream normally. Use `watchCompletion` to be notified of this
    * operation’s success.
@@ -88,6 +89,7 @@ trait SinkQueue[T] {
  * This trait adds cancel support to [[SinkQueue]].
  */
 trait SinkQueueWithCancel[T] extends SinkQueue[T] {
+
   /**
    * Cancel the stream. This method returns right away without waiting for actual finalizing stream.
    */

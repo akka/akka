@@ -31,7 +31,7 @@ object SnapshotMutableStateSpec {
 
     def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
       Future.successful(state.get(persistenceId).map {
-        case (snap, meta) ⇒ SelectedSnapshot(meta, snap)
+        case (snap, meta) => SelectedSnapshot(meta, snap)
       })
     }
 
@@ -54,8 +54,7 @@ object SnapshotMutableStateSpec {
     def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) = ???
   }
 
-  def conf: Config = ConfigFactory.parseString(
-    s"""
+  def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -73,29 +72,29 @@ object SnapshotMutableStateSpec {
 
   final class MutableState(var value: Int)
 
-  def counter(
-    persistenceId: PersistenceId,
-    probe:         ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
-    EventSourcedBehavior[Command, Event, MutableState](
-      persistenceId,
-      emptyState = new MutableState(0),
-      commandHandler = (state, cmd) ⇒ cmd match {
-        case Increment ⇒
-          Effect.persist(Incremented)
+  def counter(persistenceId: PersistenceId,
+              probe: ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
+    EventSourcedBehavior[Command, Event, MutableState](persistenceId,
+                                                       emptyState = new MutableState(0),
+                                                       commandHandler = (state, cmd) =>
+                                                         cmd match {
+                                                           case Increment =>
+                                                             Effect.persist(Incremented)
 
-        case GetValue(replyTo) ⇒
-          replyTo ! state.value
-          Effect.none
-      },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented ⇒
-          state.value += 1
-          probe ! s"incremented-${state.value}"
-          state
-      }).onSnapshot {
-        case (meta, Success(_)) ⇒ probe ! s"snapshot-success-${meta.sequenceNr}"
-        case (meta, Failure(_)) ⇒ probe ! s"snapshot-failure-${meta.sequenceNr}"
-      }
+                                                           case GetValue(replyTo) =>
+                                                             replyTo ! state.value
+                                                             Effect.none
+                                                         },
+                                                       eventHandler = (state, evt) =>
+                                                         evt match {
+                                                           case Incremented =>
+                                                             state.value += 1
+                                                             probe ! s"incremented-${state.value}"
+                                                             state
+                                                         }).onSnapshot {
+      case (meta, Success(_)) => probe ! s"snapshot-success-${meta.sequenceNr}"
+      case (meta, Failure(_)) => probe ! s"snapshot-failure-${meta.sequenceNr}"
+    }
   }
 
 }
@@ -113,10 +112,12 @@ class SnapshotMutableStateSpec extends ScalaTestWithActorTestKit(SnapshotMutable
       val pid = nextPid()
       val probe = TestProbe[String]()
       def snapshotState3: Behavior[Command] =
-        counter(pid, probe.ref).snapshotWhen { (state, _, _) ⇒ state.value == 3 }
+        counter(pid, probe.ref).snapshotWhen { (state, _, _) =>
+          state.value == 3
+        }
       val c = spawn(snapshotState3)
 
-      (1 to 5).foreach { n ⇒
+      (1 to 5).foreach { n =>
         c ! Increment
         probe.expectMessage(s"incremented-$n")
         if (n == 3) {

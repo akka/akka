@@ -65,10 +65,10 @@ trait Predicate[-T] extends java.io.Serializable {
  */
 @SerialVersionUID(1L)
 trait Creator[+T] extends Serializable {
+
   /**
    * This method must return a different instance upon every call.
    */
   @throws(classOf[Exception])
   def create(): T
 }
-

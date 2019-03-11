@@ -18,11 +18,11 @@ object FunctionRefSpec {
 
   class Super extends Actor {
     def receive = {
-      case GetForwarder(replyTo) ⇒
+      case GetForwarder(replyTo) =>
         val cell = context.asInstanceOf[ActorCell]
-        val ref = cell.addFunctionRef((sender, msg) ⇒ replyTo ! Forwarded(msg, sender))
+        val ref = cell.addFunctionRef((sender, msg) => replyTo ! Forwarded(msg, sender))
         replyTo ! ref
-      case DropForwarder(ref) ⇒
+      case DropForwarder(ref) =>
         val cell = context.asInstanceOf[ActorCell]
         cell.removeFunctionRef(ref)
     }
@@ -31,7 +31,7 @@ object FunctionRefSpec {
   class SupSuper extends Actor {
     val s = context.actorOf(Props[Super], "super")
     def receive = {
-      case msg ⇒ s ! msg
+      case msg => s ! msg
     }
   }
 
@@ -93,8 +93,10 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
     "not registered" must {
       "not be found" in {
         val provider = system.asInstanceOf[ExtendedActorSystem].provider
-        val ref = new FunctionRef(testActor.path / "blabla", provider, system, (_, _) ⇒ ())
-        EventFilter[SerializationCheckFailedException](start = "Failed to serialize and deserialize message of type akka.actor.FunctionRefSpec", occurrences = 1) intercept {
+        val ref = new FunctionRef(testActor.path / "blabla", provider, system, (_, _) => ())
+        EventFilter[SerializationCheckFailedException](
+          start = "Failed to serialize and deserialize message of type akka.actor.FunctionRefSpec",
+          occurrences = 1).intercept {
           // needs to be something that fails when the deserialized form is not a FunctionRef
           // this relies upon serialize-messages during tests
           testActor ! DropForwarder(ref)

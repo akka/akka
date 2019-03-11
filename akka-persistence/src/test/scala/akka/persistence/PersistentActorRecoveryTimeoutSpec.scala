@@ -16,19 +16,21 @@ object PersistentActorRecoveryTimeoutSpec {
   val journalId = "persistent-actor-recovery-timeout-spec"
 
   def config =
-    SteppingInmemJournal.config(PersistentActorRecoveryTimeoutSpec.journalId).withFallback(
-      ConfigFactory.parseString(
-        """
+    SteppingInmemJournal
+      .config(PersistentActorRecoveryTimeoutSpec.journalId)
+      .withFallback(ConfigFactory.parseString("""
           |akka.persistence.journal.stepping-inmem.recovery-event-timeout=1s
-        """.stripMargin)).withFallback(PersistenceSpec.config("stepping-inmem", "PersistentActorRecoveryTimeoutSpec"))
+        """.stripMargin))
+      .withFallback(PersistenceSpec.config("stepping-inmem", "PersistentActorRecoveryTimeoutSpec"))
 
   class TestActor(probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor") {
     override def receiveRecover: Receive = Actor.emptyBehavior
 
     override def receiveCommand: Receive = {
-      case x ⇒ persist(x) { _ ⇒
-        sender() ! x
-      }
+      case x =>
+        persist(x) { _ =>
+          sender() ! x
+        }
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
@@ -36,21 +38,24 @@ object PersistentActorRecoveryTimeoutSpec {
     }
   }
 
-  class TestReceiveTimeoutActor(receiveTimeout: FiniteDuration, probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor-2") with ActorLogging {
+  class TestReceiveTimeoutActor(receiveTimeout: FiniteDuration, probe: ActorRef)
+      extends NamedPersistentActor("recovery-timeout-actor-2")
+      with ActorLogging {
 
     override def preStart(): Unit = {
       context.setReceiveTimeout(receiveTimeout)
     }
 
     override def receiveRecover: Receive = {
-      case RecoveryCompleted ⇒ probe ! context.receiveTimeout
-      case _                 ⇒ // we don't care
+      case RecoveryCompleted => probe ! context.receiveTimeout
+      case _                 => // we don't care
     }
 
     override def receiveCommand: Receive = {
-      case x ⇒ persist(x) { _ ⇒
-        sender() ! x
-      }
+      case x =>
+        persist(x) { _ =>
+          sender() ! x
+        }
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
@@ -61,7 +66,9 @@ object PersistentActorRecoveryTimeoutSpec {
 
 }
 
-class PersistentActorRecoveryTimeoutSpec extends AkkaSpec(PersistentActorRecoveryTimeoutSpec.config) with ImplicitSender {
+class PersistentActorRecoveryTimeoutSpec
+    extends AkkaSpec(PersistentActorRecoveryTimeoutSpec.config)
+    with ImplicitSender {
 
   import PersistentActorRecoveryTimeoutSpec.journalId
 
@@ -105,7 +112,8 @@ class PersistentActorRecoveryTimeoutSpec extends AkkaSpec(PersistentActorRecover
       val timeout = 42.days
 
       val probe = TestProbe()
-      val persisting = system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
+      val persisting =
+        system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
 
       awaitAssert(SteppingInmemJournal.getRef(journalId), 3.seconds)
       val journal = SteppingInmemJournal.getRef(journalId)
@@ -123,7 +131,8 @@ class PersistentActorRecoveryTimeoutSpec extends AkkaSpec(PersistentActorRecover
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      val replaying = system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
+      val replaying =
+        system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
 
       // initial read highest
       SteppingInmemJournal.step(journal)

@@ -15,20 +15,18 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object DeviceGroup {
   def apply(groupId: String): Behavior[DeviceGroupMessage] =
-    Behaviors.setup(context ⇒ new DeviceGroup(context, groupId))
+    Behaviors.setup(context => new DeviceGroup(context, groupId))
 
   trait DeviceGroupMessage
 
-  private final case class DeviceTerminated(
-    device:   ActorRef[Device.DeviceMessage],
-    groupId:  String,
-    deviceId: String) extends DeviceGroupMessage
+  private final case class DeviceTerminated(device: ActorRef[Device.DeviceMessage], groupId: String, deviceId: String)
+      extends DeviceGroupMessage
 
 }
 
 //#query-added
 class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId: String)
-  extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
+    extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
   import DeviceGroup._
   import DeviceManager._
 
@@ -39,11 +37,11 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
   override def onMessage(msg: DeviceGroupMessage): Behavior[DeviceGroupMessage] =
     msg match {
       //#query-added
-      case trackMsg @ RequestTrackDevice(`groupId`, deviceId, replyTo) ⇒
+      case trackMsg @ RequestTrackDevice(`groupId`, deviceId, replyTo) =>
         deviceIdToActor.get(deviceId) match {
-          case Some(deviceActor) ⇒
+          case Some(deviceActor) =>
             replyTo ! DeviceRegistered(deviceActor)
-          case None ⇒
+          case None =>
             context.log.info("Creating device actor for {}", trackMsg.deviceId)
             val deviceActor = context.spawn(Device(groupId, deviceId), s"device-$deviceId")
             //#device-group-register
@@ -54,14 +52,11 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
         }
         this
 
-      case RequestTrackDevice(gId, _, _) ⇒
-        context.log.warning(
-          "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-          gId, groupId
-        )
+      case RequestTrackDevice(gId, _, _) =>
+        context.log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
         this
 
-      case RequestDeviceList(requestId, gId, replyTo) ⇒
+      case RequestDeviceList(requestId, gId, replyTo) =>
         if (gId == groupId) {
           replyTo ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
           this
@@ -69,7 +64,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
           Behaviors.unhandled
       //#device-group-remove
 
-      case DeviceTerminated(_, _, deviceId) ⇒
+      case DeviceTerminated(_, _, deviceId) =>
         context.log.info("Device actor for {} has been terminated", deviceId)
         deviceIdToActor -= deviceId
         this
@@ -77,21 +72,17 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
       //#query-added
       // ... other cases omitted
 
-      case RequestAllTemperatures(requestId, gId, replyTo) ⇒
+      case RequestAllTemperatures(requestId, gId, replyTo) =>
         if (gId == groupId) {
-          context.spawnAnonymous(DeviceGroupQuery(
-            deviceIdToActor,
-            requestId = requestId,
-            requester = replyTo,
-            3.seconds
-          ))
+          context.spawnAnonymous(
+            DeviceGroupQuery(deviceIdToActor, requestId = requestId, requester = replyTo, 3.seconds))
           this
         } else
           Behaviors.unhandled
     }
 
   override def onSignal: PartialFunction[Signal, Behavior[DeviceGroupMessage]] = {
-    case PostStop ⇒
+    case PostStop =>
       context.log.info("DeviceGroup {} stopped", groupId)
       this
   }

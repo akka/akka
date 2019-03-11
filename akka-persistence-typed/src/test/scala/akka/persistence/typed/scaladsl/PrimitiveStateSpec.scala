@@ -14,8 +14,7 @@ import org.scalatest.WordSpecLike
 
 object PrimitiveStateSpec {
 
-  private val conf = ConfigFactory.parseString(
-    s"""
+  private val conf = ConfigFactory.parseString(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 }
@@ -25,22 +24,20 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
   implicit val testSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
-    EventSourcedBehavior[Int, Int, Int](
-      persistenceId,
-      emptyState = 0,
-      commandHandler = (_, command) ⇒ {
-        if (command < 0)
-          Effect.stop()
-        else
-          Effect.persist(command)
-      },
-      eventHandler = (state, event) ⇒ {
-        probe.tell("eventHandler:" + state + ":" + event)
-        state + event
-      }
-    ).onRecoveryCompleted { n ⇒
-        probe.tell("onRecoveryCompleted:" + n)
-      }
+    EventSourcedBehavior[Int, Int, Int](persistenceId,
+                                        emptyState = 0,
+                                        commandHandler = (_, command) => {
+                                          if (command < 0)
+                                            Effect.stop()
+                                          else
+                                            Effect.persist(command)
+                                        },
+                                        eventHandler = (state, event) => {
+                                          probe.tell("eventHandler:" + state + ":" + event)
+                                          state + event
+                                        }).onRecoveryCompleted { n =>
+      probe.tell("onRecoveryCompleted:" + n)
+    }
 
   "A typed persistent actor with primitive state" must {
     "persist events and update state" in {

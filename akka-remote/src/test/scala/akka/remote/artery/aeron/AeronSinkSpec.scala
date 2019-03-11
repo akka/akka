@@ -60,15 +60,17 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
       val port = SocketUtil.temporaryLocalPort(udp = true)
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
-      Source.fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))
+      Source
+        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))
         // fail receiver stream on first message
-        .map(_ ⇒ throw new RuntimeException("stop") with NoStackTrace)
+        .map(_ => throw new RuntimeException("stop") with NoStackTrace)
         .runWith(Sink.ignore)
 
       // use large enough messages to fill up buffers
       val payload = new Array[Byte](100000)
-      val done = Source(1 to 1000).map(_ ⇒ payload)
-        .map { n ⇒
+      val done = Source(1 to 1000)
+        .map(_ => payload)
+        .map { n =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()

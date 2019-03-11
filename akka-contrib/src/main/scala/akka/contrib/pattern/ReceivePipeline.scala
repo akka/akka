@@ -8,22 +8,24 @@ import akka.actor.Actor
 
 @deprecated("Feel free to copy", "2.5.0")
 object ReceivePipeline {
+
   /**
    * Result returned by an interceptor PF to determine what/whether to delegate to the next inner interceptor
    */
   sealed trait Delegation
 
   case class Inner(transformedMsg: Any) extends Delegation {
+
     /**
      * Add a block of code to be executed after the message (which may be further transformed and processed by
      * inner interceptors) is handled by the actor's receive.
      *
      * The block of code will be executed before similar blocks in outer interceptors.
      */
-    def andAfter(after: ⇒ Unit): Delegation = InnerAndAfter(transformedMsg, (_ ⇒ after))
+    def andAfter(after: => Unit): Delegation = InnerAndAfter(transformedMsg, (_ => after))
   }
 
-  private[ReceivePipeline] case class InnerAndAfter(transformedMsg: Any, after: Unit ⇒ Unit) extends Delegation
+  private[ReceivePipeline] case class InnerAndAfter(transformedMsg: Any, after: Unit => Unit) extends Delegation
 
   /**
    * Interceptor return value that indicates that the message has been handled
@@ -32,7 +34,7 @@ object ReceivePipeline {
    */
   case object HandledCompletely extends Delegation
 
-  private def withDefault(interceptor: Interceptor): Interceptor = interceptor.orElse({ case msg ⇒ Inner(msg) })
+  private def withDefault(interceptor: Interceptor): Interceptor = interceptor.orElse({ case msg => Inner(msg) })
 
   type Interceptor = PartialFunction[Any, Delegation]
 
@@ -40,7 +42,7 @@ object ReceivePipeline {
   private case object Done extends HandlerResult
   private case object Undefined extends HandlerResult
 
-  private type Handler = Any ⇒ HandlerResult
+  private type Handler = Any => HandlerResult
 }
 
 /**
@@ -63,6 +65,7 @@ trait ReceivePipeline extends Actor {
     pipeline :+= withDefault(interceptor)
     decoratorCache = None
   }
+
   /**
    * Adds an outer interceptor, it will be applied firstly, far from Actor's original behavior
    * @param interceptor an interceptor
@@ -72,18 +75,20 @@ trait ReceivePipeline extends Actor {
     decoratorCache = None
   }
 
-  private def combinedDecorator: Receive ⇒ Receive = { receive ⇒
+  private def combinedDecorator: Receive => Receive = { receive =>
     // So that reconstructed Receive PF is undefined only when the actor's
     // receive is undefined for a transformed message that reaches it...
     val innerReceiveHandler: Handler = {
-      case msg ⇒ receive.lift(msg).map(_ ⇒ Done).getOrElse(Undefined)
+      case msg => receive.lift(msg).map(_ => Done).getOrElse(Undefined)
     }
 
-    val zipped = pipeline.foldRight(innerReceiveHandler) { (outerInterceptor, innerHandler) ⇒
+    val zipped = pipeline.foldRight(innerReceiveHandler) { (outerInterceptor, innerHandler) =>
       outerInterceptor.andThen {
-        case Inner(msg)                ⇒ innerHandler(msg)
-        case InnerAndAfter(msg, after) ⇒ try innerHandler(msg) finally after(())
-        case HandledCompletely         ⇒ Done
+        case Inner(msg) => innerHandler(msg)
+        case InnerAndAfter(msg, after) =>
+          try innerHandler(msg)
+          finally after(())
+        case HandledCompletely => Done
       }
     }
 
@@ -94,7 +99,7 @@ trait ReceivePipeline extends Actor {
     def isDefinedAt(m: Any): Boolean = evaluate(m) != Undefined
     def apply(m: Any): Unit = evaluate(m)
 
-    override def applyOrElse[A1 <: Any, B1 >: Unit](m: A1, default: A1 ⇒ B1): B1 = {
+    override def applyOrElse[A1 <: Any, B1 >: Unit](m: A1, default: A1 => B1): B1 = {
       val result = handler(m)
 
       if (result == Undefined) default(m)
@@ -107,9 +112,9 @@ trait ReceivePipeline extends Actor {
    * INTERNAL API.
    */
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
-    def withCachedDecoration(decorator: Receive ⇒ Receive): Receive = decoratorCache match {
-      case Some((`receive`, cached)) ⇒ cached
-      case _ ⇒
+    def withCachedDecoration(decorator: Receive => Receive): Receive = decoratorCache match {
+      case Some((`receive`, cached)) => cached
+      case _ =>
         val decorated = decorator(receive)
         decoratorCache = Some((receive, decorated))
         decorated

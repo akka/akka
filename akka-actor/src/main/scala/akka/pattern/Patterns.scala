@@ -19,11 +19,11 @@ object Patterns {
   import akka.actor.ActorRef
   import akka.japi
   import akka.pattern.{
-    after ⇒ scalaAfter,
-    ask ⇒ scalaAsk,
-    gracefulStop ⇒ scalaGracefulStop,
-    pipe ⇒ scalaPipe,
-    retry ⇒ scalaRetry
+    after => scalaAfter,
+    ask => scalaAsk,
+    gracefulStop => scalaGracefulStop,
+    pipe => scalaPipe,
+    retry => scalaRetry
   }
   import akka.util.Timeout
 
@@ -61,7 +61,8 @@ object Patterns {
    *   });
    * }}}
    */
-  def ask(actor: ActorRef, message: Any, timeout: Timeout): Future[AnyRef] = scalaAsk(actor, message)(timeout).asInstanceOf[Future[AnyRef]]
+  def ask(actor: ActorRef, message: Any, timeout: Timeout): Future[AnyRef] =
+    scalaAsk(actor, message)(timeout).asInstanceOf[Future[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -122,7 +123,9 @@ object Patterns {
    * @param messageFactory function taking an actor ref and returning the message to be sent
    * @param timeout        the timeout for the response before failing the returned completion stage
    */
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: java.time.Duration): CompletionStage[AnyRef] =
+  def askWithReplyTo(actor: ActorRef,
+                     messageFactory: japi.function.Function[ActorRef, Any],
+                     timeout: java.time.Duration): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(Timeout.create(timeout)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
@@ -170,7 +173,9 @@ object Patterns {
    *   timeout);
    * }}}
    */
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] =
+  def askWithReplyTo(actor: ActorRef,
+                     messageFactory: japi.Function[ActorRef, Any],
+                     timeoutMillis: Long): Future[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
@@ -282,7 +287,9 @@ object Patterns {
    *   timeout);
    * }}}
    */
-  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] =
+  def askWithReplyTo(selection: ActorSelection,
+                     messageFactory: japi.Function[ActorRef, Any],
+                     timeoutMillis: Long): Future[AnyRef] =
     extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
@@ -296,7 +303,9 @@ object Patterns {
    *   timeout);
    * }}}
    */
-  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeout: java.time.Duration): CompletionStage[AnyRef] =
+  def askWithReplyTo(selection: ActorSelection,
+                     messageFactory: japi.Function[ActorRef, Any],
+                     timeout: java.time.Duration): CompletionStage[AnyRef] =
     extended.ask(selection, messageFactory.apply _)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
@@ -335,7 +344,8 @@ object Patterns {
    *   Patterns.pipe(transformed, context).to(nextActor);
    * }}}
    */
-  def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] = pipeCompletionStage(future)(context)
+  def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] =
+    pipeCompletionStage(future)(context)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with success (value `true`) when
@@ -392,21 +402,29 @@ object Patterns {
    * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: java.time.Duration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
+  def gracefulStop(target: ActorRef,
+                   timeout: java.time.Duration,
+                   stopMessage: Any): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout.asScala, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
-  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
+  def after[T](duration: FiniteDuration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: Callable[Future[T]]): Future[T] =
     scalaAfter(duration, scheduler)(value.call())(context)
 
   /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
-  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
+  def after[T](duration: java.time.Duration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: Callable[CompletionStage[T]]): CompletionStage[T] =
     afterCompletionStage(duration.asScala, scheduler)(value.call())(context)
 
   /**
@@ -420,7 +438,10 @@ object Patterns {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
+  def after[T](duration: java.time.Duration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration.asScala, scheduler)(value)(context)
 
   /**
@@ -431,9 +452,12 @@ object Patterns {
    * Note that the attempt function will be invoked on the given execution context for subsequent tries and
    * therefore must be thread safe (not touch unsafe mutable state).
    */
-  def retry[T](attempt: Callable[Future[T]], attempts: Int, delay: FiniteDuration, scheduler: Scheduler,
+  def retry[T](attempt: Callable[Future[T]],
+               attempts: Int,
+               delay: FiniteDuration,
+               scheduler: Scheduler,
                context: ExecutionContext): Future[T] =
-    scalaRetry(() ⇒ attempt.call, attempts, delay)(context, scheduler)
+    scalaRetry(() => attempt.call, attempts, delay)(context, scheduler)
 
   /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
@@ -443,8 +467,12 @@ object Patterns {
    * Note that the attempt function will be invoked on the given execution context for subsequent tries
    * and therefore must be thread safe (not touch unsafe mutable state).
    */
-  def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+  def retry[T](attempt: Callable[CompletionStage[T]],
+               attempts: Int,
+               delay: java.time.Duration,
+               scheduler: Scheduler,
+               ec: ExecutionContext): CompletionStage[T] =
+    scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
 }
 
 /**
@@ -456,7 +484,7 @@ object Patterns {
 object PatternsCS {
   import akka.actor.ActorRef
   import akka.japi
-  import akka.pattern.{ ask ⇒ scalaAsk, gracefulStop ⇒ scalaGracefulStop, retry ⇒ scalaRetry }
+  import akka.pattern.{ ask => scalaAsk, gracefulStop => scalaGracefulStop, retry => scalaRetry }
   import akka.util.Timeout
 
   import scala.concurrent.duration._
@@ -539,7 +567,9 @@ object PatternsCS {
    * @param timeout        the timeout for the response before failing the returned completion operator
    */
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.15")
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
+  def askWithReplyTo(actor: ActorRef,
+                     messageFactory: japi.function.Function[ActorRef, Any],
+                     timeout: Timeout): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
@@ -558,7 +588,9 @@ object PatternsCS {
    * @param timeout        the timeout for the response before failing the returned completion stage
    */
   @deprecated("Use Pattens.askWithReplyTo instead.", since = "2.5.19")
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: java.time.Duration): CompletionStage[AnyRef] =
+  def askWithReplyTo(actor: ActorRef,
+                     messageFactory: japi.function.Function[ActorRef, Any],
+                     timeout: java.time.Duration): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(Timeout.create(timeout)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
@@ -590,7 +622,8 @@ object PatternsCS {
    */
   @deprecated("Use Pattens.ask which accepts java.time.Duration instead.", since = "2.5.19")
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
-    scalaAsk(actor, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    scalaAsk(actor, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava
+      .asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * A variation of ask which allows to implement "replyTo" pattern by including
@@ -608,7 +641,9 @@ object PatternsCS {
    * @param timeoutMillis  the timeout for the response before failing the returned completion operator
    */
   @deprecated("Use Pattens.askWithReplyTo which accepts java.time.Duration instead.", since = "2.5.19")
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+  def askWithReplyTo(actor: ActorRef,
+                     messageFactory: japi.function.Function[ActorRef, Any],
+                     timeoutMillis: Long): CompletionStage[AnyRef] =
     askWithReplyTo(actor, messageFactory, Timeout(timeoutMillis.millis))
 
   /**
@@ -702,7 +737,8 @@ object PatternsCS {
    */
   @deprecated("Use Pattens.ask which accepts java.time.Duration instead.", since = "2.5.19")
   def ask(selection: ActorSelection, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
-    scalaAsk(selection, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+    scalaAsk(selection, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava
+      .asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * A variation of ask which allows to implement "replyTo" pattern by including
@@ -716,8 +752,13 @@ object PatternsCS {
    * }}}
    */
   @deprecated("Use Pattens.askWithReplyTo which accepts java.time.Duration instead.", since = "2.5.19")
-  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
-    extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def askWithReplyTo(selection: ActorSelection,
+                     messageFactory: japi.Function[ActorRef, Any],
+                     timeoutMillis: Long): CompletionStage[AnyRef] =
+    extended
+      .ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis))
+      .toJava
+      .asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * When this [[java.util.concurrent.CompletionStage]] finishes, send its result to the given
@@ -737,7 +778,8 @@ object PatternsCS {
    * }}}
    */
   @deprecated("Use Patterns.pipe instead.", since = "2.5.19")
-  def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] = pipeCompletionStage(future)(context)
+  def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] =
+    pipeCompletionStage(future)(context)
 
   /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with success (value `true`) when
@@ -798,7 +840,9 @@ object PatternsCS {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   @deprecated("Use Patterns.gracefulStop instead.", since = "2.5.19")
-  def gracefulStop(target: ActorRef, timeout: java.time.Duration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
+  def gracefulStop(target: ActorRef,
+                   timeout: java.time.Duration,
+                   stopMessage: Any): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout.asScala, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
@@ -806,7 +850,10 @@ object PatternsCS {
    * after the specified duration.
    */
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
+  def after[T](duration: FiniteDuration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: Callable[CompletionStage[T]]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value.call())(context)
 
   /**
@@ -814,7 +861,10 @@ object PatternsCS {
    * after the specified duration.
    */
   @deprecated("Use Patterns.after instead.", since = "2.5.19")
-  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
+  def after[T](duration: java.time.Duration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: Callable[CompletionStage[T]]): CompletionStage[T] =
     afterCompletionStage(duration.asScala, scheduler)(value.call())(context)
 
   /**
@@ -822,7 +872,10 @@ object PatternsCS {
    * after the specified duration.
    */
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
+  def after[T](duration: FiniteDuration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value)(context)
 
   /**
@@ -830,7 +883,10 @@ object PatternsCS {
    * after the specified duration.
    */
   @deprecated("Use Patterns.after instead.", since = "2.5.19")
-  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
+  def after[T](duration: java.time.Duration,
+               scheduler: Scheduler,
+               context: ExecutionContext,
+               value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration.asScala, scheduler)(value)(context)
 
   /**
@@ -842,6 +898,10 @@ object PatternsCS {
    * and therefore must be thread safe (not touch unsafe mutable state).
    */
   @deprecated("Use Patterns.retry instead.", since = "2.5.19")
-  def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+  def retry[T](attempt: Callable[CompletionStage[T]],
+               attempts: Int,
+               delay: java.time.Duration,
+               scheduler: Scheduler,
+               ec: ExecutionContext): CompletionStage[T] =
+    scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
 }

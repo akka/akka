@@ -16,10 +16,7 @@ class MaterializerStateSpec extends StreamSpec {
 
     "snapshot a running stream" in {
       implicit val mat = ActorMaterializer()
-      Source.maybe[Int]
-        .map(_.toString)
-        .zipWithIndex
-        .runWith(Sink.seq)
+      Source.maybe[Int].map(_.toString).zipWithIndex.runWith(Sink.seq)
 
       awaitAssert({
         val snapshot = MaterializerState.streamSnapshots(mat).futureValue

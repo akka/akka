@@ -19,7 +19,7 @@ object ClusterShardingInternalsSpec {
   case class HandOffStopMessage() extends NoSerializationVerificationNeeded
   class EmptyHandlerActor extends Actor {
     override def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
 
     override def postStop(): Unit = {
@@ -28,8 +28,7 @@ object ClusterShardingInternalsSpec {
   }
 }
 
-class ClusterShardingInternalsSpec extends AkkaSpec(
-  """
+class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
@@ -46,21 +45,19 @@ class ClusterShardingInternalsSpec extends AkkaSpec(
       val extractEntityId = mock[ShardRegion.ExtractEntityId]
       val extractShardId = mock[ShardRegion.ExtractShardId]
 
-      clusterSharding.start(
-        typeName = typeName,
-        entityProps = Props.empty,
-        settings = settingsWithRole,
-        extractEntityId = extractEntityId,
-        extractShardId = extractShardId,
-        allocationStrategy = mock[ShardAllocationStrategy],
-        handOffStopMessage = PoisonPill)
+      clusterSharding.start(typeName = typeName,
+                            entityProps = Props.empty,
+                            settings = settingsWithRole,
+                            extractEntityId = extractEntityId,
+                            extractShardId = extractShardId,
+                            allocationStrategy = mock[ShardAllocationStrategy],
+                            handOffStopMessage = PoisonPill)
 
-      verify(clusterSharding).startProxy(
-        ArgumentMatchers.eq(typeName),
-        ArgumentMatchers.eq(settingsWithRole.role),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(extractEntityId),
-        ArgumentMatchers.eq(extractShardId))
+      verify(clusterSharding).startProxy(ArgumentMatchers.eq(typeName),
+                                         ArgumentMatchers.eq(settingsWithRole.role),
+                                         ArgumentMatchers.eq(None),
+                                         ArgumentMatchers.eq(extractEntityId),
+                                         ArgumentMatchers.eq(extractShardId))
     }
 
     "HandOffStopper must stop the entity even if the entity doesn't handle handOffStopMessage" in {
@@ -68,8 +65,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec(
       val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
       val handOffStopper = system.actorOf(
-        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis))
-      )
+        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis)))
 
       watch(emptyHandlerActor)
       expectTerminated(emptyHandlerActor, 1.seconds)

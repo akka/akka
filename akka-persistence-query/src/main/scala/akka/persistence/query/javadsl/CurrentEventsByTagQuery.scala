@@ -20,4 +20,3 @@ trait CurrentEventsByTagQuery extends ReadJournal {
    */
   def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 }
-

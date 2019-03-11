@@ -13,18 +13,19 @@ import org.reactivestreams.Processor
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
-    val settings = ActorMaterializerSettings(system)
-      .withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
+    val settings =
+      ActorMaterializerSettings(system).withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
 
     implicit val materializer = ActorMaterializer(settings)(system)
 
     val stage =
       new SimpleLinearGraphStage[Int] {
-        override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-          override def onPush(): Unit = push(out, grab(in))
-          override def onPull(): Unit = pull(in)
-          setHandlers(in, out, this)
-        }
+        override def createLogic(inheritedAttributes: Attributes) =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+            override def onPush(): Unit = push(out, grab(in))
+            override def onPull(): Unit = pull(in)
+            setHandlers(in, out, this)
+          }
       }
 
     Flow[Int].via(stage).toProcessor.run()

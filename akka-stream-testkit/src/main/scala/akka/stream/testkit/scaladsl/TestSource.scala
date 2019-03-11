@@ -20,6 +20,7 @@ object TestSource {
   /**
    * A Source that materializes to a [[akka.stream.testkit.TestPublisher.Probe]].
    */
-  def probe[T](implicit system: ActorSystem) = Source.fromGraph[T, TestPublisher.Probe[T]](new ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
+  def probe[T](implicit system: ActorSystem) =
+    Source.fromGraph[T, TestPublisher.Probe[T]](new ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
 
 }

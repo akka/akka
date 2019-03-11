@@ -15,6 +15,7 @@ import akka.annotation.DoNotInherit
 @DoNotInherit sealed abstract class Done extends Serializable
 
 case object Done extends Done {
+
   /**
    * Java API: the singleton instance
    */

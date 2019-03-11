@@ -23,11 +23,11 @@ object RouterSpec {
     sealed trait Command
     case class DoLog(text: String) extends Command
 
-    val behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
+    val behavior: Behavior[Command] = Behaviors.setup { ctx =>
       ctx.log.info("Starting worker")
 
       Behaviors.receiveMessage {
-        case DoLog(text) ⇒
+        case DoLog(text) =>
           ctx.log.info("Got message {}", text)
           Behaviors.same
       }
@@ -45,15 +45,14 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "The routing sample" must {
 
     "show pool routing" in {
-      spawn(Behaviors.setup[Unit] { ctx ⇒
+      spawn(Behaviors.setup[Unit] { ctx =>
         // #pool
         // make sure the workers are restarted if they fail
-        val supervisedWorker = Behaviors.supervise(Worker.behavior)
-          .onFailure[Exception](SupervisorStrategy.restart)
+        val supervisedWorker = Behaviors.supervise(Worker.behavior).onFailure[Exception](SupervisorStrategy.restart)
         val pool = Routers.pool(poolSize = 4)(supervisedWorker)
         val router = ctx.spawn(pool, "worker-pool")
 
-        (0 to 10).foreach { n ⇒
+        (0 to 10).foreach { n =>
           router ! Worker.DoLog(s"msg $n")
         }
         // #pool
@@ -68,7 +67,7 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "show group routing" in {
 
-      spawn(Behaviors.setup[Unit] { ctx ⇒
+      spawn(Behaviors.setup[Unit] { ctx =>
         // #group
         // this would likely happen elsewhere - if we create it locally we
         // can just as well use a pool
@@ -82,7 +81,7 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         // guarantee the router has seen any workers yet if we hit it directly like this and
         // these messages may end up in dead letters - in a real application you would not use
         // a group router like this - it is to keep the sample simple
-        (0 to 10).foreach { n ⇒
+        (0 to 10).foreach { n =>
           router ! Worker.DoLog(s"msg $n")
         }
         // #group

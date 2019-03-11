@@ -17,18 +17,18 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class GroupRouterBuilder[T] private[akka] (
-  key:          ServiceKey[T],
-  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RandomLogic[T]()
-) extends javadsl.GroupRouter[T]
-  with scaladsl.GroupRouter[T] {
+private[akka] final case class GroupRouterBuilder[T] private[akka] (key: ServiceKey[T],
+                                                                    logicFactory: () => RoutingLogic[T] = () =>
+                                                                      new RoutingLogics.RandomLogic[T]())
+    extends javadsl.GroupRouter[T]
+    with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] = new GroupRouterImpl[T](ctx.asScala, key, logicFactory())
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
 }
 
@@ -36,11 +36,8 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
  * INTERNAL API
  */
 @InternalApi
-private final class GroupRouterImpl[T](
-  ctx:          ActorContext[T],
-  serviceKey:   ServiceKey[T],
-  routingLogic: RoutingLogic[T]
-) extends AbstractBehavior[T] {
+private final class GroupRouterImpl[T](ctx: ActorContext[T], serviceKey: ServiceKey[T], routingLogic: RoutingLogic[T])
+    extends AbstractBehavior[T] {
 
   // casting trix to avoid having to wrap incoming messages - note that this will cause problems if intercepting
   // messages to a router
@@ -48,12 +45,12 @@ private final class GroupRouterImpl[T](
   private var routeesEmpty = true
 
   def onMessage(msg: T): Behavior[T] = msg match {
-    case serviceKey.Listing(update) ⇒
+    case serviceKey.Listing(update) =>
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
       routeesEmpty = update.isEmpty
       this
-    case msg: T @unchecked ⇒
+    case msg: T @unchecked =>
       if (!routeesEmpty) routingLogic.selectRoutee() ! msg
       else ctx.system.deadLetters ! Dropped(msg, ctx.self)
       this

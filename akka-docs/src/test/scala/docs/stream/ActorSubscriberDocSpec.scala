@@ -49,17 +49,17 @@ object ActorSubscriberDocSpec {
     }
 
     def receive = {
-      case OnNext(Msg(id, replyTo)) ⇒
+      case OnNext(Msg(id, replyTo)) =>
         queue += (id -> replyTo)
         assert(queue.size <= MaxQueueSize, s"queued too many: ${queue.size}")
         router.route(Work(id), self)
-      case Reply(id) ⇒
+      case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
         if (canceled && queue.isEmpty) {
           context.stop(self)
         }
-      case OnComplete ⇒
+      case OnComplete =>
         if (queue.isEmpty) {
           context.stop(self)
         }
@@ -69,7 +69,7 @@ object ActorSubscriberDocSpec {
   class Worker extends Actor {
     import WorkerPool._
     def receive = {
-      case Work(id) ⇒
+      case Work(id) =>
         // ...
         sender() ! Reply(id)
     }
@@ -88,8 +88,7 @@ class ActorSubscriberDocSpec extends AkkaSpec {
 
     //#actor-subscriber-usage
     val N = 117
-    val worker = Source(1 to N).map(WorkerPool.Msg(_, replyTo))
-      .runWith(Sink.actorSubscriber(WorkerPool.props))
+    val worker = Source(1 to N).map(WorkerPool.Msg(_, replyTo)).runWith(Sink.actorSubscriber(WorkerPool.props))
     //#actor-subscriber-usage
 
     watch(worker)

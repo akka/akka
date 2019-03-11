@@ -4,7 +4,7 @@
 
 package akka.stream.impl
 
-import java.{ util ⇒ ju }
+import java.{ util => ju }
 
 import akka.annotation.InternalApi
 import akka.stream._
@@ -37,8 +37,8 @@ private[akka] object Buffer {
 
   def apply[T](size: Int, materializer: Materializer): Buffer[T] =
     materializer match {
-      case m: ActorMaterializer ⇒ apply(size, m.settings.maxFixedBufferSize)
-      case _                    ⇒ apply(size, 1000000000)
+      case m: ActorMaterializer => apply(size, m.settings.maxFixedBufferSize)
+      case _                    => apply(size, 1000000000)
     }
 
   def apply[T](size: Int, max: Int): Buffer[T] =
@@ -66,7 +66,8 @@ private[akka] object Buffer {
     else new ModuloFixedSizeBuffer(size)
 
   sealed abstract class FixedSizeBuffer[T](val capacity: Int) extends Buffer[T] {
-    override def toString = s"Buffer($capacity, $readIdx, $writeIdx)(${(readIdx until writeIdx).map(get).mkString(", ")})"
+    override def toString =
+      s"Buffer($capacity, $readIdx, $writeIdx)(${(readIdx until writeIdx).map(get).mkString(", ")})"
     private val buffer = new Array[AnyRef](capacity)
 
     protected var readIdx = 0L
@@ -88,7 +89,8 @@ private[akka] object Buffer {
     // for the maintenance parameter see dropHead
     protected def toOffset(idx: Long, maintenance: Boolean): Int
 
-    private def put(idx: Long, elem: T, maintenance: Boolean): Unit = buffer(toOffset(idx, maintenance)) = elem.asInstanceOf[AnyRef]
+    private def put(idx: Long, elem: T, maintenance: Boolean): Unit =
+      buffer(toOffset(idx, maintenance)) = elem.asInstanceOf[AnyRef]
     private def get(idx: Long): T = buffer(toOffset(idx, false)).asInstanceOf[T]
 
     def peek(): T = get(readIdx)

@@ -28,8 +28,9 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
   "A RestartStrategy" must {
 
     "ensure that slave stays dead after max restarts within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(
-        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
+      val boss = system.actorOf(
+        Props(
+          new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -39,8 +40,8 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
-          case Crash ⇒ throw new Exception("Crashing...")
+          case Ping  => countDownLatch.countDown()
+          case Crash => throw new Exception("Crashing...")
         }
 
         override def postRestart(reason: Throwable) = {
@@ -82,7 +83,7 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Crash ⇒ throw new Exception("Crashing...")
+          case Crash => throw new Exception("Crashing...")
         }
 
         override def postRestart(reason: Throwable) = {
@@ -91,14 +92,16 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       })
       val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
-      (1 to 100) foreach { _ ⇒ slave ! Crash }
+      (1 to 100).foreach { _ =>
+        slave ! Crash
+      }
       Await.ready(countDownLatch, 2 minutes)
       assert(!slave.isTerminated)
     }
 
     "ensure that slave restarts after number of crashes not within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(
-        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
+      val boss = system.actorOf(Props(
+        new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -109,9 +112,9 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping ⇒
+          case Ping =>
             if (!pingLatch.isOpen) pingLatch.open else secondPingLatch.open
-          case Crash ⇒ throw new Exception("Crashing...")
+          case Crash => throw new Exception("Crashing...")
         }
         override def postRestart(reason: Throwable) = {
           if (!restartLatch.isOpen)
@@ -165,8 +168,8 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
-          case Crash ⇒ throw new Exception("Crashing...")
+          case Ping  => countDownLatch.countDown()
+          case Crash => throw new Exception("Crashing...")
         }
         override def postRestart(reason: Throwable) = {
           if (!restartLatch.isOpen)
@@ -212,16 +215,16 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       val boss = system.actorOf(Props(new Actor {
         override val supervisorStrategy = OneForOneStrategy(withinTimeRange = 1 second)(List(classOf[Throwable]))
         def receive = {
-          case p: Props      ⇒ sender() ! context.watch(context.actorOf(p))
-          case t: Terminated ⇒ maxNoOfRestartsLatch.open()
+          case p: Props      => sender() ! context.watch(context.actorOf(p))
+          case t: Terminated => maxNoOfRestartsLatch.open()
         }
       }))
 
       val slaveProps = Props(new Actor {
 
         def receive = {
-          case Ping  ⇒ countDownLatch.countDown()
-          case Crash ⇒ throw new Exception("Crashing...")
+          case Ping  => countDownLatch.countDown()
+          case Crash => throw new Exception("Crashing...")
         }
 
         override def postRestart(reason: Throwable) = {
@@ -261,4 +264,3 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
     }
   }
 }
-

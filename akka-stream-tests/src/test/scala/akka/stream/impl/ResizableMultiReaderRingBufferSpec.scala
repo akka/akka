@@ -124,7 +124,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
       val COUNTER_LIMIT = 200
       val LOG = false
       val sb = new java.lang.StringBuilder
-      def log(s: ⇒ String): Unit = if (LOG) sb.append(s)
+      def log(s: => String): Unit = if (LOG) sb.append(s)
 
       class StressTestCursor(cursorNr: Int, run: Int) extends Cursor {
         var cursor: Int = _
@@ -143,7 +143,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
             counter += 1
             counter == COUNTER_LIMIT
           } catch {
-            case NothingToReadException ⇒ log("FAILED\n"); false // ok, we currently can't read, try again later
+            case NothingToReadException => log("FAILED\n"); false // ok, we currently can't read, try again later
           }
         }
         override def toString: String = s"cursorNr $cursorNr, ix $cursor, counter $counter"
@@ -151,8 +151,8 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
 
       val random = new Random
       for {
-        bit ← 1 to MAXSIZEBIT_LIMIT
-        n ← 1 to 2
+        bit <- 1 to MAXSIZEBIT_LIMIT
+        n <- 1 to 2
       } {
         var counter = 1
         var activeCursors = List.tabulate(random.nextInt(8) + 1)(new StressTestCursor(_, 1 << bit))
@@ -182,14 +182,17 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
     }
   }
 
-  class TestBuffer(iSize: Int, mSize: Int, cursors: Cursors) extends ResizableMultiReaderRingBuffer[Int](iSize, mSize, cursors) {
+  class TestBuffer(iSize: Int, mSize: Int, cursors: Cursors)
+      extends ResizableMultiReaderRingBuffer[Int](iSize, mSize, cursors) {
     def inspect: String =
-      underlyingArray.map(x ⇒ if (x == null) 0 else x).mkString("", " ", " " + toString.dropWhile(_ != '('))
+      underlyingArray.map(x => if (x == null) 0 else x).mkString("", " ", " " + toString.dropWhile(_ != '('))
   }
 
-  class Test(iSize: Int, mSize: Int, cursorCount: Int) extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
+  class Test(iSize: Int, mSize: Int, cursorCount: Int)
+      extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
     def read(cursorIx: Int): Integer =
-      try read(cursors.cursors(cursorIx)) catch { case NothingToReadException ⇒ null }
+      try read(cursors.cursors(cursorIx))
+      catch { case NothingToReadException => null }
   }
 
   class SimpleCursors(cursorCount: Int) extends Cursors {

@@ -21,9 +21,7 @@ class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
-abstract class NodeMembershipSpec
-  extends MultiNodeSpec(NodeMembershipMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with MultiNodeClusterSpec {
 
   import NodeMembershipMultiJvmSpec._
 

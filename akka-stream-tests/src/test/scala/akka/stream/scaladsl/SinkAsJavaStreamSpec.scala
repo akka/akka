@@ -28,7 +28,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail if parent stream is failed" in {
-      val javaSource = Source(1 to 100).map(_ ⇒ throw TE("")).runWith(StreamConverters.asJavaStream())
+      val javaSource = Source(1 to 100).map(_ => throw TE("")).runWith(StreamConverters.asJavaStream())
       a[TE] shouldBe thrownBy {
         javaSource.findFirst()
       }
@@ -55,9 +55,15 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
 
       try {
-        TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream()
-          .addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(materializer)
-        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        TestSource
+          .probe[ByteString]
+          .runWith(
+            StreamConverters.asJavaStream().addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(
+            materializer)
+        materializer
+          .asInstanceOf[PhasedFusingActorMaterializer]
+          .supervisor
+          .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
         assertDispatcher(ref, "akka.actor.default-dispatcher")
       } finally shutdown(sys)
@@ -69,7 +75,10 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       try {
         TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream())(materializer)
-        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer
+          .asInstanceOf[PhasedFusingActorMaterializer]
+          .supervisor
+          .tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)

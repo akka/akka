@@ -27,9 +27,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
 
-object CountExtension
-  extends ExtensionId[CountExtensionImpl]
-  with ExtensionIdProvider {
+object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdProvider {
   //The lookup method is required by ExtensionIdProvider,
   // so we return ourselves here, this allows us
   // to configure our extension to be loaded when
@@ -61,7 +59,7 @@ object ExtensionDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
         CountExtension(context.system).increment()
     }
   }
@@ -69,12 +67,12 @@ object ExtensionDocSpec {
 
   //#extension-usage-actor-trait
 
-  trait Counting { self: Actor ⇒
+  trait Counting { self: Actor =>
     def increment() = CountExtension(context.system).increment()
   }
   class MyCounterActor extends Actor with Counting {
     def receive = {
-      case someMessage ⇒ increment()
+      case someMessage => increment()
     }
   }
   //#extension-usage-actor-trait

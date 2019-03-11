@@ -10,21 +10,19 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
 
   // SRV strings with invalid domain names
   // should fail to build lookups
-  val srvWithInvalidDomainNames = List(
-    "_portName._protocol.service_name.local",
-    "_portName._protocol.servicename,local",
-    "_portName._protocol.servicename.local-",
-    "_portName._protocol.-servicename.local")
+  val srvWithInvalidDomainNames = List("_portName._protocol.service_name.local",
+                                       "_portName._protocol.servicename,local",
+                                       "_portName._protocol.servicename.local-",
+                                       "_portName._protocol.-servicename.local")
 
   // No SRV that should result in simple A/AAAA lookups
-  val noSrvLookups = List(
-    "portName.protocol.serviceName.local",
-    "serviceName.local",
-    "_portName.serviceName",
-    "_serviceName.local",
-    "_serviceName,local",
-    "-serviceName.local",
-    "serviceName.local-")
+  val noSrvLookups = List("portName.protocol.serviceName.local",
+                          "serviceName.local",
+                          "_portName.serviceName",
+                          "_serviceName.local",
+                          "_serviceName,local",
+                          "-serviceName.local",
+                          "serviceName.local-")
 
   "Lookup.parseSrv" should {
 
@@ -49,7 +47,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any non-conforming SRV String" in {
-      noSrvLookups.foreach { str ⇒
+      noSrvLookups.foreach { str =>
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -59,7 +57,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any SRV with invalid domain names" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str =>
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -77,7 +75,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false for any non-conforming SRV String" in {
-      noSrvLookups.foreach { str ⇒
+      noSrvLookups.foreach { str =>
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }
@@ -85,7 +83,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false if domain part in SRV String is an invalid domain name" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str =>
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }

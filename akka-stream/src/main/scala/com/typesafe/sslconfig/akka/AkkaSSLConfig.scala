@@ -31,7 +31,7 @@ object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider
   def defaultSSLConfigSettings(system: ActorSystem): SSLConfigSettings = {
     val akkaOverrides = system.settings.config.getConfig("akka.ssl-config")
     val defaults = system.settings.config.getConfig("ssl-config")
-    SSLConfigFactory.parse(akkaOverrides withFallback defaults)
+    SSLConfigFactory.parse(akkaOverrides.withFallback(defaults))
   }
 
 }
@@ -52,7 +52,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
    * Please note that the ActorSystem-wide extension always remains configured via typesafe config,
    * custom ones can be created for special-handling specific connections
    */
-  def mapSettings(f: SSLConfigSettings ⇒ SSLConfigSettings): AkkaSSLConfig =
+  def mapSettings(f: SSLConfigSettings => SSLConfigSettings): AkkaSSLConfig =
     new AkkaSSLConfig(system, f(config))
 
   /**
@@ -110,11 +110,13 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   def buildHostnameVerifier(conf: SSLConfigSettings): HostnameVerifier = {
     val clazz: Class[HostnameVerifier] =
-      if (config.loose.disableHostnameVerification) classOf[DisabledComplainingHostnameVerifier].asInstanceOf[Class[HostnameVerifier]]
+      if (config.loose.disableHostnameVerification)
+        classOf[DisabledComplainingHostnameVerifier].asInstanceOf[Class[HostnameVerifier]]
       else config.hostnameVerifierClass.asInstanceOf[Class[HostnameVerifier]]
 
-    val v = system.dynamicAccess.createInstanceFor[HostnameVerifier](clazz, Nil)
-      .orElse(system.dynamicAccess.createInstanceFor[HostnameVerifier](clazz, List(classOf[LoggerFactory] → mkLogger)))
+    val v = system.dynamicAccess
+      .createInstanceFor[HostnameVerifier](clazz, Nil)
+      .orElse(system.dynamicAccess.createInstanceFor[HostnameVerifier](clazz, List(classOf[LoggerFactory] -> mkLogger)))
       .getOrElse(throw new Exception("Unable to obtain hostname verifier for class: " + clazz))
 
     log.debug("buildHostnameVerifier: created hostname verifier: {}", v)
@@ -140,26 +142,29 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
     //    val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.getOrElse(Algorithms.disabledKeyAlgorithms) // was Option
     val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.mkString(",") // TODO Sub optimal, we got a Seq...
-    val constraints = AlgorithmConstraintsParser.parseAll(AlgorithmConstraintsParser.line, disabledKeyAlgorithms).get.toSet
+    val constraints =
+      AlgorithmConstraintsParser.parseAll(AlgorithmConstraintsParser.line, disabledKeyAlgorithms).get.toSet
     val algorithmChecker = new AlgorithmChecker(mkLogger, keyConstraints = constraints, signatureConstraints = Set())
-    for (cert ← trustManager.getAcceptedIssuers) {
+    for (cert <- trustManager.getAcceptedIssuers) {
       try {
         algorithmChecker.checkKeyAlgorithms(cert)
       } catch {
-        case e: CertPathValidatorException ⇒
-          log.warning("You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)", e)
+        case e: CertPathValidatorException =>
+          log.warning(
+            "You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)",
+            e)
       }
     }
   }
 
   def configureProtocols(existingProtocols: Array[String], sslConfig: SSLConfigSettings): Array[String] = {
     val definedProtocols = sslConfig.enabledProtocols match {
-      case Some(configuredProtocols) ⇒
+      case Some(configuredProtocols) =>
         // If we are given a specific list of protocols, then return it in exactly that order,
         // assuming that it's actually possible in the SSL context.
         configuredProtocols.filter(existingProtocols.contains).toArray
 
-      case None ⇒
+      case None =>
         // Otherwise, we return the default protocols in the given list.
         Protocols.recommendedProtocols.filter(existingProtocols.contains)
     }
@@ -167,7 +172,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
     val allowWeakProtocols = sslConfig.loose.allowWeakProtocols
     if (!allowWeakProtocols) {
       val deprecatedProtocols = Protocols.deprecatedProtocols
-      for (deprecatedProtocol ← deprecatedProtocols) {
+      for (deprecatedProtocol <- deprecatedProtocols) {
         if (definedProtocols.contains(deprecatedProtocol)) {
           throw new IllegalStateException(s"Weak protocol $deprecatedProtocol found in ssl-config.protocols!")
         }
@@ -178,18 +183,18 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   def configureCipherSuites(existingCiphers: Array[String], sslConfig: SSLConfigSettings): Array[String] = {
     val definedCiphers = sslConfig.enabledCipherSuites match {
-      case Some(configuredCiphers) ⇒
+      case Some(configuredCiphers) =>
         // If we are given a specific list of ciphers, return it in that order.
         configuredCiphers.filter(existingCiphers.contains(_)).toArray
 
-      case None ⇒
+      case None =>
         Ciphers.recommendedCiphers.filter(existingCiphers.contains(_)).toArray
     }
 
     val allowWeakCiphers = sslConfig.loose.allowWeakCiphers
     if (!allowWeakCiphers) {
       val deprecatedCiphers = Ciphers.deprecatedCiphers
-      for (deprecatedCipher ← deprecatedCiphers) {
+      for (deprecatedCipher <- deprecatedCiphers) {
         if (definedCiphers.contains(deprecatedCipher)) {
           throw new IllegalStateException(s"Weak cipher $deprecatedCipher found in ssl-config.ciphers!")
         }
@@ -202,7 +207,8 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   private def looseDisableSNI(defaultParams: SSLParameters): Unit = if (config.loose.disableSNI) {
     // this will be logged once for each AkkaSSLConfig
-    log.warning("You are using ssl-config.loose.disableSNI=true! " +
+    log.warning(
+      "You are using ssl-config.loose.disableSNI=true! " +
       "It is strongly discouraged to disable Server Name Indication, as it is crucial to preventing man-in-the-middle attacks.")
 
     defaultParams.setServerNames(Collections.emptyList())

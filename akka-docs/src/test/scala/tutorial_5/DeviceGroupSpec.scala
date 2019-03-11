@@ -122,12 +122,10 @@ class DeviceGroupSpec extends AkkaSpec {
 
       groupActor.tell(DeviceGroup.RequestAllTemperatures(requestId = 0), probe.ref)
       probe.expectMsg(
-        DeviceGroup.RespondAllTemperatures(
-          requestId = 0,
-          temperatures = Map(
-            "device1" -> DeviceGroup.Temperature(1.0),
-            "device2" -> DeviceGroup.Temperature(2.0),
-            "device3" -> DeviceGroup.TemperatureNotAvailable)))
+        DeviceGroup.RespondAllTemperatures(requestId = 0,
+                                           temperatures = Map("device1" -> DeviceGroup.Temperature(1.0),
+                                                              "device2" -> DeviceGroup.Temperature(2.0),
+                                                              "device3" -> DeviceGroup.TemperatureNotAvailable)))
     }
     //#group-query-integration-test
 

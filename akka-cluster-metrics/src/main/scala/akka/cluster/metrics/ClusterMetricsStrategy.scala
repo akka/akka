@@ -12,10 +12,11 @@ import akka.util.Helpers.ConfigOps
  * Default [[ClusterMetricsSupervisor]] strategy:
  * A configurable [[akka.actor.OneForOneStrategy]] with restart-on-throwable decider.
  */
-class ClusterMetricsStrategy(config: Config) extends OneForOneStrategy(
-  maxNrOfRetries = config.getInt("maxNrOfRetries"),
-  withinTimeRange = config.getMillisDuration("withinTimeRange"),
-  loggingEnabled = config.getBoolean("loggingEnabled"))(ClusterMetricsStrategy.metricsDecider)
+class ClusterMetricsStrategy(config: Config)
+    extends OneForOneStrategy(
+      maxNrOfRetries = config.getInt("maxNrOfRetries"),
+      withinTimeRange = config.getMillisDuration("withinTimeRange"),
+      loggingEnabled = config.getBoolean("loggingEnabled"))(ClusterMetricsStrategy.metricsDecider)
 
 /**
  * Provide custom metrics strategy resources.
@@ -28,10 +29,10 @@ object ClusterMetricsStrategy {
    * [[akka.actor.SupervisorStrategy]] `Decider` which allows to survive intermittent Sigar native method calls failures.
    */
   val metricsDecider: SupervisorStrategy.Decider = {
-    case _: ActorInitializationException ⇒ Stop
-    case _: ActorKilledException         ⇒ Stop
-    case _: DeathPactException           ⇒ Stop
-    case _: Throwable                    ⇒ Restart
+    case _: ActorInitializationException => Stop
+    case _: ActorKilledException         => Stop
+    case _: DeathPactException           => Stop
+    case _: Throwable                    => Restart
   }
 
 }

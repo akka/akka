@@ -20,7 +20,8 @@ import java.io.NotSerializableException
  * the ClusterSingleton we want to make protobuf representations of them.
  */
 private[akka] class ClusterSingletonMessageSerializer(val system: ExtendedActorSystem)
-  extends SerializerWithStringManifest with BaseSerializer {
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -31,35 +32,40 @@ private[akka] class ClusterSingletonMessageSerializer(val system: ExtendedActorS
 
   private val emptyByteArray = Array.empty[Byte]
 
-  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
-    HandOverToMeManifest → { _ ⇒ HandOverToMe },
-    HandOverInProgressManifest → { _ ⇒ HandOverInProgress },
-    HandOverDoneManifest → { _ ⇒ HandOverDone },
-    TakeOverFromMeManifest → { _ ⇒ TakeOverFromMe })
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](HandOverToMeManifest -> { _ =>
+    HandOverToMe
+  }, HandOverInProgressManifest -> { _ =>
+    HandOverInProgress
+  }, HandOverDoneManifest -> { _ =>
+    HandOverDone
+  }, TakeOverFromMeManifest -> { _ =>
+    TakeOverFromMe
+  })
 
   override def manifest(obj: AnyRef): String = obj match {
-    case HandOverToMe       ⇒ HandOverToMeManifest
-    case HandOverInProgress ⇒ HandOverInProgressManifest
-    case HandOverDone       ⇒ HandOverDoneManifest
-    case TakeOverFromMe     ⇒ TakeOverFromMeManifest
-    case _ ⇒
+    case HandOverToMe       => HandOverToMeManifest
+    case HandOverInProgress => HandOverInProgressManifest
+    case HandOverDone       => HandOverDoneManifest
+    case TakeOverFromMe     => TakeOverFromMeManifest
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case HandOverToMe       ⇒ emptyByteArray
-    case HandOverInProgress ⇒ emptyByteArray
-    case HandOverDone       ⇒ emptyByteArray
-    case TakeOverFromMe     ⇒ emptyByteArray
-    case _ ⇒
+    case HandOverToMe       => emptyByteArray
+    case HandOverInProgress => emptyByteArray
+    case HandOverDone       => emptyByteArray
+    case TakeOverFromMe     => emptyByteArray
+    case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
-      case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new NotSerializableException(
-        s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
+      case Some(f) => f(bytes)
+      case None =>
+        throw new NotSerializableException(
+          s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 
 }

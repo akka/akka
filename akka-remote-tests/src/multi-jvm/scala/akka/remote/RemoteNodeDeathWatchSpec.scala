@@ -23,8 +23,7 @@ class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
@@ -44,8 +43,8 @@ class ArteryRemoteNodeDeathWatchFastMultiJvmNode1 extends RemoteNodeDeathWatchFa
 class ArteryRemoteNodeDeathWatchFastMultiJvmNode2 extends RemoteNodeDeathWatchFastSpec(artery = true)
 class ArteryRemoteNodeDeathWatchFastMultiJvmNode3 extends RemoteNodeDeathWatchFastSpec(artery = true)
 
-abstract class RemoteNodeDeathWatchFastSpec(artery: Boolean) extends RemoteNodeDeathWatchSpec(
-  new RemoteNodeDeathWatchConfig(artery)) {
+abstract class RemoteNodeDeathWatchFastSpec(artery: Boolean)
+    extends RemoteNodeDeathWatchSpec(new RemoteNodeDeathWatchConfig(artery)) {
   override def scenario = "fast"
 }
 
@@ -57,8 +56,8 @@ class ArteryRemoteNodeDeathWatchSlowMultiJvmNode1 extends RemoteNodeDeathWatchSl
 class ArteryRemoteNodeDeathWatchSlowMultiJvmNode2 extends RemoteNodeDeathWatchSlowSpec(artery = true)
 class ArteryRemoteNodeDeathWatchSlowMultiJvmNode3 extends RemoteNodeDeathWatchSlowSpec(artery = true)
 
-abstract class RemoteNodeDeathWatchSlowSpec(artery: Boolean) extends RemoteNodeDeathWatchSpec(
-  new RemoteNodeDeathWatchConfig(artery)) {
+abstract class RemoteNodeDeathWatchSlowSpec(artery: Boolean)
+    extends RemoteNodeDeathWatchSpec(new RemoteNodeDeathWatchConfig(artery)) {
   override def scenario = "slow"
   override def sleep(): Unit = Thread.sleep(3000)
 }
@@ -76,21 +75,21 @@ object RemoteNodeDeathWatchSpec {
 
   class ProbeActor(testActor: ActorRef) extends Actor {
     def receive = {
-      case WatchIt(watchee) ⇒
-        context watch watchee
+      case WatchIt(watchee) =>
+        context.watch(watchee)
         sender() ! Ack
-      case UnwatchIt(watchee) ⇒
-        context unwatch watchee
+      case UnwatchIt(watchee) =>
+        context.unwatch(watchee)
         sender() ! Ack
-      case t: Terminated ⇒
-        testActor forward WrappedTerminated(t)
-      case msg ⇒ testActor forward msg
+      case t: Terminated =>
+        testActor.forward(WrappedTerminated(t))
+      case msg => testActor.forward(msg)
     }
   }
 }
 
 abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteNodeDeathWatchSpec._
   import RemoteWatcher._
@@ -350,7 +349,7 @@ abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchCon
         enterBarrier("watch-established-5")
         enterBarrier("stopped-5")
 
-        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet should ===(Set(a1, a2))
+        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) => t.actor }.toSet should ===(Set(a1, a2))
         p3.expectMsgType[WrappedTerminated](5 seconds).t.actor should ===(a3)
         p2.expectNoMessage(2 seconds)
         enterBarrier("terminated-verified-5")

@@ -18,7 +18,7 @@ import akka.stream.MaterializerLoggingProvider
  * itself would not know if you're calling it from a "on element" context or not, which is why
  * these decisions have to be handled by the operator itself.
  */
-trait StageLogging { self: GraphStageLogic ⇒
+trait StageLogging { self: GraphStageLogic =>
   private[this] var _log: LoggingAdapter = _
 
   /** Override to customise reported log source */
@@ -28,9 +28,9 @@ trait StageLogging { self: GraphStageLogic ⇒
     // only used in StageLogic, i.e. thread safe
     if (_log eq null) {
       materializer match {
-        case p: MaterializerLoggingProvider ⇒
+        case p: MaterializerLoggingProvider =>
           _log = p.makeLogger(logSource)
-        case _ ⇒
+        case _ =>
           _log = NoLogging
       }
     }

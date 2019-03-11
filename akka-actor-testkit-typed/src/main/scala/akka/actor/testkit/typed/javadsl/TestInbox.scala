@@ -18,11 +18,11 @@ object TestInbox {
 
   def create[T](name: String): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl(address / name withUid (uid))
+    new TestInboxImpl((address / name).withUid(uid))
   }
   def create[T](): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl(address / "inbox" withUid (uid))
+    new TestInboxImpl((address / "inbox").withUid(uid))
   }
 }
 
@@ -39,6 +39,7 @@ object TestInbox {
  */
 @DoNotInherit
 abstract class TestInbox[T] {
+
   /**
    * The actor ref of the inbox
    */

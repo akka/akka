@@ -48,43 +48,50 @@ object LoggingReceive {
    * Java API: compatible with lambda expressions
    */
   def create(r: AbstractActor.Receive, context: AbstractActor.ActorContext): AbstractActor.Receive =
-    new AbstractActor.Receive(apply(r.onMessage.asInstanceOf[PartialFunction[Any, Unit]])(context)
-      .asInstanceOf[PartialFunction[Any, BoxedUnit]])
+    new AbstractActor.Receive(
+      apply(r.onMessage.asInstanceOf[PartialFunction[Any, Unit]])(context)
+        .asInstanceOf[PartialFunction[Any, BoxedUnit]])
 
   /**
    * Create a decorated logger which will append `" in state " + label` to each message it logs.
    */
   def withLabel(label: String, logLevel: LogLevel)(r: Receive)(implicit context: ActorContext): Receive = r match {
-    case _: LoggingReceive ⇒ r
-    case _                 ⇒ if (context.system.settings.AddLoggingReceive) new LoggingReceive(None, r, Option(label), logLevel) else r
+    case _: LoggingReceive => r
+    case _                 => if (context.system.settings.AddLoggingReceive) new LoggingReceive(None, r, Option(label), logLevel) else r
   }
 
   /**
    * Create a decorated logger which will append `" in state " + label` to each message it logs.
    */
-  def withLabel(label: String)(r: Receive)(implicit context: ActorContext): Receive = withLabel(label, Logging.DebugLevel)(r)
+  def withLabel(label: String)(r: Receive)(implicit context: ActorContext): Receive =
+    withLabel(label, Logging.DebugLevel)(r)
 }
 
 /**
  * This decorator adds invocation logging to a Receive function.
  * @param source the log source, if not defined the actor of the context will be used
  */
-class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String], logLevel: LogLevel)(implicit context: ActorContext) extends Receive {
-  def this(source: Option[AnyRef], r: Receive, label: Option[String])(implicit context: ActorContext) = this(source, r, label, Logging.DebugLevel)
-  def this(source: Option[AnyRef], r: Receive)(implicit context: ActorContext) = this(source, r, None, Logging.DebugLevel)
+class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String], logLevel: LogLevel)(
+    implicit context: ActorContext)
+    extends Receive {
+  def this(source: Option[AnyRef], r: Receive, label: Option[String])(implicit context: ActorContext) =
+    this(source, r, label, Logging.DebugLevel)
+  def this(source: Option[AnyRef], r: Receive)(implicit context: ActorContext) =
+    this(source, r, None, Logging.DebugLevel)
   def isDefinedAt(o: Any): Boolean = {
     val handled = r.isDefinedAt(o)
     if (context.system.eventStream.logLevel >= logLevel) {
-      val src = source getOrElse context.asInstanceOf[ActorCell].actor
+      val src = source.getOrElse(context.asInstanceOf[ActorCell].actor)
       val (str, clazz) = LogSource.fromAnyRef(src)
-      val message = "received " + (if (handled) "handled" else "unhandled") + " message " + o + " from " + context.sender() +
+      val message = "received " + (if (handled) "handled" else "unhandled") + " message " + o + " from " + context
+          .sender() +
         (label match {
-          case Some(l) ⇒ " in state " + l
-          case _       ⇒ ""
+          case Some(l) => " in state " + l
+          case _       => ""
         })
       val event = src match {
-        case a: DiagnosticActorLogging ⇒ LogEvent(logLevel, str, clazz, message, a.log.mdc)
-        case _                         ⇒ LogEvent(logLevel, str, clazz, message)
+        case a: DiagnosticActorLogging => LogEvent(logLevel, str, clazz, message, a.log.mdc)
+        case _                         => LogEvent(logLevel, str, clazz, message)
       }
       context.system.eventStream.publish(event)
     }

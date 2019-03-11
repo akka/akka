@@ -25,12 +25,12 @@ object BoundAddressesExtension extends ExtensionId[BoundAddressesExtension] with
 }
 
 class BoundAddressesExtension(val system: ExtendedActorSystem) extends Extension {
+
   /**
    * Returns a mapping from a protocol to a set of bound addresses.
    */
-  def boundAddresses: Map[String, Set[Address]] = system.provider
-    .asInstanceOf[RemoteActorRefProvider].transport match {
-      case artery: ArteryTransport ⇒ Map(ArteryTransport.ProtocolName → Set(artery.bindAddress.address))
-      case remoting: Remoting      ⇒ remoting.boundAddresses
-    }
+  def boundAddresses: Map[String, Set[Address]] = system.provider.asInstanceOf[RemoteActorRefProvider].transport match {
+    case artery: ArteryTransport => Map(ArteryTransport.ProtocolName -> Set(artery.bindAddress.address))
+    case remoting: Remoting      => remoting.boundAddresses
+  }
 }

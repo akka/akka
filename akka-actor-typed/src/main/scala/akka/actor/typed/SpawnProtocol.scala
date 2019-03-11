@@ -11,17 +11,18 @@ import akka.actor.typed.scaladsl.Behaviors
 object SpawnProtocol {
 
   object Spawn {
+
     /**
      * Special factory to make using Spawn with ask easier
      */
-    def apply[T](behavior: Behavior[T], name: String, props: Props): ActorRef[ActorRef[T]] ⇒ Spawn[T] =
-      replyTo ⇒ new Spawn(behavior, name, props, replyTo)
+    def apply[T](behavior: Behavior[T], name: String, props: Props): ActorRef[ActorRef[T]] => Spawn[T] =
+      replyTo => new Spawn(behavior, name, props, replyTo)
 
     /**
      * Special factory to make using Spawn with ask easier. Props defaults to Props.empty
      */
-    def apply[T](behavior: Behavior[T], name: String): ActorRef[ActorRef[T]] ⇒ Spawn[T] =
-      replyTo ⇒ new Spawn(behavior, name, Props.empty, replyTo)
+    def apply[T](behavior: Behavior[T], name: String): ActorRef[ActorRef[T]] => Spawn[T] =
+      replyTo => new Spawn(behavior, name, Props.empty, replyTo)
   }
 
   /**
@@ -36,15 +37,15 @@ object SpawnProtocol {
    * `InvalidActorNameException`, but it's better to use unique names to begin with.
    */
   final case class Spawn[T](behavior: Behavior[T], name: String, props: Props, replyTo: ActorRef[ActorRef[T]])
-    extends SpawnProtocol
+      extends SpawnProtocol
 
   /**
    * Behavior implementing the [[SpawnProtocol]].
    */
   val behavior: Behavior[SpawnProtocol] =
-    Behaviors.receive { (ctx, msg) ⇒
+    Behaviors.receive { (ctx, msg) =>
       msg match {
-        case Spawn(bhvr, name, props, replyTo) ⇒
+        case Spawn(bhvr, name, props, replyTo) =>
           val ref =
             if (name == null || name.equals(""))
               ctx.spawnAnonymous(bhvr, props)
@@ -53,8 +54,8 @@ object SpawnProtocol {
               @tailrec def spawnWithUniqueName(c: Int): ActorRef[Any] = {
                 val nameSuggestion = if (c == 0) name else s"$name-$c"
                 ctx.child(nameSuggestion) match {
-                  case Some(_) ⇒ spawnWithUniqueName(c + 1) // already taken, try next
-                  case None    ⇒ ctx.spawn(bhvr, nameSuggestion, props)
+                  case Some(_) => spawnWithUniqueName(c + 1) // already taken, try next
+                  case None    => ctx.spawn(bhvr, nameSuggestion, props)
                 }
               }
 
