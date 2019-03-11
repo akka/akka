@@ -38,12 +38,13 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "create n children and route messages to" in {
       val childCounter = new AtomicInteger(0)
-      val probe = createTestProbe[String]()
+      case class Ack(msg: String, recipient: Int)
+      val probe = createTestProbe[AnyRef]()
       val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ ⇒
         val id = childCounter.getAndIncrement()
         probe.ref ! s"started $id"
         Behaviors.receiveMessage { msg ⇒
-          probe.ref ! s"$id $msg"
+          probe.ref ! Ack(msg, id)
           Behaviors.same
         }
       }))
@@ -52,11 +53,21 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val expectedStarted = (0 to 3).map { n ⇒ s"started $n" }.toSet
       probe.receiveMessages(4).toSet should ===(expectedStarted)
 
-      (0 to 8).foreach { n ⇒
-        pool ! s"message-$n"
-        val expectedRecipient = n % 4
-        probe.expectMessage(s"$expectedRecipient message-$n")
+      // send one message at a time and see we rotate over all children, noe that we don't necessarily
+      // know what order the logic is rotating over the children, so we just check we reach all of them
+      val sent = (0 to 8).map { n ⇒
+        val msg = s"message-$n"
+        pool ! msg
+        msg
       }
+
+      val acks = (0 to 8).map(_ ⇒ probe.expectMessageType[Ack])
+      val (recipients, messages) = acks.foldLeft[(Set[Int], Set[String])]((Set.empty, Set.empty)) {
+        case ((recipients, messages), ack) ⇒
+          (recipients + ack.recipient, messages + ack.msg)
+      }
+      recipients should ===(Set(0, 1, 2, 3))
+      messages should ===(sent.toSet)
     }
 
     "keep routing to the rest of the children if some children stops" in {
