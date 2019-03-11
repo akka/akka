@@ -19,7 +19,7 @@ class SplitWhenTest extends AkkaPublisherVerification[Int] {
     else {
       val futureSource =
         Source(iterable(elements))
-          .splitWhen(elem ⇒ false)
+          .splitWhen(elem => false)
           .prefixAndTail(0)
           .map(_._2)
           .concatSubstreams

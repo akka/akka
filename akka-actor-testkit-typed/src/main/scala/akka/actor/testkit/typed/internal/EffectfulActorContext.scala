@@ -29,17 +29,17 @@ import scala.compat.java8.FunctionConverters._
     effectQueue.offer(new SpawnedAnonymous(behavior, props, ref))
     ref
   }
-  override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] = {
+  override def spawnMessageAdapter[U](f: U => T): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f)
     effectQueue.offer(new SpawnedAnonymousAdapter(ref))
     ref
   }
-  override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
+  override def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f, name)
     effectQueue.offer(new SpawnedAdapter(name, ref))
     ref
   }
-  override def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U] = {
+  override def messageAdapter[U: ClassTag](f: U => T): ActorRef[U] = {
     val ref = super.messageAdapter(f)
     effectQueue.offer(MessageAdapter(implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]], f))
     ref
@@ -83,4 +83,3 @@ import scala.compat.java8.FunctionConverters._
     super.scheduleOnce(delay, target, message)
   }
 }
-

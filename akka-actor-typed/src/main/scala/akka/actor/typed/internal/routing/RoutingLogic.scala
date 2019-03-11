@@ -15,6 +15,7 @@ import akka.dispatch.forkjoin.ThreadLocalRandom
  */
 @InternalApi
 sealed private[akka] trait RoutingLogic[T] {
+
   /**
    * @param routees available routees, will contain at least one element. Must not be mutated by select logic.
    */
@@ -55,14 +56,14 @@ private[akka] object RoutingLogics {
       // make sure we keep a somewhat similar order so we can potentially continue roundrobining
       // from where we were unless the set of routees completely changed
       // Also, avoid putting all entries from the same node next to each other in case of cluster
-      val sortedNewRoutees = newRoutees.toArray.sortBy(ref ⇒ (ref.path.toStringWithoutAddress, ref.path.address))
+      val sortedNewRoutees = newRoutees.toArray.sortBy(ref => (ref.path.toStringWithoutAddress, ref.path.address))
 
       if (currentRoutees ne null) {
         val firstDiffIndex = {
           var idx = 0
           while (idx < currentRoutees.length &&
-            idx < sortedNewRoutees.length &&
-            currentRoutees(idx) == sortedNewRoutees(idx)) {
+                 idx < sortedNewRoutees.length &&
+                 currentRoutees(idx) == sortedNewRoutees(idx)) {
             idx += 1
           }
           idx

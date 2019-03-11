@@ -84,8 +84,8 @@ class ExtensionSpec extends WordSpec with Matchers {
 
     "fail the actor system if an extension listed in akka.extensions fails to start" in {
       intercept[RuntimeException] {
-        val system = ActorSystem("failing", ConfigFactory.parseString(
-          """
+        val system = ActorSystem("failing",
+                                 ConfigFactory.parseString("""
             akka.extensions = ["akka.actor.FailingTestExtension"]
           """))
 
@@ -94,8 +94,8 @@ class ExtensionSpec extends WordSpec with Matchers {
     }
 
     "log an error if an extension listed in akka.extensions cannot be loaded" in {
-      val system = ActorSystem("failing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem("failing",
+                               ConfigFactory.parseString("""
           akka.extensions = ["akka.actor.MissingExtension"]
         """))
       EventFilter.error("While trying to load extension [akka.actor.MissingExtension], skipping.").intercept(())(system)
@@ -114,8 +114,8 @@ class ExtensionSpec extends WordSpec with Matchers {
 
     "fail the actor system if a library-extension fails to start" in {
       intercept[FailingTestExtension.TestException] {
-        ActorSystem("failing", ConfigFactory.parseString(
-          """
+        ActorSystem("failing",
+                    ConfigFactory.parseString("""
             akka.library-extensions += "akka.actor.FailingTestExtension"
           """).withFallback(ConfigFactory.load()).resolve())
       }
@@ -124,8 +124,8 @@ class ExtensionSpec extends WordSpec with Matchers {
 
     "fail the actor system if a library-extension cannot be loaded" in {
       intercept[RuntimeException] {
-        ActorSystem("failing", ConfigFactory.parseString(
-          """
+        ActorSystem("failing",
+                    ConfigFactory.parseString("""
             akka.library-extensions += "akka.actor.MissingExtension"
           """).withFallback(ConfigFactory.load()))
       }

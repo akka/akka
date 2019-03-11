@@ -8,7 +8,7 @@ import com.typesafe.config._
 import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
-import akka.serialization.{ Serializer, SerializationExtension }
+import akka.serialization.{ SerializationExtension, Serializer }
 import akka.testkit.TestKit
 
 class PersistenceSerializerDocSpec extends WordSpec {

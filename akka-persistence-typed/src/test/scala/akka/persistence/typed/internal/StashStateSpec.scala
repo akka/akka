@@ -38,30 +38,31 @@ class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     def apply(probe: TestProbe[Int]): Behavior[InternalProtocol] = {
       val settings = dummySettings()
-      Behaviors.setup[InternalProtocol] { _ ⇒
+      Behaviors.setup[InternalProtocol] { _ =>
         val stashState = new StashState(settings)
-        Behaviors.receiveMessagePartial[InternalProtocol] {
-          case RecoveryPermitGranted ⇒
-            stashState.internalStashBuffer.stash(RecoveryPermitGranted)
-            probe.ref ! stashState.internalStashBuffer.size
-            Behaviors.same[InternalProtocol]
-          case _: IncomingCommand[_] ⇒ Behaviors.stopped
-        }.receiveSignal {
-          case (_, _) ⇒
-            stashState.clearStashBuffers()
-            Behaviors.stopped[InternalProtocol]
-        }
+        Behaviors
+          .receiveMessagePartial[InternalProtocol] {
+            case RecoveryPermitGranted =>
+              stashState.internalStashBuffer.stash(RecoveryPermitGranted)
+              probe.ref ! stashState.internalStashBuffer.size
+              Behaviors.same[InternalProtocol]
+            case _: IncomingCommand[_] => Behaviors.stopped
+          }
+          .receiveSignal {
+            case (_, _) =>
+              stashState.clearStashBuffers()
+              Behaviors.stopped[InternalProtocol]
+          }
       }
     }
   }
 
   private def dummySettings(capacity: Int = 42) =
-    EventSourcedSettings(
-      stashCapacity = capacity,
-      stashOverflowStrategy = StashOverflowStrategy.Fail,
-      logOnStashing = false,
-      recoveryEventTimeout = 3.seconds,
-      journalPluginId = "",
-      snapshotPluginId = "")
+    EventSourcedSettings(stashCapacity = capacity,
+                         stashOverflowStrategy = StashOverflowStrategy.Fail,
+                         logOnStashing = false,
+                         recoveryEventTimeout = 3.seconds,
+                         journalPluginId = "",
+                         snapshotPluginId = "")
 
 }

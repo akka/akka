@@ -18,43 +18,43 @@ import scala.concurrent.duration.FiniteDuration
  * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
  * with `BackoffOpts.onStop`.
  */
-@InternalApi private[pattern] class BackoffOnStopSupervisor(
-  val childProps:    Props,
-  val childName:     String,
-  minBackoff:        FiniteDuration,
-  maxBackoff:        FiniteDuration,
-  val reset:         BackoffReset,
-  randomFactor:      Double,
-  strategy:          SupervisorStrategy,
-  replyWhileStopped: Option[Any],
-  finalStopMessage:  Option[Any ⇒ Boolean])
-  extends Actor with HandleBackoff
-  with ActorLogging {
+@InternalApi private[pattern] class BackoffOnStopSupervisor(val childProps: Props,
+                                                            val childName: String,
+                                                            minBackoff: FiniteDuration,
+                                                            maxBackoff: FiniteDuration,
+                                                            val reset: BackoffReset,
+                                                            randomFactor: Double,
+                                                            strategy: SupervisorStrategy,
+                                                            replyWhileStopped: Option[Any],
+                                                            finalStopMessage: Option[Any => Boolean])
+    extends Actor
+    with HandleBackoff
+    with ActorLogging {
 
   import BackoffSupervisor._
   import context.dispatcher
 
   override val supervisorStrategy = strategy match {
-    case oneForOne: OneForOneStrategy ⇒
+    case oneForOne: OneForOneStrategy =>
       OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
-        case ex ⇒
+        case ex =>
           val defaultDirective: Directive =
-            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) ⇒ Escalate)
+            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
 
-          strategy.decider.applyOrElse(ex, (_: Any) ⇒ defaultDirective)
+          strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
       }
-    case s ⇒ s
+    case s => s
   }
 
   def onTerminated: Receive = {
-    case Terminated(ref) if child.contains(ref) ⇒
+    case Terminated(ref) if child.contains(ref) =>
       child = None
       if (finalStopMessageReceived) {
         context.stop(self)
       } else {
         val maxNrOfRetries = strategy match {
-          case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
-          case _                            ⇒ -1
+          case oneForOne: OneForOneStrategy => oneForOne.maxNrOfRetries
+          case _                            => -1
         }
 
         val nextRestartCount = restartCount + 1
@@ -64,30 +64,32 @@ import scala.concurrent.duration.FiniteDuration
           context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
           restartCount = nextRestartCount
         } else {
-          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})",
+                    nextRestartCount,
+                    maxNrOfRetries)
           context.stop(self)
         }
       }
 
   }
 
-  def receive: Receive = onTerminated orElse handleBackoff
+  def receive: Receive = onTerminated.orElse(handleBackoff)
 
   protected def handleMessageToChild(msg: Any): Unit = child match {
-    case Some(c) ⇒
+    case Some(c) =>
       c.forward(msg)
       if (!finalStopMessageReceived) finalStopMessage match {
-        case Some(fsm) ⇒ finalStopMessageReceived = fsm(msg)
-        case None      ⇒
+        case Some(fsm) => finalStopMessageReceived = fsm(msg)
+        case None      =>
       }
-    case None ⇒
+    case None =>
       replyWhileStopped match {
-        case Some(r) ⇒ sender() ! r
-        case None    ⇒ context.system.deadLetters.forward(msg)
+        case Some(r) => sender() ! r
+        case None    => context.system.deadLetters.forward(msg)
       }
       finalStopMessage match {
-        case Some(fsm) if fsm(msg) ⇒ context.stop(self)
-        case _                     ⇒
+        case Some(fsm) if fsm(msg) => context.stop(self)
+        case _                     =>
       }
   }
 }

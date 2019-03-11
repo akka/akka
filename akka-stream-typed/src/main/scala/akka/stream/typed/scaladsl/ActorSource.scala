@@ -47,12 +47,14 @@ object ActorSource {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def actorRef[T](
-    completionMatcher: PartialFunction[T, Unit],
-    failureMatcher:    PartialFunction[T, Throwable],
-    bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
-    Source.actorRef[T](
-      completionMatcher.asInstanceOf[PartialFunction[Any, Unit]],
-      failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
-      bufferSize, overflowStrategy).mapMaterializedValue(actorRefAdapter)
+  def actorRef[T](completionMatcher: PartialFunction[T, Unit],
+                  failureMatcher: PartialFunction[T, Throwable],
+                  bufferSize: Int,
+                  overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
+    Source
+      .actorRef[T](completionMatcher.asInstanceOf[PartialFunction[Any, Unit]],
+                   failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
+                   bufferSize,
+                   overflowStrategy)
+      .mapMaterializedValue(actorRefAdapter)
 }

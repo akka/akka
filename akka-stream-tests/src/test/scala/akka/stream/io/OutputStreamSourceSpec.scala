@@ -47,11 +47,15 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   def assertNoBlockedThreads(): Unit = {
     def threadsBlocked =
-      ManagementFactory.getThreadMXBean.dumpAllThreads(true, true).toSeq
-        .filter(t ⇒ t.getThreadName.startsWith("OutputStreamSourceSpec") &&
-          t.getLockName != null &&
-          t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
-          t.getStackTrace.exists(s ⇒ s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
+      ManagementFactory.getThreadMXBean
+        .dumpAllThreads(true, true)
+        .toSeq
+        .filter(
+          t =>
+            t.getThreadName.startsWith("OutputStreamSourceSpec") &&
+            t.getLockName != null &&
+            t.getLockName.startsWith("java.util.concurrent.locks.AbstractQueuedSynchronizer") &&
+            t.getStackTrace.exists(s => s.getClassName.startsWith(classOf[OutputStreamSourceStage].getName)))
 
     awaitAssert(threadsBlocked should ===(Seq()), 5.seconds, interval = 500.millis)
   }
@@ -70,9 +74,10 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     // https://github.com/akka/akka/issues/25983
     "not truncate the stream on close" in assertAllStagesStopped {
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         val (outputStream, result) =
-          StreamConverters.asOutputStream()
+          StreamConverters
+            .asOutputStream()
             .toMat(Sink.fold[ByteString, ByteString](ByteString.empty)(_ ++ _))(Keep.both)
             .run
         outputStream.write(bytesArray)
@@ -100,11 +105,16 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "block writes when buffer is full" in assertAllStagesStopped {
-      val (outputStream, probe) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both)
-        .withAttributes(Attributes.inputBuffer(16, 16)).run
+      val (outputStream, probe) = StreamConverters
+        .asOutputStream()
+        .toMat(TestSink.probe[ByteString])(Keep.both)
+        .withAttributes(Attributes.inputBuffer(16, 16))
+        .run
       val s = probe.expectSubscription()
 
-      (1 to 16).foreach { _ ⇒ outputStream.write(bytesArray) }
+      (1 to 16).foreach { _ =>
+        outputStream.write(bytesArray)
+      }
 
       //blocked call
       val f = Future(outputStream.write(bytesArray))
@@ -130,8 +140,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "throw IOException when writing to the stream after the subscriber has cancelled the reactive stream" in assertAllStagesStopped {
-      val (outputStream, sink) = StreamConverters.asOutputStream()
-        .toMat(TestSink.probe[ByteString])(Keep.both).run
+      val (outputStream, sink) = StreamConverters.asOutputStream().toMat(TestSink.probe[ByteString])(Keep.both).run
 
       val s = sink.expectSubscription()
 
@@ -148,15 +157,13 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "fail to materialize with zero sized input buffer" in {
       an[IllegalArgumentException] shouldBe thrownBy {
-        StreamConverters.asOutputStream(timeout)
-          .withAttributes(inputBuffer(0, 0))
-          .runWith(Sink.head)
+        StreamConverters.asOutputStream(timeout).withAttributes(inputBuffer(0, 0)).runWith(Sink.head)
         /*
              With Sink.head we test the code path in which the source
              itself throws an exception when being materialized. If
              Sink.ignore is used, the same exception is thrown by
              Materializer.
-             */
+       */
       }
     }
 
@@ -164,8 +171,8 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       // make sure previous tests didn't leak
       assertNoBlockedThreads()
 
-      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
-        .toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
+      val (outputStream, probe) =
+        StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
 
       val sub = probe.expectSubscription()
 
@@ -179,8 +186,8 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "not leave blocked threads when materializer shutdown" in {
       val materializer2 = ActorMaterializer(settings)
-      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
-        .toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
+      val (outputStream, probe) =
+        StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
 
       val sub = probe.expectSubscription()
 
@@ -197,9 +204,11 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val bufSize = 4
       val sourceProbe = TestProbe()
-      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
+      val (outputStream, probe) = StreamConverters
+        .asOutputStream(timeout)
         .addAttributes(Attributes.inputBuffer(bufSize, bufSize))
-        .toMat(TestSink.probe[ByteString])(Keep.both).run
+        .toMat(TestSink.probe[ByteString])(Keep.both)
+        .run
 
       // fill the buffer up
       (1 to (bufSize - 1)).foreach(outputStream.write)

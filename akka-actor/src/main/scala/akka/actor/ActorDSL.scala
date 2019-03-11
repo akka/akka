@@ -69,7 +69,9 @@ import akka.util.JavaDurationConverters._
  *
  * @deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.
  */
-@deprecated("deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.", since = "2.5.0")
+@deprecated(
+  "deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.",
+  since = "2.5.0")
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected object Extension extends ExtensionId[Extension] with ExtensionIdProvider {
@@ -87,13 +89,14 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 
     private case class MkChild(props: Props, name: String) extends NoSerializationVerificationNeeded
-    private val boss = system.systemActorOf(Props(
-      new Actor {
+    private val boss = system
+      .systemActorOf(Props(new Actor {
         def receive = {
-          case MkChild(props, name) ⇒ sender() ! context.actorOf(props, name)
-          case any                  ⇒ sender() ! any
+          case MkChild(props, name) => sender() ! context.actorOf(props, name)
+          case any                  => sender() ! any
         }
-      }), "dsl").asInstanceOf[RepointableActorRef]
+      }), "dsl")
+      .asInstanceOf[RepointableActorRef]
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")
 
@@ -157,6 +160,7 @@ abstract class Inbox {
 }
 
 object Inbox {
+
   /**
    * Create a new Inbox within the given system.
    */

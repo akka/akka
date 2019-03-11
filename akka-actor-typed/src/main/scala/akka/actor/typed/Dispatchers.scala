@@ -7,6 +7,7 @@ package akka.actor.typed
 import scala.concurrent.ExecutionContextExecutor
 
 object Dispatchers {
+
   /**
    * The id of the default dispatcher, also the full key of the
    * configuration of the default dispatcher.

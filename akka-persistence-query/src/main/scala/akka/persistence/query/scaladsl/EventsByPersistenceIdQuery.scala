@@ -26,7 +26,8 @@ trait EventsByPersistenceIdQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * stored events is provided by [[CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]].
    */
-  def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
+  def eventsByPersistenceId(persistenceId: String,
+                            fromSequenceNr: Long,
                             toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }

@@ -5,12 +5,12 @@
 package akka.actor.typed.javadsl
 
 import java.util.Collections
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.annotation.ApiMayChange
-import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{ Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 
@@ -40,7 +40,7 @@ object Behaviors {
    * processed by the started behavior.
    */
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
-    Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx.asJava))
+    Behavior.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -103,7 +103,7 @@ object Behaviors {
    * a new behavior that holds the new immutable state.
    */
   def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ReceiveBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
+    new BehaviorImpl.ReceiveBehavior((ctx, msg) => onMessage.apply(ctx.asJava, msg))
 
   /**
    * Simplified version of [[receive]] with only a single argument - the message
@@ -122,7 +122,7 @@ object Behaviors {
    * a new behavior that holds the new immutable state.
    */
   def receiveMessage[T](onMessage: akka.japi.Function[T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ReceiveBehavior((_, msg) ⇒ onMessage.apply(msg))
+    new BehaviorImpl.ReceiveBehavior((_, msg) => onMessage.apply(msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -136,12 +136,11 @@ object Behaviors {
    * that can potentially be different from this one. State is maintained by returning
    * a new behavior that holds the new immutable state.
    */
-  def receive[T](
-    onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
-    onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
-    new BehaviorImpl.ReceiveBehavior(
-      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      { case (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig) })
+  def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
+                 onSignal: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    new BehaviorImpl.ReceiveBehavior((ctx, msg) => onMessage.apply(ctx.asJava, msg), {
+      case (ctx, sig) => onSignal.apply(ctx.asJava, sig)
+    })
   }
 
   /**
@@ -229,6 +228,7 @@ object Behaviors {
     new Supervise[T](wrapped)
 
   final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
+
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
@@ -285,7 +285,7 @@ object Behaviors {
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
+    TimerSchedulerImpl.withTimers(timers => factory.apply(timers))
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
@@ -297,8 +297,8 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](
-    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T](mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+                 behavior: Behavior[T]): Behavior[T] =
     withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
@@ -330,26 +330,22 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](
-    staticMdc:     java.util.Map[String, Any],
-    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
-    behavior:      Behavior[T]): Behavior[T] = {
+  def withMdc[T](staticMdc: java.util.Map[String, Any],
+                 mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
+                 behavior: Behavior[T]): Behavior[T] = {
 
     def asScalaMap(m: java.util.Map[String, Any]): Map[String, Any] = {
       if (m == null || m.isEmpty) Map.empty[String, Any]
       else m.asScala.toMap
     }
 
-    val mdcForMessageFun: T ⇒ Map[String, Any] =
+    val mdcForMessageFun: T => Map[String, Any] =
       if (mdcForMessage == null) Map.empty
-      else {
-        message ⇒ asScalaMap(mdcForMessage.apply(message))
+      else { message =>
+        asScalaMap(mdcForMessage.apply(message))
       }
 
-    WithMdcBehaviorInterceptor[T](
-      asScalaMap(staticMdc),
-      mdcForMessageFun,
-      behavior)
+    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)
   }
 
 }

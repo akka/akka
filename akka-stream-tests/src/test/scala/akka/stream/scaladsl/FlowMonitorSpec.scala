@@ -76,8 +76,7 @@ class FlowMonitorSpec extends StreamSpec {
         TestSource.probe[Any].monitor.to(Sink.ignore).run()(mat)
       mat.shutdown()
 
-      awaitAssert(
-        monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
+      awaitAssert(monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
     }
 
   }

@@ -34,7 +34,8 @@ class ConfigDocSpec extends WordSpec with Matchers {
   }
 
   "deployment section" in {
-    val conf = ConfigFactory.parseString("""
+    val conf =
+      ConfigFactory.parseString("""
   #//#deployment-section
   akka.actor.deployment {
   

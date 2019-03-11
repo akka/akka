@@ -20,12 +20,14 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(
+        ConfigFactory.parseString("""
       akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks
       akka.cluster.publish-stats-interval = 0 s # always, when it happens
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class TransitionMultiJvmNode1 extends TransitionSpec
@@ -33,9 +35,9 @@ class TransitionMultiJvmNode2 extends TransitionSpec
 class TransitionMultiJvmNode3 extends TransitionSpec
 
 abstract class TransitionSpec
-  extends MultiNodeSpec(TransitionMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender {
+    extends MultiNodeSpec(TransitionMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import TransitionMultiJvmSpec._
 
@@ -46,8 +48,8 @@ abstract class TransitionSpec
   def nonLeader(roles: RoleName*) = roles.toSeq.sorted.tail
 
   def memberStatus(address: Address): MemberStatus = {
-    val statusOption = (clusterView.members union clusterView.unreachableMembers).collectFirst {
-      case m if m.address == address ⇒ m.status
+    val statusOption = clusterView.members.union(clusterView.unreachableMembers).collectFirst {
+      case m if m.address == address => m.status
     }
     statusOption.getOrElse(Removed)
   }
@@ -56,10 +58,10 @@ abstract class TransitionSpec
 
   def members: Set[RoleName] = memberAddresses.flatMap(roleName(_))
 
-  def seenLatestGossip: Set[RoleName] = clusterView.seenBy flatMap roleName
+  def seenLatestGossip: Set[RoleName] = clusterView.seenBy.flatMap(roleName)
 
   def awaitSeen(addresses: Address*): Unit = awaitAssert {
-    (seenLatestGossip map address) should ===(addresses.toSet)
+    (seenLatestGossip.map(address)) should ===(addresses.toSet)
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitAssert {
@@ -91,7 +93,7 @@ abstract class TransitionSpec
           clusterView.latestStats.gossipStats.receivedGossipCount != oldCount // received gossip
         }
         // gossip chat will synchronize the views
-        awaitCond((Set(fromRole, toRole) diff seenLatestGossip).isEmpty)
+        awaitCond(Set(fromRole, toRole).diff(seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(fromRole) {
@@ -99,10 +101,10 @@ abstract class TransitionSpec
         // send gossip
         cluster.clusterCore ! InternalClusterAction.SendGossipTo(toRole)
         // gossip chat will synchronize the views
-        awaitCond((Set(fromRole, toRole) diff seenLatestGossip).isEmpty)
+        awaitCond(Set(fromRole, toRole).diff(seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
-      runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
+      runOn(roles.filterNot(r => r == fromRole || r == toRole): _*) {
         enterBarrier("before-gossip-" + gossipBarrierCounter)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
@@ -114,7 +116,7 @@ abstract class TransitionSpec
     "start nodes as singleton clusters" taggedAs LongRunningTest in {
 
       runOn(first) {
-        cluster join myself
+        cluster.join(myself)
         // first joining itself will immediately be moved to Up
         awaitMemberStatus(myself, Up)
         awaitCond(clusterView.isSingletonCluster)
@@ -144,7 +146,7 @@ abstract class TransitionSpec
       }
       enterBarrier("leader-actions-2")
 
-      first gossipTo second
+      first.gossipTo(second)
       runOn(first, second) {
         // gossip chat will synchronize the views
         awaitMemberStatus(second, Up)
@@ -166,7 +168,7 @@ abstract class TransitionSpec
       }
       enterBarrier("third-joined-second")
 
-      second gossipTo first
+      second.gossipTo(first)
       runOn(first, second) {
         // gossip chat will synchronize the views
         awaitMembers(first, second, third)
@@ -175,7 +177,7 @@ abstract class TransitionSpec
         awaitAssert(seenLatestGossip should ===(Set(first, second, third)))
       }
 
-      first gossipTo third
+      first.gossipTo(third)
       runOn(first, second, third) {
         awaitMembers(first, second, third)
         awaitMemberStatus(first, Up)
@@ -197,14 +199,14 @@ abstract class TransitionSpec
       enterBarrier("leader-actions-3")
 
       // leader gossipTo first non-leader
-      leader12 gossipTo other1
+      leader12.gossipTo(other1)
       runOn(other1) {
         awaitMemberStatus(third, Up)
         awaitAssert(seenLatestGossip should ===(Set(leader12, myself)))
       }
 
       // first non-leader gossipTo the other non-leader
-      other1 gossipTo other2
+      other1.gossipTo(other2)
       runOn(other1) {
         // send gossip
         cluster.clusterCore ! InternalClusterAction.SendGossipTo(other2)
@@ -215,7 +217,7 @@ abstract class TransitionSpec
       }
 
       // first non-leader gossipTo the leader
-      other1 gossipTo leader12
+      other1.gossipTo(leader12)
       runOn(first, second, third) {
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
@@ -236,7 +238,7 @@ abstract class TransitionSpec
 
       enterBarrier("after-second-unavailable")
 
-      third gossipTo first
+      third.gossipTo(first)
 
       runOn(first, third) {
         awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))
@@ -248,7 +250,7 @@ abstract class TransitionSpec
 
       enterBarrier("after-second-down")
 
-      first gossipTo third
+      first.gossipTo(third)
 
       runOn(first, third) {
         awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))

@@ -17,9 +17,9 @@ class ClusterShardingStateSpec extends ScalaTestWithActorTestKit(ClusterSharding
   val sharding = ClusterSharding(system)
 
   val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
-    case IdReplyPlz(id, _)  ⇒ id
-    case IdWhoAreYou(id, _) ⇒ id
-    case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+    case IdReplyPlz(id, _)  => id
+    case IdWhoAreYou(id, _) => id
+    case other              => throw new IllegalArgumentException(s"Unexpected message $other")
   }
 
   val cluster = Cluster(system)
@@ -36,12 +36,9 @@ class ClusterShardingStateSpec extends ScalaTestWithActorTestKit(ClusterSharding
       probe.expectMessage(CurrentShardRegionState(Set()))
 
       val shardingRef: ActorRef[IdTestProtocol] = sharding.init(
-        Entity(
-          typeKey,
-          ctx ⇒ ClusterShardingSpec.behaviorWithId(ctx.shard))
+        Entity(typeKey, ctx => ClusterShardingSpec.behaviorWithId(ctx.shard))
           .withStopMessage(IdStopPlz())
-          .withMessageExtractor(idTestProtocolMessageExtractor)
-      )
+          .withMessageExtractor(idTestProtocolMessageExtractor))
 
       sharding.shardState ! GetShardRegionState(typeKey, probe.ref)
       probe.expectMessage(CurrentShardRegionState(Set()))

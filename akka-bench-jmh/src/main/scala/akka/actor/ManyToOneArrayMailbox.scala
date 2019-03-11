@@ -23,7 +23,9 @@ import scala.annotation.tailrec
  *
  * NOTE: ManyToOneArrayMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
  */
-case class ManyToOneArrayMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[BoundedNodeMessageQueue] {
+case class ManyToOneArrayMailbox(val capacity: Int)
+    extends MailboxType
+    with ProducesMessageQueue[BoundedNodeMessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"))
 
@@ -45,9 +47,11 @@ class ManyToOneArrayMessageQueue(capacity: Int) extends MessageQueue with Bounde
 
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (!queue.add(handle))
-      receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
-        DeadLetter(handle.message, handle.sender, receiver), handle.sender
-      )
+      receiver
+        .asInstanceOf[InternalActorRef]
+        .provider
+        .deadLetters
+        .tell(DeadLetter(handle.message, handle.sender, receiver), handle.sender)
 
   final def dequeue(): Envelope = queue.poll()
 

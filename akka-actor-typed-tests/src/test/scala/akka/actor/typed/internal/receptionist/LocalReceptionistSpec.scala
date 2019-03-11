@@ -27,10 +27,10 @@ object LocalReceptionistSpec {
   val behaviorB = Behaviors.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Behaviors.receive[Any] { (_, message) ⇒
+  val stoppableBehavior = Behaviors.receive[Any] { (_, message) =>
     message match {
-      case Stop ⇒ Behavior.stopped
-      case _    ⇒ Behavior.same
+      case Stop => Behavior.stopped
+      case _    => Behavior.same
     }
   }
 
@@ -128,7 +128,7 @@ class LocalReceptionistBehaviorSpec extends WordSpec with Matchers {
   import LocalReceptionistSpec._
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {
-    inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
+    inboxes.foreach(i => withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 
   "A local receptionist behavior" must {

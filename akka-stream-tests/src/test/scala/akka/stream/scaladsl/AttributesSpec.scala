@@ -18,7 +18,8 @@ import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 
-  class AttributesSource(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SourceShape[Any], Attributes] {
+  class AttributesSource(_initialAttributes: Attributes = Attributes.none)
+      extends GraphStageWithMaterializedValue[SourceShape[Any], Attributes] {
     val out = Outlet[Any]("out")
     override protected def initialAttributes: Attributes = _initialAttributes
     override val shape = SourceShape.of(out)
@@ -26,8 +27,7 @@ object AttributesSpec {
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Attributes) = {
       val logic = new GraphStageLogic(shape) {
         setHandler(out, new OutHandler {
-          def onPull(): Unit = {
-          }
+          def onPull(): Unit = {}
         })
       }
       (logic, inheritedAttributes)
@@ -35,7 +35,8 @@ object AttributesSpec {
 
   }
 
-  class AttributesFlow(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Attributes] {
+  class AttributesFlow(_initialAttributes: Attributes = Attributes.none)
+      extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Attributes] {
 
     val in = Inlet[Any]("in")
     val out = Outlet[Any]("out")
@@ -55,7 +56,8 @@ object AttributesSpec {
     }
   }
 
-  class AttributesSink(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SinkShape[Any], Attributes] {
+  class AttributesSink(_initialAttributes: Attributes = Attributes.none)
+      extends GraphStageWithMaterializedValue[SinkShape[Any], Attributes] {
 
     val in = Inlet[Any]("in")
 
@@ -83,7 +85,7 @@ object AttributesSpec {
     val out = Outlet[String]("out")
     override val shape = SourceShape.of(out)
     override protected def initialAttributes: Attributes =
-      initialDispatcher.fold(Attributes.none)(name ⇒ ActorAttributes.dispatcher(name))
+      initialDispatcher.fold(Attributes.none)(name => ActorAttributes.dispatcher(name))
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         def onPull(): Unit = {
@@ -99,8 +101,10 @@ object AttributesSpec {
   case class WhateverAttribute(label: String) extends Attribute
 }
 
-class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
-  """
+class AttributesSpec
+    extends StreamSpec(
+      ConfigFactory
+        .parseString("""
     my-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -110,14 +114,13 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       throughput = 1
     }
   """)
-  // we need to revert to the regular mailbox or else the test suite will complain
-  // about using non-test worthy dispatchers
-  .withFallback(Utils.UnboundedMailboxConfig)) {
+        // we need to revert to the regular mailbox or else the test suite will complain
+        // about using non-test worthy dispatchers
+        .withFallback(Utils.UnboundedMailboxConfig)) {
 
   import AttributesSpec._
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -145,11 +148,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "be appended with addAttributes" in {
       val attributes =
-        Source.fromGraph(new AttributesSource()
-          .addAttributes(Attributes.name("new-name"))
-          .addAttributes(Attributes.name("re-added")) // adding twice at same level replaces
-          .addAttributes(whateverAttribute("other-thing"))
-        )
+        Source
+          .fromGraph(
+            new AttributesSource()
+              .addAttributes(Attributes.name("new-name"))
+              .addAttributes(Attributes.name("re-added")) // adding twice at same level replaces
+              .addAttributes(whateverAttribute("other-thing")))
           .toMat(Sink.head)(Keep.left)
           .run()
 
@@ -159,10 +163,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "be replaced withAttributes directly on a stage" in {
       val attributes =
-        Source.fromGraph(new AttributesSource()
-          .withAttributes(Attributes.name("new-name") and whateverAttribute("other-thing"))
-          .withAttributes(Attributes.name("re-added")) // we loose all previous attributes for same level
-        )
+        Source
+          .fromGraph(
+            new AttributesSource()
+              .withAttributes(Attributes.name("new-name") and whateverAttribute("other-thing"))
+              .withAttributes(Attributes.name("re-added")) // we loose all previous attributes for same level
+          )
           .toMat(Sink.head)(Keep.left)
           .run()
 
@@ -172,7 +178,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "be overridable on a module basis" in {
       val attributes =
-        Source.fromGraph(new AttributesSource().withAttributes(Attributes.name("new-name")))
+        Source
+          .fromGraph(new AttributesSource().withAttributes(Attributes.name("new-name")))
           .toMat(Sink.head)(Keep.left)
           .run()
 
@@ -180,7 +187,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
     "keep the outermost attribute as the least specific" in {
-      val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+      val attributes = Source
+        .fromGraph(new AttributesSource(Attributes.name("original-name")))
         .map(identity)
         .addAttributes(Attributes.name("whole-graph"))
         .toMat(Sink.head)(Keep.left)
@@ -198,8 +206,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on fromGraph(single-source-stage) Source behave the same as the stage itself" in {
       val attributes =
-        Source.fromGraph(
-          new AttributesSource(Attributes.name("original-name") and whateverAttribute("whatever"))
+        Source
+          .fromGraph(new AttributesSource(Attributes.name("original-name") and whateverAttribute("whatever"))
             .withAttributes(Attributes.name("new-name")))
           .toMat(Sink.head)(Keep.left)
           .run()
@@ -213,9 +221,11 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
       val attributes =
-        Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+        Source
+          .fromGraph(new AttributesSource(Attributes.name("original-name")))
           .withAttributes(Attributes.name("replaced")) // this actually replaces now
-          .toMat(Sink.head)(Keep.left).withAttributes(Attributes.name("whole-graph"))
+          .toMat(Sink.head)(Keep.left)
+          .withAttributes(Attributes.name("whole-graph"))
           .run()
 
       // most specific
@@ -228,7 +238,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
     "not replace stage specific attributes with attributes on surrounding composite source" in {
-      val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+      val attributes = Source
+        .fromGraph(new AttributesSource(Attributes.name("original-name")))
         .map(identity)
         .addAttributes(Attributes.name("composite-graph"))
         .toMat(Sink.head)(Keep.left)
@@ -243,10 +254,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes =
-        Source.maybe.toMat(
-          Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
-            .withAttributes(Attributes.name("replaced")) // this actually replaces now
-        )(Keep.right)
+        Source.maybe
+          .toMat(
+            Sink
+              .fromGraph(new AttributesSink(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          )(Keep.right)
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
@@ -259,19 +272,18 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "use the initial attributes for dispatcher" in {
       val dispatcher =
-        Source.fromGraph(new ThreadNameSnitchingStage("my-dispatcher"))
-          .runWith(Sink.head)
-          .futureValue
+        Source.fromGraph(new ThreadNameSnitchingStage("my-dispatcher")).runWith(Sink.head).futureValue
 
       dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
     "use an explicit attribute on the stage to select dispatcher" in {
       val dispatcher =
-        Source.fromGraph(
-          // directly on stage
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher")
-            .addAttributes(ActorAttributes.dispatcher("my-dispatcher")))
+        Source
+          .fromGraph(
+            // directly on stage
+            new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher").addAttributes(
+              ActorAttributes.dispatcher("my-dispatcher")))
           .runWith(Sink.head)
           .futureValue
 
@@ -280,8 +292,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "use the most specific dispatcher when another one is defined on a surrounding composed graph" in {
       val dispatcher =
-        Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           .map(identity)
           // this is now for the composed source -> flow graph
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
@@ -293,8 +305,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcher =
-        Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           // this already introduces an async boundary here
           .map(identity)
           // this is now just for map since there already is one in-between stage and map
@@ -308,8 +320,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "change dispatcher when defined directly on top of the async boundary" in {
       val dispatcher =
-        Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           .async
           .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
@@ -320,8 +332,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "change dispatcher when defined on the async call" in {
       val dispatcher =
-        Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           .async("my-dispatcher")
           .runWith(Sink.head)
           .futureValue
@@ -335,9 +347,9 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     "make the attributes on fromGraph(flow-stage) Flow behave the same as the stage itself" in {
       val attributes =
         Source.empty
-          .viaMat(
-            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
-              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          .viaMat(Flow
+            .fromGraph(new AttributesFlow(Attributes.name("original-name")))
+            .withAttributes(Attributes.name("replaced")) // this actually replaces now
           )(Keep.right)
           .withAttributes(Attributes.name("source-flow"))
           .toMat(Sink.ignore)(Keep.left)
@@ -352,13 +364,13 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       val attributes =
         Source.empty
           .viaMat(
-            Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+            Flow
+              .fromGraph(new AttributesFlow(Attributes.name("original-name")))
               .map(identity)
               .withAttributes(Attributes.name("replaced"))
               .addAttributes(whateverAttribute("whatever"))
               .withAttributes(Attributes.name("replaced-again"))
-              .addAttributes(whateverAttribute("replaced"))
-          )(Keep.right)
+              .addAttributes(whateverAttribute("replaced")))(Keep.right)
           .toMat(Sink.ignore)(Keep.left)
           .run()
 
@@ -376,10 +388,12 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
   "attributes on a Sink" must {
     "make the attributes on fromGraph(sink-stage) Sink behave the same as the stage itself" in {
       val attributes =
-        Source.empty.toMat(
-          Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
-            .withAttributes(Attributes.name("replaced")) // this actually replaces now
-        )(Keep.right)
+        Source.empty
+          .toMat(
+            Sink
+              .fromGraph(new AttributesSink(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+          )(Keep.right)
           .withAttributes(Attributes.name("whole-graph"))
           .run()
 
@@ -396,8 +410,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcherF =
-        javadsl.Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        javadsl.Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           // this already introduces an async boundary here
           .detach
           // this is now just for map since there already is one in-between stage and map
@@ -412,8 +426,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "change dispatcher when defined directly on top of the async boundary" in {
       val dispatcherF =
-        javadsl.Source.fromGraph(
-          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+        javadsl.Source
+          .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           .async
           .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(javadsl.Sink.head(), materializer)
@@ -425,7 +439,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
-        javadsl.Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+        javadsl.Source
+          .fromGraph(new AttributesSource(Attributes.name("original-name")))
           .withAttributes(Attributes.name("replaced")) // this actually replaces now
           .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
           .withAttributes(Attributes.name("whole-graph"))
@@ -440,11 +455,14 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
-        javadsl.Source.empty[Any]
+        javadsl.Source
+          .empty[Any]
           .viaMat(
-            javadsl.Flow.fromGraph(new AttributesFlow(Attributes.name("original-name")))
+            javadsl.Flow
+              .fromGraph(new AttributesFlow(Attributes.name("original-name")))
               .withAttributes(Attributes.name("replaced")) // this actually replaces now
-              , javadsl.Keep.right[NotUsed, Attributes])
+            ,
+            javadsl.Keep.right[NotUsed, Attributes])
           .withAttributes(Attributes.name("source-flow"))
           .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
           .withAttributes(Attributes.name("whole-graph"))
@@ -459,10 +477,14 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
-        javadsl.Source.empty[Any].toMat(
-          javadsl.Sink.fromGraph(new AttributesSink(Attributes.name("original-name")))
-            .withAttributes(Attributes.name("replaced")) // this actually replaces now
-            , javadsl.Keep.right[NotUsed, Attributes])
+        javadsl.Source
+          .empty[Any]
+          .toMat(
+            javadsl.Sink
+              .fromGraph(new AttributesSink(Attributes.name("original-name")))
+              .withAttributes(Attributes.name("replaced")) // this actually replaces now
+            ,
+            javadsl.Keep.right[NotUsed, Attributes])
           .withAttributes(Attributes.name("whole-graph"))
           .run(materializer)
 
@@ -484,7 +506,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
       try {
         val dispatcher =
-          Source.fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          Source
+            .fromGraph(new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
             .runWith(Sink.head)(myDispatcherMaterializer)
             .futureValue
 
@@ -501,7 +524,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   "the default dispatcher attributes" must {
 
-    val config = ConfigFactory.parseString(s"""
+    val config = ConfigFactory
+      .parseString(s"""
         my-dispatcher {
           type = Dispatcher
           executor = "thread-pool-executor"
@@ -516,7 +540,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       """)
       // we need to revert to the regular mailbox or else the test suite will complain
       // about using non-test worthy dispatchers
-      .withFallback(Utils.UnboundedMailboxConfig).resolve()
+      .withFallback(Utils.UnboundedMailboxConfig)
+      .resolve()
 
     "allow for specifying a custom default dispatcher" in {
 
@@ -538,8 +563,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       import ActorAttributes._
 
       val threadName =
-        Source.fromGraph(new ThreadNameSnitchingStage(None)
-          .addAttributes(Attributes(IODispatcher))).runWith(Sink.head)
+        Source.fromGraph(new ThreadNameSnitchingStage(None).addAttributes(Attributes(IODispatcher))).runWith(Sink.head)
 
       threadName.futureValue should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
     }
@@ -552,8 +576,9 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
         val mat = ActorMaterializer()(system)
         val threadName =
-          Source.fromGraph(new ThreadNameSnitchingStage(None)
-            .addAttributes(Attributes(IODispatcher))).runWith(Sink.head)(mat)
+          Source
+            .fromGraph(new ThreadNameSnitchingStage(None).addAttributes(Attributes(IODispatcher)))
+            .runWith(Sink.head)(mat)
 
         threadName.futureValue should startWith("AttributesSpec-io-dispatcher-override-my-io-dispatcher-")
 
@@ -571,7 +596,8 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     "resolve the blocking io dispatcher attribute" in {
       import ActorAttributes._
 
-      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be("akka.stream.default-blocking-io-dispatcher")
+      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be(
+        "akka.stream.default-blocking-io-dispatcher")
     }
   }
 

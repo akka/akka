@@ -19,16 +19,16 @@ class TestActor(override val persistenceId: String) extends PersistentActor {
   import TestActor.DeleteCmd
 
   val receiveRecover: Receive = {
-    case evt: String ⇒
+    case evt: String =>
   }
 
   val receiveCommand: Receive = {
-    case DeleteCmd(toSeqNr) ⇒
+    case DeleteCmd(toSeqNr) =>
       deleteMessages(toSeqNr)
       sender() ! s"$toSeqNr-deleted"
 
-    case cmd: String ⇒
-      persist(cmd) { evt ⇒
+    case cmd: String =>
+      persist(cmd) { evt =>
         sender() ! evt + "-done"
       }
   }

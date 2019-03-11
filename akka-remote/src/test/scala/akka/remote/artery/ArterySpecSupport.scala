@@ -48,9 +48,10 @@ object ArterySpecSupport {
    * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
    * Combine with [[FlightRecorderSpecIntegration]] or remember to delete flight recorder file if using manually
    */
-  def defaultConfig = newFlightRecorderConfig
-    .withFallback(staticArteryRemotingConfig)
-    .withFallback(tlsConfig) // TLS only used if transport=tls-tcp
+  def defaultConfig =
+    newFlightRecorderConfig
+      .withFallback(staticArteryRemotingConfig)
+      .withFallback(tlsConfig) // TLS only used if transport=tls-tcp
 
   // set the test key-store and trust-store properties
   // TLS only used if transport=tls-tcp, which can be set from specific tests or
@@ -76,7 +77,7 @@ object ArterySpecSupport {
  * afterTermination and call handleFlightRecorderFile manually in the spec or else it will not be dumped
  * on failure but also leak the afr file
  */
-trait FlightRecorderSpecIntegration { self: AkkaSpec ⇒
+trait FlightRecorderSpecIntegration { self: AkkaSpec =>
 
   def system: ActorSystem
 

@@ -13,20 +13,21 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class PoolRouterBuilder[T](
-  poolSize:     Int,
-  behavior:     Behavior[T],
-  logicFactory: () ⇒ RoutingLogic[T] = () ⇒ new RoutingLogics.RoundRobinLogic[T]
-) extends javadsl.PoolRouter[T]
-  with scaladsl.PoolRouter[T] {
+private[akka] final case class PoolRouterBuilder[T](poolSize: Int,
+                                                    behavior: Behavior[T],
+                                                    logicFactory: () => RoutingLogic[T] = () =>
+                                                      new RoutingLogics.RoundRobinLogic[T])
+    extends javadsl.PoolRouter[T]
+    with scaladsl.PoolRouter[T] {
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   // deferred creation of the actual router
-  def apply(ctx: TypedActorContext[T]): Behavior[T] = new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
+  def apply(ctx: TypedActorContext[T]): Behavior[T] =
+    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
 
-  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () ⇒ new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
 }
@@ -35,14 +36,13 @@ private[akka] final case class PoolRouterBuilder[T](
  * INTERNAL API
  */
 @InternalApi
-private final class PoolRouterImpl[T](
-  ctx:      ActorContext[T],
-  poolSize: Int,
-  behavior: Behavior[T],
-  logic:    RoutingLogic[T]
-) extends AbstractBehavior[T] {
+private final class PoolRouterImpl[T](ctx: ActorContext[T],
+                                      poolSize: Int,
+                                      behavior: Behavior[T],
+                                      logic: RoutingLogic[T])
+    extends AbstractBehavior[T] {
 
-  (1 to poolSize).foreach { _ ⇒
+  (1 to poolSize).foreach { _ =>
     val child = ctx.spawnAnonymous(behavior)
     ctx.watch(child)
     child
@@ -60,7 +60,7 @@ private final class PoolRouterImpl[T](
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[T]] = {
-    case Terminated(child) ⇒
+    case Terminated(child) =>
       // Note that if several children are stopping concurrently children may already be empty
       // for the `Terminated` we receive for the first child. This means it is not certain that
       // there will be a log entry per child in those cases (it does not make sense to keep the
@@ -76,4 +76,3 @@ private final class PoolRouterImpl[T](
   }
 
 }
-

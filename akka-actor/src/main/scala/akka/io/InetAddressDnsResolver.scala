@@ -33,41 +33,45 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   private final val DefaultPositive = Ttl.fromPositive(30.seconds)
 
   private lazy val defaultCachePolicy: CachePolicy =
-    Option(Security.getProperty(CachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(CachePolicyPropFallback))).filter(_ != "")
-      .map(x ⇒ Try(x.toInt)) match {
-        case None             ⇒ DefaultPositive
-        case Some(Success(n)) ⇒ parsePolicy(n)
-        case Some(Failure(_)) ⇒
-          log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
-          DefaultPositive
-      }
+    Option(Security.getProperty(CachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(CachePolicyPropFallback)))
+      .filter(_ != "")
+      .map(x => Try(x.toInt)) match {
+      case None             => DefaultPositive
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
+        DefaultPositive
+    }
 
   private lazy val defaultNegativeCachePolicy: CachePolicy =
-    Option(Security.getProperty(NegativeCachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback))).filter(_ != "")
-      .map(x ⇒ Try(x.toInt)) match {
-        case None             ⇒ Never
-        case Some(Success(n)) ⇒ parsePolicy(n)
-        case Some(Failure(_)) ⇒
-          log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
-          Never
-      }
+    Option(Security.getProperty(NegativeCachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback)))
+      .filter(_ != "")
+      .map(x => Try(x.toInt)) match {
+      case None             => Never
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
+        Never
+    }
 
   private def parsePolicy(n: Int): CachePolicy = {
     n match {
-      case 0          ⇒ Never
-      case x if x < 0 ⇒ Forever
-      case x          ⇒ Ttl.fromPositive(x.seconds)
+      case 0          => Never
+      case x if x < 0 => Forever
+      case x          => Ttl.fromPositive(x.seconds)
     }
   }
 
   private def getTtl(path: String, positive: Boolean): CachePolicy =
     config.getString(path) match {
-      case "default" ⇒ if (positive) defaultCachePolicy else defaultNegativeCachePolicy
-      case "forever" ⇒ Forever
-      case "never"   ⇒ Never
-      case _ ⇒ {
+      case "default" => if (positive) defaultCachePolicy else defaultNegativeCachePolicy
+      case "forever" => Forever
+      case "never"   => Never
+      case _ => {
         val finiteTtl = config
           .getDuration(path, TimeUnit.SECONDS)
           .requiring(_ > 0, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
@@ -84,23 +88,23 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private def toLongTtl(cp: CachePolicy): Long = {
     cp match {
-      case Forever  ⇒ Long.MaxValue
-      case Never    ⇒ 0
-      case Ttl(ttl) ⇒ ttl.toMillis
+      case Forever  => Long.MaxValue
+      case Never    => 0
+      case Ttl(ttl) => ttl.toMillis
     }
   }
 
   override def receive = {
-    case Dns.Resolve(name) ⇒
+    case Dns.Resolve(name) =>
       val answer = cache.cached(name) match {
-        case Some(a) ⇒ a
-        case None ⇒
+        case Some(a) => a
+        case None =>
           try {
             val answer = Dns.Resolved(name, InetAddress.getAllByName(name))
             if (positiveCachePolicy != Never) cache.put(answer, positiveCachePolicy)
             answer
           } catch {
-            case _: UnknownHostException ⇒
+            case _: UnknownHostException =>
               val answer = Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
               if (negativeCachePolicy != Never) cache.put(answer, negativeCachePolicy)
               answer

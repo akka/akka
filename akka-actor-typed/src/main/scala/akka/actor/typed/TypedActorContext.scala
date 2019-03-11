@@ -28,4 +28,3 @@ trait TypedActorContext[T] {
    */
   def asScala: scaladsl.ActorContext[T]
 }
-

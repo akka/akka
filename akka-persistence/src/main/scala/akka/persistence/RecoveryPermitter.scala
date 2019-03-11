@@ -41,7 +41,7 @@ import akka.actor.Terminated
   private var maxPendingStats = 0
 
   def receive = {
-    case RequestRecoveryPermit ⇒
+    case RequestRecoveryPermit =>
       context.watch(sender())
       if (usedPermits >= maxPermits) {
         if (pending.isEmpty)
@@ -52,10 +52,10 @@ import akka.actor.Terminated
         recoveryPermitGranted(sender())
       }
 
-    case ReturnRecoveryPermit ⇒
+    case ReturnRecoveryPermit =>
       onReturnRecoveryPermit(sender())
 
-    case Terminated(ref) ⇒
+    case Terminated(ref) =>
       // pre-mature termination should be rare
       if (!pending.remove(ref))
         onReturnRecoveryPermit(ref)
@@ -70,9 +70,9 @@ import akka.actor.Terminated
       recoveryPermitGranted(ref)
     }
     if (pending.isEmpty && maxPendingStats > 0) {
-      log.debug(
-        "Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
-        usedPermits + maxPendingStats, usedPermits)
+      log.debug("Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
+                usedPermits + maxPendingStats,
+                usedPermits)
       maxPendingStats = 0
     }
   }

@@ -17,8 +17,8 @@ class DnsSettingsSpec extends AkkaSpec {
   "DNS settings" must {
 
     "use host servers if set to default" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "default"
           resolve-timeout = 1s
           search-domains = []
@@ -30,8 +30,8 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse a single name server" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = []
@@ -42,22 +42,21 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse a list of name servers" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = ["127.0.0.1", "127.0.0.2"]
           resolve-timeout = 1s
           search-domains = []
           ndots = 1
         """))
 
-      dnsSettings.NameServers.map(_.getAddress) shouldEqual List(
-        InetAddress.getByName("127.0.0.1"), InetAddress.getByName("127.0.0.2")
-      )
+      dnsSettings.NameServers.map(_.getAddress) shouldEqual List(InetAddress.getByName("127.0.0.1"),
+                                                                 InetAddress.getByName("127.0.0.2"))
     }
 
     "use host search domains if set to default" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = "default"
@@ -69,8 +68,8 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse a single search domain" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = "example.com"
@@ -81,8 +80,8 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse a single list of search domains" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = [ "example.com", "example.net" ]
@@ -93,8 +92,8 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "use host ndots if set to default" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = "example.com"
@@ -106,8 +105,8 @@ class DnsSettingsSpec extends AkkaSpec {
     }
 
     "parse ndots" in {
-      val dnsSettings = new DnsSettings(eas, ConfigFactory.parseString(
-        """
+      val dnsSettings = new DnsSettings(eas,
+                                        ConfigFactory.parseString("""
           nameservers = "127.0.0.1"
           resolve-timeout = 1s
           search-domains = "example.com"

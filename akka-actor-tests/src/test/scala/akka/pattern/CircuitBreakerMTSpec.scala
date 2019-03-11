@@ -7,7 +7,7 @@ package akka.pattern
 import akka.testkit._
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
@@ -21,28 +21,34 @@ class CircuitBreakerMTSpec extends AkkaSpec {
     def openBreaker(): Unit = {
       // returns true if the breaker is open
       def failingCall(): Boolean =
-        Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
-          case _: CircuitBreakerOpenException ⇒ true
-          case _                              ⇒ false
+        Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))).recover {
+          case _: CircuitBreakerOpenException => true
+          case _                              => false
         }, remainingOrDefault)
 
       // fire some failing calls
-      1 to (maxFailures + 1) foreach { _ ⇒ failingCall() }
+      (1 to (maxFailures + 1)).foreach { _ =>
+        failingCall()
+      }
       // and then continue with failing calls until the breaker is open
       awaitCond(failingCall())
     }
 
     def testCallsWithBreaker(): immutable.IndexedSeq[Future[String]] = {
       val aFewActive = new TestLatch(5)
-      for (_ ← 1 to numberOfTestCalls) yield breaker.withCircuitBreaker(Future {
-        aFewActive.countDown()
-        Await.ready(aFewActive, 5.seconds.dilated)
-        "succeed"
-      }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒
-          aFewActive.countDown()
-          Future.successful("CBO")
-      }
+      for (_ <- 1 to numberOfTestCalls)
+        yield
+          breaker
+            .withCircuitBreaker(Future {
+              aFewActive.countDown()
+              Await.ready(aFewActive, 5.seconds.dilated)
+              "succeed"
+            })
+            .recoverWith {
+              case _: CircuitBreakerOpenException =>
+                aFewActive.countDown()
+                Future.successful("CBO")
+            }
     }
 
     "allow many calls while in closed state with no errors" in {

@@ -38,8 +38,9 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] final case class ScatterGatherFirstCompletedRoutees(
-  routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
+private[akka] final case class ScatterGatherFirstCompletedRoutees(routees: immutable.IndexedSeq[Routee],
+                                                                  within: FiniteDuration)
+    extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit =
     if (routees.isEmpty) {
@@ -51,11 +52,11 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
       implicit val timeout = Timeout(within)
       val promise = Promise[Any]()
       routees.foreach {
-        case ActorRefRoutee(ref) ⇒
+        case ActorRefRoutee(ref) =>
           promise.tryCompleteWith(ref.ask(message))
-        case ActorSelectionRoutee(sel) ⇒
+        case ActorSelectionRoutee(sel) =>
           promise.tryCompleteWith(sel.ask(message))
-        case _ ⇒
+        case _ =>
       }
 
       promise.future.pipeTo(sender)
@@ -97,19 +98,20 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
-  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  within:                          FiniteDuration,
-  override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher:  Boolean            = false)
-  extends Pool with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
+    val nrOfInstances: Int,
+    override val resizer: Option[Resizer] = None,
+    within: FiniteDuration,
+    override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+    override val usePoolDispatcher: Boolean = false)
+    extends Pool
+    with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
 
   def this(config: Config) =
-    this(
-      nrOfInstances = config.getInt("nr-of-instances"),
-      within = config.getMillisDuration("within"),
-      resizer = Resizer.fromConfig(config),
-      usePoolDispatcher = config.hasPath("pool-dispatcher"))
+    this(nrOfInstances = config.getInt("nr-of-instances"),
+         within = config.getMillisDuration("within"),
+         resizer = Resizer.fromConfig(config),
+         usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -134,7 +136,8 @@ final case class ScatterGatherFirstCompletedPool(
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedPool = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedPool =
+    copy(supervisorStrategy = strategy)
 
   /**
    * Setting the resizer to be used.
@@ -173,16 +176,14 @@ final case class ScatterGatherFirstCompletedPool(
  *   router management messages
  */
 @SerialVersionUID(1L)
-final case class ScatterGatherFirstCompletedGroup(
-  val paths:                     immutable.Iterable[String],
-  within:                        FiniteDuration,
-  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
-  extends Group {
+final case class ScatterGatherFirstCompletedGroup(val paths: immutable.Iterable[String],
+                                                  within: FiniteDuration,
+                                                  override val routerDispatcher: String =
+                                                    Dispatchers.DefaultDispatcherId)
+    extends Group {
 
   def this(config: Config) =
-    this(
-      paths = immutableSeq(config.getStringList("routees.paths")),
-      within = config.getMillisDuration("within"))
+    this(paths = immutableSeq(config.getStringList("routees.paths")), within = config.getMillisDuration("within"))
 
   /**
    * Java API

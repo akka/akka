@@ -37,19 +37,14 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 private[akka] object ReplayingEvents {
 
   @InternalApi
-  private[akka] final case class ReplayingState[State](
-    seqNr:               Long,
-    state:               State,
-    eventSeenInInterval: Boolean,
-    toSeqNr:             Long,
-    receivedPoisonPill:  Boolean
-  )
+  private[akka] final case class ReplayingState[State](seqNr: Long,
+                                                       state: State,
+                                                       eventSeenInInterval: Boolean,
+                                                       toSeqNr: Long,
+                                                       receivedPoisonPill: Boolean)
 
-  def apply[C, E, S](
-    setup: BehaviorSetup[C, E, S],
-    state: ReplayingState[S]
-  ): Behavior[InternalProtocol] =
-    Behaviors.setup { ctx ⇒
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
+    Behaviors.setup { ctx =>
       // protect against event recovery stalling forever because of journal overloaded and such
       setup.startRecoveryTimer(snapshot = false)
       new ReplayingEvents[C, E, S](setup.setMdc(MDC.ReplayingEvents), state)
@@ -58,10 +53,12 @@ private[akka] object ReplayingEvents {
 }
 
 @InternalApi
-private[akka] final class ReplayingEvents[C, E, S](
-  override val setup: BehaviorSetup[C, E, S],
-  var state:          ReplayingState[S])
-  extends AbstractBehavior[InternalProtocol] with JournalInteractions[C, E, S] with StashManagement[C, E, S] with WithSeqNrAccessible {
+private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S],
+                                                   var state: ReplayingState[S])
+    extends AbstractBehavior[InternalProtocol]
+    with JournalInteractions[C, E, S]
+    with StashManagement[C, E, S]
+    with WithSeqNrAccessible {
 
   import InternalProtocol._
   import ReplayingEvents.ReplayingState
@@ -70,51 +67,49 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)      ⇒ onJournalResponse(r)
-      case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap) ⇒ onRecoveryTick(snap)
-      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
-      case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)      => onJournalResponse(r)
+      case SnapshotterResponse(r)  => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap) => onRecoveryTick(snap)
+      case cmd: IncomingCommand[C] => onCommand(cmd)
+      case RecoveryPermitGranted   => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
   override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
-    case PoisonPill ⇒
+    case PoisonPill =>
       state = state.copy(receivedPoisonPill = true)
       this
   }
 
-  private def onJournalResponse(
-    response: JournalProtocol.Response): Behavior[InternalProtocol] = {
+  private def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
     try {
       response match {
-        case ReplayedMessage(repr) ⇒
+        case ReplayedMessage(repr) =>
           val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
 
           try {
-            state = state.copy(
-              seqNr = repr.sequenceNr,
-              state = setup.eventHandler(state.state, event),
-              eventSeenInInterval = true)
+            state = state.copy(seqNr = repr.sequenceNr,
+                               state = setup.eventHandler(state.state, event),
+                               eventSeenInInterval = true)
             this
           } catch {
-            case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
+            case NonFatal(ex) => onRecoveryFailure(ex, repr.sequenceNr, Some(event))
           }
-        case RecoverySuccess(highestSeqNr) ⇒
+        case RecoverySuccess(highestSeqNr) =>
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
-        case ReplayMessagesFailure(cause) ⇒
+        case ReplayMessagesFailure(cause) =>
           onRecoveryFailure(cause, state.seqNr, Some(response))
 
-        case _ ⇒
+        case _ =>
           Behaviors.unhandled
       }
     } catch {
-      case ex: UnstashException[_] ⇒
+      case ex: UnstashException[_] =>
         // let supervisor handle it, don't treat it as recovery failure
         throw ex
-      case NonFatal(cause) ⇒
+      case NonFatal(cause) =>
         onRecoveryFailure(cause, state.seqNr, None)
     }
   }
@@ -122,8 +117,7 @@ private[akka] final class ReplayingEvents[C, E, S](
   private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
-      if (setup.settings.logOnStashing) setup.log.debug(
-        "Discarding message [{}], because actor is to be stopped", cmd)
+      if (setup.settings.logOnStashing) setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
@@ -137,7 +131,8 @@ private[akka] final class ReplayingEvents[C, E, S](
         state = state.copy(eventSeenInInterval = false)
         this
       } else {
-        val msg = s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
+        val msg =
+          s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
         onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
       }
     } else {
@@ -146,7 +141,8 @@ private[akka] final class ReplayingEvents[C, E, S](
     }
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-    setup.log.warning("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
+    setup.log
+      .warning("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
     Behaviors.unhandled // ignore the response
   }
 
@@ -158,44 +154,44 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param cause failure cause.
    * @param message the message that was being processed when the exception was thrown
    */
-  protected def onRecoveryFailure(cause: Throwable, sequenceNr: Long, message: Option[Any]): Behavior[InternalProtocol] = {
+  protected def onRecoveryFailure(cause: Throwable,
+                                  sequenceNr: Long,
+                                  message: Option[Any]): Behavior[InternalProtocol] = {
     try {
       setup.onRecoveryFailure(cause)
     } catch {
-      case NonFatal(t) ⇒ setup.log.error(t, "onRecoveryFailure threw exception")
+      case NonFatal(t) => setup.log.error(t, "onRecoveryFailure threw exception")
     }
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
     val msg = message match {
-      case Some(evt) ⇒
+      case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
-          s"PersistenceId [${setup.persistenceId.id}]"
-      case None ⇒
+        s"PersistenceId [${setup.persistenceId.id}]"
+      case None =>
         s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId [${setup.persistenceId.id}]"
     }
 
     throw new JournalFailureException(msg, cause)
   }
 
-  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
-    tryReturnRecoveryPermit("replay completed successfully")
-    setup.recoveryCompleted(state.state)
+  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
+    try {
+      tryReturnRecoveryPermit("replay completed successfully")
+      setup.recoveryCompleted(state.state)
 
-    if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
-      Behaviors.stopped
-    else {
-      val running = Running[C, E, S](
-        setup,
-        Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill)
-      )
+      if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
+        Behaviors.stopped
+      else {
+        val running =
+          Running[C, E, S](setup, Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill))
 
-      tryUnstashOne(running)
+        tryUnstashOne(running)
+      }
+    } finally {
+      setup.cancelRecoveryTimer()
     }
-  } finally {
-    setup.cancelRecoveryTimer()
-  }
 
   override def currentSequenceNumber: Long = state.seqNr
 }
-

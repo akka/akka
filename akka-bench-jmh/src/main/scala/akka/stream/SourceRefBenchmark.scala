@@ -25,14 +25,12 @@ import scala.util.Success
 @BenchmarkMode(Array(Mode.Throughput))
 class SourceRefBenchmark {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
         loglevel = "WARNING"
-      }""".stripMargin
-  ).withFallback(ConfigFactory.load())
+      }""".stripMargin).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("test", config)
 
@@ -88,7 +86,7 @@ class SourceRefBenchmark {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    sourceRef.source.runWith(Sink.onComplete(_ ⇒ lock.release()))
+    sourceRef.source.runWith(Sink.onComplete(_ => lock.release()))
 
     lock.acquire()
   }

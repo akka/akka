@@ -22,9 +22,9 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       case object Tock
 
       val probe = TestProbe[Tock.type]()
-      val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
+      val behavior = Behaviors.withTimers[Tick.type] { timer =>
         timer.startSingleTimer("T", Tick, 10.millis)
-        Behaviors.receiveMessage { _ ⇒
+        Behaviors.receiveMessage { _ =>
           probe.ref ! Tock
           Behaviors.same
         }
@@ -46,9 +46,9 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       case object Tock
 
       val probe = TestProbe[Tock.type]()
-      val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
+      val behavior = Behaviors.withTimers[Tick.type] { timer =>
         timer.startPeriodicTimer("T", Tick, 10.millis)
-        Behaviors.receive { (context, Tick) ⇒
+        Behaviors.receive { (context, Tick) =>
           probe.ref ! Tock
           Behaviors.same
         }
@@ -56,7 +56,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       spawn(behavior)
 
-      for (_ ← Range(0, 5)) {
+      for (_ <- Range(0, 5)) {
         manualTime.expectNoMessageFor(9.millis, probe)
 
         manualTime.timePasses(1.milli)
@@ -75,14 +75,14 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       val probe = TestProbe[Event]("evt")
       val interval = 10.millis
 
-      val behavior = Behaviors.withTimers[Command] { timer ⇒
+      val behavior = Behaviors.withTimers[Command] { timer =>
         timer.startPeriodicTimer("T", Tick(1), interval)
-        Behaviors.receive { (context, cmd) ⇒
+        Behaviors.receive { (context, cmd) =>
           cmd match {
-            case Tick(n) ⇒
+            case Tick(n) =>
               probe.ref ! Tock(n)
               Behaviors.same
-            case SlowThenBump(nextCount) ⇒
+            case SlowThenBump(nextCount) =>
               manualTime.timePasses(interval)
               timer.startPeriodicTimer("T", Tick(nextCount), interval)
               probe.ref ! SlowThenBumpAck

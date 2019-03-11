@@ -6,7 +6,7 @@ package akka.persistence.journal.leveldb
 
 import akka.actor._
 import akka.persistence._
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 object SharedLeveldbJournalSpec {
   val config =
@@ -41,13 +41,14 @@ object SharedLeveldbJournalSpec {
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {
-      case RecoveryCompleted ⇒ // ignore
-      case payload           ⇒ probe ! payload
+      case RecoveryCompleted => // ignore
+      case payload           => probe ! payload
     }
     override def receiveCommand = {
-      case payload ⇒ persist(payload) { _ ⇒
-        probe ! payload
-      }
+      case payload =>
+        persist(payload) { _ =>
+          probe ! payload
+        }
     }
   }
 
@@ -55,8 +56,8 @@ object SharedLeveldbJournalSpec {
     val p = context.actorOf(Props(classOf[ExamplePersistentActor], probe, context.system.name))
 
     def receive = {
-      case ActorIdentity(1, Some(store)) ⇒ SharedLeveldbJournal.setStore(store, context.system)
-      case m                             ⇒ p forward m
+      case ActorIdentity(1, Some(store)) => SharedLeveldbJournal.setStore(store, context.system)
+      case m                             => p.forward(m)
     }
 
     override def preStart(): Unit =
@@ -77,7 +78,7 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
     super.afterTermination()
   }
 
-  "A LevelDB store" can {
+  "A LevelDB store".can {
     "be shared by multiple actor systems" in {
 
       val probeA = new TestProbe(systemA)

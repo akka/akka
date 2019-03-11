@@ -7,8 +7,7 @@ package akka.testkit.metrics
 import org.scalatest._
 import com.typesafe.config.ConfigFactory
 
-class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll
-  with MetricsKit {
+class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll with MetricsKit {
 
   import scala.concurrent.duration._
 
@@ -54,8 +53,8 @@ class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with Bef
       val hist = hdrHistogram(KitKey / "hist", highestTrackableValue = maxMillis, 4, "ns")
 
       for {
-        n ← 1 to 11
-        i ← 0L to 1579331
+        n <- 1 to 11
+        i <- 0L to 1579331
       } hist.update(i)
 
       hist.update(1579331)

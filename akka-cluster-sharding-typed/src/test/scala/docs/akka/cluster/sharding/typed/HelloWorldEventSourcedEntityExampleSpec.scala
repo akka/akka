@@ -13,8 +13,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object HelloWorldEventSourcedEntityExampleSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
 
       akka.remote.netty.tcp.port = 0
@@ -25,7 +24,9 @@ object HelloWorldEventSourcedEntityExampleSpec {
     """)
 }
 
-class HelloWorldEventSourcedEntityExampleSpec extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config) with WordSpecLike {
+class HelloWorldEventSourcedEntityExampleSpec
+    extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config)
+    with WordSpecLike {
   import HelloWorldPersistentEntityExample.HelloWorld
   import HelloWorldPersistentEntityExample.HelloWorld._
 
@@ -35,9 +36,7 @@ class HelloWorldEventSourcedEntityExampleSpec extends ScalaTestWithActorTestKit(
     super.beforeAll()
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
-    sharding.init(Entity(
-      HelloWorld.entityTypeKey,
-      ctx ⇒ HelloWorld.persistentEntity(ctx.entityId)))
+    sharding.init(Entity(HelloWorld.entityTypeKey, ctx => HelloWorld.persistentEntity(ctx.entityId)))
   }
 
   "HelloWorld example" must {
