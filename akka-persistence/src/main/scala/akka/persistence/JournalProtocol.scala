@@ -133,3 +133,13 @@ private[persistence] object JournalProtocol {
     extends Response with DeadLetterSuppression
 
 }
+
+/**
+ * Reply message to a successful [[akka.persistence.JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesSuccess(toSequenceNr: Long) extends JournalProtocol.Response
+
+/**
+ * Reply message to a failed [[akka.persistence.JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long) extends JournalProtocol.Response
