@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-${YEAR} Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed.internal
 
 import java.io.NotSerializableException
