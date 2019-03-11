@@ -119,4 +119,50 @@ private[akka] trait JournalInteractions[C, E, S] {
         state.state), setup.selfUntyped)
   }
 
+  /**
+   * On [[akka.persistence.SaveSnapshotSuccess]], if [[EventSourcedSettings.retainSnapshotsOnly]]
+   * is enabled, this is not executed and continues to `internalDeleteSnapshots`, otherwise old
+   * messages are deleted based on [[EventSourcedSettings.snapshotSize]] before old snapshots are
+   * deleted based on [[EventSourcedSettings.keepNSnapshots]].
+   */
+  protected def internalDeleteEvents(e: SaveSnapshotSuccess, state: Running.RunningState[S]): Unit = {
+    val toSequenceNr = e.metadata.sequenceNr - setup.settings.keepNSnapshots * setup.settings.snapshotSize
+
+    if (setup.settings.retainSnapshotsOnly)
+      internalDeleteSnapshots(toSequenceNr)
+    else {
+      val lastSequenceNr = state.seqNr
+      val self = setup.selfUntyped
+
+      // cluster sharding: if toSequenceNr > 0 untyped delete()
+      // untyped delete: if toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr
+      if (toSequenceNr > 0 && (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr))
+        setup.journal ! JournalProtocol.DeleteMessagesTo(e.metadata.persistenceId, toSequenceNr, self)
+      else
+        self ! DeleteMessagesFailure(new RuntimeException(
+          s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"), toSequenceNr)
+    }
+  }
+
+  /**
+   * Deletes the snapshot identified by `sequenceNr`.
+   *
+   * The [[PersistentActor]] will be notified about the status of the deletion
+   * via an [[DeleteSnapshotSuccess]] or [[DeleteSnapshotFailure]] message.
+   */
+  protected def internalDeleteSnapshot(toSequenceNr: Long): Unit = {
+    setup.log.debug("Deleting snapshot  to [{}]", toSequenceNr)
+    setup.snapshotStore.tell(SnapshotProtocol.DeleteSnapshot(SnapshotMetadata(setup.persistenceId.id, toSequenceNr)), setup.selfUntyped)
+  }
+
+  protected def internalDeleteSnapshots(toSequenceNr: Long): Unit = {
+    val deleteTo = toSequenceNr - 1
+    val deleteFrom = math.max(0, deleteTo - (setup.settings.keepNSnapshots * setup.settings.snapshotSize))
+    val criteria = SnapshotSelectionCriteria(
+      minSequenceNr = deleteFrom,
+      maxSequenceNr = deleteTo)
+
+    setup.log.debug("Deleting snapshots from [{}] to [{}]", deleteFrom, deleteTo)
+    setup.snapshotStore.tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, criteria), setup.selfUntyped)
+  }
 }

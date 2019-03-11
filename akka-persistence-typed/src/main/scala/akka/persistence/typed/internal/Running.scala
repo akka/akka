@@ -20,12 +20,7 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-
-import akka.persistence.typed.Callback
-import akka.persistence.typed.EventRejectedException
-import akka.persistence.typed.SideEffect
-import akka.persistence.typed.Stop
-import akka.persistence.typed.UnstashAll
+import akka.persistence.typed._
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
@@ -241,7 +236,7 @@ private[akka] object Running {
     }
 
     final def onJournalResponse(
-      response: Response): Behavior[InternalProtocol] = {
+      response: JournalProtocol.Response): Behavior[InternalProtocol] = {
       setup.log.debug("Received Journal response: {}", response)
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
@@ -283,6 +278,17 @@ private[akka] object Running {
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 
+        case DeleteMessagesSuccess(toSequenceNr) ⇒
+          setup.log.debug("PersistentShard messages to [{}] deleted successfully.", toSequenceNr)
+          internalDeleteSnapshots(toSequenceNr)
+          this
+
+        case DeleteMessagesFailure(e, toSequenceNr) ⇒
+          setup.log.warning(
+            "Failed to delete messages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
+            toSequenceNr, setup.persistenceId.id, e.getClass.getCanonicalName, e.getMessage)
+          this
+
         case _ ⇒
           // ignore all other messages, since they relate to recovery handling which we're not dealing with in Running phase
           Behaviors.unhandled
@@ -320,19 +326,31 @@ private[akka] object Running {
 
     def onSnapshotterResponse(response: SnapshotProtocol.Response): Unit = {
       response match {
-        case SaveSnapshotSuccess(meta) ⇒
+        case e @ SaveSnapshotSuccess(meta) ⇒
+          setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
+          internalDeleteEvents(e, state)
           setup.onSnapshot(meta, Success(Done))
-        case SaveSnapshotFailure(meta, ex) ⇒
-          setup.onSnapshot(meta, Failure(ex))
 
-        // FIXME #24698 not implemented yet
-        case DeleteSnapshotFailure(_, _)  ⇒ ???
-        case DeleteSnapshotSuccess(_)     ⇒ ???
-        case DeleteSnapshotsFailure(_, _) ⇒ ???
-        case DeleteSnapshotsSuccess(_)    ⇒ ???
+        case SaveSnapshotFailure(meta, e) ⇒
+          setup.log.warning(
+            "Failed to saveSnapshot given metadata [{}] due to: [{}: {}]",
+            meta, e.getClass.getCanonicalName, e.getMessage)
+          setup.onSnapshot(meta, Failure(e))
+
+        case DeleteSnapshotSuccess(meta) ⇒
+          setup.log.debug(s"Persistent snapshot [{}] deleted successfully", meta)
+
+        case DeleteSnapshotsSuccess(meta) ⇒
+          setup.log.debug(s"Persistent snapshots [{}] deleted successfully", meta)
+
+        case DeleteSnapshotFailure(meta, e) ⇒
+          setup.log.warning("Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]", meta, e.getClass.getCanonicalName, e.getMessage)
+
+        case DeleteSnapshotsFailure(c, e) ⇒
+          setup.log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]", c, e.getClass.getCanonicalName, e.getMessage)
 
         // ignore LoadSnapshot messages
-        case _                            ⇒
+        case _ ⇒
       }
     }
 
