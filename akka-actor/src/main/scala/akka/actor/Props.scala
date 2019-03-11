@@ -190,7 +190,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   /**
    * Returns a new Props with the specified deployment configuration.
    */
-  def withDeploy(d: Deploy): Props = copy(deploy = d withFallback deploy)
+  def withDeploy(d: Deploy): Props = copy(deploy = d.withFallback(deploy))
 
   /**
    * Obtain an upper-bound approximation of the actor class which is going to

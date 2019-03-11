@@ -11,8 +11,8 @@ object Producers {
   object Sample1 {
     //#Producer1
     import akka.actor.Actor
-    import akka.actor.{ Props, ActorSystem }
-    import akka.camel.{ Producer, CamelMessage }
+    import akka.actor.{ ActorSystem, Props }
+    import akka.camel.{ CamelMessage, Producer }
     import akka.util.Timeout
 
     class Producer1 extends Actor with Producer {
@@ -32,8 +32,8 @@ object Producers {
   object Sample2 {
     //#RouteResponse
     import akka.actor.{ Actor, ActorRef }
-    import akka.camel.{ Producer, CamelMessage }
-    import akka.actor.{ Props, ActorSystem }
+    import akka.camel.{ CamelMessage, Producer }
+    import akka.actor.{ ActorSystem, Props }
 
     class ResponseReceiver extends Actor {
       def receive = {
@@ -45,12 +45,11 @@ object Producers {
     class Forwarder(uri: String, target: ActorRef) extends Actor with Producer {
       def endpointUri = uri
 
-      override def routeResponse(msg: Any): Unit = { target forward msg }
+      override def routeResponse(msg: Any): Unit = { target.forward(msg) }
     }
     val system = ActorSystem("some-system")
     val receiver = system.actorOf(Props[ResponseReceiver])
-    val forwardResponse = system.actorOf(
-      Props(classOf[Forwarder], this, "http://localhost:8080/news/akka", receiver))
+    val forwardResponse = system.actorOf(Props(classOf[Forwarder], this, "http://localhost:8080/news/akka", receiver))
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
     forwardResponse ! "some request"
@@ -59,13 +58,13 @@ object Producers {
   object Sample3 {
     //#TransformOutgoingMessage
     import akka.actor.Actor
-    import akka.camel.{ Producer, CamelMessage }
+    import akka.camel.{ CamelMessage, Producer }
 
     class Transformer(uri: String) extends Actor with Producer {
       def endpointUri = uri
 
-      def upperCase(msg: CamelMessage) = msg.mapBody {
-        body: String => body.toUpperCase
+      def upperCase(msg: CamelMessage) = msg.mapBody { body: String =>
+        body.toUpperCase
       }
 
       override def transformOutgoingMessage(msg: Any) = msg match {
@@ -76,7 +75,7 @@ object Producers {
   }
   object Sample4 {
     //#Oneway
-    import akka.actor.{ Actor, Props, ActorSystem }
+    import akka.actor.{ Actor, ActorSystem, Props }
     import akka.camel.Producer
 
     class OnewaySender(uri: String) extends Actor with Producer {
@@ -92,9 +91,9 @@ object Producers {
   }
   object Sample5 {
     //#Correlate
-    import akka.camel.{ Producer, CamelMessage }
+    import akka.camel.{ CamelMessage, Producer }
     import akka.actor.Actor
-    import akka.actor.{ Props, ActorSystem }
+    import akka.actor.{ ActorSystem, Props }
 
     class Producer2 extends Actor with Producer {
       def endpointUri = "activemq:FOO.BAR"

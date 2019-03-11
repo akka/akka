@@ -51,12 +51,13 @@ case class SimpleSigarProvider(location: String = "native") extends SigarProvide
 /**
  * Provide sigar library as static mock.
  */
-case class MockitoSigarProvider(
-  pid:         Long          = 123,
-  loadAverage: Array[Double] = Array(0.7, 0.3, 0.1),
-  cpuCombined: Double        = 0.5,
-  cpuStolen:   Double        = 0.2,
-  steps:       Int           = 5) extends SigarProvider with MockitoSugar {
+case class MockitoSigarProvider(pid: Long = 123,
+                                loadAverage: Array[Double] = Array(0.7, 0.3, 0.1),
+                                cpuCombined: Double = 0.5,
+                                cpuStolen: Double = 0.2,
+                                steps: Int = 5)
+    extends SigarProvider
+    with MockitoSugar {
 
   import org.hyperic.sigar._
   import org.mockito.Mockito._
@@ -67,7 +68,7 @@ case class MockitoSigarProvider(
   /** Generate monotonic array from 0 to value. */
   def increase(value: Double): Array[Double] = {
     val delta = value / steps
-    (0 to steps) map { _ * delta } toArray
+    (0 to steps).map { _ * delta } toArray
   }
 
   /** Sigar mock instance. */
@@ -76,13 +77,13 @@ case class MockitoSigarProvider(
     // Note "thenReturn(0)" invocation is consumed in collector construction.
 
     val cpuPerc = mock[CpuPerc]
-    when(cpuPerc.getCombined) thenReturn (0, increase(cpuCombined): _*)
-    when(cpuPerc.getStolen) thenReturn (0, increase(cpuStolen): _*)
+    when(cpuPerc.getCombined).thenReturn(0, increase(cpuCombined): _*)
+    when(cpuPerc.getStolen).thenReturn(0, increase(cpuStolen): _*)
 
     val sigar = mock[SigarProxy]
-    when(sigar.getPid) thenReturn pid
-    when(sigar.getLoadAverage) thenReturn loadAverage // Constant.
-    when(sigar.getCpuPerc) thenReturn cpuPerc // Increasing.
+    when(sigar.getPid).thenReturn(pid)
+    when(sigar.getLoadAverage).thenReturn(loadAverage) // Constant.
+    when(sigar.getCpuPerc).thenReturn(cpuPerc) // Increasing.
 
     sigar
   }
@@ -134,11 +135,10 @@ trait MetricsCollectorFactory { this: AkkaSpec =>
  *
  */
 class MockitoSigarMetricsCollector(system: ActorSystem)
-  extends SigarMetricsCollector(
-    Address(if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp", system.name),
-    MetricsConfig.defaultDecayFactor,
-    MockitoSigarProvider().createSigarInstance) {
-}
+    extends SigarMetricsCollector(
+      Address(if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp", system.name),
+      MetricsConfig.defaultDecayFactor,
+      MockitoSigarProvider().createSigarInstance) {}
 
 /**
  * Metrics test configurations.
@@ -202,17 +202,19 @@ class ClusterMetricsView(system: ExtendedActorSystem) extends Closeable {
 
   /** Create actor that subscribes to the cluster eventBus to update current read view state. */
   private val eventBusListener: ActorRef = {
-    system.systemActorOf(Props(new Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-      override def preStart(): Unit = extension.subscribe(self)
-      override def postStop(): Unit = extension.unsubscribe(self)
-      def receive = {
-        case ClusterMetricsChanged(nodes) =>
-          currentMetricsSet = nodes
-          collectedMetricsList = nodes :: collectedMetricsList
-        case _ =>
-        // Ignore.
-      }
-    }).withDispatcher(Dispatchers.DefaultDispatcherId).withDeploy(Deploy.local), name = "metrics-event-bus-listener")
+    system.systemActorOf(
+      Props(new Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+        override def preStart(): Unit = extension.subscribe(self)
+        override def postStop(): Unit = extension.unsubscribe(self)
+        def receive = {
+          case ClusterMetricsChanged(nodes) =>
+            currentMetricsSet = nodes
+            collectedMetricsList = nodes :: collectedMetricsList
+          case _ =>
+          // Ignore.
+        }
+      }).withDispatcher(Dispatchers.DefaultDispatcherId).withDeploy(Deploy.local),
+      name = "metrics-event-bus-listener")
   }
 
   /** Current cluster metrics. */

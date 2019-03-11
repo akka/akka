@@ -5,7 +5,7 @@
 package docs.stream.cookbook
 
 import akka.NotUsed
-import akka.actor.{ Props, ActorRef, Actor }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
@@ -25,26 +25,22 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       case object ReplenishTokens
 
-      def props(maxAvailableTokens: Int, tokenRefreshPeriod: FiniteDuration,
-                tokenRefreshAmount: Int): Props =
+      def props(maxAvailableTokens: Int, tokenRefreshPeriod: FiniteDuration, tokenRefreshAmount: Int): Props =
         Props(new Limiter(maxAvailableTokens, tokenRefreshPeriod, tokenRefreshAmount))
     }
 
-    class Limiter(
-      val maxAvailableTokens: Int,
-      val tokenRefreshPeriod: FiniteDuration,
-      val tokenRefreshAmount: Int) extends Actor {
+    class Limiter(val maxAvailableTokens: Int, val tokenRefreshPeriod: FiniteDuration, val tokenRefreshAmount: Int)
+        extends Actor {
       import Limiter._
       import context.dispatcher
       import akka.actor.Status
 
       private var waitQueue = immutable.Queue.empty[ActorRef]
       private var permitTokens = maxAvailableTokens
-      private val replenishTimer = system.scheduler.schedule(
-        initialDelay = tokenRefreshPeriod,
-        interval = tokenRefreshPeriod,
-        receiver = self,
-        ReplenishTokens)
+      private val replenishTimer = system.scheduler.schedule(initialDelay = tokenRefreshPeriod,
+                                                             interval = tokenRefreshPeriod,
+                                                             receiver = self,
+                                                             ReplenishTokens)
 
       override def receive: Receive = open
 
@@ -69,13 +65,13 @@ class RecipeGlobalRateLimit extends RecipeSpec {
         val (toBeReleased, remainingQueue) = waitQueue.splitAt(permitTokens)
         waitQueue = remainingQueue
         permitTokens -= toBeReleased.size
-        toBeReleased foreach (_ ! MayPass)
+        toBeReleased.foreach(_ ! MayPass)
         if (permitTokens > 0) context.become(open)
       }
 
       override def postStop(): Unit = {
         replenishTimer.cancel()
-        waitQueue foreach (_ ! Status.Failure(new IllegalStateException("limiter stopped")))
+        waitQueue.foreach(_ ! Status.Failure(new IllegalStateException("limiter stopped")))
       }
     }
     //#global-limiter-actor
@@ -104,13 +100,15 @@ class RecipeGlobalRateLimit extends RecipeSpec {
 
       val probe = TestSubscriber.manualProbe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
-        import GraphDSL.Implicits._
-        val merge = b.add(Merge[String](2))
-        source1 ~> merge ~> Sink.fromSubscriber(probe)
-        source2 ~> merge
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val merge = b.add(Merge[String](2))
+          source1 ~> merge ~> Sink.fromSubscriber(probe)
+          source2 ~> merge
+          ClosedShape
+        })
+        .run()
 
       probe.expectSubscription().request(1000)
 

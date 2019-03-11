@@ -5,7 +5,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.testkit.SocketUtil.temporaryServerAddresses
@@ -24,7 +24,9 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
     commander.sender()
   }
 
-  def connectUdp(localAddress: Option[InetSocketAddress], remoteAddress: InetSocketAddress, handler: ActorRef): ActorRef = {
+  def connectUdp(localAddress: Option[InetSocketAddress],
+                 remoteAddress: InetSocketAddress,
+                 handler: ActorRef): ActorRef = {
     val commander = TestProbe()
     commander.send(IO(UdpConnected), UdpConnected.Connect(handler, remoteAddress, localAddress, Nil))
     commander.expectMsg(UdpConnected.Connected)

@@ -18,7 +18,13 @@ import scala.concurrent.duration._
 import org.scalatest._
 import akka.testkit._
 
-class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
+class UntypedProducerTest
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with SharedCamelSystem
+    with GivenWhenThen {
   import UntypedProducerTest._
   val timeout = 1 second
   override protected def beforeAll = {
@@ -46,7 +52,8 @@ class UntypedProducerTest extends WordSpec with Matchers with BeforeAndAfterAll 
     }
 
     "produce a message and receive a failure response" in {
-      val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer-failure")
+      val producer =
+        system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer-failure")
 
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
@@ -85,7 +92,7 @@ object UntypedProducerTest {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
             case "fail" => throw new Exception("failure")
-            case body   => exchange.getOut.setBody("received %s" format body)
+            case body   => exchange.getOut.setBody("received %s".format(body))
           }
         }
       })

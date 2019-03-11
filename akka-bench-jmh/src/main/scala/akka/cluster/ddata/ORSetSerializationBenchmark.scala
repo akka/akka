@@ -35,8 +35,7 @@ import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 @OutputTimeUnit(TimeUnit.SECONDS)
 class ORSetSerializationBenchmark {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
@@ -44,8 +43,7 @@ class ORSetSerializationBenchmark {
       serialize-messages = off
       allow-java-serialization = off
     }
-    """
-  )
+    """)
 
   private val system1 = ActorSystem("ORSetSerializationBenchmark", config)
   private val system2 = ActorSystem("ORSetSerializationBenchmark", config)

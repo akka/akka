@@ -69,7 +69,8 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 @InternalApi private[akka] case object RejectAdditionalSubscribers extends Publisher[Nothing] {
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
-    try rejectAdditionalSubscriber(subscriber, "Publisher") catch {
+    try rejectAdditionalSubscriber(subscriber, "Publisher")
+    catch {
       case _: SpecViolation => // nothing we can do
     }
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]

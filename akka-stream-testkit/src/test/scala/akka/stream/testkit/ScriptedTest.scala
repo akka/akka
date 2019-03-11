@@ -36,18 +36,23 @@ trait ScriptedTest extends Matchers {
         jumps ++= Vector.fill(ins.size - 1)(0) ++ Vector(outs.size)
       }
 
-      new Script(providedInputs, expectedOutputs, jumps, inputCursor = 0, outputCursor = 0, outputEndCursor = 0, completed = false)
+      new Script(providedInputs,
+                 expectedOutputs,
+                 jumps,
+                 inputCursor = 0,
+                 outputCursor = 0,
+                 outputEndCursor = 0,
+                 completed = false)
     }
   }
 
-  final class Script[In, Out](
-    val providedInputs:  Vector[In],
-    val expectedOutputs: Vector[Out],
-    val jumps:           Vector[Int],
-    val inputCursor:     Int,
-    val outputCursor:    Int,
-    val outputEndCursor: Int,
-    val completed:       Boolean) {
+  final class Script[In, Out](val providedInputs: Vector[In],
+                              val expectedOutputs: Vector[Out],
+                              val jumps: Vector[Int],
+                              val inputCursor: Int,
+                              val outputCursor: Int,
+                              val outputEndCursor: Int,
+                              val completed: Boolean) {
     require(jumps.size == providedInputs.size)
 
     def provideInput: (In, Script[In, Out]) =
@@ -55,21 +60,36 @@ trait ScriptedTest extends Matchers {
         throw new ScriptException("Script cannot provide more input.")
       else
         (providedInputs(inputCursor),
-          new Script(providedInputs, expectedOutputs, jumps, inputCursor = inputCursor + 1,
-            outputCursor, outputEndCursor = outputEndCursor + jumps(inputCursor), completed))
+         new Script(providedInputs,
+                    expectedOutputs,
+                    jumps,
+                    inputCursor = inputCursor + 1,
+                    outputCursor,
+                    outputEndCursor = outputEndCursor + jumps(inputCursor),
+                    completed))
 
     def consumeOutput(out: Out): Script[In, Out] = {
       if (noOutsPending)
         throw new ScriptException(s"Tried to produce element ${out} but no elements should be produced right now.")
       out should be(expectedOutputs(outputCursor))
-      new Script(providedInputs, expectedOutputs, jumps, inputCursor,
-        outputCursor = outputCursor + 1, outputEndCursor, completed)
+      new Script(providedInputs,
+                 expectedOutputs,
+                 jumps,
+                 inputCursor,
+                 outputCursor = outputCursor + 1,
+                 outputEndCursor,
+                 completed)
     }
 
     def complete(): Script[In, Out] = {
       if (finished)
-        new Script(providedInputs, expectedOutputs, jumps, inputCursor,
-          outputCursor = outputCursor + 1, outputEndCursor, completed = true)
+        new Script(providedInputs,
+                   expectedOutputs,
+                   jumps,
+                   inputCursor,
+                   outputCursor = outputCursor + 1,
+                   outputEndCursor,
+                   completed = true)
       else fail("received onComplete prematurely")
     }
 
@@ -85,17 +105,19 @@ trait ScriptedTest extends Matchers {
     def noInsPending: Boolean = pendingIns == 0
     def someInsPending: Boolean = !noInsPending
 
-    def debug: String = s"Script(pending=($pendingIns in, $pendingOuts out), remainingIns=${providedInputs.drop(inputCursor).mkString("/")}, remainingOuts=${expectedOutputs.drop(outputCursor).mkString("/")})"
+    def debug: String =
+      s"Script(pending=($pendingIns in, $pendingOuts out), remainingIns=${providedInputs
+        .drop(inputCursor)
+        .mkString("/")}, remainingOuts=${expectedOutputs.drop(outputCursor).mkString("/")})"
   }
 
-  class ScriptRunner[In, Out, M](
-    op:             Flow[In, In, NotUsed] => Flow[In, Out, M],
-    settings:       ActorMaterializerSettings,
-    script:         Script[In, Out],
-    maximumOverrun: Int,
-    maximumRequest: Int,
-    maximumBuffer:  Int)(implicit _system: ActorSystem)
-    extends ChainSetup(op, settings, toPublisher) {
+  class ScriptRunner[In, Out, M](op: Flow[In, In, NotUsed] => Flow[In, Out, M],
+                                 settings: ActorMaterializerSettings,
+                                 script: Script[In, Out],
+                                 maximumOverrun: Int,
+                                 maximumRequest: Int,
+                                 maximumBuffer: Int)(implicit _system: ActorSystem)
+      extends ChainSetup(op, settings, toPublisher) {
 
     var _debugLog = Vector.empty[String]
     var currentScript = script
@@ -125,7 +147,8 @@ trait ScriptedTest extends Matchers {
       outstandingDemand += demand
     }
 
-    def mayProvideInput: Boolean = currentScript.someInsPending && (pendingRequests > 0) && (currentScript.pendingOuts <= maximumBuffer)
+    def mayProvideInput: Boolean =
+      currentScript.someInsPending && (pendingRequests > 0) && (currentScript.pendingOuts <= maximumBuffer)
     def mayRequestMore: Boolean = remainingDemand > 0
 
     def shakeIt(): Boolean = {
@@ -151,7 +174,7 @@ trait ScriptedTest extends Matchers {
           true
         case _ => false // Ignore
       }
-      (u ++ d) exists (x => x)
+      (u ++ d).exists(x => x)
     }
 
     def run(): Unit = {
@@ -198,8 +221,12 @@ trait ScriptedTest extends Matchers {
 
   }
 
-  def runScript[In, Out, M](script: Script[In, Out], settings: ActorMaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Flow[In, In, NotUsed] => Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
+  def runScript[In, Out, M](
+      script: Script[In, Out],
+      settings: ActorMaterializerSettings,
+      maximumOverrun: Int = 3,
+      maximumRequest: Int = 3,
+      maximumBuffer: Int = 3)(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

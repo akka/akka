@@ -30,15 +30,15 @@ object ActorSystemSpec {
       case n: Int =>
         master = sender()
         terminaters = Set() ++ (for (i <- 1 to n) yield {
-          val man = context.watch(context.system.actorOf(Props[Terminater]))
-          man ! "run"
-          man
-        })
+            val man = context.watch(context.system.actorOf(Props[Terminater]))
+            man ! "run"
+            man
+          })
       case Terminated(child) if terminaters contains child =>
         terminaters -= child
         if (terminaters.isEmpty) {
           master ! "done"
-          context stop self
+          context.stop(self)
         }
     }
 
@@ -46,7 +46,7 @@ object ActorSystemSpec {
       if (master ne null) {
         master ! "failed with " + cause + " while processing " + msg
       }
-      context stop self
+      context.stop(self)
     }
   }
 
@@ -73,16 +73,18 @@ object ActorSystemSpec {
     }
   }
 
-  class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites) extends MessageDispatcherConfigurator(_config, _prerequisites) {
-    private val instance = new Dispatcher(
-      this,
-      config.getString("id"),
-      config.getInt("throughput"),
-      config.getNanosDuration("throughput-deadline-time"),
-      configureExecutor(),
-      config.getMillisDuration("shutdown-timeout")) {
+  class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites)
+      extends MessageDispatcherConfigurator(_config, _prerequisites) {
+    private val instance = new Dispatcher(this,
+                                          config.getString("id"),
+                                          config.getInt("throughput"),
+                                          config.getNanosDuration("throughput-deadline-time"),
+                                          configureExecutor(),
+                                          config.getMillisDuration("shutdown-timeout")) {
       val doneIt = new Switch
-      override protected[akka] def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
+      override protected[akka] def registerForExecution(mbox: Mailbox,
+                                                        hasMessageHint: Boolean,
+                                                        hasSystemMessageHint: Boolean): Boolean = {
         val ret = super.registerForExecution(mbox, hasMessageHint, hasSystemMessageHint)
         doneIt.switchOn {
           TestKit.awaitCond(mbox.actor.actor != null, 1.second)
@@ -127,21 +129,19 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
   "An ActorSystem" must {
 
     "use scala.concurrent.Future's InternalCallbackEC" in {
-      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should ===("scala.concurrent.Future$InternalCallbackExecutor$")
+      system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext.getClass.getName should ===(
+        "scala.concurrent.Future$InternalCallbackExecutor$")
     }
 
     "reject invalid names" in {
-      for (
-        n <- Seq(
-          "-hallowelt",
-          "_hallowelt",
-          "hallo*welt",
-          "hallo@welt",
-          "hallo#welt",
-          "hallo$welt",
-          "hallo%welt",
-          "hallo/welt")
-      ) intercept[IllegalArgumentException] {
+      for (n <- Seq("-hallowelt",
+                    "_hallowelt",
+                    "hallo*welt",
+                    "hallo@welt",
+                    "hallo#welt",
+                    "hallo$welt",
+                    "hallo%welt",
+                    "hallo/welt")) intercept[IllegalArgumentException] {
         ActorSystem(n)
       }
     }
@@ -151,35 +151,46 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "log dead letters" in {
-      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      val sys =
+        ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
         val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
-        EventFilter.info(pattern = """from Actor\[akka://LogDeadLetters/system/testProbe.*not delivered""", occurrences = 1).intercept {
-          EventFilter.warning(pattern = """received dead letter from Actor\[akka://LogDeadLetters/system/testProbe""", occurrences = 1).intercept {
-            a.tell("boom", probe.ref)
+        EventFilter
+          .info(pattern = """from Actor\[akka://LogDeadLetters/system/testProbe.*not delivered""", occurrences = 1)
+          .intercept {
+            EventFilter
+              .warning(pattern = """received dead letter from Actor\[akka://LogDeadLetters/system/testProbe""",
+                       occurrences = 1)
+              .intercept {
+                a.tell("boom", probe.ref)
+              }(sys)
           }(sys)
-        }(sys)
 
       } finally shutdown(sys)
     }
 
     "log dead letters sent without sender reference" in {
-      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      val sys =
+        ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
         val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
-        EventFilter.info(pattern = "without sender.*not delivered", occurrences = 1).intercept {
-          EventFilter.warning(pattern = "received dead letter without sender", occurrences = 1).intercept {
-            a.tell("boom", ActorRef.noSender)
+        EventFilter
+          .info(pattern = "without sender.*not delivered", occurrences = 1)
+          .intercept {
+            EventFilter
+              .warning(pattern = "received dead letter without sender", occurrences = 1)
+              .intercept {
+                a.tell("boom", ActorRef.noSender)
+              }(sys)
           }(sys)
-        }(sys)
 
       } finally shutdown(sys)
     }
@@ -193,7 +204,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       for (i <- 1 to count) {
         system2.registerOnTermination {
           Thread.sleep((i % 3).millis.dilated.toMillis)
-          result add i
+          result.add(i)
           latch.countDown()
         }
       }
@@ -232,7 +243,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       terminated.actor should ===(system.provider.rootGuardian)
       terminated.addressTerminated should ===(true)
       terminated.existenceConfirmed should ===(true)
-      terminated should be theSameInstanceAs Await.result(f, 10 seconds)
+      (terminated should be).theSameInstanceAs(Await.result(f, 10 seconds))
     }
 
     "throw RejectedExecutionException when shutdown" in {
@@ -295,22 +306,25 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         }
       }
 
-      created filter (ref => !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) should ===(Seq.empty[ActorRef])
+      created.filter(ref =>
+        !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) should ===(
+        Seq.empty[ActorRef])
     }
 
     "shut down when /user fails" in {
       implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
-      EventFilter[ActorKilledException]() intercept {
+      EventFilter[ActorKilledException]().intercept {
         system.actorSelection("/user") ! Kill
         Await.ready(system.whenTerminated, Duration.Inf)
       }
     }
 
     "allow configuration of guardian supervisor strategy" in {
-      implicit val system = ActorSystem(
-        "Stop",
-        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
-          .withFallback(AkkaSpec.testConf))
+      implicit val system =
+        ActorSystem("Stop",
+                    ConfigFactory
+                      .parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
+                      .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case "die" => throw new Exception("hello")
@@ -318,7 +332,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       }))
       val probe = TestProbe()
       probe.watch(a)
-      EventFilter[Exception]("hello", occurrences = 1) intercept {
+      EventFilter[Exception]("hello", occurrences = 1).intercept {
         a ! "die"
       }
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
@@ -328,16 +342,17 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "shut down when /user escalates" in {
-      implicit val system = ActorSystem(
-        "Stop",
-        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
-          .withFallback(AkkaSpec.testConf))
+      implicit val system =
+        ActorSystem("Stop",
+                    ConfigFactory
+                      .parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
+                      .withFallback(AkkaSpec.testConf))
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case "die" => throw new Exception("hello")
         }
       }))
-      EventFilter[Exception]("hello") intercept {
+      EventFilter[Exception]("hello").intercept {
         a ! "die"
         Await.ready(system.whenTerminated, Duration.Inf)
       }
@@ -388,8 +403,12 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "not allow top-level actor creation with custom guardian" in {
-      val sys = new ActorSystemImpl("custom", ConfigFactory.defaultReference(),
-        getClass.getClassLoader, None, Some(Props.empty), ActorSystemSetup.empty)
+      val sys = new ActorSystemImpl("custom",
+                                    ConfigFactory.defaultReference(),
+                                    getClass.getClassLoader,
+                                    None,
+                                    Some(Props.empty),
+                                    ActorSystemSetup.empty)
       sys.start()
       try {
         intercept[UnsupportedOperationException] {

@@ -23,12 +23,13 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
   implicit val betterGeneratorDrivenConfig = PropertyCheckConfig().copy(minSuccessful = 1000)
 
-  def genSimpleByteString(min: Int, max: Int) = for {
-    n <- Gen.choose(min, max)
-    b <- Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
-    from <- Gen.choose(0, b.length)
-    until <- Gen.choose(from, from max b.length)
-  } yield ByteString(b).slice(from, until)
+  def genSimpleByteString(min: Int, max: Int) =
+    for {
+      n <- Gen.choose(min, max)
+      b <- Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
+      from <- Gen.choose(0, b.length)
+      until <- Gen.choose(from, from max b.length)
+    } yield ByteString(b).slice(from, until)
 
   implicit val arbitraryByteString: Arbitrary[ByteString] = Arbitrary {
     Gen.sized { s =>
@@ -92,20 +93,44 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val os = new ByteArrayOutputStream
     val bos = new ObjectOutputStream(os)
     bos.writeObject(obj)
-    String valueOf encodeHex(os.toByteArray)
+    String.valueOf(encodeHex(os.toByteArray))
   }
 
-  val arbitraryByteArray: Arbitrary[Array[Byte]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Byte](n, arbitrary[Byte]) } }
+  val arbitraryByteArray: Arbitrary[Array[Byte]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
+    }
+  }
   implicit val arbitraryByteArraySlice: Arbitrary[ArraySlice[Byte]] = arbSlice(arbitraryByteArray)
-  val arbitraryShortArray: Arbitrary[Array[Short]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Short](n, arbitrary[Short]) } }
+  val arbitraryShortArray: Arbitrary[Array[Short]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Short](n, arbitrary[Short])
+    }
+  }
   implicit val arbitraryShortArraySlice: Arbitrary[ArraySlice[Short]] = arbSlice(arbitraryShortArray)
-  val arbitraryIntArray: Arbitrary[Array[Int]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Int](n, arbitrary[Int]) } }
+  val arbitraryIntArray: Arbitrary[Array[Int]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Int](n, arbitrary[Int])
+    }
+  }
   implicit val arbitraryIntArraySlice: Arbitrary[ArraySlice[Int]] = arbSlice(arbitraryIntArray)
-  val arbitraryLongArray: Arbitrary[Array[Long]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Long](n, arbitrary[Long]) } }
+  val arbitraryLongArray: Arbitrary[Array[Long]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Long](n, arbitrary[Long])
+    }
+  }
   implicit val arbitraryLongArraySlice: Arbitrary[ArraySlice[Long]] = arbSlice(arbitraryLongArray)
-  val arbitraryFloatArray: Arbitrary[Array[Float]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Float](n, arbitrary[Float]) } }
+  val arbitraryFloatArray: Arbitrary[Array[Float]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Float](n, arbitrary[Float])
+    }
+  }
   implicit val arbitraryFloatArraySlice: Arbitrary[ArraySlice[Float]] = arbSlice(arbitraryFloatArray)
-  val arbitraryDoubleArray: Arbitrary[Array[Double]] = Arbitrary { Gen.sized { n => Gen.containerOfN[Array, Double](n, arbitrary[Double]) } }
+  val arbitraryDoubleArray: Arbitrary[Array[Double]] = Arbitrary {
+    Gen.sized { n =>
+      Gen.containerOfN[Array, Double](n, arbitrary[Double])
+    }
+  }
   implicit val arbitraryDoubleArraySlice: Arbitrary[ArraySlice[Double]] = arbSlice(arbitraryDoubleArray)
 
   type ArrayNumBytes[A] = (Array[A], Int)
@@ -136,14 +161,15 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val bsIterator = bs.iterator
     val vecIterator = Vector(bs: _*).iterator.buffered
     (body(bsIterator) == body(vecIterator)) &&
-      (!strict || (bsIterator.toSeq == vecIterator.toSeq))
+    (!strict || (bsIterator.toSeq == vecIterator.toSeq))
   }
 
-  def likeVecIts(a: ByteString, b: ByteString)(body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any, strict: Boolean = true): Boolean = {
+  def likeVecIts(a: ByteString, b: ByteString)(body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any,
+                                               strict: Boolean = true): Boolean = {
     val (bsAIt, bsBIt) = (a.iterator, b.iterator)
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
-      (!strict || (bsAIt.toSeq -> bsBIt.toSeq) == (vecAIt.toSeq -> vecBIt.toSeq))
+    (!strict || (bsAIt.toSeq -> bsBIt.toSeq) == (vecAIt.toSeq -> vecBIt.toSeq))
   }
 
   def likeVecBld(body: Builder[Byte, _] => Unit): Boolean = {
@@ -209,8 +235,8 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     for (i <- 0 until a) decoded(i) = input.getFloat(byteOrder)
     input.getFloats(decoded, a, b - a)(byteOrder)
     for (i <- b until n) decoded(i) = input.getFloat(byteOrder)
-    ((decoded.toSeq map floatToRawIntBits) == (reference.toSeq map floatToRawIntBits)) &&
-      (input.toSeq == bytes.drop(n * elemSize))
+    ((decoded.toSeq.map(floatToRawIntBits)) == (reference.toSeq.map(floatToRawIntBits))) &&
+    (input.toSeq == bytes.drop(n * elemSize))
   }
 
   def testDoubleDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
@@ -224,8 +250,8 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     for (i <- 0 until a) decoded(i) = input.getDouble(byteOrder)
     input.getDoubles(decoded, a, b - a)(byteOrder)
     for (i <- b until n) decoded(i) = input.getDouble(byteOrder)
-    ((decoded.toSeq map doubleToRawLongBits) == (reference.toSeq map doubleToRawLongBits)) &&
-      (input.toSeq == bytes.drop(n * elemSize))
+    ((decoded.toSeq.map(doubleToRawLongBits)) == (reference.toSeq.map(doubleToRawLongBits))) &&
+    (input.toSeq == bytes.drop(n * elemSize))
   }
 
   def testShortEncoding(slice: ArraySlice[Short], byteOrder: ByteOrder): Boolean = {
@@ -273,10 +299,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val builder = ByteString.newBuilder
     for (i <- 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
 
-    reference.zipWithIndex.collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
-      case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
-      case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
-    }).toSeq == builder.result
+    reference.zipWithIndex
+      .collect({ // Since there is no partial put on LongBuffer, we need to collect only the interesting bytes
+        case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
+        case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
+      })
+      .toSeq == builder.result
   }
 
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
@@ -403,24 +431,24 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).drop(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).drop(Int.MaxValue) should ===(ByteString(""))
 
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(Int.MinValue) should ===(
+        ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(-1) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(0) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(2) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).drop(Int.MaxValue) should ===(ByteString(""))
 
-      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(Int.MinValue) should ===(
+        ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(-1) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(0) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(2) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).drop(Int.MaxValue) should ===(ByteString(""))
 
-      val bss = ByteStrings(Vector(
-        ByteString1.fromString("a"),
-        ByteString1.fromString("bc"),
-        ByteString1.fromString("def")))
+      val bss =
+        ByteStrings(Vector(ByteString1.fromString("a"), ByteString1.fromString("bc"), ByteString1.fromString("def")))
 
       bss.drop(Int.MinValue) should ===(ByteString("abcdef"))
       bss.drop(-1) should ===(ByteString("abcdef"))
@@ -439,30 +467,34 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       (ByteString1C.fromString("a") ++ ByteString1.fromString("bc")).drop(2) should ===(ByteString("c"))
     }
     "dropRight" in {
-      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(
+        ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(-1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(0) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(
+        ByteString(""))
 
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(
+        ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(-1) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(0) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(2) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(
+        ByteString(""))
 
-      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MinValue) should ===(
+        ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(-1) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(0) should ===(ByteString("a"))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(2) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MaxValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MaxValue) should ===(
+        ByteString(""))
 
-      val bss = ByteStrings(Vector(
-        ByteString1.fromString("a"),
-        ByteString1.fromString("bc"),
-        ByteString1.fromString("def")))
+      val bss =
+        ByteStrings(Vector(ByteString1.fromString("a"), ByteString1.fromString("bc"), ByteString1.fromString("def")))
 
       bss.dropRight(Int.MinValue) should ===(ByteString("abcdef"))
       bss.dropRight(-1) should ===(ByteString("abcdef"))
@@ -500,14 +532,19 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(2, 4) should ===(ByteString("cd"))
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(3, 4) should ===(ByteString("d"))
       // Can obtain expected results from 6 basic patterns
-      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, 10) should ===(ByteString("abcd"))
+      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, 10) should ===(
+        ByteString("abcd"))
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, 0) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, 4) should ===(ByteString("abcd"))
+      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, 4) should ===(
+        ByteString("abcd"))
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(0, 4) should ===(ByteString("abcd"))
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(1, -2) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(0, 10) should ===(ByteString("abcd"))
-      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, -100) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-100, -10) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(0, 10) should ===(
+        ByteString("abcd"))
+      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-10, -100) should ===(
+        ByteString(""))
+      ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(-100, -10) should ===(
+        ByteString(""))
 
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).slice(1, -2) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).slice(-10, -100) should ===(ByteString(""))
@@ -531,10 +568,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(0) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(-1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(-2) should ===(ByteString(""))
-      (ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")) ++ ByteString1.fromString("defg")).drop(2) should ===(ByteString("cdefg"))
+      (ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")) ++ ByteString1.fromString("defg"))
+        .drop(2) should ===(ByteString("cdefg"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(2).take(1) should ===(ByteString("c"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).take(100) should ===(ByteString("abc"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(100) should ===(ByteString("bc"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(100) should ===(
+        ByteString("bc"))
     }
     "indexOf" in {
       ByteString.empty.indexOf(5) should ===(-1)
@@ -620,7 +659,9 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "dropping" in { check((a: ByteString, b: ByteString) => (a ++ b).drop(b.size).size == a.size) }
       "taking" in { check((a: ByteString, b: ByteString) => (a ++ b).take(a.size) == a) }
       "takingRight" in { check((a: ByteString, b: ByteString) => (a ++ b).takeRight(b.size) == b) }
-      "dropping then taking" in { check((a: ByteString, b: ByteString) => (b ++ a ++ b).drop(b.size).take(a.size) == a) }
+      "dropping then taking" in {
+        check((a: ByteString, b: ByteString) => (b ++ a ++ b).drop(b.size).take(a.size) == a)
+      }
       "droppingRight" in { check((a: ByteString, b: ByteString) => (b ++ a ++ b).drop(b.size).dropRight(b.size) == a) }
     }
 
@@ -630,7 +671,11 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
 
     "be equal to the original" when {
-      "compacting" in { check { xs: ByteString => val ys = xs.compact; (xs == ys) && ys.isCompact } }
+      "compacting" in {
+        check { xs: ByteString =>
+          val ys = xs.compact; (xs == ys) && ys.isCompact
+        }
+      }
       "recombining" in {
         check { (xs: ByteString, from: Int, until: Int) =>
           val (tmp, c) = xs.splitAt(until)
@@ -644,35 +689,52 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         (a ++ b ++ c) should ===(xs)
       }
       "recombining - edge cases" in {
-        excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](1)), ByteString1(Array[Byte](2)))), -2147483648, 112121212)
+        excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](1)), ByteString1(Array[Byte](2)))),
+                             -2147483648,
+                             112121212)
         excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](100)))), 0, 2)
         excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](100)))), -2147483648, 2)
         excerciseRecombining(ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))), 0, 1)
         excerciseRecombining(ByteString1.fromString("abc").drop(1).take(1), -324234, 234232)
         excerciseRecombining(ByteString("a"), 0, 2147483647)
-        excerciseRecombining(ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))).drop(2), 2147483647, 1)
+        excerciseRecombining(ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))).drop(2),
+                             2147483647,
+                             1)
         excerciseRecombining(ByteString1.fromString("ab").drop1(1), Int.MaxValue, Int.MaxValue)
       }
     }
 
     "behave as expected" when {
-      "created from and decoding to String" in { check { s: String => ByteString(s, "UTF-8").decodeString("UTF-8") == s } }
+      "created from and decoding to String" in {
+        check { s: String =>
+          ByteString(s, "UTF-8").decodeString("UTF-8") == s
+        }
+      }
 
       "compacting" in {
         check { a: ByteString =>
           val wasCompact = a.isCompact
           val b = a.compact
           ((!wasCompact) || (b eq a)) &&
-            (b == a) &&
-            b.isCompact &&
-            (b.compact eq b)
+          (b == a) &&
+          b.isCompact &&
+          (b.compact eq b)
         }
       }
 
       "asByteBuffers" in {
-        check { (a: ByteString) => if (a.isCompact) a.asByteBuffers.size == 1 && a.asByteBuffers.head == a.asByteBuffer else a.asByteBuffers.size > 0 }
-        check { (a: ByteString) => a.asByteBuffers.foldLeft(ByteString.empty) { (bs, bb) => bs ++ ByteString(bb) } == a }
-        check { (a: ByteString) => a.asByteBuffers.forall(_.isReadOnly) }
+        check { (a: ByteString) =>
+          if (a.isCompact) a.asByteBuffers.size == 1 && a.asByteBuffers.head == a.asByteBuffer
+          else a.asByteBuffers.size > 0
+        }
+        check { (a: ByteString) =>
+          a.asByteBuffers.foldLeft(ByteString.empty) { (bs, bb) =>
+            bs ++ ByteString(bb)
+          } == a
+        }
+        check { (a: ByteString) =>
+          a.asByteBuffers.forall(_.isReadOnly)
+        }
         check { (a: ByteString) =>
           import scala.collection.JavaConverters.iterableAsScalaIterableConverter
           a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x => x._1 == x._2)
@@ -686,45 +748,108 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       }
     }
     "behave like a Vector" when {
-      "concatenating" in { check { (a: ByteString, b: ByteString) => likeVectors(a, b) { _ ++ _ } } }
+      "concatenating" in {
+        check { (a: ByteString, b: ByteString) =>
+          likeVectors(a, b) { _ ++ _ }
+        }
+      }
 
       "calling apply" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, i1, i2) => likeVector(xs) { seq =>
-              (if ((i1 >= 0) && (i1 < seq.length)) seq(i1) else 0,
-                if ((i2 >= 0) && (i2 < seq.length)) seq(i2) else 0)
-            }
+            case (xs, i1, i2) =>
+              likeVector(xs) { seq =>
+                (if ((i1 >= 0) && (i1 < seq.length)) seq(i1) else 0, if ((i2 >= 0) && (i2 < seq.length)) seq(i2) else 0)
+              }
           }
         }
       }
 
-      "calling head" in { check { a: ByteString => a.isEmpty || likeVector(a) { _.head } } }
-      "calling tail" in { check { a: ByteString => a.isEmpty || likeVector(a) { _.tail } } }
-      "calling last" in { check { a: ByteString => a.isEmpty || likeVector(a) { _.last } } }
-      "calling init" in { check { a: ByteString => a.isEmpty || likeVector(a) { _.init } } }
-      "calling length" in { check { a: ByteString => likeVector(a) { _.length } } }
+      "calling head" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVector(a) { _.head }
+        }
+      }
+      "calling tail" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVector(a) { _.tail }
+        }
+      }
+      "calling last" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVector(a) { _.last }
+        }
+      }
+      "calling init" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVector(a) { _.init }
+        }
+      }
+      "calling length" in {
+        check { a: ByteString =>
+          likeVector(a) { _.length }
+        }
+      }
 
-      "calling span" in { check { (a: ByteString, b: Byte) => likeVector(a)({ _.span(_ != b) match { case (a, b) => (a, b) } }) } }
+      "calling span" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVector(a)({ _.span(_ != b) match { case (a, b) => (a, b) } })
+        }
+      }
 
-      "calling takeWhile" in { check { (a: ByteString, b: Byte) => likeVector(a)({ _.takeWhile(_ != b) }) } }
-      "calling dropWhile" in { check { (a: ByteString, b: Byte) => likeVector(a) { _.dropWhile(_ != b) } } }
-      "calling indexWhere" in { check { (a: ByteString, b: Byte) => likeVector(a) { _.indexWhere(_ == b) } } }
-      "calling indexOf" in { check { (a: ByteString, b: Byte) => likeVector(a) { _.indexOf(b) } } }
+      "calling takeWhile" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVector(a)({ _.takeWhile(_ != b) })
+        }
+      }
+      "calling dropWhile" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVector(a) { _.dropWhile(_ != b) }
+        }
+      }
+      "calling indexWhere" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVector(a) { _.indexWhere(_ == b) }
+        }
+      }
+      "calling indexOf" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVector(a) { _.indexOf(b) }
+        }
+      }
       // this actually behave weird for Vector and negative indexes - SI9936, fixed in Scala 2.12
       // so let's just skip negative indexes (doesn't make much sense anyway)
-      "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) => likeVector(a) { _.indexOf(b, math.max(0, idx)) } } }
+      "calling indexOf(elem, idx)" in {
+        check { (a: ByteString, b: Byte, idx: Int) =>
+          likeVector(a) { _.indexOf(b, math.max(0, idx)) }
+        }
+      }
 
-      "calling foreach" in { check { a: ByteString => likeVector(a) { it => var acc = 0; it foreach { acc += _ }; acc } } }
-      "calling foldLeft" in { check { a: ByteString => likeVector(a) { _.foldLeft(0) { _ + _ } } } }
-      "calling toArray" in { check { a: ByteString => likeVector(a) { _.toArray.toSeq } } }
+      "calling foreach" in {
+        check { a: ByteString =>
+          likeVector(a) { it =>
+            var acc = 0; it.foreach { acc += _ }; acc
+          }
+        }
+      }
+      "calling foldLeft" in {
+        check { a: ByteString =>
+          likeVector(a) { _.foldLeft(0) { _ + _ } }
+        }
+      }
+      "calling toArray" in {
+        check { a: ByteString =>
+          likeVector(a) { _.toArray.toSeq }
+        }
+      }
 
       "calling slice" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVector(xs)({
-              _.slice(from, until)
-            })
+            case (xs, from, until) =>
+              likeVector(xs)({
+                _.slice(from, until)
+              })
           }
         }
       }
@@ -732,9 +857,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling take and drop" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVector(xs)({
-              _.drop(from).take(until - from)
-            })
+            case (xs, from, until) =>
+              likeVector(xs)({
+                _.drop(from).take(until - from)
+              })
           }
         }
       }
@@ -750,11 +876,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling copyToArray" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVector(xs)({ it =>
-              val array = new Array[Byte](xs.length)
-              it.slice(from, until).copyToArray(array, from, until)
-              array.toSeq
-            })
+            case (xs, from, until) =>
+              likeVector(xs)({ it =>
+                val array = new Array[Byte](xs.length)
+                it.slice(from, until).copyToArray(array, from, until)
+                array.toSeq
+              })
           }
         }
       }
@@ -763,7 +890,8 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     "serialize correctly" when {
       "parsing regular ByteString1C as compat" in {
         val oldSerd =
-          if (util.Properties.versionNumberString.startsWith("2.11") || util.Properties.versionNumberString.startsWith("2.12"))
+          if (util.Properties.versionNumberString.startsWith("2.11") || util.Properties.versionNumberString.startsWith(
+                "2.12"))
             "aced000573720021616b6b612e7574696c2e42797465537472696e672442797465537472696e67314336e9eed0afcfe4a40200015b000562797465737400025b427872001b616b6b612e7574696c2e436f6d7061637442797465537472696e67fa2925150f93468f0200007870757200025b42acf317f8060854e002000078700000000a74657374737472696e67"
           else
             // The data is the same, but the class hierarchy changed in 2.13:
@@ -791,34 +919,99 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
   "A ByteStringIterator" must {
     "behave like a buffered Vector Iterator" when {
-      "concatenating" in { check { (a: ByteString, b: ByteString) => likeVecIts(a, b) { (a, b) => (a ++ b).toSeq } } }
+      "concatenating" in {
+        check { (a: ByteString, b: ByteString) =>
+          likeVecIts(a, b) { (a, b) =>
+            (a ++ b).toSeq
+          }
+        }
+      }
 
-      "calling head" in { check { a: ByteString => a.isEmpty || likeVecIt(a) { _.head } } }
-      "calling next" in { check { a: ByteString => a.isEmpty || likeVecIt(a) { _.next() } } }
-      "calling hasNext" in { check { a: ByteString => likeVecIt(a) { _.hasNext } } }
-      "calling length" in { check { a: ByteString => likeVecIt(a) { _.length } } }
-      "calling duplicate" in { check { a: ByteString => likeVecIt(a)({ _.duplicate match { case (a, b) => (a.toSeq, b.toSeq) } }, strict = false) } }
+      "calling head" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVecIt(a) { _.head }
+        }
+      }
+      "calling next" in {
+        check { a: ByteString =>
+          a.isEmpty || likeVecIt(a) { _.next() }
+        }
+      }
+      "calling hasNext" in {
+        check { a: ByteString =>
+          likeVecIt(a) { _.hasNext }
+        }
+      }
+      "calling length" in {
+        check { a: ByteString =>
+          likeVecIt(a) { _.length }
+        }
+      }
+      "calling duplicate" in {
+        check { a: ByteString =>
+          likeVecIt(a)({ _.duplicate match { case (a, b) => (a.toSeq, b.toSeq) } }, strict = false)
+        }
+      }
 
       // Have to used toList instead of toSeq here, iterator.span (new in
       // Scala-2.9) seems to be broken in combination with toSeq for the
       // scala.collection default Iterator (see Scala issue SI-5838).
-      "calling span" in { check { (a: ByteString, b: Byte) => likeVecIt(a)({ _.span(_ != b) match { case (a, b) => (a.toList, b.toList) } }, strict = false) } }
+      "calling span" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVecIt(a)({ _.span(_ != b) match { case (a, b) => (a.toList, b.toList) } }, strict = false)
+        }
+      }
 
-      "calling takeWhile" in { check { (a: ByteString, b: Byte) => likeVecIt(a)({ _.takeWhile(_ != b).toSeq }, strict = false) } }
-      "calling dropWhile" in { check { (a: ByteString, b: Byte) => likeVecIt(a) { _.dropWhile(_ != b).toSeq } } }
-      "calling indexWhere" in { check { (a: ByteString, b: Byte) => likeVecIt(a) { _.indexWhere(_ == b) } } }
-      "calling indexOf" in { check { (a: ByteString, b: Byte) => likeVecIt(a) { _.indexOf(b) } } }
-      "calling toSeq" in { check { a: ByteString => likeVecIt(a) { _.toSeq } } }
-      "calling foreach" in { check { a: ByteString => likeVecIt(a) { it => var acc = 0; it foreach { acc += _ }; acc } } }
-      "calling foldLeft" in { check { a: ByteString => likeVecIt(a) { _.foldLeft(0) { _ + _ } } } }
-      "calling toArray" in { check { a: ByteString => likeVecIt(a) { _.toArray.toSeq } } }
+      "calling takeWhile" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVecIt(a)({ _.takeWhile(_ != b).toSeq }, strict = false)
+        }
+      }
+      "calling dropWhile" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVecIt(a) { _.dropWhile(_ != b).toSeq }
+        }
+      }
+      "calling indexWhere" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVecIt(a) { _.indexWhere(_ == b) }
+        }
+      }
+      "calling indexOf" in {
+        check { (a: ByteString, b: Byte) =>
+          likeVecIt(a) { _.indexOf(b) }
+        }
+      }
+      "calling toSeq" in {
+        check { a: ByteString =>
+          likeVecIt(a) { _.toSeq }
+        }
+      }
+      "calling foreach" in {
+        check { a: ByteString =>
+          likeVecIt(a) { it =>
+            var acc = 0; it.foreach { acc += _ }; acc
+          }
+        }
+      }
+      "calling foldLeft" in {
+        check { a: ByteString =>
+          likeVecIt(a) { _.foldLeft(0) { _ + _ } }
+        }
+      }
+      "calling toArray" in {
+        check { a: ByteString =>
+          likeVecIt(a) { _.toArray.toSeq }
+        }
+      }
 
       "calling slice" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVecIt(xs)({
-              _.slice(from, until).toSeq
-            }, strict = false)
+            case (xs, from, until) =>
+              likeVecIt(xs)({
+                _.slice(from, until).toSeq
+              }, strict = false)
           }
         }
       }
@@ -826,9 +1019,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling take and drop" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVecIt(xs)({
-              _.drop(from).take(until - from).toSeq
-            }, strict = false)
+            case (xs, from, until) =>
+              likeVecIt(xs)({
+                _.drop(from).take(until - from).toSeq
+              }, strict = false)
           }
         }
       }
@@ -836,11 +1030,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling copyToArray" in {
         check { slice: ByteStringSlice =>
           slice match {
-            case (xs, from, until) => likeVecIt(xs)({ it =>
-              val array = new Array[Byte](xs.length)
-              it.slice(from, until).copyToArray(array, from, until)
-              array.toSeq
-            }, strict = false)
+            case (xs, from, until) =>
+              likeVecIt(xs)({ it =>
+                val array = new Array[Byte](xs.length)
+                it.slice(from, until).copyToArray(array, from, until)
+                array.toSeq
+              }, strict = false)
           }
         }
       }
@@ -861,20 +1056,18 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       }
 
       "getting Bytes with a given length" in {
-        check {
-          slice: ByteStringSlice =>
-            val (bytes, _, _) = slice
-            val input = bytes.iterator
-            (input.getBytes(bytes.length).toSeq == bytes) && input.isEmpty
+        check { slice: ByteStringSlice =>
+          val (bytes, _, _) = slice
+          val input = bytes.iterator
+          (input.getBytes(bytes.length).toSeq == bytes) && input.isEmpty
         }
       }
 
       "getting ByteString with a given length" in {
-        check {
-          slice: ByteStringSlice =>
-            val (bytes, _, _) = slice
-            val input = bytes.iterator
-            (input.getByteString(bytes.length) == bytes) && input.isEmpty
+        check { slice: ByteStringSlice =>
+          val (bytes, _, _) = slice
+          val input = bytes.iterator
+          (input.getByteString(bytes.length) == bytes) && input.isEmpty
         }
       }
 
@@ -901,8 +1094,8 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           for (i <- b until bytes.length) output(i) = input.asInputStream.read().toByte
 
           (output.toSeq.drop(a) == bytes.drop(a)) &&
-            (input.asInputStream.read() == -1) &&
-            ((output.length < 1) || (input.asInputStream.read(output, 0, 1) == -1))
+          (input.asInputStream.read() == -1) &&
+          ((output.length < 1) || (input.asInputStream.read(output, 0, 1) == -1))
         }
       }
 
@@ -929,16 +1122,56 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
 
     "decode data correctly" when {
-      "decoding Short in big-endian" in { check { slice: ByteStringSlice => testShortDecoding(slice, BIG_ENDIAN) } }
-      "decoding Short in little-endian" in { check { slice: ByteStringSlice => testShortDecoding(slice, LITTLE_ENDIAN) } }
-      "decoding Int in big-endian" in { check { slice: ByteStringSlice => testIntDecoding(slice, BIG_ENDIAN) } }
-      "decoding Int in little-endian" in { check { slice: ByteStringSlice => testIntDecoding(slice, LITTLE_ENDIAN) } }
-      "decoding Long in big-endian" in { check { slice: ByteStringSlice => testLongDecoding(slice, BIG_ENDIAN) } }
-      "decoding Long in little-endian" in { check { slice: ByteStringSlice => testLongDecoding(slice, LITTLE_ENDIAN) } }
-      "decoding Float in big-endian" in { check { slice: ByteStringSlice => testFloatDecoding(slice, BIG_ENDIAN) } }
-      "decoding Float in little-endian" in { check { slice: ByteStringSlice => testFloatDecoding(slice, LITTLE_ENDIAN) } }
-      "decoding Double in big-endian" in { check { slice: ByteStringSlice => testDoubleDecoding(slice, BIG_ENDIAN) } }
-      "decoding Double in little-endian" in { check { slice: ByteStringSlice => testDoubleDecoding(slice, LITTLE_ENDIAN) } }
+      "decoding Short in big-endian" in {
+        check { slice: ByteStringSlice =>
+          testShortDecoding(slice, BIG_ENDIAN)
+        }
+      }
+      "decoding Short in little-endian" in {
+        check { slice: ByteStringSlice =>
+          testShortDecoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "decoding Int in big-endian" in {
+        check { slice: ByteStringSlice =>
+          testIntDecoding(slice, BIG_ENDIAN)
+        }
+      }
+      "decoding Int in little-endian" in {
+        check { slice: ByteStringSlice =>
+          testIntDecoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "decoding Long in big-endian" in {
+        check { slice: ByteStringSlice =>
+          testLongDecoding(slice, BIG_ENDIAN)
+        }
+      }
+      "decoding Long in little-endian" in {
+        check { slice: ByteStringSlice =>
+          testLongDecoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "decoding Float in big-endian" in {
+        check { slice: ByteStringSlice =>
+          testFloatDecoding(slice, BIG_ENDIAN)
+        }
+      }
+      "decoding Float in little-endian" in {
+        check { slice: ByteStringSlice =>
+          testFloatDecoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "decoding Double in big-endian" in {
+        check { slice: ByteStringSlice =>
+          testDoubleDecoding(slice, BIG_ENDIAN)
+        }
+      }
+      "decoding Double in little-endian" in {
+        check { slice: ByteStringSlice =>
+          testDoubleDecoding(slice, LITTLE_ENDIAN)
+        }
+      }
     }
   }
 
@@ -948,9 +1181,13 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         check { (array1: Array[Byte], array2: Array[Byte], bs1: ByteString, bs2: ByteString, bs3: ByteString) =>
           likeVecBld { builder =>
             builder ++= array1
-            bs1 foreach { b => builder += b }
+            bs1.foreach { b =>
+              builder += b
+            }
             builder ++= bs2
-            bs3 foreach { b => builder += b }
+            bs3.foreach { b =>
+              builder += b
+            }
             builder ++= Vector(array2: _*)
           }
         }
@@ -983,23 +1220,73 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     }
 
     "encode data correctly" when {
-      "encoding Short in big-endian" in { check { slice: ArraySlice[Short] => testShortEncoding(slice, BIG_ENDIAN) } }
-      "encoding Short in little-endian" in { check { slice: ArraySlice[Short] => testShortEncoding(slice, LITTLE_ENDIAN) } }
-      "encoding Int in big-endian" in { check { slice: ArraySlice[Int] => testIntEncoding(slice, BIG_ENDIAN) } }
-      "encoding Int in little-endian" in { check { slice: ArraySlice[Int] => testIntEncoding(slice, LITTLE_ENDIAN) } }
-      "encoding Long in big-endian" in { check { slice: ArraySlice[Long] => testLongEncoding(slice, BIG_ENDIAN) } }
-      "encoding Long in little-endian" in { check { slice: ArraySlice[Long] => testLongEncoding(slice, LITTLE_ENDIAN) } }
-      "encoding LongPart in big-endian" in { check { slice: ArrayNumBytes[Long] => testLongPartEncoding(slice, BIG_ENDIAN) } }
-      "encoding LongPart in little-endian" in { check { slice: ArrayNumBytes[Long] => testLongPartEncoding(slice, LITTLE_ENDIAN) } }
-      "encoding Float in big-endian" in { check { slice: ArraySlice[Float] => testFloatEncoding(slice, BIG_ENDIAN) } }
-      "encoding Float in little-endian" in { check { slice: ArraySlice[Float] => testFloatEncoding(slice, LITTLE_ENDIAN) } }
-      "encoding Double in big-endian" in { check { slice: ArraySlice[Double] => testDoubleEncoding(slice, BIG_ENDIAN) } }
-      "encoding Double in little-endian" in { check { slice: ArraySlice[Double] => testDoubleEncoding(slice, LITTLE_ENDIAN) } }
+      "encoding Short in big-endian" in {
+        check { slice: ArraySlice[Short] =>
+          testShortEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding Short in little-endian" in {
+        check { slice: ArraySlice[Short] =>
+          testShortEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "encoding Int in big-endian" in {
+        check { slice: ArraySlice[Int] =>
+          testIntEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding Int in little-endian" in {
+        check { slice: ArraySlice[Int] =>
+          testIntEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "encoding Long in big-endian" in {
+        check { slice: ArraySlice[Long] =>
+          testLongEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding Long in little-endian" in {
+        check { slice: ArraySlice[Long] =>
+          testLongEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "encoding LongPart in big-endian" in {
+        check { slice: ArrayNumBytes[Long] =>
+          testLongPartEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding LongPart in little-endian" in {
+        check { slice: ArrayNumBytes[Long] =>
+          testLongPartEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "encoding Float in big-endian" in {
+        check { slice: ArraySlice[Float] =>
+          testFloatEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding Float in little-endian" in {
+        check { slice: ArraySlice[Float] =>
+          testFloatEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
+      "encoding Double in big-endian" in {
+        check { slice: ArraySlice[Double] =>
+          testDoubleEncoding(slice, BIG_ENDIAN)
+        }
+      }
+      "encoding Double in little-endian" in {
+        check { slice: ArraySlice[Double] =>
+          testDoubleEncoding(slice, LITTLE_ENDIAN)
+        }
+      }
     }
 
     "have correct empty info" when {
       "is empty" in {
-        check { a: ByteStringBuilder => a.isEmpty }
+        check { a: ByteStringBuilder =>
+          a.isEmpty
+        }
       }
       "is nonEmpty" in {
         check { a: ByteStringBuilder =>

@@ -42,17 +42,17 @@ object FSMActorSpec {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
           case incomplete if incomplete.length < code.length =>
-            stay using CodeState(incomplete, code)
+            stay.using(CodeState(incomplete, code))
           case codeTry if (codeTry == code) => {
             doUnlock()
-            goto(Open) using CodeState("", code) forMax timeout
+            goto(Open).using(CodeState("", code)).forMax(timeout)
           }
           case wrong => {
-            stay using CodeState("", code)
+            stay.using(CodeState("", code))
           }
         }
       }
-      case Event("hello", _) => stay replying "world"
+      case Event("hello", _) => stay.replying("world")
       case Event("bye", _)   => stop(FSM.Shutdown)
     }
 
@@ -109,7 +109,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "unlock the lock" in {
 
-      import FSM.{ Transition, CurrentState, SubscribeTransitionCallBack }
+      import FSM.{ CurrentState, SubscribeTransitionCallBack, Transition }
 
       val latches = new Latches
       import latches._
@@ -138,7 +138,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       Await.ready(transitionCallBackLatch, timeout.duration)
       Await.ready(lockedLatch, timeout.duration)
 
-      EventFilter.warning(start = "unhandled event", occurrences = 1) intercept {
+      EventFilter.warning(start = "unhandled event", occurrences = 1).intercept {
         lock ! "not_handled"
         Await.ready(unhandledLatch, timeout.duration)
       }
@@ -166,7 +166,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         }
       })
       val name = fsm.path.toString
-      EventFilter.error("Next state 2 does not exist", occurrences = 1) intercept {
+      EventFilter.error("Next state 2 does not exist", occurrences = 1).intercept {
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         fsm ! "go"
         expectMsgPF(1 second, hint = "Next state 2 does not exist") {
@@ -218,7 +218,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       lazy val fsmref = TestFSMRef(new Actor with FSM[String, Null] {
         startWith("not-started", null)
         when("not-started") {
-          case Event("start", _) => goto("started") replying "starting"
+          case Event("start", _) => goto("started").replying("starting")
         }
         when("started", stateTimeout = 10 seconds) {
           case Event("stop", _) => stop()
@@ -252,12 +252,15 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
-      val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG", "akka.actor.serialize-messages" -> "off",
-        "akka.actor.debug.fsm" -> true).asJava).withFallback(system.settings.config)
+      val config = ConfigFactory
+        .parseMap(Map("akka.loglevel" -> "DEBUG",
+                      "akka.actor.serialize-messages" -> "off",
+                      "akka.actor.debug.fsm" -> true).asJava)
+        .withFallback(system.settings.config)
       val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {
         new TestKit(fsmEventSystem) {
-          EventFilter.debug(occurrences = 5) intercept {
+          EventFilter.debug(occurrences = 5).intercept {
             val fsm = TestActorRef(new Actor with LoggingFSM[Int, Null] {
               startWith(1, null)
               when(1) {
@@ -279,13 +282,17 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             system.eventStream.subscribe(testActor, classOf[Logging.Debug])
             fsm ! "go"
             expectMsgPF(1 second, hint = "processing Event(go,null)") {
-              case Logging.Debug(`name`, `fsmClass`, s: String) if s.startsWith("processing Event(go,null) from Actor[") => true
+              case Logging.Debug(`name`, `fsmClass`, s: String)
+                  if s.startsWith("processing Event(go,null) from Actor[") =>
+                true
             }
             expectMsg(1 second, Logging.Debug(name, fsmClass, "setting timer 't'/1500 milliseconds: Shutdown"))
             expectMsg(1 second, Logging.Debug(name, fsmClass, "transition 1 -> 2"))
             fsm ! "stop"
             expectMsgPF(1 second, hint = "processing Event(stop,null)") {
-              case Logging.Debug(`name`, `fsmClass`, s: String) if s.startsWith("processing Event(stop,null) from Actor[") => true
+              case Logging.Debug(`name`, `fsmClass`, s: String)
+                  if s.startsWith("processing Event(stop,null) from Actor[") =>
+                true
             }
             expectMsgAllOf(1 second, Logging.Debug(name, fsmClass, "canceling timer 't'"), FSM.Normal)
             expectNoMsg(1 second)
@@ -302,8 +309,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         override def logDepth = 3
         startWith(1, 0)
         when(1) {
-          case Event("count", c) => stay using (c + 1)
-          case Event("log", _)   => stay replying getLog
+          case Event("count", c) => stay.using(c + 1)
+          case Event("log", _)   => stay.replying(getLog)
         }
       })
       fsmref ! "log"
@@ -324,7 +331,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         startWith(0, 0)
         when(0)(transform {
           case Event("go", _) => stay
-        } using {
+        }.using {
           case x => goto(1)
         })
         when(1) {
@@ -354,7 +361,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
           case Event(OverrideTimeoutToInf, _) =>
             p.ref ! OverrideTimeoutToInf
-            stay() forMax Duration.Inf
+            stay().forMax(Duration.Inf)
         }
 
         initialize()

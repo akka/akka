@@ -10,7 +10,7 @@ import akka.contrib.circuitbreaker.sample.CircuitBreaker.AskFor
 import akka.util.Timeout
 
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Random }
+import scala.util.{ Failure, Random, Success }
 
 //#simple-service
 object SimpleService {
@@ -63,13 +63,12 @@ class CircuitBreaker(potentiallyFailingService: ActorRef) extends Actor with Act
   val serviceCircuitBreaker =
     context.actorOf(
       CircuitBreakerPropsBuilder(maxFailures = 3, callTimeout = 2.seconds, resetTimeout = 30.seconds)
-        .copy(
-          failureDetector = {
-            _ match {
-              case Response(Left(_)) => true
-              case _                 => false
-            }
-          })
+        .copy(failureDetector = {
+          _ match {
+            case Response(Left(_)) => true
+            case _                 => false
+          }
+        })
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
@@ -105,17 +104,15 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
   val serviceCircuitBreaker =
     context.actorOf(
       CircuitBreakerPropsBuilder(maxFailures = 3, callTimeout = askTimeout, resetTimeout = 30.seconds)
-        .copy(
-          failureDetector = {
-            _ match {
-              case Response(Left(_)) => true
-              case _                 => false
-            }
-          })
-        .copy(
-          openCircuitFailureConverter = { failure =>
-            Left(s"Circuit open when processing ${failure.failedMsg}")
-          })
+        .copy(failureDetector = {
+          _ match {
+            case Response(Left(_)) => true
+            case _                 => false
+          }
+        })
+        .copy(openCircuitFailureConverter = { failure =>
+          Left(s"Circuit open when processing ${failure.failedMsg}")
+        })
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 

@@ -33,13 +33,14 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   val seventh = role("seventh")
   val eighth = role("eighth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.remote.system-message-buffer-size=100
       akka.remote.artery.advanced.system-message-buffer-size=100
       akka.remote.netty.tcp.connection-timeout = 10s
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
@@ -78,9 +79,9 @@ class SurviveNetworkInstabilityMultiJvmNode7 extends SurviveNetworkInstabilitySp
 class SurviveNetworkInstabilityMultiJvmNode8 extends SurviveNetworkInstabilitySpec
 
 abstract class SurviveNetworkInstabilitySpec
-  extends MultiNodeSpec(SurviveNetworkInstabilityMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender {
+    extends MultiNodeSpec(SurviveNetworkInstabilityMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import SurviveNetworkInstabilityMultiJvmSpec._
 
@@ -90,7 +91,7 @@ abstract class SurviveNetworkInstabilitySpec
   override def expectedTestDuration = 3.minutes
 
   def assertUnreachable(subjects: RoleName*): Unit = {
-    val expected = subjects.toSet map address
+    val expected = subjects.toSet.map(address)
     awaitAssert(clusterView.unreachableMembers.map(_.address) should ===(expected))
   }
 
@@ -265,8 +266,12 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("watcher-created")
 
       runOn(second) {
-        val sysMsgBufferSize = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].
-          remoteSettings.SysMsgBufferSize
+        val sysMsgBufferSize = system
+          .asInstanceOf[ExtendedActorSystem]
+          .provider
+          .asInstanceOf[RemoteActorRefProvider]
+          .remoteSettings
+          .SysMsgBufferSize
         val refs = Vector.fill(sysMsgBufferSize + 1)(system.actorOf(Props[Echo])).toSet
         system.actorSelection(node(third) / "user" / "watcher") ! Targets(refs)
         expectMsg(TargetsRegistered)
@@ -351,7 +356,7 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(side1AfterJoin: _*) {
         // side2 removed
-        val expected = (side1AfterJoin map address).toSet
+        val expected = side1AfterJoin.map(address).toSet
         awaitAssert {
           // repeat the downing in case it was not successful, which may
           // happen if the removal was reverted due to gossip merge, see issue #18767
@@ -380,13 +385,13 @@ abstract class SurviveNetworkInstabilitySpec
       Thread.sleep(10000)
 
       runOn(side1AfterJoin: _*) {
-        val expected = (side1AfterJoin map address).toSet
+        val expected = side1AfterJoin.map(address).toSet
         clusterView.members.map(_.address) should ===(expected)
       }
 
       runOn(side2: _*) {
         // side2 comes back but stays unreachable
-        val expected = ((side2 ++ side1) map address).toSet
+        val expected = (side2 ++ side1).map(address).toSet
         clusterView.members.map(_.address) should ===(expected)
         assertUnreachable(side1: _*)
       }

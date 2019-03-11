@@ -19,7 +19,9 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
  */
 private[io] object TcpListener {
 
-  final case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
+  final case class RegisterIncoming(channel: SocketChannel)
+      extends HasFailureMessage
+      with NoSerializationVerificationNeeded {
     def failureMessage = FailedRegisterIncoming(channel)
   }
 
@@ -30,13 +32,14 @@ private[io] object TcpListener {
 /**
  * INTERNAL API
  */
-private[io] class TcpListener(
-  selectorRouter:  ActorRef,
-  tcp:             TcpExt,
-  channelRegistry: ChannelRegistry,
-  bindCommander:   ActorRef,
-  bind:            Bind)
-  extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class TcpListener(selectorRouter: ActorRef,
+                              tcp: TcpExt,
+                              channelRegistry: ChannelRegistry,
+                              bindCommander: ActorRef,
+                              bind: Bind)
+    extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import TcpListener._
   import tcp.Settings._
@@ -97,7 +100,9 @@ private[io] class TcpListener(
 
     case Unbind =>
       log.debug("Unbinding endpoint {}", localAddress)
-      registration.cancelAndClose { () => self ! Unbound }
+      registration.cancelAndClose { () =>
+        self ! Unbound
+      }
 
       context.become(unregistering(sender()))
   }
@@ -123,7 +128,8 @@ private[io] class TcpListener(
         Props(classOf[TcpIncomingConnection], tcp, socketChannel, registry, bind.handler, bind.options, bind.pullMode)
       selectorRouter ! WorkerForCommand(RegisterIncoming(socketChannel), self, props)
       acceptAllPending(registration, limit - 1)
-    } else if (bind.pullMode) limit else BatchAcceptLimit
+    } else if (bind.pullMode) limit
+    else BatchAcceptLimit
   }
 
   override def postStop(): Unit = {

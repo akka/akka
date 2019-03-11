@@ -21,7 +21,8 @@ object OptimizedRecoverySpec {
     }
   }
 
-  class TestPersistentActor(name: String, override val recovery: Recovery, probe: ActorRef) extends NamedPersistentActor(name) {
+  class TestPersistentActor(name: String, override val recovery: Recovery, probe: ActorRef)
+      extends NamedPersistentActor(name) {
     import TestPersistentActor._
 
     override def persistenceId: String = name
@@ -32,10 +33,11 @@ object OptimizedRecoverySpec {
       case TakeSnapshot           => saveSnapshot(state)
       case s: SaveSnapshotSuccess => probe ! s
       case GetState               => probe ! state
-      case Save(s) => persist(Saved(s, lastSequenceNr + 1)) { evt =>
-        state += evt.s
-        probe ! evt
-      }
+      case Save(s) =>
+        persist(Saved(s, lastSequenceNr + 1)) { evt =>
+          state += evt.s
+          probe ! evt
+        }
     }
 
     def receiveRecover = {
@@ -56,9 +58,9 @@ object OptimizedRecoverySpec {
 
 }
 
-class OptimizedRecoverySpec extends PersistenceSpec(PersistenceSpec.config(
-  "inmem",
-  "OptimizedRecoverySpec")) with ImplicitSender {
+class OptimizedRecoverySpec
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "OptimizedRecoverySpec"))
+    with ImplicitSender {
 
   import OptimizedRecoverySpec.TestPersistentActor
   import OptimizedRecoverySpec.TestPersistentActor._

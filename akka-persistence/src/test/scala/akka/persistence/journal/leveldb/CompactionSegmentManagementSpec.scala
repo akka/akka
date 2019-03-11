@@ -10,11 +10,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
 
   "A CompactionSegmentManagement compatible object" must {
     "ignore persistence ids without declared compaction intervals" in {
-      val intervals = Map(
-        "persistence_id-1" -> 1L,
-        "persistence_id-2" -> 1L,
-        "persistence_id-3" -> 1L
-      )
+      val intervals = Map("persistence_id-1" -> 1L, "persistence_id-2" -> 1L, "persistence_id-3" -> 1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
@@ -25,11 +21,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
     }
 
     "ignore persistence ids whose compaction intervals are less or equal to zero" in {
-      val intervals = Map(
-        "persistence_id-1" -> 1L,
-        "persistence_id-2" -> 0L,
-        "persistence_id-3" -> -1L
-      )
+      val intervals = Map("persistence_id-1" -> 1L, "persistence_id-2" -> 0L, "persistence_id-3" -> -1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
@@ -39,11 +31,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
     }
 
     "allow for wildcard configuration" in {
-      val intervals = Map(
-        "persistence_id-1" -> 1L,
-        "persistence_id-2" -> 1L,
-        "*" -> 1L
-      )
+      val intervals = Map("persistence_id-1" -> 1L, "persistence_id-2" -> 1L, "*" -> 1L)
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }

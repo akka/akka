@@ -61,8 +61,7 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
     }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first, second)(ConfigFactory.parseString(
-    """akka.cluster.roles=["shard"]"""))
+  nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
 
 }
 
@@ -70,7 +69,9 @@ class ClusterShardingGetStateSpecMultiJvmNode1 extends ClusterShardingGetStateSp
 class ClusterShardingGetStateSpecMultiJvmNode2 extends ClusterShardingGetStateSpec
 class ClusterShardingGetStateSpecMultiJvmNode3 extends ClusterShardingGetStateSpec
 
-abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterShardingGetStateSpecConfig) with STMultiNodeSpec {
+abstract class ClusterShardingGetStateSpec
+    extends MultiNodeSpec(ClusterShardingGetStateSpecConfig)
+    with STMultiNodeSpec {
 
   import ClusterShardingGetStateSpec._
   import ClusterShardingGetStateSpecConfig._
@@ -78,20 +79,18 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterSharding
   def initialParticipants = roles.size
 
   def startShard(): ActorRef = {
-    ClusterSharding(system).start(
-      typeName = shardTypeName,
-      entityProps = Props(new ShardedActor),
-      settings = ClusterShardingSettings(system).withRole("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).start(typeName = shardTypeName,
+                                  entityProps = Props(new ShardedActor),
+                                  settings = ClusterShardingSettings(system).withRole("shard"),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId)
   }
 
   def startProxy(): ActorRef = {
-    ClusterSharding(system).startProxy(
-      typeName = shardTypeName,
-      role = Some("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).startProxy(typeName = shardTypeName,
+                                       role = Some("shard"),
+                                       extractEntityId = extractEntityId,
+                                       extractShardId = extractShardId)
   }
 
   def join(from: RoleName): Unit = {

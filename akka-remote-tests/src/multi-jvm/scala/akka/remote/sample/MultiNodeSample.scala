@@ -32,8 +32,7 @@ object MultiNodeSample {
   }
 }
 
-class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
-  with STMultiNodeSpec with ImplicitSender {
+class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig) with STMultiNodeSpec with ImplicitSender {
 
   import MultiNodeSample._
   import MultiNodeSampleConfig._

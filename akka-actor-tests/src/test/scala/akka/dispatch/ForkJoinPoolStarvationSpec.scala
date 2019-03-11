@@ -5,12 +5,11 @@
 package akka.dispatch
 
 import akka.actor.{ Actor, Props }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 
 object ForkJoinPoolStarvationSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       |actorhang {
       |
       |  task-dispatcher {

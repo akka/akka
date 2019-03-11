@@ -8,12 +8,14 @@ import akka.actor.Actor
 
 @deprecated("Feel free to copy", "2.5.0")
 object ReceivePipeline {
+
   /**
    * Result returned by an interceptor PF to determine what/whether to delegate to the next inner interceptor
    */
   sealed trait Delegation
 
   case class Inner(transformedMsg: Any) extends Delegation {
+
     /**
      * Add a block of code to be executed after the message (which may be further transformed and processed by
      * inner interceptors) is handled by the actor's receive.
@@ -63,6 +65,7 @@ trait ReceivePipeline extends Actor {
     pipeline :+= withDefault(interceptor)
     decoratorCache = None
   }
+
   /**
    * Adds an outer interceptor, it will be applied firstly, far from Actor's original behavior
    * @param interceptor an interceptor
@@ -81,9 +84,11 @@ trait ReceivePipeline extends Actor {
 
     val zipped = pipeline.foldRight(innerReceiveHandler) { (outerInterceptor, innerHandler) =>
       outerInterceptor.andThen {
-        case Inner(msg)                => innerHandler(msg)
-        case InnerAndAfter(msg, after) => try innerHandler(msg) finally after(())
-        case HandledCompletely         => Done
+        case Inner(msg) => innerHandler(msg)
+        case InnerAndAfter(msg, after) =>
+          try innerHandler(msg)
+          finally after(())
+        case HandledCompletely => Done
       }
     }
 

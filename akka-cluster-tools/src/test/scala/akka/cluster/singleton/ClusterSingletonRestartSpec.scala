@@ -36,16 +36,15 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
 
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     from.actorOf(
-      ClusterSingletonManager.props(
-        singletonProps = TestActors.echoActorProps,
-        terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(from)),
+      ClusterSingletonManager.props(singletonProps = TestActors.echoActorProps,
+                                    terminationMessage = PoisonPill,
+                                    settings = ClusterSingletonManagerSettings(from)),
       name = "echo")
 
     within(10.seconds) {
       import akka.util.ccompat.imm._
       awaitAssert {
-        Cluster(from) join Cluster(to).selfAddress
+        Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
         Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
@@ -74,8 +73,7 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
         val sys1port = Cluster(sys1).selfAddress.port.get
 
         val sys3Config =
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$sys1port
             akka.remote.netty.tcp.port=$sys1port
             """).withFallback(system.settings.config)
@@ -120,4 +118,3 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       shutdown(sys3)
   }
 }
-

@@ -18,8 +18,8 @@ import scala.collection.immutable
  */
 @InternalApi
 private[akka] final class TestInboxImpl[T](path: ActorPath)
-  extends akka.actor.testkit.typed.javadsl.TestInbox[T]
-  with akka.actor.testkit.typed.scaladsl.TestInbox[T] {
+    extends akka.actor.testkit.typed.javadsl.TestInbox[T]
+    with akka.actor.testkit.typed.scaladsl.TestInbox[T] {
 
   private val q = new ConcurrentLinkedQueue[T]
 

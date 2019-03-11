@@ -27,16 +27,14 @@ object PartitionHubBenchmark {
 class PartitionHubBenchmark {
   import PartitionHubBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("PartitionHubBenchmark", config)
 
@@ -69,11 +67,10 @@ class PartitionHubBenchmark {
     val N = OperationsPerInvocation
     val latch = new CountDownLatch(NumberOfStreams)
 
-    val source = testSource
-      .runWith(PartitionHub.sink[java.lang.Integer](
-        (size, elem) => elem.intValue % NumberOfStreams,
-        startAfterNrOfConsumers = NumberOfStreams, bufferSize = BufferSize
-      ))(materializer)
+    val source = testSource.runWith(
+      PartitionHub.sink[java.lang.Integer]((size, elem) => elem.intValue % NumberOfStreams,
+                                           startAfterNrOfConsumers = NumberOfStreams,
+                                           bufferSize = BufferSize))(materializer)
 
     for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
@@ -90,13 +87,10 @@ class PartitionHubBenchmark {
     val N = OperationsPerInvocation
     val latch = new CountDownLatch(NumberOfStreams)
 
-    val source = testSource
-      .runWith(
-        Sink.fromGraph(new FixedSizePartitionHub(
-          _.intValue % NumberOfStreams,
-          lanes = NumberOfStreams, bufferSize = BufferSize
-        ))
-      )(materializer)
+    val source = testSource.runWith(
+      Sink.fromGraph(
+        new FixedSizePartitionHub(_.intValue % NumberOfStreams, lanes = NumberOfStreams, bufferSize = BufferSize)))(
+      materializer)
 
     for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)

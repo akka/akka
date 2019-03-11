@@ -21,4 +21,3 @@ final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatCheck
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
     JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
 }
-

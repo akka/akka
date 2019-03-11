@@ -197,9 +197,9 @@ private[akka] class CachingConfig(_config: Config) extends Config {
 
   def resolveWith(source: Config) = config.resolveWith(source)
 
-  override def getEnumList[T <: Enum[T]](enumClass: Class[T], path: String): util.List[T] = config.getEnumList(enumClass, path)
+  override def getEnumList[T <: Enum[T]](enumClass: Class[T], path: String): util.List[T] =
+    config.getEnumList(enumClass, path)
 
   override def getEnum[T <: Enum[T]](enumClass: Class[T], path: String): T = config.getEnum(enumClass, path)
 
 }
-

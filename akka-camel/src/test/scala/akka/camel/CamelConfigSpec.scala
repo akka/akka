@@ -50,4 +50,3 @@ class CamelConfigSpec extends WordSpec with Matchers {
     }
   }
 }
-

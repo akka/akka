@@ -16,8 +16,7 @@ class SinkRecipeDocSpec extends RecipeSpec {
       //#forseachAsync-processing
       //def asyncProcessing(value: Int): Future[Unit] = _
 
-      Source(1 to 100)
-        .runWith(Sink.foreachAsync(10)(asyncProcessing))
+      Source(1 to 100).runWith(Sink.foreachAsync(10)(asyncProcessing))
       //#forseachAsync-processing
     }
   }

@@ -281,12 +281,11 @@ trait ActorContext[T] extends TypedActorContext[T] {
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](
-    resClass:        Class[Res],
-    target:          RecipientRef[Req],
-    responseTimeout: Duration,
-    createRequest:   java.util.function.Function[ActorRef[Res], Req],
-    applyToResponse: BiFunction[Res, Throwable, T]): Unit
+  def ask[Req, Res](resClass: Class[Res],
+                    target: RecipientRef[Req],
+                    responseTimeout: Duration,
+                    createRequest: java.util.function.Function[ActorRef[Res], Req],
+                    applyToResponse: BiFunction[Res, Throwable, T]): Unit
 
   /**
    * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with

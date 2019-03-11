@@ -27,8 +27,7 @@ import scala.concurrent.duration._
 
 object ReplicatorSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -49,7 +48,6 @@ object ReplicatorSpec {
 
   def client(replicator: ActorRef[Replicator.Command])(implicit node: SelfUniqueAddress): Behavior[ClientCommand] =
     Behaviors.setup[ClientCommand] { ctx =>
-
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.messageAdapter(InternalUpdateResponse.apply)
 
@@ -76,21 +74,22 @@ object ReplicatorSpec {
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Behaviors.same
 
-            case internal: InternalMsg => internal match {
-              case InternalUpdateResponse(_) => Behaviors.same // ok
+            case internal: InternalMsg =>
+              internal match {
+                case InternalUpdateResponse(_) => Behaviors.same // ok
 
-              case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) =>
-                val value = rsp.get(Key).value.toInt
-                replyTo ! value
-                Behaviors.same
+                case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) =>
+                  val value = rsp.get(Key).value.toInt
+                  replyTo ! value
+                  Behaviors.same
 
-              case InternalGetResponse(rsp) =>
-                Behaviors.unhandled // not dealing with failures
+                case InternalGetResponse(rsp) =>
+                  Behaviors.unhandled // not dealing with failures
 
-              case InternalChanged(chg @ Replicator.Changed(Key)) =>
-                val value = chg.get(Key).value.intValue
-                behavior(value)
-            }
+                case InternalChanged(chg @ Replicator.Changed(Key)) =>
+                  val value = chg.get(Key).value.intValue
+                  behavior(value)
+              }
           }
         }
       }
@@ -175,4 +174,3 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
     }
   }
 }
-

@@ -267,40 +267,39 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         Behaviors.same
     }
 
-  private def stashingBehavior(
-    probe:                 ActorRef[String],
-    withSlowStoppingChild: Option[CountDownLatch] = None) = {
+  private def stashingBehavior(probe: ActorRef[String], withSlowStoppingChild: Option[CountDownLatch] = None) = {
     Behaviors.setup[String] { ctx =>
-
       withSlowStoppingChild.foreach(latch => ctx.spawnAnonymous(slowStoppingChild(latch)))
 
       val stash = StashBuffer[String](10)
 
       def unstashing(n: Int): Behavior[String] =
-        Behaviors.receiveMessage[String] {
-          case "stash" =>
-            probe.ref ! s"unstashing-$n"
-            unstashing(n + 1)
-          case "stash-fail" =>
-            probe.ref ! s"stash-fail-$n"
-            throw TestException("unstash-fail")
-          case "get-current" =>
-            probe.ref ! s"current-$n"
-            Behaviors.same
-          case "get-stash-size" =>
-            probe.ref ! s"stash-size-${stash.size}"
-            Behaviors.same
-          case "unstash" =>
-            // when testing resume
-            stash.unstashAll(ctx, unstashing(n))
-        }.receiveSignal {
-          case (_, PreRestart) =>
-            probe.ref ! s"pre-restart-$n"
-            Behaviors.same
-          case (_, PostStop) =>
-            probe.ref ! s"post-stop-$n"
-            Behaviors.same
-        }
+        Behaviors
+          .receiveMessage[String] {
+            case "stash" =>
+              probe.ref ! s"unstashing-$n"
+              unstashing(n + 1)
+            case "stash-fail" =>
+              probe.ref ! s"stash-fail-$n"
+              throw TestException("unstash-fail")
+            case "get-current" =>
+              probe.ref ! s"current-$n"
+              Behaviors.same
+            case "get-stash-size" =>
+              probe.ref ! s"stash-size-${stash.size}"
+              Behaviors.same
+            case "unstash" =>
+              // when testing resume
+              stash.unstashAll(ctx, unstashing(n))
+          }
+          .receiveSignal {
+            case (_, PreRestart) =>
+              probe.ref ! s"pre-restart-$n"
+              Behaviors.same
+            case (_, PostStop) =>
+              probe.ref ! s"post-stop-$n"
+              Behaviors.same
+          }
 
       Behaviors.receiveMessage[String] {
         case msg if msg.startsWith("stash") =>
@@ -368,16 +367,19 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
 
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receivePartial[String] {
-        case (ctx, "unstash") =>
-          val stash = StashBuffer[String](10)
-          stash.stash("one")
-          stash.unstashAll(ctx, Behavior.same)
+      val ref = spawn(
+        Behaviors
+          .supervise(Behaviors.receivePartial[String] {
+            case (ctx, "unstash") =>
+              val stash = StashBuffer[String](10)
+              stash.stash("one")
+              stash.unstashAll(ctx, Behavior.same)
 
-        case (_, msg) =>
-          probe.ref ! msg
-          Behaviors.same
-      }).onFailure[TestException](SupervisorStrategy.stop))
+            case (_, msg) =>
+              probe.ref ! msg
+              Behaviors.same
+          })
+          .onFailure[TestException](SupervisorStrategy.stop))
 
       ref ! "unstash"
       probe.expectMessage("one")
@@ -388,16 +390,19 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "work with supervised intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.supervise(Behaviors.receivePartial[String] {
-        case (ctx, "unstash") =>
-          val stash = StashBuffer[String](10)
-          stash.stash("one")
-          stash.stash("two")
-          stash.unstashAll(ctx, Behaviors.receiveMessage { msg =>
-            probe.ref ! msg
-            Behaviors.same
+      val ref = spawn(
+        Behaviors
+          .supervise(Behaviors.receivePartial[String] {
+            case (ctx, "unstash") =>
+              val stash = StashBuffer[String](10)
+              stash.stash("one")
+              stash.stash("two")
+              stash.unstashAll(ctx, Behaviors.receiveMessage { msg =>
+                probe.ref ! msg
+                Behaviors.same
+              })
           })
-      }).onFailure[TestException](SupervisorStrategy.stop))
+          .onFailure[TestException](SupervisorStrategy.stop))
 
       ref ! "unstash"
       probe.expectMessage("one")
@@ -406,22 +411,18 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("three")
     }
 
-    def testPostStop(
-      probe: TestProbe[String],
-      ref:   ActorRef[String]
-    ): Unit = {
+    def testPostStop(probe: TestProbe[String], ref: ActorRef[String]): Unit = {
       ref ! "stash"
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](start = "unstash-fail", occurrences = 1)
-        .intercept {
-          ref ! "unstash"
-          probe.expectMessage("unstashing-0")
-          probe.expectMessage("unstashing-1")
-          probe.expectMessage("stash-fail-2")
-          probe.expectMessage("post-stop-2")
-        }
+      EventFilter[TestException](start = "unstash-fail", occurrences = 1).intercept {
+        ref ! "unstash"
+        probe.expectMessage("unstashing-0")
+        probe.expectMessage("unstashing-1")
+        probe.expectMessage("stash-fail-2")
+        probe.expectMessage("post-stop-2")
+      }
     }
 
     "signal PostStop to the latest unstashed behavior on failure" in {
@@ -433,47 +434,39 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "signal PostStop to the latest unstashed behavior on failure with stop supervision" in {
       val probe = TestProbe[String]()
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
-          .onFailure[TestException](SupervisorStrategy.stop))
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref)).onFailure[TestException](SupervisorStrategy.stop))
       testPostStop(probe, ref)
     }
 
-    def testPreRestart(
-      probe:      TestProbe[String],
-      childLatch: Option[CountDownLatch],
-      ref:        ActorRef[String]
-    ): Unit = {
+    def testPreRestart(probe: TestProbe[String], childLatch: Option[CountDownLatch], ref: ActorRef[String]): Unit = {
       ref ! "stash"
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](
-        start = "Supervisor RestartSupervisor saw failure: unstash-fail",
-        occurrences = 1
-      ).intercept {
-        ref ! "unstash"
-        // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
-        // because it's waiting for child to stop
-        ref ! "get-current"
+      EventFilter[TestException](start = "Supervisor RestartSupervisor saw failure: unstash-fail", occurrences = 1)
+        .intercept {
+          ref ! "unstash"
+          // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
+          // because it's waiting for child to stop
+          ref ! "get-current"
 
-        probe.expectMessage("unstashing-0")
-        probe.expectMessage("unstashing-1")
-        probe.expectMessage("stash-fail-2")
-        probe.expectMessage("pre-restart-2")
+          probe.expectMessage("unstashing-0")
+          probe.expectMessage("unstashing-1")
+          probe.expectMessage("stash-fail-2")
+          probe.expectMessage("pre-restart-2")
 
-        childLatch.foreach(_.countDown())
-        probe.expectMessage("current-00")
+          childLatch.foreach(_.countDown())
+          probe.expectMessage("current-00")
 
-        ref ! "get-stash-size"
-        probe.expectMessage("stash-size-0")
-      }
+          ref ! "get-stash-size"
+          probe.expectMessage("stash-size-0")
+        }
     }
 
     "signal PreRestart to the latest unstashed behavior on failure with restart supervision" in {
       val probe = TestProbe[String]()
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
-          .onFailure[TestException](SupervisorStrategy.restart))
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref)).onFailure[TestException](SupervisorStrategy.restart))
 
       testPreRestart(probe, None, ref)
       // one more time to ensure that the restart strategy is kept
@@ -484,8 +477,10 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val childLatch = new CountDownLatch(1)
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref, Some(childLatch)))
-          .onFailure[TestException](SupervisorStrategy.restart))
+        spawn(
+          Behaviors
+            .supervise(stashingBehavior(probe.ref, Some(childLatch)))
+            .onFailure[TestException](SupervisorStrategy.restart))
 
       testPreRestart(probe, Some(childLatch), ref)
     }
@@ -493,8 +488,10 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "signal PreRestart to the latest unstashed behavior on failure with backoff supervision" in {
       val probe = TestProbe[String]()
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
-          .onFailure[TestException](SupervisorStrategy.restartWithBackoff(100.millis, 100.millis, 0.0)))
+        spawn(
+          Behaviors
+            .supervise(stashingBehavior(probe.ref))
+            .onFailure[TestException](SupervisorStrategy.restartWithBackoff(100.millis, 100.millis, 0.0)))
 
       testPreRestart(probe, None, ref)
 
@@ -506,8 +503,10 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val childLatch = new CountDownLatch(1)
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref, Some(childLatch)))
-          .onFailure[TestException](SupervisorStrategy.restartWithBackoff(100.millis, 100.millis, 0.0)))
+        spawn(
+          Behaviors
+            .supervise(stashingBehavior(probe.ref, Some(childLatch)))
+            .onFailure[TestException](SupervisorStrategy.restartWithBackoff(100.millis, 100.millis, 0.0)))
 
       testPreRestart(probe, Some(childLatch), ref)
     }
@@ -515,8 +514,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     "handle resume correctly on failure unstashing" in {
       val probe = TestProbe[String]()
       val ref =
-        spawn(Behaviors.supervise(stashingBehavior(probe.ref))
-          .onFailure[TestException](SupervisorStrategy.resume))
+        spawn(Behaviors.supervise(stashingBehavior(probe.ref)).onFailure[TestException](SupervisorStrategy.resume))
 
       ref ! "stash"
       ref ! "stash"
@@ -526,17 +524,18 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      EventFilter[TestException](start = "Supervisor ResumeSupervisor saw failure: unstash-fail", occurrences = 1).intercept {
-        ref ! "unstash"
-        ref ! "get-current"
+      EventFilter[TestException](start = "Supervisor ResumeSupervisor saw failure: unstash-fail", occurrences = 1)
+        .intercept {
+          ref ! "unstash"
+          ref ! "get-current"
 
-        probe.expectMessage("unstashing-0")
-        probe.expectMessage("unstashing-1")
-        probe.expectMessage("stash-fail-2")
-        probe.expectMessage("current-2")
-        ref ! "get-stash-size"
-        probe.expectMessage("stash-size-5")
-      }
+          probe.expectMessage("unstashing-0")
+          probe.expectMessage("unstashing-1")
+          probe.expectMessage("stash-fail-2")
+          probe.expectMessage("current-2")
+          ref ! "get-stash-size"
+          probe.expectMessage("stash-size-5")
+        }
 
       ref ! "unstash"
       ref ! "get-current"

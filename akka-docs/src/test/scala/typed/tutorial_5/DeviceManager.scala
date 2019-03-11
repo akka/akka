@@ -23,12 +23,14 @@ object DeviceManager {
   sealed trait DeviceManagerMessage
 
   final case class RequestTrackDevice(groupId: String, deviceId: String, replyTo: ActorRef[DeviceRegistered])
-    extends DeviceManagerMessage with DeviceGroupMessage
+      extends DeviceManagerMessage
+      with DeviceGroupMessage
 
   final case class DeviceRegistered(device: ActorRef[Device.DeviceMessage])
 
   final case class RequestDeviceList(requestId: Long, groupId: String, replyTo: ActorRef[ReplyDeviceList])
-    extends DeviceManagerMessage with DeviceGroupMessage
+      extends DeviceManagerMessage
+      with DeviceGroupMessage
 
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
@@ -39,7 +41,9 @@ object DeviceManager {
   import DeviceGroupQuery.DeviceGroupQueryMessage
 
   final case class RequestAllTemperatures(requestId: Long, groupId: String, replyTo: ActorRef[RespondAllTemperatures])
-    extends DeviceGroupQueryMessage with DeviceGroupMessage with DeviceManagerMessage
+      extends DeviceGroupQueryMessage
+      with DeviceGroupMessage
+      with DeviceManagerMessage
 
   final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
 
@@ -52,7 +56,7 @@ object DeviceManager {
 }
 
 class DeviceManager(context: ActorContext[DeviceManager.DeviceManagerMessage])
-  extends AbstractBehavior[DeviceManager.DeviceManagerMessage] {
+    extends AbstractBehavior[DeviceManager.DeviceManagerMessage] {
   import DeviceManager._
   import DeviceGroup.DeviceGroupMessage
 

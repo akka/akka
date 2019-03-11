@@ -22,9 +22,12 @@ import akka.util.OptionVal
 
   final case class Timer(key: Any, msg: Any, repeat: Boolean, generation: Int, task: Cancellable)
   final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
   final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded with NotInfluenceReceiveTimeout
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
+      with NotInfluenceReceiveTimeout
 }
 
 /**
@@ -113,9 +116,10 @@ import akka.util.OptionVal
           OptionVal.Some(t.msg.asInstanceOf[AnyRef])
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          log.debug(
-            "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
-            timerMsg.key, timerMsg.generation, t.generation)
+          log.debug("Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
+                    timerMsg.key,
+                    timerMsg.generation,
+                    t.generation)
           OptionVal.None // message should be ignored
         }
     }

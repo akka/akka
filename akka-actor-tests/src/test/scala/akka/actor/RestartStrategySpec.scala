@@ -28,8 +28,9 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
   "A RestartStrategy" must {
 
     "ensure that slave stays dead after max restarts within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(
-        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
+      val boss = system.actorOf(
+        Props(
+          new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -91,14 +92,16 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
       })
       val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
 
-      (1 to 100) foreach { _ => slave ! Crash }
+      (1 to 100).foreach { _ =>
+        slave ! Crash
+      }
       Await.ready(countDownLatch, 2 minutes)
       assert(!slave.isTerminated)
     }
 
     "ensure that slave restarts after number of crashes not within time range" in {
-      val boss = system.actorOf(Props(new Supervisor(
-        OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
+      val boss = system.actorOf(Props(
+        new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val secondRestartLatch = new TestLatch
@@ -261,4 +264,3 @@ class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off"
     }
   }
 }
-

@@ -46,12 +46,17 @@ class FlowMapAsyncSpec extends StreamSpec {
     "produce future elements in order" in {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 50).mapAsync(4)(n =>
-        if (n % 3 == 0) Future.successful(n)
-        else Future {
-          Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
-          n
-        }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 50)
+        .mapAsync(4)(
+          n =>
+            if (n % 3 == 0) Future.successful(n)
+            else
+              Future {
+                Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+                n
+              })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n <- 1 to 50) c.expectNext(n)
@@ -62,10 +67,14 @@ class FlowMapAsyncSpec extends StreamSpec {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 20).mapAsync(8)(n => Future {
-        probe.ref ! n
-        n
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 20)
+        .mapAsync(8)(n =>
+          Future {
+            probe.ref ! n
+            n
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       probe.expectNoMsg(500.millis)
       sub.request(1)
@@ -86,13 +95,17 @@ class FlowMapAsyncSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsync(4)(n =>
-        if (n == 3) Future.failed[Int](new TE("err1"))
-        else Future {
-          Await.ready(latch, 10.seconds)
-          n
-        }
-      ).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 5)
+        .mapAsync(4)(
+          n =>
+            if (n == 3) Future.failed[Int](new TE("err1"))
+            else
+              Future {
+                Await.ready(latch, 10.seconds)
+                n
+              })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError().getMessage should be("err1")
@@ -103,13 +116,17 @@ class FlowMapAsyncSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsync(4)(n => Future {
-        if (n == 3) throw new RuntimeException("err1") with NoStackTrace
-        else {
-          Await.ready(latch, 10.seconds)
-          n
-        }
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 5)
+        .mapAsync(4)(n =>
+          Future {
+            if (n == 3) throw new RuntimeException("err1") with NoStackTrace
+            else {
+              Await.ready(latch, 10.seconds)
+              n
+            }
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError().getMessage should be("err1")
@@ -130,7 +147,8 @@ class FlowMapAsyncSpec extends StreamSpec {
         .mapAsync(4) { n =>
           if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
           else Future.successful(n)
-        }.runWith(Sink.ignore)
+        }
+        .runWith(Sink.ignore)
       intercept[RuntimeException] {
         Await.result(done, remainingOrDefault)
       }.getMessage should be("err1")
@@ -148,9 +166,8 @@ class FlowMapAsyncSpec extends StreamSpec {
 
       val input = pa :: pb :: pc :: pd :: pe :: pf :: Nil
 
-      val probe = Source.fromIterator(() => input.iterator)
-        .mapAsync(5)(p => p.future.map(_.toUpperCase))
-        .runWith(TestSink.probe)
+      val probe =
+        Source.fromIterator(() => input.iterator).mapAsync(5)(p => p.future.map(_.toUpperCase)).runWith(TestSink.probe)
 
       import TestSubscriber._
       var gotErrorAlready = false
@@ -197,7 +214,8 @@ class FlowMapAsyncSpec extends StreamSpec {
 
       val input = pa :: pb :: pc :: pd :: pe :: pf :: Nil
 
-      val elements = Source.fromIterator(() => input.iterator)
+      val elements = Source
+        .fromIterator(() => input.iterator)
         .mapAsync(5)(p => p.future)
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
@@ -217,15 +235,17 @@ class FlowMapAsyncSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsync(4)(n =>
-        if (n == 3) throw new RuntimeException("err2") with NoStackTrace
-        else {
-          Future {
-            Await.ready(latch, 10.seconds)
-            n
-          }
-        }).
-        to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 5)
+        .mapAsync(4)(n =>
+          if (n == 3) throw new RuntimeException("err2") with NoStackTrace
+          else {
+            Future {
+              Await.ready(latch, 10.seconds)
+              n
+            }
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError().getMessage should be("err2")
@@ -236,12 +256,14 @@ class FlowMapAsyncSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val p = Source(1 to 5)
-        .mapAsync(4)(n => Future {
-          if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-          else n
-        })
+        .mapAsync(4)(n =>
+          Future {
+            if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+            else n
+          })
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       for (n <- List(1, 2, 4, 5)) c.expectNext(n)
@@ -254,10 +276,10 @@ class FlowMapAsyncSpec extends StreamSpec {
       val p = Source(1 to 5)
         .mapAsync(4)(n =>
           if (n == 3) Future.failed(new TE("err3"))
-          else Future.successful(n)
-        )
+          else Future.successful(n))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       for (n <- List(1, 2, 4, 5)) c.expectNext(n)
@@ -265,28 +287,31 @@ class FlowMapAsyncSpec extends StreamSpec {
     }
 
     "resume after multiple failures" in assertAllStagesStopped {
-      val futures: List[Future[String]] = List(
-        Future.failed(Utils.TE("failure1")),
-        Future.failed(Utils.TE("failure2")),
-        Future.failed(Utils.TE("failure3")),
-        Future.failed(Utils.TE("failure4")),
-        Future.failed(Utils.TE("failure5")),
-        Future.successful("happy!"))
+      val futures: List[Future[String]] = List(Future.failed(Utils.TE("failure1")),
+                                               Future.failed(Utils.TE("failure2")),
+                                               Future.failed(Utils.TE("failure3")),
+                                               Future.failed(Utils.TE("failure4")),
+                                               Future.failed(Utils.TE("failure5")),
+                                               Future.successful("happy!"))
 
       Await.result(
-        Source(futures)
-          .mapAsync(2)(identity).withAttributes(supervisionStrategy(resumingDecider))
-          .runWith(Sink.head), 3.seconds) should ===("happy!")
+        Source(futures).mapAsync(2)(identity).withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.head),
+        3.seconds) should ===("happy!")
     }
 
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
-      Await.result(Source(1 to 3).mapAsync(1)(n => Future {
-        if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
-        else n
-      }).withAttributes(supervisionStrategy(resumingDecider))
-        .grouped(10)
-        .runWith(Sink.head), 1.second) should be(Seq(1, 2))
+      Await.result(
+        Source(1 to 3)
+          .mapAsync(1)(n =>
+            Future {
+              if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
+              else n
+            })
+          .withAttributes(supervisionStrategy(resumingDecider))
+          .grouped(10)
+          .runWith(Sink.head),
+        1.second) should be(Seq(1, 2))
     }
 
     "resume when mapAsync throws" in {
@@ -297,7 +322,8 @@ class FlowMapAsyncSpec extends StreamSpec {
           if (n == 3) throw new RuntimeException("err4") with NoStackTrace
           else Future(n))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       for (n <- List(1, 2, 4, 5)) c.expectNext(n)
@@ -317,7 +343,8 @@ class FlowMapAsyncSpec extends StreamSpec {
       val p = Source(List("a", "b", "c"))
         .mapAsync(4)(elem => if (elem == "b") Future.successful(null) else Future.successful(elem))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       for (elem <- List("a", "c")) c.expectNext(elem)
@@ -393,8 +420,8 @@ class FlowMapAsyncSpec extends StreamSpec {
           Future {
             if (elem) throw TE("this has gone too far")
             else elem
-          }
-        ).addAttributes(supervisionStrategy {
+          })
+        .addAttributes(supervisionStrategy {
           case TE("this has gone too far") =>
             failCount.incrementAndGet()
             Supervision.resume
@@ -411,8 +438,8 @@ class FlowMapAsyncSpec extends StreamSpec {
       val result = Source(List(true, false))
         .mapAsync(1)(elem =>
           if (elem) Future.failed(TE("this has gone too far"))
-          else Future.successful(elem)
-        ).addAttributes(supervisionStrategy {
+          else Future.successful(elem))
+        .addAttributes(supervisionStrategy {
           case TE("this has gone too far") =>
             failCount.incrementAndGet()
             Supervision.resume
@@ -428,12 +455,14 @@ class FlowMapAsyncSpec extends StreamSpec {
       import system.dispatcher
       val failCount = new AtomicInteger(0)
       val result = Source(List(true, false))
-        .mapAsync(1)(elem =>
-          if (elem) throw TE("this has gone too far")
-          else Future {
-            elem
-          }
-        ).addAttributes(supervisionStrategy {
+        .mapAsync(1)(
+          elem =>
+            if (elem) throw TE("this has gone too far")
+            else
+              Future {
+                elem
+              })
+        .addAttributes(supervisionStrategy {
           case TE("this has gone too far") =>
             failCount.incrementAndGet()
             Supervision.resume

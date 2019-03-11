@@ -29,7 +29,9 @@ private[akka] object AllPersistenceIdsPublisher {
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int, writeJournalPluginId: String)
-  extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+    extends ActorPublisher[String]
+    with DeliveryBuffer[String]
+    with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
 

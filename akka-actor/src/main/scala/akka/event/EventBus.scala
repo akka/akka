@@ -4,7 +4,7 @@
 
 package akka.event
 
-import akka.actor.{ ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.util.Index
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator
@@ -55,7 +55,7 @@ trait EventBus {
  */
 trait ActorEventBus extends EventBus {
   type Subscriber = ActorRef
-  protected def compareSubscribers(a: ActorRef, b: ActorRef) = a compareTo b
+  protected def compareSubscribers(a: ActorRef, b: ActorRef) = a.compareTo(b)
 }
 
 /**
@@ -165,14 +165,15 @@ trait SubchannelClassification { this: EventBus =>
     val c = classify(event)
     val recv =
       if (cache contains c) cache(c) // c will never be removed from cache
-      else subscriptions.synchronized {
-        if (cache contains c) cache(c)
-        else {
-          addToCache(subscriptions.addKey(c))
-          cache(c)
+      else
+        subscriptions.synchronized {
+          if (cache contains c) cache(c)
+          else {
+            addToCache(subscriptions.addKey(c))
+            cache(c)
+          }
         }
-      }
-    recv foreach (publish(event, _))
+    recv.foreach(publish(event, _))
   }
 
   /**
@@ -182,16 +183,16 @@ trait SubchannelClassification { this: EventBus =>
   private[akka] def hasSubscriptions(subscriber: Subscriber): Boolean =
     // FIXME binary incompatible, but I think it is safe to filter out this problem,
     //       since it is only called from new functionality in EventStreamUnsubscriber
-    cache.values exists { _ contains subscriber }
+    cache.values.exists { _ contains subscriber }
 
   private def removeFromCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
     cache = changes.foldLeft(cache) {
-      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) diff cs)
+      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).diff(cs))
     }
 
   private def addToCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
     cache = changes.foldLeft(cache) {
-      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) union cs)
+      case (m, (c, cs)) => m.updated(c, m.getOrElse(c, Set.empty[Subscriber]).union(cs))
     }
 
 }
@@ -203,12 +204,14 @@ trait SubchannelClassification { this: EventBus =>
  * Note: the compareClassifiers and compareSubscribers must together form an absolute ordering (think java.util.Comparator.compare)
  */
 trait ScanningClassification { self: EventBus =>
-  protected final val subscribers = new ConcurrentSkipListSet[(Classifier, Subscriber)](new Comparator[(Classifier, Subscriber)] {
-    def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int = compareClassifiers(a._1, b._1) match {
-      case 0     => compareSubscribers(a._2, b._2)
-      case other => other
-    }
-  })
+  protected final val subscribers =
+    new ConcurrentSkipListSet[(Classifier, Subscriber)](new Comparator[(Classifier, Subscriber)] {
+      def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int =
+        compareClassifiers(a._1, b._1) match {
+          case 0     => compareSubscribers(a._2, b._2)
+          case other => other
+        }
+    })
 
   /**
    * Provides a total ordering of Classifiers (think java.util.Comparator.compare)
@@ -263,7 +266,8 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
 
   protected def system: ActorSystem
 
-  private class ManagedActorClassificationMappings(val seqNr: Int, val backing: Map[ActorRef, immutable.TreeSet[ActorRef]]) {
+  private class ManagedActorClassificationMappings(val seqNr: Int,
+                                                   val backing: Map[ActorRef, immutable.TreeSet[ActorRef]]) {
 
     def get(monitored: ActorRef): immutable.TreeSet[ActorRef] = backing.getOrElse(monitored, empty)
 
@@ -342,7 +346,11 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
       }
     }
 
-    try { dissociateAsMonitored(actor) } finally { dissociateAsMonitor(actor) }
+    try {
+      dissociateAsMonitored(actor)
+    } finally {
+      dissociateAsMonitor(actor)
+    }
   }
 
   @tailrec
@@ -411,4 +419,3 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
     true
   }
 }
-

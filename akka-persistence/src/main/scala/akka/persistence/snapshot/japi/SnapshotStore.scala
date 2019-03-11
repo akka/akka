@@ -16,7 +16,8 @@ import scala.concurrent.Future
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher
 
-  override final def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
+  override final def loadAsync(persistenceId: String,
+                               criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
     doLoadAsync(persistenceId, criteria).map(option)
 
   override final def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =

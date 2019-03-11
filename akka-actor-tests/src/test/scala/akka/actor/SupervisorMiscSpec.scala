@@ -8,7 +8,7 @@ import language.postfixOps
 
 import akka.testkit.{ filterEvents, EventFilter }
 import scala.concurrent.Await
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
@@ -35,8 +35,8 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       filterEvents(EventFilter[Exception]("Kill")) {
         val countDownLatch = new CountDownLatch(4)
 
-        val supervisor = system.actorOf(Props(new Supervisor(
-          OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 5 seconds)(List(classOf[Exception])))))
+        val supervisor = system.actorOf(Props(
+          new Supervisor(OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 5 seconds)(List(classOf[Exception])))))
 
         val workerProps = Props(new Actor {
           override def postRestart(cause: Throwable): Unit = { countDownLatch.countDown() }
@@ -46,11 +46,14 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
           }
         })
 
-        val actor1, actor2 = Await.result((supervisor ? workerProps.withDispatcher("pinned-dispatcher")).mapTo[ActorRef], timeout.duration)
+        val actor1, actor2 =
+          Await.result((supervisor ? workerProps.withDispatcher("pinned-dispatcher")).mapTo[ActorRef], timeout.duration)
 
-        val actor3 = Await.result((supervisor ? workerProps.withDispatcher("test-dispatcher")).mapTo[ActorRef], timeout.duration)
+        val actor3 =
+          Await.result((supervisor ? workerProps.withDispatcher("test-dispatcher")).mapTo[ActorRef], timeout.duration)
 
-        val actor4 = Await.result((supervisor ? workerProps.withDispatcher("pinned-dispatcher")).mapTo[ActorRef], timeout.duration)
+        val actor4 =
+          Await.result((supervisor ? workerProps.withDispatcher("pinned-dispatcher")).mapTo[ActorRef], timeout.duration)
 
         actor1 ! Kill
         actor2 ! Kill
@@ -59,11 +62,13 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
         countDownLatch.await(10, TimeUnit.SECONDS)
 
-        Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4) map {
-          case (id, ref) => (id, ref ? "status")
-        } foreach {
-          case (id, f) => (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
-        }
+        Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4)
+          .map {
+            case (id, ref) => (id, ref ? "status")
+          }
+          .foreach {
+            case (id, f) => (id, Await.result(f, timeout.duration)) should ===((id, "OK"))
+          }
       }
     }
 
@@ -74,7 +79,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         override def preStart(): Unit = testActor ! "preStart"
       }))
       val m = "weird message"
-      EventFilter[Exception](m, occurrences = 1) intercept {
+      EventFilter[Exception](m, occurrences = 1).intercept {
         a ! new Exception(m)
       }
       expectMsg("preStart")
@@ -127,7 +132,9 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "be able to create a similar kid in the fault handling strategy" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
-          override def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
+          override def handleChildTerminated(context: ActorContext,
+                                             child: ActorRef,
+                                             children: Iterable[ActorRef]): Unit = {
             val newKid = context.actorOf(Props.empty, child.path.name)
             testActor ! { if ((newKid ne child) && newKid.path == child.path) "green" else "red" }
           }
@@ -137,7 +144,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       }))
       parent ! "engage"
       expectMsg("green")
-      EventFilter[IllegalStateException]("handleChildTerminated failed", occurrences = 1) intercept {
+      EventFilter[IllegalStateException]("handleChildTerminated failed", occurrences = 1).intercept {
         system.stop(parent)
       }
     }
@@ -151,7 +158,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
           case "doit" => context.actorOf(Props.empty, "child") ! Kill
         }
       }))
-      EventFilter[ActorKilledException](occurrences = 1) intercept {
+      EventFilter[ActorKilledException](occurrences = 1).intercept {
         parent ! "doit"
       }
       val p = expectMsgType[ActorRef].path

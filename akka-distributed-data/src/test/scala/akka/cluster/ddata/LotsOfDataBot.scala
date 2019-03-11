@@ -30,9 +30,10 @@ object LotsOfDataBot {
   def startup(ports: Seq[String]): Unit = {
     ports.foreach { port =>
       // Override the configuration of the port
-      val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-        withFallback(ConfigFactory.load(
-          ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("akka.remote.netty.tcp.port=" + port)
+        .withFallback(
+          ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
@@ -107,7 +108,7 @@ class LotsOfDataBot extends Actor with ActorLogging {
           replicator ! Update(key, ORSet(), WriteLocal)(_ :+ s)
         } else {
           // remove
-          replicator ! Update(key, ORSet(), WriteLocal)(_ remove s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_.remove(s))
         }
       }
 
@@ -136,4 +137,3 @@ class LotsOfDataBot extends Actor with ActorLogging {
   override def postStop(): Unit = tickTask.cancel()
 
 }
-

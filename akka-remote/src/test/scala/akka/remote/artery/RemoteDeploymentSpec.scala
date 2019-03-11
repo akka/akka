@@ -59,8 +59,8 @@ object RemoteDeploymentSpec {
   }
 }
 
-class RemoteDeploymentSpec extends ArteryMultiNodeSpec(
-  ConfigFactory.parseString("""
+class RemoteDeploymentSpec
+    extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
     akka.remote.artery.advanced.inbound-lanes = 10
     akka.remote.artery.advanced.outbound-lanes = 3
     """).withFallback(ArterySpecSupport.defaultConfig)) {
@@ -86,7 +86,8 @@ class RemoteDeploymentSpec extends ArteryMultiNodeSpec(
     "create and supervise children on remote node" in {
       val senderProbe = TestProbe()(masterSystem)
       val r = masterSystem.actorOf(Props[Echo1], "blub")
-      r.path.toString should ===(s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/blub")
+      r.path.toString should ===(
+        s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/blub")
 
       r.tell(42, senderProbe.ref)
       senderProbe.expectMsg(42)

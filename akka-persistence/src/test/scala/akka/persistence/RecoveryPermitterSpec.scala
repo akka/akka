@@ -21,7 +21,7 @@ object RecoveryPermitterSpec {
     Props(new TestPersistentActor(name, probe, throwFromRecoveryCompleted))
 
   class TestPersistentActor(name: String, probe: ActorRef, throwFromRecoveryCompleted: Boolean)
-    extends PersistentActor {
+      extends PersistentActor {
 
     override def persistenceId = name
 
@@ -43,8 +43,7 @@ object RecoveryPermitterSpec {
 
 }
 
-class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
@@ -188,4 +187,3 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
   }
 
 }
-

@@ -15,8 +15,7 @@ import scala.collection.immutable
 
 class FlowJoinSpec extends StreamSpec(ConfigFactory.parseString("akka.loglevel=INFO")) {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -121,15 +120,16 @@ class FlowJoinSpec extends StreamSpec(ConfigFactory.parseString("akka.loglevel=I
     }
 
     "allow for concat cycle" in assertAllStagesStopped {
-      val flow = Flow.fromGraph(GraphDSL.create(TestSource.probe[String](system), Sink.head[String])(Keep.both) { implicit b => (source, sink) =>
-        import GraphDSL.Implicits._
-        val concat = b.add(Concat[String](2))
-        val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
-        source ~> concat.in(0)
-        concat.out ~> broadcast.in
-        broadcast.out(0) ~> sink
+      val flow = Flow.fromGraph(GraphDSL.create(TestSource.probe[String](system), Sink.head[String])(Keep.both) {
+        implicit b => (source, sink) =>
+          import GraphDSL.Implicits._
+          val concat = b.add(Concat[String](2))
+          val broadcast = b.add(Broadcast[String](2, eagerCancel = true))
+          source ~> concat.in(0)
+          concat.out ~> broadcast.in
+          broadcast.out(0) ~> sink
 
-        FlowShape(concat.in(1), broadcast.out(1))
+          FlowShape(concat.in(1), broadcast.out(1))
       })
 
       val (probe, result) = flow.join(Flow[String]).run()

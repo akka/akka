@@ -182,14 +182,17 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with Matchers {
     }
   }
 
-  class TestBuffer(iSize: Int, mSize: Int, cursors: Cursors) extends ResizableMultiReaderRingBuffer[Int](iSize, mSize, cursors) {
+  class TestBuffer(iSize: Int, mSize: Int, cursors: Cursors)
+      extends ResizableMultiReaderRingBuffer[Int](iSize, mSize, cursors) {
     def inspect: String =
       underlyingArray.map(x => if (x == null) 0 else x).mkString("", " ", " " + toString.dropWhile(_ != '('))
   }
 
-  class Test(iSize: Int, mSize: Int, cursorCount: Int) extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
+  class Test(iSize: Int, mSize: Int, cursorCount: Int)
+      extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
     def read(cursorIx: Int): Integer =
-      try read(cursors.cursors(cursorIx)) catch { case NothingToReadException => null }
+      try read(cursors.cursors(cursorIx))
+      catch { case NothingToReadException => null }
   }
 
   class SimpleCursors(cursorCount: Int) extends Cursors {

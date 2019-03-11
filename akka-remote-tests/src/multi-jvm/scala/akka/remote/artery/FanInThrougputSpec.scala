@@ -28,8 +28,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanInThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanInThroughputSpec.real-message = off
@@ -37,9 +36,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
        akka.remote.artery.advanced {
          # inbound-lanes = 4
        }
-       """))
-    .withFallback(MaxThroughputSpec.cfg)
-    .withFallback(RemotingMultiNodeSpec.commonConfig))
+       """)).withFallback(MaxThroughputSpec.cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
@@ -65,7 +62,8 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
 
   override def initialParticipants = roles.size
 
-  def remoteSettings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
+  def remoteSettings =
+    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
   def reporter(name: String): TestRateReporter = {
@@ -91,34 +89,30 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
   }
 
   val scenarios = List(
-    TestSettings(
-      testName = "warmup",
-      totalMessages = adjustedTotalMessages(20000),
-      burstSize = 1000,
-      payloadSize = 100,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-100",
-      totalMessages = adjustedTotalMessages(50000),
-      burstSize = 1000,
-      payloadSize = 100,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-1k",
-      totalMessages = adjustedTotalMessages(10000),
-      burstSize = 1000,
-      payloadSize = 1000,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-10k",
-      totalMessages = adjustedTotalMessages(2000),
-      burstSize = 1000,
-      payloadSize = 10000,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage))
+    TestSettings(testName = "warmup",
+                 totalMessages = adjustedTotalMessages(20000),
+                 burstSize = 1000,
+                 payloadSize = 100,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-100",
+                 totalMessages = adjustedTotalMessages(50000),
+                 burstSize = 1000,
+                 payloadSize = 100,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-1k",
+                 totalMessages = adjustedTotalMessages(10000),
+                 burstSize = 1000,
+                 payloadSize = 1000,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-10k",
+                 totalMessages = adjustedTotalMessages(2000),
+                 burstSize = 1000,
+                 payloadSize = 10000,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage))
 
   def test(testSettings: TestSettings, resultReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
@@ -131,9 +125,8 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     runOn(roles.head) {
       val rep = reporter(testName)
       val receivers = (1 to sendingNodes.size).map { n =>
-        system.actorOf(
-          receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
-          receiverName + "-" + n)
+        system.actorOf(receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
+                       receiverName + "-" + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
@@ -144,16 +137,22 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     runOn(sendingNodes: _*) {
       enterBarrier(receiverName + "-started")
       val ignore = TestProbe()
-      val receivers = (1 to sendingNodes.size).map { n =>
-        identifyReceiver(receiverName + "-" + n, roles.head)
-      }.toArray[Target]
+      val receivers = (1 to sendingNodes.size)
+        .map { n =>
+          identifyReceiver(receiverName + "-" + n, roles.head)
+        }
+        .toArray[Target]
 
       val idx = roles.indexOf(myself) - 1
       val receiver = receivers(idx)
       val plotProbe = TestProbe()
-      val snd = system.actorOf(
-        senderProps(receiver, receivers, testSettings, plotProbe.ref, printTaskRunnerMetrics = idx == 0, resultReporter),
-        testName + "-snd" + idx)
+      val snd = system.actorOf(senderProps(receiver,
+                                           receivers,
+                                           testSettings,
+                                           plotProbe.ref,
+                                           printTaskRunnerMetrics = idx == 0,
+                                           resultReporter),
+                               testName + "-snd" + idx)
       val terminationProbe = TestProbe()
       terminationProbe.watch(snd)
       snd ! Run

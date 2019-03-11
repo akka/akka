@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2009-${YEAR} Lightbend Inc. <https://www.lightbend.com>
  */
-
 package akka.cluster.typed.internal
 
 import java.io.NotSerializableException
@@ -19,7 +18,8 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
  */
 @InternalApi
 private[akka] final class AkkaClusterTypedSerializer(override val system: ExtendedActorSystem)
-  extends SerializerWithStringManifest with BaseSerializer {
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   // Serializers are initialized early on. `toTyped` might then try to initialize the untyped ActorSystemAdapter extension.
   private lazy val resolver = ActorRefResolver(system.toTyped)
@@ -45,7 +45,8 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
   }
 
   private def receptionistEntryToBinary(e: Entry): Array[Byte] =
-    ClusterMessages.ReceptionistEntry.newBuilder()
+    ClusterMessages.ReceptionistEntry
+      .newBuilder()
       .setActorRef(resolver.toSerializationFormat(e.ref))
       .setSystemUid(e.systemUid)
       .build()
@@ -53,9 +54,6 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
 
   private def receptionistEntryFromBinary(bytes: Array[Byte]): Entry = {
     val re = ClusterMessages.ReceptionistEntry.parseFrom(bytes)
-    Entry(
-      resolver.resolveActorRef(re.getActorRef),
-      re.getSystemUid
-    )
+    Entry(resolver.resolveActorRef(re.getActorRef), re.getSystemUid)
   }
 }

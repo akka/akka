@@ -80,16 +80,20 @@ class MultiDcClusterShardingSpecMultiJvmNode2 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode3 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode4 extends MultiDcClusterShardingSpec
 
-abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterShardingSpecConfig) with MultiNodeClusterSpec
-  with STMultiNodeSpec with ImplicitSender {
+abstract class MultiDcClusterShardingSpec
+    extends MultiNodeSpec(MultiDcClusterShardingSpecConfig)
+    with MultiNodeClusterSpec
+    with STMultiNodeSpec
+    with ImplicitSender {
   import MultiDcClusterShardingSpec._
   import MultiDcClusterShardingSpecConfig._
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       startSharding()
-      withClue(s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
+      withClue(
+        s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
         within(15.seconds) {
           awaitAssert(cluster.state.members.exists { m =>
             m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
@@ -101,12 +105,11 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
   }
 
   def startSharding(): Unit = {
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity](),
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).start(typeName = "Entity",
+                                  entityProps = Props[Entity](),
+                                  settings = ClusterShardingSettings(system),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
@@ -190,12 +193,11 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
     "allow proxy within same data center" in {
       runOn(second) {
-        val proxy = ClusterSharding(system).startProxy(
-          typeName = "Entity",
-          role = None,
-          dataCenter = None, // by default use own DC
-          extractEntityId = extractEntityId,
-          extractShardId = extractShardId)
+        val proxy = ClusterSharding(system).startProxy(typeName = "Entity",
+                                                       role = None,
+                                                       dataCenter = None, // by default use own DC
+                                                       extractEntityId = extractEntityId,
+                                                       extractShardId = extractShardId)
         proxy ! GetCount("5")
         expectMsg(1)
       }
@@ -204,12 +206,11 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
     "allow proxy across different data centers" in {
       runOn(second) {
-        val proxy = ClusterSharding(system).startProxy(
-          typeName = "Entity",
-          role = None,
-          dataCenter = Some("DC2"), // proxy to other DC
-          extractEntityId = extractEntityId,
-          extractShardId = extractShardId)
+        val proxy = ClusterSharding(system).startProxy(typeName = "Entity",
+                                                       role = None,
+                                                       dataCenter = Some("DC2"), // proxy to other DC
+                                                       extractEntityId = extractEntityId,
+                                                       extractShardId = extractShardId)
 
         proxy ! GetCount("5")
         expectMsg(2)
@@ -219,4 +220,3 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
   }
 }
-

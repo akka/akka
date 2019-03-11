@@ -19,7 +19,9 @@ import akka.actor.typed.internal.InternalRecipientRef
  * INTERNAL API
  */
 @InternalApi private[akka] final class DebugRef[T](override val path: untyped.ActorPath, override val isLocal: Boolean)
-  extends ActorRef[T] with ActorRefImpl[T] with InternalRecipientRef[T] {
+    extends ActorRef[T]
+    with ActorRefImpl[T]
+    with InternalRecipientRef[T] {
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]
 

@@ -22,7 +22,9 @@ import akka.actor.typed.internal.InternalRecipientRef
  * Not for user extension
  */
 @DoNotInherit
-trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]] with java.io.Serializable { this: InternalRecipientRef[T] =>
+trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
+  this: InternalRecipientRef[T] =>
+
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
@@ -57,6 +59,7 @@ trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]
 object ActorRef {
 
   implicit final class ActorRefOps[-T](val ref: ActorRef[T]) extends AnyVal {
+
     /**
      * Send a message to the Actor referenced by this ActorRef using *at-most-once*
      * messaging semantics.
@@ -99,7 +102,7 @@ private[akka] final case class SerializedActorRef[T] private (address: String) {
     case null =>
       throw new IllegalStateException(
         "Trying to deserialize a serialized typed ActorRef without an ActorSystem in scope." +
-          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
+        " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
     case someSystem =>
       val resolver = ActorRefResolver(someSystem.toTyped)
       resolver.resolveActorRef(address)
@@ -112,6 +115,7 @@ private[akka] final case class SerializedActorRef[T] private (address: String) {
  * - not watchable
  */
 trait RecipientRef[-T] { this: InternalRecipientRef[T] =>
+
   /**
    * Send a message to the destination referenced by this `RecipientRef` using *at-most-once*
    * messaging semantics.
@@ -122,6 +126,7 @@ trait RecipientRef[-T] { this: InternalRecipientRef[T] =>
 object RecipientRef {
 
   implicit final class RecipientRefOps[-T](val ref: RecipientRef[T]) extends AnyVal {
+
     /**
      * Send a message to the destination referenced by this `RecipientRef` using *at-most-once*
      * messaging semantics.

@@ -6,12 +6,12 @@ package akka.dispatch
 
 import language.postfixOps
 
-import java.util.concurrent.{ ConcurrentLinkedQueue, BlockingQueue }
-import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
+import java.util.concurrent.{ BlockingQueue, ConcurrentLinkedQueue }
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
-import akka.testkit.{ EventFilter, AkkaSpec }
-import scala.concurrent.{ Future, Await, ExecutionContext }
+import akka.testkit.{ AkkaSpec, EventFilter }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -126,57 +126,57 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     q.hasMessages should ===(false)
   }
 
-  def testEnqueueDequeue(
-    config:   MailboxType,
-    enqueueN: Int         = 10000,
-    dequeueN: Int         = 10000,
-    parallel: Boolean     = true): Unit = within(10 seconds) {
+  def testEnqueueDequeue(config: MailboxType,
+                         enqueueN: Int = 10000,
+                         dequeueN: Int = 10000,
+                         parallel: Boolean = true): Unit = within(10 seconds) {
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
-    EventFilter.warning(
-      pattern = "received dead letter without sender",
-      occurrences = (enqueueN - dequeueN)) intercept {
+    EventFilter
+      .warning(pattern = "received dead letter without sender", occurrences = (enqueueN - dequeueN))
+      .intercept {
 
-      def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
-        val messages = Vector() ++ (for (i <- fromNum to toNum) yield createMessageInvocation(i))
-        for (i <- messages) q.enqueue(testActor, i)
-        messages
+        def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {
+          val messages = Vector() ++ (for (i <- fromNum to toNum) yield createMessageInvocation(i))
+          for (i <- messages) q.enqueue(testActor, i)
+          messages
+        }
+
+        val producers = {
+          val step = 500
+          val ps = for (i <- (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
+
+          if (parallel == false)
+            ps.foreach { Await.ready(_, remainingOrDefault) }
+
+          ps
+        }
+
+        def createConsumer: Future[Vector[Envelope]] = spawn {
+          var r = Vector[Envelope]()
+
+          while (producers.exists(_.isCompleted == false) || q.hasMessages) Option(q.dequeue).foreach { message =>
+            r = r :+ message
+          }
+
+          r
+        }
+
+        val consumers = List.fill(maxConsumers)(createConsumer)
+
+        val ps = producers.map(Await.result(_, remainingOrDefault))
+        val cs = consumers.map(Await.result(_, remainingOrDefault))
+
+        ps.map(_.size).sum should ===(enqueueN) //Must have produced 1000 messages
+        cs.map(_.size).sum should ===(dequeueN) //Must have consumed all produced messages
+        //No message is allowed to be consumed by more than one consumer
+        cs.flatten.distinct.size should ===(dequeueN)
+        //All consumed messages should have been produced
+        cs.flatten.diff(ps.flatten).size should ===(0)
+        //The ones that were produced and not consumed
+        ps.flatten.diff(cs.flatten).size should ===(enqueueN - dequeueN)
       }
-
-      val producers = {
-        val step = 500
-        val ps = for (i <- (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
-
-        if (parallel == false)
-          ps foreach { Await.ready(_, remainingOrDefault) }
-
-        ps
-      }
-
-      def createConsumer: Future[Vector[Envelope]] = spawn {
-        var r = Vector[Envelope]()
-
-        while (producers.exists(_.isCompleted == false) || q.hasMessages)
-          Option(q.dequeue) foreach { message => r = r :+ message }
-
-        r
-      }
-
-      val consumers = List.fill(maxConsumers)(createConsumer)
-
-      val ps = producers.map(Await.result(_, remainingOrDefault))
-      val cs = consumers.map(Await.result(_, remainingOrDefault))
-
-      ps.map(_.size).sum should ===(enqueueN) //Must have produced 1000 messages
-      cs.map(_.size).sum should ===(dequeueN) //Must have consumed all produced messages
-      //No message is allowed to be consumed by more than one consumer
-      cs.flatten.distinct.size should ===(dequeueN)
-      //All consumed messages should have been produced
-      (cs.flatten diff ps.flatten).size should ===(0)
-      //The ones that were produced and not consumed
-      (ps.flatten diff cs.flatten).size should ===(enqueueN - dequeueN)
-    }
   }
 }
 
@@ -192,8 +192,9 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    => new UnboundedPriorityMailbox(comparator).create(None, None)
-    case BoundedMailbox(capacity, pushTimeOut) => new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
+    case UnboundedMailbox() => new UnboundedPriorityMailbox(comparator).create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) =>
+      new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
   }
 }
 
@@ -201,16 +202,18 @@ class StablePriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The stable priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    => new UnboundedStablePriorityMailbox(comparator).create(None, None)
-    case BoundedMailbox(capacity, pushTimeOut) => new BoundedStablePriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
+    case UnboundedMailbox() => new UnboundedStablePriorityMailbox(comparator).create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) =>
+      new BoundedStablePriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
   }
 }
 
 class ControlAwareMailboxSpec extends MailboxSpec {
   lazy val name = "The control aware mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    => new UnboundedControlAwareMailbox().create(None, None)
-    case BoundedMailbox(capacity, pushTimeOut) => new BoundedControlAwareMailbox(capacity, pushTimeOut).create(None, None)
+    case UnboundedMailbox() => new UnboundedControlAwareMailbox().create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) =>
+      new BoundedControlAwareMailbox(capacity, pushTimeOut).create(None, None)
   }
 }
 
@@ -271,26 +274,26 @@ object SingleConsumerOnlyMailboxVerificationSpec {
       }""")
 }
 
-class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerOnlyMailboxVerificationSpec.mailboxConf) {
+class SingleConsumerOnlyMailboxVerificationSpec
+    extends AkkaSpec(SingleConsumerOnlyMailboxVerificationSpec.mailboxConf) {
   import SingleConsumerOnlyMailboxVerificationSpec.Ping
 
   def pathologicalPingPong(dispatcherId: String): Unit = {
     val total = 2000000
     val runner = system.actorOf(Props(new Actor {
-      val a, b = context.watch(
-        context.actorOf(Props(new Actor {
-          var n = total / 2
-          def receive = {
-            case Ping =>
-              n -= 1
-              sender() ! Ping
-              if (n == 0)
-                context stop self
-          }
-        }).withDispatcher(dispatcherId)))
+      val a, b = context.watch(context.actorOf(Props(new Actor {
+        var n = total / 2
+        def receive = {
+          case Ping =>
+            n -= 1
+            sender() ! Ping
+            if (n == 0)
+              context.stop(self)
+        }
+      }).withDispatcher(dispatcherId)))
       def receive = {
         case Ping                  => a.tell(Ping, b)
-        case Terminated(`a` | `b`) => if (context.children.isEmpty) context stop self
+        case Terminated(`a` | `b`) => if (context.children.isEmpty) context.stop(self)
       }
     }))
     watch(runner)

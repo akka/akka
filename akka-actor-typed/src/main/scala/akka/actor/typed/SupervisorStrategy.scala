@@ -65,10 +65,9 @@ object SupervisorStrategy {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  def restartWithBackoff(
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
-    randomFactor: Double): BackoffSupervisorStrategy =
+  def restartWithBackoff(minBackoff: FiniteDuration,
+                         maxBackoff: FiniteDuration,
+                         randomFactor: Double): BackoffSupervisorStrategy =
     Backoff(minBackoff, maxBackoff, randomFactor, resetBackoffAfter = minBackoff)
 
   /**
@@ -98,10 +97,9 @@ object SupervisorStrategy {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  def restartWithBackoff(
-    minBackoff:   java.time.Duration,
-    maxBackoff:   java.time.Duration,
-    randomFactor: Double): BackoffSupervisorStrategy =
+  def restartWithBackoff(minBackoff: java.time.Duration,
+                         maxBackoff: java.time.Duration,
+                         randomFactor: Double): BackoffSupervisorStrategy =
     restartWithBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor)
 
   /**
@@ -135,12 +133,13 @@ object SupervisorStrategy {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final case class Restart(
-    maxRestarts:     Int,
-    withinTimeRange: FiniteDuration,
-    loggingEnabled:  Boolean        = true,
-    stopChildren:    Boolean        = true,
-    stashCapacity:   Int            = -1) extends RestartSupervisorStrategy with RestartOrBackoff {
+  @InternalApi private[akka] final case class Restart(maxRestarts: Int,
+                                                      withinTimeRange: FiniteDuration,
+                                                      loggingEnabled: Boolean = true,
+                                                      stopChildren: Boolean = true,
+                                                      stashCapacity: Int = -1)
+      extends RestartSupervisorStrategy
+      with RestartOrBackoff {
 
     override def withLimit(maxNrOfRetries: Int, withinTimeRange: FiniteDuration): RestartSupervisorStrategy =
       copy(maxNrOfRetries, withinTimeRange)
@@ -162,15 +161,16 @@ object SupervisorStrategy {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] final case class Backoff(
-    minBackoff:        FiniteDuration,
-    maxBackoff:        FiniteDuration,
-    randomFactor:      Double,
-    resetBackoffAfter: FiniteDuration,
-    loggingEnabled:    Boolean        = true,
-    maxRestarts:       Int            = -1,
-    stopChildren:      Boolean        = true,
-    stashCapacity:     Int            = -1) extends BackoffSupervisorStrategy with RestartOrBackoff {
+  @InternalApi private[akka] final case class Backoff(minBackoff: FiniteDuration,
+                                                      maxBackoff: FiniteDuration,
+                                                      randomFactor: Double,
+                                                      resetBackoffAfter: FiniteDuration,
+                                                      loggingEnabled: Boolean = true,
+                                                      maxRestarts: Int = -1,
+                                                      stopChildren: Boolean = true,
+                                                      stashCapacity: Int = -1)
+      extends BackoffSupervisorStrategy
+      with RestartOrBackoff {
 
     override def withResetBackoffAfter(timeout: FiniteDuration): BackoffSupervisorStrategy =
       copy(resetBackoffAfter = timeout)

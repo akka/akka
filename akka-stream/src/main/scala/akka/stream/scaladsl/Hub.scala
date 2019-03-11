@@ -72,7 +72,8 @@ object MergeHub {
 /**
  * INTERNAL API
  */
-private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWithMaterializedValue[SourceShape[T], Sink[T, NotUsed]] {
+private[akka] class MergeHub[T](perProducerBufferSize: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[T], Sink[T, NotUsed]] {
   require(perProducerBufferSize > 0, "Buffer size must be positive")
 
   val out: Outlet[T] = Outlet("MergeHub.out")
@@ -104,7 +105,9 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
 
   }
 
-  final class MergedSourceLogic(_shape: Shape, producerCount: AtomicLong) extends GraphStageLogic(_shape) with OutHandler {
+  final class MergedSourceLogic(_shape: Shape, producerCount: AtomicLong)
+      extends GraphStageLogic(_shape)
+      with OutHandler {
     /*
      * Basically all merged messages are shared in this queue. Individual buffer sizes are enforced by tracking
      * demand per producer in the 'demands' Map. One twist here is that the same queue contains control messages,
@@ -116,9 +119,10 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
     @volatile private[this] var shuttingDown = false
 
     private[this] val demands = scala.collection.mutable.LongMap.empty[InputState]
-    private[this] val wakeupCallback = getAsyncCallback[NotUsed]((_) =>
-      // We are only allowed to dequeue if we are not backpressured. See comment in tryProcessNext() for details.
-      if (isAvailable(out)) tryProcessNext(firstAttempt = true))
+    private[this] val wakeupCallback = getAsyncCallback[NotUsed](
+      (_) =>
+        // We are only allowed to dequeue if we are not backpressured. See comment in tryProcessNext() for details.
+        if (isAvailable(out)) tryProcessNext(firstAttempt = true))
 
     setHandler(out, this)
 
@@ -228,59 +232,61 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
       val in: Inlet[T] = Inlet("MergeHub.in")
       override val shape: SinkShape[T] = SinkShape(in)
 
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
-        // Start from non-zero demand to avoid initial delays.
-        // The HUB will expect this behavior.
-        private[this] var demand: Long = perProducerBufferSize
-        private[this] val id = idCounter.getAndIncrement()
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with InHandler {
+          // Start from non-zero demand to avoid initial delays.
+          // The HUB will expect this behavior.
+          private[this] var demand: Long = perProducerBufferSize
+          private[this] val id = idCounter.getAndIncrement()
 
-        override def preStart(): Unit = {
-          if (!logic.isShuttingDown) {
-            logic.enqueue(Register(id, getAsyncCallback(onDemand)))
+          override def preStart(): Unit = {
+            if (!logic.isShuttingDown) {
+              logic.enqueue(Register(id, getAsyncCallback(onDemand)))
 
-            // At this point, we could be in the unfortunate situation that:
-            // - we missed the shutdown announcement and entered this arm of the if statement
-            // - *before* we enqueued our Register event, the Hub already finished looking at the queue
-            //   and is now dead, so we are never notified again.
-            // To safeguard against this, we MUST check the announcement again. This is enough:
-            // if the Hub is no longer looking at the queue, then it must be that isShuttingDown must be already true.
-            if (!logic.isShuttingDown) pullWithDemand()
-            else completeStage()
-          } else {
-            completeStage()
+              // At this point, we could be in the unfortunate situation that:
+              // - we missed the shutdown announcement and entered this arm of the if statement
+              // - *before* we enqueued our Register event, the Hub already finished looking at the queue
+              //   and is now dead, so we are never notified again.
+              // To safeguard against this, we MUST check the announcement again. This is enough:
+              // if the Hub is no longer looking at the queue, then it must be that isShuttingDown must be already true.
+              if (!logic.isShuttingDown) pullWithDemand()
+              else completeStage()
+            } else {
+              completeStage()
+            }
           }
-        }
-        override def postStop(): Unit = {
-          // Unlike in the case of preStart, we don't care about the Hub no longer looking at the queue.
-          if (!logic.isShuttingDown) logic.enqueue(Deregister(id))
-        }
-
-        override def onPush(): Unit = {
-          logic.enqueue(Element(id, grab(in)))
-          if (demand > 0) pullWithDemand()
-        }
-
-        private def pullWithDemand(): Unit = {
-          demand -= 1
-          pull(in)
-        }
-
-        // Make some noise
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          throw new MergeHub.ProducerFailed("Upstream producer failed with exception, " +
-            "removing from MergeHub now", ex)
-        }
-
-        private def onDemand(moreDemand: Long): Unit = {
-          if (moreDemand == MergeHub.Cancel) completeStage()
-          else {
-            demand += moreDemand
-            if (!hasBeenPulled(in)) pullWithDemand()
+          override def postStop(): Unit = {
+            // Unlike in the case of preStart, we don't care about the Hub no longer looking at the queue.
+            if (!logic.isShuttingDown) logic.enqueue(Deregister(id))
           }
-        }
 
-        setHandler(in, this)
-      }
+          override def onPush(): Unit = {
+            logic.enqueue(Element(id, grab(in)))
+            if (demand > 0) pullWithDemand()
+          }
+
+          private def pullWithDemand(): Unit = {
+            demand -= 1
+            pull(in)
+          }
+
+          // Make some noise
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            throw new MergeHub.ProducerFailed("Upstream producer failed with exception, " +
+                                              "removing from MergeHub now",
+                                              ex)
+          }
+
+          private def onDemand(moreDemand: Long): Unit = {
+            if (moreDemand == MergeHub.Cancel) completeStage()
+            else {
+              demand += moreDemand
+              if (!hasBeenPulled(in)) pullWithDemand()
+            }
+          }
+
+          setHandler(in, this)
+        }
 
     }
 
@@ -347,7 +353,8 @@ object BroadcastHub {
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
+private[akka] class BroadcastHub[T](bufferSize: Int)
+    extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
   require((bufferSize & bufferSize - 1) == 0, "Buffer size must be a power of two")
@@ -373,11 +380,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
   private object Completed
 
   private sealed trait HubState
-  private case class Open(callbackFuture: Future[AsyncCallback[HubEvent]], registrations: List[Consumer]) extends HubState
+  private case class Open(callbackFuture: Future[AsyncCallback[HubEvent]], registrations: List[Consumer])
+      extends HubState
   private case class Closed(failure: Option[Throwable]) extends HubState
 
-  private class BroadcastSinkLogic(_shape: Shape)
-    extends GraphStageLogic(_shape) with InHandler {
+  private class BroadcastSinkLogic(_shape: Shape) extends GraphStageLogic(_shape) with InHandler {
 
     private[this] val callbackPromise: Promise[AsyncCallback[HubEvent]] = Promise()
     private[this] val noRegistrationsState = Open(callbackPromise.future, Nil)
@@ -425,7 +432,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
     private def onEvent(ev: HubEvent): Unit = {
       ev match {
         case RegistrationPending =>
-          state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations foreach { consumer =>
+          state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations.foreach { consumer =>
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
@@ -434,8 +441,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             consumer.callback.invokeWithFeedback(Initialize(startFrom)).failed.foreach {
               case _: StreamDetachedException =>
                 callbackPromise.future.foreach(callback =>
-                  callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
-                )
+                  callback.invoke(UnRegister(consumer.id, startFrom, startFrom)))
               case _ => ()
             }
           }
@@ -483,12 +489,12 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       val failMessage = HubCompleted(Some(ex))
 
       // Notify pending consumers and set tombstone
-      state.getAndSet(Closed(Some(ex))).asInstanceOf[Open].registrations foreach { consumer =>
+      state.getAndSet(Closed(Some(ex))).asInstanceOf[Open].registrations.foreach { consumer =>
         consumer.callback.invoke(failMessage)
       }
 
       // Notify registered consumers
-      consumerWheel.iterator.flatMap(_.iterator) foreach { consumer =>
+      consumerWheel.iterator.flatMap(_.iterator).foreach { consumer =>
         consumer.callback.invoke(failMessage)
       }
       failStage(ex)
@@ -577,7 +583,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
         case open: Open =>
           if (state.compareAndSet(open, Closed(None))) {
             val completedMessage = HubCompleted(None)
-            open.registrations foreach { consumer =>
+            open.registrations.foreach { consumer =>
               consumer.callback.invoke(completedMessage)
             }
           } else tryClose()
@@ -610,7 +616,8 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
   private final case class HubCompleted(failure: Option[Throwable]) extends ConsumerEvent
   private final case class Initialize(offset: Int) extends ConsumerEvent
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
     val idCounter = new AtomicLong()
 
     val logic = new BroadcastSinkLogic(shape)
@@ -619,100 +626,101 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       val out: Outlet[T] = Outlet("BroadcastHub.out")
       override val shape: SourceShape[T] = SourceShape(out)
 
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
-        private[this] var untilNextAdvanceSignal = DemandThreshold
-        private[this] val id = idCounter.getAndIncrement()
-        private[this] var offsetInitialized = false
-        private[this] var hubCallback: AsyncCallback[HubEvent] = _
-
-        /*
-         * We need to track our last offset that we published to the Hub. The reason is, that for efficiency reasons,
-         * the Hub can only look up and move/remove Consumers with known wheel slots. This means that no extra hash-map
-         * is needed, but it also means that we need to keep track of both our current offset, and the last one that
-         * we published.
-         */
-        private[this] var previousPublishedOffset = 0
-        private[this] var offset = 0
-
-        override def preStart(): Unit = {
-          val callback = getAsyncCallback(onCommand)
-
-          val onHubReady: Try[AsyncCallback[HubEvent]] => Unit = {
-            case Success(callback) =>
-              hubCallback = callback
-              if (isAvailable(out) && offsetInitialized) onPull()
-              callback.invoke(RegistrationPending)
-            case Failure(ex) =>
-              failStage(ex)
-          }
-
-          @tailrec def register(): Unit = {
-            logic.state.get() match {
-              case Closed(Some(ex)) => failStage(ex)
-              case Closed(None)     => completeStage()
-              case previousState @ Open(callbackFuture, registrations) =>
-                val newRegistrations = Consumer(id, callback) :: registrations
-                if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
-                  callbackFuture.onComplete(getAsyncCallback(onHubReady).invoke)(materializer.executionContext)
-                } else register()
-            }
-          }
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with OutHandler {
+          private[this] var untilNextAdvanceSignal = DemandThreshold
+          private[this] val id = idCounter.getAndIncrement()
+          private[this] var offsetInitialized = false
+          private[this] var hubCallback: AsyncCallback[HubEvent] = _
 
           /*
-           * Note that there is a potential race here. First we add ourselves to the pending registrations, then
-           * we send RegistrationPending. However, another downstream might have triggered our registration by its
-           * own RegistrationPending message, since we are in the list already.
-           * This means we might receive an onCommand(Initialize(offset)) *before* onHubReady fires so it is important
-           * to only serve elements after both offsetInitialized = true and hubCallback is not null.
+           * We need to track our last offset that we published to the Hub. The reason is, that for efficiency reasons,
+           * the Hub can only look up and move/remove Consumers with known wheel slots. This means that no extra hash-map
+           * is needed, but it also means that we need to keep track of both our current offset, and the last one that
+           * we published.
            */
-          register()
+          private[this] var previousPublishedOffset = 0
+          private[this] var offset = 0
 
-        }
+          override def preStart(): Unit = {
+            val callback = getAsyncCallback(onCommand)
 
-        override def onPull(): Unit = {
-          if (offsetInitialized && (hubCallback ne null)) {
-            val elem = logic.poll(offset)
+            val onHubReady: Try[AsyncCallback[HubEvent]] => Unit = {
+              case Success(callback) =>
+                hubCallback = callback
+                if (isAvailable(out) && offsetInitialized) onPull()
+                callback.invoke(RegistrationPending)
+              case Failure(ex) =>
+                failStage(ex)
+            }
 
-            elem match {
-              case null =>
-                hubCallback.invoke(NeedWakeup(id, previousPublishedOffset, offset))
-                previousPublishedOffset = offset
-                untilNextAdvanceSignal = DemandThreshold
-              case Completed =>
-                completeStage()
-              case _ =>
-                push(out, elem.asInstanceOf[T])
-                offset += 1
-                untilNextAdvanceSignal -= 1
-                if (untilNextAdvanceSignal == 0) {
+            @tailrec def register(): Unit = {
+              logic.state.get() match {
+                case Closed(Some(ex)) => failStage(ex)
+                case Closed(None)     => completeStage()
+                case previousState @ Open(callbackFuture, registrations) =>
+                  val newRegistrations = Consumer(id, callback) :: registrations
+                  if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
+                    callbackFuture.onComplete(getAsyncCallback(onHubReady).invoke)(materializer.executionContext)
+                  } else register()
+              }
+            }
+
+            /*
+             * Note that there is a potential race here. First we add ourselves to the pending registrations, then
+             * we send RegistrationPending. However, another downstream might have triggered our registration by its
+             * own RegistrationPending message, since we are in the list already.
+             * This means we might receive an onCommand(Initialize(offset)) *before* onHubReady fires so it is important
+             * to only serve elements after both offsetInitialized = true and hubCallback is not null.
+             */
+            register()
+
+          }
+
+          override def onPull(): Unit = {
+            if (offsetInitialized && (hubCallback ne null)) {
+              val elem = logic.poll(offset)
+
+              elem match {
+                case null =>
+                  hubCallback.invoke(NeedWakeup(id, previousPublishedOffset, offset))
+                  previousPublishedOffset = offset
                   untilNextAdvanceSignal = DemandThreshold
-                  val previousOffset = previousPublishedOffset
-                  previousPublishedOffset += DemandThreshold
-                  hubCallback.invoke(Advance(id, previousOffset))
-                }
+                case Completed =>
+                  completeStage()
+                case _ =>
+                  push(out, elem.asInstanceOf[T])
+                  offset += 1
+                  untilNextAdvanceSignal -= 1
+                  if (untilNextAdvanceSignal == 0) {
+                    untilNextAdvanceSignal = DemandThreshold
+                    val previousOffset = previousPublishedOffset
+                    previousPublishedOffset += DemandThreshold
+                    hubCallback.invoke(Advance(id, previousOffset))
+                  }
+              }
             }
           }
-        }
 
-        override def postStop(): Unit = {
-          if (hubCallback ne null)
-            hubCallback.invoke(UnRegister(id, previousPublishedOffset, offset))
-        }
+          override def postStop(): Unit = {
+            if (hubCallback ne null)
+              hubCallback.invoke(UnRegister(id, previousPublishedOffset, offset))
+          }
 
-        private def onCommand(cmd: ConsumerEvent): Unit = cmd match {
-          case HubCompleted(Some(ex)) => failStage(ex)
-          case HubCompleted(None)     => completeStage()
-          case Wakeup =>
-            if (isAvailable(out)) onPull()
-          case Initialize(initialOffset) =>
-            offsetInitialized = true
-            previousPublishedOffset = initialOffset
-            offset = initialOffset
-            if (isAvailable(out) && (hubCallback ne null)) onPull()
-        }
+          private def onCommand(cmd: ConsumerEvent): Unit = cmd match {
+            case HubCompleted(Some(ex)) => failStage(ex)
+            case HubCompleted(None)     => completeStage()
+            case Wakeup =>
+              if (isAvailable(out)) onPull()
+            case Initialize(initialOffset) =>
+              offsetInitialized = true
+              previousPublishedOffset = initialOffset
+              offset = initialOffset
+              if (isAvailable(out) && (hubCallback ne null)) onPull()
+          }
 
-        setHandler(out, this)
-      }
+          setHandler(out, this)
+        }
     }
 
     (logic, Source.fromGraph(source))
@@ -765,7 +773,8 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def statefulSink[T](partitioner: () => (ConsumerInfo, T) => Long, startAfterNrOfConsumers: Int,
+  @ApiMayChange def statefulSink[T](partitioner: () => (ConsumerInfo, T) => Long,
+                                    startAfterNrOfConsumers: Int,
                                     bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
     Sink.fromGraph(new PartitionHub[T](partitioner, startAfterNrOfConsumers, bufferSize))
 
@@ -799,7 +808,8 @@ object PartitionHub {
    *   is backpressured.
    */
   @ApiMayChange
-  def sink[T](partitioner: (Int, T) => Int, startAfterNrOfConsumers: Int,
+  def sink[T](partitioner: (Int, T) => Int,
+              startAfterNrOfConsumers: Int,
               bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = {
     val fun: (ConsumerInfo, T) => Long = { (info, elem) =>
       val idx = partitioner(info.size, elem)
@@ -859,7 +869,8 @@ object PartitionHub {
     case object Completed
 
     sealed trait HubState
-    final case class Open(callbackFuture: Future[AsyncCallback[HubEvent]], registrations: List[Consumer]) extends HubState
+    final case class Open(callbackFuture: Future[AsyncCallback[HubEvent]], registrations: List[Consumer])
+        extends HubState
     final case class Closed(failure: Option[Throwable]) extends HubState
 
     // The reason for the two implementations here is that the common case (as I see it) is to have a few (< 100)
@@ -982,7 +993,7 @@ object PartitionHub {
 
       override def remove(id: Long): Unit = {
         (if (id < FixedQueues) queues1.getAndSet(id.toInt, null)
-        else queues2.remove(id)) match {
+         else queues2.remove(id)) match {
           case null  =>
           case queue => _totalSize.addAndGet(-queue.size)
         }
@@ -995,10 +1006,10 @@ object PartitionHub {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class PartitionHub[T](
-  partitioner:             () => (PartitionHub.ConsumerInfo, T) => Long,
-  startAfterNrOfConsumers: Int, bufferSize: Int)
-  extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
+@InternalApi private[akka] class PartitionHub[T](partitioner: () => (PartitionHub.ConsumerInfo, T) => Long,
+                                                 startAfterNrOfConsumers: Int,
+                                                 bufferSize: Int)
+    extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   import PartitionHub.Internal._
   import PartitionHub.ConsumerInfo
 
@@ -1009,8 +1020,7 @@ object PartitionHub {
   // queue in Artery
   def createQueue(): PartitionQueue = new PartitionQueueImpl
 
-  private class PartitionSinkLogic(_shape: Shape)
-    extends GraphStageLogic(_shape) with InHandler {
+  private class PartitionSinkLogic(_shape: Shape) extends GraphStageLogic(_shape) with InHandler {
 
     // Half of buffer size, rounded up
     private val DemandThreshold = (bufferSize / 2) + (bufferSize % 2)
@@ -1029,8 +1039,7 @@ object PartitionHub {
 
     private var callbackCount = 0L
 
-    private final class ConsumerInfoImpl(val consumers: Vector[Consumer])
-      extends ConsumerInfo { info =>
+    private final class ConsumerInfoImpl(val consumers: Vector[Consumer]) extends ConsumerInfo { info =>
 
       override def queueSize(consumerId: Long): Int =
         queue.size(consumerId)
@@ -1122,7 +1131,7 @@ object PartitionHub {
           tryPull()
 
         case RegistrationPending =>
-          state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations foreach { consumer =>
+          state.getAndSet(noRegistrationsState).asInstanceOf[Open].registrations.foreach { consumer =>
             val newConsumers = (consumerInfo.consumers :+ consumer).sortBy(_.id)
             consumerInfo = new ConsumerInfoImpl(newConsumers)
             queue.init(consumer.id)
@@ -1155,7 +1164,7 @@ object PartitionHub {
       val failMessage = HubCompleted(Some(ex))
 
       // Notify pending consumers and set tombstone
-      state.getAndSet(Closed(Some(ex))).asInstanceOf[Open].registrations foreach { consumer =>
+      state.getAndSet(Closed(Some(ex))).asInstanceOf[Open].registrations.foreach { consumer =>
         consumer.callback.invoke(failMessage)
       }
 
@@ -1174,7 +1183,7 @@ object PartitionHub {
         case open: Open =>
           if (state.compareAndSet(open, Closed(None))) {
             val completedMessage = HubCompleted(None)
-            open.registrations foreach { consumer =>
+            open.registrations.foreach { consumer =>
               consumer.callback.invoke(completedMessage)
             }
           } else tryClose()
@@ -1196,7 +1205,8 @@ object PartitionHub {
     setHandler(in, this)
   }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, Source[T, NotUsed]) = {
     val idCounter = new AtomicLong
 
     val logic = new PartitionSinkLogic(shape)
@@ -1205,74 +1215,75 @@ object PartitionHub {
       val out: Outlet[T] = Outlet("PartitionHub.out")
       override val shape: SourceShape[T] = SourceShape(out)
 
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
-        private val id = idCounter.getAndIncrement()
-        private var hubCallback: AsyncCallback[HubEvent] = _
-        private val callback = getAsyncCallback(onCommand)
-        private val consumer = Consumer(id, callback)
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with OutHandler {
+          private val id = idCounter.getAndIncrement()
+          private var hubCallback: AsyncCallback[HubEvent] = _
+          private val callback = getAsyncCallback(onCommand)
+          private val consumer = Consumer(id, callback)
 
-        private var callbackCount = 0L
+          private var callbackCount = 0L
 
-        override def preStart(): Unit = {
-          val onHubReady: Try[AsyncCallback[HubEvent]] => Unit = {
-            case Success(callback) =>
-              hubCallback = callback
-              callback.invoke(RegistrationPending)
-              if (isAvailable(out)) onPull()
-            case Failure(ex) =>
-              failStage(ex)
+          override def preStart(): Unit = {
+            val onHubReady: Try[AsyncCallback[HubEvent]] => Unit = {
+              case Success(callback) =>
+                hubCallback = callback
+                callback.invoke(RegistrationPending)
+                if (isAvailable(out)) onPull()
+              case Failure(ex) =>
+                failStage(ex)
+            }
+
+            @tailrec def register(): Unit = {
+              logic.state.get() match {
+                case Closed(Some(ex)) => failStage(ex)
+                case Closed(None)     => completeStage()
+                case previousState @ Open(callbackFuture, registrations) =>
+                  val newRegistrations = consumer :: registrations
+                  if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
+                    callbackFuture.onComplete(getAsyncCallback(onHubReady).invoke)(materializer.executionContext)
+                  } else register()
+              }
+            }
+
+            register()
+
           }
 
-          @tailrec def register(): Unit = {
-            logic.state.get() match {
-              case Closed(Some(ex)) => failStage(ex)
-              case Closed(None)     => completeStage()
-              case previousState @ Open(callbackFuture, registrations) =>
-                val newRegistrations = consumer :: registrations
-                if (logic.state.compareAndSet(previousState, Open(callbackFuture, newRegistrations))) {
-                  callbackFuture.onComplete(getAsyncCallback(onHubReady).invoke)(materializer.executionContext)
-                } else register()
+          override def onPull(): Unit = {
+            if (hubCallback ne null) {
+              val elem = logic.poll(id, hubCallback)
+
+              elem match {
+                case null =>
+                  hubCallback.invoke(NeedWakeup(consumer))
+                case Completed =>
+                  completeStage()
+                case _ =>
+                  push(out, elem.asInstanceOf[T])
+              }
             }
           }
 
-          register()
+          override def postStop(): Unit = {
+            if (hubCallback ne null)
+              hubCallback.invoke(UnRegister(id))
+          }
 
-        }
-
-        override def onPull(): Unit = {
-          if (hubCallback ne null) {
-            val elem = logic.poll(id, hubCallback)
-
-            elem match {
-              case null =>
-                hubCallback.invoke(NeedWakeup(consumer))
-              case Completed =>
-                completeStage()
-              case _ =>
-                push(out, elem.asInstanceOf[T])
+          private def onCommand(cmd: ConsumerEvent): Unit = {
+            callbackCount += 1
+            cmd match {
+              case HubCompleted(Some(ex)) => failStage(ex)
+              case HubCompleted(None)     => completeStage()
+              case Wakeup =>
+                if (isAvailable(out)) onPull()
+              case Initialize =>
+                if (isAvailable(out) && (hubCallback ne null)) onPull()
             }
           }
-        }
 
-        override def postStop(): Unit = {
-          if (hubCallback ne null)
-            hubCallback.invoke(UnRegister(id))
+          setHandler(out, this)
         }
-
-        private def onCommand(cmd: ConsumerEvent): Unit = {
-          callbackCount += 1
-          cmd match {
-            case HubCompleted(Some(ex)) => failStage(ex)
-            case HubCompleted(None)     => completeStage()
-            case Wakeup =>
-              if (isAvailable(out)) onPull()
-            case Initialize =>
-              if (isAvailable(out) && (hubCallback ne null)) onPull()
-          }
-        }
-
-        setHandler(out, this)
-      }
     }
 
     (logic, Source.fromGraph(source))

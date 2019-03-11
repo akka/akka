@@ -17,8 +17,7 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
@@ -26,8 +25,8 @@ class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
 abstract class NodeLeavingAndExitingSpec
-  extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import NodeLeavingAndExitingMultiJvmSpec._
   import ClusterEvent._

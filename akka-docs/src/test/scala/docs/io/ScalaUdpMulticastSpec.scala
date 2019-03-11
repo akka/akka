@@ -15,13 +15,17 @@ import org.scalatest.BeforeAndAfterAll
 import akka.testkit.SocketUtil
 import scala.collection.JavaConverters._
 
-class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")) with WordSpecLike with BeforeAndAfterAll {
+class ScalaUdpMulticastSpec
+    extends TestKit(ActorSystem("ScalaUdpMulticastSpec"))
+    with WordSpecLike
+    with BeforeAndAfterAll {
 
   "listener" should {
     "send message back to sink" in {
       val ipv6ifaces =
-        NetworkInterface.getNetworkInterfaces.asScala.toSeq.filter(iface =>
-          iface.supportsMulticast &&
+        NetworkInterface.getNetworkInterfaces.asScala.toSeq.filter(
+          iface =>
+            iface.supportsMulticast &&
             iface.isUp &&
             iface.getInetAddresses.asScala.exists(_.isInstanceOf[Inet6Address]))
 
@@ -70,4 +74,3 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
   }
 
 }
-

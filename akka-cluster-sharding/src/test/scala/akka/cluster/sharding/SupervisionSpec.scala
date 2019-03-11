@@ -15,8 +15,7 @@ import scala.concurrent.duration._
 
 object SupervisionSpec {
   val config =
-    ConfigFactory.parseString(
-      """
+    ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
     akka.loglevel = INFO
     """)
@@ -68,23 +67,22 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
 
     "allow passivation" in {
 
-      val supervisedProps = BackoffSupervisor.props(Backoff.onStop(
-        Props(new PassivatingActor()),
-        childName = "child",
-        minBackoff = 1.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2,
-        maxNrOfRetries = -1
-      ).withFinalStopMessage(_ == StopMessage))
+      val supervisedProps = BackoffSupervisor.props(
+        Backoff
+          .onStop(Props(new PassivatingActor()),
+                  childName = "child",
+                  minBackoff = 1.seconds,
+                  maxBackoff = 30.seconds,
+                  randomFactor = 0.2,
+                  maxNrOfRetries = -1)
+          .withFinalStopMessage(_ == StopMessage))
 
       Cluster(system).join(Cluster(system).selfAddress)
-      val region = ClusterSharding(system).start(
-        "passy",
-        supervisedProps,
-        ClusterShardingSettings(system),
-        idExtractor,
-        shardResolver
-      )
+      val region = ClusterSharding(system).start("passy",
+                                                 supervisedProps,
+                                                 ClusterShardingSettings(system),
+                                                 idExtractor,
+                                                 shardResolver)
 
       region ! Msg(10, "hello")
       val response = expectMsgType[Response](5.seconds)
@@ -103,22 +101,21 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
 
     "allow passivation" in {
 
-      val supervisedProps = BackoffSupervisor.props(BackoffOpts.onStop(
-        Props(new PassivatingActor()),
-        childName = "child",
-        minBackoff = 1.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2
-      ).withFinalStopMessage(_ == StopMessage))
+      val supervisedProps = BackoffSupervisor.props(
+        BackoffOpts
+          .onStop(Props(new PassivatingActor()),
+                  childName = "child",
+                  minBackoff = 1.seconds,
+                  maxBackoff = 30.seconds,
+                  randomFactor = 0.2)
+          .withFinalStopMessage(_ == StopMessage))
 
       Cluster(system).join(Cluster(system).selfAddress)
-      val region = ClusterSharding(system).start(
-        "passy",
-        supervisedProps,
-        ClusterShardingSettings(system),
-        idExtractor,
-        shardResolver
-      )
+      val region = ClusterSharding(system).start("passy",
+                                                 supervisedProps,
+                                                 ClusterShardingSettings(system),
+                                                 idExtractor,
+                                                 shardResolver)
 
       region ! Msg(10, "hello")
       val response = expectMsgType[Response](5.seconds)

@@ -18,18 +18,18 @@ import scala.concurrent.duration.FiniteDuration
  * This back-off supervisor is created by using `akka.pattern.BackoffSupervisor.props`
  * with `BackoffOpts.onStop`.
  */
-@InternalApi private[pattern] class BackoffOnStopSupervisor(
-  val childProps:    Props,
-  val childName:     String,
-  minBackoff:        FiniteDuration,
-  maxBackoff:        FiniteDuration,
-  val reset:         BackoffReset,
-  randomFactor:      Double,
-  strategy:          SupervisorStrategy,
-  replyWhileStopped: Option[Any],
-  finalStopMessage:  Option[Any => Boolean])
-  extends Actor with HandleBackoff
-  with ActorLogging {
+@InternalApi private[pattern] class BackoffOnStopSupervisor(val childProps: Props,
+                                                            val childName: String,
+                                                            minBackoff: FiniteDuration,
+                                                            maxBackoff: FiniteDuration,
+                                                            val reset: BackoffReset,
+                                                            randomFactor: Double,
+                                                            strategy: SupervisorStrategy,
+                                                            replyWhileStopped: Option[Any],
+                                                            finalStopMessage: Option[Any => Boolean])
+    extends Actor
+    with HandleBackoff
+    with ActorLogging {
 
   import BackoffSupervisor._
   import context.dispatcher
@@ -64,14 +64,16 @@ import scala.concurrent.duration.FiniteDuration
           context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
           restartCount = nextRestartCount
         } else {
-          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})",
+                    nextRestartCount,
+                    maxNrOfRetries)
           context.stop(self)
         }
       }
 
   }
 
-  def receive: Receive = onTerminated orElse handleBackoff
+  def receive: Receive = onTerminated.orElse(handleBackoff)
 
   protected def handleMessageToChild(msg: Any): Unit = child match {
     case Some(c) =>

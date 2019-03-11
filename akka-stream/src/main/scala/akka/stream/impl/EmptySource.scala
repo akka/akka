@@ -28,4 +28,3 @@ import akka.stream.stage._
 
   override def toString = "EmptySource"
 }
-

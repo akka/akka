@@ -101,9 +101,9 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
 
     val instructions: Array[Instruction] =
       (Array(AdvanceHeader, TryMarkDirty) :+
-        WriteId) ++
-        Array.fill(EntrySize - 2)(WriteByte) :+
-        Commit
+      WriteId) ++
+      Array.fill(EntrySize - 2)(WriteByte) :+
+      Commit
 
     def step(simulator: Simulator): String = {
       instructions(instructionPtr)(simulator)

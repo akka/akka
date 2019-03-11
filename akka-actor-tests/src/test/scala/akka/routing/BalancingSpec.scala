@@ -7,8 +7,8 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.{ Props, Actor }
-import akka.testkit.{ TestLatch, ImplicitSender, AkkaSpec }
+import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 import akka.actor.ActorRef
 import org.scalatest.BeforeAndAfterEach
 import java.net.URLEncoder
@@ -32,8 +32,8 @@ object BalancingSpec {
   }
 
   class Parent extends Actor {
-    val pool = context.actorOf(BalancingPool(2).props(routeeProps =
-      Props(classOf[Worker], TestLatch(0)(context.system))))
+    val pool =
+      context.actorOf(BalancingPool(2).props(routeeProps = Props(classOf[Worker], TestLatch(0)(context.system))))
 
     def receive = {
       case msg => pool.forward(msg)
@@ -41,8 +41,7 @@ object BalancingSpec {
   }
 }
 
-class BalancingSpec extends AkkaSpec(
-  """
+class BalancingSpec extends AkkaSpec("""
     akka.actor.deployment {
       /balancingPool-2 {
         router = balancing-pool
@@ -97,22 +96,22 @@ class BalancingSpec extends AkkaSpec(
 
     "deliver messages in a balancing fashion when defined programatically" in {
       val latch = TestLatch(poolSize)
-      val pool = system.actorOf(BalancingPool(poolSize).props(routeeProps =
-        Props(classOf[Worker], latch)), name = "balancingPool-1")
+      val pool = system.actorOf(BalancingPool(poolSize).props(routeeProps = Props(classOf[Worker], latch)),
+                                name = "balancingPool-1")
       test(pool, latch)
     }
 
     "deliver messages in a balancing fashion when defined in config" in {
       val latch = TestLatch(poolSize)
-      val pool = system.actorOf(FromConfig().props(routeeProps =
-        Props(classOf[Worker], latch)), name = "balancingPool-2")
+      val pool =
+        system.actorOf(FromConfig().props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-2")
       test(pool, latch)
     }
 
     "deliver messages in a balancing fashion when overridden in config" in {
       val latch = TestLatch(poolSize)
-      val pool = system.actorOf(BalancingPool(1).props(routeeProps =
-        Props(classOf[Worker], latch)), name = "balancingPool-3")
+      val pool =
+        system.actorOf(BalancingPool(1).props(routeeProps = Props(classOf[Worker], latch)), name = "balancingPool-3")
       test(pool, latch)
     }
 

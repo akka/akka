@@ -25,8 +25,9 @@ object SnapshotRecoveryLocalStoreSpec {
     }
   }
 
-  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name)
-    with ActorLogging {
+  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef)
+      extends NamedPersistentActor(name)
+      with ActorLogging {
 
     override def recovery = Recovery(toSequenceNr = 0)
 
@@ -39,7 +40,9 @@ object SnapshotRecoveryLocalStoreSpec {
   }
 }
 
-class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotRecoveryLocalStoreSpec")) with ImplicitSender {
+class SnapshotRecoveryLocalStoreSpec
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotRecoveryLocalStoreSpec"))
+    with ImplicitSender {
 
   import SnapshotRecoveryLocalStoreSpec._
 

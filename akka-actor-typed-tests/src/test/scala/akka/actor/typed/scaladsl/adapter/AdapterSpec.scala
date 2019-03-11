@@ -38,8 +38,8 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.receive[String] {
-      (context, message) =>
+    Behaviors
+      .receive[String] { (context, message) =>
         message match {
           case "send" =>
             val replyTo = context.self.toUntyped
@@ -67,11 +67,12 @@ object AdapterSpec {
             context.stop(child)
             Behaviors.same
         }
-    } receiveSignal {
-      case (context, Terminated(ref)) =>
-        probe ! "terminated"
-        Behaviors.same
-    }
+      }
+      .receiveSignal {
+        case (context, Terminated(ref)) =>
+          probe ! "terminated"
+          Behaviors.same
+      }
 
   def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx =>
     val child = ctx.spawnAnonymous(Behaviors.receiveMessage[String] { _ =>
@@ -160,8 +161,7 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends AkkaSpec(
-  """
+class AdapterSpec extends AkkaSpec("""
    akka.loggers = [akka.testkit.TestEventListener]
   """) {
   import AdapterSpec._
@@ -171,14 +171,15 @@ class AdapterSpec extends AkkaSpec(
       val typed1 = system.toTyped
       val typed2 = system.toTyped
 
-      typed1 should be theSameInstanceAs typed2
+      (typed1 should be).theSameInstanceAs(typed2)
     }
 
     "not crash if guardian is stopped" in {
       for { _ <- 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
-          system = ActorSystem.create(Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]), "AdapterSpec-stopping-guardian")
+          system = ActorSystem.create(Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]),
+                                      "AdapterSpec-stopping-guardian")
         } finally if (system != null) shutdown(system.toUntyped)
       }
     }

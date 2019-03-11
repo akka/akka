@@ -7,7 +7,7 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
-import java.util.concurrent.locks.{ ReentrantLock, Lock }
+import java.util.concurrent.locks.{ Lock, ReentrantLock }
 
 /**
  * A lock-less thread-safe implementation of [[akka.remote.FailureDetectorRegistry]].
@@ -35,7 +35,7 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) 
 
     resourceToFailureDetector.get.get(resource) match {
       case Some(failureDetector) => failureDetector.heartbeat()
-      case None =>
+      case None                  =>
         // First one wins and creates the new FailureDetector
         failureDetectorCreationLock.lock()
         try {
@@ -89,4 +89,3 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) 
     resourceToFailureDetector.get.get(resource)
 
 }
-

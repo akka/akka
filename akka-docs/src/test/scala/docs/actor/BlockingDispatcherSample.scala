@@ -82,8 +82,7 @@ object BlockingDispatcherSample {
 object SeparateDispatcherSample {
   def main(args: Array[String]) = {
 
-    val config = ConfigFactory.parseString(
-      """
+    val config = ConfigFactory.parseString("""
       //#my-blocking-dispatcher-config
       my-blocking-dispatcher {
         type = Dispatcher
@@ -94,8 +93,7 @@ object SeparateDispatcherSample {
         throughput = 1
       }
       //#my-blocking-dispatcher-config
-      """
-    )
+      """)
     val system = ActorSystem("SeparateDispatcherSample", config)
 
     try {

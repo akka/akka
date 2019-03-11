@@ -44,7 +44,8 @@ import akka.io.Udp._
  * discarded.
  *
  */
-private[io] class UdpManager(udp: UdpExt) extends SelectionHandler.SelectorBasedManager(udp.settings, udp.settings.NrOfSelectors) {
+private[io] class UdpManager(udp: UdpExt)
+    extends SelectionHandler.SelectorBasedManager(udp.settings, udp.settings.NrOfSelectors) {
 
   def receive = workerForCommandHandler {
     case b: Bind =>

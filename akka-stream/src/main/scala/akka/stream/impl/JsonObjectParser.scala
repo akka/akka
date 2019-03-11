@@ -101,8 +101,7 @@ import scala.annotation.switch
   private def seekObject(): Boolean = {
     completedObject = false
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
-      proceed(buffer(pos))
+    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) proceed(buffer(pos))
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")

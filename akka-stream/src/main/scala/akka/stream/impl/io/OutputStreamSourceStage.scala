@@ -24,7 +24,8 @@ private[stream] object OutputStreamSourceStage {
   case object Close extends AdapterToStageMessage
 }
 
-final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
+final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration)
+    extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
   val out = Outlet[ByteString]("OutputStreamSource.out")
   override def initialAttributes = DefaultAttributes.outputStreamSource
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
@@ -56,8 +57,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       }
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-        }
+        override def onPull(): Unit = {}
       })
     }
 
@@ -66,11 +66,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
   }
 }
 
-private[akka] class OutputStreamAdapter(
-  unfulfilledDemand: Semaphore,
-  sendToStage:       AsyncCallback[AdapterToStageMessage],
-  writeTimeout:      FiniteDuration)
-  extends OutputStream {
+private[akka] class OutputStreamAdapter(unfulfilledDemand: Semaphore,
+                                        sendToStage: AsyncCallback[AdapterToStageMessage],
+                                        writeTimeout: FiniteDuration)
+    extends OutputStream {
 
   @scala.throws(classOf[IOException])
   private[this] def sendData(data: ByteString): Unit = {

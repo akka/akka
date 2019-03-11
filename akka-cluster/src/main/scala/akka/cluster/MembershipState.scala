@@ -30,11 +30,10 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class MembershipState(
-  latestGossip:       Gossip,
-  selfUniqueAddress:  UniqueAddress,
-  selfDc:             DataCenter,
-  crossDcConnections: Int) {
+@InternalApi private[akka] final case class MembershipState(latestGossip: Gossip,
+                                                            selfUniqueAddress: UniqueAddress,
+                                                            selfDc: DataCenter,
+                                                            crossDcConnections: Int) {
 
   import MembershipState._
 
@@ -57,8 +56,9 @@ import scala.util.Random
     // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
     // convergence cannot be reached
     def memberHinderingConvergenceExists =
-      members.exists(member =>
-        member.dataCenter == selfDc &&
+      members.exists(
+        member =>
+          member.dataCenter == selfDc &&
           convergenceMemberStatus(member.status) &&
           !(latestGossip.seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
 
@@ -86,14 +86,18 @@ import scala.util.Random
    *        but including observed unreachable nodes outside of the data center
    */
   lazy val dcReachabilityWithoutObservationsWithin: Reachability =
-    dcReachability.filterRecords { r => latestGossip.member(r.subject).dataCenter != selfDc }
+    dcReachability.filterRecords { r =>
+      latestGossip.member(r.subject).dataCenter != selfDc
+    }
 
   /**
    * @return reachability for data center nodes, with observations from outside the data center or from downed nodes filtered out
    */
   lazy val dcReachabilityExcludingDownedObservers: Reachability = {
     val membersToExclude = members.collect { case m if m.status == Down || m.dataCenter != selfDc => m.uniqueAddress }
-    overview.reachability.removeObservers(membersToExclude).remove(members.collect { case m if m.dataCenter != selfDc => m.uniqueAddress })
+    overview.reachability
+      .removeObservers(membersToExclude)
+      .remove(members.collect { case m if m.dataCenter != selfDc => m.uniqueAddress })
   }
 
   lazy val dcReachabilityNoOutsideNodes: Reachability =
@@ -155,14 +159,18 @@ import scala.util.Random
 
     val reachableMembersInDc =
       if (reachability.isAllReachable) mbrs.filter(m => m.dataCenter == selfDc && m.status != Down)
-      else mbrs.filter(m =>
-        m.dataCenter == selfDc &&
-          m.status != Down &&
-          (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
+      else
+        mbrs.filter(
+          m =>
+            m.dataCenter == selfDc &&
+            m.status != Down &&
+            (reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress))
     if (reachableMembersInDc.isEmpty) None
-    else reachableMembersInDc.find(m => leaderMemberStatus(m.status))
-      .orElse(Some(reachableMembersInDc.min(Member.leaderStatusOrdering)))
-      .map(_.uniqueAddress)
+    else
+      reachableMembersInDc
+        .find(m => leaderMemberStatus(m.status))
+        .orElse(Some(reachableMembersInDc.min(Member.leaderStatusOrdering)))
+        .map(_.uniqueAddress)
   }
 
   def isInSameDc(node: UniqueAddress): Boolean =
@@ -213,9 +221,8 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class GossipTargetSelector(
-  reduceGossipDifferentViewProbability: Double,
-  crossDcGossipProbability:             Double) {
+@InternalApi private[akka] class GossipTargetSelector(reduceGossipDifferentViewProbability: Double,
+                                                      crossDcGossipProbability: Double) {
 
   final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
     selectRandomNode(gossipTargets(state))
@@ -275,10 +282,14 @@ import scala.util.Random
       if (preferNodesWithDifferentView(state)) {
         // If it's time to try to gossip to some nodes with a different view
         // gossip to a random alive same dc member with preference to a member with older gossip version
-        latestGossip.members.iterator.collect {
-          case m if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state.validNodeForGossip(m.uniqueAddress) =>
-            m.uniqueAddress
-        }.to(Vector)
+        latestGossip.members.iterator
+          .collect {
+            case m
+                if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state
+                  .validNodeForGossip(m.uniqueAddress) =>
+              m.uniqueAddress
+          }
+          .to(Vector)
       } else Vector.empty
 
     // Fall back to localGossip
@@ -308,7 +319,6 @@ import scala.util.Random
         def findFirstDcWithValidNodes(left: List[DataCenter]): Vector[UniqueAddress] =
           left match {
             case dc :: tail =>
-
               val validNodes = nodesPerDc(dc).collect {
                 case member if state.validNodeForGossip(member.uniqueAddress) =>
                   member.uniqueAddress
@@ -365,12 +375,13 @@ import scala.util.Random
    */
   protected def selectDcLocalNodes(state: MembershipState): Boolean = {
     val localMembers = state.dcMembers.size
-    val probability = if (localMembers > 4)
-      crossDcGossipProbability
-    else {
-      // don't go below the configured probability
-      math.max((5 - localMembers) * 0.25, crossDcGossipProbability)
-    }
+    val probability =
+      if (localMembers > 4)
+        crossDcGossipProbability
+      else {
+        // don't go below the configured probability
+        math.max((5 - localMembers) * 0.25, crossDcGossipProbability)
+      }
     ThreadLocalRandom.current.nextDouble() > probability
   }
 

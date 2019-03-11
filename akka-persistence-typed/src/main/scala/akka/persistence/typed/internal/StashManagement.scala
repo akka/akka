@@ -40,7 +40,8 @@ private[akka] trait StashManagement[C, E, S] {
   private def stash(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
     logStashMessage(msg, buffer)
 
-    try buffer.stash(msg) catch {
+    try buffer.stash(msg)
+    catch {
       case e: StashOverflowException =>
         setup.settings.stashOverflowStrategy match {
           case StashOverflowStrategy.Drop =>
@@ -95,21 +96,24 @@ private[akka] trait StashManagement[C, E, S] {
     stashState.isUnstashAllInProgress
 
   private def logStashMessage(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Stashing message to {} stash: [{}] ",
-      if (buffer eq stashState.internalStashBuffer) "internal" else "user", msg)
+    if (setup.settings.logOnStashing)
+      setup.log.debug("Stashing message to {} stash: [{}] ",
+                      if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+                      msg)
   }
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Unstashing message from {} stash: [{}]",
-      if (buffer eq stashState.internalStashBuffer) "internal" else "user", buffer.head)
+    if (setup.settings.logOnStashing)
+      setup.log.debug("Unstashing message from {} stash: [{}]",
+                      if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+                      buffer.head)
   }
 
   private def logUnstashAll(): Unit = {
-    if (setup.settings.logOnStashing) setup.log.debug(
-      "Unstashing all [{}] messages from user stash, first is: [{}]",
-      stashState.userStashBuffer.size, stashState.userStashBuffer.head)
+    if (setup.settings.logOnStashing)
+      setup.log.debug("Unstashing all [{}] messages from user stash, first is: [{}]",
+                      stashState.userStashBuffer.size,
+                      stashState.userStashBuffer.head)
   }
 
 }

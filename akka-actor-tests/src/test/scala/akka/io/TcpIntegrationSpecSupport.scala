@@ -21,7 +21,9 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec =>
       if (runClientInExtraSystem) {
         val res = ActorSystem("TcpIntegrationSpec-client", system.settings.config)
         // terminate clientSystem after server system
-        system.whenTerminated.onComplete { _ => res.terminate() }(ExecutionContexts.sameThreadExecutionContext)
+        system.whenTerminated.onComplete { _ =>
+          res.terminate()
+        }(ExecutionContexts.sameThreadExecutionContext)
         res
       } else system
     val bindHandler = TestProbe()

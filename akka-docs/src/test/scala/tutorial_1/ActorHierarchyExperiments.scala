@@ -8,7 +8,7 @@ package docs.tutorial_1
 //#print-refs
 package com.example
 
-import akka.actor.{ Actor, Props, ActorSystem }
+import akka.actor.{ Actor, ActorSystem, Props }
 import scala.io.StdIn
 
 object PrintMyActorRefActor {

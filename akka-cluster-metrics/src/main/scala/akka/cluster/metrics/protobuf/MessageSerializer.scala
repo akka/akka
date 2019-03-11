@@ -11,7 +11,7 @@ import java.{ lang => jl }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.cluster.metrics._
-import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers, SerializerWithStringManifest }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
 import akka.util.ClassLoaderObjectInputStream
 import akka.protobuf.{ ByteString, MessageLite }
 import akka.util.ccompat._
@@ -93,8 +93,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     case CpuMetricsSelectorManifest               => CpuMetricsSelector
     case HeapMetricsSelectorManifest              => HeapMetricsSelector
     case SystemLoadAverageMetricsSelectorManifest => SystemLoadAverageMetricsSelector
-    case _ => throw new NotSerializableException(
-      s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
+    case _ =>
+      throw new NotSerializableException(
+        s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
   }
 
   private def addressToProto(address: Address): cm.Address.Builder = address match {
@@ -121,8 +122,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val builder = cm.MetricsSelector.newBuilder()
     val serializer = serialization.findSerializerFor(selector)
 
-    builder.setData(ByteString.copyFrom(serializer.toBinary(selector)))
-      .setSerializerId(serializer.identifier)
+    builder.setData(ByteString.copyFrom(serializer.toBinary(selector))).setSerializerId(serializer.identifier)
 
     val manifest = Serializers.manifestFor(serializer, selector)
     builder.setManifest(manifest)
@@ -175,13 +175,14 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val allNodeMetrics = envelope.gossip.nodes
     val allAddresses: Vector[Address] = allNodeMetrics.iterator.map(_.address).to(immutable.Vector)
     val addressMapping = allAddresses.zipWithIndex.toMap
-    val allMetricNames: Vector[String] = allNodeMetrics.foldLeft(Set.empty[String])((s, n) => s ++ n.metrics.iterator.map(_.name)).toVector
+    val allMetricNames: Vector[String] =
+      allNodeMetrics.foldLeft(Set.empty[String])((s, n) => s ++ n.metrics.iterator.map(_.name)).toVector
     val metricNamesMapping = allMetricNames.zipWithIndex.toMap
     def mapAddress(address: Address) = mapWithErrorMessage(addressMapping, address, "address")
     def mapName(name: String) = mapWithErrorMessage(metricNamesMapping, name, "address")
 
-    def ewmaToProto(ewma: Option[EWMA]): Option[cm.NodeMetrics.EWMA.Builder] = ewma.map {
-      x => cm.NodeMetrics.EWMA.newBuilder().setValue(x.value).setAlpha(x.alpha)
+    def ewmaToProto(ewma: Option[EWMA]): Option[cm.NodeMetrics.EWMA.Builder] = ewma.map { x =>
+      cm.NodeMetrics.EWMA.newBuilder().setValue(x.value).setAlpha(x.alpha)
     }
 
     def numberToProto(number: Number): cm.NodeMetrics.Number.Builder = {
@@ -202,20 +203,31 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     }
 
     def metricToProto(metric: Metric): cm.NodeMetrics.Metric.Builder = {
-      val builder = cm.NodeMetrics.Metric.newBuilder().setNameIndex(mapName(metric.name)).setNumber(numberToProto(metric.value))
+      val builder =
+        cm.NodeMetrics.Metric.newBuilder().setNameIndex(mapName(metric.name)).setNumber(numberToProto(metric.value))
       ewmaToProto(metric.average).map(builder.setEwma).getOrElse(builder)
     }
 
     def nodeMetricsToProto(nodeMetrics: NodeMetrics): cm.NodeMetrics.Builder =
-      cm.NodeMetrics.newBuilder().setAddressIndex(mapAddress(nodeMetrics.address)).setTimestamp(nodeMetrics.timestamp).
-        addAllMetrics(nodeMetrics.metrics.map(metricToProto(_).build).asJava)
+      cm.NodeMetrics
+        .newBuilder()
+        .setAddressIndex(mapAddress(nodeMetrics.address))
+        .setTimestamp(nodeMetrics.timestamp)
+        .addAllMetrics(nodeMetrics.metrics.map(metricToProto(_).build).asJava)
 
     val nodeMetrics: Iterable[cm.NodeMetrics] = allNodeMetrics.map(nodeMetricsToProto(_).build)
 
-    cm.MetricsGossipEnvelope.newBuilder().setFrom(addressToProto(envelope.from)).setGossip(
-      cm.MetricsGossip.newBuilder().addAllAllAddresses(allAddresses.map(addressToProto(_).build()).asJava).
-        addAllAllMetricNames(allMetricNames.asJava).addAllNodeMetrics(nodeMetrics.asJava)).
-      setReply(envelope.reply).build
+    cm.MetricsGossipEnvelope
+      .newBuilder()
+      .setFrom(addressToProto(envelope.from))
+      .setGossip(
+        cm.MetricsGossip
+          .newBuilder()
+          .addAllAllAddresses(allAddresses.map(addressToProto(_).build()).asJava)
+          .addAllAllMetricNames(allMetricNames.asJava)
+          .addAllNodeMetrics(nodeMetrics.asJava))
+      .setReply(envelope.reply)
+      .build
   }
 
   private def metricsGossipEnvelopeFromBinary(bytes: Array[Byte]): MetricsGossipEnvelope =
@@ -237,9 +249,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         case NumberType.Float_VALUE   => jl.Float.intBitsToFloat(number.getValue32)
         case NumberType.Integer_VALUE => number.getValue32
         case NumberType.Serialized_VALUE =>
-          val in = new ClassLoaderObjectInputStream(
-            system.dynamicAccess.classLoader,
-            new ByteArrayInputStream(number.getSerialized.toByteArray))
+          val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader,
+                                                    new ByteArrayInputStream(number.getSerialized.toByteArray))
           val obj = in.readObject
           in.close()
           obj.asInstanceOf[jl.Number]
@@ -247,14 +258,17 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     }
 
     def metricFromProto(metric: cm.NodeMetrics.Metric): Metric =
-      Metric(metricNameMapping(metric.getNameIndex), numberFromProto(metric.getNumber),
-        if (metric.hasEwma) ewmaFromProto(metric.getEwma) else None)
+      Metric(metricNameMapping(metric.getNameIndex),
+             numberFromProto(metric.getNumber),
+             if (metric.hasEwma) ewmaFromProto(metric.getEwma) else None)
 
     def nodeMetricsFromProto(nodeMetrics: cm.NodeMetrics): NodeMetrics =
-      NodeMetrics(addressMapping(nodeMetrics.getAddressIndex), nodeMetrics.getTimestamp,
-        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
+      NodeMetrics(addressMapping(nodeMetrics.getAddressIndex),
+                  nodeMetrics.getTimestamp,
+                  nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
 
-    val nodeMetrics: Set[NodeMetrics] = mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(immutable.Set)
+    val nodeMetrics: Set[NodeMetrics] =
+      mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(immutable.Set)
 
     MetricsGossipEnvelope(addressFromProto(envelope.getFrom), MetricsGossip(nodeMetrics), envelope.getReply)
   }
@@ -265,33 +279,33 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val selector =
       if (alb.hasMetricsSelector) {
         val ms = alb.getMetricsSelector
-        serialization.deserialize(
-          ms.getData.toByteArray,
-          ms.getSerializerId,
-          ms.getManifest
-        ).get.asInstanceOf[MetricsSelector]
+        serialization
+          .deserialize(ms.getData.toByteArray, ms.getSerializerId, ms.getManifest)
+          .get
+          .asInstanceOf[MetricsSelector]
       } else MixMetricsSelector
 
-    AdaptiveLoadBalancingPool(
-      metricsSelector = selector,
-      nrOfInstances = alb.getNrOfInstances,
-      routerDispatcher = if (alb.hasRouterDispatcher) alb.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = alb.getUsePoolDispatcher
-    )
+    AdaptiveLoadBalancingPool(metricsSelector = selector,
+                              nrOfInstances = alb.getNrOfInstances,
+                              routerDispatcher =
+                                if (alb.hasRouterDispatcher) alb.getRouterDispatcher
+                                else Dispatchers.DefaultDispatcherId,
+                              usePoolDispatcher = alb.getUsePoolDispatcher)
   }
 
   def mixMetricSelectorFromBinary(bytes: Array[Byte]): MixMetricsSelector = {
     val mm = cm.MixMetricsSelector.parseFrom(bytes)
-    MixMetricsSelector(mm.getSelectorsList.asScala
+    MixMetricsSelector(
+      mm.getSelectorsList.asScala
       // should be safe because we serialized only the right subtypes of MetricsSelector
-      .map(s => metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector]).toIndexedSeq)
+        .map(s => metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector])
+        .toIndexedSeq)
   }
 
   def metricSelectorFromProto(selector: cm.MetricsSelector): MetricsSelector =
-    serialization.deserialize(
-      selector.getData.toByteArray,
-      selector.getSerializerId,
-      selector.getManifest
-    ).get.asInstanceOf[MetricsSelector]
+    serialization
+      .deserialize(selector.getData.toByteArray, selector.getSerializerId, selector.getManifest)
+      .get
+      .asInstanceOf[MetricsSelector]
 
 }

@@ -39,7 +39,9 @@ object ClusterSingletonLeavingSpeedSpec {
   }
 }
 
-class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
+class ClusterSingletonLeavingSpeedSpec
+    extends AkkaSpec(
+      """
   akka.loglevel = DEBUG
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.auto-down-unreachable-after = 2s
@@ -72,10 +74,9 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   def join(from: ActorSystem, to: ActorSystem, probe: ActorRef): Unit = {
 
     from.actorOf(
-      ClusterSingletonManager.props(
-        singletonProps = TheSingleton.props(probe),
-        terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(from)),
+      ClusterSingletonManager.props(singletonProps = TheSingleton.props(probe),
+                                    terminationMessage = PoisonPill,
+                                    settings = ClusterSingletonManagerSettings(from)),
       name = "echo")
 
     Cluster(from).join(Cluster(to).selfAddress)
@@ -122,7 +123,8 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
           }
         }
 
-        println(s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
+        println(
+          s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
           s"diff ${(startedDuration - stoppedDuration).toMillis} ms")
 
         (stoppedDuration, startedDuration)
@@ -130,7 +132,8 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
 
       durations.zipWithIndex.foreach {
         case ((stoppedDuration, startedDuration), i) =>
-          println(s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
+          println(
+            s"Singleton $i stopped in ${stoppedDuration.toMillis} ms, started in ${startedDuration.toMillis} ms, " +
             s"diff ${(startedDuration - stoppedDuration).toMillis} ms")
       }
 
@@ -141,4 +144,3 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
     systems.foreach(shutdown(_))
   }
 }
-

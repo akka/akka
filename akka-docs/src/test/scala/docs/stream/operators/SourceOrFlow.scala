@@ -17,12 +17,12 @@ object SourceOrFlow {
     //#log
 
     Flow[String]
-      //#log
+    //#log
       .log(name = "myStream")
-      .addAttributes(Attributes.logLevels(
-        onElement = Attributes.LogLevels.Off,
-        onFailure = Attributes.LogLevels.Error,
-        onFinish = Attributes.LogLevels.Info))
+      .addAttributes(
+        Attributes.logLevels(onElement = Attributes.LogLevels.Off,
+                             onFailure = Attributes.LogLevels.Error,
+                             onFinish = Attributes.LogLevels.Info))
     //#log
   }
 
@@ -30,7 +30,8 @@ object SourceOrFlow {
     //#conflate
     import scala.concurrent.duration._
 
-    Source.cycle(() => List(1, 10, 100, 1000).iterator)
+    Source
+      .cycle(() => List(1, 10, 100, 1000).iterator)
       .throttle(10, per = 1.second) // faster upstream
       .conflate((acc, el) => acc + el) // acc: Int, el: Int
       .throttle(1, per = 1.second) // slow downstream
@@ -45,9 +46,10 @@ object SourceOrFlow {
       def sum(other: Summed) = Summed(this.i + other.i)
     }
 
-    Source.cycle(() => List(1, 10, 100, 1000).iterator)
+    Source
+      .cycle(() => List(1, 10, 100, 1000).iterator)
       .throttle(10, per = 1.second) // faster upstream
-      .conflateWithSeed(el => Summed(el))((acc, el) => acc sum Summed(el)) // (Summed, Int) => Summed
+      .conflateWithSeed(el => Summed(el))((acc, el) => acc.sum(Summed(el))) // (Summed, Int) => Summed
       .throttle(1, per = 1.second) // slow downstream
     //#conflateWithSeed
   }

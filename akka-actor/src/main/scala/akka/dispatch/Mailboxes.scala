@@ -8,7 +8,12 @@ import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
-import akka.dispatch.sysmsg.{ EarliestFirstSystemMessageList, LatestFirstSystemMessageList, SystemMessage, SystemMessageList }
+import akka.dispatch.sysmsg.{
+  EarliestFirstSystemMessageList,
+  LatestFirstSystemMessageList,
+  SystemMessage,
+  SystemMessageList
+}
 import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
@@ -22,11 +27,10 @@ object Mailboxes {
   final val NoMailboxRequirement = ""
 }
 
-private[akka] class Mailboxes(
-  val settings:    ActorSystem.Settings,
-  val eventStream: EventStream,
-  dynamicAccess:   DynamicAccess,
-  deadLetters:     ActorRef) {
+private[akka] class Mailboxes(val settings: ActorSystem.Settings,
+                              val eventStream: EventStream,
+                              dynamicAccess: DynamicAccess,
+                              deadLetters: ActorRef) {
 
   import Mailboxes._
 
@@ -51,16 +55,26 @@ private[akka] class Mailboxes(
 
   private val mailboxBindings: Map[Class[_ <: Any], String] = {
     import scala.collection.JavaConverters._
-    settings.config.getConfig("akka.actor.mailbox.requirements").root.unwrapped.asScala
-      .toMap.foldLeft(Map.empty[Class[_ <: Any], String]) {
+    settings.config
+      .getConfig("akka.actor.mailbox.requirements")
+      .root
+      .unwrapped
+      .asScala
+      .toMap
+      .foldLeft(Map.empty[Class[_ <: Any], String]) {
         case (m, (k, v)) =>
-          dynamicAccess.getClassFor[Any](k).map {
-            case x => m.updated(x, v.toString)
-          }.recover {
-            case e =>
-              throw new ConfigurationException(s"Type [${k}] specified as akka.actor.mailbox.requirement " +
-                s"[${v}] in config can't be loaded due to [${e.getMessage}]", e)
-          }.get
+          dynamicAccess
+            .getClassFor[Any](k)
+            .map {
+              case x => m.updated(x, v.toString)
+            }
+            .recover {
+              case e =>
+                throw new ConfigurationException(s"Type [${k}] specified as akka.actor.mailbox.requirement " +
+                                                 s"[${v}] in config can't be loaded due to [${e.getMessage}]",
+                                                 e)
+            }
+            .get
       }
   }
 
@@ -75,15 +89,18 @@ private[akka] class Mailboxes(
   def lookupByQueueType(queueType: Class[_ <: Any]): MailboxType = lookup(lookupId(queueType))
 
   private final val rmqClass = classOf[RequiresMessageQueue[_]]
+
   /**
    * Return the required message queue type for this class if any.
    */
   def getRequiredType(actorClass: Class[_ <: Actor]): Class[_] =
     Reflect.findMarker(actorClass, rmqClass) match {
-      case t: ParameterizedType => t.getActualTypeArguments.head match {
-        case c: Class[_] => c
-        case x           => throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
-      }
+      case t: ParameterizedType =>
+        t.getActualTypeArguments.head match {
+          case c: Class[_] => c
+          case x =>
+            throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
+        }
     }
 
   // don’t care if this happens twice
@@ -98,14 +115,16 @@ private[akka] class Mailboxes(
   def getProducedMessageQueueType(mailboxType: MailboxType): Class[_] = {
     val pmqClass = classOf[ProducesMessageQueue[_]]
     if (!pmqClass.isAssignableFrom(mailboxType.getClass)) classOf[MessageQueue]
-    else Reflect.findMarker(mailboxType.getClass, pmqClass) match {
-      case t: ParameterizedType =>
-        t.getActualTypeArguments.head match {
-          case c: Class[_] => c
-          case x => throw new IllegalArgumentException(
-            s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
-        }
-    }
+    else
+      Reflect.findMarker(mailboxType.getClass, pmqClass) match {
+        case t: ParameterizedType =>
+          t.getActualTypeArguments.head match {
+            case c: Class[_] => c
+            case x =>
+              throw new IllegalArgumentException(
+                s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
+          }
+      }
   }
 
   /**
@@ -123,12 +142,14 @@ private[akka] class Mailboxes(
 
     val hasMailboxType =
       dispatcherConfig.hasPath("mailbox-type") &&
-        dispatcherConfig.getString("mailbox-type") != Deploy.NoMailboxGiven
+      dispatcherConfig.getString("mailbox-type") != Deploy.NoMailboxGiven
 
     // TODO remove in 2.3
     if (!hasMailboxType && !mailboxSizeWarningIssued && dispatcherConfig.hasPath("mailbox-size")) {
-      eventStream.publish(Warning("mailboxes", getClass,
-        s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
+      eventStream.publish(
+        Warning("mailboxes",
+                getClass,
+                s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
       mailboxSizeWarningIssued = true
     }
 
@@ -137,11 +158,11 @@ private[akka] class Mailboxes(
       if (hasMailboxRequirement && !mailboxRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
           s"produced message queue type [$mqType] does not fulfill requirement for dispatcher [$id]. " +
-            s"Must be a subclass of [$mailboxRequirement].")
+          s"Must be a subclass of [$mailboxRequirement].")
       if (hasRequiredType(actorClass) && !actorRequirement.isAssignableFrom(mqType))
         throw new IllegalArgumentException(
           s"produced message queue type [$mqType] does not fulfill requirement for actor class [$actorClass]. " +
-            s"Must be a subclass of [$actorRequirement].")
+          s"Must be a subclass of [$actorRequirement].")
       mailboxType
     }
 
@@ -188,19 +209,23 @@ private[akka] class Mailboxes(
               case "" => throw new ConfigurationException(s"The setting mailbox-type, defined in [$id] is empty")
               case fqcn =>
                 val args = List(classOf[ActorSystem.Settings] -> settings, classOf[Config] -> conf)
-                dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
-                  case exception =>
-                    throw new IllegalArgumentException(
-                      s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
+                dynamicAccess
+                  .createInstanceFor[MailboxType](fqcn, args)
+                  .recover({
+                    case exception =>
+                      throw new IllegalArgumentException(
+                        s"Cannot instantiate MailboxType [$fqcn], defined in [$id], make sure it has a public" +
                         " constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters",
-                      exception)
-                }).get
+                        exception)
+                  })
+                  .get
             }
 
             if (!mailboxNonZeroPushTimeoutWarningIssued) {
               mailboxType match {
                 case m: ProducesPushTimeoutSemanticsMailbox if m.pushTimeOut.toNanos > 0L =>
-                  warn(s"Configured potentially-blocking mailbox [$id] configured with non-zero pushTimeOut (${m.pushTimeOut}), " +
+                  warn(
+                    s"Configured potentially-blocking mailbox [$id] configured with non-zero pushTimeOut (${m.pushTimeOut}), " +
                     s"which can lead to blocking behavior when sending messages to this mailbox. " +
                     s"Avoid this by setting `$id.mailbox-push-timeout-time` to `0`.")
                   mailboxNonZeroPushTimeoutWarningIssued = true
@@ -228,7 +253,8 @@ private[akka] class Mailboxes(
   //INTERNAL API
   private def config(id: String): Config = {
     import scala.collection.JavaConverters._
-    ConfigFactory.parseMap(Map("id" -> id).asJava)
+    ConfigFactory
+      .parseMap(Map("id" -> id).asJava)
       .withFallback(settings.config.getConfig(id))
       .withFallback(defaultMailboxConfig)
   }
@@ -244,7 +270,7 @@ private[akka] class Mailboxes(
 
     @tailrec def updateCache(cache: Map[String, Int], key: String, value: Int): Boolean = {
       stashCapacityCache.compareAndSet(cache, cache.updated(key, value)) ||
-        updateCache(stashCapacityCache.get, key, value) // recursive, try again
+      updateCache(stashCapacityCache.get, key, value) // recursive, try again
     }
 
     if (dispatcher == Dispatchers.DefaultDispatcherId && mailbox == Mailboxes.DefaultMailboxId)

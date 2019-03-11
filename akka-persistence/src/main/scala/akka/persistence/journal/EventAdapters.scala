@@ -20,10 +20,9 @@ import scala.util.Try
 /**
  * `EventAdapters` serves as a per-journal collection of bound event adapters.
  */
-class EventAdapters(
-  map:      ConcurrentHashMap[Class[_], EventAdapter],
-  bindings: immutable.Seq[(Class[_], EventAdapter)],
-  log:      LoggingAdapter) {
+class EventAdapters(map: ConcurrentHashMap[Class[_], EventAdapter],
+                    bindings: immutable.Seq[(Class[_], EventAdapter)],
+                    log: LoggingAdapter) {
 
   /**
    * Finds the "most specific" matching adapter for the given class (i.e. it may return an adapter that can work on a
@@ -34,8 +33,8 @@ class EventAdapters(
   def get(clazz: Class[_]): EventAdapter = {
     map.get(clazz) match {
       case null => // bindings are ordered from most specific to least specific
-        val value = bindings filter {
-          _._1 isAssignableFrom clazz
+        val value = bindings.filter {
+          _._1.isAssignableFrom(clazz)
         } match {
           case (_, bestMatch) +: _ => bestMatch
           case _                   => IdentityEventAdapter
@@ -71,18 +70,17 @@ private[akka] object EventAdapters {
       apply(system, adapters, adapterBindings)
   }
 
-  private def apply(
-    system:          ExtendedActorSystem,
-    adapters:        Map[Name, FQN],
-    adapterBindings: Map[FQN, BoundAdapters]): EventAdapters = {
+  private def apply(system: ExtendedActorSystem,
+                    adapters: Map[Name, FQN],
+                    adapterBindings: Map[FQN, BoundAdapters]): EventAdapters = {
 
     val adapterNames = adapters.keys.toSet
     for {
       (fqn, boundToAdapters) <- adapterBindings
       boundAdapter <- boundToAdapters
-    } require(
-      adapterNames(boundAdapter.toString),
-      s"$fqn was bound to undefined event-adapter: $boundAdapter (bindings: ${boundToAdapters.mkString("[", ", ", "]")}, known adapters: ${adapters.keys.mkString})")
+    } require(adapterNames(boundAdapter.toString),
+              s"$fqn was bound to undefined event-adapter: $boundAdapter (bindings: ${boundToAdapters
+                .mkString("[", ", ", "]")}, known adapters: ${adapters.keys.mkString})")
 
     // A Map of handler from alias to implementation (i.e. class implementing akka.serialization.Serializer)
     // For example this defines a handler named 'country': `"country" -> com.example.comain.CountryTagsAdapter`
@@ -92,24 +90,29 @@ private[akka] object EventAdapters {
     // It is primarily ordered by the most specific classes first, and secondly in the configured order.
     val bindings: immutable.Seq[ClassHandler] = {
       val bs = for ((k: FQN, as: BoundAdapters) <- adapterBindings)
-        yield if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
-      else (system.dynamicAccess.getClassFor[Any](k).get, NoopWriteEventAdapter(CombinedReadEventAdapter(as.map(handlers))))
+        yield
+          if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
+          else
+            (system.dynamicAccess.getClassFor[Any](k).get,
+             NoopWriteEventAdapter(CombinedReadEventAdapter(as.map(handlers))))
 
       sort(bs)
     }
 
-    val backing = bindings.foldLeft(new ConcurrentHashMap[Class[_], EventAdapter]) { case (map, (c, s)) => map.put(c, s); map }
+    val backing = bindings.foldLeft(new ConcurrentHashMap[Class[_], EventAdapter]) {
+      case (map, (c, s)) => map.put(c, s); map
+    }
 
     new EventAdapters(backing, bindings, system.log)
   }
 
   def instantiateAdapter(adapterFQN: String, system: ExtendedActorSystem): Try[EventAdapter] = {
     val clazz = system.dynamicAccess.getClassFor[Any](adapterFQN).get
-    if (classOf[EventAdapter] isAssignableFrom clazz)
+    if (classOf[EventAdapter].isAssignableFrom(clazz))
       instantiate[EventAdapter](adapterFQN, system)
-    else if (classOf[WriteEventAdapter] isAssignableFrom clazz)
+    else if (classOf[WriteEventAdapter].isAssignableFrom(clazz))
       instantiate[WriteEventAdapter](adapterFQN, system).map(NoopReadEventAdapter)
-    else if (classOf[ReadEventAdapter] isAssignableFrom clazz)
+    else if (classOf[ReadEventAdapter].isAssignableFrom(clazz))
       instantiate[ReadEventAdapter](adapterFQN, system).map(NoopWriteEventAdapter)
     else
       throw new IllegalArgumentException(s"Configured $adapterFQN does not implement any EventAdapter interface!")
@@ -117,7 +120,8 @@ private[akka] object EventAdapters {
 
   /** INTERNAL API */
   private[akka] case class CombinedReadEventAdapter(adapters: immutable.Seq[EventAdapter]) extends EventAdapter {
-    private def onlyReadSideException = new IllegalStateException("CombinedReadEventAdapter must not be used when writing (creating manifests) events!")
+    private def onlyReadSideException =
+      new IllegalStateException("CombinedReadEventAdapter must not be used when writing (creating manifests) events!")
     override def manifest(event: Any): String = throw onlyReadSideException
     override def toJournal(event: Any): Any = throw onlyReadSideException
 
@@ -133,7 +137,7 @@ private[akka] object EventAdapters {
    * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
   private def instantiate[T: ClassTag](fqn: FQN, system: ExtendedActorSystem): Try[T] =
-    system.dynamicAccess.createInstanceFor[T](fqn, List(classOf[ExtendedActorSystem] -> system)) recoverWith {
+    system.dynamicAccess.createInstanceFor[T](fqn, List(classOf[ExtendedActorSystem] -> system)).recoverWith {
       case _: NoSuchMethodException => system.dynamicAccess.createInstanceFor[T](fqn, Nil)
     }
 
@@ -143,26 +147,27 @@ private[akka] object EventAdapters {
    */
   private def sort[T](in: Iterable[(Class[_], T)]): immutable.Seq[(Class[_], T)] =
     in.foldLeft(new ArrayBuffer[(Class[_], T)](in.size)) { (buf, ca) =>
-      buf.indexWhere(_._1 isAssignableFrom ca._1) match {
-        case -1 => buf append ca
-        case x  => buf insert (x, ca)
+        buf.indexWhere(_._1.isAssignableFrom(ca._1)) match {
+          case -1 => buf.append(ca)
+          case x  => buf.insert(x, ca)
+        }
+        buf
       }
-      buf
-    }.to(immutable.Seq)
+      .to(immutable.Seq)
 
   private final def configToMap(config: Config, path: String): Map[String, String] = {
     import scala.collection.JavaConverters._
     if (config.hasPath(path)) {
-      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
+      config.getConfig(path).root.unwrapped.asScala.toMap.map { case (k, v) => k -> v.toString }
     } else Map.empty
   }
 
   private final def configToListMap(config: Config, path: String): Map[String, immutable.Seq[String]] = {
     import scala.collection.JavaConverters._
     if (config.hasPath(path)) {
-      config.getConfig(path).root.unwrapped.asScala.toMap map {
+      config.getConfig(path).root.unwrapped.asScala.toMap.map {
         case (k, v: util.ArrayList[_]) if v.isInstanceOf[util.ArrayList[_]] => k -> v.asScala.map(_.toString).toList
-        case (k, v) => k -> List(v.toString)
+        case (k, v)                                                         => k -> List(v.toString)
       }
     } else Map.empty
   }

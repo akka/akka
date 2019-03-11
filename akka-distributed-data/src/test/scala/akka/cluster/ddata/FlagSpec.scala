@@ -24,9 +24,9 @@ class FlagSpec extends WordSpec with Matchers {
     "merge by picking true" in {
       val f1 = Flag()
       val f2 = f1.switchOn
-      val m1 = f1 merge f2
+      val m1 = f1.merge(f2)
       m1.enabled should be(true)
-      val m2 = f2 merge f1
+      val m2 = f2.merge(f1)
       m2.enabled should be(true)
     }
 

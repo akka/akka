@@ -15,13 +15,9 @@ object BlogPostExample {
 
   //#event
   sealed trait BlogEvent
-  final case class PostAdded(
-    postId:  String,
-    content: PostContent) extends BlogEvent
+  final case class PostAdded(postId: String, content: PostContent) extends BlogEvent
 
-  final case class BodyChanged(
-    postId:  String,
-    newBody: String) extends BlogEvent
+  final case class BodyChanged(postId: String, newBody: String) extends BlogEvent
   final case class Published(postId: String) extends BlogEvent
   //#event
 
@@ -56,33 +52,35 @@ object BlogPostExample {
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
-      persistenceId = PersistenceId(s"Blog-$entityId"),
-      emptyState = BlankState,
-      commandHandler,
-      eventHandler)
+    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](persistenceId = PersistenceId(s"Blog-$entityId"),
+                                                            emptyState = BlankState,
+                                                            commandHandler,
+                                                            eventHandler)
   //#behavior
 
   //#command-handler
   private val commandHandler: (BlogState, BlogCommand) => Effect[BlogEvent, BlogState] = { (state, command) =>
     state match {
 
-      case BlankState => command match {
-        case cmd: AddPost => addPost(cmd)
-        case _            => Effect.unhandled
-      }
+      case BlankState =>
+        command match {
+          case cmd: AddPost => addPost(cmd)
+          case _            => Effect.unhandled
+        }
 
-      case draftState: DraftState => command match {
-        case cmd: ChangeBody  => changeBody(draftState, cmd)
-        case Publish(replyTo) => publish(draftState, replyTo)
-        case GetPost(replyTo) => getPost(draftState, replyTo)
-        case _: AddPost       => Effect.unhandled
-      }
+      case draftState: DraftState =>
+        command match {
+          case cmd: ChangeBody  => changeBody(draftState, cmd)
+          case Publish(replyTo) => publish(draftState, replyTo)
+          case GetPost(replyTo) => getPost(draftState, replyTo)
+          case _: AddPost       => Effect.unhandled
+        }
 
-      case publishedState: PublishedState => command match {
-        case GetPost(replyTo) => getPost(publishedState, replyTo)
-        case _                => Effect.unhandled
-      }
+      case publishedState: PublishedState =>
+        command match {
+          case GetPost(replyTo) => getPost(publishedState, replyTo)
+          case _                => Effect.unhandled
+        }
     }
   }
 
@@ -125,22 +123,24 @@ object BlogPostExample {
   private val eventHandler: (BlogState, BlogEvent) => BlogState = { (state, event) =>
     state match {
 
-      case BlankState => event match {
-        case PostAdded(_, content) =>
-          DraftState(content)
-        case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
-      }
+      case BlankState =>
+        event match {
+          case PostAdded(_, content) =>
+            DraftState(content)
+          case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
+        }
 
-      case draftState: DraftState => event match {
+      case draftState: DraftState =>
+        event match {
 
-        case BodyChanged(_, newBody) =>
-          draftState.withBody(newBody)
+          case BodyChanged(_, newBody) =>
+            draftState.withBody(newBody)
 
-        case Published(_) =>
-          PublishedState(draftState.content)
+          case Published(_) =>
+            PublishedState(draftState.content)
 
-        case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
-      }
+          case _ => throw new IllegalStateException(s"unexpected event [$event] in state [$state]")
+        }
 
       case _: PublishedState =>
         // no more changes after published
@@ -150,4 +150,3 @@ object BlogPostExample {
   //#event-handler
 
 }
-

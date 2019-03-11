@@ -13,7 +13,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
-import akka.util.{ Timeout, unused }
+import akka.util.{ unused, Timeout }
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
 
@@ -28,6 +28,7 @@ object AskPattern {
    * See [[ask]]
    */
   implicit final class Askable[T](val ref: RecipientRef[T]) extends AnyVal {
+
     /**
      * The ask-pattern implements the initiator side of a request–reply protocol.
      * The `?` operator is pronounced as "ask" (and a convenience symbolic operation
@@ -95,8 +96,9 @@ object AskPattern {
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
         case a: InternalRecipientRef[_] => askUntyped(a, timeout, replyTo)
-        case a => throw new IllegalStateException(
-          "Only expect references to be RecipientRef, ActorRefAdapter or ActorSystemAdapter until " +
+        case a =>
+          throw new IllegalStateException(
+            "Only expect references to be RecipientRef, ActorRefAdapter or ActorSystemAdapter until " +
             "native system is implemented: " + a.getClass)
       }
     }
@@ -109,13 +111,14 @@ object AskPattern {
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
       if (target.isTerminated)
-        (
-          adapt.ActorRefAdapter[U](target.provider.deadLetters),
-          Future.failed[U](new TimeoutException(s"Recipient[$target] had already been terminated.")), null)
+        (adapt.ActorRefAdapter[U](target.provider.deadLetters),
+         Future.failed[U](new TimeoutException(s"Recipient[$target] had already been terminated.")),
+         null)
       else if (timeout.duration.length <= 0)
-        (
-          adapt.ActorRefAdapter[U](target.provider.deadLetters),
-          Future.failed[U](new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")), null)
+        (adapt.ActorRefAdapter[U](target.provider.deadLetters),
+         Future.failed[U](
+           new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")),
+         null)
       else {
         // messageClassName "unknown' is set later, after applying the message factory
         val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)

@@ -17,7 +17,8 @@ import akka.serialization.SerializerWithStringManifest
  * INTERNAL API
  */
 @InternalApi private[akka] class ShardingSerializer(val system: akka.actor.ExtendedActorSystem)
-  extends SerializerWithStringManifest with BaseSerializer {
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   private val payloadSupport = new WrappedPayloadSupport(system)
 

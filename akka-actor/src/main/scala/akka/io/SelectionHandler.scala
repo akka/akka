@@ -31,10 +31,10 @@ abstract class SelectionHandlerSettings(config: Config) {
 
   val MaxChannels: Int = getString("max-channels") match {
     case "unlimited" => -1
-    case _           => getInt("max-channels") requiring (_ > 0, "max-channels must be > 0 or 'unlimited'")
+    case _           => getInt("max-channels").requiring(_ > 0, "max-channels must be > 0 or 'unlimited'")
   }
-  val SelectorAssociationRetries: Int = getInt("selector-association-retries") requiring (
-    _ >= 0, "selector-association-retries must be >= 0")
+  val SelectorAssociationRetries: Int =
+    getInt("selector-association-retries").requiring(_ >= 0, "selector-association-retries must be >= 0")
 
   val SelectorDispatcher: String = getString("selector-dispatcher")
   val WorkerDispatcher: String = getString("worker-dispatcher")
@@ -47,6 +47,7 @@ abstract class SelectionHandlerSettings(config: Config) {
  * Interface behind which we hide our selector management logic from the connection actors
  */
 private[io] trait ChannelRegistry {
+
   /**
    * Registers the given channel with the selector, creates a ChannelRegistration instance for it
    * and dispatches it back to the channelActor calling this `register`
@@ -82,22 +83,28 @@ private[io] object SelectionHandler {
     def failureMessage: Any
   }
 
-  final case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry => Props)
-    extends NoSerializationVerificationNeeded
+  final case class WorkerForCommand(apiCommand: HasFailureMessage,
+                                    commander: ActorRef,
+                                    childProps: ChannelRegistry => Props)
+      extends NoSerializationVerificationNeeded
 
-  final case class Retry(command: WorkerForCommand, retriesLeft: Int) extends NoSerializationVerificationNeeded { require(retriesLeft >= 0) }
+  final case class Retry(command: WorkerForCommand, retriesLeft: Int) extends NoSerializationVerificationNeeded {
+    require(retriesLeft >= 0)
+  }
 
   case object ChannelConnectable
   case object ChannelAcceptable
   case object ChannelReadable extends DeadLetterSuppression
   case object ChannelWritable extends DeadLetterSuppression
 
-  private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int) extends Actor {
+  private[io] abstract class SelectorBasedManager(selectorSettings: SelectionHandlerSettings, nrOfSelectors: Int)
+      extends Actor {
 
     override def supervisorStrategy = connectionSupervisorStrategy
 
     val selectorPool = context.actorOf(
-      props = RandomPool(nrOfSelectors).props(Props(classOf[SelectionHandler], selectorSettings)).withDeploy(Deploy.local),
+      props =
+        RandomPool(nrOfSelectors).props(Props(classOf[SelectionHandler], selectorSettings)).withDeploy(Deploy.local),
       name = "selectors")
 
     final def workerForCommandHandler(pf: PartialFunction[HasFailureMessage, ChannelRegistry => Props]): Receive = {
@@ -111,7 +118,9 @@ private[io] object SelectionHandler {
    */
   private[io] final val connectionSupervisorStrategy: SupervisorStrategy =
     new OneForOneStrategy()(SupervisorStrategy.stoppingStrategy.decider) {
-      override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+      override def logFailure(context: ActorContext,
+                              child: ActorRef,
+                              cause: Throwable,
                               decision: SupervisorStrategy.Directive): Unit =
         if (cause.isInstanceOf[DeathPactException]) {
           try context.system.eventStream.publish {
@@ -120,7 +129,10 @@ private[io] object SelectionHandler {
         } else super.logFailure(context, child, cause, decision)
     }
 
-  private class ChannelRegistryImpl(executionContext: ExecutionContext, settings: SelectionHandlerSettings, log: LoggingAdapter) extends ChannelRegistry {
+  private class ChannelRegistryImpl(executionContext: ExecutionContext,
+                                    settings: SelectionHandlerSettings,
+                                    log: LoggingAdapter)
+      extends ChannelRegistry {
     private[this] val selector = SelectorProvider.provider.openSelector
     private[this] val wakeUp = new AtomicBoolean(false)
 
@@ -171,20 +183,21 @@ private[io] object SelectionHandler {
       if (settings.TraceLogging) log.debug(s"Scheduling Registering channel $channel with initialOps $initialOps")
       execute {
         new Task {
-          def tryRun(): Unit = try {
-            if (settings.TraceLogging) log.debug(s"Registering channel $channel with initialOps $initialOps")
-            val key = channel.register(selector, initialOps, channelActor)
-            channelActor ! new ChannelRegistration {
-              def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
+          def tryRun(): Unit =
+            try {
+              if (settings.TraceLogging) log.debug(s"Registering channel $channel with initialOps $initialOps")
+              val key = channel.register(selector, initialOps, channelActor)
+              channelActor ! new ChannelRegistration {
+                def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
 
-              def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
+                def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
 
-              def cancelAndClose(andThen: () => Unit): Unit = cancelKeyAndClose(key, andThen)
+                def cancelAndClose(andThen: () => Unit): Unit = cancelKeyAndClose(key, andThen)
+              }
+            } catch {
+              case _: ClosedChannelException =>
+              // ignore, might happen if a connection is closed in the same moment as an interest is registered
             }
-          } catch {
-            case _: ClosedChannelException =>
-            // ignore, might happen if a connection is closed in the same moment as an interest is registered
-          }
         }
       }
     }
@@ -195,7 +208,8 @@ private[io] object SelectionHandler {
           def tryRun(): Unit = {
             // thorough 'close' of the Selector
             @tailrec def closeNextChannel(it: JIterator[SelectionKey]): Unit = if (it.hasNext) {
-              try it.next().channel.close() catch { case NonFatal(e) => log.debug("Error closing channel: {}", e) }
+              try it.next().channel.close()
+              catch { case NonFatal(e) => log.debug("Error closing channel: {}", e) }
               closeNextChannel(it)
             }
             try closeNextChannel(selector.keys.iterator)
@@ -276,8 +290,10 @@ private[io] object SelectionHandler {
   }
 }
 
-private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends Actor with ActorLogging
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class SelectionHandler(settings: SelectionHandlerSettings)
+    extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import SelectionHandler._
   import settings._
 
@@ -289,13 +305,13 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
   }
 
   def receive: Receive = {
-    case cmd: WorkerForCommand   => spawnChildWithCapacityProtection(cmd, SelectorAssociationRetries)
+    case cmd: WorkerForCommand => spawnChildWithCapacityProtection(cmd, SelectorAssociationRetries)
 
     case Retry(cmd, retriesLeft) => spawnChildWithCapacityProtection(cmd, retriesLeft)
 
     // since our ActorRef is never exposed to the user and we are only assigning watches to our
     // children all incoming `Terminated` events must be for a child of ours
-    case _: Terminated           => childCount -= 1
+    case _: Terminated => childCount -= 1
   }
 
   override def postStop(): Unit = registry.shutdown()
@@ -307,11 +323,14 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
       case _: Exception => SupervisorStrategy.Stop
     }
     new OneForOneStrategy()(stoppingDecider) {
-      override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+      override def logFailure(context: ActorContext,
+                              child: ActorRef,
+                              cause: Throwable,
                               decision: SupervisorStrategy.Directive): Unit =
         try {
           val logMessage = cause match {
-            case e: ActorInitializationException if (e.getCause ne null) && (e.getCause.getMessage ne null) => e.getCause.getMessage
+            case e: ActorInitializationException if (e.getCause ne null) && (e.getCause.getMessage ne null) =>
+              e.getCause.getMessage
             case e: ActorInitializationException if e.getCause ne null =>
               e.getCause match {
                 case ie: java.lang.reflect.InvocationTargetException => ie.getTargetException.toString
@@ -319,8 +338,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
               }
             case e => e.getMessage
           }
-          context.system.eventStream.publish(
-            Logging.Debug(child.path.toString, classOf[SelectionHandler], logMessage))
+          context.system.eventStream.publish(Logging.Debug(child.path.toString, classOf[SelectionHandler], logMessage))
         } catch { case NonFatal(_) => }
     }
   }
@@ -330,13 +348,15 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
     if (MaxChannelsPerSelector == -1 || childCount < MaxChannelsPerSelector) {
       val newName = sequenceNumber.toString
       sequenceNumber += 1
-      val child = context.actorOf(props = cmd.childProps(registry).withDispatcher(WorkerDispatcher).withDeploy(Deploy.local), name = newName)
+      val child = context.actorOf(props =
+                                    cmd.childProps(registry).withDispatcher(WorkerDispatcher).withDeploy(Deploy.local),
+                                  name = newName)
       childCount += 1
       if (MaxChannelsPerSelector > 0) context.watch(child) // we don't need to watch if we aren't limited
     } else {
       if (retriesLeft >= 1) {
         log.debug("Rejecting [{}] with [{}] retries left, retrying...", cmd, retriesLeft)
-        context.parent forward Retry(cmd, retriesLeft - 1)
+        context.parent.forward(Retry(cmd, retriesLeft - 1))
       } else {
         log.warning("Rejecting [{}] with no retries left, aborting...", cmd)
         cmd.commander ! cmd.apiCommand.failureMessage // I can't do it, Captain!

@@ -44,10 +44,15 @@ object EventSourcedActorDeleteFailureSpec {
 
 }
 
-class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
-  """
+class EventSourcedActorDeleteFailureSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config("inmem",
+                             "SnapshotFailureRobustnessSpec",
+                             extraConfig = Some(
+                               """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
   import EventSourcedActorDeleteFailureSpec._
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
@@ -72,4 +77,3 @@ class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec
 
   }
 }
-

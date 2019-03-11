@@ -32,7 +32,9 @@ private[persistence] object Eventsourced {
   }
 
   /** INTERNAL API: forces actor to stash incoming commands until all these invocations are handled */
-  private[akka] final case class StashingHandlerInvocation(evt: Any, handler: Any => Unit) extends PendingHandlerInvocation
+  private[akka] final case class StashingHandlerInvocation(evt: Any, handler: Any => Unit)
+      extends PendingHandlerInvocation
+
   /** INTERNAL API: does not force the actor to stash commands; Originates from either `persistAsync` or `defer` calls */
   private[akka] final case class AsyncHandlerInvocation(evt: Any, handler: Any => Unit) extends PendingHandlerInvocation
 
@@ -45,8 +47,11 @@ private[persistence] object Eventsourced {
  *
  * Scala API and implementation details of [[PersistentActor]] and [[AbstractPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash
-  with PersistenceIdentity with PersistenceRecovery {
+private[persistence] trait Eventsourced
+    extends Snapshotter
+    with PersistenceStash
+    with PersistenceIdentity
+    with PersistenceRecovery {
   import Eventsourced._
   import JournalProtocol._
   import SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
@@ -148,11 +153,18 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
     event match {
       case Some(evt) =>
-        log.error(cause, "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
-          "persistenceId [{}].", evt.getClass.getName, lastSequenceNr, persistenceId)
+        log.error(cause,
+                  "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
+                  "persistenceId [{}].",
+                  evt.getClass.getName,
+                  lastSequenceNr,
+                  persistenceId)
       case None =>
-        log.error(cause, "Persistence failure when replaying events for persistenceId [{}]. " +
-          "Last known sequence number [{}]", persistenceId, lastSequenceNr)
+        log.error(cause,
+                  "Persistence failure when replaying events for persistenceId [{}]. " +
+                  "Last known sequence number [{}]",
+                  persistenceId,
+                  lastSequenceNr)
     }
 
   /**
@@ -169,8 +181,11 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param event the event that was to be persisted
    */
   protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
-      event.getClass.getName, seqNr, persistenceId)
+    log.error(cause,
+              "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
+              event.getClass.getName,
+              seqNr,
+              persistenceId)
   }
 
   /**
@@ -182,14 +197,17 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.error(
-      cause,
-      "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-      event.getClass.getName, seqNr, persistenceId, cause.getMessage)
+    log.error(cause,
+              "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
+              event.getClass.getName,
+              seqNr,
+              persistenceId,
+              cause.getMessage)
   }
 
   private def stashInternally(currMsg: Any): Unit =
-    try internalStash.stash() catch {
+    try internalStash.stash()
+    catch {
       case e: StashOverflowException =>
         internalStashOverflowStrategy match {
           case DiscardToDeadLetterStrategy =>
@@ -278,15 +296,26 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     message match {
       case RecoveryCompleted => // mute
       case SaveSnapshotFailure(m, e) =>
-        log.warning("Failed to saveSnapshot given metadata [{}] due to: [{}: {}]", m, e.getClass.getCanonicalName, e.getMessage)
+        log.warning("Failed to saveSnapshot given metadata [{}] due to: [{}: {}]",
+                    m,
+                    e.getClass.getCanonicalName,
+                    e.getMessage)
       case DeleteSnapshotFailure(m, e) =>
-        log.warning("Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]", m, e.getClass.getCanonicalName, e.getMessage)
+        log.warning("Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]",
+                    m,
+                    e.getClass.getCanonicalName,
+                    e.getMessage)
       case DeleteSnapshotsFailure(c, e) =>
-        log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]", c, e.getClass.getCanonicalName, e.getMessage)
+        log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]",
+                    c,
+                    e.getClass.getCanonicalName,
+                    e.getMessage)
       case DeleteMessagesFailure(e, toSequenceNr) =>
-        log.warning(
-          "Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
-          toSequenceNr, persistenceId, e.getClass.getCanonicalName, e.getMessage)
+        log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
+                    toSequenceNr,
+                    persistenceId,
+                    e.getClass.getCanonicalName,
+                    e.getMessage)
       case m => super.unhandled(m)
     }
   }
@@ -343,11 +372,17 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalPersist[A](event: A)(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingStashingPersistInvocations += 1
-    pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
-    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
-      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
+    pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
+    eventBatch ::= AtomicWrite(
+      PersistentRepr(event,
+                     persistenceId = persistenceId,
+                     sequenceNr = nextSequenceNr(),
+                     writerUuid = writerUuid,
+                     sender = sender()))
   }
 
   /**
@@ -355,14 +390,21 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalPersistAll[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event =>
         pendingStashingPersistInvocations += 1
-        pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
+        pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       }
-      eventBatch ::= AtomicWrite(events.map(PersistentRepr.apply(_, persistenceId = persistenceId,
-        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
+      eventBatch ::= AtomicWrite(
+        events.map(
+          PersistentRepr.apply(_,
+                               persistenceId = persistenceId,
+                               sequenceNr = nextSequenceNr(),
+                               writerUuid = writerUuid,
+                               sender = sender())))
     }
   }
 
@@ -371,10 +413,16 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalPersistAsync[A](event: A)(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
-    pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
-    eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
-      sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
+    pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
+    eventBatch ::= AtomicWrite(
+      PersistentRepr(event,
+                     persistenceId = persistenceId,
+                     sequenceNr = nextSequenceNr(),
+                     writerUuid = writerUuid,
+                     sender = sender()))
   }
 
   /**
@@ -382,13 +430,20 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalPersistAllAsync[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event =>
-        pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
+        pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       }
-      eventBatch ::= AtomicWrite(events.map(PersistentRepr(_, persistenceId = persistenceId,
-        sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
+      eventBatch ::= AtomicWrite(
+        events.map(
+          PersistentRepr(_,
+                         persistenceId = persistenceId,
+                         sequenceNr = nextSequenceNr(),
+                         writerUuid = writerUuid,
+                         sender = sender())))
     }
   }
 
@@ -397,11 +452,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalDeferAsync[A](event: A)(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
       handler(event)
     } else {
-      pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
+      pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
     }
   }
@@ -411,12 +468,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalDefer[A](event: A)(handler: A => Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
+    if (recoveryRunning)
+      throw new IllegalStateException(
+        "Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
       handler(event)
     } else {
       pendingStashingPersistInvocations += 1
-      pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit])
+      pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
       eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
     }
   }
@@ -438,8 +497,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
       journal ! DeleteMessagesTo(persistenceId, toSequenceNr, self)
     else
-      self ! DeleteMessagesFailure(new RuntimeException(
-        s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"), toSequenceNr)
+      self ! DeleteMessagesFailure(
+        new RuntimeException(
+          s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
+        toSequenceNr)
   }
 
   /**
@@ -452,10 +513,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * Or delete all by using `Long.MaxValue` as the `toSequenceNr`
    * {{{ m.copy(sequenceNr = Long.MaxValue) }}}
    */
-  @InternalApi private[akka] def internalDeleteMessagesBeforeSnapshot(
-    e:               SaveSnapshotSuccess,
-    keepNrOfBatches: Int,
-    snapshotAfter:   Int): Unit = {
+  @InternalApi private[akka] def internalDeleteMessagesBeforeSnapshot(e: SaveSnapshotSuccess,
+                                                                      keepNrOfBatches: Int,
+                                                                      snapshotAfter: Int): Unit = {
     /* Delete old events but keep the latest around
       1. It's not safe to delete all events immediately because snapshots are typically stored with
          a weaker consistency level. A replay might "see" the deleted events before it sees the stored
@@ -539,7 +599,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
 
     private val recoveryBehavior: Receive = {
-      val _receiveRecover = try receiveRecover catch {
+      val _receiveRecover = try receiveRecover
+      catch {
         case NonFatal(e) =>
           try onRecoveryFailure(e, Some(e))
           finally context.stop(self)
@@ -562,42 +623,43 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
     override def recoveryRunning: Boolean = true
 
-    override def stateReceive(receive: Receive, message: Any) = try message match {
-      case LoadSnapshotResult(sso, toSnr) =>
-        timeoutCancellable.cancel()
-        sso.foreach {
-          case SelectedSnapshot(metadata, snapshot) =>
-            val offer = SnapshotOffer(metadata, snapshot)
-            if (recoveryBehavior.isDefinedAt(offer)) {
-              setLastSequenceNr(metadata.sequenceNr)
-              // Since we are recovering we can ignore the receive behavior from the stack
-              Eventsourced.super.aroundReceive(recoveryBehavior, offer)
-            } else {
-              unhandled(offer)
-            }
-        }
-        changeState(recovering(recoveryBehavior, timeout))
-        journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+    override def stateReceive(receive: Receive, message: Any) =
+      try message match {
+        case LoadSnapshotResult(sso, toSnr) =>
+          timeoutCancellable.cancel()
+          sso.foreach {
+            case SelectedSnapshot(metadata, snapshot) =>
+              val offer = SnapshotOffer(metadata, snapshot)
+              if (recoveryBehavior.isDefinedAt(offer)) {
+                setLastSequenceNr(metadata.sequenceNr)
+                // Since we are recovering we can ignore the receive behavior from the stack
+                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+              } else {
+                unhandled(offer)
+              }
+          }
+          changeState(recovering(recoveryBehavior, timeout))
+          journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
 
-      case LoadSnapshotFailed(cause) =>
-        timeoutCancellable.cancel()
-        try onRecoveryFailure(cause, event = None) finally context.stop(self)
-        returnRecoveryPermit()
+        case LoadSnapshotFailed(cause) =>
+          timeoutCancellable.cancel()
+          try onRecoveryFailure(cause, event = None)
+          finally context.stop(self)
+          returnRecoveryPermit()
 
-      case RecoveryTick(true) =>
-        try onRecoveryFailure(
-          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
-          event = None)
-        finally context.stop(self)
-        returnRecoveryPermit()
+        case RecoveryTick(true) =>
+          try onRecoveryFailure(new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
+                                event = None)
+          finally context.stop(self)
+          returnRecoveryPermit()
 
-      case other =>
-        stashInternally(other)
-    } catch {
-      case NonFatal(e) =>
-        returnRecoveryPermit()
-        throw e
-    }
+        case other =>
+          stashInternally(other)
+      } catch {
+        case NonFatal(e) =>
+          returnRecoveryPermit()
+          throw e
+      }
 
     private def returnRecoveryPermit(): Unit =
       extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
@@ -629,50 +691,54 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       override def recoveryRunning: Boolean = _recoveryRunning
 
-      override def stateReceive(receive: Receive, message: Any) = try message match {
-        case ReplayedMessage(p) =>
-          try {
-            eventSeenInInterval = true
-            updateLastSequenceNr(p)
-            Eventsourced.super.aroundReceive(recoveryBehavior, p)
-          } catch {
-            case NonFatal(t) =>
-              timeoutCancellable.cancel()
-              try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
-              returnRecoveryPermit()
-          }
-        case RecoverySuccess(highestSeqNr) =>
-          timeoutCancellable.cancel()
-          onReplaySuccess() // callback for subclass implementation
-          sequenceNr = highestSeqNr
-          setLastSequenceNr(highestSeqNr)
-          _recoveryRunning = false
-          try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-          finally transitToProcessingState() // in finally in case exception and resume strategy
-          // if exception from RecoveryCompleted the permit is returned in below catch
-          returnRecoveryPermit()
-        case ReplayMessagesFailure(cause) =>
-          timeoutCancellable.cancel()
-          try onRecoveryFailure(cause, event = None) finally context.stop(self)
-          returnRecoveryPermit()
-        case RecoveryTick(false) if !eventSeenInInterval =>
-          timeoutCancellable.cancel()
-          try onRecoveryFailure(
-            new RecoveryTimedOut(s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
-            event = None)
-          finally context.stop(self)
-          returnRecoveryPermit()
-        case RecoveryTick(false) =>
-          eventSeenInInterval = false
-        case RecoveryTick(true) =>
-        // snapshot tick, ignore
-        case other =>
-          stashInternally(other)
-      } catch {
-        case NonFatal(e) =>
-          returnRecoveryPermit()
-          throw e
-      }
+      override def stateReceive(receive: Receive, message: Any) =
+        try message match {
+          case ReplayedMessage(p) =>
+            try {
+              eventSeenInInterval = true
+              updateLastSequenceNr(p)
+              Eventsourced.super.aroundReceive(recoveryBehavior, p)
+            } catch {
+              case NonFatal(t) =>
+                timeoutCancellable.cancel()
+                try onRecoveryFailure(t, Some(p.payload))
+                finally context.stop(self)
+                returnRecoveryPermit()
+            }
+          case RecoverySuccess(highestSeqNr) =>
+            timeoutCancellable.cancel()
+            onReplaySuccess() // callback for subclass implementation
+            sequenceNr = highestSeqNr
+            setLastSequenceNr(highestSeqNr)
+            _recoveryRunning = false
+            try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+            finally transitToProcessingState() // in finally in case exception and resume strategy
+            // if exception from RecoveryCompleted the permit is returned in below catch
+            returnRecoveryPermit()
+          case ReplayMessagesFailure(cause) =>
+            timeoutCancellable.cancel()
+            try onRecoveryFailure(cause, event = None)
+            finally context.stop(self)
+            returnRecoveryPermit()
+          case RecoveryTick(false) if !eventSeenInInterval =>
+            timeoutCancellable.cancel()
+            try onRecoveryFailure(
+              new RecoveryTimedOut(
+                s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
+              event = None)
+            finally context.stop(self)
+            returnRecoveryPermit()
+          case RecoveryTick(false) =>
+            eventSeenInInterval = false
+          case RecoveryTick(true) =>
+          // snapshot tick, ignore
+          case other =>
+            stashInternally(other)
+        } catch {
+          case NonFatal(e) =>
+            returnRecoveryPermit()
+            throw e
+        }
 
       private def returnRecoveryPermit(): Unit =
         extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
@@ -734,7 +800,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         // while message is in flight, in that case the handler has already been discarded
         if (id == instanceId) {
           onWriteMessageComplete(err = false)
-          try onPersistFailure(cause, p.payload, p.sequenceNr) finally context.stop(self)
+          try onPersistFailure(cause, p.payload, p.sequenceNr)
+          finally context.stop(self)
         }
       case LoopMessageSuccess(l, id) =>
         // instanceId mismatch can happen for persistAsync and defer in case of actor restart
@@ -772,12 +839,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
     override def stateReceive(receive: Receive, message: Any) =
       if (common.isDefinedAt(message)) common(message)
-      else try {
-        Eventsourced.super.aroundReceive(receive, message)
-        aroundReceiveComplete(err = false)
-      } catch {
-        case NonFatal(e) => aroundReceiveComplete(err = true); throw e
-      }
+      else
+        try {
+          Eventsourced.super.aroundReceive(receive, message)
+          aroundReceiveComplete(err = false)
+        } catch {
+          case NonFatal(e) => aroundReceiveComplete(err = true); throw e
+        }
 
     private def aroundReceiveComplete(err: Boolean): Unit = {
       if (eventBatch.nonEmpty) flushBatch()

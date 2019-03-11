@@ -24,8 +24,7 @@ object StreamRefsSpec {
 
   object DataSourceActor {
     def props(probe: ActorRef): Props =
-      Props(new DataSourceActor(probe))
-        .withDispatcher("akka.test.stream-dispatcher")
+      Props(new DataSourceActor(probe)).withDispatcher("akka.test.stream-dispatcher")
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
@@ -42,33 +41,32 @@ object StreamRefsSpec {
         val source: Source[String, NotUsed] = Source(List("hello", "world"))
         val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
 
-        ref pipeTo sender()
+        ref.pipeTo(sender())
 
       case "give-infinite" =>
         val source: Source[String, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map("ping-" + _)
         val (r: NotUsed, ref: Future[SourceRef[String]]) = source.toMat(StreamRefs.sourceRef())(Keep.both).run()
 
-        ref pipeTo sender()
+        ref.pipeTo(sender())
 
       case "give-fail" =>
-        val ref = Source.failed[String](new Exception("Booooom!") with NoStackTrace)
-          .runWith(StreamRefs.sourceRef())
+        val ref = Source.failed[String](new Exception("Booooom!") with NoStackTrace).runWith(StreamRefs.sourceRef())
 
-        ref pipeTo sender()
+        ref.pipeTo(sender())
 
       case "give-complete-asap" =>
-        val ref = Source.empty
-          .runWith(StreamRefs.sourceRef())
+        val ref = Source.empty.runWith(StreamRefs.sourceRef())
 
-        ref pipeTo sender()
+        ref.pipeTo(sender())
 
       case "give-subscribe-timeout" =>
-        val ref = Source.repeat("is anyone there?")
+        val ref = Source
+          .repeat("is anyone there?")
           .toMat(StreamRefs.sourceRef())(Keep.right) // attributes like this so they apply to the Sink.sourceRef
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .run()
 
-        ref pipeTo sender()
+        ref.pipeTo(sender())
       //      case "send-bulk" =>
       //        /*
       //         * Here we're able to send a source to a remote recipient
@@ -87,32 +85,27 @@ object StreamRefsSpec {
          * For them it's a Sink; for us it's a Source.
          */
         val sink =
-          StreamRefs.sinkRef[String]()
-            .to(Sink.actorRef(probe, "<COMPLETE>"))
-            .run()
+          StreamRefs.sinkRef[String]().to(Sink.actorRef(probe, "<COMPLETE>")).run()
 
-        sink pipeTo sender()
+        sink.pipeTo(sender())
 
       case "receive-ignore" =>
         val sink =
-          StreamRefs.sinkRef[String]()
-            .to(Sink.ignore)
-            .run()
+          StreamRefs.sinkRef[String]().to(Sink.ignore).run()
 
-        sink pipeTo sender()
+        sink.pipeTo(sender())
 
       case "receive-subscribe-timeout" =>
-        val sink = StreamRefs.sinkRef[String]()
+        val sink = StreamRefs
+          .sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
           .to(Sink.actorRef(probe, "<COMPLETE>"))
           .run()
 
-        sink pipeTo sender()
+        sink.pipeTo(sender())
 
       case "receive-32" =>
-        val (sink, driver) = StreamRefs.sinkRef[String]()
-          .toMat(TestSink.probe(context.system))(Keep.both)
-          .run()
+        val (sink, driver) = StreamRefs.sinkRef[String]().toMat(TestSink.probe(context.system))(Keep.both).run()
 
         import context.dispatcher
         Future {
@@ -125,9 +118,9 @@ object StreamRefsSpec {
           driver.expectNextN(30)
 
           "<COMPLETED>"
-        } pipeTo probe
+        }.pipeTo(probe)
 
-        sink pipeTo sender()
+        sink.pipeTo(sender())
 
       //      case "receive-bulk" =>
       //        /*
@@ -155,8 +148,7 @@ object StreamRefsSpec {
   final case class BulkSinkMsg(dataSink: SinkRef[ByteString])
 
   def config(): Config = {
-    ConfigFactory.parseString(
-      s"""
+    ConfigFactory.parseString(s"""
     akka {
       loglevel = INFO
 
@@ -204,8 +196,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef
-        .runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
 
       p.expectMsg("hello")
       p.expectMsg("world")
@@ -216,8 +207,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give-fail"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef
-        .runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
 
       val f = p.expectMsgType[Failure]
       f.cause.getMessage should include("Remote stream (")
@@ -231,8 +221,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give-complete-asap"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef
-        .runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
 
       p.expectMsg("<COMPLETE>")
     }
@@ -241,8 +230,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give-infinite"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      val probe = sourceRef
-        .runWith(TestSink.probe)
+      val probe = sourceRef.runWith(TestSink.probe)
 
       probe.ensureSubscription()
       probe.expectNoMessage(100.millis)
@@ -270,8 +258,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // not materializing it, awaiting the timeout...
       Thread.sleep(800) // the timeout is 500ms
 
-      val probe = remoteSource
-        .runWith(TestSink.probe[String](system))
+      val probe = remoteSource.runWith(TestSink.probe[String](system))
 
       //      val failure = p.expectMsgType[Failure]
       //      failure.cause.getMessage should include("[SourceRef-0] Remote side did not subscribe (materialize) handed out Sink reference")
@@ -287,7 +274,8 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give-subscribe-timeout"
       val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
       // materialize directly and start consuming, timeout is 500ms
-      val eventualStrings: Future[immutable.Seq[String]] = remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+      val eventualStrings: Future[immutable.Seq[String]] = remoteSource
+        .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
         .take(60) // 60 * 100 millis - data flowing for 6 seconds - both 500ms and 5s timeouts should have passed
         .runWith(Sink.seq)
 
@@ -300,7 +288,8 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
 
       val done =
-        remoteSource.throttle(1, 200.millis)
+        remoteSource
+          .throttle(1, 200.millis)
           .takeWithin(5.seconds) // which is > than the subscription timeout (so we make sure the timeout was cancelled)
           .runWith(Sink.ignore)
 
@@ -315,9 +304,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "receive"
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
 
-      Source("hello" :: "world" :: Nil)
-        .to(remoteSink)
-        .run()
+      Source("hello" :: "world" :: Nil).to(remoteSink).run()
 
       p.expectMsg("hello")
       p.expectMsg("world")
@@ -330,9 +317,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
 
       val remoteFailureMessage = "Booom!"
-      Source.failed(new Exception(remoteFailureMessage))
-        .to(remoteSink)
-        .run()
+      Source.failed(new Exception(remoteFailureMessage)).to(remoteSink).run()
 
       val f = p.expectMsgType[akka.actor.Status.Failure]
       f.cause.getMessage should include(s"Remote stream (")
@@ -346,8 +331,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
 
       val msgs = (1 to 100).toList.map(i => s"payload-$i")
 
-      Source(msgs)
-        .runWith(remoteSink)
+      Source(msgs).runWith(remoteSink)
 
       msgs.foreach(t => p.expectMsg(t))
       p.expectMsg("<COMPLETE>")
@@ -360,9 +344,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // not materializing it, awaiting the timeout...
       Thread.sleep(800) // the timeout is 500ms
 
-      val probe = TestSource.probe[String](system)
-        .to(remoteSink)
-        .run()
+      val probe = TestSource.probe[String](system).to(remoteSink).run()
 
       val failure = p.expectMsgType[Failure]
       failure.cause.getMessage should include("Remote side did not subscribe (materialize) handed out Sink reference")
@@ -375,7 +357,8 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
     "not receive timeout if subscribing is already done to the sink ref" in {
       remoteActor ! "receive-subscribe-timeout"
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
-      Source.repeat("whatever")
+      Source
+        .repeat("whatever")
         .throttle(1, 100.millis)
         .take(10) // the timeout is 500ms, so this makes sure we run more time than that
         .runWith(remoteSink)
@@ -392,7 +375,8 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
 
       val done =
-        Source.repeat("hello-24934")
+        Source
+          .repeat("hello-24934")
           .throttle(1, 300.millis)
           .takeWithin(5.seconds) // which is > than the subscription timeout (so we make sure the timeout was cancelled)
           .alsoToMat(Sink.last)(Keep.right)
@@ -406,7 +390,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "receive-32"
       val sinkRef = expectMsgType[SinkRef[String]]
 
-      Source.repeat("hello") runWith sinkRef
+      Source.repeat("hello").runWith(sinkRef)
 
       // if we get this message, it means no checks in the request/expect semantics were broken, good!
       p.expectMsg("<COMPLETED>")

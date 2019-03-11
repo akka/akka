@@ -45,7 +45,8 @@ object SharedMediaDriverSupport {
             override def accept(msg: String): Unit = {
               println(msg)
             }
-          }) catch {
+          })
+          catch {
             case NonFatal(e) =>
               println(e.getMessage)
               false
@@ -103,7 +104,7 @@ object SharedMediaDriverSupport {
         case NonFatal(e) =>
           println(
             s"Couldn't delete Aeron embedded media driver files in [${driver.aeronDirectoryName}] " +
-              s"due to [${e.getMessage}]")
+            s"due to [${e.getMessage}]")
       }
     }
   }

@@ -46,10 +46,9 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](
-    flow1:   Graph[FlowShape[I1, O1], M1],
-    flow2:   Graph[FlowShape[I2, O2], M2],
-    combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
+  def fromFlowsMat[I1, O1, I2, O2, M1, M2, M](flow1: Graph[FlowShape[I1, O1], M1],
+                                              flow2: Graph[FlowShape[I2, O2], M2],
+                                              combine: function.Function2[M1, M2, M]): BidiFlow[I1, O1, I2, O2, M] = {
     new BidiFlow(scaladsl.BidiFlow.fromFlowsMat(flow1, flow2)(combinerToScala(combine)))
   }
 
@@ -71,16 +70,16 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromFlows[I1, O1, I2, O2, M1, M2](
-    flow1: Graph[FlowShape[I1, O1], M1],
-    flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
+  def fromFlows[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
+                                        flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.fromFlows(flow1, flow2))
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
    * operator each, expressed by the two functions.
    */
-  def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
+  def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1],
+                                    bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.fromFunctions(top.apply _, bottom.apply _))
 
   /**
@@ -112,7 +111,8 @@ object BidiFlow {
   }
 }
 
-final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat])
+    extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
   override def traversalBuilder = delegate.traversalBuilder
   override def shape = delegate.shape
 
@@ -159,7 +159,8 @@ final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2
    * The `combine` function is used to compose the materialized values of this flow and that
    * flow into the materialized value of the resulting BidiFlow.
    */
-  def atop[OO1, II2, Mat2, M](bidi: BidiFlow[O1, OO1, II2, I2, Mat2], combine: function.Function2[Mat, Mat2, M]): BidiFlow[I1, OO1, II2, O2, M] =
+  def atop[OO1, II2, Mat2, M](bidi: BidiFlow[O1, OO1, II2, I2, Mat2],
+                              combine: function.Function2[Mat, Mat2, M]): BidiFlow[I1, OO1, II2, O2, M] =
     new BidiFlow(delegate.atopMat(bidi.asScala)(combinerToScala(combine)))
 
   /**

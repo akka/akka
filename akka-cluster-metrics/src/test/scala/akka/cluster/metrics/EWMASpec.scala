@@ -5,7 +5,7 @@
 package akka.cluster.metrics
 
 import scala.concurrent.duration._
-import akka.testkit.{ LongRunningTest, AkkaSpec }
+import akka.testkit.{ AkkaSpec, LongRunningTest }
 import java.util.concurrent.ThreadLocalRandom
 
 class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
@@ -75,7 +75,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
     "calculate the ewma for multiple, variable, data streams" taggedAs LongRunningTest in {
       var streamingDataSet = Map.empty[String, Metric]
       var usedMemory = Array.empty[Byte]
-      (1 to 50) foreach { _ =>
+      (1 to 50).foreach { _ =>
         // wait a while between each message to give the metrics a chance to change
         Thread.sleep(100)
         usedMemory = usedMemory ++ Array.fill(1024)(ThreadLocalRandom.current.nextInt(127).toByte)

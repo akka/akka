@@ -9,9 +9,9 @@ import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 
 trait PluginCleanup extends BeforeAndAfterAll { _: PluginSpec =>
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
+  val storageLocations =
+    List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir").map(s =>
+      new File(system.settings.config.getString(s)))
 
   override def beforeAll(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)

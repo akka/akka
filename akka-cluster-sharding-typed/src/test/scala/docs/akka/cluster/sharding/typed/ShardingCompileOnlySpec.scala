@@ -46,9 +46,8 @@ object ShardingCompileOnlySpec {
   //#init
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
 
-  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.init(Entity(
-    typeKey = TypeKey,
-    createBehavior = ctx => counter(ctx.entityId, 0)))
+  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] =
+    sharding.init(Entity(typeKey = TypeKey, createBehavior = ctx => counter(ctx.entityId, 0)))
   //#init
 
   //#send
@@ -64,9 +63,7 @@ object ShardingCompileOnlySpec {
   //#persistence
   val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
 
-  ClusterSharding(system).init(Entity(
-    typeKey = BlogTypeKey,
-    createBehavior = ctx => behavior(ctx.entityId)))
+  ClusterSharding(system).init(Entity(typeKey = BlogTypeKey, createBehavior = ctx => behavior(ctx.entityId)))
   //#persistence
 
   //#counter-passivate
@@ -76,7 +73,6 @@ object ShardingCompileOnlySpec {
 
   def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
     Behaviors.setup { ctx =>
-
       def become(value: Int): Behavior[CounterCommand] =
         Behaviors.receiveMessage[CounterCommand] {
           case Increment =>
@@ -98,10 +94,9 @@ object ShardingCompileOnlySpec {
     }
   }
 
-  sharding.init(Entity(
-    typeKey = TypeKey,
-    createBehavior = ctx => counter2(ctx.shard, ctx.entityId))
-    .withStopMessage(GoodByeCounter))
+  sharding.init(
+    Entity(typeKey = TypeKey, createBehavior = ctx => counter2(ctx.shard, ctx.entityId))
+      .withStopMessage(GoodByeCounter))
   //#counter-passivate
 
 }

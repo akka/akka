@@ -6,10 +6,10 @@ package akka.camel
 
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
-import scala.concurrent.{ Promise, Await, Future }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.collection.immutable
 import akka.camel.TestSupport.NonSharedCamelSystem
-import akka.actor.{ ActorRef, Props, Actor }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing.BroadcastGroup
 import scala.concurrent.duration._
 import akka.testkit._
@@ -51,7 +51,7 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         // map over all futures, put all futures in one list of activated and deactivated actor refs.
         futureRegistrarLists.map {
           case (futureActivations, futureDeactivations) =>
-            futureActivations zip futureDeactivations map {
+            futureActivations.zip(futureDeactivations).map {
               case (activations, deactivations) =>
                 promiseAllRefs.success((activations.flatten, deactivations.flatten))
             }
@@ -61,7 +61,8 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         activations.size should ===(2 * number * number)
         // should be the size of the activated activated producers and consumers
         deactivations.size should ===(2 * number * number)
-        def partitionNames(refs: immutable.Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
+        def partitionNames(refs: immutable.Seq[ActorRef]) =
+          refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
         def assertContainsSameElements(lists: (Seq[_], Seq[_])): Unit = {
           val (a, b) = lists
           a.intersect(b).size should ===(a.size)
@@ -93,7 +94,9 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
 
         allActivationFutures = allActivationFutures :+ activationListFuture
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
-        val routee = context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise), "registrar-" + i)
+        val routee =
+          context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise),
+                          "registrar-" + i)
         routee.path.toString
       }
       promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
@@ -110,8 +113,12 @@ final case class DeRegisterConsumersAndProducers()
 final case class Activations()
 final case class DeActivations()
 
-class Registrar(val start: Int, val number: Int, activationsPromise: Promise[List[ActorRef]],
-                deActivationsPromise: Promise[List[ActorRef]]) extends Actor with ActorLogging {
+class Registrar(val start: Int,
+                val number: Int,
+                activationsPromise: Promise[List[ActorRef]],
+                deActivationsPromise: Promise[List[ActorRef]])
+    extends Actor
+    with ActorLogging {
   private var actorRefs = Set[ActorRef]()
   private var activations = Set[Future[ActorRef]]()
   private var deActivations = Set[Future[ActorRef]]()
@@ -128,18 +135,18 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       add(new TestProducer(endpoint), "concurrent-test-producer-" + start + "-" + i)
       index = index + 1
       if (activations.size == number * 2) {
-        Future.sequence(activations.toList) map activationsPromise.success
+        Future.sequence(activations.toList).map(activationsPromise.success)
       }
     case reg: DeRegisterConsumersAndProducers =>
       actorRefs.foreach { aref =>
         context.stop(aref)
         val result = camel.deactivationFutureFor(aref)
-        result.failed.foreach {
-          e => log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
+        result.failed.foreach { e =>
+          log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
         }
         deActivations += result
         if (deActivations.size == number * 2) {
-          Future.sequence(deActivations.toList) map deActivationsPromise.success
+          Future.sequence(deActivations.toList).map(deActivationsPromise.success)
         }
       }
   }
@@ -148,8 +155,8 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
     val ref = context.actorOf(Props(actor), name)
     actorRefs = actorRefs + ref
     val result = camel.activationFutureFor(ref)
-    result.failed.foreach {
-      e => log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
+    result.failed.foreach { e =>
+      log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
     }
     activations += result
   }
@@ -168,7 +175,8 @@ class EchoConsumer(endpoint: String) extends Actor with Consumer {
    * By default it returns an identity function, override this method to
    * return a custom route definition handler.
    */
-  override def onRouteDefinition = (rd: RouteDefinition) => rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+  override def onRouteDefinition =
+    (rd: RouteDefinition) => rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
 }
 
 class TestProducer(uri: String) extends Actor with Producer {

@@ -13,8 +13,7 @@ object ClusterShardingIncorrectSetupSpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  val commonConfig = ConfigFactory.parseString(
-    """
+  val commonConfig = ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.cluster.sharding {
          waiting-for-state-timeout = 100ms
@@ -37,7 +36,10 @@ object ClusterShardingIncorrectSetupSpec {
   }
 }
 
-abstract class ClusterShardingIncorrectSetupSpec extends MultiNodeSpec(ClusterShardingIncorrectSetupSpecConfig) with MultiNodeClusterSpec with ImplicitSender {
+abstract class ClusterShardingIncorrectSetupSpec
+    extends MultiNodeSpec(ClusterShardingIncorrectSetupSpecConfig)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import ClusterShardingIncorrectSetupSpec._
   import ClusterShardingIncorrectSetupSpecConfig._
@@ -48,16 +50,14 @@ abstract class ClusterShardingIncorrectSetupSpec extends MultiNodeSpec(ClusterSh
       enterBarrier("cluster-up")
       runOn(first) {
         EventFilter.error(pattern = """Has ClusterSharding been started on all nodes?""").intercept {
-          ClusterSharding(system).start(
-            typeName = "Entity",
-            entityProps = TestActors.echoActorProps,
-            settings = ClusterShardingSettings(system),
-            extractEntityId = extractEntityId,
-            extractShardId = extractShardId)
+          ClusterSharding(system).start(typeName = "Entity",
+                                        entityProps = TestActors.echoActorProps,
+                                        settings = ClusterShardingSettings(system),
+                                        extractEntityId = extractEntityId,
+                                        extractShardId = extractShardId)
         }
       }
       enterBarrier("helpful error message logged")
     }
   }
 }
-

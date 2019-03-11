@@ -65,6 +65,7 @@ trait Timers extends Actor {
  * and thus are cancelled automatically when it is restarted or stopped.
  */
 abstract class AbstractActorWithTimers extends AbstractActor with Timers {
+
   /**
    * Start and cancel timers via the enclosed `TimerScheduler`.
    */

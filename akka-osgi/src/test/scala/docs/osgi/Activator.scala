@@ -11,7 +11,7 @@ class SomeActor extends akka.actor.Actor {
 }
 
 //#Activator
-import akka.actor.{ Props, ActorSystem }
+import akka.actor.{ ActorSystem, Props }
 import org.osgi.framework.BundleContext
 import akka.osgi.ActorSystemActivator
 

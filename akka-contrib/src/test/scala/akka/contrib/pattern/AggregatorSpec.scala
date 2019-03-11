@@ -13,12 +13,12 @@ import scala.concurrent.duration._
 import scala.math.BigDecimal.int2bigDecimal
 import akka.actor._
 import org.scalatest.BeforeAndAfterAll
+
 /**
  * Sample and test code for the aggregator patter.
  * This is based on Jamie Allen's tutorial at
  * http://jaxenter.com/tutorial-asynchronous-programming-with-akka-actors-46220.html
  */
-
 sealed trait AccountType
 case object Checking extends AccountType
 case object Savings extends AccountType
@@ -27,9 +27,7 @@ case object MoneyMarket extends AccountType
 final case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
 final case class GetAccountBalances(id: Long)
 
-final case class AccountBalances(
-  accountType: AccountType,
-  balance:     Option[List[(Long, BigDecimal)]])
+final case class AccountBalances(accountType: AccountType, balance: Option[List[(Long, BigDecimal)]])
 
 final case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 final case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
@@ -71,20 +69,17 @@ class AccountBalanceRetriever extends Actor with Aggregator {
   }
   //#initial-expect
 
-  class AccountAggregator(
-    originalSender: ActorRef,
-    id:             Long, types: Set[AccountType]) {
+  class AccountAggregator(originalSender: ActorRef, id: Long, types: Set[AccountType]) {
 
     val results =
       mutable.ArrayBuffer.empty[(AccountType, Option[List[(Long, BigDecimal)]])]
 
     if (types.size > 0)
-      types foreach {
+      types.foreach {
         case Checking    => fetchCheckingAccountsBalance()
         case Savings     => fetchSavingsAccountsBalance()
         case MoneyMarket => fetchMoneyMarketAccountsBalance()
-      }
-    else collectBalances() // Empty type list yields empty response
+      } else collectBalances() // Empty type list yields empty response
 
     context.system.scheduler.scheduleOnce(1.second, self, TimedOut)
     //#expect-timeout
@@ -181,14 +176,19 @@ class ChainingSample extends Actor with Aggregator {
 
     def processFinal(eval: List[Int]): Unit = {
       // Select only the entries coming back from eval
-      originalSender ! FinalResponse(eval map values)
+      originalSender ! FinalResponse(eval.map(values))
       context.stop(self)
     }
   }
 }
 //#chain-sample
 
-class AggregatorSpec extends TestKit(ActorSystem("AggregatorSpec")) with ImplicitSender with FunSuiteLike with Matchers with BeforeAndAfterAll {
+class AggregatorSpec
+    extends TestKit(ActorSystem("AggregatorSpec"))
+    with ImplicitSender
+    with FunSuiteLike
+    with Matchers
+    with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     shutdown()
@@ -206,7 +206,7 @@ class AggregatorSpec extends TestKit(ActorSystem("AggregatorSpec")) with Implici
 
   test("Test request 3 account types") {
     system.actorOf(Props[AccountBalanceRetriever]) !
-      GetCustomerAccountBalances(1, Set(Checking, Savings, MoneyMarket))
+    GetCustomerAccountBalances(1, Set(Checking, Savings, MoneyMarket))
     receiveOne(10.seconds) match {
       case result: List[_] =>
         result should have size 3
@@ -226,7 +226,7 @@ class WorkListSpec extends FunSuiteLike {
 
   test("Processing empty WorkList") {
     // ProcessAndRemove something in the middle
-    val processed = workList process {
+    val processed = workList.process {
       case TestEntry(9) => true
       case _            => false
     }
@@ -264,19 +264,19 @@ class WorkListSpec extends FunSuiteLike {
   test("Process temp entries") {
 
     // ProcessAndRemove something in the middle
-    assert(workList process {
+    assert(workList.process {
       case TestEntry(2) => true
       case _            => false
     })
 
     // ProcessAndRemove the head
-    assert(workList process {
+    assert(workList.process {
       case TestEntry(0) => true
       case _            => false
     })
 
     // ProcessAndRemove the tail
-    assert(workList process {
+    assert(workList.process {
       case TestEntry(3) => true
       case _            => false
     })
@@ -290,26 +290,26 @@ class WorkListSpec extends FunSuiteLike {
   }
 
   test("Process permanent entry") {
-    assert(workList process {
+    assert(workList.process {
       case TestEntry(4) => true
       case _            => false
     })
   }
 
   test("Remove permanent entry") {
-    val removed = workList remove entry4
+    val removed = workList.remove(entry4)
     assert(removed)
   }
 
   test("Remove temp entry already processed") {
-    val removed = workList remove entry2
+    val removed = workList.remove(entry2)
     assert(!removed)
   }
 
   test("Process non-matching entries") {
 
     val processed =
-      workList process {
+      workList.process {
         case TestEntry(2) => true
         case _            => false
       }
@@ -317,7 +317,7 @@ class WorkListSpec extends FunSuiteLike {
     assert(!processed)
 
     val processed2 =
-      workList process {
+      workList.process {
         case TestEntry(5) => true
         case _            => false
       }
@@ -328,12 +328,16 @@ class WorkListSpec extends FunSuiteLike {
 
   test("Append two lists") {
     workList.removeAll()
-    0 to 4 foreach { id => workList.add(TestEntry(id), permanent = false) }
+    (0 to 4).foreach { id =>
+      workList.add(TestEntry(id), permanent = false)
+    }
 
     val l2 = new WorkList[TestEntry]
-    5 to 9 foreach { id => l2.add(TestEntry(id), permanent = true) }
+    (5 to 9).foreach { id =>
+      l2.add(TestEntry(id), permanent = true)
+    }
 
-    workList addAll l2
+    workList.addAll(l2)
 
     @tailrec
     def checkEntries(id: Int, entry: WorkList.Entry[TestEntry]): Int = {
@@ -357,9 +361,9 @@ class WorkListSpec extends FunSuiteLike {
 
   val fn1: PartialFunction[Any, Unit] = {
     case s: String =>
-      val result1 = workList2 remove fn1
+      val result1 = workList2.remove(fn1)
       assert(result1 === true, "First remove must return true")
-      val result2 = workList2 remove fn1
+      val result2 = workList2.remove(fn1)
       assert(result2 === false, "Second remove must return false")
   }
 
@@ -374,7 +378,7 @@ class WorkListSpec extends FunSuiteLike {
     assert(workList2.tail == workList2.head.next)
 
     // Processing inserted fn1, reentrant adding fn2
-    workList2 process { fn =>
+    workList2.process { fn =>
       var processed = true
       fn.applyOrElse("Foo", (_: Any) => processed = false)
       processed
@@ -383,7 +387,7 @@ class WorkListSpec extends FunSuiteLike {
 
   test("Reentrant delete") {
     // Processing inserted fn2, should delete itself
-    workList2 process { fn =>
+    workList2.process { fn =>
       var processed = true
       fn.applyOrElse("Foo", (_: Any) => processed = false)
       processed

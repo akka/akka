@@ -4,18 +4,19 @@
 
 package akka.remote.transport
 
-import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.remote.{ RARP, EndpointException }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
+import akka.remote.{ EndpointException, RARP }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
 import scala.concurrent.Await
 
 object AkkaProtocolStressTest {
-  val configA: Config = ConfigFactory parseString ("""
+  val configA: Config =
+    ConfigFactory.parseString("""
     akka {
       #loglevel = DEBUG
       actor.serialize-messages = off
@@ -53,12 +54,13 @@ object AkkaProtocolStressTest {
 
     def receive = {
       case "start" => self ! "sendNext"
-      case "sendNext" => if (nextSeq < limit) {
-        remote ! nextSeq
-        nextSeq += 1
-        if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
-        else self ! "sendNext"
-      }
+      case "sendNext" =>
+        if (nextSeq < limit) {
+          remote ! nextSeq
+          nextSeq += 1
+          if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
+          else self ! "sendNext"
+        }
       case seq: Int =>
         if (seq > maxSeq) {
           losses += seq - maxSeq - 1
@@ -119,13 +121,14 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   }
 
   override def beforeTermination(): Unit = {
-    system.eventStream.publish(TestEvent.Mute(
-      EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
-    systemB.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    system.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    systemB.eventStream.publish(
+      TestEvent.Mute(EventFilter[EndpointException](),
+                     EventFilter.error(start = "AssociationError"),
+                     EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def afterTermination(): Unit = shutdown(systemB)

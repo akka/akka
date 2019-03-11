@@ -26,8 +26,8 @@ object CustomGuardianAndMaterializerSpec {
 class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import CustomGuardianAndMaterializerSpec._
 
-  val guardian = Behaviors.receive[GuardianProtocol] {
-    (_, msg) => Behaviors.same
+  val guardian = Behaviors.receive[GuardianProtocol] { (_, msg) =>
+    Behaviors.same
   }
 
   implicit val mat = ActorMaterializer()

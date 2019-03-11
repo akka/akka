@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 
 import akka.event.Logging
 import akka.stream.Attributes.LogLevels
-import akka.stream.testkit.{ StreamSpec, ScriptedTest }
+import akka.stream.testkit.{ ScriptedTest, StreamSpec }
 import akka.stream._
 import akka.testkit.TestProbe
 
@@ -46,21 +46,15 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
       "allow extracting value to be logged" in {
         val logging = FlowWithContext[Message, Long].log("my-log2", m => m.data)
-        Source(List(Message("a", 1L)))
-          .asSourceWithContext(m => m.offset)
-          .via(logging)
-          .asSource
-          .runWith(Sink.ignore)
+        Source(List(Message("a", 1L))).asSourceWithContext(m => m.offset).via(logging).asSource.runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log2] Element: a"))
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log2] Upstream finished."))
       }
 
       "allow disabling element logging" in {
-        val disableElementLogging = Attributes.logLevels(
-          onElement = LogLevels.Off,
-          onFinish = Logging.DebugLevel,
-          onFailure = Logging.DebugLevel)
+        val disableElementLogging =
+          Attributes.logLevels(onElement = LogLevels.Off, onFinish = Logging.DebugLevel, onFailure = Logging.DebugLevel)
 
         val logging = FlowWithContext[Message, Long].log("my-log3").withAttributes(disableElementLogging)
         Source(List(Message("a", 1L), Message("b", 2L)))
@@ -100,10 +94,8 @@ class FlowWithContextLogSpec extends StreamSpec("""
       }
 
       "allow disabling element logging" in {
-        val disableElementLogging = Attributes.logLevels(
-          onElement = LogLevels.Off,
-          onFinish = Logging.DebugLevel,
-          onFailure = Logging.DebugLevel)
+        val disableElementLogging =
+          Attributes.logLevels(onElement = LogLevels.Off, onFinish = Logging.DebugLevel, onFailure = Logging.DebugLevel)
 
         Source(List(Message("a", 1L), Message("b", 2L)))
           .asSourceWithContext(m => m.offset)

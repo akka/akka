@@ -47,12 +47,15 @@ object ActorSource {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def actorRef[T](
-    completionMatcher: Predicate[T],
-    failureMatcher:    PartialFunction[T, Throwable],
-    bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] = {
-    akka.stream.typed.scaladsl.ActorSource.actorRef(
-      { case m if completionMatcher.test(m) => }: PartialFunction[T, Unit],
-      failureMatcher, bufferSize, overflowStrategy).asJava
+  def actorRef[T](completionMatcher: Predicate[T],
+                  failureMatcher: PartialFunction[T, Throwable],
+                  bufferSize: Int,
+                  overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] = {
+    akka.stream.typed.scaladsl.ActorSource
+      .actorRef({ case m if completionMatcher.test(m) => }: PartialFunction[T, Unit],
+                failureMatcher,
+                bufferSize,
+                overflowStrategy)
+      .asJava
   }
 }

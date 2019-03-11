@@ -31,12 +31,10 @@ object JoinConfig {
     """).withFallback(AkkaSpec.testConf)
 
   def joinConfig(configured: Int): Config =
-    ConfigFactory.parseString(s"$Key = $configured")
-      .withFallback(baseConfig)
+    ConfigFactory.parseString(s"$Key = $configured").withFallback(baseConfig)
 }
 
-abstract class JoinConfigCompatCheckerClusterShardingSpec extends AkkaSpec(
-  JoinConfig.joinConfig(JoinConfig.Shards)) {
+abstract class JoinConfigCompatCheckerClusterShardingSpec extends AkkaSpec(JoinConfig.joinConfig(JoinConfig.Shards)) {
 
   protected val duration = 5.seconds
 
@@ -61,8 +59,7 @@ abstract class JoinConfigCompatCheckerClusterShardingSpec extends AkkaSpec(
   }
 
   protected def configured(system: ActorSystem): Int =
-    Try(system.settings.config.getInt(JoinConfig.Key))
-      .getOrElse(0)
+    Try(system.settings.config.getInt(JoinConfig.Key)).getOrElse(0)
 
 }
 

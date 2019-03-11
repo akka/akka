@@ -70,4 +70,4 @@ object ActorRefResolverSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ActorRefResolverSetup(createExtension: java.util.function.Function[ActorSystem[_], ActorRefResolver])
-  extends ExtensionSetup[ActorRefResolver](ActorRefResolver, createExtension)
+    extends ExtensionSetup[ActorRefResolver](ActorRefResolver, createExtension)

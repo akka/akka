@@ -7,9 +7,7 @@ package akka.actor
 import akka.testkit._
 
 object HotSwapSpec {
-  abstract class Becomer extends Actor {
-
-  }
+  abstract class Becomer extends Actor {}
 }
 
 class HotSwapSpec extends AkkaSpec with ImplicitSender {
@@ -19,7 +17,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
     "be able to become in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
         context.become { case always => sender() ! always }
-        def receive = { case _ => sender() ! "FAILURE" }
+        def receive = { case _       => sender() ! "FAILURE" }
       }))
       a ! "pigdog"
       expectMsg("pigdog")
@@ -37,7 +35,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
     "be able to become with stacking in its constructor" in {
       val a = system.actorOf(Props(new Becomer {
         context.become({ case always => sender() ! "pigdog:" + always; context.unbecome() }, false)
-        def receive = { case always => sender() ! "badass:" + always }
+        def receive = { case always  => sender() ! "badass:" + always }
       }))
       a ! "pigdog"
       expectMsg("pigdog:pigdog")
@@ -79,10 +77,11 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case "init" => sender() ! "init"
-          case "swap" => context.become({
-            case "swapped" => sender() ! "swapped"
-            case "revert"  => context.unbecome()
-          })
+          case "swap" =>
+            context.become({
+              case "swapped" => sender() ! "swapped"
+              case "revert"  => context.unbecome()
+            })
         }
       }))
 
@@ -118,7 +117,7 @@ class HotSwapSpec extends AkkaSpec with ImplicitSender {
       expectMsg("swapped")
       a ! "state"
       expectMsg("1")
-      EventFilter[Exception](message = "Crash (expected)!", occurrences = 1) intercept { a ! "crash" }
+      EventFilter[Exception](message = "Crash (expected)!", occurrences = 1).intercept { a ! "crash" }
       a ! "state"
       expectMsg("0")
     }

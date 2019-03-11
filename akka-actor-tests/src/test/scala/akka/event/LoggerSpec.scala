@@ -48,7 +48,8 @@ object LoggerSpec {
       }
     """).withFallback(AkkaSpec.testConf)
 
-  val multipleConfig = ConfigFactory.parseString("""
+  val multipleConfig =
+    ConfigFactory.parseString("""
       akka {
         stdout-loglevel = "OFF"
         loglevel = "WARNING"
@@ -97,10 +98,10 @@ object LoggerSpec {
         ref ! ("OK")
       case event: LogEvent if !event.mdc.isEmpty =>
         print(event)
-        target foreach { _ ! event }
+        target.foreach { _ ! event }
       case event: LogEvent =>
         print(event)
-        target foreach { _ ! event.message }
+        target.foreach { _ ! event.message }
     }
   }
 
@@ -248,10 +249,11 @@ class LoggerSpec extends WordSpec with Matchers {
 
         ref ! "Current Message in MDC"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Current Message in MDC") if w.mdc.size == 3 &&
-            w.mdc("requestId") == 3 &&
-            w.mdc("currentMsg") == "Current Message in MDC" &&
-            w.mdc("currentMsgLength") == 22 =>
+          case w @ Warning(_, _, "Current Message in MDC")
+              if w.mdc.size == 3 &&
+              w.mdc("requestId") == 3 &&
+              w.mdc("currentMsg") == "Current Message in MDC" &&
+              w.mdc("currentMsgLength") == 22 =>
         }
 
         ref ! "Current Message removed from MDC"

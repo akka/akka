@@ -61,7 +61,9 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       // TestTransport throws IllegalAssociationException when trying to associate with non-existing system
-      intercept[InvalidAssociationException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
+      intercept[InvalidAssociationException] {
+        Await.result(transportA.associate(nonExistingAddress), timeout.duration)
+      }
 
     }
 
@@ -133,9 +135,9 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       awaitCond(!registry.existsAssociation(addressA, addressB))
 
-      registry.logSnapshot exists {
+      registry.logSnapshot.exists {
         case DisassociateAttempt(requester, remote) if requester == addressA && remote == addressB => true
-        case _ => false
+        case _                                                                                     => false
       } should ===(true)
     }
 

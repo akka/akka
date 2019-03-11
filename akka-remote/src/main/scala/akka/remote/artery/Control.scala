@@ -80,7 +80,7 @@ private[remote] object InboundControlJunction {
   // messages for the stream callback
   private[InboundControlJunction] sealed trait CallbackMessage
   private[InboundControlJunction] final case class Attach(observer: ControlMessageObserver, done: Promise[Done])
-    extends CallbackMessage
+      extends CallbackMessage
   private[InboundControlJunction] final case class Dettach(observer: ControlMessageObserver) extends CallbackMessage
 }
 
@@ -88,7 +88,8 @@ private[remote] object InboundControlJunction {
  * INTERNAL API
  */
 private[remote] class InboundControlJunction
-  extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], InboundControlJunction.ControlMessageSubject] {
+    extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope],
+                                            InboundControlJunction.ControlMessageSubject] {
   import InboundControlJunction._
 
   val in: Inlet[InboundEnvelope] = Inlet("InboundControlJunction.in")
@@ -157,9 +158,10 @@ private[remote] object OutboundControlJunction {
 /**
  * INTERNAL API
  */
-private[remote] class OutboundControlJunction(
-  outboundContext: OutboundContext, outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
-  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope], OutboundControlJunction.OutboundControlIngress] {
+private[remote] class OutboundControlJunction(outboundContext: OutboundContext,
+                                              outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
+    extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope],
+                                            OutboundControlJunction.OutboundControlIngress] {
   import OutboundControlJunction._
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundControlJunction.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundControlJunction.out")
@@ -167,7 +169,8 @@ private[remote] class OutboundControlJunction(
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
 
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundControlIngress {
+    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging
+    with OutboundControlIngress {
 
       val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
       private val maxControlMessageBufferSize: Int = outboundContext.settings.Advanced.OutboundControlQueueSize
@@ -201,8 +204,7 @@ private[remote] class OutboundControlJunction(
       }
 
       private def wrap(message: ControlMessage): OutboundEnvelope =
-        outboundEnvelopePool.acquire().init(
-          recipient = OptionVal.None, message = message, sender = OptionVal.None)
+        outboundEnvelopePool.acquire().init(recipient = OptionVal.None, message = message, sender = OptionVal.None)
 
       override def sendControlMessage(message: ControlMessage): Unit =
         sendControlMessageCallback.invoke(message)

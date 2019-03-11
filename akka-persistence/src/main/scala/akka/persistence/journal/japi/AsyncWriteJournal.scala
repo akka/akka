@@ -22,10 +22,12 @@ abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal w
 
   final def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     doAsyncWriteMessages(messages.asJava).map { results =>
-      results.asScala.iterator.map { r =>
-        if (r.isPresent) Failure(r.get)
-        else successUnit
-      }.to(immutable.IndexedSeq)
+      results.asScala.iterator
+        .map { r =>
+          if (r.isPresent) Failure(r.get)
+          else successUnit
+        }
+        .to(immutable.IndexedSeq)
     }
 
   final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =

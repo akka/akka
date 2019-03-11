@@ -10,6 +10,7 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.ORMap.ZeroTag
 
 object LWWMap {
+
   /**
    * INTERNAL API
    */
@@ -21,6 +22,7 @@ object LWWMap {
   private val _empty: LWWMap[Any, Any] = new LWWMap(new ORMap(ORSet.empty, Map.empty, zeroTag = LWWMapTag))
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
+
   /**
    * Java API
    */
@@ -55,10 +57,11 @@ object LWWMap {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class LWWMap[A, B] private[akka] (
-  private[akka] val underlying: ORMap[A, LWWRegister[B]])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
-  import LWWRegister.{ Clock, defaultClock }
+final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, LWWRegister[B]])
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
+  import LWWRegister.{ defaultClock, Clock }
 
   type T = LWWMap[A, B]
   type D = ORMap.DeltaOp

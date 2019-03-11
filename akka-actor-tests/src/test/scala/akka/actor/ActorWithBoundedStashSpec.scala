@@ -40,11 +40,13 @@ object ActorWithBoundedStashSpec {
     def receive = {
       case msg: String if msg.startsWith("hello") =>
         numStashed += 1
-        try { stash(); sender() ! "ok" } catch {
+        try {
+          stash(); sender() ! "ok"
+        } catch {
           case _: StashOverflowException =>
             if (numStashed == 21) {
               sender() ! "STASHOVERFLOW"
-              context stop self
+              context.stop(self)
             } else {
               sender() ! "Unexpected StashOverflowException: " + numStashed
             }
@@ -82,7 +84,11 @@ object ActorWithBoundedStashSpec {
     """)
 }
 
-class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testConf) with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
+class ActorWithBoundedStashSpec
+    extends AkkaSpec(ActorWithBoundedStashSpec.testConf)
+    with BeforeAndAfterEach
+    with DefaultTimeout
+    with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
   override def atStartup: Unit = {

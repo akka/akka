@@ -137,12 +137,11 @@ private[remote] object RollingEventLogSection {
 /**
  * INTERNAL API
  */
-private[remote] class RollingEventLogSection(
-  fileChannel:   FileChannel,
-  offset:        Long,
-  entryCount:    Long,
-  logBufferSize: Long,
-  recordSize:    Int) {
+private[remote] class RollingEventLogSection(fileChannel: FileChannel,
+                                             offset: Long,
+                                             entryCount: Long,
+                                             logBufferSize: Long,
+                                             recordSize: Int) {
   import RollingEventLogSection._
 
   require(entryCount > 0, "entryCount must be greater than 0")
@@ -285,7 +284,8 @@ private[remote] final case class SnapshotInProgress(latch: CountDownLatch) exten
 /**
  * INTERNAL API
  */
-private[remote] class FlightRecorder(val fileChannel: FileChannel) extends AtomicReference[FlightRecorderStatus](Running) {
+private[remote] class FlightRecorder(val fileChannel: FileChannel)
+    extends AtomicReference[FlightRecorderStatus](Running) {
   import FlightRecorder._
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)
@@ -294,26 +294,23 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
   require((SnapshotCount & (SnapshotCount - 1)) == 0, "SnapshotCount must be power of two")
   private[this] val SnapshotMask = SnapshotCount - 1
   private[this] val alertLogs =
-    new RollingEventLogSection(
-      fileChannel = fileChannel,
-      offset = AlertSectionOffset,
-      entryCount = AlertWindow,
-      logBufferSize = AlertLogSize,
-      recordSize = AlertRecordSize)
+    new RollingEventLogSection(fileChannel = fileChannel,
+                               offset = AlertSectionOffset,
+                               entryCount = AlertWindow,
+                               logBufferSize = AlertLogSize,
+                               recordSize = AlertRecordSize)
   private[this] val loFreqLogs =
-    new RollingEventLogSection(
-      fileChannel = fileChannel,
-      offset = LoFreqSectionOffset,
-      entryCount = LoFreqWindow,
-      logBufferSize = LoFreqLogSize,
-      recordSize = LoFreqRecordSize)
+    new RollingEventLogSection(fileChannel = fileChannel,
+                               offset = LoFreqSectionOffset,
+                               entryCount = LoFreqWindow,
+                               logBufferSize = LoFreqLogSize,
+                               recordSize = LoFreqRecordSize)
   private[this] val hiFreqLogs =
-    new RollingEventLogSection(
-      fileChannel = fileChannel,
-      offset = HiFreqSectionOffset,
-      entryCount = HiFreqWindow,
-      logBufferSize = HiFreqLogSize,
-      recordSize = HiFreqRecordSize)
+    new RollingEventLogSection(fileChannel = fileChannel,
+                               offset = HiFreqSectionOffset,
+                               entryCount = HiFreqWindow,
+                               logBufferSize = HiFreqLogSize,
+                               recordSize = HiFreqRecordSize)
   // No need for volatile, guarded by atomic CAS and set
   @volatile private var currentLog = 0
 

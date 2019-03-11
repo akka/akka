@@ -29,6 +29,7 @@ class DefaultOSGiLogger extends DefaultLogger {
     //the Default Logger needs to be aware of the LogService which is published on the EventStream
     context.system.eventStream.subscribe(self, classOf[LogService])
     context.system.eventStream.unsubscribe(self, UnregisteringLogService.getClass)
+
     /**
      * Logs every already received LogEvent and set the logger ready to log every incoming LogEvent.
      *
@@ -71,9 +72,12 @@ class DefaultOSGiLogger extends DefaultLogger {
   def logMessage(logService: LogService, event: LogEvent): Unit = {
     event match {
       case error: Logging.Error if error.cause != NoCause =>
-        logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message), error.cause)
+        logService.log(event.level.asInt,
+                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message),
+                       error.cause)
       case _ =>
-        logService.log(event.level.asInt, messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
+        logService.log(event.level.asInt,
+                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
     }
   }
 

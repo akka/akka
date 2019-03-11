@@ -19,8 +19,7 @@ object AsyncSerializeSpec {
   case class Message3(str: String)
   case class Message4(str: String)
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
        akka {
         actor {
           serializers {
@@ -105,7 +104,7 @@ class AsyncSerializeSpec extends AkkaSpec(AsyncSerializeSpec.config) {
     }
 
     "logs warning if sync methods called" in {
-      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 1) intercept {
+      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 1).intercept {
         ser.serialize(Message1("to async"))
       }
     }
@@ -115,7 +114,7 @@ class AsyncSerializeSpec extends AkkaSpec(AsyncSerializeSpec.config) {
 
       val serializer = ser.findSerializerFor(msg3).asInstanceOf[TestAsyncSerializerCS]
 
-      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 2) intercept {
+      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 2).intercept {
         val binary = ser.serialize(msg3).get
         val back = ser.deserialize(binary, serializer.identifier, serializer.manifest(msg3)).get
         back shouldEqual msg3

@@ -14,8 +14,7 @@ import akka.testkit.AkkaSpec
 
 class TestPublisherSubscriberSpec extends AkkaSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -32,7 +31,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
       upstream.expectEventPF { case RequestMore(_, e) => e } should ===(1L)
-      downstream.expectEventPF { case OnNext(e) => e } should ===(1)
+      downstream.expectEventPF { case OnNext(e)       => e } should ===(1)
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
@@ -54,7 +53,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e) => e }
+      an[AssertionError] should be thrownBy upstream.expectEventPF { case Subscribe(e)       => e }
       an[AssertionError] should be thrownBy downstream.expectNextPF[String] { case e: String => e }
 
       upstreamSubscription.sendComplete()
@@ -66,9 +65,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
 
       Source.fromPublisher(upstream).runWith(Sink.fromSubscriber(downstream))
 
-      downstream
-        .expectSubscription()
-        .request(10)
+      downstream.expectSubscription().request(10)
 
       upstream.expectRequest() should ===(10L)
       upstream.sendNext(1)

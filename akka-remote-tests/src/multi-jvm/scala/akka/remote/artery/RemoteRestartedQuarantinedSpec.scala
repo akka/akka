@@ -19,8 +19,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
@@ -44,7 +44,9 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   override def initialParticipants = 2
 
-  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(role: RoleName,
+                      actorName: String,
+                      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -106,13 +108,16 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(system.name,
+                                      ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
 
         val probe = TestProbe()(freshSystem)
 
-        freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
+        freshSystem
+          .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
+          .tell(Identify("subject"), probe.ref)
         probe.expectMsgType[ActorIdentity](5.seconds).ref should not be (None)
 
         // Now the other system will be able to pass, too

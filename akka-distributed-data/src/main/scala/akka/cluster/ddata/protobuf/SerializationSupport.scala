@@ -90,26 +90,26 @@ trait SerializationSupport {
     Address(addressProtocol, system.name, address.getHostname, address.getPort)
 
   def uniqueAddressToProto(uniqueAddress: UniqueAddress): dm.UniqueAddress.Builder =
-    dm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address))
+    dm.UniqueAddress
+      .newBuilder()
+      .setAddress(addressToProto(uniqueAddress.address))
       .setUid(uniqueAddress.longUid.toInt)
       .setUid2((uniqueAddress.longUid >> 32).toInt)
 
   def uniqueAddressFromProto(uniqueAddress: dm.UniqueAddress): UniqueAddress =
-    UniqueAddress(
-      addressFromProto(uniqueAddress.getAddress),
-      if (uniqueAddress.hasUid2) {
-        // new remote node join the two parts of the long uid back
-        (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xFFFFFFFFL)
-      } else {
-        // old remote node
-        uniqueAddress.getUid.toLong
-      })
+    UniqueAddress(addressFromProto(uniqueAddress.getAddress), if (uniqueAddress.hasUid2) {
+      // new remote node join the two parts of the long uid back
+      (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0XFFFFFFFFL)
+    } else {
+      // old remote node
+      uniqueAddress.getUid.toLong
+    })
 
   def versionVectorToProto(versionVector: VersionVector): dm.VersionVector = {
     val b = dm.VersionVector.newBuilder()
     versionVector.versionsIterator.foreach {
-      case (node, value) => b.addEntries(dm.VersionVector.Entry.newBuilder().
-        setNode(uniqueAddressToProto(node)).setVersion(value))
+      case (node, value) =>
+        b.addEntries(dm.VersionVector.Entry.newBuilder().setNode(uniqueAddressToProto(node)).setVersion(value))
     }
     b.build()
   }
@@ -124,8 +124,9 @@ trait SerializationSupport {
     else if (entries.size == 1)
       VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
     else {
-      val versions: TreeMap[UniqueAddress, Long] = scala.collection.immutable.TreeMap.from(versionVector.getEntriesList.asScala.iterator.map(entry =>
-        uniqueAddressFromProto(entry.getNode) -> entry.getVersion))
+      val versions: TreeMap[UniqueAddress, Long] =
+        scala.collection.immutable.TreeMap.from(versionVector.getEntriesList.asScala.iterator.map(entry =>
+          uniqueAddressFromProto(entry.getNode) -> entry.getVersion))
       VersionVector(versions)
     }
   }
@@ -137,8 +138,9 @@ trait SerializationSupport {
     def buildOther(): dm.OtherMessage = {
       val m = msg.asInstanceOf[AnyRef]
       val msgSerializer = serialization.findSerializerFor(m)
-      val builder = dm.OtherMessage.newBuilder().
-        setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
+      val builder = dm.OtherMessage
+        .newBuilder()
+        .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
         .setSerializerId(msgSerializer.identifier)
 
       val ms = Serializers.manifestFor(msgSerializer, m)
@@ -164,10 +166,7 @@ trait SerializationSupport {
 
   def otherMessageFromProto(other: dm.OtherMessage): AnyRef = {
     val manifest = if (other.hasMessageManifest) other.getMessageManifest.toStringUtf8 else ""
-    serialization.deserialize(
-      other.getEnclosedMessage.toByteArray,
-      other.getSerializerId,
-      manifest).get
+    serialization.deserialize(other.getEnclosedMessage.toByteArray, other.getSerializerId, manifest).get
   }
 
 }

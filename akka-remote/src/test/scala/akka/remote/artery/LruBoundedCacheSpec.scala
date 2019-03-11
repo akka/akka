@@ -11,7 +11,8 @@ import scala.util.Random
 
 class LruBoundedCacheSpec extends AkkaSpec {
 
-  class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "") extends LruBoundedCache[String, String](_capacity, threshold) {
+  class TestCache(_capacity: Int, threshold: Int, hashSeed: String = "")
+      extends LruBoundedCache[String, String](_capacity, threshold) {
     private var cntr = 0
 
     override protected def compute(k: String): String = {

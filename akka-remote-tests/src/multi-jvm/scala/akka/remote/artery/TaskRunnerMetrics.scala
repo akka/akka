@@ -45,12 +45,14 @@ class TaskRunnerMetrics(system: ActorSystem) {
           entryOffset = c
 
           if (aeronSourceHistogram.getTotalCount > 0) {
-            println(s"Histogram of AeronSource tasks in microseconds. Max count before delegate: $aeronSourceMaxBeforeDelegate")
+            println(
+              s"Histogram of AeronSource tasks in microseconds. Max count before delegate: $aeronSourceMaxBeforeDelegate")
             aeronSourceHistogram.outputPercentileDistribution(System.out, 1000.0)
           }
 
           if (aeronSinkHistogram.getTotalCount > 0) {
-            println(s"Histogram of AeronSink tasks in microseconds. Max count before delegate: $aeronSinkMaxBeforeDelegate")
+            println(
+              s"Histogram of AeronSink tasks in microseconds. Max count before delegate: $aeronSinkMaxBeforeDelegate")
             aeronSinkHistogram.outputPercentileDistribution(System.out, 1000.0)
           }
         }

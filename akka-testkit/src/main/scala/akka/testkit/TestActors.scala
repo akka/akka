@@ -4,7 +4,7 @@
 
 package akka.testkit
 
-import akka.actor.{ Props, Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, Props }
 
 /**
  * A collection of common actor patterns used in tests.
@@ -36,7 +36,7 @@ object TestActors {
    */
   class ForwardActor(ref: ActorRef) extends Actor {
     override def receive = {
-      case message => ref forward message
+      case message => ref.forward(message)
     }
   }
 

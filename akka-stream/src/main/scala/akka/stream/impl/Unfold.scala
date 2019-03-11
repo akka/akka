@@ -38,7 +38,8 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldAsync[S, E](s: S, f: S => Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
+@InternalApi private[akka] final class UnfoldAsync[S, E](s: S, f: S => Future[Option[(S, E)]])
+    extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("UnfoldAsync.out")
   override val shape: SourceShape[E] = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldAsync
@@ -58,8 +59,7 @@ import scala.util.{ Failure, Success, Try }
         asyncHandler = ac.invoke
       }
 
-      def onPull(): Unit = f(state).onComplete(asyncHandler)(
-        akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
 
       setHandler(out, this)
     }

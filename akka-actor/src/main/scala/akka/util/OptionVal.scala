@@ -59,7 +59,7 @@ private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
   /**
    *  Returns the option's value if it is nonempty, or `null` if it is empty.
    */
-  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse ev(null)
+  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this.getOrElse(ev(null))
 
   /**
    * Returns the option's value.

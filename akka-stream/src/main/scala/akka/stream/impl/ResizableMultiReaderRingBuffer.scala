@@ -15,16 +15,13 @@ import akka.annotation.InternalApi
  * Contrary to many other ring buffer implementations this one does not automatically overwrite the oldest
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
-@InternalApi private[akka] class ResizableMultiReaderRingBuffer[T](
-  initialSize: Int, // constructor param, not field
-  maxSize:     Int, // constructor param, not field
-  val cursors: Cursors) {
-  require(
-    Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
-    "maxSize must be a power of 2 that is > 0 and < Int.MaxValue/2")
-  require(
-    Integer.lowestOneBit(initialSize) == initialSize && 0 < initialSize && initialSize <= maxSize,
-    "initialSize must be a power of 2 that is > 0 and <= maxSize")
+@InternalApi private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // constructor param, not field
+                                                                   maxSize: Int, // constructor param, not field
+                                                                   val cursors: Cursors) {
+  require(Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
+          "maxSize must be a power of 2 that is > 0 and < Int.MaxValue/2")
+  require(Integer.lowestOneBit(initialSize) == initialSize && 0 < initialSize && initialSize <= maxSize,
+          "initialSize must be a power of 2 that is > 0 and <= maxSize")
 
   private[this] val maxSizeBit = Integer.numberOfTrailingZeros(maxSize)
   private[this] var array = new Array[Any](initialSize)

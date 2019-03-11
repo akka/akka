@@ -55,9 +55,9 @@ private[cluster] object Reachability {
  */
 @SerialVersionUID(1L)
 @InternalApi
-private[cluster] class Reachability private (
-  val records:  immutable.IndexedSeq[Reachability.Record],
-  val versions: Map[UniqueAddress, Long]) extends Serializable {
+private[cluster] class Reachability private (val records: immutable.IndexedSeq[Reachability.Record],
+                                             val versions: Map[UniqueAddress, Long])
+    extends Serializable {
 
   import Reachability._
 
@@ -75,7 +75,7 @@ private[cluster] class Reachability private (
         var allTerminated = Set.empty[UniqueAddress]
         var allUnreachable = Set.empty[UniqueAddress]
 
-        records foreach { r =>
+        records.foreach { r =>
           val m = mapBuilder.get(r.observer) match {
             case None    => Map(r.subject -> r)
             case Some(m) => m.updated(r.subject, r)
@@ -88,13 +88,13 @@ private[cluster] class Reachability private (
 
         val observerRowsMap: Map[UniqueAddress, Map[UniqueAddress, Reachability.Record]] = mapBuilder.toMap
 
-        (observerRowsMap, allUnreachable diff allTerminated, allTerminated)
+        (observerRowsMap, allUnreachable.diff(allTerminated), allTerminated)
       }
     }
 
     val allUnreachableOrTerminated: Set[UniqueAddress] =
       if (allTerminated.isEmpty) allUnreachable
-      else allUnreachable union allTerminated
+      else allUnreachable.union(allTerminated)
 
   }
 
@@ -132,7 +132,6 @@ private[cluster] class Reachability private (
 
       // otherwise, update old observations
       case Some(oldObserverRows) =>
-
         oldObserverRows.get(subject) match {
           case None =>
             if (status == Reachable && oldObserverRows.forall { case (_, r) => r.status == Reachable }) {
@@ -145,7 +144,9 @@ private[cluster] class Reachability private (
             if (oldRecord.status == Terminated || oldRecord.status == status)
               this
             else {
-              if (status == Reachable && oldObserverRows.forall { case (_, r) => r.status == Reachable || r.subject == subject }) {
+              if (status == Reachable && oldObserverRows.forall {
+                    case (_, r) => r.status == Reachable || r.subject == subject
+                  }) {
                 // all Reachable, prune by removing the records of the observer, and bump the version
                 new Reachability(records.filterNot(_.observer == observer), newVersions)
               } else {
@@ -161,12 +162,12 @@ private[cluster] class Reachability private (
     val recordBuilder = new immutable.VectorBuilder[Record]
     recordBuilder.sizeHint(math.max(this.records.size, other.records.size))
     var newVersions = versions
-    allowed foreach { observer =>
+    allowed.foreach { observer =>
       val observerVersion1 = this.currentVersion(observer)
       val observerVersion2 = other.currentVersion(observer)
 
       (this.observerRows(observer), other.observerRows(observer)) match {
-        case (None, None) =>
+        case (None, None)               =>
         case (Some(rows1), Some(rows2)) =>
           // We throw away a complete set of records based on the version here. Couldn't we lose records here? No,
           // because the observer gossips always the complete set of records. (That's hard to see in the model, because
@@ -213,10 +214,11 @@ private[cluster] class Reachability private (
   def status(observer: UniqueAddress, subject: UniqueAddress): ReachabilityStatus =
     observerRows(observer) match {
       case None => Reachable
-      case Some(observerRows) => observerRows.get(subject) match {
-        case None         => Reachable
-        case Some(record) => record.status
-      }
+      case Some(observerRows) =>
+        observerRows.get(subject) match {
+          case None         => Reachable
+          case Some(record) => record.status
+        }
     }
 
   def status(node: UniqueAddress): ReachabilityStatus =
@@ -262,9 +264,11 @@ private[cluster] class Reachability private (
     observerRows(observer) match {
       case None => Set.empty
       case Some(observerRows) =>
-        observerRows.iterator.collect {
-          case (subject, record) if record.status == Unreachable => subject
-        }.to(immutable.Set)
+        observerRows.iterator
+          .collect {
+            case (subject, record) if record.status == Unreachable => subject
+          }
+          .to(immutable.Set)
     }
 
   def observersGroupedByUnreachable: Map[UniqueAddress, Set[UniqueAddress]] = {
@@ -292,7 +296,7 @@ private[cluster] class Reachability private (
   override def equals(obj: Any): Boolean = obj match {
     case other: Reachability =>
       records.size == other.records.size && versions == other.versions &&
-        cache.observerRowsMap == other.cache.observerRowsMap
+      cache.observerRowsMap == other.cache.observerRowsMap
     case _ => false
   }
 
@@ -313,4 +317,3 @@ private[cluster] class Reachability private (
   }
 
 }
-

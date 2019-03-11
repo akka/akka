@@ -21,9 +21,9 @@ import scala.util.Failure
  */
 @InternalApi
 private[akka] object PersistencePlugin {
-  final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](
-    scaladslPlugin: ScalaDsl, javadslPlugin: JavaDsl)
-    extends Extension
+  final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](scaladslPlugin: ScalaDsl,
+                                                                        javadslPlugin: JavaDsl)
+      extends Extension
 }
 
 /**
@@ -39,7 +39,8 @@ private[akka] trait PluginProvider[T, ScalaDsl, JavaDsl] {
  * INTERNAL API
  */
 @InternalApi
-private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](system: ExtendedActorSystem)(implicit ev: PluginProvider[T, ScalaDsl, JavaDsl]) {
+private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](system: ExtendedActorSystem)(
+    implicit ev: PluginProvider[T, ScalaDsl, JavaDsl]) {
 
   private val plugins = new AtomicReference[Map[String, ExtensionId[PluginHolder[ScalaDsl, JavaDsl]]]](Map.empty)
   private val log = Logging(system, getClass)
@@ -55,10 +56,7 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
         val extensionId = new ExtensionId[PluginHolder[ScalaDsl, JavaDsl]] {
           override def createExtension(system: ExtendedActorSystem): PluginHolder[ScalaDsl, JavaDsl] = {
             val provider = createPlugin(configPath, readJournalPluginConfig)
-            PluginHolder(
-              ev.scalaDsl(provider),
-              ev.javaDsl(provider)
-            )
+            PluginHolder(ev.scalaDsl(provider), ev.javaDsl(provider))
           }
         }
         plugins.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
@@ -68,9 +66,8 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
 
   private def createPlugin(configPath: String, readJournalPluginConfig: Config): T = {
     val mergedConfig = readJournalPluginConfig.withFallback(system.settings.config)
-    require(
-      !isEmpty(configPath) && mergedConfig.hasPath(configPath),
-      s"'reference.conf' is missing persistence plugin config path: '$configPath'")
+    require(!isEmpty(configPath) && mergedConfig.hasPath(configPath),
+            s"'reference.conf' is missing persistence plugin config path: '$configPath'")
     val pluginConfig = mergedConfig.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")
     log.debug(s"Create plugin: $configPath $pluginClassName")
@@ -79,19 +76,23 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
     def instantiate(args: collection.immutable.Seq[(Class[_], AnyRef)]) =
       system.dynamicAccess.createInstanceFor[T](pluginClass, args)
 
-    instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
+    instantiate(
+      (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
       (classOf[String], configPath) :: Nil)
       .recoverWith {
-        case x: NoSuchMethodException => instantiate(
-          (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+        case x: NoSuchMethodException =>
+          instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
       }
       .recoverWith { case x: NoSuchMethodException => instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
       .recoverWith { case x: NoSuchMethodException => instantiate(Nil) }
       .recoverWith {
-        case ex: Exception => Failure.apply(
-          new IllegalArgumentException("Unable to create read journal plugin instance for path " +
-            s"[$configPath], class [$pluginClassName]!", ex))
-      }.get
+        case ex: Exception =>
+          Failure.apply(
+            new IllegalArgumentException("Unable to create read journal plugin instance for path " +
+                                         s"[$configPath], class [$pluginClassName]!",
+                                         ex))
+      }
+      .get
   }
 
   /** Check for default or missing identity. */

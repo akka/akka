@@ -5,7 +5,7 @@
 package akka.stream.javadsl
 
 import akka.stream.stage.GraphStage
-import akka.stream.{ UniformFanInShape, scaladsl }
+import akka.stream.{ scaladsl, UniformFanInShape }
 
 import scala.collection.JavaConverters._
 
@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
  *
  */
 object MergeLatest {
+
   /**
    * Create a new `MergeLatest` with the specified number of input ports.
    *
@@ -39,4 +40,3 @@ object MergeLatest {
    */
   def create[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] = create(inputPorts, false)
 }
-

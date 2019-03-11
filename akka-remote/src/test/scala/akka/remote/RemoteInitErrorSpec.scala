@@ -21,8 +21,7 @@ import scala.util.control.NonFatal
  * the ActorSystem with the use of remoting will intentionally fail.
  */
 class RemoteInitErrorSpec extends WordSpec with Matchers {
-  val conf = ConfigFactory.parseString(
-    """
+  val conf = ConfigFactory.parseString("""
       akka {
         actor {
           provider = remote
@@ -53,7 +52,7 @@ class RemoteInitErrorSpec extends WordSpec with Matchers {
           eventually(timeout(30 seconds), interval(800 milliseconds)) {
             val current = currentThreadIds()
             // no new threads should remain compared to the start state
-            (current diff start) should be(empty)
+            (current.diff(start)) should be(empty)
           }
         }
       }

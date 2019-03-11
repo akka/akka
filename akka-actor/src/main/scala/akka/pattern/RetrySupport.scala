@@ -35,13 +35,15 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(implicit ec: ExecutionContext,
+                                                                               scheduler: Scheduler): Future[T] = {
     try {
       if (attempts > 0) {
-        attempt() recoverWith {
-          case NonFatal(_) => after(delay, scheduler) {
-            retry(attempt, attempts - 1, delay)
-          }
+        attempt().recoverWith {
+          case NonFatal(_) =>
+            after(delay, scheduler) {
+              retry(attempt, attempts - 1, delay)
+            }
         }
       } else {
         attempt()

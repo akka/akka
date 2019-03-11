@@ -8,12 +8,15 @@ import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.util.SerializedSuspendableExecutionContext
 
-@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+            since = "2.5.0")
 object Agent {
+
   /**
    * Factory method for creating an Agent.
    */
-  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+              since = "2.5.0")
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
   /**
@@ -21,7 +24,8 @@ object Agent {
    * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.i
    */
   @Deprecated
-  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+              since = "2.5.0")
   def create[T](initialValue: T, context: ExecutionContext): Agent[T] = Agent(initialValue)(context)
 
   /**
@@ -37,10 +41,15 @@ object Agent {
 
     def send(f: T => T): Unit = withinTransaction(new Runnable { def run = ref.single.transform(f) })
 
-    def sendOff(f: T => T)(implicit ec: ExecutionContext): Unit = withinTransaction(
-      new Runnable {
+    def sendOff(f: T => T)(implicit ec: ExecutionContext): Unit =
+      withinTransaction(new Runnable {
         def run =
-          try updater.suspend() finally ec.execute(new Runnable { def run = try ref.single.transform(f) finally updater.resume() })
+          try updater.suspend()
+          finally ec.execute(new Runnable {
+            def run =
+              try ref.single.transform(f)
+              finally updater.resume()
+          })
       })
 
     def alter(newValue: T): Future[T] = doAlter({ ref.single.update(newValue); newValue })
@@ -52,7 +61,9 @@ object Agent {
       withinTransaction(new Runnable {
         def run = {
           updater.suspend()
-          result completeWith Future(try ref.single.transformAndGet(f) finally updater.resume())
+          result.completeWith(
+            Future(try ref.single.transformAndGet(f)
+            finally updater.resume()))
         }
       })
       result.future
@@ -75,7 +86,7 @@ object Agent {
       Txn.findCurrent match {
         case Some(txn) =>
           val result = Promise[T]()
-          Txn.afterCommit(status => result completeWith Future(f)(updater))(txn)
+          Txn.afterCommit(status => result.completeWith(Future(f)(updater)))(txn)
           result.future
         case _ => Future(f)(updater)
       }
@@ -159,7 +170,8 @@ object Agent {
  *
  * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.
  */
-@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+            since = "2.5.0")
 abstract class Agent[T] {
 
   /**

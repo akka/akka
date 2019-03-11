@@ -128,7 +128,7 @@ class LocalReceptionistBehaviorSpec extends WordSpec with Matchers {
   import LocalReceptionistSpec._
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {
-    inboxes foreach (i => withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
+    inboxes.foreach(i => withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 
   "A local receptionist behavior" must {

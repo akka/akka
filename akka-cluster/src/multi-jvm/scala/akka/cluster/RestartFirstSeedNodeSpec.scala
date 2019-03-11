@@ -26,13 +26,12 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed2 = role("seed2")
   val seed3 = role("seed3")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
       akka.cluster.retry-unsuccessful-join-after = 3s
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class RestartFirstSeedNodeMultiJvmNode1 extends RestartFirstSeedNodeSpec
@@ -40,8 +39,9 @@ class RestartFirstSeedNodeMultiJvmNode2 extends RestartFirstSeedNodeSpec
 class RestartFirstSeedNodeMultiJvmNode3 extends RestartFirstSeedNodeSpec
 
 abstract class RestartFirstSeedNodeSpec
-  extends MultiNodeSpec(RestartFirstSeedNodeMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(RestartFirstSeedNodeMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import RestartFirstSeedNodeMultiJvmSpec._
 
@@ -53,18 +53,15 @@ abstract class RestartFirstSeedNodeSpec
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
 
-  lazy val restartedSeed1System = ActorSystem(
-    system.name,
-    ConfigFactory.parseString(
-      s"""
+  lazy val restartedSeed1System = ActorSystem(system.name,
+                                              ConfigFactory.parseString(s"""
         akka.remote.netty.tcp.port = ${seedNodes.head.port.get}
         akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
         """).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(seed1) {
-      shutdown(
-        if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
+      shutdown(if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
     }
     super.afterAll()
   }
@@ -87,7 +84,7 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed1) {
         enterBarrier("seed1-address-receiver-ready")
         seedNode1Address = Cluster(seed1System).selfAddress
-        List(seed2, seed3) foreach { r =>
+        List(seed2, seed3).foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! seedNode1Address
           expectMsg(5 seconds, "ok")
         }

@@ -14,10 +14,10 @@ import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.routing.GetRoutees
 import akka.routing.FromConfig
-import akka.testkit.{ LongRunningTest, DefaultTimeout, ImplicitSender }
+import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.routing.ActorRefRoutee
 import akka.routing.Routees
 import akka.cluster.routing.ClusterRouterPool
@@ -59,13 +59,16 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
   def nodeList = Seq(node1, node2, node3)
 
   // Extract individual sigar library for every node.
-  nodeList foreach { role =>
+  nodeList.foreach { role =>
     nodeConfig(role) {
-      ConfigFactory.parseString(s"akka.cluster.metrics.native-library-extract-folder=$${user.dir}/target/native/" + role.name)
+      ConfigFactory.parseString(
+        s"akka.cluster.metrics.native-library-extract-folder=$${user.dir}/target/native/" + role.name)
     }
   }
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       # Enable metrics estension.
       akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
 
@@ -97,7 +100,8 @@ object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
           }
         }
       }
-    """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -109,9 +113,12 @@ class AdaptiveLoadBalancingRouterMultiJvmNode1 extends AdaptiveLoadBalancingRout
 class AdaptiveLoadBalancingRouterMultiJvmNode2 extends AdaptiveLoadBalancingRouterSpec
 class AdaptiveLoadBalancingRouterMultiJvmNode3 extends AdaptiveLoadBalancingRouterSpec
 
-abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoadBalancingRouterConfig)
-  with MultiNodeClusterSpec with RedirectLogging
-  with ImplicitSender with DefaultTimeout {
+abstract class AdaptiveLoadBalancingRouterSpec
+    extends MultiNodeSpec(AdaptiveLoadBalancingRouterConfig)
+    with MultiNodeClusterSpec
+    with RedirectLogging
+    with ImplicitSender
+    with DefaultTimeout {
   import AdaptiveLoadBalancingRouterConfig._
 
   def currentRoutees(router: ActorRef) =
@@ -136,10 +143,10 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
 
   def startRouter(name: String): ActorRef = {
     val router = system.actorOf(
-      ClusterRouterPool(
-        local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
-        settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true)).
-        props(Props[Echo]),
+      ClusterRouterPool(local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
+                        settings = ClusterRouterPoolSettings(totalInstances = 10,
+                                                             maxInstancesPerNode = 1,
+                                                             allowLocalRoutees = true)).props(Props[Echo]),
       name)
     // it may take some time until router receives cluster member events
     awaitAssert { currentRoutees(router).size should ===(roles.size) }
@@ -166,7 +173,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         metricsAwait()
 
         val iterationCount = 100
-        1 to iterationCount foreach { _ =>
+        (1 to iterationCount).foreach { _ =>
           router1 ! "hit"
           // wait a while between each message, since metrics is collected periodically
           Thread.sleep(10)
@@ -203,7 +210,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         metricsAwait()
 
         val iterationCount = 3000
-        1 to iterationCount foreach { _ =>
+        (1 to iterationCount).foreach { _ =>
           router2 ! "hit"
         }
 
@@ -234,8 +241,8 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router4).size should ===(6) }
         val routees = currentRoutees(router4)
-        routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet should ===(Set(
-          address(node1), address(node2), address(node3)))
+        routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet should ===(
+          Set(address(node1), address(node2), address(node3)))
       }
       enterBarrier("after-5")
     }

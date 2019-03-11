@@ -5,6 +5,7 @@
 package akka.cluster.ddata
 
 object Key {
+
   /**
    * Extract the [[Key#id]].
    */
@@ -35,4 +36,3 @@ abstract class Key[+T <: ReplicatedData](val id: Key.KeyId) extends Serializable
 
   override def toString(): String = id
 }
-

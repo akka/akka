@@ -17,8 +17,7 @@ class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.artery.enabled = $artery
@@ -26,15 +25,15 @@ class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
 
 }
 
-class RemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec(
-  new RemoteQuarantinePiercingConfig(artery = false))
-class RemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec(
-  new RemoteQuarantinePiercingConfig(artery = false))
+class RemoteQuarantinePiercingMultiJvmNode1
+    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = false))
+class RemoteQuarantinePiercingMultiJvmNode2
+    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = false))
 
-class ArteryRemoteQuarantinePiercingMultiJvmNode1 extends RemoteQuarantinePiercingSpec(
-  new RemoteQuarantinePiercingConfig(artery = true))
-class ArteryRemoteQuarantinePiercingMultiJvmNode2 extends RemoteQuarantinePiercingSpec(
-  new RemoteQuarantinePiercingConfig(artery = true))
+class ArteryRemoteQuarantinePiercingMultiJvmNode1
+    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = true))
+class ArteryRemoteQuarantinePiercingMultiJvmNode2
+    extends RemoteQuarantinePiercingSpec(new RemoteQuarantinePiercingConfig(artery = true))
 
 object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
@@ -46,13 +45,15 @@ object RemoteQuarantinePiercingSpec {
 }
 
 abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
 
   override def initialParticipants = roles.size
 
-  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(role: RoleName,
+                      actorName: String,
+                      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -106,7 +107,8 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
         Await.ready(system.whenTerminated, 30.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(system.name,
+                                      ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))

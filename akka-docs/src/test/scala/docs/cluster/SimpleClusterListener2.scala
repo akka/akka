@@ -40,9 +40,7 @@ class SimpleClusterListener2 extends Actor with ActorLogging {
     case UnreachableMember(member) =>
       log.info("Member detected as unreachable: {}", member)
     case MemberRemoved(member, previousStatus) =>
-      log.info(
-        "Member is Removed: {} after {}",
-        member.address, previousStatus)
+      log.info("Member is Removed: {} after {}", member.address, previousStatus)
     case _: MemberEvent => // ignore
   }
 }

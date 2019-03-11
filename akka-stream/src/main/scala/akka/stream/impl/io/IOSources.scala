@@ -27,7 +27,6 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-
 private[akka] object FileSource {
 
   val completionHandler = new CompletionHandler[Integer, Try[Int] => Unit] {
@@ -47,7 +46,7 @@ private[akka] object FileSource {
  * Creates simple asynchronous Source backed by the given file.
  */
 private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: Long)
-  extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[IOResult]] {
+    extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[IOResult]] {
   require(chunkSize > 0, "chunkSize must be greater than 0")
   val out = Outlet[ByteString]("FileSource.out")
 
@@ -90,9 +89,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
           availableChunks = readAhead(maxReadAhead, availableChunks)
         //if already read something and try
         if (availableChunks.nonEmpty) {
-          emitMultiple(out, availableChunks.iterator,
-            () => if (eofEncountered) success() else setHandler(out, handler)
-          )
+          emitMultiple(out, availableChunks.iterator, () => if (eofEncountered) success() else setHandler(out, handler))
           availableChunks = Vector.empty[ByteString]
         } else if (eofEncountered) success()
       }
@@ -105,7 +102,8 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
       /** BLOCKING I/O READ */
       @tailrec def readAhead(maxChunks: Int, chunks: Vector[ByteString]): Vector[ByteString] =
         if (chunks.size < maxChunks && !eofEncountered) {
-          val readBytes = try channel.read(buffer, position) catch {
+          val readBytes = try channel.read(buffer, position)
+          catch {
             case NonFatal(ex) =>
               failStage(ex)
               ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
@@ -146,8 +144,11 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
  * INTERNAL API
  * Source backed by the given input stream.
  */
-@InternalApi private[akka] final class InputStreamSource(createInputStream: () => InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
-  extends SourceModule[ByteString, Future[IOResult]](shape) {
+@InternalApi private[akka] final class InputStreamSource(createInputStream: () => InputStream,
+                                                         chunkSize: Int,
+                                                         val attributes: Attributes,
+                                                         shape: SourceShape[ByteString])
+    extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val ioResultPromise = Promise[IOResult]()
@@ -155,9 +156,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 
-      val props = InputStreamPublisher
-        .props(is, ioResultPromise, chunkSize)
-        .withDispatcher(Dispatcher.resolve(context))
+      val props = InputStreamPublisher.props(is, ioResultPromise, chunkSize).withDispatcher(Dispatcher.resolve(context))
 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)

@@ -23,8 +23,7 @@ object AllPersistenceIdsSpec {
     """
 }
 
-class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
-  with Cleanup with ImplicitSender {
+class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config) with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
@@ -47,9 +46,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       val src = queries.currentPersistenceIds()
       val probe = src.runWith(TestSink.probe[String])
       probe.within(10.seconds) {
-        probe.request(5)
-          .expectNextUnordered("a", "b", "c")
-          .expectComplete()
+        probe.request(5).expectNextUnordered("a", "b", "c").expectComplete()
       }
     }
 
@@ -61,8 +58,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       val src = queries.persistenceIds()
       val probe = src.runWith(TestSink.probe[String])
       probe.within(10.seconds) {
-        probe.request(5)
-          .expectNextUnorderedN(List("a", "b", "c", "d"))
+        probe.request(5).expectNextUnorderedN(List("a", "b", "c", "d"))
 
         system.actorOf(TestActor.props("e")) ! "e1"
         probe.expectNext("e")

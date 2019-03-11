@@ -14,6 +14,7 @@ import com.typesafe.config.Config
  * @see [[akka.cluster.ddata.ReplicatorSettings]].
  */
 object ReplicatorSettings {
+
   /**
    * Create settings from the default configuration
    * `akka.cluster.distributed-data`.

@@ -25,10 +25,11 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[io] final class AsyncDnsResolver(
-  settings:      DnsSettings,
-  cache:         AsyncDnsCache,
-  clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef]) extends Actor with ActorLogging {
+private[io] final class AsyncDnsResolver(settings: DnsSettings,
+                                         cache: AsyncDnsCache,
+                                         clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef])
+    extends Actor
+    with ActorLogging {
 
   import AsyncDnsResolver._
 
@@ -39,7 +40,10 @@ private[io] final class AsyncDnsResolver(
 
   val nameServers = settings.NameServers
 
-  log.debug("Using name servers [{}] and search domains [{}] with ndots={}", nameServers, settings.SearchDomains, settings.NDots)
+  log.debug("Using name servers [{}] and search domains [{}] with ndots={}",
+            nameServers,
+            settings.SearchDomains,
+            settings.NDots)
 
   private var requestId: Short = 0
   private def nextId(): Short = {
@@ -56,17 +60,21 @@ private[io] final class AsyncDnsResolver(
           log.debug("{} cached {}", mode, resolved)
           sender() ! resolved
         case None =>
-          resolveWithResolvers(name, mode, resolvers).map { resolved =>
-            if (resolved.records.nonEmpty) {
-              val minTtl = resolved.records.minBy[Duration](_.ttl.value).ttl
-              cache.put((name, mode), resolved, minTtl)
+          resolveWithResolvers(name, mode, resolvers)
+            .map { resolved =>
+              if (resolved.records.nonEmpty) {
+                val minTtl = resolved.records.minBy[Duration](_.ttl.value).ttl
+                cache.put((name, mode), resolved, minTtl)
+              }
+              resolved
             }
-            resolved
-          } pipeTo sender()
+            .pipeTo(sender())
       }
   }
 
-  private def resolveWithResolvers(name: String, requestType: RequestType, resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
+  private def resolveWithResolvers(name: String,
+                                   requestType: RequestType,
+                                   resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
     if (isInetAddress(name)) {
       Future.fromTry {
         Try {
@@ -82,21 +90,26 @@ private[io] final class AsyncDnsResolver(
       resolvers match {
         case Nil =>
           Future.failed(ResolveFailedException(s"Failed to resolve $name with nameservers: $nameServers"))
-        case head :: tail => resolveWithSearch(name, requestType, head).recoverWith {
-          case NonFatal(t) =>
-            log.error(t, "Resolve failed. Trying next name server")
-            resolveWithResolvers(name, requestType, tail)
-        }
+        case head :: tail =>
+          resolveWithSearch(name, requestType, head).recoverWith {
+            case NonFatal(t) =>
+              log.error(t, "Resolve failed. Trying next name server")
+              resolveWithResolvers(name, requestType, tail)
+          }
       }
     }
 
   private def sendQuestion(resolver: ActorRef, message: DnsQuestion): Future[Answer] = {
     val result = (resolver ? message).mapTo[Answer]
-    result.failed.foreach { _ => resolver ! DropRequest(message.id) }
+    result.failed.foreach { _ =>
+      resolver ! DropRequest(message.id)
+    }
     result
   }
 
-  private def resolveWithSearch(name: String, requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+  private def resolveWithSearch(name: String,
+                                requestType: RequestType,
+                                resolver: ActorRef): Future[DnsProtocol.Resolved] = {
     if (settings.SearchDomains.nonEmpty) {
       val nameWithSearch = settings.SearchDomains.map(sd => name + "." + sd)
       // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
@@ -118,7 +131,9 @@ private[io] final class AsyncDnsResolver(
     }
   }
 
-  private def resolveFirst(searchNames: List[String], requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+  private def resolveFirst(searchNames: List[String],
+                           requestType: RequestType,
+                           resolver: ActorRef): Future[DnsProtocol.Resolved] = {
     searchNames match {
       case searchName :: Nil =>
         resolve(searchName, requestType, resolver)
@@ -138,16 +153,17 @@ private[io] final class AsyncDnsResolver(
     val caseFoldedName = Helpers.toRootLowerCase(name)
     requestType match {
       case Ip(ipv4, ipv6) =>
+        val ipv4Recs: Future[Answer] =
+          if (ipv4)
+            sendQuestion(resolver, Question4(nextId(), caseFoldedName))
+          else
+            Empty
 
-        val ipv4Recs: Future[Answer] = if (ipv4)
-          sendQuestion(resolver, Question4(nextId(), caseFoldedName))
-        else
-          Empty
-
-        val ipv6Recs = if (ipv6)
-          sendQuestion(resolver, Question6(nextId(), caseFoldedName))
-        else
-          Empty
+        val ipv6Recs =
+          if (ipv6)
+            sendQuestion(resolver, Question6(nextId(), caseFoldedName))
+          else
+            Empty
 
         for {
           ipv4 <- ipv4Recs
@@ -155,10 +171,9 @@ private[io] final class AsyncDnsResolver(
         } yield DnsProtocol.Resolved(name, ipv4.rrs ++ ipv6.rrs, ipv4.additionalRecs ++ ipv6.additionalRecs)
 
       case Srv =>
-        sendQuestion(resolver, SrvQuestion(nextId(), caseFoldedName))
-          .map(answer => {
-            DnsProtocol.Resolved(name, answer.rrs, answer.additionalRecs)
-          })
+        sendQuestion(resolver, SrvQuestion(nextId(), caseFoldedName)).map(answer => {
+          DnsProtocol.Resolved(name, answer.rrs, answer.additionalRecs)
+        })
     }
   }
 
@@ -178,9 +193,10 @@ private[io] object AsyncDnsResolver {
 
   private def isInetAddress(name: String): Boolean =
     ipv4Address.findAllMatchIn(name).nonEmpty ||
-      ipv6Address.findAllMatchIn(name).nonEmpty
+    ipv6Address.findAllMatchIn(name).nonEmpty
 
-  private val Empty = Future.successful(Answer(-1, immutable.Seq.empty[ResourceRecord], immutable.Seq.empty[ResourceRecord]))
+  private val Empty =
+    Future.successful(Answer(-1, immutable.Seq.empty[ResourceRecord], immutable.Seq.empty[ResourceRecord]))
 
   case class ResolveFailedException(msg: String) extends Exception(msg)
 }

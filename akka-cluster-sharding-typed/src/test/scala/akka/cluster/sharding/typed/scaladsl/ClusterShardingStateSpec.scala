@@ -36,12 +36,9 @@ class ClusterShardingStateSpec extends ScalaTestWithActorTestKit(ClusterSharding
       probe.expectMessage(CurrentShardRegionState(Set()))
 
       val shardingRef: ActorRef[IdTestProtocol] = sharding.init(
-        Entity(
-          typeKey,
-          ctx => ClusterShardingSpec.behaviorWithId(ctx.shard))
+        Entity(typeKey, ctx => ClusterShardingSpec.behaviorWithId(ctx.shard))
           .withStopMessage(IdStopPlz())
-          .withMessageExtractor(idTestProtocolMessageExtractor)
-      )
+          .withMessageExtractor(idTestProtocolMessageExtractor))
 
       sharding.shardState ! GetShardRegionState(typeKey, probe.ref)
       probe.expectMessage(CurrentShardRegionState(Set()))

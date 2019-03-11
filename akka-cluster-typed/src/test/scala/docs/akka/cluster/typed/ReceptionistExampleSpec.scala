@@ -45,27 +45,30 @@ object PingPongExample {
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Nothing] = Behaviors.setup[Listing] { ctx =>
-    ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
-    val ps = ctx.spawnAnonymous(pingService)
-    ctx.watch(ps)
-    Behaviors.receiveMessagePartial[Listing] {
-      case PingServiceKey.Listing(listings) if listings.nonEmpty =>
-        listings.foreach(ps => ctx.spawnAnonymous(pinger(ps)))
-        Behaviors.same
-    } receiveSignal {
-      case (_, Terminated(`ps`)) =>
-        println("Ping service has shut down")
-        Behaviors.stopped
+  val guardian: Behavior[Nothing] = Behaviors
+    .setup[Listing] { ctx =>
+      ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
+      val ps = ctx.spawnAnonymous(pingService)
+      ctx.watch(ps)
+      Behaviors
+        .receiveMessagePartial[Listing] {
+          case PingServiceKey.Listing(listings) if listings.nonEmpty =>
+            listings.foreach(ps => ctx.spawnAnonymous(pinger(ps)))
+            Behaviors.same
+        }
+        .receiveSignal {
+          case (_, Terminated(`ps`)) =>
+            println("Ping service has shut down")
+            Behaviors.stopped
+        }
     }
-  }.narrow
+    .narrow
   //#pinger-guardian
 
 }
 
 object ReceptionistExampleSpec {
-  val clusterConfig = ConfigFactory.parseString(
-    s"""
+  val clusterConfig = ConfigFactory.parseString(s"""
 #config
 akka {
   actor {

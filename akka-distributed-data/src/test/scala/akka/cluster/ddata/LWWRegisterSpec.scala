@@ -35,10 +35,10 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       r1.timestamp should be(100)
       val r2 = r1.withValue(node2, "B", clock)
       r2.timestamp should be(101)
-      val m1 = r1 merge r2
+      val m1 = r1.merge(r2)
       m1.value should be("B")
       m1.timestamp should be(101)
-      val m2 = r2 merge r1
+      val m2 = r2.merge(r1)
       m2.value should be("B")
       m2.timestamp should be(101)
     }
@@ -49,9 +49,9 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       }
       val r1 = LWWRegister(node1, "A", clock)
       val r2 = LWWRegister(node2, "B", clock)
-      val m1 = r1 merge r2
+      val m1 = r1.merge(r2)
       m1.value should be("A")
-      val m2 = r2 merge r1
+      val m2 = r2.merge(r1)
       m2.value should be("A")
     }
 

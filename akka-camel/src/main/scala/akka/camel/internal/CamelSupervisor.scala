@@ -32,8 +32,8 @@ private[camel] class CamelSupervisor extends Actor with CamelSupport {
   def receive = {
     case AddWatch(actorRef)     => context.watch(actorRef)
     case Terminated(actorRef)   => registry ! DeRegister(actorRef)
-    case msg: ActivationMessage => activationTracker forward msg
-    case msg                    => registry forward (msg)
+    case msg: ActivationMessage => activationTracker.forward(msg)
+    case msg                    => registry.forward(msg)
   }
 }
 
@@ -50,7 +50,8 @@ private[camel] object CamelSupervisor {
    * INTERNAL API
    * Registers a consumer or a producer.
    */
-  final case class Register(actorRef: ActorRef, endpointUri: String, config: Option[ConsumerConfig] = None) extends NoSerializationVerificationNeeded
+  final case class Register(actorRef: ActorRef, endpointUri: String, config: Option[ConsumerConfig] = None)
+      extends NoSerializationVerificationNeeded
 
   /**
    * INTERNAL API
@@ -70,35 +71,42 @@ private[camel] object CamelSupervisor {
    * INTERNAL API
    * Provides a Producer with the required camel objects to function.
    */
-  final case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor) extends NoSerializationVerificationNeeded
+  final case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor)
+      extends NoSerializationVerificationNeeded
 }
 
 /**
  * INTERNAL API
  * Thrown by registrars to indicate that the actor could not be de-activated.
  */
-private[camel] class ActorDeActivationException(val actorRef: ActorRef, cause: Throwable) extends AkkaException(s"$actorRef failed to de-activate", cause)
+private[camel] class ActorDeActivationException(val actorRef: ActorRef, cause: Throwable)
+    extends AkkaException(s"$actorRef failed to de-activate", cause)
 
 /**
  * INTERNAL API
  * Thrown by the registrars to indicate that the actor could not be activated.
  */
-private[camel] class ActorActivationException(val actorRef: ActorRef, cause: Throwable) extends AkkaException(s"$actorRef failed to activate", cause)
+private[camel] class ActorActivationException(val actorRef: ActorRef, cause: Throwable)
+    extends AkkaException(s"$actorRef failed to activate", cause)
 
 /**
  * INTERNAL API
  * Registry for Camel Consumers and Producers. Supervises the registrars.
  */
 private[camel] class Registry(activationTracker: ActorRef) extends Actor with CamelSupport {
-  import context.{ stop, parent }
+  import context.{ parent, stop }
 
-  private val producerRegistrar = context.actorOf(Props(classOf[ProducerRegistrar], activationTracker), "producerRegistrar")
-  private val consumerRegistrar = context.actorOf(Props(classOf[ConsumerRegistrar], activationTracker), "consumerRegistrar")
+  private val producerRegistrar =
+    context.actorOf(Props(classOf[ProducerRegistrar], activationTracker), "producerRegistrar")
+  private val consumerRegistrar =
+    context.actorOf(Props(classOf[ConsumerRegistrar], activationTracker), "consumerRegistrar")
   private var producers = Set[ActorRef]()
   private var consumers = Set[ActorRef]()
 
   class RegistryLogStrategy()(_decider: SupervisorStrategy.Decider) extends OneForOneStrategy()(_decider) {
-    override def logFailure(context: ActorContext, child: ActorRef, cause: Throwable,
+    override def logFailure(context: ActorContext,
+                            child: ActorRef,
+                            cause: Throwable,
                             decision: SupervisorStrategy.Directive): Unit =
       cause match {
         case _: ActorActivationException | _: ActorDeActivationException =>
@@ -126,7 +134,7 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
     case msg @ Register(consumer, _, Some(_)) =>
       if (!consumers(consumer)) {
         consumers += consumer
-        consumerRegistrar forward msg
+        consumerRegistrar.forward(msg)
         parent ! AddWatch(consumer)
       }
     case msg @ Register(producer, _, None) =>
@@ -134,7 +142,7 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
         producers += producer
         parent ! AddWatch(producer)
       }
-      producerRegistrar forward msg
+      producerRegistrar.forward(msg)
     case DeRegister(actorRef) =>
       producers.find(_ == actorRef).foreach { p =>
         deRegisterProducer(p)
@@ -173,10 +181,12 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
           case NonFatal(e) => throw new ActorActivationException(producer, e)
         }
       } else {
-        camelObjects.get(producer) foreach { case (endpoint, processor) => producer ! CamelProducerObjects(endpoint, processor) }
+        camelObjects.get(producer).foreach {
+          case (endpoint, processor) => producer ! CamelProducerObjects(endpoint, processor)
+        }
       }
     case DeRegister(producer) =>
-      camelObjects.get(producer) foreach {
+      camelObjects.get(producer).foreach {
         case (_, processor) =>
           try {
             camelObjects.get(producer).foreach(_._2.stop())

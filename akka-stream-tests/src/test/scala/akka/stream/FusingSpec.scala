@@ -64,7 +64,8 @@ class FusingSpec extends StreamSpec {
         .via(snitchFlow.async)
         .mergeSubstreams
         .runWith(Sink.seq)
-        .futureValue.sorted should ===(in)
+        .futureValue
+        .sorted should ===(in)
       val refs = receiveN(in.size + in.size) // each element through the first map, then the second map
 
       refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
@@ -79,7 +80,8 @@ class FusingSpec extends StreamSpec {
         .async
         .mergeSubstreams
         .runWith(Sink.seq)
-        .futureValue.sorted should ===(in)
+        .futureValue
+        .sorted should ===(in)
       val refs = receiveN(in.size + in.size) // each element through the first map, then the second map
       refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }

@@ -54,21 +54,23 @@ object PerformanceSpec {
 
   class CommandsourcedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
 
-    override val receiveCommand: Receive = controlBehavior orElse {
-      case cmd => persistAsync(cmd) { _ =>
-        if (lastSequenceNr % 1000 == 0) print(".")
-        if (lastSequenceNr == failAt) throw new TestException("boom")
-      }
+    override val receiveCommand: Receive = controlBehavior.orElse {
+      case cmd =>
+        persistAsync(cmd) { _ =>
+          if (lastSequenceNr % 1000 == 0) print(".")
+          if (lastSequenceNr == failAt) throw new TestException("boom")
+        }
     }
   }
 
   class EventsourcedTestPersistentActor(name: String) extends PerformanceTestPersistentActor(name) {
 
-    override val receiveCommand: Receive = controlBehavior orElse {
-      case cmd => persist(cmd) { _ =>
-        if (lastSequenceNr % 1000 == 0) print(".")
-        if (lastSequenceNr == failAt) throw new TestException("boom")
-      }
+    override val receiveCommand: Receive = controlBehavior.orElse {
+      case cmd =>
+        persist(cmd) { _ =>
+          if (lastSequenceNr % 1000 == 0) print(".")
+          if (lastSequenceNr == failAt) throw new TestException("boom")
+        }
     }
   }
 
@@ -83,7 +85,7 @@ object PerformanceSpec {
       if (lastSequenceNr == failAt) throw new TestException("boom")
     }
 
-    val receiveCommand: Receive = controlBehavior orElse {
+    val receiveCommand: Receive = controlBehavior.orElse {
       case cmd =>
         counter += 1
         if (counter % 10 == 0) persist(cmd)(handler)
@@ -97,12 +99,12 @@ object PerformanceSpec {
       case m => if (lastSequenceNr % 1000 == 0) print("."); m
     }
 
-    val receiveCommand: Receive = printProgress andThen (controlBehavior orElse {
+    val receiveCommand: Receive = printProgress.andThen(controlBehavior.orElse {
       case "a" => persist("a")(_ => context.become(processC))
       case "b" => persist("b")(_ => ())
     })
 
-    val processC: Receive = printProgress andThen {
+    val processC: Receive = printProgress.andThen {
       case "c" =>
         persist("c")(_ => context.unbecome())
         unstashAll()
@@ -111,16 +113,23 @@ object PerformanceSpec {
   }
 }
 
-class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "PerformanceSpec", serialization = "off").withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with ImplicitSender {
+class PerformanceSpec
+    extends PersistenceSpec(
+      PersistenceSpec
+        .config("leveldb", "PerformanceSpec", serialization = "off")
+        .withFallback(ConfigFactory.parseString(PerformanceSpec.config)))
+    with ImplicitSender {
   import PerformanceSpec._
 
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
   def stressPersistentActor(persistentActor: ActorRef, failAt: Option[Long], description: String): Unit = {
-    failAt foreach { persistentActor ! FailAt(_) }
+    failAt.foreach { persistentActor ! FailAt(_) }
     val m = new Measure(loadCycles)
     m.startMeasure()
-    1 to loadCycles foreach { i => persistentActor ! s"msg${i}" }
+    (1 to loadCycles).foreach { i =>
+      persistentActor ! s"msg${i}"
+    }
     persistentActor ! StopMeasure
     expectMsg(100.seconds, StopMeasure)
     println(f"\nthroughput = ${m.stopMeasure()}%.2f $description per second")
@@ -145,8 +154,8 @@ class PerformanceSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", 
     val persistentActor = namedPersistentActor[StashingEventsourcedTestPersistentActor]
     val m = new Measure(loadCycles)
     m.startMeasure()
-    val cmds = 1 to (loadCycles / 3) flatMap (_ => List("a", "b", "c"))
-    cmds foreach (persistentActor ! _)
+    val cmds = (1 to (loadCycles / 3)).flatMap(_ => List("a", "b", "c"))
+    cmds.foreach(persistentActor ! _)
     persistentActor ! StopMeasure
     expectMsg(100.seconds, StopMeasure)
     println(f"\nthroughput = ${m.stopMeasure()}%.2f persistent events per second")

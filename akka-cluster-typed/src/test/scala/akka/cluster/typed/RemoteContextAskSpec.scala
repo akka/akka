@@ -43,8 +43,7 @@ class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends Serial
 }
 
 object RemoteContextAskSpec {
-  def config = ConfigFactory.parseString(
-    s"""
+  def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = debug
       actor {

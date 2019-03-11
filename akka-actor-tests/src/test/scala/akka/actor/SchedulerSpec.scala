@@ -7,8 +7,8 @@ package akka.actor
 import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
-import atomic.{ AtomicReference, AtomicInteger }
-import scala.concurrent.{ Future, Await, ExecutionContext }
+import atomic.{ AtomicInteger, AtomicReference }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import scala.util.Try
@@ -20,7 +20,8 @@ import akka.testkit._
 import scala.util.control.NoStackTrace
 
 object SchedulerSpec {
-  val testConfRevolver = ConfigFactory.parseString("""
+  val testConfRevolver =
+    ConfigFactory.parseString("""
     akka.scheduler.implementation = akka.actor.LightArrayRevolverScheduler
     akka.scheduler.ticks-per-wheel = 32
     akka.actor.serialize-messages = off
@@ -74,7 +75,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       expectMsg("msg")
 
       // stop the actor and, hence, the continuous messaging from happening
-      system stop actor
+      system.stop(actor)
 
       expectNoMsg(500 millis)
     }
@@ -194,7 +195,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
       collectCancellable(system.scheduler.schedule(500 milliseconds, 500 milliseconds, actor, Ping))
       // appx 2 pings before crash
-      EventFilter[Exception]("CRASH", occurrences = 1) intercept {
+      EventFilter[Exception]("CRASH", occurrences = 1).intercept {
         collectCancellable(system.scheduler.scheduleOnce(1000 milliseconds, actor, Crash))
       }
 
@@ -292,11 +293,14 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
         }
       }
       val latencies = within(10.seconds) {
-        for (i <- 1 to N) yield try expectMsgType[Long] catch {
-          case NonFatal(e) => throw new Exception(s"failed expecting the $i-th latency", e)
-        }
+        for (i <- 1 to N)
+          yield
+            try expectMsgType[Long]
+            catch {
+              case NonFatal(e) => throw new Exception(s"failed expecting the $i-th latency", e)
+            }
       }
-      val histogram = latencies groupBy (_ / 100000000L)
+      val histogram = latencies.groupBy(_ / 100000000L)
       for (k <- histogram.keys.toSeq.sorted) {
         system.log.info(f"${k * 100}%3d: ${histogram(k).size}")
       }
@@ -362,11 +366,14 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       val cancelled = cancellations.sum
       println(cancelled)
       val latencies = within(10.seconds) {
-        for (i <- 1 to (N - cancelled)) yield try expectMsgType[Long] catch {
-          case NonFatal(e) => throw new Exception(s"failed expecting the $i-th latency", e)
-        }
+        for (i <- 1 to (N - cancelled))
+          yield
+            try expectMsgType[Long]
+            catch {
+              case NonFatal(e) => throw new Exception(s"failed expecting the $i-th latency", e)
+            }
       }
-      val histogram = latencies groupBy (_ / 100000000L)
+      val histogram = latencies.groupBy(_ / 100000000L)
       for (k <- histogram.keys.toSeq.sorted) {
         system.log.info(f"${k * 100}%3d: ${histogram(k).size}")
       }
@@ -389,7 +396,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         }
         def delay = if (ThreadLocalRandom.current.nextBoolean) step * 2 else step
         val N = 1000000
-        (1 to N) foreach (_ => sched.scheduleOnce(delay)(counter.incrementAndGet()))
+        (1 to N).foreach(_ => sched.scheduleOnce(delay)(counter.incrementAndGet()))
         sched.close()
         Await.result(terminated, 3.seconds.dilated) should be > 10
         awaitCond(counter.get == N)
@@ -401,13 +408,13 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         implicit def ec = localEC
         import driver._
         val start = step / 2
-        (0 to 3) foreach (i => sched.scheduleOnce(start + step * i, testActor, "hello"))
+        (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
         expectNoMsg(step)
         wakeUp(step)
         expectWait(step)
         wakeUp(step * 4 + step / 2)
         expectWait(step / 2)
-        (0 to 3) foreach (_ => expectMsg(Duration.Zero, "hello"))
+        (0 to 3).foreach(_ => expectMsg(Duration.Zero, "hello"))
       }
     }
 
@@ -431,7 +438,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         implicit def ec = localEC
         import driver._
         val start = step / 2
-        (0 to 3) foreach (i => sched.scheduleOnce(start + step * i, probe.ref, "hello"))
+        (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, probe.ref, "hello"))
         probe.expectNoMsg(step)
         wakeUp(step)
         expectWait(step)
@@ -458,7 +465,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         implicit def ec = localEC
         import driver._
         val start = step / 2
-        (0 to 3) foreach (i => sched.scheduleOnce(start + step * i, testActor, "hello"))
+        (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
         expectNoMsg(step)
         wakeUp(step)
         expectWait(step)
@@ -494,12 +501,12 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         probe.expectMsgType[Long]
 
         val nums = 0 until numEvents
-        nums foreach (i => sched.scheduleOnce(start + step * i, testActor, "hello-" + i))
+        nums.foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello-" + i))
         expectNoMsg(step)
         wakeUp(step)
         expectWait(step)
 
-        nums foreach { i =>
+        nums.foreach { i =>
           wakeUp(step)
           expectMsg("hello-" + i)
           expectWait(step)
@@ -542,7 +549,8 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
-  def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
+  def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
+      thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
     import akka.actor.{ LightArrayRevolverScheduler => LARS }
     val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])
     val prb = TestProbe()
@@ -560,9 +568,9 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           // println(s"waiting $ns")
           prb.ref ! ns
           try time += (lbq.get match {
-            case q: LinkedBlockingQueue[Long] => q.take()
-            case _                            => 0L
-          })
+              case q: LinkedBlockingQueue[Long] => q.take()
+              case _                            => 0L
+            })
           catch {
             case _: InterruptedException => Thread.currentThread.interrupt()
           }

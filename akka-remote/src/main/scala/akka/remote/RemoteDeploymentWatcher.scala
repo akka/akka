@@ -9,7 +9,7 @@ import akka.actor.Terminated
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 
 /**
  * INTERNAL API
@@ -33,10 +33,10 @@ private[akka] class RemoteDeploymentWatcher extends Actor with RequiresMessageQu
       supervisors += (a -> supervisor)
       context.watch(a)
 
-    case t @ Terminated(a) if supervisors isDefinedAt a =>
+    case t @ Terminated(a) if supervisors.isDefinedAt(a) =>
       // send extra DeathWatchNotification to the supervisor so that it will remove the child
-      supervisors(a).sendSystemMessage(DeathWatchNotification(a, existenceConfirmed = t.existenceConfirmed,
-        addressTerminated = t.addressTerminated))
+      supervisors(a).sendSystemMessage(
+        DeathWatchNotification(a, existenceConfirmed = t.existenceConfirmed, addressTerminated = t.addressTerminated))
       supervisors -= a
 
     case _: Terminated =>

@@ -17,7 +17,6 @@
  *  @version 2.9
  *  @since   2.9
  */
-
 package akka.routing
 
 import java.lang.Integer.{ rotateLeft => rotl }
@@ -32,7 +31,6 @@ import akka.util.ccompat._
  *  incorporate a new integer) to update the values.  Only one method
  *  needs to be called to finalize the hash.
  */
-
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.
   // Don't change these without consulting a hashing expert!

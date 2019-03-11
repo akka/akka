@@ -16,6 +16,7 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 @InternalApi private[akka] class AdapterExtension(sys: akka.actor.ActorSystem) extends akka.actor.Extension {
   val adapter = ActorSystemAdapter(sys)
 }
+
 /**
  * Internal API
  */

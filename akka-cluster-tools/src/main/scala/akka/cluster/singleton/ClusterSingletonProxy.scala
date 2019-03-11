@@ -36,11 +36,11 @@ object ClusterSingletonProxySettings {
    * the default configuration `akka.cluster.singleton-proxy`.
    */
   def apply(config: Config): ClusterSingletonProxySettings =
-    new ClusterSingletonProxySettings(
-      singletonName = config.getString("singleton-name"),
-      role = roleOption(config.getString("role")),
-      singletonIdentificationInterval = config.getDuration("singleton-identification-interval", MILLISECONDS).millis,
-      bufferSize = config.getInt("buffer-size"))
+    new ClusterSingletonProxySettings(singletonName = config.getString("singleton-name"),
+                                      role = roleOption(config.getString("role")),
+                                      singletonIdentificationInterval =
+                                        config.getDuration("singleton-identification-interval", MILLISECONDS).millis,
+                                      bufferSize = config.getInt("buffer-size"))
 
   /**
    * Java API: Create settings from the default configuration
@@ -72,26 +72,26 @@ object ClusterSingletonProxySettings {
  *   when new messages are sent viea the proxy. Use 0 to disable buffering, i.e. messages will be dropped
  *   immediately if the location of the singleton is unknown.
  */
-final class ClusterSingletonProxySettings(
-  val singletonName:                   String,
-  val role:                            Option[String],
-  val dataCenter:                      Option[DataCenter],
-  val singletonIdentificationInterval: FiniteDuration,
-  val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
+final class ClusterSingletonProxySettings(val singletonName: String,
+                                          val role: Option[String],
+                                          val dataCenter: Option[DataCenter],
+                                          val singletonIdentificationInterval: FiniteDuration,
+                                          val bufferSize: Int)
+    extends NoSerializationVerificationNeeded {
 
   // for backwards compatibility
-  def this(
-    singletonName:                   String,
-    role:                            Option[String],
-    singletonIdentificationInterval: FiniteDuration,
-    bufferSize:                      Int) =
+  def this(singletonName: String,
+           role: Option[String],
+           singletonIdentificationInterval: FiniteDuration,
+           bufferSize: Int) =
     this(singletonName, role, None, singletonIdentificationInterval, bufferSize)
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
 
   def withSingletonName(name: String): ClusterSingletonProxySettings = copy(singletonName = name)
 
-  def withRole(role: String): ClusterSingletonProxySettings = copy(role = ClusterSingletonProxySettings.roleOption(role))
+  def withRole(role: String): ClusterSingletonProxySettings =
+    copy(role = ClusterSingletonProxySettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterSingletonProxySettings = copy(role = role)
 
@@ -99,22 +99,23 @@ final class ClusterSingletonProxySettings(
 
   def withDataCenter(dataCenter: Option[DataCenter]): ClusterSingletonProxySettings = copy(dataCenter = dataCenter)
 
-  def withSingletonIdentificationInterval(singletonIdentificationInterval: FiniteDuration): ClusterSingletonProxySettings =
+  def withSingletonIdentificationInterval(
+      singletonIdentificationInterval: FiniteDuration): ClusterSingletonProxySettings =
     copy(singletonIdentificationInterval = singletonIdentificationInterval)
 
   def withBufferSize(bufferSize: Int): ClusterSingletonProxySettings =
     copy(bufferSize = bufferSize)
 
-  private def copy(
-    singletonName:                   String             = singletonName,
-    role:                            Option[String]     = role,
-    dataCenter:                      Option[DataCenter] = dataCenter,
-    singletonIdentificationInterval: FiniteDuration     = singletonIdentificationInterval,
-    bufferSize:                      Int                = bufferSize): ClusterSingletonProxySettings =
+  private def copy(singletonName: String = singletonName,
+                   role: Option[String] = role,
+                   dataCenter: Option[DataCenter] = dataCenter,
+                   singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+                   bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
     new ClusterSingletonProxySettings(singletonName, role, dataCenter, singletonIdentificationInterval, bufferSize)
 }
 
 object ClusterSingletonProxy {
+
   /**
    * Scala API: Factory method for `ClusterSingletonProxy` [[akka.actor.Props]].
    *
@@ -147,7 +148,9 @@ object ClusterSingletonProxy {
  * Note that this is a best effort implementation: messages can always be lost due to the distributed nature of the
  * actors involved.
  */
-final class ClusterSingletonProxy(singletonManagerPath: String, settings: ClusterSingletonProxySettings) extends Actor with ActorLogging {
+final class ClusterSingletonProxy(singletonManagerPath: String, settings: ClusterSingletonProxySettings)
+    extends Actor
+    with ActorLogging {
   import settings._
   val singletonPath = (singletonManagerPath + "/" + settings.singletonName).split("/")
   var identifyCounter = 0
@@ -188,11 +191,12 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
   def handleInitial(state: CurrentClusterState): Unit = {
-    trackChange {
-      () =>
-        membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.collect {
+    trackChange { () =>
+      membersByAge = immutable.SortedSet
+        .empty(ageOrdering)
+        .union(state.members.collect {
           case m if m.status == MemberStatus.Up && matchingRole(m) => m
-        }
+        })
     }
   }
 
@@ -206,7 +210,9 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     identifyId = createIdentifyId(identifyCounter)
     singleton = None
     cancelTimer()
-    identifyTimer = Some(context.system.scheduler.schedule(0 milliseconds, singletonIdentificationInterval, self, ClusterSingletonProxy.TryToIdentifySingleton))
+    identifyTimer = Some(
+      context.system.scheduler
+        .schedule(0 milliseconds, singletonIdentificationInterval, self, ClusterSingletonProxy.TryToIdentifySingleton))
   }
 
   def trackChange(block: () => Unit): Unit = {
@@ -266,7 +272,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     case ClusterSingletonProxy.TryToIdentifySingleton =>
       identifyTimer match {
         case Some(_) =>
-          membersByAge.headOption foreach { oldest =>
+          membersByAge.headOption.foreach { oldest =>
             val singletonAddress = RootActorPath(oldest.address) / singletonPath
             log.debug("Trying to identify singleton at [{}]", singletonAddress)
             context.actorSelection(singletonAddress) ! Identify(identifyId)
@@ -285,10 +291,10 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
       singleton match {
         case Some(s) =>
           if (log.isDebugEnabled)
-            log.debug(
-              "Forwarding message of type [{}] to current singleton instance at [{}]",
-              Logging.simpleName(msg.getClass), s.path)
-          s forward msg
+            log.debug("Forwarding message of type [{}] to current singleton instance at [{}]",
+                      Logging.simpleName(msg.getClass),
+                      s.path)
+          s.forward(msg)
         case None =>
           buffer(msg)
       }

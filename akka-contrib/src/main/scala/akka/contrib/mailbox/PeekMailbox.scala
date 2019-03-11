@@ -8,7 +8,15 @@ import java.util.concurrent.{ ConcurrentHashMap, ConcurrentLinkedQueue }
 
 import com.typesafe.config.Config
 
-import akka.actor.{ ActorContext, ActorRef, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{
+  ActorContext,
+  ActorRef,
+  ActorSystem,
+  ExtendedActorSystem,
+  Extension,
+  ExtensionId,
+  ExtensionIdProvider
+}
 import akka.dispatch.{ Envelope, MailboxType, MessageQueue, UnboundedQueueBasedMessageQueue }
 
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
@@ -57,8 +65,7 @@ class PeekMailboxType(settings: ActorSystem.Settings, config: Config) extends Ma
 }
 
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
-class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
-  extends UnboundedQueueBasedMessageQueue {
+class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int) extends UnboundedQueueBasedMessageQueue {
   final val queue = new ConcurrentLinkedQueue[Envelope]()
 
   /*
@@ -104,4 +111,3 @@ class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
     PeekMailboxExtension(system).unregister(owner)
   }
 }
-

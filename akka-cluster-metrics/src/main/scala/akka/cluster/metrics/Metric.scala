@@ -22,7 +22,7 @@ import scala.util.Try
  */
 @SerialVersionUID(1L)
 final case class Metric private[metrics] (name: String, value: Number, average: Option[EWMA])
-  extends MetricNumericConverter {
+    extends MetricNumericConverter {
 
   require(defined(value), s"Invalid Metric [$name] value [$value]")
 
@@ -31,12 +31,11 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
    * Returns the updated metric.
    */
   def :+(latest: Metric): Metric =
-    if (this sameAs latest) average match {
+    if (this.sameAs(latest)) average match {
       case Some(avg)                        => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
       case None if latest.average.isDefined => copy(value = latest.value, average = latest.average)
       case _                                => copy(value = latest.value)
-    }
-    else this
+    } else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value
@@ -112,8 +111,10 @@ object StandardMetrics {
   // In latest Linux kernels: CpuCombined + CpuStolen + CpuIdle = 1.0  or 100%.
   /** Sum of User + Sys + Nice + Wait. See `org.hyperic.sigar.CpuPerc` */
   final val CpuCombined = "cpu-combined"
+
   /** The amount of CPU 'stolen' from this virtual machine by the hypervisor for other tasks (such as running another virtual machine). */
   final val CpuStolen = "cpu-stolen"
+
   /** Amount of CPU time left after combined and stolen are removed. */
   final val CpuIdle = "cpu-idle"
 
@@ -128,9 +129,12 @@ object StandardMetrics {
       for {
         used <- nodeMetrics.metric(HeapMemoryUsed)
         committed <- nodeMetrics.metric(HeapMemoryCommitted)
-      } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        used.smoothValue.longValue, committed.smoothValue.longValue,
-        nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
+      } yield
+        (nodeMetrics.address,
+         nodeMetrics.timestamp,
+         used.smoothValue.longValue,
+         committed.smoothValue.longValue,
+         nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
     }
 
   }
@@ -172,14 +176,17 @@ object StandardMetrics {
      * necessary cpu metrics.
      * @return if possible a tuple matching the Cpu constructor parameters
      */
-    def unapply(nodeMetrics: NodeMetrics): Option[(Address, Long, Option[Double], Option[Double], Option[Double], Int)] = {
+    def unapply(
+        nodeMetrics: NodeMetrics): Option[(Address, Long, Option[Double], Option[Double], Option[Double], Int)] = {
       for {
         processors <- nodeMetrics.metric(Processors)
-      } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
-        nodeMetrics.metric(CpuCombined).map(_.smoothValue),
-        nodeMetrics.metric(CpuStolen).map(_.smoothValue),
-        processors.value.intValue)
+      } yield
+        (nodeMetrics.address,
+         nodeMetrics.timestamp,
+         nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
+         nodeMetrics.metric(CpuCombined).map(_.smoothValue),
+         nodeMetrics.metric(CpuStolen).map(_.smoothValue),
+         processors.value.intValue)
     }
 
   }
@@ -207,13 +214,12 @@ object StandardMetrics {
    * @param processors the number of available processors
    */
   @SerialVersionUID(1L)
-  final case class Cpu(
-    address:           Address,
-    timestamp:         Long,
-    systemLoadAverage: Option[Double],
-    cpuCombined:       Option[Double],
-    cpuStolen:         Option[Double],
-    processors:        Int) {
+  final case class Cpu(address: Address,
+                       timestamp: Long,
+                       systemLoadAverage: Option[Double],
+                       cpuCombined: Option[Double],
+                       cpuStolen: Option[Double],
+                       processors: Int) {
 
     cpuCombined match {
       case Some(x) => require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")
@@ -283,7 +289,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     if (timestamp >= that.timestamp) this // that is older
     else {
       // equality is based on the name of the Metric
-      copy(metrics = that.metrics union (metrics diff that.metrics), timestamp = that.timestamp)
+      copy(metrics = that.metrics.union(metrics.diff(that.metrics)), timestamp = that.timestamp)
     }
   }
 
@@ -298,13 +304,14 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     val updated = for {
       latest <- latestNode.metrics
       current <- currentNode.metrics
-      if (latest sameAs current)
+      if latest.sameAs(current)
     } yield {
       current :+ latest
     }
     // Append metrics missing from either latest or current.
     // Equality is based on the [[Metric.name]]
-    val merged = updated union (latestNode.metrics diff updated) union (currentNode.metrics diff updated diff latestNode.metrics)
+    val merged =
+      updated.union(latestNode.metrics.diff(updated)).union(currentNode.metrics.diff(updated).diff(latestNode.metrics))
     copy(metrics = merged, timestamp = latestNode.timestamp)
   }
 
@@ -347,32 +354,36 @@ private[metrics] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
   /**
    * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus]] `Up`.
    */
-  def remove(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
+  def remove(node: Address): MetricsGossip = copy(nodes = nodes.filterNot(_.address == node))
 
   /**
    * Only the nodes that are in the `includeNodes` Set.
    */
   def filter(includeNodes: Set[Address]): MetricsGossip =
-    copy(nodes = nodes filter { includeNodes contains _.address })
+    copy(nodes = nodes.filter { includeNodes contains _.address })
 
   /**
    * Adds new remote [[NodeMetrics]] and merges existing from a remote gossip.
    */
   def merge(otherGossip: MetricsGossip): MetricsGossip =
-    otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) => gossip :+ nodeMetrics }
+    otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) =>
+      gossip :+ nodeMetrics
+    }
 
   /**
    * Adds new local [[NodeMetrics]], or merges an existing.
    */
   def :+(newNodeMetrics: NodeMetrics): MetricsGossip = nodeMetricsFor(newNodeMetrics.address) match {
     case Some(existingNodeMetrics) =>
-      copy(nodes = nodes - existingNodeMetrics + (existingNodeMetrics update newNodeMetrics))
+      copy(nodes = nodes - existingNodeMetrics + (existingNodeMetrics.update(newNodeMetrics)))
     case None => copy(nodes = nodes + newNodeMetrics)
   }
 
   /**
    * Returns [[NodeMetrics]] for a node if exists.
    */
-  def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes find { n => n.address == address }
+  def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes.find { n =>
+    n.address == address
+  }
 
 }

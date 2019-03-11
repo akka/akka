@@ -17,13 +17,15 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object MaybeSource extends GraphStageWithMaterializedValue[SourceShape[AnyRef], Promise[Option[AnyRef]]] {
+@InternalApi private[akka] object MaybeSource
+    extends GraphStageWithMaterializedValue[SourceShape[AnyRef], Promise[Option[AnyRef]]] {
   val out = Outlet[AnyRef]("MaybeSource.out")
   override val shape = SourceShape(out)
 
   override protected def initialAttributes = DefaultAttributes.maybeSource
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Promise[Option[AnyRef]]) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, Promise[Option[AnyRef]]) = {
     import scala.util.{ Success => ScalaSuccess, Failure => ScalaFailure }
     val promise = Promise[Option[AnyRef]]()
     val logic = new GraphStageLogic(shape) with OutHandler {
@@ -37,9 +39,8 @@ import scala.util.Try
             handleCompletion(value)
           case None =>
             // callback on future completion
-            promise.future.onComplete(
-              getAsyncCallback(handleCompletion).invoke
-            )(ExecutionContexts.sameThreadExecutionContext)
+            promise.future.onComplete(getAsyncCallback(handleCompletion).invoke)(
+              ExecutionContexts.sameThreadExecutionContext)
         }
       }
 

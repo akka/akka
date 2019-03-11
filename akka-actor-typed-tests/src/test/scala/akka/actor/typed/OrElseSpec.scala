@@ -84,11 +84,13 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "Behavior.orElse" must {
     "work for deferred behavior on the left" in {
-      val orElseDeferred = Behaviors.setup[Ping] { _ =>
-        Behaviors.receiveMessage { _ =>
-          Behaviors.unhandled
+      val orElseDeferred = Behaviors
+        .setup[Ping] { _ =>
+          Behaviors.receiveMessage { _ =>
+            Behaviors.unhandled
+          }
         }
-      }.orElse(ping(Map.empty))
+        .orElse(ping(Map.empty))
 
       val p = spawn(orElseDeferred)
       val probe = TestProbe[Pong]
@@ -145,10 +147,10 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     val y = spawn(dealer(Set.empty))
 
-    (0 to 10000) foreach { i =>
+    (0 to 10000).foreach { i =>
       y ! Add(i)
     }
-    (0 to 9999) foreach { i =>
+    (0 to 9999).foreach { i =>
       y ! Remove(i)
     }
     val probe = TestProbe[Set[Any]]
@@ -158,4 +160,3 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   }
 
 }
-

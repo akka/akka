@@ -26,15 +26,15 @@ private[akka] class Callback[State](val sideEffect: State => Unit) extends SideE
 
 /** INTERNAL API */
 @InternalApi
-final private[akka] class ReplyEffectImpl[ReplyMessage, State](replyTo: ActorRef[ReplyMessage], replyWithMessage: State => ReplyMessage)
-  extends Callback[State](state => replyTo ! replyWithMessage(state)) {
+final private[akka] class ReplyEffectImpl[ReplyMessage, State](replyTo: ActorRef[ReplyMessage],
+                                                               replyWithMessage: State => ReplyMessage)
+    extends Callback[State](state => replyTo ! replyWithMessage(state)) {
   override def toString: String = "Reply"
 }
 
 /** INTERNAL API */
 @InternalApi
-final private[akka] class NoReplyEffectImpl[State]
-  extends Callback[State](_ => ()) {
+final private[akka] class NoReplyEffectImpl[State] extends Callback[State](_ => ()) {
   override def toString: String = "NoReply"
 }
 
@@ -47,6 +47,7 @@ private[akka] case object Stop extends SideEffect[Nothing]
 private[akka] case object UnstashAll extends SideEffect[Nothing]
 
 object SideEffect {
+
   /**
    * Create a ChainedEffect that can be run after Effects
    */
@@ -68,4 +69,3 @@ object SideEffect {
    */
   def unstashAll[State](): SideEffect[State] = UnstashAll.asInstanceOf[SideEffect[State]]
 }
-

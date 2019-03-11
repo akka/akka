@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.remote.WireFormats.ActorRefData
-import akka.serialization.{ Serialization, BaseSerializer }
+import akka.serialization.{ BaseSerializer, Serialization }
 
 import scala.annotation.tailrec
 
@@ -57,7 +57,8 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
               val unCachedParsingMethod =
                 if (method eq null) clazz.getDeclaredMethod("parseFrom", ProtobufSerializer.ARRAY_OF_BYTE_ARRAY: _*)
                 else method
-              if (parsingMethodBindingRef.compareAndSet(parsingMethodBinding, parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
+              if (parsingMethodBindingRef.compareAndSet(parsingMethodBinding,
+                                                        parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
                 unCachedParsingMethod
               else
                 parsingMethod(unCachedParsingMethod)
@@ -65,7 +66,8 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
         }
         parsingMethod().invoke(null, bytes)
 
-      case None => throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
+      case None =>
+        throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
     }
   }
 
@@ -80,7 +82,9 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
           val unCachedtoByteArrayMethod =
             if (method eq null) clazz.getMethod("toByteArray")
             else method
-          if (toByteArrayMethodBindingRef.compareAndSet(toByteArrayMethodBinding, toByteArrayMethodBinding.updated(clazz, unCachedtoByteArrayMethod)))
+          if (toByteArrayMethodBindingRef.compareAndSet(
+                toByteArrayMethodBinding,
+                toByteArrayMethodBinding.updated(clazz, unCachedtoByteArrayMethod)))
             unCachedtoByteArrayMethod
           else
             toByteArrayMethod(unCachedtoByteArrayMethod)

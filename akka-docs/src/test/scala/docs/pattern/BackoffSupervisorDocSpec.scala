@@ -19,12 +19,11 @@ class BackoffSupervisorDocSpec {
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
-      BackoffOpts.onStop(
-        childProps,
-        childName = "myEcho",
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+      BackoffOpts.onStop(childProps,
+                         childName = "myEcho",
+                         minBackoff = 3.seconds,
+                         maxBackoff = 30.seconds,
+                         randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -39,12 +38,11 @@ class BackoffSupervisorDocSpec {
     val childProps = Props(classOf[EchoActor])
 
     val supervisor = BackoffSupervisor.props(
-      BackoffOpts.onFailure(
-        childProps,
-        childName = "myEcho",
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+      BackoffOpts.onFailure(childProps,
+                            childName = "myEcho",
+                            minBackoff = 3.seconds,
+                            maxBackoff = 30.seconds,
+                            randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -59,13 +57,14 @@ class BackoffSupervisorDocSpec {
 
     //#backoff-custom-stop
     val supervisor = BackoffSupervisor.props(
-      BackoffOpts.onStop(
-        childProps,
-        childName = "myEcho",
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
-      ).withManualReset // the child must send BackoffSupervisor.Reset to its parent
+      BackoffOpts
+        .onStop(childProps,
+                childName = "myEcho",
+                minBackoff = 3.seconds,
+                maxBackoff = 30.seconds,
+                randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        )
+        .withManualReset // the child must send BackoffSupervisor.Reset to its parent
         .withDefaultStoppingStrategy // Stop at any Exception thrown
     )
     //#backoff-custom-stop
@@ -81,18 +80,18 @@ class BackoffSupervisorDocSpec {
 
     //#backoff-custom-fail
     val supervisor = BackoffSupervisor.props(
-      BackoffOpts.onFailure(
-        childProps,
-        childName = "myEcho",
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
-      ).withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
-        .withSupervisorStrategy(
-          OneForOneStrategy() {
-            case _: MyException => SupervisorStrategy.Restart
-            case _              => SupervisorStrategy.Escalate
-          }))
+      BackoffOpts
+        .onFailure(childProps,
+                   childName = "myEcho",
+                   minBackoff = 3.seconds,
+                   maxBackoff = 30.seconds,
+                   randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        )
+        .withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
+        .withSupervisorStrategy(OneForOneStrategy() {
+          case _: MyException => SupervisorStrategy.Restart
+          case _              => SupervisorStrategy.Escalate
+        }))
     //#backoff-custom-fail
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -110,13 +109,10 @@ class BackoffSupervisorDocSpec {
     val childProps = Props(classOf[EchoActor])
 
     //#backoff-sharded
-    val supervisor = BackoffSupervisor.props(BackoffOpts.onStop(
-      childProps,
-      childName = "myEcho",
-      minBackoff = 3.seconds,
-      maxBackoff = 30.seconds,
-      randomFactor = 0.2
-    ).withFinalStopMessage(_ == StopMessage))
+    val supervisor = BackoffSupervisor.props(
+      BackoffOpts
+        .onStop(childProps, childName = "myEcho", minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+        .withFinalStopMessage(_ == StopMessage))
     //#backoff-sharded
 
     //#backoff-sharded-passivation

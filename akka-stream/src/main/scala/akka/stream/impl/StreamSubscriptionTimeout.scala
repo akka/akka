@@ -85,19 +85,26 @@ import scala.util.control.NoStackTrace
     target match {
       case p: Processor[_, _] =>
         log.debug("Cancelling {} Processor's publisher and subscriber sides (after {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms") with NoStackTrace)
+        handleSubscriptionTimeout(
+          target,
+          new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms")
+          with NoStackTrace)
 
       case p: Publisher[_] =>
         log.debug("Cancelling {} (after: {} ms)", p, millis)
-        handleSubscriptionTimeout(target, new SubscriptionTimeoutException(s"Publisher ($p) you are trying to subscribe to has been shut-down " +
-          s"because exceeding it's subscription-timeout.") with NoStackTrace)
+        handleSubscriptionTimeout(target,
+                                  new SubscriptionTimeoutException(
+                                    s"Publisher ($p) you are trying to subscribe to has been shut-down " +
+                                    s"because exceeding it's subscription-timeout.") with NoStackTrace)
     }
   }
 
   private def warn(target: Publisher[_], timeout: FiniteDuration): Unit = {
     log.warning(
       "Timed out {} detected (after {} ms)! You should investigate if you either cancel or consume all {} instances",
-      target, timeout.toMillis, target.getClass.getCanonicalName)
+      target,
+      timeout.toMillis,
+      target.getClass.getCanonicalName)
   }
 
   /**

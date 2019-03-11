@@ -26,12 +26,12 @@ class DeviceManager extends Actor with ActorLogging {
     case trackMsg @ RequestTrackDevice(groupId, _) =>
       groupIdToActor.get(groupId) match {
         case Some(ref) =>
-          ref forward trackMsg
+          ref.forward(trackMsg)
         case None =>
           log.info("Creating device group actor for {}", groupId)
           val groupActor = context.actorOf(DeviceGroup.props(groupId), "group-" + groupId)
           context.watch(groupActor)
-          groupActor forward trackMsg
+          groupActor.forward(trackMsg)
           groupIdToActor += groupId -> groupActor
           actorToGroupId += groupActor -> groupId
       }

@@ -27,7 +27,8 @@ import scala.concurrent.duration._
   final case class SrvQuestion(id: Short, name: String) extends DnsQuestion
   final case class Question4(id: Short, name: String) extends DnsQuestion
   final case class Question6(id: Short, name: String) extends DnsQuestion
-  final case class Answer(id: Short, rrs: im.Seq[ResourceRecord], additionalRecs: im.Seq[ResourceRecord] = Nil) extends NoSerializationVerificationNeeded
+  final case class Answer(id: Short, rrs: im.Seq[ResourceRecord], additionalRecs: im.Seq[ResourceRecord] = Nil)
+      extends NoSerializationVerificationNeeded
   final case class DropRequest(id: Short)
 }
 
@@ -123,7 +124,8 @@ import scala.concurrent.duration._
             log.debug("Client for id {} not found. Discarding unsuccessful response.", msg.id)
         }
       } else {
-        val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
+        val (recs, additionalRecs) =
+          if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
         self ! Answer(msg.id, recs, additionalRecs)
       }
     case response: Answer =>
@@ -139,12 +141,12 @@ import scala.concurrent.duration._
   }
 
   def createTcpClient() = {
-    context.actorOf(BackoffSupervisor.props(
-      Props(classOf[TcpDnsClient], tcp, ns, self),
-      childName = "tcpDnsClient",
-      minBackoff = 10.millis,
-      maxBackoff = 20.seconds,
-      randomFactor = 0.1
-    ), "tcpDnsClientSupervisor")
+    context.actorOf(
+      BackoffSupervisor.props(Props(classOf[TcpDnsClient], tcp, ns, self),
+                              childName = "tcpDnsClient",
+                              minBackoff = 10.millis,
+                              maxBackoff = 20.seconds,
+                              randomFactor = 0.1),
+      "tcpDnsClientSupervisor")
   }
 }

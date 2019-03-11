@@ -143,36 +143,38 @@ object BehaviorSpec {
   }
 
   def mkFull(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] = {
-    SBehaviors.receive[Command] {
-      case (context, GetSelf) =>
-        monitor ! Self(context.self)
-        SBehaviors.same
-      case (_, Miss) =>
-        monitor ! Missed
-        SBehaviors.unhandled
-      case (_, Ignore) =>
-        monitor ! Ignored
-        SBehaviors.same
-      case (_, Ping) =>
-        monitor ! Pong
-        mkFull(monitor, state)
-      case (_, Swap) =>
-        monitor ! Swapped
-        mkFull(monitor, state.next)
-      case (_, GetState()) =>
-        monitor ! state
-        SBehaviors.same
-      case (_, Stop) => SBehaviors.stopped
-      case (_, _)    => SBehaviors.unhandled
-    } receiveSignal {
-      case (_, signal) =>
-        monitor ! ReceivedSignal(signal)
-        SBehaviors.same
-    }
+    SBehaviors
+      .receive[Command] {
+        case (context, GetSelf) =>
+          monitor ! Self(context.self)
+          SBehaviors.same
+        case (_, Miss) =>
+          monitor ! Missed
+          SBehaviors.unhandled
+        case (_, Ignore) =>
+          monitor ! Ignored
+          SBehaviors.same
+        case (_, Ping) =>
+          monitor ! Pong
+          mkFull(monitor, state)
+        case (_, Swap) =>
+          monitor ! Swapped
+          mkFull(monitor, state.next)
+        case (_, GetState()) =>
+          monitor ! state
+          SBehaviors.same
+        case (_, Stop) => SBehaviors.stopped
+        case (_, _)    => SBehaviors.unhandled
+      }
+      .receiveSignal {
+        case (_, signal) =>
+          monitor ! ReceivedSignal(signal)
+          SBehaviors.same
+      }
   }
   /*
- * function converters for Java, to ease the pain on Scala 2.11
- */
+   * function converters for Java, to ease the pain on Scala 2.11
+   */
   def fs(f: (JActorContext[Command], Signal) => Behavior[Command]) =
     new F2[JActorContext[Command], Signal, Behavior[Command]] {
       override def apply(context: JActorContext[Command], sig: Signal) = f(context, sig)
@@ -349,32 +351,34 @@ class FullBehaviorSpec extends ScalaTestWithActorTestKit with Messages with Beco
 class ReceiveBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) -> null
   private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
-    SBehaviors.receive[Command] {
-      case (context, GetSelf) =>
-        monitor ! Self(context.self)
-        SBehaviors.same
-      case (_, Miss) =>
-        monitor ! Missed
-        SBehaviors.unhandled
-      case (_, Ignore) =>
-        monitor ! Ignored
-        SBehaviors.same
-      case (_, Ping) =>
-        monitor ! Pong
-        behv(monitor, state)
-      case (_, Swap) =>
-        monitor ! Swapped
-        behv(monitor, state.next)
-      case (_, GetState()) =>
-        monitor ! state
-        SBehaviors.same
-      case (_, Stop)       => SBehaviors.stopped
-      case (_, _: AuxPing) => SBehaviors.unhandled
-    } receiveSignal {
-      case (_, signal) =>
-        monitor ! ReceivedSignal(signal)
-        SBehaviors.same
-    }
+    SBehaviors
+      .receive[Command] {
+        case (context, GetSelf) =>
+          monitor ! Self(context.self)
+          SBehaviors.same
+        case (_, Miss) =>
+          monitor ! Missed
+          SBehaviors.unhandled
+        case (_, Ignore) =>
+          monitor ! Ignored
+          SBehaviors.same
+        case (_, Ping) =>
+          monitor ! Pong
+          behv(monitor, state)
+        case (_, Swap) =>
+          monitor ! Swapped
+          behv(monitor, state.next)
+        case (_, GetState()) =>
+          monitor ! state
+          SBehaviors.same
+        case (_, Stop)       => SBehaviors.stopped
+        case (_, _: AuxPing) => SBehaviors.unhandled
+      }
+      .receiveSignal {
+        case (_, signal) =>
+          monitor ! ReceivedSignal(signal)
+          SBehaviors.same
+      }
   }
 }
 
@@ -383,8 +387,8 @@ class ImmutableWithSignalScalaBehaviorSpec extends Messages with BecomeWithLifec
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) -> null
 
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-    SBehaviors.receive[Command] {
-      (context, message) =>
+    SBehaviors
+      .receive[Command] { (context, message) =>
         message match {
           case GetSelf =>
             monitor ! Self(context.self)
@@ -407,11 +411,12 @@ class ImmutableWithSignalScalaBehaviorSpec extends Messages with BecomeWithLifec
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
         }
-    } receiveSignal {
-      case (_, sig) =>
-        monitor ! ReceivedSignal(sig)
-        SBehaviors.same
-    }
+      }
+      .receiveSignal {
+        case (_, sig) =>
+          monitor ! ReceivedSignal(sig)
+          SBehaviors.same
+      }
 }
 
 class ImmutableScalaBehaviorSpec extends Messages with Become with Stoppable {
@@ -512,12 +517,16 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: TypedActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(context: TypedActorContext[Command],
+                                 message: Command,
+                                 target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: TypedActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(context: TypedActorContext[Command],
+                                signal: Signal,
+                                target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }
@@ -536,28 +545,29 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) -> null
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
     JBehaviors.receive(
-      fc((context, message) => message match {
-        case GetSelf =>
-          monitor ! Self(context.getSelf)
-          SBehaviors.same
-        case Miss =>
-          monitor ! Missed
-          SBehaviors.unhandled
-        case Ignore =>
-          monitor ! Ignored
-          SBehaviors.same
-        case Ping =>
-          monitor ! Pong
-          behv(monitor, state)
-        case Swap =>
-          monitor ! Swapped
-          behv(monitor, state.next)
-        case GetState() =>
-          monitor ! state
-          SBehaviors.same
-        case Stop       => SBehaviors.stopped
-        case _: AuxPing => SBehaviors.unhandled
-      }),
+      fc((context, message) =>
+        message match {
+          case GetSelf =>
+            monitor ! Self(context.getSelf)
+            SBehaviors.same
+          case Miss =>
+            monitor ! Missed
+            SBehaviors.unhandled
+          case Ignore =>
+            monitor ! Ignored
+            SBehaviors.same
+          case Ping =>
+            monitor ! Pong
+            behv(monitor, state)
+          case Swap =>
+            monitor ! Swapped
+            behv(monitor, state.next)
+          case GetState() =>
+            monitor ! state
+            SBehaviors.same
+          case Stop       => SBehaviors.stopped
+          case _: AuxPing => SBehaviors.unhandled
+        }),
       fs((_, sig) => {
         monitor ! ReceivedSignal(sig)
         SBehaviors.same
@@ -625,12 +635,16 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: TypedActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(context: TypedActorContext[Command],
+                                 message: Command,
+                                 target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: TypedActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(context: TypedActorContext[Command],
+                                signal: Signal,
+                                target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }
@@ -641,7 +655,6 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
 
 class RestarterJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    JBehaviors.supervise(super.behavior(monitor)._1)
-      .onFailure(classOf[Exception], SupervisorStrategy.restart) -> null
+    JBehaviors.supervise(super.behavior(monitor)._1).onFailure(classOf[Exception], SupervisorStrategy.restart) -> null
   }
 }

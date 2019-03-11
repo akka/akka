@@ -25,8 +25,7 @@ object TransportFailConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote {
         transport-failure-detector {

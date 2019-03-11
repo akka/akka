@@ -123,7 +123,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! ChannelAcceptable
       val channel = expectWorkerForCommand
 
-      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
+      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1).intercept {
         listener ! FailedRegisterIncoming(channel)
         awaitCond(!channel.isOpen)
       }
@@ -175,12 +175,16 @@ class TcpListenerSpec extends AkkaSpec("""
 
     private class ListenerParent(pullMode: Boolean) extends Actor with ChannelRegistry {
       val listener = context.actorOf(
-        props = Props(classOf[TcpListener], selectorRouter.ref, Tcp(system), this, bindCommander.ref,
-          Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
+        props = Props(classOf[TcpListener],
+                      selectorRouter.ref,
+                      Tcp(system),
+                      this,
+                      bindCommander.ref,
+                      Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {
-        case msg => parent.ref forward msg
+        case msg => parent.ref.forward(msg)
       }
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -191,5 +195,6 @@ class TcpListenerSpec extends AkkaSpec("""
 
 }
 object TcpListenerSpec {
-  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
+  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
+      extends NoSerializationVerificationNeeded
 }

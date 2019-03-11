@@ -95,7 +95,8 @@ class ProtobufReadOptional {
           .setRow(s.row)
           .setLetter(s.letter)
           .setSeatType(s.seatType.code)
-          .build().toByteArray
+          .build()
+          .toByteArray
     }
 
     // -- fromBinary helpers --
@@ -142,11 +143,12 @@ class RenamePlainJson {
       marshaller.toJson(event)
 
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case json: JsObject => EventSeq(marshaller.fromJson(manifest match {
-        case V1      => rename(json, "code", "seatNr")
-        case V2      => json // pass-through
-        case unknown => throw new IllegalArgumentException(s"Unknown manifest: $unknown")
-      }))
+      case json: JsObject =>
+        EventSeq(marshaller.fromJson(manifest match {
+          case V1      => rename(json, "code", "seatNr")
+          case V2      => json // pass-through
+          case unknown => throw new IllegalArgumentException(s"Unknown manifest: $unknown")
+        }))
       case _ =>
         val c = event.getClass
         throw new IllegalArgumentException("Can only work with JSON, was: %s".format(c))
@@ -190,8 +192,7 @@ object SimplestCustomSerializer {
     // serialize the object
     override def toBinary(obj: AnyRef): Array[Byte] = obj match {
       case p: Person => s"""${p.name}|${p.surname}""".getBytes(Utf8)
-      case _ => throw new IllegalArgumentException(
-        s"Unable to serialize to bytes, clazz was: ${obj.getClass}!")
+      case _         => throw new IllegalArgumentException(s"Unable to serialize to bytes, clazz was: ${obj.getClass}!")
     }
 
     // deserialize the object, using the manifest to indicate which logic to apply
@@ -201,8 +202,9 @@ object SimplestCustomSerializer {
           val nameAndSurname = new String(bytes, Utf8)
           val Array(name, surname) = nameAndSurname.split("[|]")
           Person(name, surname)
-        case _ => throw new NotSerializableException(
-          s"Unable to deserialize from bytes, manifest was: $manifest! Bytes length: " +
+        case _ =>
+          throw new NotSerializableException(
+            s"Unable to deserialize from bytes, manifest was: $manifest! Bytes length: " +
             bytes.length)
       }
 
@@ -251,9 +253,7 @@ class UserEventsAdapter extends EventAdapter {
     case UserDetailsChanged(null, address) => EventSeq(UserAddressChanged(address))
     case UserDetailsChanged(name, null)    => EventSeq(UserNameChanged(name))
     case UserDetailsChanged(name, address) =>
-      EventSeq(
-        UserNameChanged(name),
-        UserAddressChanged(address))
+      EventSeq(UserNameChanged(name), UserAddressChanged(address))
     case event: V2 => EventSeq(event)
   }
 
@@ -270,8 +270,7 @@ class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
   val utf8 = Charset.forName("UTF-8")
   override def identifier: Int = 8337
 
-  val SkipEventManifestsEvents = Set(
-    "docs.persistence.CustomerBlinked" // ...
+  val SkipEventManifestsEvents = Set("docs.persistence.CustomerBlinked" // ...
   )
 
   override def manifest(o: AnyRef): String = o.getClass.getName
@@ -377,8 +376,7 @@ class JsonDataModelAdapter extends EventAdapter {
     case json: JsObject =>
       EventSeq(marshaller.fromJson(json))
     case _ =>
-      throw new IllegalArgumentException(
-        "Unable to fromJournal a non-JSON object! Was: " + event.getClass)
+      throw new IllegalArgumentException("Unable to fromJournal a non-JSON object! Was: " + event.getClass)
   }
 }
 //#detach-models-adapter-json

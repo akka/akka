@@ -31,7 +31,9 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
   testTransport(on = true)
 
   case class Highest(n: Int, delta: Option[Highest] = None)
-    extends DeltaReplicatedData with RequiresCausalDeliveryOfDeltas with ReplicatedDelta {
+      extends DeltaReplicatedData
+      with RequiresCausalDeliveryOfDeltas
+      with ReplicatedDelta {
     type T = Highest
     type D = Highest
 
@@ -143,8 +145,9 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
 
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
-  val fullStateReplicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second).withDeltaCrdtEnabled(false)), "fullStateReplicator")
+  val fullStateReplicator = system.actorOf(
+    Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second).withDeltaCrdtEnabled(false)),
+    "fullStateReplicator")
   val deltaReplicator = {
     val r = system.actorOf(Replicator.props(ReplicatorSettings(system)), "deltaReplicator")
     r ! Replicator.Internal.TestFullStateGossip(enabled = false)
@@ -161,7 +164,7 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -370,8 +373,8 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
               fullStateReplicator ! Update(key, PNCounter.empty, consistency)(_ :+ n)
               deltaReplicator ! Update(key, PNCounter.empty, consistency)(_ :+ n)
             case Decr(key, n, consistency) =>
-              fullStateReplicator ! Update(key, PNCounter.empty, consistency)(_ decrement n)
-              deltaReplicator ! Update(key, PNCounter.empty, consistency)(_ decrement n)
+              fullStateReplicator ! Update(key, PNCounter.empty, consistency)(_.decrement(n))
+              deltaReplicator ! Update(key, PNCounter.empty, consistency)(_.decrement(n))
             case Add(key, elem, consistency) =>
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
@@ -381,8 +384,8 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
               }
             case Remove(key, elem, consistency) =>
               runOn(first) {
-                fullStateReplicator ! Update(key, ORSet.empty[String], consistency)(_ remove elem)
-                deltaReplicator ! Update(key, ORSet.empty[String], consistency)(_ remove elem)
+                fullStateReplicator ! Update(key, ORSet.empty[String], consistency)(_.remove(elem))
+                deltaReplicator ! Update(key, ORSet.empty[String], consistency)(_.remove(elem))
               }
           }
         }
@@ -425,4 +428,3 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
   }
 
 }
-

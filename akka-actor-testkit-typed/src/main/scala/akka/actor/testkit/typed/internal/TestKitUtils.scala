@@ -18,8 +18,10 @@ import scala.concurrent.duration.Duration
 @InternalApi
 private[akka] object ActorTestKitGuardian {
   sealed trait TestKitCommand
-  final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
-  final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
+  final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props)
+      extends TestKitCommand
+  final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props)
+      extends TestKitCommand
   final case class StopActor[T](ref: ActorRef[T], replyTo: ActorRef[Ack.type]) extends TestKitCommand
   final case class ActorStopped[T](replyTo: ActorRef[Ack.type]) extends TestKitCommand
 
@@ -94,12 +96,10 @@ private[akka] object TestKitUtils {
       .replaceAll("[^a-zA-Z_0-9]", "_")
   }
 
-  def shutdown(
-    system:                  ActorSystem[_],
-    timeout:                 Duration,
-    throwIfShutdownTimesOut: Boolean): Unit = {
+  def shutdown(system: ActorSystem[_], timeout: Duration, throwIfShutdownTimesOut: Boolean): Unit = {
     system.terminate()
-    try Await.ready(system.whenTerminated, timeout) catch {
+    try Await.ready(system.whenTerminated, timeout)
+    catch {
       case _: TimeoutException =>
         val message = "Failed to stop [%s] within [%s] \n%s".format(system.name, timeout, system.printTree)
         if (throwIfShutdownTimesOut) throw new RuntimeException(message)

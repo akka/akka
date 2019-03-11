@@ -32,10 +32,10 @@ object TestKitDocSpec {
   class TestFsmActor extends Actor with FSM[Int, String] {
     startWith(1, "")
     when(1) {
-      case Event("go", _) => goto(2) using "go"
+      case Event("go", _) => goto(2).using("go")
     }
     when(2) {
-      case Event("back", _) => goto(1) using "back"
+      case Event("back", _) => goto(1).using("back")
     }
   }
 
@@ -262,7 +262,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val target = system.actorOf(Props.empty)
     //#test-probe-watch
     val probe = TestProbe()
-    probe watch target
+    probe.watch(target)
     target ! PoisonPill
     probe.expectTerminated(target)
     //#test-probe-watch
@@ -322,12 +322,13 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.EventFilter
     import com.typesafe.config.ConfigFactory
 
-    implicit val system = ActorSystem("testsystem", ConfigFactory.parseString("""
+    implicit val system = ActorSystem("testsystem",
+                                      ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]
       """))
     try {
       val actor = system.actorOf(Props.empty)
-      EventFilter[ActorKilledException](occurrences = 1) intercept {
+      EventFilter[ActorKilledException](occurrences = 1).intercept {
         actor ! Kill
       }
     } finally {
@@ -346,7 +347,8 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       //#put-your-test-code-here
       val probe = TestProbe()
       probe.send(testActor, "hello")
-      try expectMsg("hello") catch { case NonFatal(e) => system.terminate(); throw e }
+      try expectMsg("hello")
+      catch { case NonFatal(e) => system.terminate(); throw e }
       //#put-your-test-code-here
 
       shutdown(system)

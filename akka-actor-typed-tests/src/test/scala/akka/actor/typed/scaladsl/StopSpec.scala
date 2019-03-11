@@ -37,21 +37,23 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "execute the post stop when wrapped" in {
       val sawSignal = Promise[Done]()
       val ref = spawn(Behaviors.setup[AnyRef] { _ =>
-        Behaviors.intercept(
-          new BehaviorInterceptor[AnyRef, AnyRef] {
-            override def aroundReceive(context: typed.TypedActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
-              target(context, message)
-            }
-
-            override def aroundSignal(context: typed.TypedActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
-              target(context, signal)
-            }
+        Behaviors.intercept(new BehaviorInterceptor[AnyRef, AnyRef] {
+          override def aroundReceive(context: typed.TypedActorContext[AnyRef],
+                                     message: AnyRef,
+                                     target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+            target(context, message)
           }
-        )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-            case (context, PostStop) =>
-              sawSignal.success(Done)
-              Behaviors.empty
-          }))
+
+          override def aroundSignal(context: typed.TypedActorContext[AnyRef],
+                                    signal: Signal,
+                                    target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+            target(context, signal)
+          }
+        })(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
+          case (context, PostStop) =>
+            sawSignal.success(Done)
+            Behaviors.empty
+        }))
       })
       ref ! "stopit"
       sawSignal.future.futureValue should ===(Done)
@@ -78,8 +80,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           // illegal:
           Behaviors.setup[String] { _ =>
             throw TestException("boom!")
-          }
-        )
+          })
       }
 
       ex.getMessage should include("Behavior used as `postStop` behavior in Stopped(...) was a deferred one ")

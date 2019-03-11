@@ -30,7 +30,7 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
     if (cfg ne LeveldbStore.emptyConfig) cfg
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
 
-  override def receivePluginInternal: Receive = receiveCompactionInternal orElse {
+  override def receivePluginInternal: Receive = receiveCompactionInternal.orElse {
     case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) =>
       import context.dispatcher
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
@@ -47,11 +47,14 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
                 }
             }.map(_ => highSeqNr)
           }
-        }.map {
-          highSeqNr => RecoverySuccess(highSeqNr)
-        }.recover {
+        }
+        .map { highSeqNr =>
+          RecoverySuccess(highSeqNr)
+        }
+        .recover {
           case e => ReplayMessagesFailure(e)
-        }.pipeTo(replyTo)
+        }
+        .pipeTo(replyTo)
 
     case SubscribePersistenceId(persistenceId: String) =>
       addPersistenceIdSubscriber(sender(), persistenceId)
@@ -105,10 +108,15 @@ private[persistence] object LeveldbJournal {
    * `fromSequenceNr` is exclusive
    * `toSequenceNr` is inclusive
    */
-  final case class ReplayTaggedMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
-                                        tag: String, replyTo: ActorRef) extends SubscriptionCommand
+  final case class ReplayTaggedMessages(fromSequenceNr: Long,
+                                        toSequenceNr: Long,
+                                        max: Long,
+                                        tag: String,
+                                        replyTo: ActorRef)
+      extends SubscriptionCommand
   final case class ReplayedTaggedMessage(persistent: PersistentRepr, tag: String, offset: Long)
-    extends DeadLetterSuppression with NoSerializationVerificationNeeded
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 }
 
 /**
@@ -117,8 +125,8 @@ private[persistence] object LeveldbJournal {
  * Journal backed by a [[SharedLeveldbStore]]. For testing only.
  */
 private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
-  val timeout: Timeout = context.system.settings.config.getMillisDuration(
-    "akka.persistence.journal.leveldb-shared.timeout")
+  val timeout: Timeout =
+    context.system.settings.config.getMillisDuration("akka.persistence.journal.leveldb-shared.timeout")
 
   override def receivePluginInternal: Receive = {
     case cmd: LeveldbJournal.SubscriptionCommand =>
@@ -127,13 +135,15 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
         case Some(s) => s.forward(cmd)
         case None =>
           log.error("Failed {} request. " +
-            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`", cmd)
+                    "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`",
+                    cmd)
       }
 
   }
 }
 
 object SharedLeveldbJournal {
+
   /**
    * Sets the shared LevelDB `store` for the given actor `system`.
    *

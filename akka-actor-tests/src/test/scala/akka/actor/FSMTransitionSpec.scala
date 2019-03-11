@@ -36,7 +36,7 @@ object FSMTransitionSpec {
       case Event("tick", _) => goto(0)
     }
     whenUnhandled {
-      case Event("reply", _) => stay replying "reply"
+      case Event("reply", _) => stay.replying("reply")
     }
     initialize()
     override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { target ! "restarted" }
@@ -45,7 +45,7 @@ object FSMTransitionSpec {
   class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {
     startWith(0, 0)
     when(0) {
-      case Event("tick", _) => goto(1) using 1
+      case Event("tick", _) => goto(1).using(1)
       case Event("stay", _) => stay()
     }
     when(1) {
@@ -150,7 +150,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       val fsmref = system.actorOf(Props(new Actor with FSM[Int, ActorRef] {
         startWith(0, null)
         when(0) {
-          case Event("switch", _) => goto(1) using sender()
+          case Event("switch", _) => goto(1).using(sender())
         }
         onTransition {
           case x -> y => nextStateData ! (x -> y)

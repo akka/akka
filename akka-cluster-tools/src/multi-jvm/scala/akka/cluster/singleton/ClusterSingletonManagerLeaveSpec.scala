@@ -30,6 +30,7 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
@@ -55,7 +56,10 @@ class ClusterSingletonManagerLeaveMultiJvmNode1 extends ClusterSingletonManagerL
 class ClusterSingletonManagerLeaveMultiJvmNode2 extends ClusterSingletonManagerLeaveSpec
 class ClusterSingletonManagerLeaveMultiJvmNode3 extends ClusterSingletonManagerLeaveSpec
 
-class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerLeaveSpec
+    extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerLeaveSpec._
 
   override def initialParticipants = roles.size
@@ -64,28 +68,26 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       createSingleton()
     }
   }
 
   def createSingleton(): ActorRef = {
     system.actorOf(
-      ClusterSingletonManager.props(
-        singletonProps = Props(classOf[Echo], testActor),
-        terminationMessage = "stop",
-        settings = ClusterSingletonManagerSettings(system)),
+      ClusterSingletonManager.props(singletonProps = Props(classOf[Echo], testActor),
+                                    terminationMessage = "stop",
+                                    settings = ClusterSingletonManagerSettings(system)),
       name = "echo")
   }
 
   val echoProxyTerminatedProbe = TestProbe()
 
   lazy val echoProxy: ActorRef = {
-    echoProxyTerminatedProbe.watch(system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = "/user/echo",
-        settings = ClusterSingletonProxySettings(system)),
-      name = "echoProxy"))
+    echoProxyTerminatedProbe.watch(
+      system.actorOf(ClusterSingletonProxy.props(singletonManagerPath = "/user/echo",
+                                                 settings = ClusterSingletonProxySettings(system)),
+                     name = "echoProxy"))
   }
 
   "Leaving ClusterSingletonManager" must {

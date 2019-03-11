@@ -10,7 +10,7 @@ import akka.stream.scaladsl._
 //#stream-imports
 
 //#other-imports
-import akka.{ NotUsed, Done }
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.util.ByteString
 import scala.concurrent._
@@ -50,9 +50,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     val factorials = source.scan(BigInt(1))((acc, next) => acc * next)
 
     val result: Future[IOResult] =
-      factorials
-        .map(num => ByteString(s"$num\n"))
-        .runWith(FileIO.toPath(Paths.get("factorials.txt")))
+      factorials.map(num => ByteString(s"$num\n")).runWith(FileIO.toPath(Paths.get("factorials.txt")))
     //#transform-source
 
     //#use-transformed-sink
@@ -81,9 +79,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
 
   //#transform-sink
   def lineSink(filename: String): Sink[String, Future[IOResult]] =
-    Flow[String]
-      .map(s => ByteString(s + "\n"))
-      .toMat(FileIO.toPath(Paths.get(filename)))(Keep.right)
+    Flow[String].map(s => ByteString(s + "\n")).toMat(FileIO.toPath(Paths.get(filename)))(Keep.right)
   //#transform-sink
 
 }

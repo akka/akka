@@ -24,8 +24,7 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -74,8 +73,9 @@ object RemoteRoundRobinSpec {
   }
 }
 
-class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
-  with DefaultTimeout {
+class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
+    extends RemotingMultiNodeSpec(multiNodeConfig)
+    with DefaultTimeout {
   import RemoteRoundRobinSpec._
   import multiNodeConfig._
 
@@ -112,7 +112,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        replies.values foreach { _ should ===(iterationCount) }
+        replies.values.foreach { _ should ===(iterationCount) }
         replies.get(node(fourth).address) should ===(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
@@ -133,9 +133,9 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(
-          nrOfInstances = 1,
-          resizer = Some(new TestResizer)).props(Props[SomeActor]), "service-hello2")
+        val actor =
+          system.actorOf(RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]),
+                         "service-hello2")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         actor ! GetRoutees
@@ -194,7 +194,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         }
 
         enterBarrier("end")
-        replies.values foreach { _ should ===(iterationCount) }
+        replies.values.foreach { _ should ===(iterationCount) }
         replies.get(node(fourth).address) should ===(None)
       }
 

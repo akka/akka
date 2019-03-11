@@ -16,18 +16,22 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
 
 object FishingOutcomes {
+
   /**
    * Complete fishing and return all messages up until this
    */
   val complete: FishingOutcome = FishingOutcome.Complete
+
   /**
    * Consume this message, collect it into the result, and continue with the next message
    */
   val continue: FishingOutcome = FishingOutcome.Continue
+
   /**
    * Consume this message, but do not collect it into the result, and continue with the next message
    */
   val continueAndIgnore: FishingOutcome = FishingOutcome.ContinueAndIgnore
+
   /**
    * Fail fishing with a custom error message
    */

@@ -10,7 +10,8 @@ import akka.annotation.InternalApi
 import akka.util.ByteString
 
 /** INTERNAL API */
-@InternalApi private[akka] class GzipCompressor(compressionLevel: Int = Deflater.BEST_COMPRESSION) extends DeflateCompressor(compressionLevel, true) {
+@InternalApi private[akka] class GzipCompressor(compressionLevel: Int = Deflater.BEST_COMPRESSION)
+    extends DeflateCompressor(compressionLevel, true) {
   override protected lazy val deflater = new Deflater(compressionLevel, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false
@@ -21,7 +22,8 @@ import akka.util.ByteString
     header() ++ super.compressWithBuffer(input, buffer)
   }
   override protected def flushWithBuffer(buffer: Array[Byte]): ByteString = header() ++ super.flushWithBuffer(buffer)
-  override protected def finishWithBuffer(buffer: Array[Byte]): ByteString = header() ++ super.finishWithBuffer(buffer) ++ trailer()
+  override protected def finishWithBuffer(buffer: Array[Byte]): ByteString =
+    header() ++ super.finishWithBuffer(buffer) ++ trailer()
 
   private def updateCrc(input: ByteString): Unit = {
     checkSum.update(input.toArray)

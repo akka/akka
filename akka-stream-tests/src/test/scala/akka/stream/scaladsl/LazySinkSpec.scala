@@ -20,8 +20,7 @@ import scala.concurrent.duration._
 
 class LazySinkSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 1, maxSize = 1)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
   implicit val materializer = ActorMaterializer(settings)
 
   val ex = TE("")
@@ -66,9 +65,7 @@ class LazySinkSpec extends StreamSpec {
     "complete normally when upstream is completed" in assertAllStagesStopped {
       val futureProbe = Source.single(1).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
       val futureResult = Await.result(futureProbe, remainingOrDefault).get
-      futureResult.request(1)
-        .expectNext(1)
-        .expectComplete()
+      futureResult.request(1).expectNext(1).expectComplete()
     }
 
     "failed gracefully when sink factory method failed" in assertAllStagesStopped {
@@ -84,14 +81,14 @@ class LazySinkSpec extends StreamSpec {
 
     "failed gracefully when upstream failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val futureProbe = Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
+      val futureProbe =
+        Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
 
       val sourceSub = sourceProbe.expectSubscription()
       sourceSub.expectRequest(1)
       sourceSub.sendNext(0)
       val probe = Await.result(futureProbe, remainingOrDefault).get
-      probe.request(1)
-        .expectNext(0)
+      probe.request(1).expectNext(0)
       sourceSub.sendError(ex)
       probe.expectError(ex)
     }
@@ -108,14 +105,14 @@ class LazySinkSpec extends StreamSpec {
 
     "cancel upstream when internal sink is cancelled" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
-      val futureProbe = Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
+      val futureProbe =
+        Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
       val sourceSub = sourceProbe.expectSubscription()
       sourceSub.expectRequest(1)
       sourceSub.sendNext(0)
       sourceSub.expectRequest(1)
       val probe = Await.result(futureProbe, remainingOrDefault).get
-      probe.request(1)
-        .expectNext(0)
+      probe.request(1).expectNext(0)
       probe.cancel()
       sourceSub.expectCancellation()
     }
@@ -130,10 +127,9 @@ class LazySinkSpec extends StreamSpec {
         }
       }
 
-      val result = Source(List("whatever"))
-        .runWith(
-          Sink.lazyInitAsync[String, NotUsed](
-            () => { println("create sink"); Future.successful(Sink.fromGraph(FailingInnerMat)) }))
+      val result = Source(List("whatever")).runWith(Sink.lazyInitAsync[String, NotUsed](() => {
+        println("create sink"); Future.successful(Sink.fromGraph(FailingInnerMat))
+      }))
 
       result.failed.futureValue should ===(matFail)
     }

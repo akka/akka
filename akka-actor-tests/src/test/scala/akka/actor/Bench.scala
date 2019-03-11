@@ -2,7 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Julien Gaugaz
    inspired by the version contributed by Yura Taras and modified by Isaac Gouy
-*/
+ */
 
 package akka.actor
 
@@ -47,24 +47,27 @@ object Chameneos {
     }
 
     def complement(otherColour: Colour): Colour = colour match {
-      case RED => otherColour match {
-        case RED    => RED
-        case YELLOW => BLUE
-        case BLUE   => YELLOW
-        case FADED  => FADED
-      }
-      case YELLOW => otherColour match {
-        case RED    => BLUE
-        case YELLOW => YELLOW
-        case BLUE   => RED
-        case FADED  => FADED
-      }
-      case BLUE => otherColour match {
-        case RED    => YELLOW
-        case YELLOW => RED
-        case BLUE   => BLUE
-        case FADED  => FADED
-      }
+      case RED =>
+        otherColour match {
+          case RED    => RED
+          case YELLOW => BLUE
+          case BLUE   => YELLOW
+          case FADED  => FADED
+        }
+      case YELLOW =>
+        otherColour match {
+          case RED    => BLUE
+          case YELLOW => YELLOW
+          case BLUE   => RED
+          case FADED  => FADED
+        }
+      case BLUE =>
+        otherColour match {
+          case RED    => YELLOW
+          case YELLOW => RED
+          case BLUE   => BLUE
+          case FADED  => FADED
+        }
       case FADED => FADED
     }
 

@@ -12,6 +12,7 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {
+
   /**
    * INTERNAL API
    */
@@ -22,6 +23,7 @@ object PNCounterMap {
 
   def empty[A]: PNCounterMap[A] = new PNCounterMap(new ORMap(ORSet.empty, Map.empty, zeroTag = PNCounterMapTag))
   def apply[A](): PNCounterMap[A] = empty
+
   /**
    * Java API
    */
@@ -39,9 +41,10 @@ object PNCounterMap {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class PNCounterMap[A] private[akka] (
-  private[akka] val underlying: ORMap[A, PNCounter])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+final class PNCounterMap[A] private[akka] (private[akka] val underlying: ORMap[A, PNCounter])
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
 
   type T = PNCounterMap[A]
   type D = ORMap.DeltaOp

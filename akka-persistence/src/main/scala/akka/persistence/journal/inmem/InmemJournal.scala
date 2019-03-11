@@ -28,7 +28,7 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
   }
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
-    recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
+      recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
     val highest = highestSequenceNr(persistenceId)
     if (highest != 0L && max != 0L)
       read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach(recoveryCallback)
@@ -53,10 +53,11 @@ private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
-  def add(p: PersistentRepr): Unit = messages = messages + (messages.get(p.persistenceId) match {
-    case Some(ms) => p.persistenceId -> (ms :+ p)
-    case None     => p.persistenceId -> Vector(p)
-  })
+  def add(p: PersistentRepr): Unit =
+    messages = messages + (messages.get(p.persistenceId) match {
+        case Some(ms) => p.persistenceId -> (ms :+ p)
+        case None     => p.persistenceId -> Vector(p)
+      })
 
   def update(pid: String, snr: Long)(f: PersistentRepr => PersistentRepr): Unit = messages = messages.get(pid) match {
     case Some(ms) => messages + (pid -> ms.map(sp => if (sp.sequenceNr == snr) f(sp) else sp))
@@ -68,10 +69,11 @@ private[persistence] trait InmemMessages {
     case None     => messages
   }
 
-  def read(pid: String, fromSnr: Long, toSnr: Long, max: Long): immutable.Seq[PersistentRepr] = messages.get(pid) match {
-    case Some(ms) => ms.filter(m => m.sequenceNr >= fromSnr && m.sequenceNr <= toSnr).take(safeLongToInt(max))
-    case None     => Nil
-  }
+  def read(pid: String, fromSnr: Long, toSnr: Long, max: Long): immutable.Seq[PersistentRepr] =
+    messages.get(pid) match {
+      case Some(ms) => ms.filter(m => m.sequenceNr >= fromSnr && m.sequenceNr <= toSnr).take(safeLongToInt(max))
+      case None     => Nil
+    }
 
   def highestSequenceNr(pid: String): Long = {
     val snro = for {
@@ -84,4 +86,3 @@ private[persistence] trait InmemMessages {
   private def safeLongToInt(l: Long): Int =
     if (Int.MaxValue < l) Int.MaxValue else l.toInt
 }
-

@@ -48,16 +48,14 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
       import akka.persistence.query.PersistenceQuery
       import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 
-      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
-        LeveldbReadJournal.Identifier)
+      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
       //#get-read-journal
     }
 
     "demonstrate EventsByPersistenceId" in {
       //#EventsByPersistenceId
       implicit val mat = ActorMaterializer()(system)
-      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
-        LeveldbReadJournal.Identifier)
+      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[EventEnvelope, NotUsed] =
         queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
@@ -69,8 +67,7 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
     "demonstrate AllPersistenceIds" in {
       //#AllPersistenceIds
       implicit val mat = ActorMaterializer()(system)
-      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
-        LeveldbReadJournal.Identifier)
+      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[String, NotUsed] = queries.persistenceIds()
       //#AllPersistenceIds
@@ -79,8 +76,7 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
     "demonstrate EventsByTag" in {
       //#EventsByTag
       implicit val mat = ActorMaterializer()(system)
-      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
-        LeveldbReadJournal.Identifier)
+      val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
       val src: Source[EventEnvelope, NotUsed] =
         queries.eventsByTag(tag = "green", offset = Sequence(0L))

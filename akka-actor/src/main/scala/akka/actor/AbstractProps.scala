@@ -28,7 +28,8 @@ private[akka] trait AbstractProps {
    * Java API: create a Props given a class and its constructor arguments.
    */
   @varargs
-  def create(clazz: Class[_], args: AnyRef*): Props = new Props(deploy = Props.defaultDeploy, clazz = clazz, args = args.toList)
+  def create(clazz: Class[_], args: AnyRef*): Props =
+    new Props(deploy = Props.defaultDeploy, clazz = clazz, args = args.toList)
 
   /**
    * Create new Props from the given [[akka.japi.Creator]].
@@ -50,11 +51,12 @@ private[akka] trait AbstractProps {
         t.getActualTypeArguments.head match {
           case c: Class[_] => c // since T <: Actor
           case v: TypeVariable[_] =>
-            v.getBounds collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac => c } getOrElse ac
+            v.getBounds.collectFirst { case c: Class[_] if ac.isAssignableFrom(c) && c != ac => c }.getOrElse(ac)
           case x => throw new IllegalArgumentException(s"unsupported type found in Creator argument [$x]")
         }
       case c: Class[_] if (c == coc) =>
-        throw new IllegalArgumentException("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
+        throw new IllegalArgumentException(
+          "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
     }
     create(classOf[CreatorConsumer], actorClass, creator)
   }

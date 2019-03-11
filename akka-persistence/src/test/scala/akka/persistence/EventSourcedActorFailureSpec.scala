@@ -35,7 +35,7 @@ object EventSourcedActorFailureSpec {
     }
 
     override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
-      recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
+        recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
       val highest = highestSequenceNr(persistenceId)
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
@@ -72,7 +72,7 @@ object EventSourcedActorFailureSpec {
   }
 
   class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case c @ Cmd(txt) => persist(Evt(txt))(updateState)
     }
 
@@ -105,7 +105,7 @@ object EventSourcedActorFailureSpec {
   class FailingRecovery(name: String, recoveryFailureProbe: Option[ActorRef]) extends ExamplePersistentActor(name) {
     def this(name: String) = this(name, None)
 
-    override val receiveCommand: Receive = commonBehavior orElse {
+    override val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) => persist(Evt(s"${data}"))(updateState)
     }
 
@@ -119,7 +119,7 @@ object EventSourcedActorFailureSpec {
   }
 
   class ThrowingActor1(name: String) extends ExamplePersistentActor(name) {
-    override val receiveCommand: Receive = commonBehavior orElse {
+    override val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persist(Evt(s"${data}"))(updateState)
         if (data == "err")
@@ -128,7 +128,7 @@ object EventSourcedActorFailureSpec {
   }
 
   class ThrowingActor2(name: String) extends ExamplePersistentActor(name) {
-    override val receiveCommand: Receive = commonBehavior orElse {
+    override val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persist(Evt(s"${data}")) { evt =>
           if (data == "err")
@@ -140,16 +140,20 @@ object EventSourcedActorFailureSpec {
   }
 }
 
-class EventSourcedActorFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
-  """
+class EventSourcedActorFailureSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config("inmem",
+                             "SnapshotFailureRobustnessSpec",
+                             extraConfig = Some(
+                               """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorFailureSpec$FailingInmemJournal"
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import EventSourcedActorFailureSpec._
   import PersistentActorSpec._
 
-  system.eventStream.publish(TestEvent.Mute(
-    EventFilter[akka.pattern.AskTimeoutException]()))
+  system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 
   def prepareFailingRecovery(): Unit = {
     val persistentActor = namedPersistentActor[FailingRecovery]
@@ -306,7 +310,7 @@ class EventSourcedActorFailureSpec extends PersistenceSpec(PersistenceSpec.confi
       expectMsg(List("a-1", "a-2", "c-1", "c-2"))
 
       // Create yet another one with same persistenceId, b-1 and b-2 discarded during replay
-      EventFilter.warning(start = "Invalid replayed event", occurrences = 2) intercept {
+      EventFilter.warning(start = "Invalid replayed event", occurrences = 2).intercept {
         val p3 = namedPersistentActor[Behavior1PersistentActor]
         p3 ! GetState
         expectMsg(List("a-1", "a-2", "c-1", "c-2"))
@@ -315,4 +319,3 @@ class EventSourcedActorFailureSpec extends PersistenceSpec(PersistenceSpec.confi
 
   }
 }
-

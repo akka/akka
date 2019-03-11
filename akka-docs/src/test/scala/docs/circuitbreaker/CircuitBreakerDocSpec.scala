@@ -22,11 +22,8 @@ class DangerousActor extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
-    new CircuitBreaker(
-      context.system.scheduler,
-      maxFailures = 5,
-      callTimeout = 10.seconds,
-      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
+    new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+      .onOpen(notifyMeOnOpen())
 
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -37,7 +34,7 @@ class DangerousActor extends Actor with ActorLogging {
 
   def receive = {
     case "is my middle name" =>
-      breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender()
+      breaker.withCircuitBreaker(Future(dangerousCall)).pipeTo(sender())
     case "block for me" =>
       sender() ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
@@ -49,11 +46,8 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
-    new CircuitBreaker(
-      context.system.scheduler,
-      maxFailures = 5,
-      callTimeout = 10.seconds,
-      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
+    new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+      .onOpen(notifyMeOnOpen())
 
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -88,11 +82,7 @@ class EvenNoFailureActor extends Actor {
     }
 
     val breaker =
-      new CircuitBreaker(
-        context.system.scheduler,
-        maxFailures = 5,
-        callTimeout = 10.seconds,
-        resetTimeout = 1.minute)
+      new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
 
     // this call will return 8888 and increase failure count at the same time
     breaker.withCircuitBreaker(Future(8888), evenNumberAsFailure)

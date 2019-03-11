@@ -13,13 +13,12 @@ object TestMessage {
   final case class Item(id: Long, name: String)
 }
 
-final case class TestMessage(
-  id:          Long,
-  name:        String,
-  status:      Boolean,
-  description: String,
-  payload:     Array[Byte],
-  items:       Vector[TestMessage.Item])
+final case class TestMessage(id: Long,
+                             name: String,
+                             status: Boolean,
+                             description: String,
+                             payload: Array[Byte],
+                             items: Vector[TestMessage.Item])
 
 class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
@@ -34,7 +33,8 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case msg: TestMessage =>
-      val builder = proto.TestMessage.newBuilder()
+      val builder = proto.TestMessage
+        .newBuilder()
         .setId(msg.id)
         .setName(msg.name)
         .setDescription(msg.description)
@@ -53,12 +53,11 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       TestMessage.Item(item.getId, item.getName)
     }.toVector
 
-    TestMessage(
-      id = protoMsg.getId,
-      name = protoMsg.getName,
-      description = protoMsg.getDescription,
-      status = protoMsg.getStatus,
-      payload = protoMsg.getPayload.toByteArray(),
-      items = items)
+    TestMessage(id = protoMsg.getId,
+                name = protoMsg.getName,
+                description = protoMsg.getDescription,
+                status = protoMsg.getStatus,
+                payload = protoMsg.getPayload.toByteArray(),
+                items = items)
   }
 }

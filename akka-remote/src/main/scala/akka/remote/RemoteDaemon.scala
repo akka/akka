@@ -6,7 +6,19 @@ package akka.remote
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import akka.actor.{ Actor, ActorPath, ActorPathExtractor, ActorRef, ActorSystemImpl, AddressTerminated, Deploy, InternalActorRef, Nobody, Props, VirtualPathContainer }
+import akka.actor.{
+  Actor,
+  ActorPath,
+  ActorPathExtractor,
+  ActorRef,
+  ActorSystemImpl,
+  AddressTerminated,
+  Deploy,
+  InternalActorRef,
+  Nobody,
+  Props,
+  VirtualPathContainer
+}
 import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.actor.ActorRefWithCell
@@ -33,7 +45,8 @@ private[akka] sealed trait DaemonMsg
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
+private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef)
+    extends DaemonMsg
 
 /**
  * INTERNAL API
@@ -42,14 +55,13 @@ private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, pat
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
-private[akka] class RemoteSystemDaemon(
-  system:            ActorSystemImpl,
-  _path:             ActorPath,
-  _parent:           InternalActorRef,
-  terminator:        ActorRef,
-  _log:              MarkerLoggingAdapter,
-  val untrustedMode: Boolean)
-  extends VirtualPathContainer(system.provider, _path, _parent, _log) {
+private[akka] class RemoteSystemDaemon(system: ActorSystemImpl,
+                                       _path: ActorPath,
+                                       _parent: InternalActorRef,
+                                       terminator: ActorRef,
+                                       _log: MarkerLoggingAdapter,
+                                       val untrustedMode: Boolean)
+    extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   import akka.actor.SystemGuardian._
 
@@ -107,7 +119,7 @@ private[akka] class RemoteSystemDaemon(
           if (last == -1) (Nobody, n)
           else rec(s.substring(0, last), n + 1)
         case ref if uid != undefinedUid && uid != ref.path.uid => (Nobody, n)
-        case ref => (ref, n)
+        case ref                                               => (ref, n)
       }
     }
 
@@ -142,73 +154,78 @@ private[akka] class RemoteSystemDaemon(
     case _ => super.sendSystemMessage(message)
   }
 
-  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = try msg match {
-    case message: DaemonMsg =>
-      log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
-      message match {
-        case DaemonMsgCreate(_, _, path, _) if untrustedMode =>
-          log.debug("does not accept deployments (untrusted) for [{}]", path) // TODO add security marker?
+  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
+    try msg match {
+      case message: DaemonMsg =>
+        log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
+        message match {
+          case DaemonMsgCreate(_, _, path, _) if untrustedMode =>
+            log.debug("does not accept deployments (untrusted) for [{}]", path) // TODO add security marker?
 
-        case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled =>
-          val name = props.clazz.getCanonicalName
-          if (remoteDeploymentWhitelist.contains(name))
-            doCreateActor(message, props, deploy, path, supervisor)
-          else {
-            val ex = new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
-            log.error(LogMarker.Security, ex,
-              "Received command to create remote Actor, but class [{}] is not white-listed! " +
-                "Target path: [{}]", props.actorClass, path)
-          }
-        case DaemonMsgCreate(props, deploy, path, supervisor) =>
-          doCreateActor(message, props, deploy, path, supervisor)
-      }
-
-    case sel: ActorSelectionMessage =>
-      val (concatenatedChildNames, m) = {
-        val iter = sel.elements.iterator
-        // find child elements, and the message to send, which is a remaining ActorSelectionMessage
-        // in case of SelectChildPattern, otherwise the actual message of the selection
-        @tailrec def rec(acc: List[String]): (List[String], Any) =
-          if (iter.isEmpty)
-            (acc.reverse, sel.msg)
-          else {
-            iter.next() match {
-              case SelectChildName(name)       => rec(name :: acc)
-              case SelectParent if acc.isEmpty => rec(acc)
-              case SelectParent                => rec(acc.tail)
-              case pat: SelectChildPattern     => (acc.reverse, sel.copy(elements = pat +: iter.toVector))
+          case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled =>
+            val name = props.clazz.getCanonicalName
+            if (remoteDeploymentWhitelist.contains(name))
+              doCreateActor(message, props, deploy, path, supervisor)
+            else {
+              val ex =
+                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
+              log.error(LogMarker.Security,
+                        ex,
+                        "Received command to create remote Actor, but class [{}] is not white-listed! " +
+                        "Target path: [{}]",
+                        props.actorClass,
+                        path)
             }
-          }
-        rec(Nil)
-      }
-      getChild(concatenatedChildNames.iterator) match {
-        case Nobody =>
-          val emptyRef = new EmptyLocalActorRef(system.provider, path / sel.elements.map(_.toString),
-            system.eventStream)
-          emptyRef.tell(sel, sender)
-        case child =>
-          child.tell(m, sender)
-      }
+          case DaemonMsgCreate(props, deploy, path, supervisor) =>
+            doCreateActor(message, props, deploy, path, supervisor)
+        }
 
-    case Identify(messageId) => sender ! ActorIdentity(messageId, Some(this))
+      case sel: ActorSelectionMessage =>
+        val (concatenatedChildNames, m) = {
+          val iter = sel.elements.iterator
+          // find child elements, and the message to send, which is a remaining ActorSelectionMessage
+          // in case of SelectChildPattern, otherwise the actual message of the selection
+          @tailrec def rec(acc: List[String]): (List[String], Any) =
+            if (iter.isEmpty)
+              (acc.reverse, sel.msg)
+            else {
+              iter.next() match {
+                case SelectChildName(name)       => rec(name :: acc)
+                case SelectParent if acc.isEmpty => rec(acc)
+                case SelectParent                => rec(acc.tail)
+                case pat: SelectChildPattern     => (acc.reverse, sel.copy(elements = pat +: iter.toVector))
+              }
+            }
+          rec(Nil)
+        }
+        getChild(concatenatedChildNames.iterator) match {
+          case Nobody =>
+            val emptyRef =
+              new EmptyLocalActorRef(system.provider, path / sel.elements.map(_.toString), system.eventStream)
+            emptyRef.tell(sel, sender)
+          case child =>
+            child.tell(m, sender)
+        }
 
-    case TerminationHook =>
-      terminating.switchOn {
-        terminationHookDoneWhenNoChildren()
-        foreachChild { system.stop }
-      }
+      case Identify(messageId) => sender ! ActorIdentity(messageId, Some(this))
 
-    case AddressTerminated(address) =>
-      foreachChild {
-        case a: InternalActorRef if a.getParent.path.address == address => system.stop(a)
-        case _ => // skip, this child doesn't belong to the terminated address
-      }
+      case TerminationHook =>
+        terminating.switchOn {
+          terminationHookDoneWhenNoChildren()
+          foreachChild { system.stop }
+        }
 
-    case unknown => log.warning(LogMarker.Security, "Unknown message [{}] received by [{}]", unknown, this)
+      case AddressTerminated(address) =>
+        foreachChild {
+          case a: InternalActorRef if a.getParent.path.address == address => system.stop(a)
+          case _                                                          => // skip, this child doesn't belong to the terminated address
+        }
 
-  } catch {
-    case NonFatal(e) => log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)
-  }
+      case unknown => log.warning(LogMarker.Security, "Unknown message [{}] received by [{}]", unknown, this)
+
+    } catch {
+      case NonFatal(e) => log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)
+    }
 
   private def doCreateActor(message: DaemonMsg, props: Props, deploy: Deploy, path: String, supervisor: ActorRef) = {
     path match {
@@ -225,14 +242,21 @@ private[akka] class RemoteSystemDaemon(
         }
         val isTerminating = !terminating.whileOff {
           val parent = supervisor.asInstanceOf[InternalActorRef]
-          val actor = system.provider.actorOf(system, props, parent,
-            p, systemService = false, Some(deploy), lookupDeploy = true, async = false)
+          val actor = system.provider.actorOf(system,
+                                              props,
+                                              parent,
+                                              p,
+                                              systemService = false,
+                                              Some(deploy),
+                                              lookupDeploy = true,
+                                              async = false)
           addChild(childName, actor)
           actor.sendSystemMessage(Watch(actor, this))
           actor.start()
           if (addChildParentNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
         }
-        if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
+        if (isTerminating)
+          log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
       case _ =>
         log.debug("remote path does not match path from message [{}]", message)
     }
@@ -246,7 +270,7 @@ private[akka] class RemoteSystemDaemon(
 
 /** INTERNAL API */
 final class NotWhitelistedClassRemoteDeploymentAttemptException(illegal: Class[_], whitelist: immutable.Set[String])
-  extends RuntimeException(
-    s"Attempted to deploy not whitelisted Actor class: " +
+    extends RuntimeException(
+      s"Attempted to deploy not whitelisted Actor class: " +
       s"[$illegal], " +
       s"whitelisted classes: [${whitelist.mkString(", ")}]")

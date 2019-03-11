@@ -27,20 +27,18 @@ import akka.util.Helpers.ConfigOps
  * @param clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  */
-class DeadlineFailureDetector(
-  val acceptableHeartbeatPause: FiniteDuration,
-  val heartbeatInterval:        FiniteDuration)(
-  implicit
-  clock: Clock) extends FailureDetector {
+class DeadlineFailureDetector(val acceptableHeartbeatPause: FiniteDuration, val heartbeatInterval: FiniteDuration)(
+    implicit
+    clock: Clock)
+    extends FailureDetector {
 
   /**
    * Constructor that reads parameters from config.
    * Expecting config properties named `acceptable-heartbeat-pause`.
    */
   def this(config: Config, ev: EventStream) =
-    this(
-      acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
-      heartbeatInterval = config.getMillisDuration("heartbeat-interval"))
+    this(acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
+         heartbeatInterval = config.getMillisDuration("heartbeat-interval"))
 
   require(acceptableHeartbeatPause >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0 s")
   require(heartbeatInterval > Duration.Zero, "failure-detector.heartbeat-interval must be > 0 s")
@@ -63,4 +61,3 @@ class DeadlineFailureDetector(
   }
 
 }
-

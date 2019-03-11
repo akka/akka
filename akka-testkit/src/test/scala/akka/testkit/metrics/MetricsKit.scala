@@ -67,7 +67,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    * Schedule metric reports execution iterval. Should not be used multiple times
    */
   def scheduleMetricReports(every: FiniteDuration): Unit = {
-    reporters foreach { _.start(every.toMillis, TimeUnit.MILLISECONDS) }
+    reporters.foreach { _.start(every.toMillis, TimeUnit.MILLISECONDS) }
   }
 
   def registeredMetrics = registry.getMetrics.asScala
@@ -92,7 +92,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    */
   def reportMetrics(): Unit = {
     if (reportMetricsEnabled)
-      reporters foreach { _.report() }
+      reporters.foreach { _.report() }
   }
 
   /**
@@ -103,7 +103,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   def reportMemoryMetrics(): Unit = {
     val gauges = registry.getGauges(MemMetricsFilter)
 
-    reporters foreach { _.report(gauges, empty, empty, empty, empty) }
+    reporters.foreach { _.report(gauges, empty, empty, empty, empty) }
   }
 
   /**
@@ -114,7 +114,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   def reportGcMetrics(): Unit = {
     val gauges = registry.getGauges(GcMetricsFilter)
 
-    reporters foreach { _.report(gauges, empty, empty, empty, empty) }
+    reporters.foreach { _.report(gauges, empty, empty, empty, empty) }
   }
 
   /**
@@ -125,7 +125,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   def reportFileDescriptorMetrics(): Unit = {
     val gauges = registry.getGauges(FileDescriptorMetricsFilter)
 
-    reporters foreach { _.report(gauges, empty, empty, empty, empty) }
+    reporters.foreach { _.report(gauges, empty, empty, empty, empty) }
   }
 
   /**
@@ -144,15 +144,18 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    * MUST be called after all tests have finished.
    */
   def shutdownMetrics(): Unit = {
-    reporters foreach { _.stop() }
+    reporters.foreach { _.stop() }
   }
 
   private[metrics] def getOrRegister[M <: Metric](key: String, metric: => M)(implicit tag: ClassTag[M]): M = {
     import collection.JavaConverters._
     registry.getMetrics.asScala.find(_._1 == key).map(_._2) match {
       case Some(existing: M) => existing
-      case Some(existing)    => throw new IllegalArgumentException("Key: [%s] is already for different kind of metric! Was [%s], expected [%s]".format(key, metric.getClass.getSimpleName, tag.runtimeClass.getSimpleName))
-      case _                 => registry.register(key, metric)
+      case Some(existing) =>
+        throw new IllegalArgumentException(
+          "Key: [%s] is already for different kind of metric! Was [%s], expected [%s]"
+            .format(key, metric.getClass.getSimpleName, tag.runtimeClass.getSimpleName))
+      case _ => registry.register(key, metric)
     }
   }
 
@@ -204,7 +207,8 @@ private[akka] class MetricsKitSettings(config: Config) {
   val Reporters = config.getStringList("akka.test.metrics.reporters")
 
   object ConsoleReporter {
-    val ScheduledReportInterval = config.getMillisDuration("akka.test.metrics.reporter.console.scheduled-report-interval")
+    val ScheduledReportInterval =
+      config.getMillisDuration("akka.test.metrics.reporter.console.scheduled-report-interval")
     val Verbose = config.getBoolean("akka.test.metrics.reporter.console.verbose")
   }
 

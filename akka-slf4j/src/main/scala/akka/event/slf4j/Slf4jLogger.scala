@@ -23,11 +23,12 @@ trait SLF4JLogging {
  * Logger is a factory for obtaining SLF4J-Loggers
  */
 object Logger {
+
   /**
    * @param logger - which logger
    * @return a Logger that corresponds for the given logger name
    */
-  def apply(logger: String): SLFLogger = SLFLoggerFactory getLogger logger
+  def apply(logger: String): SLFLogger = SLFLoggerFactory.getLogger(logger)
 
   /**
    * @param logClass - the class to log for
@@ -36,7 +37,7 @@ object Logger {
    */
   def apply(logClass: Class[_], logSource: String): SLFLogger = logClass match {
     case c if c == classOf[DummyClassForStringSources] => apply(logSource)
-    case _ => SLFLoggerFactory getLogger logClass
+    case _                                             => SLFLoggerFactory.getLogger(logClass)
   }
 
   /**
@@ -66,15 +67,21 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
           case Error.NoCause | null =>
             Logger(logClass, logSource).error(markerIfPresent(event), if (message != null) message.toString else null)
           case _ =>
-            Logger(logClass, logSource).error(markerIfPresent(event), if (message != null) message.toString else cause.getLocalizedMessage, cause)
+            Logger(logClass, logSource).error(markerIfPresent(event),
+                                              if (message != null) message.toString else cause.getLocalizedMessage,
+                                              cause)
         }
       }
 
     case event @ Warning(logSource, logClass, message) =>
       withMdc(logSource, event) {
         event match {
-          case e: LogEventWithCause => Logger(logClass, logSource).warn(markerIfPresent(event), if (message != null) message.toString else e.cause.getLocalizedMessage, e.cause)
-          case _                    => Logger(logClass, logSource).warn(markerIfPresent(event), if (message != null) message.toString else null)
+          case e: LogEventWithCause =>
+            Logger(logClass, logSource).warn(markerIfPresent(event),
+                                             if (message != null) message.toString else e.cause.getLocalizedMessage,
+                                             e.cause)
+          case _ =>
+            Logger(logClass, logSource).warn(markerIfPresent(event), if (message != null) message.toString else null)
         }
       }
 
@@ -99,8 +106,9 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
     MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
     MDC.put(mdcActorSystemAttributeName, actorSystemName)
-    logEvent.mdc foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
-    try logStatement finally {
+    logEvent.mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
+    try logStatement
+    finally {
       MDC.remove(mdcAkkaSourceAttributeName)
       MDC.remove(mdcThreadAttributeName)
       MDC.remove(mdcAkkaTimestamp)

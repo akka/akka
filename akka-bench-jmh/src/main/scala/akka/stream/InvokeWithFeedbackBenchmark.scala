@@ -33,7 +33,8 @@ class InvokeWithFeedbackBenchmark {
 
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
-      Source.queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
+      Source
+        .queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
         .toMat(Sink.queue[Int]())(Keep.both)
         .run()
 

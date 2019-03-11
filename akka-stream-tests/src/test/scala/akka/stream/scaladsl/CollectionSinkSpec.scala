@@ -12,8 +12,7 @@ import scala.concurrent.{ Await, Future }
 
 class CollectionSinkSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val mat = ActorMaterializer(settings)
 
@@ -51,7 +50,8 @@ class CollectionSinkSpec extends StreamSpec {
 
       "return an empty Vector[T] from an empty Source" in {
         val input = Nil
-        val future: Future[immutable.Vector[Int]] = Source.fromIterator(() => input.iterator).runWith(Sink.collection[Int, Vector[Int]])
+        val future: Future[immutable.Vector[Int]] =
+          Source.fromIterator(() => input.iterator).runWith(Sink.collection[Int, Vector[Int]])
         val result: immutable.Vector[Int] = Await.result(future, remainingOrDefault)
         result should be(Vector.empty[Int])
       }
@@ -66,4 +66,3 @@ class CollectionSinkSpec extends StreamSpec {
     }
   }
 }
-

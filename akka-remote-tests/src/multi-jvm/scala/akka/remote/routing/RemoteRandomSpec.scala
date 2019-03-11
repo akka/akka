@@ -25,8 +25,7 @@ class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -57,8 +56,9 @@ object RemoteRandomSpec {
   }
 }
 
-class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
-  with DefaultTimeout {
+class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
+    extends RemotingMultiNodeSpec(multiNodeConfig)
+    with DefaultTimeout {
   import multiNodeConfig._
   import RemoteRandomSpec._
 
@@ -94,7 +94,7 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMult
 
         enterBarrier("end")
         // since it's random we can't be too strict in the assert
-        replies.values count (_ > 0) should be > (connectionCount - 2)
+        replies.values.count(_ > 0) should be > (connectionCount - 2)
         replies.get(node(fourth).address) should ===(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send

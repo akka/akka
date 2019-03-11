@@ -10,6 +10,7 @@ import akka.actor.typed.scaladsl.adapter._
 import com.typesafe.config.Config
 
 object ReplicatorSettings {
+
   /**
    * Create settings from the default configuration
    * `akka.cluster.distributed-data`.

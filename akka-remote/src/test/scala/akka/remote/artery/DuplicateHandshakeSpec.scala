@@ -33,8 +33,11 @@ class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
-    TestSource.probe[AnyRef]
+  private def setupStream(
+      inboundContext: InboundContext,
+      timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+    TestSource
+      .probe[AnyRef]
       .map { msg =>
         val association = inboundContext.association(addressA.uid)
         val ser = serialization.serializerFor(msg.getClass)
@@ -45,8 +48,16 @@ class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
         }
 
         val env = new ReusableInboundEnvelope
-        env.init(recipient = OptionVal.None, sender = OptionVal.None, originUid = addressA.uid,
-          serializerId, manifest, flags = 0, envelopeBuffer = null, association, lane = 0)
+        env
+          .init(recipient = OptionVal.None,
+                sender = OptionVal.None,
+                originUid = addressA.uid,
+                serializerId,
+                manifest,
+                flags = 0,
+                envelopeBuffer = null,
+                association,
+                lane = 0)
           .withMessage(msg)
         env
       }

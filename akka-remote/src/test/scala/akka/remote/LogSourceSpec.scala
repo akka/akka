@@ -23,8 +23,7 @@ object LogSourceSpec {
   }
 }
 
-class LogSourceSpec extends AkkaSpec(
-  """
+class LogSourceSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.provider = remote
     akka.remote.netty.tcp.port = 0
@@ -37,7 +36,7 @@ class LogSourceSpec extends AkkaSpec(
   system.eventStream.subscribe(system.actorOf(Props(new Actor {
     def receive = {
       case i @ Info(_, _, msg: String) if msg contains "hello" => logProbe.ref ! i
-      case _ =>
+      case _                                                   =>
     }
   }).withDeploy(Deploy.local), "logSniffer"), classOf[Logging.Info])
 

@@ -34,7 +34,6 @@ object StashDocSpec {
 
     def behavior(id: String, db: DB): Behavior[Command] =
       Behaviors.setup[Command] { context =>
-
         val buffer = StashBuffer[Command](capacity = 100)
 
         def init(): Behavior[Command] =

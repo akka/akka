@@ -8,7 +8,7 @@ import language.{ postfixOps }
 import org.scalatest.{ BeforeAndAfterEach }
 import akka.actor._
 import akka.event.Logging.Warning
-import scala.concurrent.{ Promise, Await }
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.dispatch.Dispatcher
@@ -57,7 +57,7 @@ object TestActorRefSpec {
     def receiveT = {
       case "work" =>
         sender() ! "workDone"
-        context stop self
+        context.stop(self)
       case replyTo: Promise[_] => replyTo.asInstanceOf[Promise[Any]].success("complexReply")
       case replyTo: ActorRef   => replyTo ! "complexReply"
     }
@@ -90,11 +90,11 @@ object TestActorRefSpec {
   }
 
   class ReceiveTimeoutActor(target: ActorRef) extends Actor {
-    context setReceiveTimeout 1.second
+    context.setReceiveTimeout(1.second)
     def receive = {
       case ReceiveTimeout =>
         target ! "timeout"
-        context stop self
+        context.stop(self)
     }
   }
 
@@ -112,7 +112,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
   override def beforeEach(): Unit = otherthread = null
 
-  private def assertThread(): Unit = otherthread should (be(null) or equal(thread))
+  private def assertThread(): Unit = otherthread should (be(null).or(equal(thread)))
 
   "A TestActorRef should be an ActorRef, hence it" must {
 
@@ -168,13 +168,13 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "stop when sent a poison pill" in {
-      EventFilter[ActorKilledException]() intercept {
+      EventFilter[ActorKilledException]().intercept {
         val a = TestActorRef(Props[WorkerActor])
         system.actorOf(Props(new Actor {
           context.watch(a)
           def receive = {
-            case t: Terminated => testActor forward WrappedTerminated(t)
-            case x             => testActor forward x
+            case t: Terminated => testActor.forward(WrappedTerminated(t))
+            case x             => testActor.forward(x)
           }
         }))
         a.!(PoisonPill)(testActor)
@@ -187,7 +187,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "restart when Kill:ed" in {
-      EventFilter[ActorKilledException]() intercept {
+      EventFilter[ActorKilledException]().intercept {
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
@@ -242,7 +242,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.underlyingActor.context.receiveTimeout should be theSameInstanceAs Duration.Undefined
+      (a.underlyingActor.context.receiveTimeout should be).theSameInstanceAs(Duration.Undefined)
     }
 
     "set CallingThreadDispatcher" in {
@@ -269,7 +269,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     }
 
     "not throw an exception when parent is passed in the apply" in {
-      EventFilter[RuntimeException](occurrences = 1, message = "expected") intercept {
+      EventFilter[RuntimeException](occurrences = 1, message = "expected").intercept {
         val parent = TestProbe()
         val child = TestActorRef(Props(new Actor {
           def receive: Receive = {
@@ -282,7 +282,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       }
     }
     "not throw an exception when child is created through childActorOf" in {
-      EventFilter[RuntimeException](occurrences = 1, message = "expected") intercept {
+      EventFilter[RuntimeException](occurrences = 1, message = "expected").intercept {
         val parent = TestProbe()
         val child = parent.childActorOf(Props(new Actor {
           def receive: Receive = {

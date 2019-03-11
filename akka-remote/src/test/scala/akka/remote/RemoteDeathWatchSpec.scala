@@ -12,7 +12,8 @@ import scala.concurrent.duration._
 import akka.testkit.SocketUtil
 import akka.event.Logging.Warning
 
-class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
+class RemoteDeathWatchSpec
+    extends AkkaSpec(ConfigFactory.parseString("""
 akka {
     actor {
         provider = remote
@@ -27,18 +28,21 @@ akka {
         port = 0
     }
 }
-""")) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+"""))
+    with ImplicitSender
+    with DefaultTimeout
+    with DeathWatchSpec {
 
   val protocol =
     if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
     else "akka.tcp"
 
-  val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
-    .withFallback(system.settings.config))
+  val other = ActorSystem(
+    "other",
+    ConfigFactory.parseString("akka.remote.netty.tcp.port=2666").withFallback(system.settings.config))
 
   override def beforeTermination(): Unit = {
-    system.eventStream.publish(TestEvent.Mute(
-      EventFilter.warning(pattern = "received dead letter.*Disassociate")))
+    system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = "received dead letter.*Disassociate")))
   }
 
   override def afterTermination(): Unit = {
@@ -94,8 +98,12 @@ akka {
     // This forces ReliableDeliverySupervisor to start with unknown remote system UID.
     val extinctPath = RootActorPath(Address(protocol, "extinct-system", "localhost", SocketUtil.temporaryLocalPort())) / "user" / "noone"
     val transport = RARP(system).provider.transport
-    val extinctRef = new RemoteActorRef(transport, transport.localAddressForRemote(extinctPath.address),
-      extinctPath, Nobody, props = None, deploy = None)
+    val extinctRef = new RemoteActorRef(transport,
+                                        transport.localAddressForRemote(extinctPath.address),
+                                        extinctPath,
+                                        Nobody,
+                                        props = None,
+                                        deploy = None)
 
     val probe = TestProbe()
     probe.watch(extinctRef)

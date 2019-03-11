@@ -24,8 +24,8 @@ class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUp
 class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec
 
 abstract class MembershipChangeListenerUpSpec
-  extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import MembershipChangeListenerUpMultiJvmSpec._
   import ClusterEvent._
@@ -38,7 +38,7 @@ abstract class MembershipChangeListenerUpSpec
 
       runOn(first, second) {
         val latch = TestLatch()
-        val expectedAddresses = Set(first, second) map address
+        val expectedAddresses = Set(first, second).map(address)
         cluster.subscribe(system.actorOf(Props(new Actor {
           var members = Set.empty[Member]
           def receive = {
@@ -65,7 +65,7 @@ abstract class MembershipChangeListenerUpSpec
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       val latch = TestLatch()
-      val expectedAddresses = Set(first, second, third) map address
+      val expectedAddresses = Set(first, second, third).map(address)
       cluster.subscribe(system.actorOf(Props(new Actor {
         var members = Set.empty[Member]
         def receive = {

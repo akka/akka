@@ -32,9 +32,7 @@ class MBeanMultiJvmNode2 extends MBeanSpec
 class MBeanMultiJvmNode3 extends MBeanSpec
 class MBeanMultiJvmNode4 extends MBeanSpec
 
-abstract class MBeanSpec
-  extends MultiNodeSpec(MBeanMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNodeClusterSpec {
 
   import MBeanMultiJvmSpec._
 
@@ -44,15 +42,14 @@ abstract class MBeanSpec
   "Cluster MBean" must {
     "expose attributes" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
-      info.getAttributes.map(_.getName).toSet should ===(Set(
-        "ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available"))
+      info.getAttributes.map(_.getName).toSet should ===(
+        Set("ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available"))
       enterBarrier("after-1")
     }
 
     "expose operations" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
-      info.getOperations.map(_.getName).toSet should ===(Set(
-        "join", "leave", "down"))
+      info.getOperations.map(_.getName).toSet should ===(Set("join", "leave", "down"))
       enterBarrier("after-2")
     }
 

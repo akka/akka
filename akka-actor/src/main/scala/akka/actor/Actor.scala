@@ -81,8 +81,7 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
   if (ref.isDefined && ref.get == null) {
     throw new IllegalArgumentException(
       "ActorIdentity created with ref = Some(null) is not allowed, " +
-      "this could happen when serializing with Scala 2.12 and deserializing with Scala 2.11 which is not supported."
-    )
+      "this could happen when serializing with Scala 2.12 and deserializing with Scala 2.11 which is not supported.")
   }
 
   /**
@@ -228,8 +227,7 @@ final case class PreRestartException private[akka] (actor: ActorRef,
       (if (originalCause == null) "null" else originalCause.getClass) + ", " +
       (messageOption match { case Some(m: AnyRef) => m.getClass; case _ => "None" }) +
       ")",
-      cause
-    )
+      cause)
 
 /**
  * A PostRestartException is thrown when constructor or postRestart() method
@@ -244,8 +242,7 @@ final case class PostRestartException private[akka] (actor: ActorRef, cause: Thr
     extends ActorInitializationException(
       actor,
       "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")",
-      cause
-    )
+      cause)
 
 /**
  * This is an extractor for retrieving the original cause (i.e. the first
@@ -258,7 +255,7 @@ object OriginalRestartException {
   def unapply(ex: PostRestartException): Option[Throwable] = {
     @tailrec def rec(ex: PostRestartException): Option[Throwable] = ex match {
       case PostRestartException(_, _, e: PostRestartException) => rec(e)
-      case PostRestartException(_, _, e) => Some(e)
+      case PostRestartException(_, _, e)                       => Some(e)
     }
     rec(ex)
   }
@@ -491,8 +488,7 @@ trait Actor {
     if ((contextStack.isEmpty) || (contextStack.head eq null))
       throw ActorInitializationException(
         s"You cannot create an instance of [${getClass.getName}] explicitly using the constructor (new). " +
-        "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation."
-      )
+        "You have to use one of the 'actorOf' factory methods to create a new actor. See the documentation.")
     val c = contextStack.head
     ActorCell.contextStack.set(null :: contextStack)
     c
@@ -616,7 +612,7 @@ trait Actor {
   @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
   def preRestart(@unused reason: Throwable, @unused message: Option[Any]): Unit = {
-    context.children foreach { child =>
+    context.children.foreach { child =>
       context.unwatch(child)
       context.stop(child)
     }
@@ -649,7 +645,7 @@ trait Actor {
   def unhandled(message: Any): Unit = {
     message match {
       case Terminated(dead) => throw DeathPactException(dead)
-      case _ => context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
+      case _                => context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
 }

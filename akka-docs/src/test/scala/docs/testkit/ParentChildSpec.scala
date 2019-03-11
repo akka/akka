@@ -20,7 +20,6 @@ import org.scalatest.BeforeAndAfterAll
 /**
  * Parent-Child examples
  */
-
 //#test-example
 class Parent extends Actor {
   val child = context.actorOf(Props[Child], "child")
@@ -71,7 +70,6 @@ class GenericDependentParent(childMaker: ActorRefFactory => ActorRef) extends Ac
 /**
  * Test specification
  */
-
 class MockedChild extends Actor {
   def receive = {
     case "ping" => sender ! "pong"
@@ -142,8 +140,8 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
       val parent = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props(new Child), "child")
         def receive = {
-          case x if sender == child => proxy.ref forward x
-          case x                    => child forward x
+          case x if sender == child => proxy.ref.forward(x)
+          case x                    => child.forward(x)
         }
       }))
 

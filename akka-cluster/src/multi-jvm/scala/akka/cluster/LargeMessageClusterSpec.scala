@@ -26,8 +26,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
 
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
-  commonConfig(ConfigFactory.parseString(
-    s"""
+  commonConfig(ConfigFactory.parseString(s"""
     akka {
       cluster.debug.verbose-heartbeat-logging = on
       loggers = ["akka.testkit.TestEventListener"]
@@ -82,8 +81,10 @@ class LargeMessageClusterMultiJvmNode1 extends LargeMessageClusterSpec
 class LargeMessageClusterMultiJvmNode2 extends LargeMessageClusterSpec
 class LargeMessageClusterMultiJvmNode3 extends LargeMessageClusterSpec
 
-abstract class LargeMessageClusterSpec extends MultiNodeSpec(LargeMessageClusterMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+abstract class LargeMessageClusterSpec
+    extends MultiNodeSpec(LargeMessageClusterMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
   import LargeMessageClusterMultiJvmSpec._
 
   override def expectedTestDuration: FiniteDuration = 3.minutes
@@ -97,8 +98,7 @@ abstract class LargeMessageClusterSpec extends MultiNodeSpec(LargeMessageCluster
 
   "Artery Cluster with large messages" must {
     "init cluster" taggedAs LongRunningTest in {
-      Cluster(system).subscribe(unreachableProbe.ref, ClusterEvent.InitialStateAsEvents,
-        classOf[UnreachableMember])
+      Cluster(system).subscribe(unreachableProbe.ref, ClusterEvent.InitialStateAsEvents, classOf[UnreachableMember])
 
       awaitClusterUp(first, second, third)
 

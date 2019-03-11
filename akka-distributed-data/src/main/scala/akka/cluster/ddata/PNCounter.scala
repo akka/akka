@@ -14,6 +14,7 @@ import akka.annotation.InternalApi
 object PNCounter {
   val empty: PNCounter = new PNCounter(GCounter.empty, GCounter.empty)
   def apply(): PNCounter = empty
+
   /**
    * Java API
    */
@@ -40,10 +41,11 @@ object PNCounter {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class PNCounter private[akka] (
-  private[akka] val increments: GCounter, private[akka] val decrements: GCounter)
-  extends DeltaReplicatedData with ReplicatedDelta
-  with ReplicatedDataSerialization with RemovedNodePruning {
+final class PNCounter private[akka] (private[akka] val increments: GCounter, private[akka] val decrements: GCounter)
+    extends DeltaReplicatedData
+    with ReplicatedDelta
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
 
   type T = PNCounter
   type D = PNCounter
@@ -157,10 +159,13 @@ final class PNCounter private[akka] (
 
   /** Internal API */
   @InternalApi private[akka] def increment(key: UniqueAddress, n: BigInt): PNCounter = change(key, n)
+
   /** Internal API */
   @InternalApi private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
+
   /** Internal API */
   @InternalApi private[akka] def decrement(key: UniqueAddress, n: BigInt): PNCounter = change(key, -n)
+
   /** Internal API */
   @InternalApi private[akka] def decrement(key: UniqueAddress): PNCounter = decrement(key, 1)
 
@@ -171,9 +176,7 @@ final class PNCounter private[akka] (
     else this
 
   override def merge(that: PNCounter): PNCounter =
-    copy(
-      increments = that.increments.merge(this.increments),
-      decrements = that.decrements.merge(this.decrements))
+    copy(increments = that.increments.merge(this.increments), decrements = that.decrements.merge(this.decrements))
 
   override def delta: Option[PNCounter] = {
     val incrementsDelta = increments.delta match {
@@ -196,20 +199,17 @@ final class PNCounter private[akka] (
     else new PNCounter(increments.resetDelta, decrements.resetDelta)
 
   override def modifiedByNodes: Set[UniqueAddress] =
-    increments.modifiedByNodes union decrements.modifiedByNodes
+    increments.modifiedByNodes.union(decrements.modifiedByNodes)
 
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     increments.needPruningFrom(removedNode) || decrements.needPruningFrom(removedNode)
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): PNCounter =
-    copy(
-      increments = increments.prune(removedNode, collapseInto),
-      decrements = decrements.prune(removedNode, collapseInto))
+    copy(increments = increments.prune(removedNode, collapseInto),
+         decrements = decrements.prune(removedNode, collapseInto))
 
   override def pruningCleanup(removedNode: UniqueAddress): PNCounter =
-    copy(
-      increments = increments.pruningCleanup(removedNode),
-      decrements = decrements.pruningCleanup(removedNode))
+    copy(increments = increments.pruningCleanup(removedNode), decrements = decrements.pruningCleanup(removedNode))
 
   private def copy(increments: GCounter = this.increments, decrements: GCounter = this.decrements): PNCounter =
     new PNCounter(increments, decrements)

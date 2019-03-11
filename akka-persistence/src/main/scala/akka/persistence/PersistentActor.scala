@@ -16,11 +16,13 @@ import scala.util.control.NoStackTrace
 import akka.annotation.InternalApi
 
 abstract class RecoveryCompleted
+
 /**
  * Sent to a [[PersistentActor]] when the journal replay has been finished.
  */
 @SerialVersionUID(1L)
 case object RecoveryCompleted extends RecoveryCompleted {
+
   /**
    * Java API: get the singleton instance
    */
@@ -56,10 +58,9 @@ final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
  * @param replayMax maximum number of messages to replay. Default is no limit.
  */
 @SerialVersionUID(1L)
-final case class Recovery(
-  fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
-  toSequenceNr: Long                      = Long.MaxValue,
-  replayMax:    Long                      = Long.MaxValue)
+final case class Recovery(fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
+                          toSequenceNr: Long = Long.MaxValue,
+                          replayMax: Long = Long.MaxValue)
 
 object Recovery {
 
@@ -122,6 +123,7 @@ sealed trait StashOverflowStrategy
  * Discard the message to [[akka.actor.DeadLetter]].
  */
 case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
+
   /**
    * Java API: get the singleton instance
    */
@@ -135,6 +137,7 @@ case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
  * to replay.
  */
 case object ThrowOverflowExceptionStrategy extends StashOverflowStrategy {
+
   /**
    * Java API: get the singleton instance
    */
@@ -458,6 +461,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
 abstract class AbstractPersistentActor extends AbstractActor with AbstractPersistentActorLike {
+
   /**
    * Recovery handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message

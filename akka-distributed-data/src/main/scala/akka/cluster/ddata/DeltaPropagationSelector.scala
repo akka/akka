@@ -108,27 +108,27 @@ import akka.util.ccompat._
               val cacheKey = (key, fromSeqNr, toSeqNr)
               val deltaGroup = cache.get(cacheKey) match {
                 case None =>
-                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft {
-                    (d1, d2) =>
-                      val merged = d2 match {
-                        case NoDeltaPlaceholder => NoDeltaPlaceholder
-                        case _ =>
-                          // this is fine also if d1 is a NoDeltaPlaceholder
-                          d1.merge(d2.asInstanceOf[d1.T])
-                      }
-                      merged match {
-                        case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize =>
-                          // discard too large deltas
-                          NoDeltaPlaceholder
-                        case _ => merged
-                      }
+                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft { (d1, d2) =>
+                    val merged = d2 match {
+                      case NoDeltaPlaceholder => NoDeltaPlaceholder
+                      case _                  =>
+                        // this is fine also if d1 is a NoDeltaPlaceholder
+                        d1.merge(d2.asInstanceOf[d1.T])
+                    }
+                    merged match {
+                      case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize =>
+                        // discard too large deltas
+                        NoDeltaPlaceholder
+                      case _ => merged
+                    }
                   }
                   cache = cache.updated(cacheKey, group)
                   group
                 case Some(group) => group
               }
               deltas = deltas.updated(key, (deltaGroup, fromSeqNr, toSeqNr))
-              deltaSentToNode = deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
+              deltaSentToNode =
+                deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
             }
         }
 

@@ -25,15 +25,14 @@ object AccountExampleWithOptionState {
     // Command
     sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
     final case class CreateAccount()(override val replyTo: ActorRef[OperationResult])
-      extends AccountCommand[OperationResult]
+        extends AccountCommand[OperationResult]
     final case class Deposit(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
-      extends AccountCommand[OperationResult]
+        extends AccountCommand[OperationResult]
     final case class Withdraw(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
-      extends AccountCommand[OperationResult]
-    final case class GetBalance()(override val replyTo: ActorRef[CurrentBalance])
-      extends AccountCommand[CurrentBalance]
+        extends AccountCommand[OperationResult]
+    final case class GetBalance()(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
     final case class CloseAccount()(override val replyTo: ActorRef[OperationResult])
-      extends AccountCommand[OperationResult]
+        extends AccountCommand[OperationResult]
 
     // Reply
     sealed trait AccountCommandReply
@@ -65,13 +64,11 @@ object AccountExampleWithOptionState {
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
         cmd match {
           case c @ Deposit(amount) =>
-            Effect.persist(Deposited(amount))
-              .thenReply(c)(_ => Confirmed)
+            Effect.persist(Deposited(amount)).thenReply(c)(_ => Confirmed)
 
           case c @ Withdraw(amount) =>
             if (canWithdraw(amount)) {
-              Effect.persist(Withdrawn(amount))
-                .thenReply(c)(_ => Confirmed)
+              Effect.persist(Withdrawn(amount)).thenReply(c)(_ => Confirmed)
 
             } else {
               Effect.reply(c)(Rejected(s"Insufficient balance $balance to be able to withdraw $amount"))
@@ -82,8 +79,7 @@ object AccountExampleWithOptionState {
 
           case c: CloseAccount =>
             if (balance == Zero)
-              Effect.persist(AccountClosed)
-                .thenReply(c)(_ => Confirmed)
+              Effect.persist(AccountClosed).thenReply(c)(_ => Confirmed)
             else
               Effect.reply(c)(Rejected("Can't close account with non-zero balance"))
 
@@ -126,22 +122,22 @@ object AccountExampleWithOptionState {
       EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Option[Account]](
         PersistenceId(s"Account|$accountNumber"),
         None,
-        (state, cmd) => state match {
-          case None          => onFirstCommand(cmd)
-          case Some(account) => account.applyCommand(cmd)
-        },
-        (state, event) => state match {
-          case None          => Some(onFirstEvent(event))
-          case Some(account) => Some(account.applyEvent(event))
-        }
-      )
+        (state, cmd) =>
+          state match {
+            case None          => onFirstCommand(cmd)
+            case Some(account) => account.applyCommand(cmd)
+          },
+        (state, event) =>
+          state match {
+            case None          => Some(onFirstEvent(event))
+            case Some(account) => Some(account.applyEvent(event))
+          })
     }
 
     def onFirstCommand(cmd: AccountCommand[_]): ReplyEffect = {
       cmd match {
         case c: CreateAccount =>
-          Effect.persist(AccountCreated)
-            .thenReply(c)(_ => Confirmed)
+          Effect.persist(AccountCreated).thenReply(c)(_ => Confirmed)
         case _ =>
           // CreateAccount before handling any other commands
           Effect.unhandled.thenNoReply()
@@ -159,4 +155,3 @@ object AccountExampleWithOptionState {
   //#account-entity
 
 }
-

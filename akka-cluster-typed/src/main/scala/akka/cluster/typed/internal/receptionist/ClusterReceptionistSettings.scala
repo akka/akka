@@ -33,11 +33,9 @@ private[akka] object ClusterReceptionistSettings {
         case _          => Replicator.WriteTo(config.getInt(key), writeTimeout)
       }
     }
-    ClusterReceptionistSettings(
-      writeConsistency,
-      pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
-      config.getInt("distributed-key-count")
-    )
+    ClusterReceptionistSettings(writeConsistency,
+                                pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
+                                config.getInt("distributed-key-count"))
   }
 }
 
@@ -45,8 +43,6 @@ private[akka] object ClusterReceptionistSettings {
  * Internal API
  */
 @InternalApi
-private[akka] case class ClusterReceptionistSettings(
-  writeConsistency:    WriteConsistency,
-  pruningInterval:     FiniteDuration,
-  distributedKeyCount: Int)
-
+private[akka] case class ClusterReceptionistSettings(writeConsistency: WriteConsistency,
+                                                     pruningInterval: FiniteDuration,
+                                                     distributedKeyCount: Int)

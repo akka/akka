@@ -4,11 +4,11 @@
 
 package docs.io
 
-import akka.actor.{ ActorRef, ActorLogging, Props, Actor, ActorSystem }
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
 import akka.io.Tcp._
-import akka.io.{ Tcp, IO }
+import akka.io.{ IO, Tcp }
 import java.net.InetSocketAddress
-import akka.testkit.{ ImplicitSender, TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 
 import scala.concurrent.Await

@@ -101,7 +101,7 @@ class SystemMessageListSpec extends AkkaSpec {
       val fwdList = create3 :: create4 :: create5 :: ENil
       val revList = create2 :: create1 :: create0 :: LNil
 
-      val list =  fwdList.reversePrepend(revList)
+      val list = fwdList.reversePrepend(revList)
 
       (list.head eq create0) should ===(true)
       (list.tail.head eq create1) should ===(true)

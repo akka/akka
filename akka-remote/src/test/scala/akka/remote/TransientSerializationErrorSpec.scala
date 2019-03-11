@@ -43,9 +43,10 @@ object TransientSerializationErrorSpec {
   }
 }
 
-abstract class AbstractTransientSerializationErrorSpec(config: Config) extends AkkaSpec(
-  config.withFallback(ConfigFactory.parseString(
-    """
+abstract class AbstractTransientSerializationErrorSpec(config: Config)
+    extends AkkaSpec(
+      config.withFallback(
+        ConfigFactory.parseString("""
     akka {
       loglevel = info
       actor {
@@ -89,16 +90,12 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
       expectMsg("ping")
 
       // none of these should tear down the connection
-      List(
-        ManifestIllegal,
-        ManifestNotSerializable,
-        ToBinaryIllegal,
-        ToBinaryNotSerializable,
-        NotDeserializable,
-        IllegalOnDeserialize
-      ).foreach(msg =>
-        selection.tell(msg, this.testActor)
-      )
+      List(ManifestIllegal,
+           ManifestNotSerializable,
+           ToBinaryIllegal,
+           ToBinaryNotSerializable,
+           NotDeserializable,
+           IllegalOnDeserialize).foreach(msg => selection.tell(msg, this.testActor))
 
       // make sure we still have a connection
       selection.tell("ping", this.testActor)
@@ -112,7 +109,8 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
   }
 }
 
-class TransientSerializationErrorSpec extends AbstractTransientSerializationErrorSpec(ConfigFactory.parseString("""
+class TransientSerializationErrorSpec
+    extends AbstractTransientSerializationErrorSpec(ConfigFactory.parseString("""
   akka.remote.netty.tcp {
     hostname = localhost
     port = 0

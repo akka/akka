@@ -85,7 +85,8 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
 object PersistentClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("persistence")
 object DDataClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("ddata")
 
-class PersistentClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(PersistentClusterShardingLeavingSpecConfig)
+class PersistentClusterShardingLeavingSpec
+    extends ClusterShardingLeavingSpec(PersistentClusterShardingLeavingSpecConfig)
 class DDataClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(DDataClusterShardingLeavingSpecConfig)
 
 class PersistentClusterShardingLeavingMultiJvmNode1 extends PersistentClusterShardingLeavingSpec
@@ -98,14 +99,17 @@ class DDataClusterShardingLeavingMultiJvmNode2 extends DDataClusterShardingLeavi
 class DDataClusterShardingLeavingMultiJvmNode3 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode4 extends DDataClusterShardingLeavingSpec
 
-abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingLeavingSpec._
   import config._
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  val storageLocations = List(
+    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
     storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
@@ -120,7 +124,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       startSharding()
       within(15.seconds) {
         awaitAssert(cluster.state.members.exists { m =>
@@ -132,12 +136,11 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
   }
 
   def startSharding(): Unit = {
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity],
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).start(typeName = "Entity",
+                                  entityProps = Props[Entity],
+                                  settings = ClusterShardingSettings(system),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
@@ -221,4 +224,3 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   }
 }
-

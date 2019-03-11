@@ -23,7 +23,8 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () => Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () => Source[T, M])
+    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 

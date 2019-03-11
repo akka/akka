@@ -63,8 +63,7 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
     akka.actor.warn-about-java-serializer-usage=false
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first, second, third)(ConfigFactory.parseString(
-    """akka.cluster.roles=["shard"]"""))
+  nodeConfig(first, second, third)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
 
 }
 
@@ -73,7 +72,9 @@ class ClusterShardingGetStatsSpecMultiJvmNode2 extends ClusterShardingGetStatsSp
 class ClusterShardingGetStatsSpecMultiJvmNode3 extends ClusterShardingGetStatsSpec
 class ClusterShardingGetStatsSpecMultiJvmNode4 extends ClusterShardingGetStatsSpec
 
-abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterShardingGetStatsSpecConfig) with STMultiNodeSpec {
+abstract class ClusterShardingGetStatsSpec
+    extends MultiNodeSpec(ClusterShardingGetStatsSpecConfig)
+    with STMultiNodeSpec {
 
   import ClusterShardingGetStatsSpec._
   import ClusterShardingGetStatsSpecConfig._
@@ -81,20 +82,18 @@ abstract class ClusterShardingGetStatsSpec extends MultiNodeSpec(ClusterSharding
   def initialParticipants = roles.size
 
   def startShard(): ActorRef = {
-    ClusterSharding(system).start(
-      typeName = shardTypeName,
-      entityProps = Props(new ShardedActor),
-      settings = ClusterShardingSettings(system).withRole("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).start(typeName = shardTypeName,
+                                  entityProps = Props(new ShardedActor),
+                                  settings = ClusterShardingSettings(system).withRole("shard"),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId)
   }
 
   def startProxy(): ActorRef = {
-    ClusterSharding(system).startProxy(
-      typeName = shardTypeName,
-      role = Some("shard"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+    ClusterSharding(system).startProxy(typeName = shardTypeName,
+                                       role = Some("shard"),
+                                       extractEntityId = extractEntityId,
+                                       extractShardId = extractShardId)
   }
 
   def join(from: RoleName): Unit = {

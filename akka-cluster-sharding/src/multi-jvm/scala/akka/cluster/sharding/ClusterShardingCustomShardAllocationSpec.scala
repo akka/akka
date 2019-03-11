@@ -65,11 +65,15 @@ object ClusterShardingCustomShardAllocationSpec {
 
   case class TestAllocationStrategy(ref: ActorRef) extends ShardAllocationStrategy {
     implicit val timeout = Timeout(3.seconds)
-    override def allocateShard(requester: ActorRef, shardId: ShardRegion.ShardId, currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]]): Future[ActorRef] = {
+    override def allocateShard(
+        requester: ActorRef,
+        shardId: ShardRegion.ShardId,
+        currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]]): Future[ActorRef] = {
       (ref ? AllocateReq).mapTo[ActorRef]
     }
 
-    override def rebalance(currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]], rebalanceInProgress: Set[ShardRegion.ShardId]): Future[Set[ShardRegion.ShardId]] = {
+    override def rebalance(currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardRegion.ShardId]],
+                           rebalanceInProgress: Set[ShardRegion.ShardId]): Future[Set[ShardRegion.ShardId]] = {
       (ref ? RebalanceReq).mapTo[Set[String]]
     }
   }
@@ -99,19 +103,28 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-object PersistentClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("persistence")
-object DDataClusterShardingCustomShardAllocationSpecConfig extends ClusterShardingCustomShardAllocationSpecConfig("ddata")
+object PersistentClusterShardingCustomShardAllocationSpecConfig
+    extends ClusterShardingCustomShardAllocationSpecConfig("persistence")
+object DDataClusterShardingCustomShardAllocationSpecConfig
+    extends ClusterShardingCustomShardAllocationSpecConfig("ddata")
 
-class PersistentClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(PersistentClusterShardingCustomShardAllocationSpecConfig)
-class DDataClusterShardingCustomShardAllocationSpec extends ClusterShardingCustomShardAllocationSpec(DDataClusterShardingCustomShardAllocationSpecConfig)
+class PersistentClusterShardingCustomShardAllocationSpec
+    extends ClusterShardingCustomShardAllocationSpec(PersistentClusterShardingCustomShardAllocationSpecConfig)
+class DDataClusterShardingCustomShardAllocationSpec
+    extends ClusterShardingCustomShardAllocationSpec(DDataClusterShardingCustomShardAllocationSpecConfig)
 
-class PersistentClusterShardingCustomShardAllocationMultiJvmNode1 extends PersistentClusterShardingCustomShardAllocationSpec
-class PersistentClusterShardingCustomShardAllocationMultiJvmNode2 extends PersistentClusterShardingCustomShardAllocationSpec
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode1
+    extends PersistentClusterShardingCustomShardAllocationSpec
+class PersistentClusterShardingCustomShardAllocationMultiJvmNode2
+    extends PersistentClusterShardingCustomShardAllocationSpec
 
 class DDataClusterShardingCustomShardAllocationMultiJvmNode1 extends DDataClusterShardingCustomShardAllocationSpec
 class DDataClusterShardingCustomShardAllocationMultiJvmNode2 extends DDataClusterShardingCustomShardAllocationSpec
 
-abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingCustomShardAllocationSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingCustomShardAllocationSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingCustomShardAllocationSpec._
   import config._
 
@@ -119,21 +132,20 @@ abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingC
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       startSharding()
     }
     enterBarrier(from.name + "-joined")
   }
 
   def startSharding(): Unit = {
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity],
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId,
-      allocationStrategy = TestAllocationStrategy(allocator),
-      handOffStopMessage = PoisonPill)
+    ClusterSharding(system).start(typeName = "Entity",
+                                  entityProps = Props[Entity],
+                                  settings = ClusterShardingSettings(system),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId,
+                                  allocationStrategy = TestAllocationStrategy(allocator),
+                                  handOffStopMessage = PoisonPill)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

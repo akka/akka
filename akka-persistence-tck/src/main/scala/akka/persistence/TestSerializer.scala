@@ -40,8 +40,7 @@ class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
         throw new IllegalStateException("currentTransportInformation was not set")
       case t =>
         if (t.system ne system)
-          throw new IllegalStateException(
-            s"wrong system in currentTransportInformation, ${t.system} != $system")
+          throw new IllegalStateException(s"wrong system in currentTransportInformation, ${t.system} != $system")
         if (t.address != system.provider.getDefaultAddress)
           throw new IllegalStateException(
             s"wrong address in currentTransportInformation, ${t.address} != ${system.provider.getDefaultAddress}")

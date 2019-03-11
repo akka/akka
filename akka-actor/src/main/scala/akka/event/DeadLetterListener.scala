@@ -32,11 +32,13 @@ class DeadLetterListener extends Actor {
       val origin = if (snd eq context.system.deadLetters) "without sender" else s"from $snd"
       val done = maxCount != Int.MaxValue && count >= maxCount
       val doneMsg = if (done) ", no more dead letters will be logged" else ""
-      eventStream.publish(Info(rcp.path.toString, rcp.getClass,
-        s"Message [${message.getClass.getName}] $origin to $rcp was not delivered. [$count] dead letters encountered$doneMsg. " +
-          s"If this is not an expected behavior, then [$rcp] may have terminated unexpectedly, " +
-          "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
-          "and 'akka.log-dead-letters-during-shutdown'."))
+      eventStream.publish(
+        Info(rcp.path.toString,
+             rcp.getClass,
+             s"Message [${message.getClass.getName}] $origin to $rcp was not delivered. [$count] dead letters encountered$doneMsg. " +
+             s"If this is not an expected behavior, then [$rcp] may have terminated unexpectedly, " +
+             "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
+             "and 'akka.log-dead-letters-during-shutdown'."))
       if (done) context.stop(self)
   }
 

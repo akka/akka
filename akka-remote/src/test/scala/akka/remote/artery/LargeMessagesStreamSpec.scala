@@ -24,8 +24,7 @@ object LargeMessagesStreamSpec {
   }
 }
 
-class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
-  """
+class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.large-message-destinations = [ "/user/large" ]
     }

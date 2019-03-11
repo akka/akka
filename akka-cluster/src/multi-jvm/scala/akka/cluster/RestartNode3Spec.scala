@@ -25,12 +25,11 @@ object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -40,8 +39,9 @@ class RestartNode3MultiJvmNode2 extends RestartNode3Spec
 class RestartNode3MultiJvmNode3 extends RestartNode3Spec
 
 abstract class RestartNode3Spec
-  extends MultiNodeSpec(RestartNode3MultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(RestartNode3MultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import RestartNode3MultiJvmSpec._
 
@@ -52,10 +52,8 @@ abstract class RestartNode3Spec
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first)
 
-  lazy val restartedSecondSystem = ActorSystem(
-    system.name,
-    ConfigFactory.parseString(
-      s"""
+  lazy val restartedSecondSystem = ActorSystem(system.name,
+                                               ConfigFactory.parseString(s"""
         akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
         akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
         """).withFallback(system.settings.config))
@@ -90,7 +88,7 @@ abstract class RestartNode3Spec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r =>
+        List(first, third).foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }

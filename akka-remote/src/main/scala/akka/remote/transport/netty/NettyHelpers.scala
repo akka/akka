@@ -91,4 +91,3 @@ private[netty] trait NettyClientHelpers extends SimpleChannelHandler with NettyH
     onDisconnect(ctx, e)
   }
 }
-
