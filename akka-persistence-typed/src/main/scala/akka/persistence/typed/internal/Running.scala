@@ -20,7 +20,12 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed._
+
+import akka.persistence.typed.Callback
+import akka.persistence.typed.EventRejectedException
+import akka.persistence.typed.SideEffect
+import akka.persistence.typed.Stop
+import akka.persistence.typed.UnstashAll
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
