@@ -73,7 +73,11 @@ class TestInstrument(system: ExtendedActorSystem) extends RemoteInstrument {
       case _ =>
     }
 
-  override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit =
+  override def remoteMessageReceived(recipient: ActorRef,
+                                     message: Object,
+                                     sender: ActorRef,
+                                     size: Int,
+                                     time: Long): Unit =
     message match {
       case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) =>
         MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageReceived(recipient, message, sender, size, time))
@@ -93,8 +97,7 @@ object MetadataCarryingSpec {
   }
 }
 
-class MetadataCarryingSpec extends ArteryMultiNodeSpec(
-  """
+class MetadataCarryingSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.advanced {
         instruments = [ "akka.remote.artery.TestInstrument" ]

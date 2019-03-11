@@ -30,13 +30,12 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 5s
       akka.cluster.allow-weakly-up-members = off
       #akka.remote.use-passive-connections = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   /**
    * This was used together with sleep in EndpointReader before deliverAndAck
@@ -60,8 +59,9 @@ class RestartNodeMultiJvmNode2 extends RestartNodeSpec
 class RestartNodeMultiJvmNode3 extends RestartNodeSpec
 
 abstract class RestartNodeSpec
-  extends MultiNodeSpec(RestartNodeMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(RestartNodeMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import RestartNodeMultiJvmSpec._
 
@@ -72,9 +72,8 @@ abstract class RestartNodeSpec
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first, secondUniqueAddress.address, third)
 
-  lazy val restartedSecondSystem = ActorSystem(
-    system.name,
-    ConfigFactory.parseString(s"""
+  lazy val restartedSecondSystem = ActorSystem(system.name,
+                                               ConfigFactory.parseString(s"""
       akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
       akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
       """).withFallback(system.settings.config))
@@ -107,7 +106,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r =>
+        List(first, third).foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }

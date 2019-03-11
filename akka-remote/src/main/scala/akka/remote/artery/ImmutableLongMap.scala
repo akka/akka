@@ -24,8 +24,8 @@ private[akka] object ImmutableLongMap {
  * Keys and values are backed by arrays and lookup is performed with binary
  * search. It's intended for rather small (<1000) maps.
  */
-private[akka] class ImmutableLongMap[A >: Null] private (
-  private val keys: Array[Long], private val values: Array[A])(implicit t: ClassTag[A]) {
+private[akka] class ImmutableLongMap[A >: Null] private (private val keys: Array[Long], private val values: Array[A])(
+    implicit t: ClassTag[A]) {
 
   val size: Int = keys.length
 

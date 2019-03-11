@@ -37,14 +37,13 @@ object DeviceInProgress2 {
 
     //#read-protocol-2
     sealed trait DeviceMessage
-    final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature])
-      extends DeviceMessage
+    final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends DeviceMessage
     final case class RespondTemperature(requestId: Long, value: Option[Double])
     //#read-protocol-2
   }
 
   class Device(context: ActorContext[Device.DeviceMessage], groupId: String, deviceId: String)
-    extends AbstractBehavior[Device.DeviceMessage] {
+      extends AbstractBehavior[Device.DeviceMessage] {
     import Device._
 
     var lastTemperatureReading: Option[Double] = None
@@ -75,8 +74,7 @@ object DeviceInProgress3 {
   object Device {
     //#write-protocol-1
     sealed trait DeviceMessage
-    final case class RecordTemperature(value: Double)
-      extends DeviceMessage
+    final case class RecordTemperature(value: Double) extends DeviceMessage
     //#write-protocol-1
   }
 }

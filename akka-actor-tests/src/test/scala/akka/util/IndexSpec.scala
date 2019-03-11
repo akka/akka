@@ -14,9 +14,10 @@ import akka.testkit.DefaultTimeout
 
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
   implicit val ec = system.dispatcher
-  private def emptyIndex = new Index[String, Int](100, new Comparator[Int] {
-    override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
-  })
+  private def emptyIndex =
+    new Index[String, Int](100, new Comparator[Int] {
+      override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+    })
 
   private def indexWithValues = {
     val index = emptyIndex

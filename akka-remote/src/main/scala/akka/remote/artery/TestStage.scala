@@ -18,6 +18,7 @@ import akka.util.OptionVal
 import akka.event.Logging
 
 object TestManagementCommands {
+
   /** INTERNAL API */
   @SerialVersionUID(1L)
   final case class FailInboundStreamOnce(ex: Throwable)
@@ -56,6 +57,7 @@ private[remote] class SharedTestState {
     if (state.compareAndSet(current, current.copy(failInboundStream = Some(ex)))) ()
     else failInboundStreamOnce(ex)
   }
+
   /**
    * Get the exception to fail the inbound stream with and immediately reset the state to not-failed.
    * This is used to simulate a single failure on the stream, where a successful restart recovers operations.
@@ -100,15 +102,13 @@ private[remote] class SharedTestState {
 /**
  * INTERNAL API
  */
-private[remote] final case class TestState(
-  blackholes:        Map[Address, Set[Address]],
-  failInboundStream: Option[Throwable])
+private[remote] final case class TestState(blackholes: Map[Address, Set[Address]], failInboundStream: Option[Throwable])
 
 /**
  * INTERNAL API
  */
 private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState)
-  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
+    extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundTestStage.out")
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
@@ -120,9 +120,9 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
       override def onPush(): Unit = {
         val env = grab(in)
         if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
-          log.debug(
-            "dropping outbound message [{}] to [{}] because of blackhole",
-            Logging.messageClassName(env.message), outboundContext.remoteAddress)
+          log.debug("dropping outbound message [{}] to [{}] because of blackhole",
+                    Logging.messageClassName(env.message),
+                    outboundContext.remoteAddress)
           pull(in) // drop message
         } else
           push(out, env)
@@ -140,7 +140,7 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
  * INTERNAL API
  */
 private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState)
-  extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+    extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundTestStage.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundTestStage.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
@@ -162,9 +162,10 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
                 push(out, env)
               case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
-                  log.debug(
-                    "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                    Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
+                  log.debug("dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
+                            Logging.messageClassName(env.message),
+                            association.remoteAddress,
+                            env.originUid)
                   pull(in) // drop message
                 } else
                   push(out, env)
@@ -179,4 +180,3 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
     }
 
 }
-

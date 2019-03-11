@@ -17,7 +17,9 @@ class FlowWithContextSpec extends StreamSpec {
 
     "get created from Flow.asFlowWithContext" in {
       val flow = Flow[Message].map { case m => m.copy(data = m.data + "z") }
-      val flowWithContext = flow.asFlowWithContext((m: Message, o: Long) => Message(m.data, o)) { m => m.offset }
+      val flowWithContext = flow.asFlowWithContext((m: Message, o: Long) => Message(m.data, o)) { m =>
+        m.offset
+      }
 
       val msg = Message("a", 1L)
       Source(Vector(msg))

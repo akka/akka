@@ -152,11 +152,12 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
   "various ways of transforming materialized values" in {
     import scala.concurrent.duration._
 
-    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) { implicit builder => tickSource =>
-      import GraphDSL.Implicits._
-      val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
-      tickSource ~> zip.in0
-      FlowShape(zip.in1, zip.out)
+    val throttler = Flow.fromGraph(GraphDSL.create(Source.tick(1.second, 1.second, "test")) {
+      implicit builder => tickSource =>
+        import GraphDSL.Implicits._
+        val zip = builder.add(ZipWith[String, Int, Int](Keep.right))
+        tickSource ~> zip.in0
+        FlowShape(zip.in1, zip.out)
     })
 
     //#flow-mat-combine
@@ -225,10 +226,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "defining asynchronous boundaries" in {
     //#flow-async
-    Source(List(1, 2, 3))
-      .map(_ + 1).async
-      .map(_ * 2)
-      .to(Sink.ignore)
+    Source(List(1, 2, 3)).map(_ + 1).async.map(_ * 2).to(Sink.ignore)
     //#flow-async
   }
 
@@ -261,11 +259,10 @@ object FlowDocSpec {
   final class RunWithMyself extends Actor {
     implicit val mat = ActorMaterializer()
 
-    Source.maybe
-      .runWith(Sink.onComplete {
-        case Success(done) => println(s"Completed: $done")
-        case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
-      })
+    Source.maybe.runWith(Sink.onComplete {
+      case Success(done) => println(s"Completed: $done")
+      case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
+    })
 
     def receive = {
       case "boom" =>
@@ -277,11 +274,10 @@ object FlowDocSpec {
   //#materializer-from-system-in-actor
   final class RunForever(implicit val mat: Materializer) extends Actor {
 
-    Source.maybe
-      .runWith(Sink.onComplete {
-        case Success(done) => println(s"Completed: $done")
-        case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
-      })
+    Source.maybe.runWith(Sink.onComplete {
+      case Success(done) => println(s"Completed: $done")
+      case Failure(ex)   => println(s"Failed: ${ex.getMessage}")
+    })
 
     def receive = {
       case "boom" =>

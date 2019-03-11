@@ -35,4 +35,3 @@ class FailureDetectorPuppet(config: Config, ev: EventStream) extends FailureDete
   override def heartbeat(): Unit = status.compareAndSet(Unknown, Up)
 
 }
-

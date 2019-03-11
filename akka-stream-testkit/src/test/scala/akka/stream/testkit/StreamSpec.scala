@@ -16,9 +16,7 @@ import scala.concurrent.duration._
 
 class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
-    this(ActorSystem(
-      AkkaSpec.getCallerName(getClass),
-      ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    this(ActorSystem(AkkaSpec.getCallerName(getClass), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
@@ -35,18 +33,20 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
         // FIXME correction - I'm not sure this works at _all_ - supposed to dump stream state if test fails
         val streamSupervisors = system.actorSelection("/user/" + StreamSupervisor.baseName + "*")
         streamSupervisors.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children: Seq[ActorRef] = probe.receiveWhile(2.seconds) {
-          case StreamSupervisor.Children(children) => children
-        }.flatten
+        val children: Seq[ActorRef] = probe
+          .receiveWhile(2.seconds) {
+            case StreamSupervisor.Children(children) => children
+          }
+          .flatten
         println("--- Stream actors debug dump ---")
         if (children.isEmpty) println("Stream is completed. No debug information is available")
         else {
           println("Stream actors alive: " + children)
-          Future.sequence(children.map(MaterializerState.requestFromChild))
+          Future
+            .sequence(children.map(MaterializerState.requestFromChild))
             .foreach(snapshots =>
               snapshots.foreach(s =>
-                akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
-            )
+                akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl])))
         }
         failed
       case other => other

@@ -35,10 +35,14 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
-      val p = Source(1 to 4).mapAsyncUnordered(4)(n => Future {
-        Await.ready(latch(n), 5.seconds)
-        n
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 4)
+        .mapAsyncUnordered(4)(n =>
+          Future {
+            Await.ready(latch(n), 5.seconds)
+            n
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(5)
       latch(2).countDown()
@@ -56,15 +60,18 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 20).mapAsyncUnordered(4)(n =>
-        if (n % 3 == 0) {
-          probe.ref ! n
-          Future.successful(n)
-        } else
-          Future {
+      val p = Source(1 to 20)
+        .mapAsyncUnordered(4)(n =>
+          if (n % 3 == 0) {
             probe.ref ! n
-            n
-          }).to(Sink.fromSubscriber(c)).run()
+            Future.successful(n)
+          } else
+            Future {
+              probe.ref ! n
+              n
+            })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       c.expectNoMsg(200.millis)
       probe.expectNoMsg(Duration.Zero)
@@ -86,13 +93,17 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsyncUnordered(4)(n => Future {
-        if (n == 3) throw new RuntimeException("err1") with NoStackTrace
-        else {
-          Await.ready(latch, 10.seconds)
-          n
-        }
-      }).to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 5)
+        .mapAsyncUnordered(4)(n =>
+          Future {
+            if (n == 3) throw new RuntimeException("err1") with NoStackTrace
+            else {
+              Await.ready(latch, 10.seconds)
+              n
+            }
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -113,7 +124,8 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .mapAsyncUnordered(4) { n =>
           if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
           else Future.successful(n)
-        }.runWith(Sink.ignore)
+        }
+        .runWith(Sink.ignore)
       intercept[RuntimeException] {
         Await.result(done, remainingOrDefault)
       }.getMessage should be("err1")
@@ -124,15 +136,17 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val latch = TestLatch(1)
       val c = TestSubscriber.manualProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsyncUnordered(4)(n =>
-        if (n == 3) throw new RuntimeException("err2") with NoStackTrace
-        else {
-          Future {
-            Await.ready(latch, 10.seconds)
-            n
-          }
-        }).
-        to(Sink.fromSubscriber(c)).run()
+      val p = Source(1 to 5)
+        .mapAsyncUnordered(4)(n =>
+          if (n == 3) throw new RuntimeException("err2") with NoStackTrace
+          else {
+            Future {
+              Await.ready(latch, 10.seconds)
+              n
+            }
+          })
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")
@@ -142,10 +156,11 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
     "resume after future failure" in {
       implicit val ec = system.dispatcher
       Source(1 to 5)
-        .mapAsyncUnordered(4)(n => Future {
-          if (n == 3) throw new RuntimeException("err3") with NoStackTrace
-          else n
-        })
+        .mapAsyncUnordered(4)(n =>
+          Future {
+            if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+            else n
+          })
         .withAttributes(supervisionStrategy(resumingDecider))
         .runWith(TestSink.probe[Int])
         .request(10)
@@ -154,28 +169,33 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
     }
 
     "resume after multiple failures" in assertAllStagesStopped {
-      val futures: List[Future[String]] = List(
-        Future.failed(Utils.TE("failure1")),
-        Future.failed(Utils.TE("failure2")),
-        Future.failed(Utils.TE("failure3")),
-        Future.failed(Utils.TE("failure4")),
-        Future.failed(Utils.TE("failure5")),
-        Future.successful("happy!"))
+      val futures: List[Future[String]] = List(Future.failed(Utils.TE("failure1")),
+                                               Future.failed(Utils.TE("failure2")),
+                                               Future.failed(Utils.TE("failure3")),
+                                               Future.failed(Utils.TE("failure4")),
+                                               Future.failed(Utils.TE("failure5")),
+                                               Future.successful("happy!"))
 
-      Await.result(
-        Source(futures)
-          .mapAsyncUnordered(2)(identity).withAttributes(supervisionStrategy(resumingDecider))
-          .runWith(Sink.head), 3.seconds) should ===("happy!")
+      Await.result(Source(futures)
+                     .mapAsyncUnordered(2)(identity)
+                     .withAttributes(supervisionStrategy(resumingDecider))
+                     .runWith(Sink.head),
+                   3.seconds) should ===("happy!")
     }
 
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
-      Await.result(Source(1 to 3).mapAsyncUnordered(1)(n => Future {
-        if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
-        else n
-      }).withAttributes(supervisionStrategy(resumingDecider))
-        .grouped(10)
-        .runWith(Sink.head), 1.second) should be(Seq(1, 2))
+      Await.result(
+        Source(1 to 3)
+          .mapAsyncUnordered(1)(n =>
+            Future {
+              if (n == 3) throw new RuntimeException("err3b") with NoStackTrace
+              else n
+            })
+          .withAttributes(supervisionStrategy(resumingDecider))
+          .grouped(10)
+          .runWith(Sink.head),
+        1.second) should be(Seq(1, 2))
     }
 
     "resume when mapAsyncUnordered throws" in {
@@ -193,7 +213,8 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
     "signal NPE when future is completed with null" in {
       val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b")).mapAsyncUnordered(4)(elem => Future.successful(null)).to(Sink.fromSubscriber(c)).run()
+      val p =
+        Source(List("a", "b")).mapAsyncUnordered(4)(elem => Future.successful(null)).to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
@@ -204,7 +225,8 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       val p = Source(List("a", "b", "c"))
         .mapAsyncUnordered(4)(elem => if (elem == "b") Future.successful(null) else Future.successful(elem))
         .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
+        .to(Sink.fromSubscriber(c))
+        .run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectNextUnordered("a", "c")

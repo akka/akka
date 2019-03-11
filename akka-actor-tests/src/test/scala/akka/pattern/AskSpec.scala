@@ -5,7 +5,7 @@
 package akka.pattern
 
 import akka.actor._
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
 
 import scala.concurrent.Await
@@ -53,14 +53,16 @@ class AskSpec extends AkkaSpec {
 
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
-      }.getMessage should ===("Unsupported recipient type, question not sent to [null]. Message of type [java.lang.Double].")
+      }.getMessage should ===(
+        "Unsupported recipient type, question not sent to [null]. Message of type [java.lang.Double].")
     }
 
     "return broken promises on 0 timeout" in {
       implicit val timeout = Timeout(0 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x => sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = s"Timeout length must be positive, question not sent to [$echo]. Message of type [java.lang.String]."
+      val expectedMsg =
+        s"Timeout length must be positive, question not sent to [$echo]. Message of type [java.lang.String]."
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should ===(expectedMsg)
@@ -70,7 +72,8 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(-1000 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x => sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = s"Timeout length must be positive, question not sent to [$echo]. Message of type [java.lang.String]."
+      val expectedMsg =
+        s"Timeout length must be positive, question not sent to [$echo]. Message of type [java.lang.String]."
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should ===(expectedMsg)
@@ -114,8 +117,8 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(5 seconds)
       import system.dispatcher
       val echo = system.actorOf(Props(new Actor { def receive = { case x => sender() ! x } }), "select-echo")
-      val identityFuture = (system.actorSelection("/user/select-echo") ? Identify(None))
-        .mapTo[ActorIdentity].map(_.ref.get)
+      val identityFuture =
+        (system.actorSelection("/user/select-echo") ? Identify(None)).mapTo[ActorIdentity].map(_.ref.get)
 
       Await.result(identityFuture, 5 seconds) should ===(echo)
     }
@@ -125,7 +128,9 @@ class AskSpec extends AkkaSpec {
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor { def receive = { case x => context.actorSelection(sender().path) ! x } }), "select-echo2")
+      val echo = system.actorOf(Props(new Actor {
+        def receive = { case x => context.actorSelection(sender().path) ! x }
+      }), "select-echo2")
       val f = echo ? "hi"
 
       Await.result(f, 1 seconds) should ===("hi")
@@ -138,7 +143,8 @@ class AskSpec extends AkkaSpec {
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor { def receive = { case x => context.actorSelection("/temp/*") ! x } }), "select-echo3")
+      val echo = system.actorOf(Props(new Actor { def receive = { case x => context.actorSelection("/temp/*") ! x } }),
+                                "select-echo3")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
         Await.result(f, 1 seconds)

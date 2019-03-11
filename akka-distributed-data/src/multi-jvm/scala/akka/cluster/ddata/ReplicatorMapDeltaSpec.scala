@@ -40,13 +40,19 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
   final case class Incr(ki: (PNCounterMapKey[String], String), n: Int, consistency: WriteConsistency) extends Op
   final case class Decr(ki: (PNCounterMapKey[String], String), n: Int, consistency: WriteConsistency) extends Op
   // AddVD and RemoveVD for variant of ORMultiMap with Value Deltas, NoVD - for the vanilla ORMultiMap
-  final case class AddVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
-  final case class RemoveVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
-  final case class AddNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
-  final case class RemoveNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class AddVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency)
+      extends Op
+  final case class RemoveVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency)
+      extends Op
+  final case class AddNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency)
+      extends Op
+  final case class RemoveNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency)
+      extends Op
   // AddOM and RemoveOM for Vanilla ORMap holding ORSet inside
-  final case class AddOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency) extends Op
-  final case class RemoveOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class AddOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency)
+      extends Op
+  final case class RemoveOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency)
+      extends Op
 
   val timeout = 5.seconds
   val writeTwo = WriteTo(2, timeout)
@@ -164,10 +170,12 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
     }.toVector
   }
 
-  def addElementToORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit node: SelfUniqueAddress) =
+  def addElementToORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(
+      implicit node: SelfUniqueAddress) =
     om.updated(node, key, ORSet.empty[String])(_ :+ element)
 
-  def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit node: SelfUniqueAddress) =
+  def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(
+      implicit node: SelfUniqueAddress) =
     om.updated(node, key, ORSet.empty[String])(_.remove(element))
 }
 
@@ -184,16 +192,17 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
 
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
-  val fullStateReplicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second).withDeltaCrdtEnabled(false)), "fullStateReplicator")
+  val fullStateReplicator = system.actorOf(
+    Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second).withDeltaCrdtEnabled(false)),
+    "fullStateReplicator")
   val deltaReplicator = {
     val r = system.actorOf(Replicator.props(ReplicatorSettings(system)), "deltaReplicator")
     r ! Replicator.Internal.TestFullStateGossip(enabled = false)
     r
   }
   // both deltas and full state
-  val ordinaryReplicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)), "ordinaryReplicator")
+  val ordinaryReplicator =
+    system.actorOf(Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)), "ordinaryReplicator")
 
   var afterCounter = 0
   def enterBarrierAfterTestStep(): Unit = {
@@ -203,7 +212,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -246,16 +255,20 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, 1))
         }
         List(KeyD, KeyE, KeyF).foreach { key =>
-          fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ :+ (key._2 -> Set("a")))
-          deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ :+ (key._2 -> Set("a")))
+          fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+            _ :+ (key._2 -> Set("a")))
+          deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+            _ :+ (key._2 -> Set("a")))
         }
         List(KeyG, KeyH, KeyI).foreach { key =>
           fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ :+ (key._2 -> Set("a")))
           deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ :+ (key._2 -> Set("a")))
         }
         List(KeyJ, KeyK, KeyL).foreach { key =>
-          fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(_ :+ (key._2 -> (ORSet.empty :+ "a")))
-          deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(_ :+ (key._2 -> (ORSet.empty :+ "a")))
+          fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(
+            _ :+ (key._2 -> (ORSet.empty :+ "a")))
+          deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(
+            _ :+ (key._2 -> (ORSet.empty :+ "a")))
         }
       }
       enterBarrier("updated-1")
@@ -335,46 +348,58 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           op match {
             case Delay(d) => Thread.sleep(d)
             case Incr(key, n, _) =>
-              fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ incrementBy (key._2, n))
-              deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ incrementBy (key._2, n))
+              fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, n))
+              deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.incrementBy(key._2, n))
             case Decr(key, n, _) =>
-              fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ decrementBy (key._2, n))
-              deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ decrementBy (key._2, n))
+              fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.decrementBy(key._2, n))
+              deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_.decrementBy(key._2, n))
             case AddVD(key, elem, _) =>
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
               runOn((if (key == KeyF) List(first) else List(first, second, third)): _*) {
-                fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ addBindingBy (key._2, elem))
-                deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ addBindingBy (key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+                  _.addBindingBy(key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+                  _.addBindingBy(key._2, elem))
               }
             case RemoveVD(key, elem, _) =>
               runOn(first) {
-                fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ removeBindingBy (key._2, elem))
-                deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ removeBindingBy (key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+                  _.removeBindingBy(key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(
+                  _.removeBindingBy(key._2, elem))
               }
             case AddNoVD(key, elem, _) =>
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
               runOn((if (key == KeyI) List(first) else List(first, second, third)): _*) {
-                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ addBindingBy (key._2, elem))
-                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ addBindingBy (key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(
+                  _.addBindingBy(key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(
+                  _.addBindingBy(key._2, elem))
               }
             case RemoveNoVD(key, elem, _) =>
               runOn(first) {
-                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ removeBindingBy (key._2, elem))
-                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ removeBindingBy (key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(
+                  _.removeBindingBy(key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(
+                  _.removeBindingBy(key._2, elem))
               }
             case AddOM(key, elem, _) =>
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
               runOn((if (key == KeyL) List(first) else List(first, second, third)): _*) {
-                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om => addElementToORMap(om, key._2, elem))
-                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om => addElementToORMap(om, key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om =>
+                  addElementToORMap(om, key._2, elem))
+                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om =>
+                  addElementToORMap(om, key._2, elem))
               }
             case RemoveOM(key, elem, _) =>
               runOn(first) {
-                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om => removeElementFromORMap(om, key._2, elem))
-                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om => removeElementFromORMap(om, key._2, elem))
+                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om =>
+                  removeElementFromORMap(om, key._2, elem))
+                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om =>
+                  removeElementFromORMap(om, key._2, elem))
               }
           }
         }
@@ -443,4 +468,3 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
   }
 
 }
-

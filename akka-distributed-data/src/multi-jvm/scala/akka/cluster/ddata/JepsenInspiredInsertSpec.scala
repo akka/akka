@@ -43,7 +43,10 @@ class JepsenInspiredInsertSpecMultiJvmNode4 extends JepsenInspiredInsertSpec
 class JepsenInspiredInsertSpecMultiJvmNode5 extends JepsenInspiredInsertSpec
 class JepsenInspiredInsertSpecMultiJvmNode6 extends JepsenInspiredInsertSpec
 
-class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) with STMultiNodeSpec with ImplicitSender {
+class JepsenInspiredInsertSpec
+    extends MultiNodeSpec(JepsenInspiredInsertSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import JepsenInspiredInsertSpec._
   import Replicator._
 
@@ -82,7 +85,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -102,7 +105,9 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
       }
 
       runOn(controller) {
-        nodes.foreach { n => enterBarrier(n.name + "-joined") }
+        nodes.foreach { n =>
+          enterBarrier(n.name + "-joined")
+        }
       }
 
       enterBarrier("after-setup")
@@ -119,7 +124,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
         writeProbe.receiveOne(3.seconds)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -152,7 +157,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
         writeProbe.receiveOne(timeout + 1.second)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -196,7 +201,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
         writeProbe.receiveOne(3.seconds)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
       successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
       successWriteAcks.size should be(myData.size)
       failureWriteAcks should be(Nil)
@@ -241,7 +246,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
         writeProbe.receiveOne(timeout + 1.second)
       }
       val successWriteAcks = writeAcks.collect { case success: UpdateSuccess[_] => success }
-      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_] => fail }
+      val failureWriteAcks = writeAcks.collect { case fail: UpdateFailure[_]    => fail }
       runOn(n1, n4, n5) {
         successWriteAcks.map(_.request.get).toSet should be(myData.toSet)
         successWriteAcks.size should be(myData.size)
@@ -282,4 +287,3 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   }
 
 }
-

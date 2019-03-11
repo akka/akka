@@ -21,10 +21,9 @@ object BenchmarkActors {
     var left = messagesPerPair / 2
     def receive = {
       case Message =>
-
         if (left == 0) {
           latch.countDown()
-          context stop self
+          context.stop(self)
         }
 
         sender() ! Message
@@ -83,10 +82,10 @@ object BenchmarkActors {
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
       case Message =>
-        if (next.isDefined) next.get forward Message
+        if (next.isDefined) next.get.forward(Message)
       case Stop =>
-        context stop self
-        if (next.isDefined) next.get forward Stop
+        context.stop(self)
+        if (next.isDefined) next.get.forward(Stop)
     }
   }
 
@@ -94,7 +93,8 @@ object BenchmarkActors {
     def props(next: Option[ActorRef]) = Props(new Pipe(next))
   }
 
-  private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(implicit system: ActorSystem) = {
+  private def startPingPongActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String)(
+      implicit system: ActorSystem) = {
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs * 2)
     val actors = for {
@@ -116,8 +116,8 @@ object BenchmarkActors {
     }
   }
 
-  private def startEchoActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String,
-                                  batchSize: Int)(implicit system: ActorSystem) = {
+  private def startEchoActorPairs(messagesPerPair: Int, numPairs: Int, dispatcher: String, batchSize: Int)(
+      implicit system: ActorSystem) = {
 
     val fullPathToDispatcher = "akka.actor." + dispatcher
     val latch = new CountDownLatch(numPairs)
@@ -133,17 +133,20 @@ object BenchmarkActors {
 
   def printProgress(totalMessages: Long, numActors: Int, startNanoTime: Long) = {
     val durationMicros = (System.nanoTime() - startNanoTime) / 1000
-    println(f"  $totalMessages messages by $numActors actors took ${durationMicros / 1000} ms, " +
+    println(
+      f"  $totalMessages messages by $numActors actors took ${durationMicros / 1000} ms, " +
       f"${totalMessages.toDouble / durationMicros}%,.2f M msg/s")
   }
 
   def requireRightNumberOfCores(numCores: Int) =
-    require(
-      Runtime.getRuntime.availableProcessors == numCores,
-      s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}"
-    )
+    require(Runtime.getRuntime.availableProcessors == numCores,
+            s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}")
 
-  def benchmarkPingPongActors(numMessagesPerActorPair: Int, numActors: Int, dispatcher: String, throughPut: Int, shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
+  def benchmarkPingPongActors(numMessagesPerActorPair: Int,
+                              numActors: Int,
+                              dispatcher: String,
+                              throughPut: Int,
+                              shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
     val numPairs = numActors / 2
     val totalNumMessages = numPairs * numMessagesPerActorPair
     val (actors, latch) = startPingPongActorPairs(numMessagesPerActorPair, numPairs, dispatcher)
@@ -153,7 +156,11 @@ object BenchmarkActors {
     printProgress(totalNumMessages, numActors, startNanoTime)
   }
 
-  def benchmarkEchoActors(numMessagesPerActorPair: Int, numActors: Int, dispatcher: String, batchSize: Int, shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
+  def benchmarkEchoActors(numMessagesPerActorPair: Int,
+                          numActors: Int,
+                          dispatcher: String,
+                          batchSize: Int,
+                          shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
     val numPairs = numActors / 2
     val totalNumMessages = numPairs * numMessagesPerActorPair
     val (actors, latch) = startEchoActorPairs(numMessagesPerActorPair, numPairs, dispatcher, batchSize)
@@ -169,4 +176,3 @@ object BenchmarkActors {
   }
 
 }
-

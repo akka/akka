@@ -43,8 +43,7 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (10) and repeatCount (3)
        akka.test.AeronStreamLatencySpec.totalMessagesFactor = 1.0
        akka.test.AeronStreamLatencySpec.repeatCount = 1
@@ -63,11 +62,10 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        }
        """)))
 
-  final case class TestSettings(
-    testName:    String,
-    messageRate: Int, // msg/s
-    payloadSize: Int,
-    repeat:      Int)
+  final case class TestSettings(testName: String,
+                                messageRate: Int, // msg/s
+                                payloadSize: Int,
+                                repeat: Int)
 
 }
 
@@ -75,8 +73,9 @@ class AeronStreamLatencySpecMultiJvmNode1 extends AeronStreamLatencySpec
 class AeronStreamLatencySpecMultiJvmNode2 extends AeronStreamLatencySpec
 
 abstract class AeronStreamLatencySpec
-  extends MultiNodeSpec(AeronStreamLatencySpec)
-  with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(AeronStreamLatencySpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import AeronStreamLatencySpec._
 
@@ -142,11 +141,16 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
+  def printTotal(testName: String,
+                 payloadSize: Long,
+                 histogram: Histogram,
+                 totalDurationNanos: Long,
+                 lastRepeat: Boolean): Unit = {
     def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
-    println(s"=== AeronStreamLatency $testName: RTT " +
+    println(
+      s"=== AeronStreamLatency $testName: RTT " +
       f"50%%ile: ${percentile(50.0)}%.0f µs, " +
       f"90%%ile: ${percentile(90.0)}%.0f µs, " +
       f"99%%ile: ${percentile(99.0)}%.0f µs, " +
@@ -156,10 +160,9 @@ abstract class AeronStreamLatencySpec
 
     // only use the last repeat for the plots
     if (lastRepeat) {
-      plots = plots.copy(
-        plot50 = plots.plot50.add(testName, percentile(50.0)),
-        plot90 = plots.plot90.add(testName, percentile(90.0)),
-        plot99 = plots.plot99.add(testName, percentile(99.0)))
+      plots = plots.copy(plot50 = plots.plot50.add(testName, percentile(50.0)),
+                         plot90 = plots.plot90.add(testName, percentile(90.0)),
+                         plot99 = plots.plot99.add(testName, percentile(99.0)))
     }
   }
 
@@ -172,31 +175,11 @@ abstract class AeronStreamLatencySpec
     pending.foreach(system.deadLetters ! _)
 
   val scenarios = List(
-    TestSettings(
-      testName = "rate-100-size-100",
-      messageRate = 100,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-1000-size-100",
-      messageRate = 1000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-10000-size-100",
-      messageRate = 10000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-20000-size-100",
-      messageRate = 20000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-1000-size-1k",
-      messageRate = 1000,
-      payloadSize = 1000,
-      repeat = repeatCount))
+    TestSettings(testName = "rate-100-size-100", messageRate = 100, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-1000-size-100", messageRate = 1000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-10000-size-100", messageRate = 10000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-20000-size-100", messageRate = 20000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-1000-size-1k", messageRate = 1000, payloadSize = 1000, repeat = repeatCount))
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
@@ -216,7 +199,8 @@ abstract class AeronStreamLatencySpec
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
       val startMsg = "0".getBytes("utf-8")
-      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+      Source
+        .fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
         .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
@@ -238,14 +222,16 @@ abstract class AeronStreamLatencySpec
         }
 
       within(10.seconds) {
-        Source(1 to 50).map { _ =>
-          val envelope = pool.acquire()
-          envelope.byteBuffer.put(startMsg)
-          envelope.byteBuffer.flip()
-          envelope
-        }
+        Source(1 to 50)
+          .map { _ =>
+            val envelope = pool.acquire()
+            envelope.byteBuffer.put(startMsg)
+            envelope.byteBuffer.flip()
+            envelope
+          }
           .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+          .runWith(
+            new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
         started.expectMsg(Done)
       }
 
@@ -254,15 +240,15 @@ abstract class AeronStreamLatencySpec
         count.set(0)
         lastRepeat.set(rep == repeat)
 
-        val sendFlow = Flow[Unit]
-          .map { _ =>
-            val envelope = pool.acquire()
-            envelope.byteBuffer.put(payload)
-            envelope.byteBuffer.flip()
-            envelope
-          }
+        val sendFlow = Flow[Unit].map { _ =>
+          val envelope = pool.acquire()
+          envelope.byteBuffer.put(payload)
+          envelope.byteBuffer.flip()
+          envelope
+        }
 
-        val queueValue = Source.fromGraph(new SendQueue[Unit](sendToDeadLetters))
+        val queueValue = Source
+          .fromGraph(new SendQueue[Unit](sendToDeadLetters))
           .via(sendFlow)
           .to(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
           .run()
@@ -318,8 +304,10 @@ abstract class AeronStreamLatencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+        Source
+          .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+          .runWith(
+            new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
       }
       enterBarrier("echo-started")
     }

@@ -39,9 +39,11 @@ class ClusterConsistentHashingGroupMultiJvmNode1 extends ClusterConsistentHashin
 class ClusterConsistentHashingGroupMultiJvmNode2 extends ClusterConsistentHashingGroupSpec
 class ClusterConsistentHashingGroupMultiJvmNode3 extends ClusterConsistentHashingGroupSpec
 
-abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with DefaultTimeout {
+abstract class ClusterConsistentHashingGroupSpec
+    extends MultiNodeSpec(ClusterConsistentHashingGroupMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with DefaultTimeout {
   import ClusterConsistentHashingGroupMultiJvmSpec._
 
   /**

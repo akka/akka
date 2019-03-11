@@ -70,9 +70,9 @@ import akka.actor.Terminated
       recoveryPermitGranted(ref)
     }
     if (pending.isEmpty && maxPendingStats > 0) {
-      log.debug(
-        "Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
-        usedPermits + maxPendingStats, usedPermits)
+      log.debug("Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
+                usedPermits + maxPendingStats,
+                usedPermits)
       maxPendingStats = 0
     }
   }

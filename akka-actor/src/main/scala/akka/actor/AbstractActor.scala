@@ -29,6 +29,7 @@ object AbstractActor {
    * extending `AbstractPartialFunction`.
    */
   final class Receive(val onMessage: PartialFunction[Any, BoxedUnit]) {
+
     /**
      * Composes this `Receive` with a fallback which gets applied
      * where this partial function is not defined.

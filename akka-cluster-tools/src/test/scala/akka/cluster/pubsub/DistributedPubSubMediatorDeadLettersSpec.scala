@@ -30,8 +30,8 @@ trait DeadLettersProbe { this: TestKitBase =>
 }
 
 class DistributedPubSubMediatorSendingToDeadLettersSpec
-  extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = true))
-  with DeadLettersProbe {
+    extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = true))
+    with DeadLettersProbe {
 
   val mediator = DistributedPubSub(system).mediator
   val msg = "hello"
@@ -78,8 +78,8 @@ class DistributedPubSubMediatorSendingToDeadLettersSpec
 }
 
 class DistributedPubSubMediatorNotSendingToDeadLettersSpec
-  extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = false))
-  with DeadLettersProbe {
+    extends AkkaSpec(DistributedPubSubMediatorDeadLettersSpec.config(sendToDeadLettersWhenNoSubscribers = false))
+    with DeadLettersProbe {
 
   val mediator = DistributedPubSub(system).mediator
   val msg = "hello"

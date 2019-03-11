@@ -18,13 +18,13 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class GraphZipLatestSpec
-  extends TestKit(ActorSystem("ZipLatestSpec"))
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with PropertyChecks
-  with GivenWhenThen
-  with ScalaFutures {
+    extends TestKit(ActorSystem("ZipLatestSpec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with PropertyChecks
+    with GivenWhenThen
+    with ScalaFutures {
   implicit val materializer = ActorMaterializer()
   override def afterAll = TestKit.shutdownActorSystem(system)
   implicit val patience = PatienceConfig(5 seconds)
@@ -312,20 +312,15 @@ class GraphZipLatestSpec
 
   private def testGraph[A, B] =
     RunnableGraph
-      .fromGraph(
-        GraphDSL
-          .create(
-            TestSink.probe[(A, B)],
-            TestSource.probe[A],
-            TestSource.probe[B])(Tuple3.apply) { implicit b => (ts, as, bs) =>
-              import GraphDSL.Implicits._
-              val zipLatest = b.add(new ZipLatest[A, B]())
-              as ~> zipLatest.in0
-              bs ~> zipLatest.in1
-              zipLatest.out ~> ts
-              ClosedShape
-            }
-      )
+      .fromGraph(GraphDSL.create(TestSink.probe[(A, B)], TestSource.probe[A], TestSource.probe[B])(Tuple3.apply) {
+        implicit b => (ts, as, bs) =>
+          import GraphDSL.Implicits._
+          val zipLatest = b.add(new ZipLatest[A, B]())
+          as ~> zipLatest.in0
+          bs ~> zipLatest.in1
+          zipLatest.out ~> ts
+          ClosedShape
+      })
       .run()
 
 }

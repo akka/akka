@@ -7,7 +7,7 @@ package internal
 
 import akka.actor.typed.ActorRef.ActorRefOps
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout, typed }
+import akka.actor.{ typed, Cancellable, NotInfluenceReceiveTimeout }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
@@ -43,11 +43,12 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
-  extends scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+    extends scaladsl.TimerScheduler[T]
+    with javadsl.TimerScheduler[T] {
   import TimerSchedulerImpl._
 
   private var timers: Map[Any, Timer[T]] = Map.empty
-  private val timerGen = Iterator from 1
+  private val timerGen = Iterator.from(1)
 
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, repeat = true)
@@ -131,9 +132,10 @@ import scala.concurrent.duration.FiniteDuration
           OptionVal.Some(t.msg)
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          log.debug(
-            "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
-            timerMsg.key, timerMsg.generation, t.generation)
+          log.debug("Received timer [{}] from old generation [{}], expected generation [{}], discarding",
+                    timerMsg.key,
+                    timerMsg.generation,
+                    t.generation)
           OptionVal.none // message should be ignored
         }
     }

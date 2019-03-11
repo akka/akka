@@ -13,8 +13,7 @@ import akka.serialization.Serializer
 import docs.ddata.TwoPhaseSet
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages
 
-class TwoPhaseSetSerializer2(val system: ExtendedActorSystem)
-  extends Serializer with SerializationSupport {
+class TwoPhaseSetSerializer2(val system: ExtendedActorSystem) extends Serializer with SerializationSupport {
 
   override def includeManifest: Boolean = false
 
@@ -24,8 +23,7 @@ class TwoPhaseSetSerializer2(val system: ExtendedActorSystem)
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: TwoPhaseSet => twoPhaseSetToProto(m).toByteArray
-    case _ => throw new IllegalArgumentException(
-      s"Can't serialize object of type ${obj.getClass}")
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {

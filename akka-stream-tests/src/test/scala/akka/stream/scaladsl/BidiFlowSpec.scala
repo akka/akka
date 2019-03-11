@@ -19,13 +19,11 @@ class BidiFlowSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  val bidi = BidiFlow.fromFlows(
-    Flow[Int].map(x => x.toLong + 2).withAttributes(name("top")),
-    Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
+  val bidi = BidiFlow.fromFlows(Flow[Int].map(x => x.toLong + 2).withAttributes(name("top")),
+                                Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
 
-  val inverse = BidiFlow.fromFlows(
-    Flow[Long].map(x => x.toInt + 2).withAttributes(name("top")),
-    Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
+  val inverse = BidiFlow.fromFlows(Flow[Long].map(x => x.toInt + 2).withAttributes(name("top")),
+                                   Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
   val bidiMat = BidiFlow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b => s =>
     Source.single(42) ~> s
@@ -41,13 +39,15 @@ class BidiFlowSpec extends StreamSpec {
   "A BidiFlow" must {
 
     "work top/bottom in isolation" in {
-      val (top, bottom) = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b => (st, sb) =>
-        val s = b.add(bidi)
+      val (top, bottom) = RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.head[Long], Sink.head[String])(Keep.both) { implicit b => (st, sb) =>
+          val s = b.add(bidi)
 
-        Source.single(1) ~> s.in1; s.out1 ~> st
-        sb <~ s.out2; s.in2 <~ Source.single(bytes)
-        ClosedShape
-      }).run()
+          Source.single(1) ~> s.in1; s.out1 ~> st
+          sb <~ s.out2; s.in2 <~ Source.single(bytes)
+          ClosedShape
+        })
+        .run()
 
       Await.result(top, 1.second) should ===(3L)
       Await.result(bottom, 1.second) should ===(str)
@@ -79,10 +79,12 @@ class BidiFlowSpec extends StreamSpec {
     }
 
     "materialize to its value" in {
-      val f = RunnableGraph.fromGraph(GraphDSL.create(bidiMat) { implicit b => bidi =>
-        Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x => ByteString(s"Hello $x"))
-        ClosedShape
-      }).run()
+      val f = RunnableGraph
+        .fromGraph(GraphDSL.create(bidiMat) { implicit b => bidi =>
+          Flow[String].map(Integer.valueOf(_).toInt) <~> bidi <~> Flow[Long].map(x => ByteString(s"Hello $x"))
+          ClosedShape
+        })
+        .run()
       Await.result(f, 1.second) should ===(42)
     }
 

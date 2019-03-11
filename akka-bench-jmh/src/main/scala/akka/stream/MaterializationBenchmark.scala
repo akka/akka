@@ -83,10 +83,7 @@ object MaterializationBenchmark {
       flow
     }
 
-    Source.repeat(Source.single(()))
-      .take(subStreamCount)
-      .flatMapConcat(_.via(subFlow))
-      .toMat(Sink.last)(Keep.right)
+    Source.repeat(Source.single(())).take(subStreamCount).flatMapConcat(_.via(subFlow)).toMat(Sink.last)(Keep.right)
   }
 }
 

@@ -38,25 +38,30 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
         return
     }
 
-    val containerConfig = ContainerConfig.builder()
+    val containerConfig = ContainerConfig
+      .builder()
       .image(image)
       .env("NO_CHOWN=true")
       .cmd("-4") // only listen on ipv4
       .hostConfig(
-        HostConfig.builder()
-          .portBindings(Map(
-            "53/tcp" -> List(PortBinding.of("", hostPort)).asJava,
-            "53/udp" -> List(PortBinding.of("", hostPort)).asJava
-          ).asJava)
-          .binds(HostConfig.Bind.from(new java.io.File("akka-actor-tests/src/test/bind/").getAbsolutePath).to("/data/bind").build())
-          .build()
-      )
+        HostConfig
+          .builder()
+          .portBindings(Map("53/tcp" -> List(PortBinding.of("", hostPort)).asJava,
+                            "53/udp" -> List(PortBinding.of("", hostPort)).asJava).asJava)
+          .binds(HostConfig.Bind
+            .from(new java.io.File("akka-actor-tests/src/test/bind/").getAbsolutePath)
+            .to("/data/bind")
+            .build())
+          .build())
       .build()
 
     val containerName = "akka-test-dns-" + getClass.getCanonicalName
 
-    client.listContainers(ListContainersParam.allContainers()).asScala
-      .find(_.names().asScala.exists(_.contains(containerName))).foreach(c => {
+    client
+      .listContainers(ListContainersParam.allContainers())
+      .asScala
+      .find(_.names().asScala.exists(_.contains(containerName)))
+      .foreach(c => {
         if ("running" == c.state()) {
           client.killContainer(c.id)
         }

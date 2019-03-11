@@ -52,8 +52,7 @@ private[akka] class ConfigServiceDiscovery(system: ExtendedActorSystem) extends 
   private val log = Logging(system, getClass)
 
   private val resolvedServices = ConfigServicesParser.parse(
-    system.settings.config.getConfig(system.settings.config.getString("akka.discovery.config.services-path"))
-  )
+    system.settings.config.getConfig(system.settings.config.getString("akka.discovery.config.services-path")))
 
   log.debug("Config discovery serving: {}", resolvedServices)
 

@@ -42,7 +42,7 @@ private[remote] object SendQueue {
  * INTERNAL API
  */
 private[remote] final class SendQueue[T](postStopAction: Vector[T] => Unit)
-  extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
+    extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
   import SendQueue._
 
   val out: Outlet[T] = Outlet("SendQueue.out")

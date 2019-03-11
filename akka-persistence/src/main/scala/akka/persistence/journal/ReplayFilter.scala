@@ -19,12 +19,11 @@ import scala.collection.mutable.LinkedHashSet
  * sequenceNr in the replayed events to find events emitted by overlapping writers.
  */
 private[akka] object ReplayFilter {
-  def props(
-    persistentActor: ActorRef,
-    mode:            Mode,
-    windowSize:      Int,
-    maxOldWriters:   Int,
-    debugEnabled:    Boolean): Props = {
+  def props(persistentActor: ActorRef,
+            mode: Mode,
+            windowSize: Int,
+            maxOldWriters: Int,
+            debugEnabled: Boolean): Props = {
     require(windowSize > 0, "windowSize must be > 0")
     require(maxOldWriters > 0, "maxOldWriters must be > 0")
     require(mode != Disabled, "mode must not be Disabled")
@@ -32,11 +31,8 @@ private[akka] object ReplayFilter {
   }
 
   // for binary compatibility
-  def props(
-    persistentActor: ActorRef,
-    mode:            Mode,
-    windowSize:      Int,
-    maxOldWriters:   Int): Props = props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+  def props(persistentActor: ActorRef, mode: Mode, windowSize: Int, maxOldWriters: Int): Props =
+    props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   sealed trait Mode
   case object Fail extends Mode
@@ -48,15 +44,19 @@ private[akka] object ReplayFilter {
 /**
  * INTERNAL API
  */
-private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-                                 windowSize: Int, maxOldWriters: Int, debugEnabled: Boolean)
-  extends Actor with ActorLogging {
+private[akka] class ReplayFilter(persistentActor: ActorRef,
+                                 mode: ReplayFilter.Mode,
+                                 windowSize: Int,
+                                 maxOldWriters: Int,
+                                 debugEnabled: Boolean)
+    extends Actor
+    with ActorLogging {
   import JournalProtocol._
-  import ReplayFilter.{ Warn, Fail, RepairByDiscardOld, Disabled }
+  import ReplayFilter.{ Disabled, Fail, RepairByDiscardOld, Warn }
 
   // for binary compatibility
-  def this(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-           windowSize: Int, maxOldWriters: Int) = this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+  def this(persistentActor: ActorRef, mode: ReplayFilter.Mode, windowSize: Int, maxOldWriters: Int) =
+    this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   val buffer = new LinkedList[ReplayedMessage]()
   val oldWriters = LinkedHashSet.empty[String]
@@ -151,8 +151,7 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
 
   def sendBuffered(): Unit = {
     val iter = buffer.iterator()
-    while (iter.hasNext())
-      persistentActor.tell(iter.next(), Actor.noSender)
+    while (iter.hasNext()) persistentActor.tell(iter.next(), Actor.noSender)
     buffer.clear()
   }
 

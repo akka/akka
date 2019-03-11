@@ -23,9 +23,7 @@ import akka.testkit.AkkaSpec
 class SettingsImpl(config: Config) extends Extension {
   val DbUri: String = config.getString("myapp.db.uri")
   val CircuitBreakerTimeout: Duration =
-    Duration(
-      config.getMilliseconds("myapp.circuit-breaker.timeout"),
-      TimeUnit.MILLISECONDS)
+    Duration(config.getMilliseconds("myapp.circuit-breaker.timeout"), TimeUnit.MILLISECONDS)
 }
 //#extension
 

@@ -11,7 +11,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
 import scala.concurrent.Await
 import akka.actor.SupervisorStrategy.Stop
-import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpecLike }
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.util.Timeout
@@ -22,7 +22,12 @@ import akka.actor.Status.Failure
 /**
  * Tests the features of the Camel Producer.
  */
-class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", AkkaSpec.testConf)) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfterEach with Matchers {
+class ProducerFeatureTest
+    extends TestKit(ActorSystem("ProducerFeatureTest", AkkaSpec.testConf))
+    with WordSpecLike
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with Matchers {
 
   import ProducerFeatureTest._
   implicit def camel = CamelExtension(system)
@@ -44,7 +49,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
   "A Producer on a sync Camel route" must {
 
     "01 produce a message and receive normal response" in {
-      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-2", true)), name = "01-direct-producer-2")
+      val producer =
+        system.actorOf(Props(new TestProducer("direct:producer-test-2", true)), name = "01-direct-producer-2")
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       producer.tell(message, testActor)
       expectMsg(CamelMessage("received TEST", Map(CamelMessage.MessageExchangeId -> "123")))
@@ -53,22 +59,24 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
     "02 produce a message and receive failure response" in {
       val latch = TestLatch()
       var deadActor: Option[ActorRef] = None
-      val supervisor = system.actorOf(Props(new Actor {
-        def receive = {
-          case p: Props => {
-            val producer = context.actorOf(p)
-            context.watch(producer)
-            sender() ! producer
+      val supervisor = system.actorOf(
+        Props(new Actor {
+          def receive = {
+            case p: Props => {
+              val producer = context.actorOf(p)
+              context.watch(producer)
+              sender() ! producer
+            }
+            case Terminated(actorRef) => {
+              deadActor = Some(actorRef)
+              latch.countDown()
+            }
           }
-          case Terminated(actorRef) => {
-            deadActor = Some(actorRef)
-            latch.countDown()
+          override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+            case _: AkkaCamelException => Stop
           }
-        }
-        override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-          case _: AkkaCamelException => Stop
-        }
-      }), name = "02-prod-anonymous-supervisor")
+        }),
+        name = "02-prod-anonymous-supervisor")
 
       supervisor.tell(Props(new TestProducer("direct:producer-test-2")), testActor)
       val producer = receiveOne(timeoutDuration).asInstanceOf[ActorRef]
@@ -86,7 +94,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
     }
 
     "03 produce a message oneway" in {
-      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1", true) with Oneway), name = "03-direct-producer-1-oneway")
+      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1", true) with Oneway),
+                                    name = "03-direct-producer-1-oneway")
       mockEndpoint.expectedBodiesReceived("TEST")
       producer ! CamelMessage("test", Map())
       mockEndpoint.assertIsSatisfied()
@@ -95,7 +104,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
     "04 produces message twoway without sender reference" in {
       // this test causes a dead letter which can be ignored. The producer is two-way but a oneway tell is used
       // to communicate with it and the response is ignored, which ends up in a dead letter
-      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1")), name = "04-ignore-this-deadletter-direct-producer-test-no-sender")
+      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-1")),
+                                    name = "04-ignore-this-deadletter-direct-producer-test-no-sender")
       mockEndpoint.expectedBodiesReceived("test")
       producer ! CamelMessage("test", Map())
       mockEndpoint.assertIsSatisfied()
@@ -105,14 +115,16 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
   "A Producer on an async Camel route" must {
 
     "10 produce message to direct:producer-test-3 and receive normal response" in {
-      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")), name = "10-direct-producer-test-3")
+      val producer =
+        system.actorOf(Props(new TestProducer("direct:producer-test-3")), name = "10-direct-producer-test-3")
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       producer.tell(message, testActor)
       expectMsg(CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123")))
     }
 
     "11 produce message to direct:producer-test-3 and receive failure response" in {
-      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")), name = "11-direct-producer-test-3-receive-failure")
+      val producer = system.actorOf(Props(new TestProducer("direct:producer-test-3")),
+                                    name = "11-direct-producer-test-3-receive-failure")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
 
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
@@ -127,7 +139,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "12 produce message, forward normal response of direct:producer-test-2 to a replying target actor and receive response" in {
       val target = system.actorOf(Props[ReplyingForwardTarget], name = "12-reply-forwarding-target")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)), name = "12-direct-producer-test-2-forwarder")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)),
+                                    name = "12-direct-producer-test-2-forwarder")
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       producer.tell(message, testActor)
       expectMsg(CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123", "test" -> "result")))
@@ -135,7 +148,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "13 produce message, forward failure response of direct:producer-test-2 to a replying target actor and receive response" in {
       val target = system.actorOf(Props[ReplyingForwardTarget], name = "13-reply-forwarding-target")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)), name = "13-direct-producer-test-2-forwarder-failure")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)),
+                                    name = "13-direct-producer-test-2-forwarder-failure")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
 
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
@@ -150,7 +164,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "14 produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1" in {
       val target = system.actorOf(Props[ProducingForwardTarget], name = "14-producer-forwarding-target")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)), name = "14-direct-producer-test-2-forwarder-to-producing-target")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)),
+                                    name = "14-direct-producer-test-2-forwarder-to-producing-target")
       mockEndpoint.expectedBodiesReceived("received test")
       producer.tell(CamelMessage("test", Map()), producer)
       mockEndpoint.assertIsSatisfied()
@@ -158,7 +173,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "15 produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1" in {
       val target = system.actorOf(Props[ProducingForwardTarget], name = "15-producer-forwarding-target-failure")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)), name = "15-direct-producer-test-2-forward-failure")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-2", target)),
+                                    name = "15-direct-producer-test-2-forward-failure")
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
         mockEndpoint.expectedMessageCount(1)
         mockEndpoint.message(0).body().isInstanceOf(classOf[akka.actor.Status.Failure])
@@ -169,7 +185,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "16 produce message, forward normal response from direct:producer-test-3 to a replying target actor and receive response" in {
       val target = system.actorOf(Props[ReplyingForwardTarget], name = "16-reply-forwarding-target")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)), name = "16-direct-producer-test-3-to-replying-actor")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)),
+                                    name = "16-direct-producer-test-3-to-replying-actor")
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
 
       producer.tell(message, testActor)
@@ -178,7 +195,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "17 produce message, forward failure response from direct:producer-test-3 to a replying target actor and receive response" in {
       val target = system.actorOf(Props[ReplyingForwardTarget], name = "17-reply-forwarding-target")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)), name = "17-direct-producer-test-3-forward-failure")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)),
+                                    name = "17-direct-producer-test-3-forward-failure")
 
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
@@ -193,7 +211,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "18 produce message, forward normal response from direct:producer-test-3 to a producing target actor and produce response to direct:forward-test-1" in {
       val target = system.actorOf(Props[ProducingForwardTarget], "18-producing-forward-target-normal")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)), name = "18-direct-producer-test-3-forward-normal")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)),
+                                    name = "18-direct-producer-test-3-forward-normal")
       mockEndpoint.expectedBodiesReceived("received test")
       producer.tell(CamelMessage("test", Map()), producer)
       mockEndpoint.assertIsSatisfied()
@@ -201,7 +220,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "19 produce message, forward failure response from direct:producer-test-3 to a producing target actor and produce response to direct:forward-test-1" in {
       val target = system.actorOf(Props[ProducingForwardTarget], "19-producing-forward-target-failure")
-      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)), name = "19-direct-producer-test-3-forward-failure-producing-target")
+      val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)),
+                                    name = "19-direct-producer-test-3-forward-failure-producing-target")
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
         mockEndpoint.expectedMessageCount(1)
         mockEndpoint.message(0).body().isInstanceOf(classOf[akka.actor.Status.Failure])
@@ -212,7 +232,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
 
     "20 keep producing messages after error" in {
       import TestSupport._
-      val consumer = start(new IntermittentErrorConsumer("direct:intermittentTest-1"), "20-intermittentTest-error-consumer")
+      val consumer =
+        start(new IntermittentErrorConsumer("direct:intermittentTest-1"), "20-intermittentTest-error-consumer")
       val producer = start(new SimpleProducer("direct:intermittentTest-1"), "20-intermittentTest-producer")
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
         val futureFailed = producer.tell("fail", testActor)
@@ -230,7 +251,9 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
     "21 be able to transform outgoing messages and have a valid sender reference" in {
       import TestSupport._
       filterEvents(EventFilter[Exception](occurrences = 1)) {
-        val producerSupervisor = system.actorOf(Props(new ProducerSupervisor(Props(new ChildProducer("mock:mock", true)))), "21-ignore-deadletter-sender-ref-test")
+        val producerSupervisor =
+          system.actorOf(Props(new ProducerSupervisor(Props(new ChildProducer("mock:mock", true)))),
+                         "21-ignore-deadletter-sender-ref-test")
         mockEndpoint.reset()
         producerSupervisor.tell(CamelMessage("test", Map()), testActor)
         producerSupervisor.tell(CamelMessage("err", Map()), testActor)
@@ -255,7 +278,7 @@ object ProducerFeatureTest {
     Await.ready(CamelExtension(context.system).activationFutureFor(child), timeout.duration)
     def receive = {
       case msg: CamelMessage =>
-        child forward (msg)
+        child.forward(msg)
       case (aref: ActorRef, msg: String) =>
         aref ! msg
     }
@@ -269,14 +292,13 @@ object ProducerFeatureTest {
     def endpointUri = uri
 
     override def transformOutgoingMessage(msg: Any) = msg match {
-      case msg: CamelMessage => if (upper) msg.mapBody {
-        body: String =>
+      case msg: CamelMessage =>
+        if (upper) msg.mapBody { body: String =>
           if (body == "err") throw new Exception("Crash!")
           val upperMsg = body.toUpperCase
           lastSender = Some(sender())
           lastMessage = Some(upperMsg)
-      }
-      else msg
+        } else msg
     }
 
     override def postStop(): Unit = {
@@ -294,10 +316,10 @@ object ProducerFeatureTest {
     }
 
     override protected def transformOutgoingMessage(msg: Any) = msg match {
-      case msg: CamelMessage => if (upper) msg.mapBody {
-        body: String => body.toUpperCase
-      }
-      else msg
+      case msg: CamelMessage =>
+        if (upper) msg.mapBody { body: String =>
+          body.toUpperCase
+        } else msg
     }
   }
 
@@ -306,18 +328,20 @@ object ProducerFeatureTest {
 
     override def headersToCopy = Set(CamelMessage.MessageExchangeId, "test")
 
-    override def routeResponse(msg: Any): Unit = target forward msg
+    override def routeResponse(msg: Any): Unit = target.forward(msg)
   }
 
   class TestResponder extends Actor {
     def receive = {
-      case msg: CamelMessage => msg.body match {
-        case "fail" => context.sender() ! akka.actor.Status.Failure(new AkkaCamelException(new Exception("failure"), msg.headers))
-        case _ =>
-          context.sender() ! (msg.mapBody {
-            body: String => "received %s" format body
-          })
-      }
+      case msg: CamelMessage =>
+        msg.body match {
+          case "fail" =>
+            context.sender() ! akka.actor.Status.Failure(new AkkaCamelException(new Exception("failure"), msg.headers))
+          case _ =>
+            context.sender() ! (msg.mapBody { body: String =>
+              "received %s".format(body)
+            })
+        }
     }
   }
 
@@ -327,7 +351,8 @@ object ProducerFeatureTest {
         context.sender() ! (msg.copy(headers = msg.headers + ("test" -> "result")))
       case msg: akka.actor.Status.Failure =>
         msg.cause match {
-          case e: AkkaCamelException => context.sender() ! Status.Failure(new AkkaCamelException(e, e.headers + ("test" -> "failure")))
+          case e: AkkaCamelException =>
+            context.sender() ! Status.Failure(new AkkaCamelException(e, e.headers + ("test" -> "failure")))
         }
     }
   }
@@ -350,7 +375,7 @@ object ProducerFeatureTest {
         def process(exchange: Exchange) = {
           exchange.getIn.getBody match {
             case "fail" => throw new Exception("failure")
-            case body   => exchange.getOut.setBody("received %s" format body)
+            case body   => exchange.getOut.setBody("received %s".format(body))
           }
         }
       })

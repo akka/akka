@@ -13,7 +13,9 @@ import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 @InternalApi
-class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+class MiscMessageSerializer(val system: akka.actor.ExtendedActorSystem)
+    extends SerializerWithStringManifest
+    with BaseSerializer {
 
   // Serializers are initialized early on. `toTyped` might then try to initialize the untyped ActorSystemAdapter extension.
   private lazy val resolver = ActorRefResolver(system.toTyped)

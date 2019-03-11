@@ -39,7 +39,7 @@ class Server extends Actor {
       context.parent ! b
     //#do-some-logging-or-setup
 
-    case CommandFailed(_: Bind) => context stop self
+    case CommandFailed(_: Bind) => context.stop(self)
 
     case c @ Connected(remote, local) =>
       //#server
@@ -58,7 +58,7 @@ class SimplisticHandler extends Actor {
   import Tcp._
   def receive = {
     case Received(data) => sender() ! Write(data)
-    case PeerClosed     => context stop self
+    case PeerClosed     => context.stop(self)
   }
 }
 //#simplistic-handler
@@ -79,13 +79,13 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
   def receive = {
     case CommandFailed(_: Connect) =>
       listener ! "connect failed"
-      context stop self
+      context.stop(self)
 
     case c @ Connected(remote, local) =>
       listener ! c
       val connection = sender()
       connection ! Register(self)
-      context become {
+      context.become {
         case data: ByteString =>
           connection ! Write(data)
         case CommandFailed(w: Write) =>
@@ -97,7 +97,7 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
           connection ! Close
         case _: ConnectionClosed =>
           listener ! "connection closed"
-          context stop self
+          context.stop(self)
       }
   }
 }
@@ -108,7 +108,7 @@ class IODocSpec extends AkkaSpec {
   class Parent extends Actor {
     context.actorOf(Props[Server], "server")
     def receive = {
-      case msg => testActor forward msg
+      case msg => testActor.forward(msg)
     }
   }
 

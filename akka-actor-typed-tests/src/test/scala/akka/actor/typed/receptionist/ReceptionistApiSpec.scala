@@ -83,4 +83,3 @@ object ReceptionistApiSpec {
   }
 
 }
-

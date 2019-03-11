@@ -14,23 +14,22 @@ class PiercingShouldKeepQuarantineConfig(artery: Boolean) extends MultiNodeConfi
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.retry-gate-closed-for = 0.5s
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
-class PiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec(
-  new PiercingShouldKeepQuarantineConfig(artery = false))
-class PiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec(
-  new PiercingShouldKeepQuarantineConfig(artery = false))
+class PiercingShouldKeepQuarantineSpecMultiJvmNode1
+    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = false))
+class PiercingShouldKeepQuarantineSpecMultiJvmNode2
+    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = false))
 
-class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode1 extends PiercingShouldKeepQuarantineSpec(
-  new PiercingShouldKeepQuarantineConfig(artery = true))
-class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShouldKeepQuarantineSpec(
-  new PiercingShouldKeepQuarantineConfig(artery = true))
+class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode1
+    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = true))
+class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2
+    extends PiercingShouldKeepQuarantineSpec(new PiercingShouldKeepQuarantineConfig(artery = true))
 
 object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
@@ -41,7 +40,7 @@ object PiercingShouldKeepQuarantineSpec {
 }
 
 abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldKeepQuarantineConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import PiercingShouldKeepQuarantineSpec._
 

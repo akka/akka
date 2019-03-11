@@ -38,16 +38,15 @@ class ImmutableLongMapSpec extends WordSpec with Matchers {
 
       val m5 = m4.updated(15L, "15")
       m5.keysIterator.toList should be(List(5L, 10L, 15L, 20L))
-      m5.keysIterator.map(m5.get).toList should be(List(OptionVal("5"), OptionVal("10"), OptionVal("15"),
-        OptionVal("20")))
+      m5.keysIterator.map(m5.get).toList should be(
+        List(OptionVal("5"), OptionVal("10"), OptionVal("15"), OptionVal("20")))
     }
 
     "replace entries" in {
       val m1 = ImmutableLongMap.empty[String].updated(10L, "10a").updated(10, "10b")
       m1.keysIterator.map(m1.get).toList should be(List(OptionVal("10b")))
 
-      val m2 = m1.updated(20L, "20a").updated(30L, "30a")
-        .updated(20L, "20b").updated(30L, "30b")
+      val m2 = m1.updated(20L, "20a").updated(30L, "30a").updated(20L, "20b").updated(30L, "30b")
       m2.keysIterator.map(m2.get).toList should be(List(OptionVal("10b"), OptionVal("20b"), OptionVal("30b")))
     }
 
@@ -68,13 +67,29 @@ class ImmutableLongMapSpec extends WordSpec with Matchers {
       ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20").updated(30, "30").hashCode should be(
         ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20").updated(30, "30").hashCode)
 
-      ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20") should not be (ImmutableLongMap.empty[String].updated(10L, "10"))
+      ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20") should not be (ImmutableLongMap
+        .empty[String]
+        .updated(10L, "10"))
 
-      ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20").updated(30, "30") should not be (
-        ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20b").updated(30, "30"))
+      ImmutableLongMap
+        .empty[String]
+        .updated(10L, "10")
+        .updated(20, "20")
+        .updated(30, "30") should not be (ImmutableLongMap
+        .empty[String]
+        .updated(10L, "10")
+        .updated(20, "20b")
+        .updated(30, "30"))
 
-      ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20").updated(30, "30") should not be (
-        ImmutableLongMap.empty[String].updated(10L, "10").updated(20, "20b").updated(31, "30"))
+      ImmutableLongMap
+        .empty[String]
+        .updated(10L, "10")
+        .updated(20, "20")
+        .updated(30, "30") should not be (ImmutableLongMap
+        .empty[String]
+        .updated(10L, "10")
+        .updated(20, "20b")
+        .updated(31, "30"))
 
       ImmutableLongMap.empty[String] should be(ImmutableLongMap.empty[String])
       ImmutableLongMap.empty[String].hashCode should be(ImmutableLongMap.empty[String].hashCode)

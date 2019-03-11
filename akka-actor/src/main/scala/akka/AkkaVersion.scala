@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 final class UnsupportedAkkaVersion private[akka] (msg: String) extends RuntimeException(msg)
 
 object AkkaVersion {
+
   /**
    * Check that the version of Akka is a specific patch version or higher and throw an [[UnsupportedAkkaVersion]]
    * exception if the version requirement is not fulfilled.
@@ -38,9 +39,10 @@ object AkkaVersion {
               if (mOrRc ne null) currentPatchStr.toInt - 1
               else currentPatchStr.toInt
             if (requiredMajorStr.toInt != currentMajorStr.toInt ||
-              requiredMinorStr.toInt > currentMinorStr.toInt ||
-              (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
-              throw new UnsupportedAkkaVersion(s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
+                requiredMinorStr.toInt > currentMinorStr.toInt ||
+                (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
+              throw new UnsupportedAkkaVersion(
+                s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
           case _ => throw new IllegalArgumentException(s"Required version string is invalid: [$requiredVersion]")
         }
 

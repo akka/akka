@@ -30,12 +30,11 @@ object StashingExample {
     final case class State(taskIdInProgress: Option[String])
 
     def apply(persistenceId: PersistenceId): Behavior[Command] =
-      EventSourcedBehavior[Command, Event, State](
-        persistenceId = persistenceId,
-        emptyState = State(None),
-        commandHandler = (state, command) => onCommand(state, command),
-        eventHandler = (state, event) => applyEvent(state, event)
-      ).onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
+      EventSourcedBehavior[Command, Event, State](persistenceId = persistenceId,
+                                                  emptyState = State(None),
+                                                  commandHandler = (state, command) => onCommand(state, command),
+                                                  eventHandler = (state, event) => applyEvent(state, event))
+        .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
 
     private def onCommand(state: State, command: Command): Effect[Event, State] = {
       state.taskIdInProgress match {
@@ -65,8 +64,7 @@ object StashingExample {
 
             case EndTask(taskId) =>
               if (inProgress == taskId)
-                Effect.persist(TaskCompleted(taskId))
-                  .thenUnstashAll() // continue with next task
+                Effect.persist(TaskCompleted(taskId)).thenUnstashAll() // continue with next task
               else
                 // other task in progress, wait with new task until later
                 Effect.stash()

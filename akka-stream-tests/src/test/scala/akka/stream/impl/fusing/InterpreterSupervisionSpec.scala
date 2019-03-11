@@ -52,10 +52,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "resume when Map throws" in new OneBoundedSetupWithDecider[Int](
-      Supervision.resumingDecider,
-      Map((x: Int) => if (x == 0) throw TE else x)
-    ) {
+    "resume when Map throws" in new OneBoundedSetupWithDecider[Int](Supervision.resumingDecider,
+                                                                    Map((x: Int) => if (x == 0) throw TE else x)) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
@@ -83,8 +81,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       Supervision.resumingDecider,
       Map((x: Int) => x + 1),
       Map((x: Int) => if (x == 0) throw TE else x + 10),
-      Map((x: Int) => x + 100)
-    ) {
+      Map((x: Int) => x + 100)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -142,8 +139,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnNext(Vector(13, 14)), OnComplete))
     }
 
-    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](
-      new Expand((in: Int) => if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
+    "fail when Expand `seed` throws" in new OneBoundedSetup[Int](new Expand((in: Int) =>
+      if (in == 2) throw TE else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -163,8 +160,8 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(OnError(TE), Cancel))
     }
 
-    "fail when Expand `expander` throws" in new OneBoundedSetup[Int](
-      new Expand((in: Int) => if (in == 2) Iterator.continually(throw TE) else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
+    "fail when Expand `expander` throws" in new OneBoundedSetup[Int](new Expand((in: Int) =>
+      if (in == 2) Iterator.continually(throw TE) else Iterator(in) ++ Iterator.continually(-math.abs(in)))) {
 
       lastEvents() should be(Set(RequestOne))
 

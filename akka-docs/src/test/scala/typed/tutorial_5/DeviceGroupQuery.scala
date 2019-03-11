@@ -26,12 +26,10 @@ import typed.tutorial_5.DeviceManager.TemperatureReading
 //#query-outline
 object DeviceGroupQuery {
 
-  def apply(
-    deviceIdToActor: Map[String, ActorRef[Device.DeviceMessage]],
-    requestId:       Long,
-    requester:       ActorRef[RespondAllTemperatures],
-    timeout:         FiniteDuration
-  ): Behavior[DeviceGroupQueryMessage] = {
+  def apply(deviceIdToActor: Map[String, ActorRef[Device.DeviceMessage]],
+            requestId: Long,
+            requester: ActorRef[RespondAllTemperatures],
+            timeout: FiniteDuration): Behavior[DeviceGroupQueryMessage] = {
     Behaviors.setup { context =>
       Behaviors.withTimers { timers =>
         new DeviceGroupQuery(deviceIdToActor, requestId, requester, timeout, context, timers)
@@ -48,14 +46,13 @@ object DeviceGroupQuery {
   private final case class DeviceTerminated(deviceId: String) extends DeviceGroupQueryMessage
 }
 
-class DeviceGroupQuery(
-  deviceIdToActor: Map[String, ActorRef[DeviceMessage]],
-  requestId:       Long,
-  requester:       ActorRef[RespondAllTemperatures],
-  timeout:         FiniteDuration,
-  context:         ActorContext[DeviceGroupQuery.DeviceGroupQueryMessage],
-  timers:          TimerScheduler[DeviceGroupQuery.DeviceGroupQueryMessage])
-  extends AbstractBehavior[DeviceGroupQuery.DeviceGroupQueryMessage] {
+class DeviceGroupQuery(deviceIdToActor: Map[String, ActorRef[DeviceMessage]],
+                       requestId: Long,
+                       requester: ActorRef[RespondAllTemperatures],
+                       timeout: FiniteDuration,
+                       context: ActorContext[DeviceGroupQuery.DeviceGroupQueryMessage],
+                       timers: TimerScheduler[DeviceGroupQuery.DeviceGroupQueryMessage])
+    extends AbstractBehavior[DeviceGroupQuery.DeviceGroupQueryMessage] {
 
   import DeviceGroupQuery._
   timers.startSingleTimer(CollectionTimeout, CollectionTimeout, timeout)

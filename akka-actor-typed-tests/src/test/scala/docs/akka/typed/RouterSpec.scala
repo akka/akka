@@ -48,8 +48,7 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       spawn(Behaviors.setup[Unit] { ctx =>
         // #pool
         // make sure the workers are restarted if they fail
-        val supervisedWorker = Behaviors.supervise(Worker.behavior)
-          .onFailure[Exception](SupervisorStrategy.restart)
+        val supervisedWorker = Behaviors.supervise(Worker.behavior).onFailure[Exception](SupervisorStrategy.restart)
         val pool = Routers.pool(poolSize = 4)(supervisedWorker)
         val router = ctx.spawn(pool, "worker-pool")
 

@@ -10,7 +10,8 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ExposedPublisherReceive(activeReceive: Actor.Receive, unhandled: Any => Unit) extends Actor.Receive {
+@InternalApi private[akka] abstract class ExposedPublisherReceive(activeReceive: Actor.Receive, unhandled: Any => Unit)
+    extends Actor.Receive {
   private var stash = List.empty[Any]
 
   def isDefinedAt(o: Any): Boolean = true

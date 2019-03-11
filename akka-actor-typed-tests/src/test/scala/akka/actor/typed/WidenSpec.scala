@@ -16,20 +16,21 @@ import org.scalatest.WordSpecLike
 
 import scala.concurrent.duration._
 
-class WidenSpec extends ScalaTestWithActorTestKit(
-  """
+class WidenSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     """) with WordSpecLike {
 
   implicit val untypedSystem = system.toUntyped
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
-    Behaviors.receiveMessage[String] { message =>
-      probe ! message
-      Behaviors.same
-    }.widen[Int] {
-      case n if n != 13 => n.toString
-    }
+    Behaviors
+      .receiveMessage[String] { message =>
+        probe ! message
+        Behaviors.same
+      }
+      .widen[Int] {
+        case n if n != 13 => n.toString
+      }
   }
 
   "Widen" should {
@@ -70,14 +71,10 @@ class WidenSpec extends ScalaTestWithActorTestKit(
         behavior.widen(transform)
 
       val beh =
-        widen(
-          widen(
-            Behaviors.receiveMessage[String] { message =>
-              probe.ref ! message
-              Behaviors.same
-            }
-          )
-        )
+        widen(widen(Behaviors.receiveMessage[String] { message =>
+          probe.ref ! message
+          Behaviors.same
+        }))
       val ref = spawn(beh)
 
       ref ! "42"
@@ -100,12 +97,10 @@ class WidenSpec extends ScalaTestWithActorTestKit(
         behavior.widen(transform)
 
       def next: Behavior[String] =
-        widen(
-          Behaviors.receiveMessage[String] { message =>
-            probe.ref ! message
-            next
-          }
-        )
+        widen(Behaviors.receiveMessage[String] { message =>
+          probe.ref ! message
+          next
+        })
 
       val ref = spawn(next)
 
@@ -128,15 +123,9 @@ class WidenSpec extends ScalaTestWithActorTestKit(
         }
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        val ref = spawn(
-          widen(
-            widen(
-              Behaviors.receiveMessage[String] { message =>
-                Behaviors.same
-              }
-            )
-          )
-        )
+        val ref = spawn(widen(widen(Behaviors.receiveMessage[String] { message =>
+          Behaviors.same
+        })))
 
         probe.expectTerminated(ref, 3.seconds)
       }

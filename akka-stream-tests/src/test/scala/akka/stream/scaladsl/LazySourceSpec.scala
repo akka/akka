@@ -33,16 +33,18 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val result = Source.fromGraph(LazySource { () => constructed.set(true); Source(List(1, 2, 3)) }).runWith(Sink.fromSubscriber(probe))
+      val result = Source
+        .fromGraph(LazySource { () =>
+          constructed.set(true); Source(List(1, 2, 3))
+        })
+        .runWith(Sink.fromSubscriber(probe))
       probe.cancel()
 
       constructed.get() should ===(false)
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-      val matF = Source.fromGraph(LazySource(() => Source(List(1, 2, 3))))
-        .toMat(Sink.cancelled)(Keep.left)
-        .run()
+      val matF = Source.fromGraph(LazySource(() => Source(List(1, 2, 3)))).toMat(Sink.cancelled)(Keep.left).run()
 
       intercept[RuntimeException] {
         matF.futureValue
@@ -66,9 +68,11 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "materialize when the source has been created" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
 
-      val matF: Future[Done] = Source.fromGraph(LazySource { () =>
-        Source(List(1, 2, 3)).mapMaterializedValue(_ => Done)
-      }).to(Sink.fromSubscriber(probe))
+      val matF: Future[Done] = Source
+        .fromGraph(LazySource { () =>
+          Source(List(1, 2, 3)).mapMaterializedValue(_ => Done)
+        })
+        .to(Sink.fromSubscriber(probe))
         .run()
 
       matF.value shouldEqual None

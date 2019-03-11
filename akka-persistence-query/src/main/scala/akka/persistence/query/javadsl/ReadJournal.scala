@@ -27,4 +27,3 @@ package akka.persistence.query.javadsl
  * For Scala API see [[akka.persistence.query.scaladsl.ReadJournal]].
  */
 trait ReadJournal
-

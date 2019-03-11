@@ -27,7 +27,7 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec =>
       import scala.concurrent.ExecutionContext.Implicits.global
 
       val afterDelay = akka.pattern.after(delay, system.scheduler)(Future.successful("GO!"))
-      afterDelay onComplete { it =>
+      afterDelay.onComplete { it =>
         import java.lang.management._
         val name = ManagementFactory.getRuntimeMXBean.getName
         val pid = name.substring(0, name.indexOf('@')).toInt

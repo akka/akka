@@ -5,8 +5,8 @@
 package akka.persistence
 
 import akka.actor._
-import akka.actor.SupervisorStrategy.{ Stop, Escalate }
-import akka.testkit.{ AkkaSpec, TestProbe, ImplicitSender }
+import akka.actor.SupervisorStrategy.{ Escalate, Stop }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import scala.concurrent.duration._
 
 import scala.util.control.NoStackTrace
@@ -23,7 +23,7 @@ object AtLeastOnceDeliveryCrashSpec {
 
     val crashingActor = context.actorOf(Props(new CrashingActor(testProbe)), "CrashingActor")
 
-    def receive: Receive = { case msg => crashingActor forward msg }
+    def receive: Receive = { case msg => crashingActor.forward(msg) }
   }
 
   object CrashingActor {
@@ -32,8 +32,7 @@ object AtLeastOnceDeliveryCrashSpec {
     case class SendingMessage(deliveryId: Long, recovering: Boolean)
   }
 
-  class CrashingActor(testProbe: ActorRef) extends PersistentActor
-    with AtLeastOnceDelivery with ActorLogging {
+  class CrashingActor(testProbe: ActorRef) extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
     import CrashingActor._
 
     override def persistenceId = self.path.name
@@ -47,23 +46,30 @@ object AtLeastOnceDeliveryCrashSpec {
     }
 
     override def receiveCommand: Receive = {
-      case Message      => persist(Message)(_ => send())
-      case CrashMessage => persist(CrashMessage) { evt => }
+      case Message => persist(Message)(_ => send())
+      case CrashMessage =>
+        persist(CrashMessage) { evt =>
+        }
     }
 
     def send() = {
-      deliver(testProbe.path) { id => SendingMessage(id, false) }
+      deliver(testProbe.path) { id =>
+        SendingMessage(id, false)
+      }
     }
   }
 
 }
 
-class AtLeastOnceDeliveryCrashSpec extends AkkaSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliveryCrashSpec", serialization = "off")) with ImplicitSender {
+class AtLeastOnceDeliveryCrashSpec
+    extends AkkaSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliveryCrashSpec", serialization = "off"))
+    with ImplicitSender {
   import AtLeastOnceDeliveryCrashSpec._
   "At least once delivery" should {
     "not send when actor crashes" in {
       val testProbe = TestProbe()
-      def createCrashActorUnderSupervisor() = system.actorOf(Props(new StoppingStrategySupervisor(testProbe.ref)), "supervisor")
+      def createCrashActorUnderSupervisor() =
+        system.actorOf(Props(new StoppingStrategySupervisor(testProbe.ref)), "supervisor")
       val superVisor = createCrashActorUnderSupervisor()
       superVisor ! CrashingActor.Message
       testProbe.expectMsgType[CrashingActor.SendingMessage]

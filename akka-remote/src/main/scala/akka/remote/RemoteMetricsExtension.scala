@@ -36,6 +36,7 @@ private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] w
  * INTERNAL API
  */
 private[akka] trait RemoteMetrics extends Extension {
+
   /**
    * Logging of the size of different message types.
    * Maximum detected size per message type is logged once, with
@@ -56,8 +57,8 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
  */
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
-  private val logFrameSizeExceeding: Int = RARP(system).provider.remoteSettings.LogFrameSizeExceeding
-    .getOrElse(Int.MaxValue)
+  private val logFrameSizeExceeding: Int =
+    RARP(system).provider.remoteSettings.LogFrameSizeExceeding.getOrElse(Int.MaxValue)
   private val log = Logging(system, this.getClass)
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 

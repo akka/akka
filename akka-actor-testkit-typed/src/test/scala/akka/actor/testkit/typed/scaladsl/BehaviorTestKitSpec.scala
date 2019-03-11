@@ -67,13 +67,13 @@ object BehaviorTestKitSpec {
           context.stop(child)
           Behaviors.same
         case SpawnAdapter =>
-          context.spawnMessageAdapter {
-            r: Reproduce => SpawnAnonymous(r.times)
+          context.spawnMessageAdapter { r: Reproduce =>
+            SpawnAnonymous(r.times)
           }
           Behaviors.same
         case SpawnAdapterWithName(name) =>
-          context.spawnMessageAdapter({
-            r: Reproduce => SpawnAnonymous(r.times)
+          context.spawnMessageAdapter({ r: Reproduce =>
+            SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
         case SpawnAndWatchUnwatch(name) =>
@@ -253,7 +253,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     }
   }
 
-  "BehaviorTestkit's run" can {
+  "BehaviorTestkit's run".can {
     "run behaviors with messages without canonicalization" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
@@ -267,21 +267,16 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val testkit = BehaviorTestKit(Father.init)
       testkit.run(SpawnAndWatchUnwatch("hello"))
       val child = testkit.childInbox("hello").ref
-      testkit.retrieveAllEffects() should be(Seq(
-        Effects.spawned(Child.initial, "hello", Props.empty),
-        Effects.watched(child),
-        Effects.unwatched(child)
-      ))
+      testkit.retrieveAllEffects() should be(
+        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watched(child), Effects.unwatched(child)))
     }
 
     "record effects for watchWith" in {
       val testkit = BehaviorTestKit(Father.init)
       testkit.run(SpawnAndWatchWith("hello"))
       val child = testkit.childInbox("hello").ref
-      testkit.retrieveAllEffects() should be(Seq(
-        Effects.spawned(Child.initial, "hello", Props.empty),
-        Effects.watched(child)
-      ))
+      testkit.retrieveAllEffects() should be(
+        Seq(Effects.spawned(Child.initial, "hello", Props.empty), Effects.watched(child)))
     }
   }
 

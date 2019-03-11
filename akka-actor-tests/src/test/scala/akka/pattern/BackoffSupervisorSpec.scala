@@ -46,8 +46,10 @@ object BackoffSupervisorSpec {
 class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
-  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
+    Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
+    Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
@@ -95,13 +97,9 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           case _: TestException => SupervisorStrategy.Restart
         }
 
-        assertCustomStrategy(
-          create(onStopOptions()
-            .withSupervisorStrategy(stoppingStrategy)))
+        assertCustomStrategy(create(onStopOptions().withSupervisorStrategy(stoppingStrategy)))
 
-        assertCustomStrategy(
-          create(onFailureOptions()
-            .withSupervisorStrategy(restartingStrategy)))
+        assertCustomStrategy(create(onFailureOptions().withSupervisorStrategy(restartingStrategy)))
       }
     }
 
@@ -166,20 +164,20 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
 
         assertManualReset(
-          create(onStopOptions(ManualChild.props(testActor))
-            .withManualReset
-            .withSupervisorStrategy(stoppingStrategy)))
+          create(onStopOptions(ManualChild.props(testActor)).withManualReset.withSupervisorStrategy(stoppingStrategy)))
 
         assertManualReset(
-          create(onFailureOptions(ManualChild.props(testActor))
-            .withManualReset
-            .withSupervisorStrategy(restartingStrategy)))
+          create(
+            onFailureOptions(ManualChild.props(testActor)).withManualReset.withSupervisorStrategy(restartingStrategy)))
       }
     }
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1).withReplyWhileStopped("child was stopped"))
+        val supervisor = create(
+          Backoff
+            .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1)
+            .withReplyWhileStopped("child was stopped"))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -201,7 +199,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
+        val supervisor =
+          create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -223,24 +222,22 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "correctly calculate the delay" in {
       val delayTable =
-        Table(
-          ("restartCount", "minBackoff", "maxBackoff", "randomFactor", "expectedResult"),
-          (0, 0.minutes, 0.minutes, 0d, 0.minutes),
-          (0, 5.minutes, 7.minutes, 0d, 5.minutes),
-          (2, 5.seconds, 7.seconds, 0d, 7.seconds),
-          (2, 5.seconds, 7.days, 0d, 20.seconds),
-          (29, 5.minutes, 10.minutes, 0d, 10.minutes),
-          (29, 10000.days, 10000.days, 0d, 10000.days),
-          (Int.MaxValue, 10000.days, 10000.days, 0d, 10000.days))
-      forAll(delayTable) { (
-        restartCount: Int,
-        minBackoff: FiniteDuration,
-        maxBackoff: FiniteDuration,
-        randomFactor: Double,
-        expectedResult: FiniteDuration) =>
-
-        val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-        assert(calculatedValue === expectedResult)
+        Table(("restartCount", "minBackoff", "maxBackoff", "randomFactor", "expectedResult"),
+              (0, 0.minutes, 0.minutes, 0d, 0.minutes),
+              (0, 5.minutes, 7.minutes, 0d, 5.minutes),
+              (2, 5.seconds, 7.seconds, 0d, 7.seconds),
+              (2, 5.seconds, 7.days, 0d, 20.seconds),
+              (29, 5.minutes, 10.minutes, 0d, 10.minutes),
+              (29, 10000.days, 10000.days, 0d, 10000.days),
+              (Int.MaxValue, 10000.days, 10000.days, 0d, 10000.days))
+      forAll(delayTable) {
+        (restartCount: Int,
+         minBackoff: FiniteDuration,
+         maxBackoff: FiniteDuration,
+         randomFactor: Double,
+         expectedResult: FiniteDuration) =>
+          val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+          assert(calculatedValue === expectedResult)
       }
     }
 

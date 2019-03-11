@@ -120,8 +120,10 @@ trait Creators { this: ActorDSL.type =>
     def whenStopping(body: => Unit): Unit = postStopFun = () => body
 
     override def preStart(): Unit = if (preStartFun != null) preStartFun() else super.preStart()
-    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = if (preRestartFun != null) preRestartFun(cause, msg) else super.preRestart(cause, msg)
-    override def postRestart(cause: Throwable): Unit = if (postRestartFun != null) postRestartFun(cause) else super.postRestart(cause)
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit =
+      if (preRestartFun != null) preRestartFun(cause, msg) else super.preRestart(cause, msg)
+    override def postRestart(cause: Throwable): Unit =
+      if (postRestartFun != null) postRestartFun(cause) else super.postRestart(cause)
     override def postStop(): Unit = if (postStopFun != null) postStopFun() else super.postStop()
     override def supervisorStrategy: SupervisorStrategy = if (strategy != null) strategy else super.supervisorStrategy
 

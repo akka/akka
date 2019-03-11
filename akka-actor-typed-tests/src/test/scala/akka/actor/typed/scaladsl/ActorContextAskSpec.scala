@@ -18,8 +18,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]
       ping-pong-dispatcher {
         executor = thread-pool-executor
@@ -50,7 +49,6 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       val probe = TestProbe[Pong]()
 
       val snitch = Behaviors.setup[Pong] { context =>
-
         // Timeout comes from TypedAkkaSpec
 
         context.ask(pingPong)(Ping) {
@@ -84,8 +82,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
           case Ping(respondTo) =>
             respondTo ! Pong
             Behaviors.same
-        }
-      ))
+        }))
 
       val snitch = Behaviors.setup[AnyRef] { context =>
         context.ask(pingPong)(Ping) {
@@ -93,16 +90,18 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
           case Failure(x)       => x
         }
 
-        Behaviors.receive[AnyRef] {
-          case (_, message) =>
-            probe.ref ! message
-            Behaviors.same
-        }.receiveSignal {
+        Behaviors
+          .receive[AnyRef] {
+            case (_, message) =>
+              probe.ref ! message
+              Behaviors.same
+          }
+          .receiveSignal {
 
-          case (_, PostStop) =>
-            probe.ref ! "stopped"
-            Behaviors.same
-        }
+            case (_, PostStop) =>
+              probe.ref ! "stopped"
+              Behaviors.same
+          }
       }
 
       EventFilter[NotImplementedError](occurrences = 1, start = "Pong").intercept {
@@ -116,7 +115,6 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.setup[AnyRef] { context =>
-
         context.ask[String, String](system.deadLetters)(ref => "boo") {
           case Success(m) => m
           case Failure(x) => x
@@ -142,7 +140,6 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       val target = spawn(Behaviors.ignore[String])
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.setup[AnyRef] { context =>
-
         context.ask[String, String](target)(_ => "bar") {
           case Success(m) => m
           case Failure(x) => x

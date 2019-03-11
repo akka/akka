@@ -11,8 +11,8 @@ import org.scalatest.{ WordSpec, WordSpecLike }
 
 //#testkit
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, BeforeAndAfterAll }
-import akka.testkit.{ TestActors, TestKit, ImplicitSender, EventFilter }
+import org.scalatest.{ BeforeAndAfterAll, Matchers }
+import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestKit }
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -101,12 +101,17 @@ object FaultHandlingDocSpec {
   """)
 }
 //#testkit
-class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
-  with ImplicitSender with WordSpecLike with Matchers with BeforeAndAfterAll {
+class FaultHandlingDocSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with ImplicitSender
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
-  def this() = this(ActorSystem(
-    "FaultHandlingDocSpec",
-    ConfigFactory.parseString("""
+  def this() =
+    this(
+      ActorSystem("FaultHandlingDocSpec",
+                  ConfigFactory.parseString("""
       akka {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
@@ -127,7 +132,7 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
       supervisor ! Props[Child]
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
       //#create
-      EventFilter.warning(occurrences = 1) intercept {
+      EventFilter.warning(occurrences = 1).intercept {
         //#resume
         child ! 42 // set state to 42
         child ! "get"
@@ -138,21 +143,21 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
         expectMsg(42)
         //#resume
       }
-      EventFilter[NullPointerException](occurrences = 1) intercept {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
         //#restart
         child ! new NullPointerException // crash it harder
         child ! "get"
         expectMsg(0)
         //#restart
       }
-      EventFilter[IllegalArgumentException](occurrences = 1) intercept {
+      EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         //#stop
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
         expectMsgPF() { case Terminated(`child`) => () }
         //#stop
       }
-      EventFilter[Exception]("CRASH", occurrences = 2) intercept {
+      EventFilter[Exception]("CRASH", occurrences = 2).intercept {
         //#escalate-kill
         supervisor ! Props[Child] // create new child
         val child2 = expectMsgType[ActorRef]

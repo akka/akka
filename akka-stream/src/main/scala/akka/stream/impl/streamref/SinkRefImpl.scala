@@ -31,9 +31,8 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
  * the ref.
  */
 @InternalApi
-private[stream] final class SinkRefStageImpl[In] private[akka] (
-  val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
+private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartnerRef: OptionVal[ActorRef])
+    extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
 
   val in: Inlet[In] = Inlet[In](s"${Logging.simpleName(getClass)}($initialRefName).in")
   override def shape: SinkShape[In] = SinkShape.of(in)
@@ -55,8 +54,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       import StreamRefAttributes._
       private[this] lazy val settings = ActorMaterializerHelper.downcast(materializer).settings.streamRefSettings
 
-      private[this] lazy val subscriptionTimeout = inheritedAttributes
-        .get[StreamRefAttributes.SubscriptionTimeout](SubscriptionTimeout(settings.subscriptionTimeout))
+      private[this] lazy val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
+        SubscriptionTimeout(settings.subscriptionTimeout))
       // end of settings ---
 
       override protected lazy val stageActorName: String = streamRefsMaster.nextSinkRefStageName()
@@ -90,8 +89,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
         initialPartnerRef match {
           case OptionVal.Some(ref) =>
             // this will set the `partnerRef`
-            observeAndValidateSender(ref, "Illegal initialPartnerRef! This may be a bug, please report your " +
-              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
+            observeAndValidateSender(ref,
+                                     "Illegal initialPartnerRef! This may be a bug, please report your " +
+                                     "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
             tryPull()
           case OptionVal.None =>
             // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
@@ -99,7 +99,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
             scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
         }
 
-        log.debug("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}", initialPartnerRef, self.ref)
+        log.debug("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
+                  initialPartnerRef,
+                  self.ref)
 
         promise.success(SourceRefImpl(self.ref))
       }
@@ -113,8 +115,10 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
               case OptionVal.Some(_ /* known to be Success*/ ) =>
                 completeStage() // other side has terminated (in response to a completion message) so we can safely terminate
               case OptionVal.None =>
-                failStage(RemoteStreamRefActorTerminatedException(s"Remote target receiver of data $partnerRef terminated. " +
-                  s"Local stream terminating, message loss (on remote side) may have happened."))
+                failStage(
+                  RemoteStreamRefActorTerminatedException(
+                    s"Remote target receiver of data $partnerRef terminated. " +
+                    s"Local stream terminating, message loss (on remote side) may have happened."))
             }
 
         case (sender, StreamRefsProtocol.CumulativeDemand(d)) =>
@@ -123,7 +127,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
           if (remoteCumulativeDemandReceived < d) {
             remoteCumulativeDemandReceived = d
-            log.debug("Received cumulative demand [{}], consumable demand: [{}]", StreamRefsProtocol.CumulativeDemand(d), remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
+            log.debug("Received cumulative demand [{}], consumable demand: [{}]",
+                      StreamRefsProtocol.CumulativeDemand(d),
+                      remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
           }
 
           tryPull()
@@ -146,7 +152,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
             s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [${promise.future.value}], " +
-              s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
+            s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex
       }
@@ -194,7 +200,9 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
           completedBeforeRemoteConnected match {
             case OptionVal.Some(scala.util.Failure(ex)) =>
-              log.warning("Stream already terminated with exception before remote side materialized, sending failure: {}", ex)
+              log.warning(
+                "Stream already terminated with exception before remote side materialized, sending failure: {}",
+                ex)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
               finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
               setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)

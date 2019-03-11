@@ -62,11 +62,11 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(system / "c1") should ===(c1)
       system.actorFor(system / "c2") should ===(c2)
       system.actorFor(system / "c2" / "c21") should ===(c21)
-      system.actorFor(system child "c2" child "c21") should ===(c21) // test Java API
+      system.actorFor(system.child("c2").child("c21")) should ===(c21) // test Java API
       system.actorFor(system / Seq("c2", "c21")) should ===(c21)
 
       import scala.collection.JavaConverters._
-      system.actorFor(system descendant Seq("c2", "c21").asJava) // test Java API
+      system.actorFor(system.descendant(Seq("c2", "c21").asJava)) // test Java API
     }
 
     "find actors by looking up their string representation" in {
@@ -201,7 +201,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "find actors by looking up their root-anchored relative path" in {
       def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         Await.result(looker ? LookupString(pathOf.path.toStringWithoutAddress), timeout.duration) should ===(result)
-        Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/")), timeout.duration) should ===(result)
+        Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/")), timeout.duration) should ===(
+          result)
       }
       for {
         looker <- all
@@ -212,8 +213,8 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "find actors by looking up their relative path" in {
       def check(looker: ActorRef, result: ActorRef, elems: String*): Unit = {
         Await.result(looker ? LookupElems(elems), timeout.duration) should ===(result)
-        Await.result(looker ? LookupString(elems mkString "/"), timeout.duration) should ===(result)
-        Await.result(looker ? LookupString(elems mkString ("", "/", "/")), timeout.duration) should ===(result)
+        Await.result(looker ? LookupString(elems.mkString("/")), timeout.duration) should ===(result)
+        Await.result(looker ? LookupString(elems.mkString("", "/", "/")), timeout.duration) should ===(result)
       }
       check(c1, user, "..")
       for {
@@ -232,7 +233,9 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
           Await.result(looker ? LookupString(target.path.toString), timeout.duration) should ===(target)
           Await.result(looker ? LookupString(target.path.toString + "/"), timeout.duration) should ===(target)
           Await.result(looker ? LookupString(target.path.toStringWithoutAddress), timeout.duration) should ===(target)
-          if (target != root) Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "/")), timeout.duration) should ===(target)
+          if (target != root)
+            Await.result(looker ? LookupString(target.path.elements.mkString("/", "/", "/")), timeout.duration) should ===(
+              target)
         }
       }
       for (target <- Seq(root, syst, user, system.deadLetters)) check(target)
@@ -248,17 +251,14 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       }
       def check(looker: ActorRef): Unit = {
         val lookname = looker.path.elements.mkString("", "/", "/")
-        for (
-          (l, r) <- Seq(
-            LookupString("a/b/c") -> empty(lookname + "a/b/c"),
-            LookupString("") -> system.deadLetters,
-            LookupString("akka://all-systems/Nobody") -> system.deadLetters,
-            LookupPath(system / "hallo") -> empty("user/hallo"),
-            LookupPath(looker.path child "hallo") -> empty(lookname + "hallo"), // test Java API
-            LookupPath(looker.path descendant Seq("a", "b").asJava) -> empty(lookname + "a/b"), // test Java API
-            LookupElems(Seq()) -> system.deadLetters,
-            LookupElems(Seq("a")) -> empty(lookname + "a"))
-        ) checkOne(looker, l, r)
+        for ((l, r) <- Seq(LookupString("a/b/c") -> empty(lookname + "a/b/c"),
+                           LookupString("") -> system.deadLetters,
+                           LookupString("akka://all-systems/Nobody") -> system.deadLetters,
+                           LookupPath(system / "hallo") -> empty("user/hallo"),
+                           LookupPath(looker.path.child("hallo")) -> empty(lookname + "hallo"), // test Java API
+                           LookupPath(looker.path.descendant(Seq("a", "b").asJava)) -> empty(lookname + "a/b"), // test Java API
+                           LookupElems(Seq()) -> system.deadLetters,
+                           LookupElems(Seq("a")) -> empty(lookname + "a"))) checkOne(looker, l, r)
       }
       for (looker <- all) check(looker)
     }

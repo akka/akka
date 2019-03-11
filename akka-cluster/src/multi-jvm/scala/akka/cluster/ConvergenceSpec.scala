@@ -19,12 +19,11 @@ final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) exte
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.failure-detector.threshold = 4
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
 class ConvergenceWithFailureDetectorPuppetMultiJvmNode1 extends ConvergenceSpec(failureDetectorPuppet = true)
@@ -38,8 +37,8 @@ class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec
 class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec(failureDetectorPuppet = false)
 
 abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(ConvergenceMultiNodeConfig(failureDetectorPuppet))
 

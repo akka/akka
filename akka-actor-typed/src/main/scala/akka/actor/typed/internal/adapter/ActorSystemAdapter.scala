@@ -31,7 +31,11 @@ import akka.event.LoggingFilterWithMarker
  * most circumstances.
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untypedSystem: untyped.ActorSystemImpl)
-  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] with ExtensionsImpl {
+    extends ActorSystem[T]
+    with ActorRef[T]
+    with internal.ActorRefImpl[T]
+    with internal.InternalRecipientRef[T]
+    with ExtensionsImpl {
 
   untypedSystem.assertInitialized()
 
@@ -53,7 +57,8 @@ import akka.event.LoggingFilterWithMarker
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 
-  final override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
+  final override val path
+      : untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
 
   override def toString: String = untypedSystem.toString
 
@@ -69,7 +74,10 @@ import akka.event.LoggingFilterWithMarker
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(untypedSystem.eventStream, getClass, name, LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
+  override val log: Logger = new LoggerAdapterImpl(untypedSystem.eventStream,
+                                                   getClass,
+                                                   name,
+                                                   LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
   override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler
@@ -88,7 +96,8 @@ import akka.event.LoggingFilterWithMarker
   override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
     FutureConverters.toJava(whenTerminated)
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
+      implicit timeout: Timeout): Future[ActorRef[U]] = {
     val ref = untypedSystem.systemActorOf(PropsAdapter(() => behavior, props), name)
     Future.successful(ActorRefAdapter(ref))
   }
@@ -130,7 +139,9 @@ private[akka] object ActorSystemAdapter {
   def toUntyped[U](sys: ActorSystem[_]): untyped.ActorSystem =
     sys match {
       case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
-      case _ => throw new UnsupportedOperationException("only adapted untyped ActorSystem permissible " +
-        s"($sys of class ${sys.getClass.getName})")
+      case _ =>
+        throw new UnsupportedOperationException(
+          "only adapted untyped ActorSystem permissible " +
+          s"($sys of class ${sys.getClass.getName})")
     }
 }

@@ -14,8 +14,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ActorContextPipeToSelfSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       |pipe-to-self-spec-dispatcher {
       |  executor = thread-pool-executor
       |  type = PinnedDispatcher
@@ -23,8 +22,9 @@ object ActorContextPipeToSelfSpec {
     """.stripMargin)
 }
 
-final class ActorContextPipeToSelfSpec extends ScalaTestWithActorTestKit(ActorContextPipeToSelfSpec.config)
-  with WordSpecLike {
+final class ActorContextPipeToSelfSpec
+    extends ScalaTestWithActorTestKit(ActorContextPipeToSelfSpec.config)
+    with WordSpecLike {
 
   "The Scala DSL ActorContext pipeToSelf" must {
     "handle success" in { responseFrom(Future.successful("hi")) should ===("ok: hi") }

@@ -60,7 +60,8 @@ object ActorFlow {
    * @tparam A Answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit timeout: Timeout): Flow[I, A, NotUsed] =
+  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] =
     ask(parallelism = 2)(ref)(makeMessage)(timeout)
 
   /**
@@ -98,7 +99,8 @@ object ActorFlow {
    * @tparam A answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     import akka.actor.typed.scaladsl.adapter._
     val untypedRef = ref.toUntyped
 

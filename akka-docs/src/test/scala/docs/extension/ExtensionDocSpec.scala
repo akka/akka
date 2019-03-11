@@ -27,9 +27,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
 
-object CountExtension
-  extends ExtensionId[CountExtensionImpl]
-  with ExtensionIdProvider {
+object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdProvider {
   //The lookup method is required by ExtensionIdProvider,
   // so we return ourselves here, this allows us
   // to configure our extension to be loaded when

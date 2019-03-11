@@ -42,10 +42,11 @@ class ShoppingCart(userId: String) extends Actor {
 
   val DataKey = LWWMapKey[String, LineItem]("cart-" + userId)
 
-  def receive = receiveGetCart
-    .orElse[Any, Unit](receiveAddItem)
-    .orElse[Any, Unit](receiveRemoveItem)
-    .orElse[Any, Unit](receiveOther)
+  def receive =
+    receiveGetCart
+      .orElse[Any, Unit](receiveAddItem)
+      .orElse[Any, Unit](receiveRemoveItem)
+      .orElse[Any, Unit](receiveOther)
 
   //#get-cart
   def receiveGetCart: Receive = {
@@ -69,8 +70,8 @@ class ShoppingCart(userId: String) extends Actor {
   //#add-item
   def receiveAddItem: Receive = {
     case cmd @ AddItem(item) =>
-      val update = Update(DataKey, LWWMap.empty[String, LineItem], writeMajority, Some(cmd)) {
-        cart => updateCart(cart, item)
+      val update = Update(DataKey, LWWMap.empty[String, LineItem], writeMajority, Some(cmd)) { cart =>
+        updateCart(cart, item)
       }
       replicator ! update
   }
@@ -109,7 +110,7 @@ class ShoppingCart(userId: String) extends Actor {
   def receiveOther: Receive = {
     case _: UpdateSuccess[_] | _: UpdateTimeout[_] =>
     // UpdateTimeout, will eventually be replicated
-    case e: UpdateFailure[_]                       => throw new IllegalStateException("Unexpected failure: " + e)
+    case e: UpdateFailure[_] => throw new IllegalStateException("Unexpected failure: " + e)
   }
 
 }

@@ -9,7 +9,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, AbstractBehavior }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
@@ -21,12 +21,10 @@ object OOIntroSpec {
   object ChatRoom {
     //#chatroom-protocol
     sealed trait RoomCommand
-    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent])
-      extends RoomCommand
+    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PublishSessionMessage(screenName: String, message: String)
-      extends RoomCommand
+    private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -51,24 +49,22 @@ object OOIntroSpec {
         message match {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
-            val ses = context.spawn(
-              session(context.self, screenName, client),
-              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            val ses = context.spawn(session(context.self, screenName, client),
+                                    name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             sessions = ses :: sessions
             this
           case PublishSessionMessage(screenName, message) =>
             val notification = NotifyClient(MessagePosted(screenName, message))
-            sessions foreach (_ ! notification)
+            sessions.foreach(_ ! notification)
             this
         }
       }
     }
 
-    private def session(
-      room:       ActorRef[PublishSessionMessage],
-      screenName: String,
-      client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
+    private def session(room: ActorRef[PublishSessionMessage],
+                        screenName: String,
+                        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receiveMessage {
         case PostMessage(message) =>
           // from client, publish to others via the room
@@ -115,15 +111,17 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           val gabblerRef = context.spawn(gabbler, "gabbler")
           context.watch(gabblerRef)
 
-          Behaviors.receiveMessagePartial[String] {
-            case "go" =>
-              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Behaviors.same
-          } receiveSignal {
-            case (_, Terminated(_)) =>
-              println("Stopping guardian")
-              Behaviors.stopped
-          }
+          Behaviors
+            .receiveMessagePartial[String] {
+              case "go" =>
+                chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+                Behaviors.same
+            }
+            .receiveSignal {
+              case (_, Terminated(_)) =>
+                println("Stopping guardian")
+                Behaviors.stopped
+            }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")

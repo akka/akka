@@ -6,7 +6,7 @@ package docs.stream
 
 import akka.NotUsed
 import akka.stream.FlowShape
-import akka.stream.scaladsl.{ GraphDSL, Merge, Balance, Source, Flow }
+import akka.stream.scaladsl.{ Balance, Flow, GraphDSL, Merge, Source }
 import akka.testkit.AkkaSpec
 
 class FlowParallelismDocSpec extends AkkaSpec {
@@ -19,13 +19,17 @@ class FlowParallelismDocSpec extends AkkaSpec {
 
   //format: OFF
   //#pipelining
-    // Takes a scoop of batter and creates a pancake with one side cooked
-    val fryingPan1: Flow[ScoopOfBatter, HalfCookedPancake, NotUsed] =
-      Flow[ScoopOfBatter].map { batter => HalfCookedPancake() }
+  // Takes a scoop of batter and creates a pancake with one side cooked
+  val fryingPan1: Flow[ScoopOfBatter, HalfCookedPancake, NotUsed] =
+    Flow[ScoopOfBatter].map { batter =>
+      HalfCookedPancake()
+    }
 
-    // Finishes a half-cooked pancake
-    val fryingPan2: Flow[HalfCookedPancake, Pancake, NotUsed] =
-      Flow[HalfCookedPancake].map { halfCooked => Pancake() }
+  // Finishes a half-cooked pancake
+  val fryingPan2: Flow[HalfCookedPancake, Pancake, NotUsed] =
+    Flow[HalfCookedPancake].map { halfCooked =>
+      Pancake()
+    }
   //#pipelining
   //format: ON
 
@@ -41,7 +45,9 @@ class FlowParallelismDocSpec extends AkkaSpec {
   "Demonstrate parallel processing" in {
     //#parallelism
     val fryingPan: Flow[ScoopOfBatter, Pancake, NotUsed] =
-      Flow[ScoopOfBatter].map { batter => Pancake() }
+      Flow[ScoopOfBatter].map { batter =>
+        Pancake()
+      }
 
     val pancakeChef: Flow[ScoopOfBatter, Pancake, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder =>
       val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
@@ -65,7 +71,6 @@ class FlowParallelismDocSpec extends AkkaSpec {
     //#parallel-pipeline
     val pancakeChef: Flow[ScoopOfBatter, Pancake, NotUsed] =
       Flow.fromGraph(GraphDSL.create() { implicit builder =>
-
         val dispatchBatter = builder.add(Balance[ScoopOfBatter](2))
         val mergePancakes = builder.add(Merge[Pancake](2))
 

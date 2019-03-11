@@ -12,6 +12,7 @@ import akka.util.HashCode
 object LWWRegister {
 
   trait Clock[A] {
+
     /**
      * @param currentTimestamp the current `timestamp` value of the `LWWRegister`
      * @param value the register value to set and associate with the returned timestamp
@@ -128,12 +129,10 @@ object LWWRegister {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class LWWRegister[A] private[akka] (
-  private[akka] val node: UniqueAddress,
-  val value:              A,
-  val timestamp:          Long)
-  extends ReplicatedData with ReplicatedDataSerialization {
-  import LWWRegister.{ Clock, defaultClock }
+final class LWWRegister[A] private[akka] (private[akka] val node: UniqueAddress, val value: A, val timestamp: Long)
+    extends ReplicatedData
+    with ReplicatedDataSerialization {
+  import LWWRegister.{ defaultClock, Clock }
 
   type T = LWWRegister[A]
 

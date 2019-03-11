@@ -15,8 +15,7 @@ import akka.serialization.Serializer
 import docs.ddata.TwoPhaseSet
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages
 
-class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
-  extends Serializer with SerializationSupport {
+class TwoPhaseSetSerializer(val system: ExtendedActorSystem) extends Serializer with SerializationSupport {
 
   override def includeManifest: Boolean = false
 
@@ -24,8 +23,7 @@ class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: TwoPhaseSet => twoPhaseSetToProto(m).toByteArray
-    case _ => throw new IllegalArgumentException(
-      s"Can't serialize object of type ${obj.getClass}")
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
@@ -63,13 +61,11 @@ class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
 }
 //#serializer
 
-class TwoPhaseSetSerializerWithCompression(system: ExtendedActorSystem)
-  extends TwoPhaseSetSerializer(system) {
+class TwoPhaseSetSerializerWithCompression(system: ExtendedActorSystem) extends TwoPhaseSetSerializer(system) {
   //#compression
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: TwoPhaseSet => compress(twoPhaseSetToProto(m))
-    case _ => throw new IllegalArgumentException(
-      s"Can't serialize object of type ${obj.getClass}")
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
@@ -77,4 +73,3 @@ class TwoPhaseSetSerializerWithCompression(system: ExtendedActorSystem)
   }
   //#compression
 }
-

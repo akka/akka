@@ -57,4 +57,5 @@ object IOResult {
  * while there was still IO operations in progress.
  */
 final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwable)
-  extends RuntimeException("Stream terminated without completing IO operation.", cause) with NoStackTrace
+    extends RuntimeException("Stream terminated without completing IO operation.", cause)
+    with NoStackTrace

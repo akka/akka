@@ -47,11 +47,8 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.withTimers { (timer) =>
           timer.startSingleTimer("key", Stop, 300.millis)
 
-          Behaviors.receive((context, stop) =>
-            Behaviors.stopped
-          )
-        }
-      ))
+          Behaviors.receive((context, stop) => Behaviors.stopped)
+        }))
       ref ! Stop
       // race, but not sure how to test in any other way
       probe.expectTerminated(ref, 500.millis)

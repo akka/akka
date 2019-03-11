@@ -41,8 +41,8 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val weighted = new WeightedRoutees(routees, a1, weights)
 
       weighted(1) should ===(routeeA)
-      2 to 4 foreach { weighted(_) should ===(routeeB) }
-      5 to 14 foreach { weighted(_) should ===(routeeC) }
+      (2 to 4).foreach { weighted(_) should ===(routeeB) }
+      (5 to 14).foreach { weighted(_) should ===(routeeC) }
       weighted.total should ===(14)
     }
 
@@ -77,9 +77,9 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val weighted = new WeightedRoutees(routees, a1, weights)
 
       weighted(1) should ===(routeeA)
-      2 to 8 foreach { weighted(_) should ===(routeeB) }
+      (2 to 8).foreach { weighted(_) should ===(routeeB) }
       // undefined, uses the mean of the weights, i.e. 4
-      9 to 12 foreach { weighted(_) should ===(routeeC) }
+      (9 to 12).foreach { weighted(_) should ===(routeeC) }
       weighted.total should ===(12)
     }
 
@@ -88,15 +88,15 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val routees2 = Vector(testActorRoutee, routeeB, routeeC)
       val weighted = new WeightedRoutees(routees2, a1, weights)
 
-      1 to 2 foreach { weighted(_) should ===(testActorRoutee) }
-      3 to weighted.total foreach { weighted(_) should not be (testActorRoutee) }
+      (1 to 2).foreach { weighted(_) should ===(testActorRoutee) }
+      (3 to weighted.total).foreach { weighted(_) should not be (testActorRoutee) }
     }
 
     "not allocate ref with weight zero" in {
       val weights = Map(a1 -> 0, b1 -> 2, c1 -> 10)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
-      1 to weighted.total foreach { weighted(_) should not be (routeeA) }
+      (1 to weighted.total).foreach { weighted(_) should not be (routeeA) }
     }
 
   }

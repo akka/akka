@@ -16,6 +16,7 @@ object ORSet {
   private val _empty: ORSet[Any] = new ORSet(Map.empty, VersionVector.empty)
   def empty[A]: ORSet[A] = _empty.asInstanceOf[ORSet[A]]
   def apply(): ORSet[Any] = _empty
+
   /**
    * Java API
    */
@@ -58,9 +59,8 @@ object ORSet {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case AddDeltaOp(u) =>
         // Note that we only merge deltas originating from the same node
-        AddDeltaOp(new ORSet(
-          concatElementsMap(u.elementsMap.asInstanceOf[Map[A, Dot]]),
-          underlying.vvector.merge(u.vvector)))
+        AddDeltaOp(
+          new ORSet(concatElementsMap(u.elementsMap.asInstanceOf[Map[A, Dot]]), underlying.vvector.merge(u.vvector)))
       case _: AtomicDeltaOp[A] => DeltaGroup(Vector(this, that))
       case DeltaGroup(ops)     => DeltaGroup(this +: ops)
     }
@@ -97,7 +97,8 @@ object ORSet {
    * INTERNAL API
    */
   @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp])
-    extends DeltaOp with ReplicatedDeltaSize {
+      extends DeltaOp
+      with ReplicatedDeltaSize {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case thatAdd: AddDeltaOp[A] =>
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible
@@ -125,7 +126,8 @@ object ORSet {
    */
   @InternalApi private[akka] def subtractDots(dot: Dot, vvector: VersionVector): Dot = {
 
-    @tailrec def dropDots(remaining: List[(UniqueAddress, Long)], acc: List[(UniqueAddress, Long)]): List[(UniqueAddress, Long)] =
+    @tailrec def dropDots(remaining: List[(UniqueAddress, Long)],
+                          acc: List[(UniqueAddress, Long)]): List[(UniqueAddress, Long)] =
       remaining match {
         case Nil => acc
         case (d @ (node, v1)) :: rest =>
@@ -158,7 +160,9 @@ object ORSet {
    * INTERNAL API
    * @see [[ORSet#merge]]
    */
-  @InternalApi private[akka] def mergeCommonKeys[A](commonKeys: Set[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] =
+  @InternalApi private[akka] def mergeCommonKeys[A](commonKeys: Set[A],
+                                                    lhs: ORSet[A],
+                                                    rhs: ORSet[A]): Map[A, ORSet.Dot] =
     mergeCommonKeys(commonKeys.iterator, lhs, rhs)
 
   private def mergeCommonKeys[A](commonKeys: Iterator[A], lhs: ORSet[A], rhs: ORSet[A]): Map[A, ORSet.Dot] = {
@@ -227,12 +231,15 @@ object ORSet {
    * INTERNAL API
    * @see [[ORSet#merge]]
    */
-  @InternalApi private[akka] def mergeDisjointKeys[A](
-    keys: Set[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
-    accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] =
+  @InternalApi private[akka] def mergeDisjointKeys[A](keys: Set[A],
+                                                      elementsMap: Map[A, ORSet.Dot],
+                                                      vvector: VersionVector,
+                                                      accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] =
     mergeDisjointKeys(keys.iterator, elementsMap, vvector, accumulator)
 
-  private def mergeDisjointKeys[A](keys: Iterator[A], elementsMap: Map[A, ORSet.Dot], vvector: VersionVector,
+  private def mergeDisjointKeys[A](keys: Iterator[A],
+                                   elementsMap: Map[A, ORSet.Dot],
+                                   vvector: VersionVector,
                                    accumulator: Map[A, ORSet.Dot]): Map[A, ORSet.Dot] = {
     keys.foldLeft(accumulator) {
       case (acc, k) =>
@@ -278,12 +285,13 @@ object ORSet {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class ORSet[A] private[akka] (
-  private[akka] val elementsMap: Map[A, ORSet.Dot],
-  private[akka] val vvector:     VersionVector,
-  override val delta:            Option[ORSet.DeltaOp] = None)
-  extends DeltaReplicatedData
-  with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
+final class ORSet[A] private[akka] (private[akka] val elementsMap: Map[A, ORSet.Dot],
+                                    private[akka] val vvector: VersionVector,
+                                    override val delta: Option[ORSet.DeltaOp] = None)
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning
+    with FastMerge {
 
   type T = ORSet[A]
   type D = ORSet.DeltaOp
@@ -426,8 +434,7 @@ final class ORSet[A] private[akka] (
     val entries00 = ORSet.mergeCommonKeys(commonKeys, this, that)
     val entries0 =
       if (addDeltaOp)
-        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) }
-      else {
+        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) } else {
         val thisUniqueKeys = this.elementsMap.keysIterator.filterNot(that.elementsMap.contains)
         ORSet.mergeDisjointKeys(thisUniqueKeys, this.elementsMap, that.vvector, entries00)
       }
@@ -523,7 +530,8 @@ final class ORSet[A] private[akka] (
     new ORSet(updated, vvector.pruningCleanup(removedNode))
   }
 
-  private def copy(elementsMap: Map[A, ORSet.Dot] = this.elementsMap, vvector: VersionVector = this.vvector,
+  private def copy(elementsMap: Map[A, ORSet.Dot] = this.elementsMap,
+                   vvector: VersionVector = this.vvector,
                    delta: Option[ORSet.DeltaOp] = this.delta): ORSet[A] =
     new ORSet(elementsMap, vvector, delta)
 

@@ -6,11 +6,13 @@ package akka.routing
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.Await
-import akka.actor.{ Props, Actor }
-import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
+import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 
-class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off")
-  with DefaultTimeout with ImplicitSender {
+class SmallestMailboxSpec
+    extends AkkaSpec("akka.actor.serialize-messages = off")
+    with DefaultTimeout
+    with ImplicitSender {
 
   "smallest mailbox pool" must {
 

@@ -12,7 +12,8 @@ final class ReentrantGuard extends ReentrantLock {
   @inline
   final def withGuard[T](body: => T): T = {
     lock()
-    try body finally unlock()
+    try body
+    finally unlock()
   }
 }
 
@@ -24,7 +25,8 @@ class Switch(startAsOn: Boolean = false) {
 
   protected def transcend(from: Boolean, action: => Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
-      try action catch {
+      try action
+      catch {
         case t: Throwable =>
           switch.compareAndSet(!from, from) // revert status
           throw t

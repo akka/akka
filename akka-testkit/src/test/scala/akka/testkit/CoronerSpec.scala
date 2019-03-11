@@ -52,7 +52,7 @@ class CoronerSpec extends WordSpec with Matchers {
       report should include("Coroner Thread Count starts at ")
       report should include("Coroner Thread Count started at ")
       report should include("XXXX")
-      report should not include ("Coroner's Report")
+      (report should not).include("Coroner's Report")
     }
 
     "display deadlock information in its report" in {
@@ -69,7 +69,9 @@ class CoronerSpec extends WordSpec with Matchers {
         val ready = new Semaphore(0)
         val proceed = new Semaphore(0)
         val t = new Thread(new Runnable {
-          def run = try recursiveLock(initialLocks) catch { case _: InterruptedException => () }
+          def run =
+            try recursiveLock(initialLocks)
+            catch { case _: InterruptedException => () }
 
           def recursiveLock(locks: List[ReentrantLock]): Unit = {
             locks match {
@@ -130,8 +132,8 @@ class CoronerSpec extends WordSpec with Matchers {
         report should include(sectionHeading)
         val deadlockSection = report.split(sectionHeading)(1)
         deadlockSection should include("None")
-        deadlockSection should not include ("deadlock-thread-a")
-        deadlockSection should not include ("deadlock-thread-b")
+        (deadlockSection should not).include("deadlock-thread-a")
+        (deadlockSection should not).include("deadlock-thread-b")
       }
     }
 

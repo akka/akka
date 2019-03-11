@@ -73,28 +73,32 @@ object SocketUtil {
   def temporaryServerAddress(address: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): InetSocketAddress =
     temporaryServerAddresses(1, address, udp).head
 
-  def temporaryServerAddresses(numberOfAddresses: Int, hostname: String = RANDOM_LOOPBACK_ADDRESS, udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
-    Vector.fill(numberOfAddresses) {
+  def temporaryServerAddresses(numberOfAddresses: Int,
+                               hostname: String = RANDOM_LOOPBACK_ADDRESS,
+                               udp: Boolean = false): immutable.IndexedSeq[InetSocketAddress] = {
+    Vector
+      .fill(numberOfAddresses) {
 
-      val address = hostname match {
-        case RANDOM_LOOPBACK_ADDRESS =>
-          if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
-          else "127.0.0.1"
-        case other =>
-          other
+        val address = hostname match {
+          case RANDOM_LOOPBACK_ADDRESS =>
+            if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
+            else "127.0.0.1"
+          case other =>
+            other
+        }
+
+        if (udp) {
+          val ds = DatagramChannel.open().socket()
+          ds.bind(new InetSocketAddress(address, 0))
+          (ds, new InetSocketAddress(address, ds.getLocalPort))
+        } else {
+          val ss = ServerSocketChannel.open().socket()
+          ss.bind(new InetSocketAddress(address, 0))
+          (ss, new InetSocketAddress(address, ss.getLocalPort))
+        }
+
       }
-
-      if (udp) {
-        val ds = DatagramChannel.open().socket()
-        ds.bind(new InetSocketAddress(address, 0))
-        (ds, new InetSocketAddress(address, ds.getLocalPort))
-      } else {
-        val ss = ServerSocketChannel.open().socket()
-        ss.bind(new InetSocketAddress(address, 0))
-        (ss, new InetSocketAddress(address, ss.getLocalPort))
-      }
-
-    } collect { case (socket, address) => socket.close(); address }
+      .collect { case (socket, address) => socket.close(); address }
   }
 
   def temporaryServerHostnameAndPort(interface: String = RANDOM_LOOPBACK_ADDRESS): (String, Int) = {

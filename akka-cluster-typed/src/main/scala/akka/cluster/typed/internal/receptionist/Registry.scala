@@ -37,9 +37,8 @@ import scala.concurrent.duration.Deadline
  *                   the service key
  * INTERNAL API
  */
-@InternalApi private[akka] final case class ShardedServiceRegistry(
-  serviceRegistries: Map[DDataKey, ServiceRegistry],
-  tombstones:        Map[ActorRef[_], Deadline]) {
+@InternalApi private[akka] final case class ShardedServiceRegistry(serviceRegistries: Map[DDataKey, ServiceRegistry],
+                                                                   tombstones: Map[ActorRef[_], Deadline]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -75,7 +74,8 @@ import scala.concurrent.duration.Deadline
     ServiceRegistry.collectChangedKeys(previousRegistry, newRegistry)
   }
 
-  def entriesPerDdataKey(entries: Map[AbstractServiceKey, Set[Entry]]): Map[DDataKey, Map[AbstractServiceKey, Set[Entry]]] =
+  def entriesPerDdataKey(
+      entries: Map[AbstractServiceKey, Set[Entry]]): Map[DDataKey, Map[AbstractServiceKey, Set[Entry]]] =
     entries.foldLeft(Map.empty[DDataKey, Map[AbstractServiceKey, Set[Entry]]]) {
       case (acc, (key, entries)) =>
         val ddataKey = ddataKeyFor(key.asServiceKey)

@@ -52,4 +52,3 @@ object HashCode {
   private def isArray(anyRef: AnyRef): Boolean = anyRef.getClass.isArray
   private val PRIME = 37
 }
-

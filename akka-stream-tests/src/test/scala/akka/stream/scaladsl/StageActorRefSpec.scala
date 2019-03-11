@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRef }
+import akka.actor.{ ActorRef, Kill, NoSerializationVerificationNeeded, PoisonPill }
 import akka.event.Logging
 import akka.stream._
-import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStageLogic, InHandler }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.stream.testkit.StreamSpec
-import akka.testkit.{ TestProbe, TestEvent, EventFilter, ImplicitSender }
+import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
 
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
@@ -213,23 +213,24 @@ object StageActorRefSpec {
           }
         }
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            sum += grab(in)
-            p.trySuccess(sum)
-            completeStage()
-          }
+        setHandler(in,
+                   new InHandler {
+                     override def onPush(): Unit = {
+                       sum += grab(in)
+                       p.trySuccess(sum)
+                       completeStage()
+                     }
 
-          override def onUpstreamFinish(): Unit = {
-            p.trySuccess(sum)
-            completeStage()
-          }
+                     override def onUpstreamFinish(): Unit = {
+                       p.trySuccess(sum)
+                       completeStage()
+                     }
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            p.tryFailure(ex)
-            failStage(ex)
-          }
-        })
+                     override def onUpstreamFailure(ex: Throwable): Unit = {
+                       p.tryFailure(ex)
+                       failStage(ex)
+                     }
+                   })
       }
 
       logic -> p.future

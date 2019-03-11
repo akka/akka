@@ -176,4 +176,3 @@ abstract class UntypedActor extends Actor {
   override def unhandled(message: Any): Unit = super.unhandled(message)
 
 }
-

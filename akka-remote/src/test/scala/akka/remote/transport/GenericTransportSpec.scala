@@ -4,19 +4,20 @@
 
 package akka.remote.transport
 
-import akka.actor.{ ExtendedActorSystem, Address }
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
-import akka.testkit.{ ImplicitSender, DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.util.ByteString
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 import akka.remote.RemoteActorRefProvider
-import akka.remote.transport.TestTransport.{ DisassociateAttempt, WriteAttempt, ListenAttempt, AssociateAttempt }
+import akka.remote.transport.TestTransport.{ AssociateAttempt, DisassociateAttempt, ListenAttempt, WriteAttempt }
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
-  extends AkkaSpec("""akka.actor.provider = remote """)
-  with DefaultTimeout with ImplicitSender {
+    extends AkkaSpec("""akka.actor.provider = remote """)
+    with DefaultTimeout
+    with ImplicitSender {
 
   def transportName: String
   def schemeIdentifier: String
@@ -32,7 +33,10 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
   def wrapTransport(transport: Transport): Transport =
     if (withAkkaProtocol) {
       val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
-      new AkkaProtocolTransport(transport, system, new AkkaProtocolSettings(provider.remoteSettings.config), AkkaPduProtobufCodec)
+      new AkkaProtocolTransport(transport,
+                                system,
+                                new AkkaProtocolSettings(provider.remoteSettings.config),
+                                AkkaPduProtobufCodec)
     } else transport
 
   def newTransportA(registry: AssociationRegistry): Transport =
@@ -85,7 +89,9 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       awaitCond(registry.transportsReady(addressATest))
 
       // TestTransport throws InvalidAssociationException when trying to associate with non-existing system
-      intercept[InvalidAssociationException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
+      intercept[InvalidAssociationException] {
+        Await.result(transportA.associate(nonExistingAddress), timeout.duration)
+      }
     }
 
     "successfully send PDUs" in {
@@ -121,7 +127,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       registry.logSnapshot.exists {
         case WriteAttempt(`addressATest`, `addressBTest`, sentPdu) => sentPdu == pdu
-        case _ => false
+        case _                                                     => false
       } should ===(true)
     }
 
@@ -157,9 +163,9 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       awaitCond(!registry.existsAssociation(addressATest, addressBTest))
 
       awaitCond {
-        registry.logSnapshot exists {
+        registry.logSnapshot.exists {
           case DisassociateAttempt(`addressATest`, `addressBTest`) => true
-          case _ => false
+          case _                                                   => false
         }
       }
     }

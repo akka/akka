@@ -37,6 +37,7 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
 @ApiMayChange
 @DoNotInherit
 abstract class Behavior[T] { behavior =>
+
   /**
    * Narrow the type of this Behavior, which is always a safe operation. This
    * method is necessary to implement the contravariant nature of Behavior
@@ -76,6 +77,7 @@ abstract class Behavior[T] { behavior =>
  * an extensible behavior but should instead use the [[BehaviorInterceptor]]
  */
 abstract class ExtensibleBehavior[T] extends Behavior[T] {
+
   /**
    * Process an incoming message and return the next behavior.
    *
@@ -114,6 +116,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
 object Behavior {
 
   final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
+
     /**
      * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
      * PartialFunction decides which message to pull in (those that it is defined
@@ -219,7 +222,8 @@ object Behavior {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val unhandledSignal: PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
+  @InternalApi private[akka] val unhandledSignal
+      : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) => UnhandledBehavior
   }
 
@@ -231,6 +235,7 @@ object Behavior {
   private[akka] abstract class DeferredBehavior[T] extends Behavior[T] {
     def apply(ctx: TypedActorContext[T]): Behavior[T]
   }
+
   /** INTERNAL API */
   @InternalApi
   private[akka] object DeferredBehavior {
@@ -268,7 +273,8 @@ object Behavior {
     private final def validatePostStop(postStop: OptionVal[Behavior[T]]): Unit = {
       postStop match {
         case OptionVal.Some(b: DeferredBehavior[_]) =>
-          throw new IllegalArgumentException(s"Behavior used as `postStop` behavior in Stopped(...) was a deferred one [${b.toString}], which is not supported (it would never be evaluated).")
+          throw new IllegalArgumentException(
+            s"Behavior used as `postStop` behavior in Stopped(...) was a deferred one [${b.toString}], which is not supported (it would never be evaluated).")
         case _ => // all good
       }
     }
@@ -305,7 +311,8 @@ object Behavior {
    */
   @InternalApi
   @tailrec
-  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: TypedActorContext[T])(f: Behavior[T] => Behavior[U]): Behavior[U] =
+  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: TypedActorContext[T])(
+      f: Behavior[T] => Behavior[U]): Behavior[U] =
     nextBehavior match {
       case SameBehavior | `currentBehavior` => same
       case UnhandledBehavior                => unhandled
@@ -321,7 +328,7 @@ object Behavior {
   def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
     // TODO can this be made @tailrec?
     behavior match {
-      case innerDeferred: DeferredBehavior[T] => start(innerDeferred(ctx), ctx)
+      case innerDeferred: DeferredBehavior[T]           => start(innerDeferred(ctx), ctx)
       case wrapped: WrappingBehavior[T, Any] @unchecked =>
         // make sure that a deferred behavior wrapped inside some other behavior is also started
         val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
@@ -346,7 +353,7 @@ object Behavior {
         case d: DeferredBehavior[T] =>
           throw new IllegalArgumentException(
             "Cannot verify behavior existence when there are deferred in the behavior stack, " +
-              s"Behavior.start the stack first. This is probably a bug, please create an issue. $d")
+            s"Behavior.start the stack first. This is probably a bug, please create an issue. $d")
         case _ => false
       }
 
@@ -401,7 +408,7 @@ object Behavior {
     // we need to throw here to allow supervision of deathpact exception
     signal match {
       case Terminated(ref) if result == UnhandledBehavior => throw DeathPactException(ref)
-      case _ => result
+      case _                                              => result
     }
   }
 
@@ -410,11 +417,12 @@ object Behavior {
       case null => throw new InvalidMessageException("[null] is not an allowed behavior")
       case SameBehavior | UnhandledBehavior =>
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
-      case d: DeferredBehavior[_] => throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior         => Behavior.same[T]
-      case s: StoppedBehavior[T]  => s
-      case f: FailedBehavior      => f
-      case EmptyBehavior          => Behavior.unhandled[T]
+      case d: DeferredBehavior[_] =>
+        throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
+      case IgnoreBehavior        => Behavior.same[T]
+      case s: StoppedBehavior[T] => s
+      case f: FailedBehavior     => f
+      case EmptyBehavior         => Behavior.unhandled[T]
       case ext: ExtensibleBehavior[T] =>
         val possiblyDeferredResult = msg match {
           case signal: Signal => ext.receiveSignal(ctx, signal)
@@ -425,4 +433,3 @@ object Behavior {
   }
 
 }
-

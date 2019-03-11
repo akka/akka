@@ -35,6 +35,7 @@ object DistributedData extends ExtensionId[DistributedData] {
  */
 @DoNotInherit
 abstract class DistributedData extends Extension {
+
   /**
    * `ActorRef` of the [[Replicator]] .
    */
@@ -70,4 +71,4 @@ object DistributedDataSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class DistributedDataSetup(createExtension: java.util.function.Function[ActorSystem[_], DistributedData])
-  extends ExtensionSetup[DistributedData](DistributedData, createExtension)
+    extends ExtensionSetup[DistributedData](DistributedData, createExtension)

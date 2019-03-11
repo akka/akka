@@ -32,8 +32,7 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
 }
 
 object RemoteMessageSpec {
-  def config = ConfigFactory.parseString(
-    s"""
+  def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = debug
       actor {

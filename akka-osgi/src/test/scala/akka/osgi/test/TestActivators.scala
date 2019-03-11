@@ -5,7 +5,7 @@
 package akka.osgi.test
 
 import akka.osgi.ActorSystemActivator
-import akka.actor.{ Props, ActorSystem }
+import akka.actor.{ ActorSystem, Props }
 import PingPong._
 import org.osgi.framework.BundleContext
 

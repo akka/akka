@@ -33,8 +33,8 @@ class LeaderElectionWithAccrualFailureDetectorMultiJvmNode4 extends LeaderElecti
 class LeaderElectionWithAccrualFailureDetectorMultiJvmNode5 extends LeaderElectionSpec(failureDetectorPuppet = false)
 
 abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(LeaderElectionMultiNodeConfig(failureDetectorPuppet))
 

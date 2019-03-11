@@ -52,8 +52,9 @@ class SharedMutableStateDocSpec {
         // Very bad: shared mutable state will cause your
         // application to break in weird ways
         Future { state = "This will race" }
-        ((echoActor ? Message("With this other one")).mapTo[Message])
-          .foreach { received => state = received.msg }
+        ((echoActor ? Message("With this other one")).mapTo[Message]).foreach { received =>
+          state = received.msg
+        }
 
         // Very bad: shared mutable object allows
         // the other actor to mutate your own state,
@@ -67,7 +68,7 @@ class SharedMutableStateDocSpec {
         // Example of correct approach
         // Completely safe: "self" is OK to close over
         // and it's an ActorRef, which is thread-safe
-        Future { expensiveCalculation() } foreach { self ! _ }
+        Future { expensiveCalculation() }.foreach { self ! _ }
 
         // Completely safe: we close over a fixed value
         // and it's an ActorRef, which is thread-safe

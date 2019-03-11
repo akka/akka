@@ -4,7 +4,7 @@
 
 package docs.event
 
-import akka.actor.{ Actor, Props, DeadLetter }
+import akka.actor.{ Actor, DeadLetter, Props }
 import akka.testkit.AkkaSpec
 
 object LoggingDocSpec {
@@ -18,8 +18,7 @@ object LoggingDocSpec {
       log.debug("Starting")
     }
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-      log.error(reason, "Restarting due to [{}] when processing [{}]",
-        reason.getMessage, message.getOrElse(""))
+      log.error(reason, "Restarting due to [{}] when processing [{}]", reason.getMessage, message.getOrElse(""))
     }
     def receive = {
       case "test" => log.info("Received test")

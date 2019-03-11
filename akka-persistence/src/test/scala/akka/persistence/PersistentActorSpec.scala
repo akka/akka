@@ -40,7 +40,9 @@ object PersistentActorSpec {
       case "boom"   => throw new TestException("boom")
       case GetState => sender() ! events.reverse
       case Delete(toSequenceNr) =>
-        persist(Some(sender())) { s => askedForDelete = s }
+        persist(Some(sender())) { s =>
+          askedForDelete = s
+        }
         deleteMessages(toSequenceNr)
     }
 
@@ -72,14 +74,16 @@ object PersistentActorSpec {
   }
 
   class Behavior1PersistentActor(name: String) extends ExamplePersistentActor(name) {
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
       case d: DeleteMessagesSuccess =>
-        val replyTo = askedForDelete.getOrElse(throw new RuntimeException("Received DeleteMessagesSuccess without anyone asking for delete!"))
+        val replyTo = askedForDelete.getOrElse(
+          throw new RuntimeException("Received DeleteMessagesSuccess without anyone asking for delete!"))
         replyTo ! d
       case d: DeleteMessagesFailure =>
-        val replyTo = askedForDelete.getOrElse(throw new RuntimeException("Received DeleteMessagesFailure without anyone asking for delete!"))
+        val replyTo = askedForDelete.getOrElse(
+          throw new RuntimeException("Received DeleteMessagesFailure without anyone asking for delete!"))
         replyTo ! d
     }
 
@@ -96,33 +100,39 @@ object PersistentActorSpec {
       }
   }
   class Behavior1PersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior1PersistentActor(name) with LevelDbRuntimePluginConfig
+      extends Behavior1PersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class Behavior1PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior1PersistentActor(name) with InmemRuntimePluginConfig
+      extends Behavior1PersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class Behavior2PersistentActor(name: String) extends ExamplePersistentActor(name) {
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAll(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
         persistAll(Seq(Evt(s"${data}-3"), Evt(s"${data}-4")))(updateState)
     }
   }
   class Behavior2PersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior2PersistentActor(name) with LevelDbRuntimePluginConfig
+      extends Behavior2PersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class Behavior2PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior2PersistentActor(name) with InmemRuntimePluginConfig
+      extends Behavior2PersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class Behavior3PersistentActor(name: String) extends ExamplePersistentActor(name) {
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAll(Seq(Evt(s"${data}-11"), Evt(s"${data}-12")))(updateState)
         updateState(Evt(s"${data}-10"))
     }
   }
   class Behavior3PersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior3PersistentActor(name) with LevelDbRuntimePluginConfig
+      extends Behavior3PersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class Behavior3PersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends Behavior3PersistentActor(name) with InmemRuntimePluginConfig
+      extends Behavior3PersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class ChangeBehaviorInLastEventHandlerPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -134,7 +144,7 @@ object PersistentActorSpec {
         }
     }
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persist(Evt(s"${data}-0")) { event =>
           updateState(event)
@@ -142,10 +152,14 @@ object PersistentActorSpec {
         }
     }
   }
-  class ChangeBehaviorInLastEventHandlerPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInLastEventHandlerPersistentActor(name) with LevelDbRuntimePluginConfig
-  class ChangeBehaviorInLastEventHandlerPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInLastEventHandlerPersistentActor(name) with InmemRuntimePluginConfig
+  class ChangeBehaviorInLastEventHandlerPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                      val providedConfig: Config)
+      extends ChangeBehaviorInLastEventHandlerPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class ChangeBehaviorInLastEventHandlerPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                    val providedConfig: Config)
+      extends ChangeBehaviorInLastEventHandlerPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class ChangeBehaviorInFirstEventHandlerPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -157,7 +171,7 @@ object PersistentActorSpec {
         persist(Evt(s"${data}-22"))(updateState)
     }
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persist(Evt(s"${data}-0")) { event =>
           updateState(event)
@@ -165,10 +179,14 @@ object PersistentActorSpec {
         }
     }
   }
-  class ChangeBehaviorInFirstEventHandlerPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInFirstEventHandlerPersistentActor(name) with LevelDbRuntimePluginConfig
-  class ChangeBehaviorInFirstEventHandlerPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInFirstEventHandlerPersistentActor(name) with InmemRuntimePluginConfig
+  class ChangeBehaviorInFirstEventHandlerPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                       val providedConfig: Config)
+      extends ChangeBehaviorInFirstEventHandlerPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class ChangeBehaviorInFirstEventHandlerPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                     val providedConfig: Config)
+      extends ChangeBehaviorInFirstEventHandlerPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class ChangeBehaviorInCommandHandlerFirstPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -178,16 +196,20 @@ object PersistentActorSpec {
         updateState(Evt(s"${data}-30"))
     }
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         context.become(newBehavior)
         persist(Evt(s"${data}-0"))(updateState)
     }
   }
-  class ChangeBehaviorInCommandHandlerFirstPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInCommandHandlerFirstPersistentActor(name) with LevelDbRuntimePluginConfig
-  class ChangeBehaviorInCommandHandlerFirstPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInCommandHandlerFirstPersistentActor(name) with InmemRuntimePluginConfig
+  class ChangeBehaviorInCommandHandlerFirstPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                         val providedConfig: Config)
+      extends ChangeBehaviorInCommandHandlerFirstPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class ChangeBehaviorInCommandHandlerFirstPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                       val providedConfig: Config)
+      extends ChangeBehaviorInCommandHandlerFirstPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class ChangeBehaviorInCommandHandlerLastPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
@@ -197,19 +219,23 @@ object PersistentActorSpec {
         context.unbecome()
     }
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persist(Evt(s"${data}-0"))(updateState)
         context.become(newBehavior)
     }
   }
-  class ChangeBehaviorInCommandHandlerLastPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInCommandHandlerLastPersistentActor(name) with LevelDbRuntimePluginConfig
-  class ChangeBehaviorInCommandHandlerLastPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ChangeBehaviorInCommandHandlerLastPersistentActor(name) with InmemRuntimePluginConfig
+  class ChangeBehaviorInCommandHandlerLastPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                        val providedConfig: Config)
+      extends ChangeBehaviorInCommandHandlerLastPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class ChangeBehaviorInCommandHandlerLastPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                      val providedConfig: Config)
+      extends ChangeBehaviorInCommandHandlerLastPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class SnapshottingPersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
-    override def receiveRecover = super.receiveRecover orElse {
+    override def receiveRecover = super.receiveRecover.orElse {
       case SnapshotOffer(_, events: List[_]) =>
         probe ! "offered"
         this.events = events
@@ -219,18 +245,25 @@ object PersistentActorSpec {
       persistAll(Seq(Evt(s"${cmd.data}-41"), Evt(s"${cmd.data}-42")))(updateState)
     }
 
-    def receiveCommand: Receive = commonBehavior orElse {
+    def receiveCommand: Receive = commonBehavior.orElse {
       case c: Cmd                 => handleCmd(c)
       case SaveSnapshotSuccess(_) => probe ! "saved"
       case "snap"                 => saveSnapshot(events)
     }
   }
-  class SnapshottingPersistentActorWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends SnapshottingPersistentActor(name, probe) with LevelDbRuntimePluginConfig
-  class SnapshottingPersistentActorWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends SnapshottingPersistentActor(name, probe) with InmemRuntimePluginConfig
+  class SnapshottingPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                  probe: ActorRef,
+                                                                  val providedConfig: Config)
+      extends SnapshottingPersistentActor(name, probe)
+      with LevelDbRuntimePluginConfig
+  class SnapshottingPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                probe: ActorRef,
+                                                                val providedConfig: Config)
+      extends SnapshottingPersistentActor(name, probe)
+      with InmemRuntimePluginConfig
 
-  class SnapshottingBecomingPersistentActor(name: String, probe: ActorRef) extends SnapshottingPersistentActor(name, probe) {
+  class SnapshottingBecomingPersistentActor(name: String, probe: ActorRef)
+      extends SnapshottingPersistentActor(name, probe) {
     val becomingRecover: Receive = {
       case msg: SnapshotOffer =>
         context.become(becomingCommand)
@@ -242,14 +275,20 @@ object PersistentActorSpec {
 
     override def receiveRecover = becomingRecover.orElse(super.receiveRecover)
 
-    val becomingCommand: Receive = receiveCommand orElse {
+    val becomingCommand: Receive = receiveCommand.orElse {
       case "It's changing me" => probe ! "I am becoming"
     }
   }
-  class SnapshottingBecomingPersistentActorWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends SnapshottingBecomingPersistentActor(name, probe) with LevelDbRuntimePluginConfig
-  class SnapshottingBecomingPersistentActorWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends SnapshottingBecomingPersistentActor(name, probe) with InmemRuntimePluginConfig
+  class SnapshottingBecomingPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                          probe: ActorRef,
+                                                                          val providedConfig: Config)
+      extends SnapshottingBecomingPersistentActor(name, probe)
+      with LevelDbRuntimePluginConfig
+  class SnapshottingBecomingPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                        probe: ActorRef,
+                                                                        val providedConfig: Config)
+      extends SnapshottingBecomingPersistentActor(name, probe)
+      with InmemRuntimePluginConfig
 
   class ReplyInEventHandlerPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -257,14 +296,16 @@ object PersistentActorSpec {
     }
   }
   class ReplyInEventHandlerPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ReplyInEventHandlerPersistentActor(name) with LevelDbRuntimePluginConfig
+      extends ReplyInEventHandlerPersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class ReplyInEventHandlerPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends ReplyInEventHandlerPersistentActor(name) with InmemRuntimePluginConfig
+      extends ReplyInEventHandlerPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistPersistentActor(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         sender() ! data
         persistAsync(Evt(s"$data-${incCounter()}")) { evt =>
@@ -285,18 +326,20 @@ object PersistentActorSpec {
 
   }
   class AsyncPersistPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistPersistentActor(name) with LevelDbRuntimePluginConfig
+      extends AsyncPersistPersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class AsyncPersistPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistPersistentActor(name) with InmemRuntimePluginConfig
+      extends AsyncPersistPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistThreeTimesPersistentActor(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         sender() ! data
 
-        1 to 3 foreach { i =>
+        (1 to 3).foreach { i =>
           persistAsync(Evt(s"$data-${incCounter()}")) { evt =>
             sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
           }
@@ -309,16 +352,18 @@ object PersistentActorSpec {
     }
   }
   class AsyncPersistThreeTimesPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistThreeTimesPersistentActor(name) with LevelDbRuntimePluginConfig
+      extends AsyncPersistThreeTimesPersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class AsyncPersistThreeTimesPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistThreeTimesPersistentActor(name) with InmemRuntimePluginConfig
+      extends AsyncPersistThreeTimesPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistSameEventTwicePersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     // atomic because used from inside the *async* callbacks
     val sendMsgCounter = new AtomicInteger()
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         sender() ! data
         val event = Evt(data)
@@ -328,17 +373,22 @@ object PersistentActorSpec {
           Thread.sleep(300)
           sender() ! s"${evt.data}-a-${sendMsgCounter.incrementAndGet()}"
         }
-        persistAsync(event) { evt => sender() ! s"${evt.data}-b-${sendMsgCounter.incrementAndGet()}" }
+        persistAsync(event) { evt =>
+          sender() ! s"${evt.data}-b-${sendMsgCounter.incrementAndGet()}"
+        }
     }
   }
-  class AsyncPersistSameEventTwicePersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistSameEventTwicePersistentActor(name) with LevelDbRuntimePluginConfig
+  class AsyncPersistSameEventTwicePersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                val providedConfig: Config)
+      extends AsyncPersistSameEventTwicePersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class AsyncPersistSameEventTwicePersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistSameEventTwicePersistentActor(name) with InmemRuntimePluginConfig
+      extends AsyncPersistSameEventTwicePersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data: String) if data contains "defer" =>
         deferAsync("before-nil")(sender() ! _)
         persistAll(Nil)(_ => sender() ! "Nil")
@@ -353,15 +403,17 @@ object PersistentActorSpec {
     }
   }
   class PersistAllNilPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends PersistAllNilPersistentActor(name) with LevelDbRuntimePluginConfig
+      extends PersistAllNilPersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class PersistAllNilPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends PersistAllNilPersistentActor(name) with InmemRuntimePluginConfig
+      extends PersistAllNilPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     var counter = 0
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         sender() ! data
 
@@ -384,16 +436,21 @@ object PersistentActorSpec {
       counter
     }
   }
-  class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name) with LevelDbRuntimePluginConfig
-  class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name) with InmemRuntimePluginConfig
+  class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithLevelDbRuntimePluginConfig(
+      name: String,
+      val providedConfig: Config)
+      extends AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                            val providedConfig: Config)
+      extends AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistAndPersistMixedSyncAsyncPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     var sendMsgCounter = 0
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         sender() ! data
 
@@ -411,15 +468,19 @@ object PersistentActorSpec {
       sendMsgCounter
     }
   }
-  class AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistAndPersistMixedSyncAsyncPersistentActor(name) with LevelDbRuntimePluginConfig
-  class AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistAndPersistMixedSyncAsyncPersistentActor(name) with InmemRuntimePluginConfig
+  class AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                          val providedConfig: Config)
+      extends AsyncPersistAndPersistMixedSyncAsyncPersistentActor(name)
+      with LevelDbRuntimePluginConfig
+  class AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                                        val providedConfig: Config)
+      extends AsyncPersistAndPersistMixedSyncAsyncPersistentActor(name)
+      with InmemRuntimePluginConfig
 
   class AsyncPersistHandlerCorrelationCheck(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAsync(Evt(data)) { evt =>
           if (data != evt.data)
@@ -435,9 +496,11 @@ object PersistentActorSpec {
     }
   }
   class AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistHandlerCorrelationCheck(name) with LevelDbRuntimePluginConfig
+      extends AsyncPersistHandlerCorrelationCheck(name)
+      with LevelDbRuntimePluginConfig
   class AsyncPersistHandlerCorrelationCheckWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AsyncPersistHandlerCorrelationCheck(name) with InmemRuntimePluginConfig
+      extends AsyncPersistHandlerCorrelationCheck(name)
+      with InmemRuntimePluginConfig
 
   class AnyValEventPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -445,11 +508,14 @@ object PersistentActorSpec {
     }
   }
   class AnyValEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AnyValEventPersistentActor(name) with LevelDbRuntimePluginConfig
+      extends AnyValEventPersistentActor(name)
+      with LevelDbRuntimePluginConfig
   class AnyValEventPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends AnyValEventPersistentActor(name) with InmemRuntimePluginConfig
+      extends AnyValEventPersistentActor(name)
+      with InmemRuntimePluginConfig
 
-  class HandleRecoveryFinishedEventPersistentActor(name: String, probe: ActorRef) extends SnapshottingPersistentActor(name, probe) {
+  class HandleRecoveryFinishedEventPersistentActor(name: String, probe: ActorRef)
+      extends SnapshottingPersistentActor(name, probe) {
     val sendingRecover: Receive = {
       case msg: SnapshotOffer =>
         // sending ourself a normal message tests
@@ -464,15 +530,21 @@ object PersistentActorSpec {
 
     override def receiveRecover = sendingRecover.orElse(super.receiveRecover)
 
-    override def receiveCommand: Receive = super.receiveCommand orElse {
+    override def receiveCommand: Receive = super.receiveCommand.orElse {
       case s: String => probe ! s
     }
 
   }
-  class HandleRecoveryFinishedEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends HandleRecoveryFinishedEventPersistentActor(name, probe) with LevelDbRuntimePluginConfig
-  class HandleRecoveryFinishedEventPersistentActorWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends HandleRecoveryFinishedEventPersistentActor(name, probe) with InmemRuntimePluginConfig
+  class HandleRecoveryFinishedEventPersistentActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                 probe: ActorRef,
+                                                                                 val providedConfig: Config)
+      extends HandleRecoveryFinishedEventPersistentActor(name, probe)
+      with LevelDbRuntimePluginConfig
+  class HandleRecoveryFinishedEventPersistentActorWithInmemRuntimePluginConfig(name: String,
+                                                                               probe: ActorRef,
+                                                                               val providedConfig: Config)
+      extends HandleRecoveryFinishedEventPersistentActor(name, probe)
+      with InmemRuntimePluginConfig
 
   trait DeferActor extends PersistentActor {
     def doDefer[A](event: A)(handler: A => Unit): Unit
@@ -497,13 +569,17 @@ object PersistentActorSpec {
   class DeferringAsyncWithPersistActor(name: String) extends DeferringWithPersistActor(name) with DeferAsync
   class DeferringSyncWithPersistActor(name: String) extends DeferringWithPersistActor(name) with DeferSync
   class DeferringAsyncWithPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithPersistActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringAsyncWithPersistActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringSyncWithPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithPersistActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringSyncWithPersistActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringAsyncWithPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithPersistActor(name) with InmemRuntimePluginConfig
+      extends DeferringAsyncWithPersistActor(name)
+      with InmemRuntimePluginConfig
   class DeferringSyncWithPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithPersistActor(name) with InmemRuntimePluginConfig
+      extends DeferringSyncWithPersistActor(name)
+      with InmemRuntimePluginConfig
 
   abstract class DeferringWithAsyncPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
@@ -517,15 +593,21 @@ object PersistentActorSpec {
   class DeferringAsyncWithAsyncPersistActor(name: String) extends DeferringWithAsyncPersistActor(name) with DeferAsync
   class DeferringSyncWithAsyncPersistActor(name: String) extends DeferringWithAsyncPersistActor(name) with DeferSync
   class DeferringAsyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithAsyncPersistActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringAsyncWithAsyncPersistActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringSyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithAsyncPersistActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringSyncWithAsyncPersistActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringAsyncWithAsyncPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithAsyncPersistActor(name) with InmemRuntimePluginConfig
+      extends DeferringAsyncWithAsyncPersistActor(name)
+      with InmemRuntimePluginConfig
   class DeferringSyncWithAsyncPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithAsyncPersistActor(name) with InmemRuntimePluginConfig
+      extends DeferringSyncWithAsyncPersistActor(name)
+      with InmemRuntimePluginConfig
 
-  abstract class DeferringMixedCallsPPADDPADPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
+  abstract class DeferringMixedCallsPPADDPADPersistActor(name: String)
+      extends ExamplePersistentActor(name)
+      with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) =>
         persist(s"p-$data-1") { sender() ! _ }
@@ -536,18 +618,32 @@ object PersistentActorSpec {
         doDefer(s"d-$data-6") { sender() ! _ }
     }
   }
-  class DeferringAsyncMixedCallsPPADDPADPersistActor(name: String) extends DeferringMixedCallsPPADDPADPersistActor(name) with DeferAsync
-  class DeferringSyncMixedCallsPPADDPADPersistActor(name: String) extends DeferringMixedCallsPPADDPADPersistActor(name) with DeferSync
-  class DeferringAsyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncMixedCallsPPADDPADPersistActor(name) with LevelDbRuntimePluginConfig
-  class DeferringSyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncMixedCallsPPADDPADPersistActor(name) with LevelDbRuntimePluginConfig
-  class DeferringAsyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncMixedCallsPPADDPADPersistActor(name) with InmemRuntimePluginConfig
-  class DeferringSyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncMixedCallsPPADDPADPersistActor(name) with InmemRuntimePluginConfig
+  class DeferringAsyncMixedCallsPPADDPADPersistActor(name: String)
+      extends DeferringMixedCallsPPADDPADPersistActor(name)
+      with DeferAsync
+  class DeferringSyncMixedCallsPPADDPADPersistActor(name: String)
+      extends DeferringMixedCallsPPADDPADPersistActor(name)
+      with DeferSync
+  class DeferringAsyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                   val providedConfig: Config)
+      extends DeferringAsyncMixedCallsPPADDPADPersistActor(name)
+      with LevelDbRuntimePluginConfig
+  class DeferringSyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                  val providedConfig: Config)
+      extends DeferringSyncMixedCallsPPADDPADPersistActor(name)
+      with LevelDbRuntimePluginConfig
+  class DeferringAsyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig(name: String,
+                                                                                 val providedConfig: Config)
+      extends DeferringAsyncMixedCallsPPADDPADPersistActor(name)
+      with InmemRuntimePluginConfig
+  class DeferringSyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig(name: String,
+                                                                                val providedConfig: Config)
+      extends DeferringSyncMixedCallsPPADDPADPersistActor(name)
+      with InmemRuntimePluginConfig
 
-  abstract class DeferringWithNoPersistCallsPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
+  abstract class DeferringWithNoPersistCallsPersistActor(name: String)
+      extends ExamplePersistentActor(name)
+      with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(_) =>
         doDefer("d-1") { sender() ! _ }
@@ -555,22 +651,35 @@ object PersistentActorSpec {
         doDefer("d-3") { sender() ! _ }
     }
   }
-  class DeferringAsyncWithNoPersistCallsPersistActor(name: String) extends DeferringWithNoPersistCallsPersistActor(name) with DeferAsync
-  class DeferringSyncWithNoPersistCallsPersistActor(name: String) extends DeferringWithNoPersistCallsPersistActor(name) with DeferSync
-  class DeferringAsyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithNoPersistCallsPersistActor(name) with LevelDbRuntimePluginConfig
-  class DeferringSyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithNoPersistCallsPersistActor(name) with LevelDbRuntimePluginConfig
-  class DeferringAsyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncWithNoPersistCallsPersistActor(name) with InmemRuntimePluginConfig
-  class DeferringSyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncWithNoPersistCallsPersistActor(name) with InmemRuntimePluginConfig
+  class DeferringAsyncWithNoPersistCallsPersistActor(name: String)
+      extends DeferringWithNoPersistCallsPersistActor(name)
+      with DeferAsync
+  class DeferringSyncWithNoPersistCallsPersistActor(name: String)
+      extends DeferringWithNoPersistCallsPersistActor(name)
+      with DeferSync
+  class DeferringAsyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                   val providedConfig: Config)
+      extends DeferringAsyncWithNoPersistCallsPersistActor(name)
+      with LevelDbRuntimePluginConfig
+  class DeferringSyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig(name: String,
+                                                                                  val providedConfig: Config)
+      extends DeferringSyncWithNoPersistCallsPersistActor(name)
+      with LevelDbRuntimePluginConfig
+  class DeferringAsyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig(name: String,
+                                                                                 val providedConfig: Config)
+      extends DeferringAsyncWithNoPersistCallsPersistActor(name)
+      with InmemRuntimePluginConfig
+  class DeferringSyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig(name: String,
+                                                                                val providedConfig: Config)
+      extends DeferringSyncWithNoPersistCallsPersistActor(name)
+      with InmemRuntimePluginConfig
 
   abstract class DeferringActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) =>
         sender() ! data
-        persist(()) { _ => } // skip calling defer immediately because of empty pending invocations
+        persist(()) { _ =>
+        } // skip calling defer immediately because of empty pending invocations
         doDefer(Evt(s"$data-defer")) { evt =>
           sender() ! evt.data
         }
@@ -579,13 +688,17 @@ object PersistentActorSpec {
   class DeferringAsyncActor(name: String) extends DeferringActor(name) with DeferAsync
   class DeferringSyncActor(name: String) extends DeferringActor(name) with DeferSync
   class DeferringAsyncActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringAsyncActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringSyncActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncActor(name) with LevelDbRuntimePluginConfig
+      extends DeferringSyncActor(name)
+      with LevelDbRuntimePluginConfig
   class DeferringAsyncActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringAsyncActor(name) with InmemRuntimePluginConfig
+      extends DeferringAsyncActor(name)
+      with InmemRuntimePluginConfig
   class DeferringSyncActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends DeferringSyncActor(name) with InmemRuntimePluginConfig
+      extends DeferringSyncActor(name)
+      with InmemRuntimePluginConfig
 
   class StressOrdering(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -601,9 +714,11 @@ object PersistentActorSpec {
     }
   }
   class StressOrderingWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends StressOrdering(name) with LevelDbRuntimePluginConfig
+      extends StressOrdering(name)
+      with LevelDbRuntimePluginConfig
   class StressOrderingWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends StressOrdering(name) with InmemRuntimePluginConfig
+      extends StressOrdering(name)
+      with InmemRuntimePluginConfig
 
   class RecoverMessageCausedRestart(name: String) extends NamedPersistentActor(name) {
     var master: ActorRef = _
@@ -618,7 +733,7 @@ object PersistentActorSpec {
       if (master ne null) {
         master ! "failed with " + reason.getClass.getSimpleName + " while processing " + message.getOrElse("")
       }
-      context stop self
+      context.stop(self)
     }
 
     override def receiveRecover = {
@@ -627,9 +742,11 @@ object PersistentActorSpec {
 
   }
   class RecoverMessageCausedRestartWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends RecoverMessageCausedRestart(name) with LevelDbRuntimePluginConfig
+      extends RecoverMessageCausedRestart(name)
+      with LevelDbRuntimePluginConfig
   class RecoverMessageCausedRestartWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends RecoverMessageCausedRestart(name) with InmemRuntimePluginConfig
+      extends RecoverMessageCausedRestart(name)
+      with InmemRuntimePluginConfig
 
   class MultipleAndNestedPersists(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -637,18 +754,26 @@ object PersistentActorSpec {
         probe ! s
         persist(s + "-outer-1") { outer =>
           probe ! outer
-          persist(s + "-inner-1") { inner => probe ! inner }
+          persist(s + "-inner-1") { inner =>
+            probe ! inner
+          }
         }
         persist(s + "-outer-2") { outer =>
           probe ! outer
-          persist(s + "-inner-2") { inner => probe ! inner }
+          persist(s + "-inner-2") { inner =>
+            probe ! inner
+          }
         }
     }
   }
-  class MultipleAndNestedPersistsWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends MultipleAndNestedPersists(name, probe) with LevelDbRuntimePluginConfig
+  class MultipleAndNestedPersistsWithLevelDbRuntimePluginConfig(name: String,
+                                                                probe: ActorRef,
+                                                                val providedConfig: Config)
+      extends MultipleAndNestedPersists(name, probe)
+      with LevelDbRuntimePluginConfig
   class MultipleAndNestedPersistsWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends MultipleAndNestedPersists(name, probe) with InmemRuntimePluginConfig
+      extends MultipleAndNestedPersists(name, probe)
+      with InmemRuntimePluginConfig
 
   class MultipleAndNestedPersistAsyncs(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -656,18 +781,28 @@ object PersistentActorSpec {
         probe ! s
         persistAsync(s + "-outer-1") { outer =>
           probe ! outer
-          persistAsync(s + "-inner-1") { inner => probe ! inner }
+          persistAsync(s + "-inner-1") { inner =>
+            probe ! inner
+          }
         }
         persistAsync(s + "-outer-2") { outer =>
           probe ! outer
-          persistAsync(s + "-inner-2") { inner => probe ! inner }
+          persistAsync(s + "-inner-2") { inner =>
+            probe ! inner
+          }
         }
     }
   }
-  class MultipleAndNestedPersistAsyncsWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends MultipleAndNestedPersistAsyncs(name, probe) with LevelDbRuntimePluginConfig
-  class MultipleAndNestedPersistAsyncsWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends MultipleAndNestedPersistAsyncs(name, probe) with InmemRuntimePluginConfig
+  class MultipleAndNestedPersistAsyncsWithLevelDbRuntimePluginConfig(name: String,
+                                                                     probe: ActorRef,
+                                                                     val providedConfig: Config)
+      extends MultipleAndNestedPersistAsyncs(name, probe)
+      with LevelDbRuntimePluginConfig
+  class MultipleAndNestedPersistAsyncsWithInmemRuntimePluginConfig(name: String,
+                                                                   probe: ActorRef,
+                                                                   val providedConfig: Config)
+      extends MultipleAndNestedPersistAsyncs(name, probe)
+      with InmemRuntimePluginConfig
 
   class DeeplyNestedPersistAsyncs(name: String, maxDepth: Int, probe: ActorRef) extends ExamplePersistentActor(name) {
     var currentDepths = Map.empty[String, Int].withDefaultValue(1)
@@ -690,10 +825,18 @@ object PersistentActorSpec {
         persistAsync(s + "-" + 1)(weMustGoDeeper)
     }
   }
-  class DeeplyNestedPersistAsyncsWithLevelDbRuntimePluginConfig(name: String, maxDepth: Int, probe: ActorRef, val providedConfig: Config)
-    extends DeeplyNestedPersistAsyncs(name, maxDepth, probe) with LevelDbRuntimePluginConfig
-  class DeeplyNestedPersistAsyncsWithInmemRuntimePluginConfig(name: String, maxDepth: Int, probe: ActorRef, val providedConfig: Config)
-    extends DeeplyNestedPersistAsyncs(name, maxDepth, probe) with InmemRuntimePluginConfig
+  class DeeplyNestedPersistAsyncsWithLevelDbRuntimePluginConfig(name: String,
+                                                                maxDepth: Int,
+                                                                probe: ActorRef,
+                                                                val providedConfig: Config)
+      extends DeeplyNestedPersistAsyncs(name, maxDepth, probe)
+      with LevelDbRuntimePluginConfig
+  class DeeplyNestedPersistAsyncsWithInmemRuntimePluginConfig(name: String,
+                                                              maxDepth: Int,
+                                                              probe: ActorRef,
+                                                              val providedConfig: Config)
+      extends DeeplyNestedPersistAsyncs(name, maxDepth, probe)
+      with InmemRuntimePluginConfig
 
   class NestedPersistNormalAndAsyncs(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -713,10 +856,16 @@ object PersistentActorSpec {
         }
     }
   }
-  class NestedPersistNormalAndAsyncsWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistNormalAndAsyncs(name, probe) with LevelDbRuntimePluginConfig
-  class NestedPersistNormalAndAsyncsWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistNormalAndAsyncs(name, probe) with InmemRuntimePluginConfig
+  class NestedPersistNormalAndAsyncsWithLevelDbRuntimePluginConfig(name: String,
+                                                                   probe: ActorRef,
+                                                                   val providedConfig: Config)
+      extends NestedPersistNormalAndAsyncs(name, probe)
+      with LevelDbRuntimePluginConfig
+  class NestedPersistNormalAndAsyncsWithInmemRuntimePluginConfig(name: String,
+                                                                 probe: ActorRef,
+                                                                 val providedConfig: Config)
+      extends NestedPersistNormalAndAsyncs(name, probe)
+      with InmemRuntimePluginConfig
 
   class NestedPersistAsyncsAndNormal(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -736,10 +885,16 @@ object PersistentActorSpec {
         }
     }
   }
-  class NestedPersistAsyncsAndNormalWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistAsyncsAndNormal(name, probe) with LevelDbRuntimePluginConfig
-  class NestedPersistAsyncsAndNormalWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistAsyncsAndNormal(name, probe) with InmemRuntimePluginConfig
+  class NestedPersistAsyncsAndNormalWithLevelDbRuntimePluginConfig(name: String,
+                                                                   probe: ActorRef,
+                                                                   val providedConfig: Config)
+      extends NestedPersistAsyncsAndNormal(name, probe)
+      with LevelDbRuntimePluginConfig
+  class NestedPersistAsyncsAndNormalWithInmemRuntimePluginConfig(name: String,
+                                                                 probe: ActorRef,
+                                                                 val providedConfig: Config)
+      extends NestedPersistAsyncsAndNormal(name, probe)
+      with InmemRuntimePluginConfig
 
   class NestedPersistInAsyncEnforcesStashing(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -756,10 +911,16 @@ object PersistentActorSpec {
         }
     }
   }
-  class NestedPersistInAsyncEnforcesStashingWithLevelDbRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistInAsyncEnforcesStashing(name, probe) with LevelDbRuntimePluginConfig
-  class NestedPersistInAsyncEnforcesStashingWithInmemRuntimePluginConfig(name: String, probe: ActorRef, val providedConfig: Config)
-    extends NestedPersistInAsyncEnforcesStashing(name, probe) with InmemRuntimePluginConfig
+  class NestedPersistInAsyncEnforcesStashingWithLevelDbRuntimePluginConfig(name: String,
+                                                                           probe: ActorRef,
+                                                                           val providedConfig: Config)
+      extends NestedPersistInAsyncEnforcesStashing(name, probe)
+      with LevelDbRuntimePluginConfig
+  class NestedPersistInAsyncEnforcesStashingWithInmemRuntimePluginConfig(name: String,
+                                                                         probe: ActorRef,
+                                                                         val providedConfig: Config)
+      extends NestedPersistInAsyncEnforcesStashing(name, probe)
+      with InmemRuntimePluginConfig
 
   class DeeplyNestedPersists(name: String, maxDepth: Int, probe: ActorRef) extends ExamplePersistentActor(name) {
     var currentDepths = Map.empty[String, Int].withDefaultValue(1)
@@ -782,18 +943,30 @@ object PersistentActorSpec {
         persist(s + "-" + 1)(weMustGoDeeper)
     }
   }
-  class DeeplyNestedPersistsWithLevelDbRuntimePluginConfig(name: String, maxDepth: Int, probe: ActorRef, val providedConfig: Config)
-    extends DeeplyNestedPersists(name, maxDepth, probe) with LevelDbRuntimePluginConfig
-  class DeeplyNestedPersistsWithInmemRuntimePluginConfig(name: String, maxDepth: Int, probe: ActorRef, val providedConfig: Config)
-    extends DeeplyNestedPersists(name, maxDepth, probe) with InmemRuntimePluginConfig
+  class DeeplyNestedPersistsWithLevelDbRuntimePluginConfig(name: String,
+                                                           maxDepth: Int,
+                                                           probe: ActorRef,
+                                                           val providedConfig: Config)
+      extends DeeplyNestedPersists(name, maxDepth, probe)
+      with LevelDbRuntimePluginConfig
+  class DeeplyNestedPersistsWithInmemRuntimePluginConfig(name: String,
+                                                         maxDepth: Int,
+                                                         probe: ActorRef,
+                                                         val providedConfig: Config)
+      extends DeeplyNestedPersists(name, maxDepth, probe)
+      with InmemRuntimePluginConfig
 
-  class StackableTestPersistentActor(val probe: ActorRef) extends StackableTestPersistentActor.BaseActor with PersistentActor with StackableTestPersistentActor.MixinActor {
+  class StackableTestPersistentActor(val probe: ActorRef)
+      extends StackableTestPersistentActor.BaseActor
+      with PersistentActor
+      with StackableTestPersistentActor.MixinActor {
     override def persistenceId: String = "StackableTestPersistentActor"
 
     def receiveCommand = {
-      case "restart" => throw new Exception("triggering restart") with NoStackTrace {
-        override def toString = "Boom!"
-      }
+      case "restart" =>
+        throw new Exception("triggering restart") with NoStackTrace {
+          override def toString = "Boom!"
+        }
     }
 
     def receiveRecover = {
@@ -822,9 +995,11 @@ object PersistentActorSpec {
 
   }
   class StackableTestPersistentActorWithLevelDbRuntimePluginConfig(probe: ActorRef, val providedConfig: Config)
-    extends StackableTestPersistentActor(probe) with LevelDbRuntimePluginConfig
+      extends StackableTestPersistentActor(probe)
+      with LevelDbRuntimePluginConfig
   class StackableTestPersistentActorWithInmemRuntimePluginConfig(probe: ActorRef, val providedConfig: Config)
-    extends StackableTestPersistentActor(probe) with InmemRuntimePluginConfig
+      extends StackableTestPersistentActor(probe)
+      with InmemRuntimePluginConfig
 
   object StackableTestPersistentActor {
 
@@ -903,14 +1078,16 @@ object PersistentActorSpec {
 
     override def onRecoveryFailure(cause: scala.Throwable, event: Option[Any]): Unit = ()
 
-    def receiveCommand = commonBehavior orElse {
+    def receiveCommand = commonBehavior.orElse {
       case Cmd(d) => persist(Evt(d))(updateState)
     }
   }
   class PersistInRecoveryWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends PersistInRecovery(name) with LevelDbRuntimePluginConfig
+      extends PersistInRecovery(name)
+      with LevelDbRuntimePluginConfig
   class PersistInRecoveryWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-    extends PersistInRecovery(name) with InmemRuntimePluginConfig
+      extends PersistInRecovery(name)
+      with InmemRuntimePluginConfig
 
   class ExceptionActor(name: String) extends ExamplePersistentActor(name) {
     override def receiveCommand = commonBehavior
@@ -937,17 +1114,23 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def behavior3PersistentActor: ActorRef = namedPersistentActor[Behavior3PersistentActor]
 
-  protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef = namedPersistentActor[ChangeBehaviorInFirstEventHandlerPersistentActor]
+  protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef =
+    namedPersistentActor[ChangeBehaviorInFirstEventHandlerPersistentActor]
 
-  protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef = namedPersistentActor[ChangeBehaviorInLastEventHandlerPersistentActor]
+  protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef =
+    namedPersistentActor[ChangeBehaviorInLastEventHandlerPersistentActor]
 
-  protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef = namedPersistentActor[ChangeBehaviorInCommandHandlerFirstPersistentActor]
+  protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef =
+    namedPersistentActor[ChangeBehaviorInCommandHandlerFirstPersistentActor]
 
-  protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef = namedPersistentActor[ChangeBehaviorInCommandHandlerLastPersistentActor]
+  protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef =
+    namedPersistentActor[ChangeBehaviorInCommandHandlerLastPersistentActor]
 
-  protected def snapshottingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
+  protected def snapshottingPersistentActor: ActorRef =
+    system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
 
-  protected def snapshottingBecomingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingBecomingPersistentActor], name, testActor))
+  protected def snapshottingBecomingPersistentActor: ActorRef =
+    system.actorOf(Props(classOf[SnapshottingBecomingPersistentActor], name, testActor))
 
   protected def replyInEventHandlerPersistentActor: ActorRef = namedPersistentActor[ReplyInEventHandlerPersistentActor]
 
@@ -955,45 +1138,61 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def asyncPersistPersistentActor: ActorRef = namedPersistentActor[AsyncPersistPersistentActor]
 
-  protected def asyncPersistThreeTimesPersistentActor: ActorRef = namedPersistentActor[AsyncPersistThreeTimesPersistentActor]
+  protected def asyncPersistThreeTimesPersistentActor: ActorRef =
+    namedPersistentActor[AsyncPersistThreeTimesPersistentActor]
 
-  protected def asyncPersistSameEventTwicePersistentActor: ActorRef = namedPersistentActor[AsyncPersistSameEventTwicePersistentActor]
+  protected def asyncPersistSameEventTwicePersistentActor: ActorRef =
+    namedPersistentActor[AsyncPersistSameEventTwicePersistentActor]
 
   protected def persistAllNilPersistentActor: ActorRef = namedPersistentActor[PersistAllNilPersistentActor]
 
-  protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef = namedPersistentActor[AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor]
+  protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef =
+    namedPersistentActor[AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActor]
 
-  protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef = namedPersistentActor[AsyncPersistAndPersistMixedSyncAsyncPersistentActor]
+  protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef =
+    namedPersistentActor[AsyncPersistAndPersistMixedSyncAsyncPersistentActor]
 
-  protected def asyncPersistHandlerCorrelationCheck: ActorRef = namedPersistentActor[AsyncPersistHandlerCorrelationCheck]
+  protected def asyncPersistHandlerCorrelationCheck: ActorRef =
+    namedPersistentActor[AsyncPersistHandlerCorrelationCheck]
 
   protected def deferringWithPersistActor: ActorRef = namedPersistentActor[DeferringWithPersistActor]
 
   protected def deferringWithAsyncPersistActor: ActorRef = namedPersistentActor[DeferringWithAsyncPersistActor]
 
-  protected def deferringMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActor[DeferringMixedCallsPPADDPADPersistActor]
+  protected def deferringMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActor[DeferringMixedCallsPPADDPADPersistActor]
 
-  protected def deferringWithNoPersistCallsPersistActor: ActorRef = namedPersistentActor[DeferringWithNoPersistCallsPersistActor]
+  protected def deferringWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActor[DeferringWithNoPersistCallsPersistActor]
 
-  protected def handleRecoveryFinishedEventPersistentActor: ActorRef = system.actorOf(Props(classOf[HandleRecoveryFinishedEventPersistentActor], name, testActor))
+  protected def handleRecoveryFinishedEventPersistentActor: ActorRef =
+    system.actorOf(Props(classOf[HandleRecoveryFinishedEventPersistentActor], name, testActor))
 
   protected def stressOrdering: ActorRef = namedPersistentActor[StressOrdering]
 
-  protected def stackableTestPersistentActor: ActorRef = system.actorOf(Props(classOf[StackableTestPersistentActor], testActor))
+  protected def stackableTestPersistentActor: ActorRef =
+    system.actorOf(Props(classOf[StackableTestPersistentActor], testActor))
 
-  protected def multipleAndNestedPersists: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersists], name, testActor))
+  protected def multipleAndNestedPersists: ActorRef =
+    system.actorOf(Props(classOf[MultipleAndNestedPersists], name, testActor))
 
-  protected def multipleAndNestedPersistAsyncs: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersistAsyncs], name, testActor))
+  protected def multipleAndNestedPersistAsyncs: ActorRef =
+    system.actorOf(Props(classOf[MultipleAndNestedPersistAsyncs], name, testActor))
 
-  protected def deeplyNestedPersists(nestedPersists: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersists], name, nestedPersists, testActor))
+  protected def deeplyNestedPersists(nestedPersists: Int): ActorRef =
+    system.actorOf(Props(classOf[DeeplyNestedPersists], name, nestedPersists, testActor))
 
-  protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersistAsyncs], name, nestedPersistAsyncs, testActor))
+  protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef =
+    system.actorOf(Props(classOf[DeeplyNestedPersistAsyncs], name, nestedPersistAsyncs, testActor))
 
-  protected def nestedPersistNormalAndAsyncs: ActorRef = system.actorOf(Props(classOf[NestedPersistNormalAndAsyncs], name, testActor))
+  protected def nestedPersistNormalAndAsyncs: ActorRef =
+    system.actorOf(Props(classOf[NestedPersistNormalAndAsyncs], name, testActor))
 
-  protected def nestedPersistAsyncsAndNormal: ActorRef = system.actorOf(Props(classOf[NestedPersistAsyncsAndNormal], name, testActor))
+  protected def nestedPersistAsyncsAndNormal: ActorRef =
+    system.actorOf(Props(classOf[NestedPersistAsyncsAndNormal], name, testActor))
 
-  protected def nestedPersistInAsyncEnforcesStashing: ActorRef = system.actorOf(Props(classOf[NestedPersistInAsyncEnforcesStashing], name, testActor))
+  protected def nestedPersistInAsyncEnforcesStashing: ActorRef =
+    system.actorOf(Props(classOf[NestedPersistInAsyncEnforcesStashing], name, testActor))
 
   protected def persistInRecovery: ActorRef = namedPersistentActor[PersistInRecovery]
 
@@ -1003,17 +1202,22 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def deferringSyncWithPersistActor: ActorRef = namedPersistentActor[DeferringSyncWithPersistActor]
 
-  protected def deferringAsyncWithAsyncPersistActor: ActorRef = namedPersistentActor[DeferringAsyncWithAsyncPersistActor]
+  protected def deferringAsyncWithAsyncPersistActor: ActorRef =
+    namedPersistentActor[DeferringAsyncWithAsyncPersistActor]
 
   protected def deferringSyncWithAsyncPersistActor: ActorRef = namedPersistentActor[DeferringSyncWithAsyncPersistActor]
 
-  protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActor[DeferringAsyncMixedCallsPPADDPADPersistActor]
+  protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActor[DeferringAsyncMixedCallsPPADDPADPersistActor]
 
-  protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActor[DeferringSyncMixedCallsPPADDPADPersistActor]
+  protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActor[DeferringSyncMixedCallsPPADDPADPersistActor]
 
-  protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActor[DeferringAsyncWithNoPersistCallsPersistActor]
+  protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActor[DeferringAsyncWithNoPersistCallsPersistActor]
 
-  protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActor[DeferringSyncWithNoPersistCallsPersistActor]
+  protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActor[DeferringSyncWithNoPersistCallsPersistActor]
 
   protected def deferringAsyncActor: ActorRef = namedPersistentActor[DeferringAsyncActor]
 
@@ -1023,7 +1227,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     "fail fast if persistenceId is null" in {
       import akka.testkit.filterEvents
       filterEvents(EventFilter[ActorInitializationException]()) {
-        EventFilter.error(message = "requirement failed: persistenceId is [null] for PersistentActor") intercept {
+        EventFilter.error(message = "requirement failed: persistenceId is [null] for PersistentActor").intercept {
           val ref = system.actorOf(Props(new NamedPersistentActor(null) {
             override def receiveRecover: Receive = Actor.emptyBehavior
 
@@ -1037,7 +1241,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     "fail fast if persistenceId is an empty string" in {
       import akka.testkit.filterEvents
       filterEvents(EventFilter[ActorInitializationException]()) {
-        EventFilter.error(message = "persistenceId cannot be empty for PersistentActor") intercept {
+        EventFilter.error(message = "persistenceId cannot be empty for PersistentActor").intercept {
           val ref = system.actorOf(Props(new NamedPersistentActor("  ") {
             override def receiveRecover: Receive = Actor.emptyBehavior
 
@@ -1167,9 +1371,11 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     }
     "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
       val persistentActor = asyncPersistThreeTimesPersistentActor
-      val commands = 1 to 10 map { i => Cmd(s"c-$i") }
+      val commands = (1 to 10).map { i =>
+        Cmd(s"c-$i")
+      }
 
-      commands foreach { i =>
+      commands.foreach { i =>
         Thread.sleep(Random.nextInt(10))
         persistentActor ! i
       }
@@ -1179,7 +1385,9 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       val replies = all.filter(r => r.count(_ == '-') == 1)
       replies should equal(commands.map(_.data))
 
-      val expectedAcks = (3 to 32) map { i => s"a-${i / 3}-${i - 2}" }
+      val expectedAcks = (3 to 32).map { i =>
+        s"a-${i / 3}-${i - 2}"
+      }
       val acks = all.filter(r => r.count(_ == '-') == 2)
       acks should equal(expectedAcks)
     }
@@ -1188,17 +1396,19 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       // but as we want to remove it soon, keeping the explicit test here.
       val persistentActor = asyncPersistThreeTimesPersistentActor
 
-      val commands = 1 to 10 map { i => Cmd(s"c-$i") }
+      val commands = (1 to 10).map { i =>
+        Cmd(s"c-$i")
+      }
       val probes = Vector.fill(10)(TestProbe())
 
-      (probes zip commands) foreach {
+      (probes.zip(commands)).foreach {
         case (p, c) =>
           persistentActor.tell(c, p.ref)
       }
 
       val ackClass = classOf[String]
       within(3.seconds) {
-        probes foreach {
+        probes.foreach {
           _.expectMsgAllClassOf(ackClass, ackClass, ackClass)
         }
       }
@@ -1457,8 +1667,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! "b"
 
       val msgs = receiveN(10).map(_.toString)
-      val as = msgs.filter(_ startsWith "a")
-      val bs = msgs.filter(_ startsWith "b")
+      val as = msgs.filter(_.startsWith("a"))
+      val bs = msgs.filter(_.startsWith("b"))
       as should equal(List("a", "a-outer-1", "a-outer-2", "a-inner-1", "a-inner-2"))
       bs should equal(List("b", "b-outer-1", "b-outer-2", "b-inner-1", "b-inner-2"))
     }
@@ -1580,7 +1790,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
 }
 
-class LeveldbPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorSpec"))
+class LeveldbPersistentActorSpec
+    extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorSpec"))
 
 class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemPersistentActorSpec"))
 
@@ -1588,205 +1799,377 @@ class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.confi
  * Same test suite as [[LeveldbPersistentActorSpec]], the only difference is that all persistent actors are using the
  * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
  */
-class LeveldbPersistentActorWithRuntimePluginConfigSpec extends PersistentActorSpec(
-  PersistenceSpec.config("leveldb", "LeveldbPersistentActorWithRuntimePluginConfigSpec")
-) {
+class LeveldbPersistentActorWithRuntimePluginConfigSpec
+    extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorWithRuntimePluginConfigSpec")) {
 
   val providedActorConfig: Config = {
-    ConfigFactory.parseString(
-      s"""
+    ConfigFactory
+      .parseString(s"""
          | custom.persistence.journal.leveldb.dir = target/journal-LeveldbPersistentActorWithRuntimePluginConfigSpec
          | custom.persistence.snapshot-store.local.dir = target/snapshots-LeveldbPersistentActorWithRuntimePluginConfigSpec/
-     """.stripMargin
-    ).withValue(
-        s"custom.persistence.journal.leveldb",
-        system.settings.config.getValue(s"akka.persistence.journal.leveldb")
-      ).withValue(
-          "custom.persistence.snapshot-store.local",
-          system.settings.config.getValue("akka.persistence.snapshot-store.local")
-        )
+     """.stripMargin)
+      .withValue(s"custom.persistence.journal.leveldb",
+                 system.settings.config.getValue(s"akka.persistence.journal.leveldb"))
+      .withValue("custom.persistence.snapshot-store.local",
+                 system.settings.config.getValue("akka.persistence.snapshot-store.local"))
   }
 
-  override protected def behavior1PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def behavior1PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def behavior2PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior2PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def behavior2PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior2PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def behavior3PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior3PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def behavior3PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior3PersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInFirstEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInFirstEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInLastEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInLastEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInCommandHandlerFirstPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInCommandHandlerFirstPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInCommandHandlerLastPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInCommandHandlerLastPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def snapshottingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingPersistentActorWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def snapshottingPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[SnapshottingPersistentActorWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def snapshottingBecomingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingBecomingPersistentActorWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def snapshottingBecomingPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[SnapshottingBecomingPersistentActorWithLevelDbRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def replyInEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def replyInEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def anyValEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistThreeTimesPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistThreeTimesPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistThreeTimesPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistThreeTimesPersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistSameEventTwicePersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistSameEventTwicePersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistSameEventTwicePersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistSameEventTwicePersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def persistAllNilPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[PersistAllNilPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def persistAllNilPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PersistAllNilPersistentActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistHandlerCorrelationCheck: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistHandlerCorrelationCheck: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def handleRecoveryFinishedEventPersistentActor: ActorRef = system.actorOf(Props(classOf[HandleRecoveryFinishedEventPersistentActorWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def handleRecoveryFinishedEventPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[HandleRecoveryFinishedEventPersistentActorWithLevelDbRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def stressOrdering: ActorRef = namedPersistentActorWithProvidedConfig[StressOrderingWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def stressOrdering: ActorRef =
+    namedPersistentActorWithProvidedConfig[StressOrderingWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def stackableTestPersistentActor: ActorRef = system.actorOf(Props(classOf[StackableTestPersistentActorWithLevelDbRuntimePluginConfig], testActor, providedActorConfig))
+  override protected def stackableTestPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[StackableTestPersistentActorWithLevelDbRuntimePluginConfig], testActor, providedActorConfig))
 
-  override protected def multipleAndNestedPersists: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersistsWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def multipleAndNestedPersists: ActorRef =
+    system.actorOf(
+      Props(classOf[MultipleAndNestedPersistsWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def multipleAndNestedPersistAsyncs: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersistAsyncsWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def multipleAndNestedPersistAsyncs: ActorRef =
+    system.actorOf(
+      Props(classOf[MultipleAndNestedPersistAsyncsWithLevelDbRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def deeplyNestedPersists(nestedPersists: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersistsWithLevelDbRuntimePluginConfig], name, nestedPersists, testActor, providedActorConfig))
+  override protected def deeplyNestedPersists(nestedPersists: Int): ActorRef =
+    system.actorOf(
+      Props(classOf[DeeplyNestedPersistsWithLevelDbRuntimePluginConfig],
+            name,
+            nestedPersists,
+            testActor,
+            providedActorConfig))
 
-  override protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersistAsyncsWithLevelDbRuntimePluginConfig], name, nestedPersistAsyncs, testActor, providedActorConfig))
+  override protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef =
+    system.actorOf(
+      Props(classOf[DeeplyNestedPersistAsyncsWithLevelDbRuntimePluginConfig],
+            name,
+            nestedPersistAsyncs,
+            testActor,
+            providedActorConfig))
 
-  override protected def nestedPersistNormalAndAsyncs: ActorRef = system.actorOf(Props(classOf[NestedPersistNormalAndAsyncsWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistNormalAndAsyncs: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistNormalAndAsyncsWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def nestedPersistAsyncsAndNormal: ActorRef = system.actorOf(Props(classOf[NestedPersistAsyncsAndNormalWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistAsyncsAndNormal: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistAsyncsAndNormalWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def nestedPersistInAsyncEnforcesStashing: ActorRef = system.actorOf(Props(classOf[NestedPersistInAsyncEnforcesStashingWithLevelDbRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistInAsyncEnforcesStashing: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistInAsyncEnforcesStashingWithLevelDbRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def persistInRecovery: ActorRef = namedPersistentActorWithProvidedConfig[PersistInRecoveryWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def persistInRecovery: ActorRef =
+    namedPersistentActorWithProvidedConfig[PersistInRecoveryWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def recoverMessageCausedRestart: ActorRef = namedPersistentActorWithProvidedConfig[RecoverMessageCausedRestartWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def recoverMessageCausedRestart: ActorRef =
+    namedPersistentActorWithProvidedConfig[RecoverMessageCausedRestartWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncWithPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncWithAsyncPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithAsyncPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithAsyncPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithAsyncPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithAsyncPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncMixedCallsPPADDPADPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithNoPersistCallsPersistActorWithLevelDbRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 
-  override protected def deferringSyncActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncActorWithLevelDbRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncActorWithLevelDbRuntimePluginConfig](providedActorConfig)
 }
 
 /**
  * Same test suite as [[InmemPersistentActorSpec]], the only difference is that all persistent actors are using the
  * provided [[Config]] instead of the [[Config]] coming from the [[ActorSystem]].
  */
-class InmemPersistentActorWithRuntimePluginConfigSpec extends PersistentActorSpec(
-  PersistenceSpec.config("inmem", "InmemPersistentActorWithRuntimePluginConfigSpec")
-) {
+class InmemPersistentActorWithRuntimePluginConfigSpec
+    extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemPersistentActorWithRuntimePluginConfigSpec")) {
 
   val providedActorConfig: Config = {
-    ConfigFactory.parseString(
-      s"""
+    ConfigFactory
+      .parseString(s"""
          | custom.persistence.snapshot-store.local.dir = target/snapshots-InmemPersistentActorWithRuntimePluginConfigSpec/
-     """.stripMargin
-    ).withValue(
-        s"custom.persistence.journal.inmem",
-        system.settings.config.getValue(s"akka.persistence.journal.inmem")
-      ).withValue(
-          "custom.persistence.snapshot-store.local",
-          system.settings.config.getValue("akka.persistence.snapshot-store.local")
-        )
+     """.stripMargin)
+      .withValue(s"custom.persistence.journal.inmem",
+                 system.settings.config.getValue(s"akka.persistence.journal.inmem"))
+      .withValue("custom.persistence.snapshot-store.local",
+                 system.settings.config.getValue("akka.persistence.snapshot-store.local"))
   }
 
-  override protected def behavior1PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def behavior1PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior1PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def behavior2PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior2PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def behavior2PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior2PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def behavior3PersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[Behavior3PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def behavior3PersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[Behavior3PersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInFirstEventHandlerPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInFirstEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInFirstEventHandlerPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInLastEventHandlerPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInLastEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[ChangeBehaviorInLastEventHandlerPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInCommandHandlerFirstPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInCommandHandlerFirstPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInCommandHandlerFirstPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ChangeBehaviorInCommandHandlerLastPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def changeBehaviorInCommandHandlerLastPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      ChangeBehaviorInCommandHandlerLastPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def snapshottingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingPersistentActorWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def snapshottingPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[SnapshottingPersistentActorWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def snapshottingBecomingPersistentActor: ActorRef = system.actorOf(Props(classOf[SnapshottingBecomingPersistentActorWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def snapshottingBecomingPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[SnapshottingBecomingPersistentActorWithInmemRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def replyInEventHandlerPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def replyInEventHandlerPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def anyValEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistThreeTimesPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistThreeTimesPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistThreeTimesPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistThreeTimesPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistSameEventTwicePersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistSameEventTwicePersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistSameEventTwicePersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistSameEventTwicePersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def persistAllNilPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[PersistAllNilPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def persistAllNilPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PersistAllNilPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistAndPersistMixedSyncAsyncSyncPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      AsyncPersistAndPersistMixedSyncAsyncSyncPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistAndPersistMixedSyncAsyncPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[
+      AsyncPersistAndPersistMixedSyncAsyncPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def asyncPersistHandlerCorrelationCheck: ActorRef = namedPersistentActorWithProvidedConfig[AsyncPersistHandlerCorrelationCheckWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def asyncPersistHandlerCorrelationCheck: ActorRef =
+    namedPersistentActorWithProvidedConfig[AsyncPersistHandlerCorrelationCheckWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def handleRecoveryFinishedEventPersistentActor: ActorRef = system.actorOf(Props(classOf[HandleRecoveryFinishedEventPersistentActorWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def handleRecoveryFinishedEventPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[HandleRecoveryFinishedEventPersistentActorWithInmemRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def stressOrdering: ActorRef = namedPersistentActorWithProvidedConfig[StressOrderingWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def stressOrdering: ActorRef =
+    namedPersistentActorWithProvidedConfig[StressOrderingWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def stackableTestPersistentActor: ActorRef = system.actorOf(Props(classOf[StackableTestPersistentActorWithInmemRuntimePluginConfig], testActor, providedActorConfig))
+  override protected def stackableTestPersistentActor: ActorRef =
+    system.actorOf(
+      Props(classOf[StackableTestPersistentActorWithInmemRuntimePluginConfig], testActor, providedActorConfig))
 
-  override protected def multipleAndNestedPersists: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersistsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def multipleAndNestedPersists: ActorRef =
+    system.actorOf(
+      Props(classOf[MultipleAndNestedPersistsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def multipleAndNestedPersistAsyncs: ActorRef = system.actorOf(Props(classOf[MultipleAndNestedPersistAsyncsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def multipleAndNestedPersistAsyncs: ActorRef =
+    system.actorOf(
+      Props(classOf[MultipleAndNestedPersistAsyncsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def deeplyNestedPersists(nestedPersists: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersistsWithInmemRuntimePluginConfig], name, nestedPersists, testActor, providedActorConfig))
+  override protected def deeplyNestedPersists(nestedPersists: Int): ActorRef =
+    system.actorOf(
+      Props(classOf[DeeplyNestedPersistsWithInmemRuntimePluginConfig],
+            name,
+            nestedPersists,
+            testActor,
+            providedActorConfig))
 
-  override protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef = system.actorOf(Props(classOf[DeeplyNestedPersistAsyncsWithInmemRuntimePluginConfig], name, nestedPersistAsyncs, testActor, providedActorConfig))
+  override protected def deeplyNestedPersistAsyncs(nestedPersistAsyncs: Int): ActorRef =
+    system.actorOf(
+      Props(classOf[DeeplyNestedPersistAsyncsWithInmemRuntimePluginConfig],
+            name,
+            nestedPersistAsyncs,
+            testActor,
+            providedActorConfig))
 
-  override protected def nestedPersistNormalAndAsyncs: ActorRef = system.actorOf(Props(classOf[NestedPersistNormalAndAsyncsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistNormalAndAsyncs: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistNormalAndAsyncsWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def nestedPersistAsyncsAndNormal: ActorRef = system.actorOf(Props(classOf[NestedPersistAsyncsAndNormalWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistAsyncsAndNormal: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistAsyncsAndNormalWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
 
-  override protected def nestedPersistInAsyncEnforcesStashing: ActorRef = system.actorOf(Props(classOf[NestedPersistInAsyncEnforcesStashingWithInmemRuntimePluginConfig], name, testActor, providedActorConfig))
+  override protected def nestedPersistInAsyncEnforcesStashing: ActorRef =
+    system.actorOf(
+      Props(classOf[NestedPersistInAsyncEnforcesStashingWithInmemRuntimePluginConfig],
+            name,
+            testActor,
+            providedActorConfig))
 
-  override protected def persistInRecovery: ActorRef = namedPersistentActorWithProvidedConfig[PersistInRecoveryWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def persistInRecovery: ActorRef =
+    namedPersistentActorWithProvidedConfig[PersistInRecoveryWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def recoverMessageCausedRestart: ActorRef = namedPersistentActorWithProvidedConfig[RecoverMessageCausedRestartWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def recoverMessageCausedRestart: ActorRef =
+    namedPersistentActorWithProvidedConfig[RecoverMessageCausedRestartWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def deferringAsyncWithPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncWithAsyncPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithAsyncPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithAsyncPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithAsyncPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithAsyncPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithAsyncPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithAsyncPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithAsyncPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncMixedCallsPPADDPADPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncMixedCallsPPADDPADPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncWithNoPersistCallsPersistActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncWithNoPersistCallsPersistActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
-  override protected def deferringAsyncActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringAsyncActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringAsyncActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringAsyncActorWithInmemRuntimePluginConfig](providedActorConfig)
 
-  override protected def deferringSyncActor: ActorRef = namedPersistentActorWithProvidedConfig[DeferringSyncActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def deferringSyncActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[DeferringSyncActorWithInmemRuntimePluginConfig](providedActorConfig)
 }

@@ -23,7 +23,7 @@ class DurationSpec extends AkkaSpec {
       (2 * one) should ===(two)
       (three - two) should ===(one)
       (three / 3) should ===(one)
-      (two / one) should ===(2D)
+      (two / one) should ===(2d)
       (one + zero) should ===(one)
       (one / 1000000) should ===(1.micro)
     }
@@ -85,7 +85,7 @@ class DurationSpec extends AkkaSpec {
 
     "support fromNow" in {
       val dead = 2.seconds.fromNow
-      val dead2 = 2 seconds fromNow
+      val dead2 = 2.seconds(fromNow)
       // view bounds vs. very local type inference vs. operator precedence: sigh
       dead.timeLeft should be > (1 second: Duration)
       dead2.timeLeft should be > (1 second: Duration)

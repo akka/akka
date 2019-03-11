@@ -20,7 +20,7 @@ object MyEventsByTagPublisher {
 
 //#events-by-tag-publisher
 class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteDuration)
-  extends ActorPublisher[EventEnvelope] {
+    extends ActorPublisher[EventEnvelope] {
 
   private case object Continue
 
@@ -31,8 +31,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
   var buf = Vector.empty[EventEnvelope]
 
   import context.dispatcher
-  val continueTask = context.system.scheduler.schedule(
-    refreshInterval, refreshInterval, self, Continue)
+  val continueTask = context.system.scheduler.schedule(refreshInterval, refreshInterval, self, Continue)
 
   override def postStop(): Unit = {
     continueTask.cancel()
@@ -48,8 +47,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
   }
 
   object Select {
-    private def statement() = connection.prepareStatement(
-      """
+    private def statement() = connection.prepareStatement("""
         SELECT id, persistent_repr FROM journal
         WHERE tag = ? AND id > ?
         ORDER BY id LIMIT ?
@@ -64,8 +62,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
         val rs = s.executeQuery()
 
         val b = Vector.newBuilder[(Long, Array[Byte])]
-        while (rs.next())
-          b += (rs.getLong(1) -> rs.getBytes(2))
+        while (rs.next()) b += (rs.getLong(1) -> rs.getBytes(2))
         b.result()
       } finally s.close()
     }
@@ -94,9 +91,9 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
       if (totalDemand <= Int.MaxValue) {
         val (use, keep) = buf.splitAt(totalDemand.toInt)
         buf = keep
-        use foreach onNext
+        use.foreach(onNext)
       } else {
-        buf foreach onNext
+        buf.foreach(onNext)
         buf = Vector.empty
       }
     }

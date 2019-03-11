@@ -16,7 +16,10 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpDnsClient(tcp: ActorRef, ns: InetSocketAddress, answerRecipient: ActorRef) extends Actor with ActorLogging with Stash {
+@InternalApi private[akka] class TcpDnsClient(tcp: ActorRef, ns: InetSocketAddress, answerRecipient: ActorRef)
+    extends Actor
+    with ActorLogging
+    with Stash {
   import TcpDnsClient._
 
   override def receive: Receive = idle
@@ -76,7 +79,8 @@ import akka.util.ByteString
     if (msg.flags.isTruncated) {
       log.warning("TCP DNS response truncated")
     }
-    val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
+    val (recs, additionalRecs) =
+      if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
     Answer(msg.id, recs, additionalRecs)
   }
 }

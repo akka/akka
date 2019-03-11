@@ -17,8 +17,7 @@ import org.scalatest.WordSpecLike
 
 object DispatchersDocSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
        //#config
       your-dispatcher {
         type = Dispatcher
@@ -41,7 +40,6 @@ object DispatchersDocSpec {
   val yourBehavior: Behavior[String] = Behaviors.same
 
   val example = Behaviors.receive[Any] { (context, message) =>
-
     //#spawn-dispatcher
     import akka.actor.typed.DispatcherSelector
 
@@ -71,7 +69,8 @@ class DispatchersDocSpec extends ScalaTestWithActorTestKit(DispatchersDocSpec.co
       withBlocking ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "akka.actor.default-blocking-io-dispatcher"
 
-      val withCustom = actor.ask(Spawn(giveMeYourDispatcher, "default", DispatcherSelector.fromConfig("your-dispatcher"))).futureValue
+      val withCustom =
+        actor.ask(Spawn(giveMeYourDispatcher, "default", DispatcherSelector.fromConfig("your-dispatcher"))).futureValue
       withCustom ! WhichDispatcher(probe.ref)
       probe.receiveMessage().id shouldEqual "your-dispatcher"
     }

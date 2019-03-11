@@ -25,9 +25,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "work with a single Source and Sink" in {
       val builder =
-        source.traversalBuilder
-          .add(sink.traversalBuilder, sink.shape, Keep.left)
-          .wire(source.out, sink.in)
+        source.traversalBuilder.add(sink.traversalBuilder, sink.shape, Keep.left).wire(source.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -39,13 +37,10 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "work with a nested Source and Sink" in {
       val nestedBuilder =
-        TraversalBuilder.empty()
-          .add(source.traversalBuilder, source.shape, Keep.left)
+        TraversalBuilder.empty().add(source.traversalBuilder, source.shape, Keep.left)
 
       val builder =
-        sink.traversalBuilder
-          .add(nestedBuilder, source.shape, Keep.left)
-          .wire(source.out, sink.in)
+        sink.traversalBuilder.add(nestedBuilder, source.shape, Keep.left).wire(source.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -58,9 +53,8 @@ class TraversalBuilderSpec extends AkkaSpec {
       val remappedShape = SourceShape(Outlet[Any]("remapped.out"))
       remappedShape.out.mappedTo = source.out
 
-      val builder = sink.traversalBuilder
-        .add(source.traversalBuilder, remappedShape, Keep.left)
-        .wire(remappedShape.out, sink.in)
+      val builder =
+        sink.traversalBuilder.add(source.traversalBuilder, remappedShape, Keep.left).wire(remappedShape.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -155,9 +149,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       val nestedFlowShape = FlowShape(flow1.in, flow2.out)
 
       val nestedFlows =
-        flow1.traversalBuilder
-          .add(flow2.traversalBuilder, flow2.shape, Keep.left)
-          .wire(flow1.out, flow2.in)
+        flow1.traversalBuilder.add(flow2.traversalBuilder, flow2.shape, Keep.left).wire(flow1.out, flow2.in)
 
       val builder = source.traversalBuilder
         .add(nestedFlows, nestedFlowShape, Keep.left)
@@ -182,9 +174,7 @@ class TraversalBuilderSpec extends AkkaSpec {
       importedFlowShape.out.mappedTo = flow2.out
 
       val nestedFlows =
-        flow1.traversalBuilder
-          .add(flow2.traversalBuilder, flow2.shape, Keep.left)
-          .wire(flow1.out, flow2.in)
+        flow1.traversalBuilder.add(flow2.traversalBuilder, flow2.shape, Keep.left).wire(flow1.out, flow2.in)
 
       val builder = source.traversalBuilder
         .add(nestedFlows, importedFlowShape, Keep.left)
@@ -225,9 +215,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "properly propagate materialized value with Keep.left" in {
       val builder =
-        source.traversalBuilder
-          .add(sink.traversalBuilder, sink.shape, Keep.left)
-          .wire(source.out, sink.in)
+        source.traversalBuilder.add(sink.traversalBuilder, sink.shape, Keep.left).wire(source.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -236,7 +224,8 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "keep mapped materialized value of empty builder" in {
       val builder =
-        TraversalBuilder.empty()
+        TraversalBuilder
+          .empty()
           .transformMat((_: Any) => "NOTUSED")
           .add(source.traversalBuilder, source.shape, Keep.left)
           .add(sink.traversalBuilder, sink.shape, Keep.left)
@@ -249,9 +238,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "properly propagate materialized value with Keep.right" in {
       val builder =
-        source.traversalBuilder
-          .add(sink.traversalBuilder, sink.shape, Keep.right)
-          .wire(source.out, sink.in)
+        source.traversalBuilder.add(sink.traversalBuilder, sink.shape, Keep.right).wire(source.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -260,9 +247,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "properly propagate materialized value with Keep.both" in {
       val builder =
-        source.traversalBuilder
-          .add(sink.traversalBuilder, sink.shape, Keep.both)
-          .wire(source.out, sink.in)
+        source.traversalBuilder.add(sink.traversalBuilder, sink.shape, Keep.both).wire(source.out, sink.in)
 
       val mat = testMaterialize(builder)
 
@@ -344,8 +329,7 @@ class TraversalBuilderSpec extends AkkaSpec {
 
     "properly map materialized value (nested)" in {
       val flowBuilder =
-        flow1.traversalBuilder
-          .transformMat("M1: " + (_: String))
+        flow1.traversalBuilder.transformMat("M1: " + (_: String))
 
       val builder = source.traversalBuilder
         .add(flowBuilder, flow1.shape, Keep.right)
@@ -367,10 +351,9 @@ class TraversalBuilderSpec extends AkkaSpec {
 
       val mat = testMaterialize(builder)
 
-      mat.attributesAssignments should ===(List(
-        source -> (Attributes.name("test") and Attributes.name("testSource")),
-        sink -> (Attributes.name("test") and Attributes.name("testSink"))
-      ))
+      mat.attributesAssignments should ===(
+        List(source -> (Attributes.name("test") and Attributes.name("testSource")),
+             sink -> (Attributes.name("test") and Attributes.name("testSink"))))
     }
 
     "overwrite last attributes until embedded in other builder" in {
@@ -381,23 +364,22 @@ class TraversalBuilderSpec extends AkkaSpec {
         .setAttributes(Attributes.name("test2"))
 
       val builder =
-        TraversalBuilder.empty()
+        TraversalBuilder
+          .empty()
           .add(innerBuilder, ClosedShape, Keep.left)
           .setAttributes(Attributes.name("outer"))
           .setAttributes(Attributes.name("outer2"))
 
       val mat = testMaterialize(builder)
 
-      mat.attributesAssignments should ===(List(
-        source -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
-        sink -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))
-      ))
+      mat.attributesAssignments should ===(
+        List(source -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
+             sink -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))))
     }
 
     "propagate attributes to embedded flow" in {
       val flowBuilder =
-        flow1.traversalBuilder
-          .setAttributes(Attributes.name("flow"))
+        flow1.traversalBuilder.setAttributes(Attributes.name("flow"))
 
       val builder = source.traversalBuilder
         .add(flowBuilder, flow1.shape, Keep.left)
@@ -408,18 +390,15 @@ class TraversalBuilderSpec extends AkkaSpec {
 
       val mat = testMaterialize(builder)
 
-      mat.attributesAssignments should ===(List(
-        source -> (Attributes.name("test") and Attributes.name("testSource")),
-        flow1 -> (Attributes.name("test") and Attributes.name("flow")),
-        sink -> (Attributes.name("test") and Attributes.name("testSink"))
-      ))
+      mat.attributesAssignments should ===(
+        List(source -> (Attributes.name("test") and Attributes.name("testSource")),
+             flow1 -> (Attributes.name("test") and Attributes.name("flow")),
+             sink -> (Attributes.name("test") and Attributes.name("testSink"))))
     }
 
     "properly track embedded island and its attributes" in {
       val flowBuilder =
-        flow1.traversalBuilder
-          .makeIsland(TestIsland1)
-          .setAttributes(Attributes.name("flow"))
+        flow1.traversalBuilder.makeIsland(TestIsland1).setAttributes(Attributes.name("flow"))
 
       val builder = source.traversalBuilder
         .add(flowBuilder, flow1.shape, Keep.left)
@@ -430,19 +409,15 @@ class TraversalBuilderSpec extends AkkaSpec {
 
       val mat = testMaterialize(builder)
 
-      mat.islandAssignments should ===(List(
-        (source, Attributes.none, TestDefaultIsland),
-        (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
-        (sink, Attributes.none, TestDefaultIsland)
-      ))
+      mat.islandAssignments should ===(
+        List((source, Attributes.none, TestDefaultIsland),
+             (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+             (sink, Attributes.none, TestDefaultIsland)))
     }
 
     "properly ignore redundant island assignment" in {
       val flowBuilder =
-        flow1.traversalBuilder
-          .makeIsland(TestIsland1)
-          .makeIsland(TestIsland2)
-          .setAttributes(Attributes.name("flow"))
+        flow1.traversalBuilder.makeIsland(TestIsland1).makeIsland(TestIsland2).setAttributes(Attributes.name("flow"))
 
       val builder = source.traversalBuilder
         .add(flowBuilder, flow1.shape, Keep.left)
@@ -453,11 +428,10 @@ class TraversalBuilderSpec extends AkkaSpec {
 
       val mat = testMaterialize(builder)
 
-      mat.islandAssignments should ===(List(
-        (source, Attributes.none, TestDefaultIsland),
-        (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
-        (sink, Attributes.none, TestDefaultIsland)
-      ))
+      mat.islandAssignments should ===(
+        List((source, Attributes.none, TestDefaultIsland),
+             (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+             (sink, Attributes.none, TestDefaultIsland)))
     }
 
     //TODO: Dummy test cases just for smoke-testing. Should be removed.
@@ -505,10 +479,7 @@ class TraversalBuilderSpec extends AkkaSpec {
     "islands 3" in {
       implicit val mat = PhasedFusingActorMaterializer()
       val sub = TestSubscriber.probe[Int]()
-      Source
-        .repeat(1)
-        .take(10)
-        .runWith(Sink.fromSubscriber(sub))
+      Source.repeat(1).take(10).runWith(Sink.fromSubscriber(sub))
 
       sub.request(10)
       sub.expectNextN(List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))

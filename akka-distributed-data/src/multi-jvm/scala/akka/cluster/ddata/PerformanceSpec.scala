@@ -78,14 +78,17 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
 
-  def repeat(description: String, keys: Iterable[ORSetKey[Int]], n: Int,
-             expectedAfterReplication: Option[Set[Int]] = None, oneByOne: Boolean = false)(
-    block: (ORSetKey[Int], Int, ActorRef) => Unit, afterEachKey: ORSetKey[Int] => Unit = _ => ()): Unit = {
+  def repeat(description: String,
+             keys: Iterable[ORSetKey[Int]],
+             n: Int,
+             expectedAfterReplication: Option[Set[Int]] = None,
+             oneByOne: Boolean = false)(block: (ORSetKey[Int], Int, ActorRef) => Unit,
+                                        afterEachKey: ORSetKey[Int] => Unit = _ => ()): Unit = {
 
     keys.foreach { key =>
       val startTime = System.nanoTime()
@@ -124,7 +127,9 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
   }
 
   def awaitReplicated(keys: Iterable[ORSetKey[Int]], expectedData: Set[Int]): Unit =
-    keys.foreach { key => awaitReplicated(key, expectedData) }
+    keys.foreach { key =>
+      awaitReplicated(key, expectedData)
+    }
 
   def awaitReplicated(key: ORSetKey[Int], expectedData: Set[Int]): Unit = {
     within(20.seconds) {
@@ -266,4 +271,3 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
   }
 
 }
-

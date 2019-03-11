@@ -39,24 +39,30 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
     "be found by full config key" in {
       withActorSystem() { system =>
         val readJournalPluginConfig: Config = ConfigFactory.parseString(customReadJournalPluginConfig)
-        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier, readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier, readJournalPluginConfig)
         // other combinations of constructor parameters
-        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier + "2", readJournalPluginConfig)
-        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier + "3", readJournalPluginConfig)
-        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier + "4", readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "2", readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "3", readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "4", readJournalPluginConfig)
         // config key existing within both the provided readJournalPluginConfig
         // and the actorSystem config. The journal must be created from the provided config then.
-        val dummyReadJournal5 = PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier + "5", readJournalPluginConfig)
+        val dummyReadJournal5 = PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "5", readJournalPluginConfig)
         dummyReadJournal5.dummyValue should equal("custom")
         // config key directly coming from the provided readJournalPluginConfig,
         // and does not exist within the actorSystem config
-        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](
-          DummyReadJournal.Identifier + "6", readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "6", readJournalPluginConfig)
       }
     }
 
@@ -81,7 +87,8 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
         .withFallback(ConfigFactory.load())
 
     val sys = ActorSystem(s"sys-${systemCounter.incrementAndGet()}", config)
-    try block(sys) finally Await.ready(sys.terminate(), 10.seconds)
+    try block(sys)
+    finally Await.ready(sys.terminate(), 10.seconds)
   }
 }
 
@@ -98,4 +105,3 @@ object ExampleQueryModels {
 class PrefixStringWithPAdapter extends ReadEventAdapter {
   override def fromJournal(event: Any, manifest: String) = EventSeq.single("p-" + event)
 }
-

@@ -21,8 +21,7 @@ class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 }
@@ -46,7 +45,7 @@ object RemoteDeliverySpec {
 }
 
 abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteDeliverySpec._
 

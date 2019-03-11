@@ -73,10 +73,9 @@ object JoinConfigCompatChecker {
       // NOTE: we only check the key if effectively required
       // because config may contain more keys than required for this checker
       val incompatibleKeys =
-        toCheck.entrySet().asScala
-          .collect {
-            case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
-          }
+        toCheck.entrySet().asScala.collect {
+          case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
+        }
 
       if (incompatibleKeys.isEmpty) Valid
       else Invalid(incompatibleKeys.to(im.Seq))
@@ -97,10 +96,9 @@ object JoinConfigCompatChecker {
   private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
 
     val filtered =
-      config.entrySet().asScala
-        .collect {
-          case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
-        }
+      config.entrySet().asScala.collect {
+        case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
+      }
 
     ConfigFactory.parseMap(filtered.toMap.asJava)
   }
@@ -111,7 +109,8 @@ object JoinConfigCompatChecker {
    * from the passed `requiredKeys` Seq.
    */
   @InternalApi
-  private[cluster] def removeSensitiveKeys(requiredKeys: im.Seq[String], clusterSettings: ClusterSettings): im.Seq[String] = {
+  private[cluster] def removeSensitiveKeys(requiredKeys: im.Seq[String],
+                                           clusterSettings: ClusterSettings): im.Seq[String] = {
     requiredKeys.filter { key =>
       !clusterSettings.SensitiveConfigPaths.exists(s => key.startsWith(s))
     }
@@ -174,6 +173,7 @@ sealed trait ConfigValidation {
 }
 
 case object Valid extends ConfigValidation {
+
   /**
    * Java API: get the singleton instance
    */

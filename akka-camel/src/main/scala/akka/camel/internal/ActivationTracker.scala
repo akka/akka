@@ -15,6 +15,7 @@ import akka.camel.internal.ActivationProtocol._
 private[camel] class ActivationTracker extends Actor with ActorLogging {
 
   val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
+
   /**
    * A state machine that keeps track of the endpoint activation status of an actor.
    */
@@ -22,6 +23,7 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
     type State = PartialFunction[ActivationMessage, Unit]
 
     var receive: State = notActivated()
+
     /**
      * Not activated state
      * @return a partial function that handles messages in the 'not activated' state
@@ -54,10 +56,10 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
         case AwaitActivation(ref)   => sender() ! EndpointActivated(ref)
         case AwaitDeActivation(ref) => awaitingDeActivation ::= sender()
         case msg @ EndpointDeActivated(ref) =>
-          awaitingDeActivation foreach (_ ! msg)
+          awaitingDeActivation.foreach(_ ! msg)
           receive = deactivated
         case msg @ EndpointFailedToDeActivate(ref, cause) =>
-          awaitingDeActivation foreach (_ ! msg)
+          awaitingDeActivation.foreach(_ ! msg)
           receive = failedToDeActivate(cause)
       }
     }
@@ -101,11 +103,12 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
 
   override def receive = {
     case msg @ ActivationMessage(ref) =>
-      (activations.getOrElseUpdate(ref, new ActivationStateMachine).receive orElse logStateWarning(ref))(msg)
+      activations.getOrElseUpdate(ref, new ActivationStateMachine).receive.orElse(logStateWarning(ref))(msg)
   }
 
-  private[this] def logStateWarning(actorRef: ActorRef): Receive =
-    { case msg => log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef) }
+  private[this] def logStateWarning(actorRef: ActorRef): Receive = {
+    case msg => log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef)
+  }
 }
 
 /**

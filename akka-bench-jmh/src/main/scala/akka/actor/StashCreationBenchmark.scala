@@ -59,4 +59,3 @@ class StashCreationBenchmark {
     true
   }
 }
-

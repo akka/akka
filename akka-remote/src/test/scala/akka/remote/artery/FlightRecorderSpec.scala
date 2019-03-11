@@ -225,7 +225,8 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.exists(_.dirty) should be(false)
       // Note the (2 * FlightRecorder.HiFreqBatchSize) initial sequence number.
       // This is because the overflow by 100 events rotates out two records, not just 100.
-      entries.map(_.code.toInt).sorted should ===((2 * FlightRecorder.HiFreqBatchSize) until (EffectiveHighFreqWindow + 100))
+      entries.map(_.code.toInt).sorted should ===(
+        (2 * FlightRecorder.HiFreqBatchSize) until (EffectiveHighFreqWindow + 100))
       entries.forall(entry => entry.param == 42) should be(true)
 
       // Timestamps are monotonic
@@ -421,7 +422,8 @@ class FlightRecorderSpec extends AkkaSpec {
       randomAccessFile.setLength(FlightRecorder.TotalSize)
       randomAccessFile.close()
 
-      channel = FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+      channel =
+        FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
       recorder = new FlightRecorder(channel)
       reader = new FlightRecorderReader(channel)
       body(recorder, reader, channel)

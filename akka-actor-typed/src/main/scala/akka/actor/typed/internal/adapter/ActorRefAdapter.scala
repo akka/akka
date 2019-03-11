@@ -16,7 +16,9 @@ import akka.dispatch.sysmsg
  * INTERNAL API
  */
 @InternalApi private[typed] class ActorRefAdapter[-T](val untypedRef: untyped.InternalActorRef)
-  extends ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] {
+    extends ActorRef[T]
+    with internal.ActorRefImpl[T]
+    with internal.InternalRecipientRef[T] {
 
   override def path: untyped.ActorPath = untypedRef.path
 
@@ -48,7 +50,8 @@ private[akka] object ActorRefAdapter {
       case adapter: ActorRefAdapter[_]   => adapter.untypedRef
       case system: ActorSystemAdapter[_] => system.untypedSystem.guardian
       case _ =>
-        throw new UnsupportedOperationException("only adapted untyped ActorRefs permissible " +
+        throw new UnsupportedOperationException(
+          "only adapted untyped ActorRefs permissible " +
           s"($ref of class ${ref.getClass.getName})")
     }
 
@@ -56,12 +59,12 @@ private[akka] object ActorRefAdapter {
     signal match {
       case internal.Create()    => throw new IllegalStateException("WAT? No, seriously.")
       case internal.Terminate() => untypedRef.stop()
-      case internal.Watch(watchee, watcher) => untypedRef.sendSystemMessage(
-        sysmsg.Watch(
-          toUntyped(watchee),
-          toUntyped(watcher)))
-      case internal.Unwatch(watchee, watcher)      => untypedRef.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
-      case internal.DeathWatchNotification(ref, _) => untypedRef.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
-      case internal.NoMessage                      => // just to suppress the warning
+      case internal.Watch(watchee, watcher) =>
+        untypedRef.sendSystemMessage(sysmsg.Watch(toUntyped(watchee), toUntyped(watcher)))
+      case internal.Unwatch(watchee, watcher) =>
+        untypedRef.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
+      case internal.DeathWatchNotification(ref, _) =>
+        untypedRef.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
+      case internal.NoMessage => // just to suppress the warning
     }
 }

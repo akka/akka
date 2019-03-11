@@ -81,7 +81,10 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
         }
 
         override def receiveCommand: Receive = {
-          case c => persist(c) { e => p.ref ! e }
+          case c =>
+            persist(c) { e =>
+              p.ref ! e
+            }
         }
       })
 
@@ -113,7 +116,10 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
         }
 
         override def receiveCommand: Receive = {
-          case c => persist(c) { e => p.ref ! e }
+          case c =>
+            persist(c) { e =>
+              p.ref ! e
+            }
         }
       })
 

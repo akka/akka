@@ -30,7 +30,8 @@ class FlightRecorderBench {
   def setup(): Unit = {
     file = File.createTempFile("akka-flightrecorder", "dat")
     file.deleteOnExit()
-    fileChannel = FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+    fileChannel =
+      FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
     recorder = new FlightRecorder(fileChannel)
   }
 

@@ -5,7 +5,7 @@
 package akka.stream.io
 
 import akka.actor._
-import akka.io.Tcp.{ ResumeReading, ConnectionClosed }
+import akka.io.Tcp.{ ConnectionClosed, ResumeReading }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -117,8 +117,7 @@ object TcpHelper {
 trait TcpHelper { this: TestKitBase =>
   import akka.stream.io.TcpHelper._
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 4, maxSize = 4)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4)
 
   implicit val materializer = ActorMaterializer(settings)
 

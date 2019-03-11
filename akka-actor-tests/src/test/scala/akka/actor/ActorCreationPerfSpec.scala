@@ -6,7 +6,7 @@ package akka.actor
 
 import scala.language.postfixOps
 
-import akka.testkit.{ PerformanceTest, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, ImplicitSender, PerformanceTest }
 import scala.concurrent.duration._
 import akka.testkit.metrics._
 import org.scalatest.BeforeAndAfterAll
@@ -58,7 +58,6 @@ object ActorCreationPerfSpec {
       case IsAlive =>
         sender() ! Alive
       case Create(number, propsCreator) =>
-
         for (i <- 1 to number) {
           val start = System.nanoTime()
           context.actorOf(propsCreator.apply())
@@ -117,8 +116,11 @@ object ActorCreationPerfSpec {
   }
 }
 
-class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with ImplicitSender
-  with MetricsKit with BeforeAndAfterAll {
+class ActorCreationPerfSpec
+    extends AkkaSpec(ActorCreationPerfSpec.config)
+    with ImplicitSender
+    with MetricsKit
+    with BeforeAndAfterAll {
 
   import ActorCreationPerfSpec._
 
@@ -175,7 +177,7 @@ class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with 
     watch(driver)
     expectTerminated(driver, 15.seconds)
 
-    after diff before
+    after.diff(before)
   }
 
   def registerTests(name: String, propsCreator: () => Props): Unit = {

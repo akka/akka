@@ -31,7 +31,7 @@ object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider
   def defaultSSLConfigSettings(system: ActorSystem): SSLConfigSettings = {
     val akkaOverrides = system.settings.config.getConfig("akka.ssl-config")
     val defaults = system.settings.config.getConfig("ssl-config")
-    SSLConfigFactory.parse(akkaOverrides withFallback defaults)
+    SSLConfigFactory.parse(akkaOverrides.withFallback(defaults))
   }
 
 }
@@ -110,10 +110,12 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   def buildHostnameVerifier(conf: SSLConfigSettings): HostnameVerifier = {
     val clazz: Class[HostnameVerifier] =
-      if (config.loose.disableHostnameVerification) classOf[DisabledComplainingHostnameVerifier].asInstanceOf[Class[HostnameVerifier]]
+      if (config.loose.disableHostnameVerification)
+        classOf[DisabledComplainingHostnameVerifier].asInstanceOf[Class[HostnameVerifier]]
       else config.hostnameVerifierClass.asInstanceOf[Class[HostnameVerifier]]
 
-    val v = system.dynamicAccess.createInstanceFor[HostnameVerifier](clazz, Nil)
+    val v = system.dynamicAccess
+      .createInstanceFor[HostnameVerifier](clazz, Nil)
       .orElse(system.dynamicAccess.createInstanceFor[HostnameVerifier](clazz, List(classOf[LoggerFactory] -> mkLogger)))
       .getOrElse(throw new Exception("Unable to obtain hostname verifier for class: " + clazz))
 
@@ -140,14 +142,17 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
     //    val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.getOrElse(Algorithms.disabledKeyAlgorithms) // was Option
     val disabledKeyAlgorithms = sslConfig.disabledKeyAlgorithms.mkString(",") // TODO Sub optimal, we got a Seq...
-    val constraints = AlgorithmConstraintsParser.parseAll(AlgorithmConstraintsParser.line, disabledKeyAlgorithms).get.toSet
+    val constraints =
+      AlgorithmConstraintsParser.parseAll(AlgorithmConstraintsParser.line, disabledKeyAlgorithms).get.toSet
     val algorithmChecker = new AlgorithmChecker(mkLogger, keyConstraints = constraints, signatureConstraints = Set())
     for (cert <- trustManager.getAcceptedIssuers) {
       try {
         algorithmChecker.checkKeyAlgorithms(cert)
       } catch {
         case e: CertPathValidatorException =>
-          log.warning("You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)", e)
+          log.warning(
+            "You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)",
+            e)
       }
     }
   }
@@ -202,7 +207,8 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   private def looseDisableSNI(defaultParams: SSLParameters): Unit = if (config.loose.disableSNI) {
     // this will be logged once for each AkkaSSLConfig
-    log.warning("You are using ssl-config.loose.disableSNI=true! " +
+    log.warning(
+      "You are using ssl-config.loose.disableSNI=true! " +
       "It is strongly discouraged to disable Server Name Indication, as it is crucial to preventing man-in-the-middle attacks.")
 
     defaultParams.setServerNames(Collections.emptyList())

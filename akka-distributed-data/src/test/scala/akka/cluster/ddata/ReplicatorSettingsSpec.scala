@@ -17,8 +17,7 @@ object ReplicatorSettingsSpec {
     akka.remote.artery.canonical.hostname = 127.0.0.1""")
 }
 
-class ReplicatorSettingsSpec extends AkkaSpec(ReplicatorSettingsSpec.config)
-  with WordSpecLike with BeforeAndAfterAll {
+class ReplicatorSettingsSpec extends AkkaSpec(ReplicatorSettingsSpec.config) with WordSpecLike with BeforeAndAfterAll {
 
   "DistributedData" must {
     "have the default replicator name" in {

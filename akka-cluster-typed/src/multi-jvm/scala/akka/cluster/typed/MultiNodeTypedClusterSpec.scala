@@ -18,7 +18,12 @@ import akka.remote.testconductor.RoleName
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport with Matchers {
+trait MultiNodeTypedClusterSpec
+    extends Suite
+    with STMultiNodeSpec
+    with WatchedByCoroner
+    with FlightRecordingSupport
+    with Matchers {
   self: MultiNodeSpec =>
 
   override def initialParticipants: Int = roles.size
@@ -63,7 +68,7 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
     }
     enterBarrier(first.name + "-joined")
 
-    rest foreach { node =>
+    rest.foreach { node =>
       runOn(node) {
         cluster.manager ! Join(address(first))
         awaitAssert(cluster.state.members.exists { m =>

@@ -19,10 +19,10 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
-  create:   () => Future[S],
-  readData: (S) => Future[Option[T]],
-  close:    (S) => Future[Done]) extends GraphStage[SourceShape[T]] {
+@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](create: () => Future[S],
+                                                                       readData: (S) => Future[Option[T]],
+                                                                       close: (S) => Future[Done])
+    extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSourceAsync.out")
   override val shape = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldResourceSourceAsync
@@ -40,32 +40,34 @@ import scala.util.control.NonFatal
     }.invokeWithFeedback _
 
     private val errorHandler: PartialFunction[Throwable, Unit] = {
-      case NonFatal(ex) => decider(ex) match {
-        case Supervision.Stop =>
-          failStage(ex)
-        case Supervision.Restart => restartResource()
-        case Supervision.Resume  => onPull()
-      }
+      case NonFatal(ex) =>
+        decider(ex) match {
+          case Supervision.Stop =>
+            failStage(ex)
+          case Supervision.Restart => restartResource()
+          case Supervision.Resume  => onPull()
+        }
     }
 
     private val readCallback = getAsyncCallback[Try[Option[T]]] {
-      case Success(data) => data match {
-        case Some(d) => push(out, d)
-        case None =>
-          // end of resource reached, lets close it
-          state match {
-            case Some(resource) =>
-              close(resource).onComplete(getAsyncCallback[Try[Done]] {
-                case Success(Done) => completeStage()
-                case Failure(ex)   => failStage(ex)
-              }.invoke)
-              state = None
+      case Success(data) =>
+        data match {
+          case Some(d) => push(out, d)
+          case None    =>
+            // end of resource reached, lets close it
+            state match {
+              case Some(resource) =>
+                close(resource).onComplete(getAsyncCallback[Try[Done]] {
+                  case Success(Done) => completeStage()
+                  case Failure(ex)   => failStage(ex)
+                }.invoke)
+                state = None
 
-            case None =>
-              // cannot happen, but for good measure
-              throw new IllegalStateException("Reached end of data but there is no open resource")
-          }
-      }
+              case None =>
+                // cannot happen, but for good measure
+                throw new IllegalStateException("Reached end of data but there is no open resource")
+            }
+        }
       case Failure(t) => errorHandler(t)
     }.invoke _
 

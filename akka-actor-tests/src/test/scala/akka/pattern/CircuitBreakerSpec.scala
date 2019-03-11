@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import language.postfixOps
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Failure, Success, Try }
 import akka.testkit._
 import org.mockito.ArgumentCaptor
 import org.scalatest.BeforeAndAfter
@@ -641,7 +641,8 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
       "even number is considered failure" in {
         val breaker = CircuitBreakerSpec.longCallTimeoutCb()
         breaker().currentFailureCount should ===(0)
-        val result = Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
+        val result =
+          Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
         checkLatch(breaker.openLatch)
         breaker().currentFailureCount should ===(1)
         result should ===(2)
@@ -669,7 +670,9 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
         val breaker: CircuitBreakerSpec.Breaker = CircuitBreakerSpec.multiFailureCb()
 
         for (_ <- 1 to 4) breaker().withCircuitBreaker(Future(throwException))
-        awaitCond(breaker().currentFailureCount == 4, awaitTimeout, message = s"Current failure count: ${breaker().currentFailureCount}")
+        awaitCond(breaker().currentFailureCount == 4,
+                  awaitTimeout,
+                  message = s"Current failure count: ${breaker().currentFailureCount}")
 
         val harmlessException = new TestException
         val harmlessExceptionAsSuccess: Try[String] => Boolean = {

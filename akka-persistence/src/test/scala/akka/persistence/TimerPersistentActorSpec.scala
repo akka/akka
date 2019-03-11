@@ -79,8 +79,7 @@ object TimerPersistentActorSpec {
 
 }
 
-class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
   """)) with ImplicitSender {
@@ -117,4 +116,3 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
   }
 
 }
-

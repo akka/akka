@@ -36,8 +36,7 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
-    implicit val materializer = ActorMaterializer(
-      ActorMaterializerSettings(system).withSupervisionStrategy(decider))
+    implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
     val source = Source(0 to 5).map(100 / _)
     val result = source.runWith(Sink.fold(0)(_ + _))
     // the element causing division by zero will be dropped
@@ -55,7 +54,8 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _                      => Supervision.Stop
     }
     val flow = Flow[Int]
-      .filter(100 / _ < 50).map(elem => 100 / (5 - elem))
+      .filter(100 / _ < 50)
+      .map(elem => 100 / (5 - elem))
       .withAttributes(ActorAttributes.supervisionStrategy(decider))
     val source = Source(0 to 5).via(flow)
 
@@ -93,12 +93,14 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate recover" in {
     implicit val materializer = ActorMaterializer()
     //#recover
-    Source(0 to 6).map(n =>
-      if (n < 5) n.toString
-      else throw new RuntimeException("Boom!")
-    ).recover {
-      case _: RuntimeException => "stream truncated"
-    }.runForeach(println)
+    Source(0 to 6)
+      .map(n =>
+        if (n < 5) n.toString
+        else throw new RuntimeException("Boom!"))
+      .recover {
+        case _: RuntimeException => "stream truncated"
+      }
+      .runForeach(println)
     //#recover
 
     /*
@@ -111,7 +113,7 @@ Output:
 4
 stream truncated
 //#recover-output
-*/
+   */
   }
 
   "demonstrate recoverWithRetries" in {
@@ -119,12 +121,14 @@ stream truncated
     //#recoverWithRetries
     val planB = Source(List("five", "six", "seven", "eight"))
 
-    Source(0 to 10).map(n =>
-      if (n < 5) n.toString
-      else throw new RuntimeException("Boom!")
-    ).recoverWithRetries(attempts = 1, {
-      case _: RuntimeException => planB
-    }).runForeach(println)
+    Source(0 to 10)
+      .map(n =>
+        if (n < 5) n.toString
+        else throw new RuntimeException("Boom!"))
+      .recoverWithRetries(attempts = 1, {
+        case _: RuntimeException => planB
+      })
+      .runForeach(println)
     //#recoverWithRetries
 
     /*
@@ -140,7 +144,7 @@ six
 seven
 eight
 //#recoverWithRetries-output
- */
+   */
   }
 
 }

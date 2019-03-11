@@ -88,11 +88,10 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
   private def secondsToMillis(seconds: Int) = TimeUnit.SECONDS.toMillis(seconds)
 
   private def dnsResolver = {
-    val actorRef = TestActorRef[InetAddressDnsResolver](Props(
-      classOf[InetAddressDnsResolver],
-      new SimpleDnsCache(),
-      system.settings.config.getConfig("akka.io.dns.inet-address")
-    ))
+    val actorRef = TestActorRef[InetAddressDnsResolver](
+      Props(classOf[InetAddressDnsResolver],
+            new SimpleDnsCache(),
+            system.settings.config.getConfig("akka.io.dns.inet-address")))
     actorRef.underlyingActor
   }
 
@@ -117,8 +116,7 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
   }
 
 }
-class InetAddressDnsResolverConfigSpec extends AkkaSpec(
-  """
+class InetAddressDnsResolverConfigSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = forever
     akka.io.dns.inet-address.negative-ttl = never
     akka.actor.serialize-creators = on
@@ -137,11 +135,10 @@ class InetAddressDnsResolverConfigSpec extends AkkaSpec(
   }
 
   private def dnsResolver = {
-    val actorRef = TestActorRef[InetAddressDnsResolver](Props(
-      classOf[InetAddressDnsResolver],
-      new SimpleDnsCache(),
-      system.settings.config.getConfig("akka.io.dns.inet-address")
-    ))
+    val actorRef = TestActorRef[InetAddressDnsResolver](
+      Props(classOf[InetAddressDnsResolver],
+            new SimpleDnsCache(),
+            system.settings.config.getConfig("akka.io.dns.inet-address")))
     actorRef.underlyingActor
   }
 }

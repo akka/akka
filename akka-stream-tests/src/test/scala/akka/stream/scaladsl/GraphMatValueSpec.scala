@@ -21,17 +21,18 @@ class GraphMatValueSpec extends StreamSpec {
 
   "A Graph with materialized value" must {
 
-    val settings = ActorMaterializerSettings(system)
-      .withInputBuffer(initialSize = 2, maxSize = 16)
+    val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
     implicit val materializer = ActorMaterializer(settings)
 
     "expose the materialized value as source" in {
       val sub = TestSubscriber.manualProbe[Int]()
-      val f = RunnableGraph.fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
-        Source(1 to 10) ~> fold
-        b.materializedValue.mapAsync(4)(identity) ~> Sink.fromSubscriber(sub)
-        ClosedShape
-      }).run()
+      val f = RunnableGraph
+        .fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
+          Source(1 to 10) ~> fold
+          b.materializedValue.mapAsync(4)(identity) ~> Sink.fromSubscriber(sub)
+          ClosedShape
+        })
+        .run()
 
       val r1 = Await.result(f, 3.seconds)
       sub.expectSubscription().request(1)
@@ -43,15 +44,17 @@ class GraphMatValueSpec extends StreamSpec {
     "expose the materialized value as source multiple times" in {
       val sub = TestSubscriber.manualProbe[Int]()
 
-      val f = RunnableGraph.fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
-        val zip = b.add(ZipWith[Int, Int, Int](_ + _))
-        Source(1 to 10) ~> fold
-        b.materializedValue.mapAsync(4)(identity) ~> zip.in0
-        b.materializedValue.mapAsync(4)(identity) ~> zip.in1
+      val f = RunnableGraph
+        .fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
+          val zip = b.add(ZipWith[Int, Int, Int](_ + _))
+          Source(1 to 10) ~> fold
+          b.materializedValue.mapAsync(4)(identity) ~> zip.in0
+          b.materializedValue.mapAsync(4)(identity) ~> zip.in1
 
-        zip.out ~> Sink.fromSubscriber(sub)
-        ClosedShape
-      }).run()
+          zip.out ~> Sink.fromSubscriber(sub)
+          ClosedShape
+        })
+        .run()
 
       val r1 = Await.result(f, 3.seconds)
       sub.expectSubscription().request(1)
@@ -61,9 +64,10 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     // Exposes the materialized value as a stream value
-    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(GraphDSL.create(foldSink) { implicit b => fold =>
-      Source(1 to 10) ~> fold
-      SourceShape(b.materializedValue)
+    val foldFeedbackSource: Source[Future[Int], Future[Int]] = Source.fromGraph(GraphDSL.create(foldSink) {
+      implicit b => fold =>
+        Source(1 to 10) ~> fold
+        SourceShape(b.materializedValue)
     })
 
     "allow exposing the materialized value as port" in {
@@ -73,24 +77,27 @@ class GraphMatValueSpec extends StreamSpec {
     }
 
     "allow exposing the materialized value as port even if wrapped and the final materialized value is Unit" in {
-      val noMatSource: Source[Int, Unit] = foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).mapMaterializedValue((_) => ())
+      val noMatSource: Source[Int, Unit] =
+        foldFeedbackSource.mapAsync(4)(identity).map(_ + 100).mapMaterializedValue((_) => ())
       Await.result(noMatSource.runWith(Sink.head), 3.seconds) should ===(155)
     }
 
     "work properly with nesting and reusing" in {
-      val compositeSource1 = Source.fromGraph(GraphDSL.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) { implicit b => (s1, s2) =>
-        val zip = b.add(ZipWith[Int, Int, Int](_ + _))
+      val compositeSource1 = Source.fromGraph(GraphDSL.create(foldFeedbackSource, foldFeedbackSource)(Keep.both) {
+        implicit b => (s1, s2) =>
+          val zip = b.add(ZipWith[Int, Int, Int](_ + _))
 
-        s1.out.mapAsync(4)(identity) ~> zip.in0
-        s2.out.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
-        SourceShape(zip.out)
+          s1.out.mapAsync(4)(identity) ~> zip.in0
+          s2.out.mapAsync(4)(identity).map(_ * 100) ~> zip.in1
+          SourceShape(zip.out)
       })
 
-      val compositeSource2 = Source.fromGraph(GraphDSL.create(compositeSource1, compositeSource1)(Keep.both) { implicit b => (s1, s2) =>
-        val zip = b.add(ZipWith[Int, Int, Int](_ + _))
-        s1.out ~> zip.in0
-        s2.out.map(_ * 10000) ~> zip.in1
-        SourceShape(zip.out)
+      val compositeSource2 = Source.fromGraph(GraphDSL.create(compositeSource1, compositeSource1)(Keep.both) {
+        implicit b => (s1, s2) =>
+          val zip = b.add(ZipWith[Int, Int, Int](_ + _))
+          s1.out ~> zip.in0
+          s2.out.map(_ * 10000) ~> zip.in1
+          SourceShape(zip.out)
       })
 
       val (((f1, f2), (f3, f4)), result) = compositeSource2.toMat(Sink.head)(Keep.both).run()
@@ -150,9 +157,10 @@ class GraphMatValueSpec extends StreamSpec {
 
     "produce NotUsed when starting from Flow.via with transformation" in {
       var done = false
-      Source.empty.viaMat(
-        Flow[Int].via(Flow[Int].mapMaterializedValue(_ => done = true)))(Keep.right)
-        .to(Sink.ignore).run() should ===(akka.NotUsed)
+      Source.empty
+        .viaMat(Flow[Int].via(Flow[Int].mapMaterializedValue(_ => done = true)))(Keep.right)
+        .to(Sink.ignore)
+        .run() should ===(akka.NotUsed)
       done should ===(true)
     }
 
@@ -200,16 +208,18 @@ class GraphMatValueSpec extends StreamSpec {
     "with Identity Flow optimization even if ports are wired in an arbitrary higher nesting level" in {
       val mat2 = ActorMaterializer(ActorMaterializerSettings(system))
 
-      val subflow = GraphDSL.create() { implicit b =>
-        import GraphDSL.Implicits._
-        val zip = b.add(Zip[String, String]())
-        val bc = b.add(Broadcast[String](2))
+      val subflow = GraphDSL
+        .create() { implicit b =>
+          import GraphDSL.Implicits._
+          val zip = b.add(Zip[String, String]())
+          val bc = b.add(Broadcast[String](2))
 
-        bc.out(0) ~> zip.in0
-        bc.out(1) ~> zip.in1
+          bc.out(0) ~> zip.in0
+          bc.out(1) ~> zip.in1
 
-        FlowShape(bc.in, zip.out)
-      }.named("nestedFlow")
+          FlowShape(bc.in, zip.out)
+        }
+        .named("nestedFlow")
 
       val nest1 = Flow[String].via(subflow)
       val nest2 = Flow[String].via(nest1)

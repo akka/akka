@@ -4,13 +4,13 @@
 
 package akka.persistence.journal
 
-import akka.actor.{ ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.util.Timeout
 import akka.testkit._
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config.{ Config, ConfigFactory }
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -31,8 +31,7 @@ object SteppingInmemJournal {
   }
 
   def config(instanceId: String): Config =
-    ConfigFactory.parseString(
-      s"""
+    ConfigFactory.parseString(s"""
         |akka.persistence.journal.stepping-inmem.class=${classOf[SteppingInmemJournal].getName}
         |akka.persistence.journal.plugin = "akka.persistence.journal.stepping-inmem"
         |akka.persistence.journal.stepping-inmem.instance-id = "$instanceId"
@@ -49,8 +48,7 @@ object SteppingInmemJournal {
   private def putRef(instanceId: String, instance: ActorRef): Unit = synchronized {
     _current = _current + (instanceId -> instance)
   }
-  private def remove(instanceId: String): Unit = synchronized(
-    _current -= instanceId)
+  private def remove(instanceId: String): Unit = synchronized(_current -= instanceId)
 }
 
 /**
@@ -72,7 +70,7 @@ final class SteppingInmemJournal extends InmemJournal {
   var queuedOps: Seq[() => Future[Unit]] = Seq.empty
   var queuedTokenRecipients = List.empty[ActorRef]
 
-  override def receivePluginInternal = super.receivePluginInternal orElse {
+  override def receivePluginInternal = super.receivePluginInternal.orElse {
     case Token if queuedOps.isEmpty => queuedTokenRecipients = queuedTokenRecipients :+ sender()
     case Token =>
       val op +: rest = queuedOps
@@ -128,11 +126,13 @@ final class SteppingInmemJournal extends InmemJournal {
     future
   }
 
-  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) => Unit): Future[Unit] = {
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      recoveryCallback: (PersistentRepr) => Unit): Future[Unit] = {
     val promise = Promise[Unit]()
     val future = promise.future
     doOrEnqueue { () =>
-      promise.completeWith(super.asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max)(recoveryCallback))
+      promise.completeWith(
+        super.asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max)(recoveryCallback))
       future
     }
 

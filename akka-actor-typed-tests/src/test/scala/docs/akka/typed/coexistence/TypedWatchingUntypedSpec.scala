@@ -37,16 +37,18 @@ object TypedWatchingUntypedSpec {
         // illustrating how to pass sender, toUntyped is an implicit extension method
         untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
 
-        Behaviors.receivePartial[Command] {
-          case (context, Pong) =>
-            // it's not possible to get the sender, that must be sent in message
-            // context.stop is an implicit extension method
-            context.stop(untyped)
-            Behaviors.same
-        } receiveSignal {
-          case (_, akka.actor.typed.Terminated(_)) =>
-            Behaviors.stopped
-        }
+        Behaviors
+          .receivePartial[Command] {
+            case (context, Pong) =>
+              // it's not possible to get the sender, that must be sent in message
+              // context.stop is an implicit extension method
+              context.stop(untyped)
+              Behaviors.same
+          }
+          .receiveSignal {
+            case (_, akka.actor.typed.Terminated(_)) =>
+              Behaviors.stopped
+          }
       }
   }
   //#typed

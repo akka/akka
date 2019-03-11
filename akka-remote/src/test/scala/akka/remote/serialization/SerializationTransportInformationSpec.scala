@@ -57,8 +57,7 @@ object SerializationTransportInformationSpec {
           throw new IllegalStateException("currentTransportInformation was not set")
         case t =>
           if (t.system ne system)
-            throw new IllegalStateException(
-              s"wrong system in currentTransportInformation, ${t.system} != $system")
+            throw new IllegalStateException(s"wrong system in currentTransportInformation, ${t.system} != $system")
           if (t.address != system.provider.getDefaultAddress)
             throw new IllegalStateException(
               s"wrong address in currentTransportInformation, ${t.address} != ${system.provider.getDefaultAddress}")
@@ -67,9 +66,11 @@ object SerializationTransportInformationSpec {
   }
 }
 
-abstract class AbstractSerializationTransportInformationSpec(config: Config) extends AkkaSpec(
-  config.withFallback(ConfigFactory.parseString(
-    """
+abstract class AbstractSerializationTransportInformationSpec(config: Config)
+    extends AkkaSpec(
+      config.withFallback(
+        ConfigFactory.parseString(
+          """
     akka {
       loglevel = info
       actor {
@@ -85,7 +86,8 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config) ext
         }
       }
     }
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import SerializationTransportInformationSpec._
 
@@ -127,7 +129,8 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config) ext
   }
 }
 
-class SerializationTransportInformationSpec extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
+class SerializationTransportInformationSpec
+    extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
   akka.remote.netty.tcp {
     hostname = localhost
     port = 0

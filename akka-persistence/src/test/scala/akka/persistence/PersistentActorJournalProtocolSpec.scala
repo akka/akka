@@ -46,7 +46,7 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
     def receiveRecover = {
       case x => monitor ! x
     }
-    def receiveCommand = behavior orElse {
+    def receiveCommand = behavior.orElse {
       case m: Multi => m.cmd.foreach(behavior)
     }
 
@@ -91,7 +91,7 @@ class JournalProbe(implicit private val system: ExtendedActorSystem) extends Ext
 class JournalPuppet extends Actor {
   val ref = JournalPuppet(context.system).ref
   def receive = {
-    case x => ref forward x
+    case x => ref.forward(x)
   }
 }
 
@@ -125,8 +125,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
     journal.send(w.persistentActor, WriteMessagesSuccessful)
     w.messages.foreach {
       case AtomicWrite(msgs) =>
-        msgs.foreach(msg =>
-          w.persistentActor.tell(WriteMessageSuccess(msg, w.actorInstanceId), msg.sender))
+        msgs.foreach(msg => w.persistentActor.tell(WriteMessageSuccess(msg, w.actorInstanceId), msg.sender))
       case NonPersistentRepr(msg, sender) => w.persistentActor.tell(msg, sender)
     }
   }
@@ -221,7 +220,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
         val w0 = expectWrite(subject, Msgs("a" +: commands(20, 30): _*))
         journal.expectNoMsg(300.millis)
         confirm(w0)
-        (1 to 11) foreach (x => expectMsg(Done(-1, x)))
+        (1 to 11).foreach(x => expectMsg(Done(-1, x)))
         val w1 = expectWrite(subject, msgs(0, 20): _*)
         journal.expectNoMsg(300.millis)
         confirm(w1)
@@ -239,7 +238,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
         subject ! PersistAsync(1, "a-1")
         val w1 = expectWrite(subject, Msgs("a-1"))
         subject ! PersistAsync(2, "a-2")
-        EventFilter[Exception](message = "K-BOOM!", occurrences = 1) intercept {
+        EventFilter[Exception](message = "K-BOOM!", occurrences = 1).intercept {
           subject ! Fail(new Exception("K-BOOM!"))
           expectMsg(PreRestart("test-6"))
           expectMsg(PostRestart("test-6"))

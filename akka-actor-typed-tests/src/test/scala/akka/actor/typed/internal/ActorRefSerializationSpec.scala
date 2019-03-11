@@ -13,8 +13,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ActorRefSerializationSpec {
-  def config = ConfigFactory.parseString(
-    """
+  def config = ConfigFactory.parseString("""
       akka.actor {
         serialize-messages = off
         allow-java-serialization = true

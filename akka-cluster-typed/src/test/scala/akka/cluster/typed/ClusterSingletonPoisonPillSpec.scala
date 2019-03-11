@@ -25,7 +25,9 @@ object ClusterSingletonPoisonPillSpec {
   }
 }
 
-class ClusterSingletonPoisonPillSpec extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config) with WordSpecLike {
+class ClusterSingletonPoisonPillSpec
+    extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config)
+    with WordSpecLike {
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
@@ -35,7 +37,8 @@ class ClusterSingletonPoisonPillSpec extends ScalaTestWithActorTestKit(ClusterSi
 
     "support using PoisonPill to stop" in {
       val probe = TestProbe[ActorRef[Any]]
-      val singleton = ClusterSingleton(system).init(SingletonActor(ClusterSingletonPoisonPillSpec.sneakyBehavior, "sneaky"))
+      val singleton =
+        ClusterSingleton(system).init(SingletonActor(ClusterSingletonPoisonPillSpec.sneakyBehavior, "sneaky"))
       singleton ! GetSelf(probe.ref)
       val singletonRef = probe.receiveMessage()
       singletonRef ! PoisonPill

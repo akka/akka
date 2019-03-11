@@ -11,7 +11,9 @@ import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
-class ServiceKeySerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config) with WordSpecLike {
+class ServiceKeySerializationSpec
+    extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
+    with WordSpecLike {
 
   val serialization = SerializationExtension(system.toUntyped)
 

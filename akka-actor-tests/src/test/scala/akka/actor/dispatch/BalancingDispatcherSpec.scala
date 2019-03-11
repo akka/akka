@@ -4,9 +4,9 @@
 
 package akka.actor.dispatch
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.actor.{ Props, ActorRefWithCell, ActorCell, Actor }
+import akka.actor.{ Actor, ActorCell, ActorRefWithCell, Props }
 import akka.dispatch.Mailbox
 import akka.testkit.AkkaSpec
 
@@ -48,15 +48,18 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
     def receive = { case _ => {} }
   }
 
-  class ChildActor extends ParentActor {
-  }
+  class ChildActor extends ParentActor {}
 
   "A BalancingDispatcher" must {
     "have fast actor stealing work from slow actor" in {
       val finishedCounter = new CountDownLatch(110)
 
-      val slow = system.actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
-      val fast = system.actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
+      val slow = system
+        .actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher))
+        .asInstanceOf[ActorRefWithCell]
+      val fast = system
+        .actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher))
+        .asInstanceOf[ActorRefWithCell]
 
       var sentToFast = 0
 
@@ -84,7 +87,7 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       slow.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages should ===(false)
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be > sentToFast
       fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount should be >
-        (slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount)
+      (slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount)
       system.stop(slow)
       system.stop(fast)
     }

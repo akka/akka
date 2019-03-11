@@ -8,7 +8,7 @@ package scaladsl
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.internal._
 
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.{ classTag, ClassTag }
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -202,6 +202,7 @@ object Behaviors {
 
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
+
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = classTag[Thr]
@@ -261,7 +262,8 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T => Map[String, Any])(
+      behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 
   /**
@@ -275,14 +277,16 @@ object Behaviors {
 
   @InternalApi
   private[akka] final class ReceiveImpl[T](onMessage: (ActorContext[T], T) => Behavior[T])
-    extends BehaviorImpl.ReceiveBehavior[T](onMessage) with Receive[T] {
+      extends BehaviorImpl.ReceiveBehavior[T](onMessage)
+      with Receive[T] {
 
     override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ReceiveBehavior(onMessage, onSignal)
   }
   @InternalApi
   private[akka] final class ReceiveMessageImpl[T](onMessage: T => Behavior[T])
-    extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage) with Receive[T] {
+      extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage)
+      with Receive[T] {
 
     override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
       new BehaviorImpl.ReceiveMessageBehavior[T](onMessage, onSignal)

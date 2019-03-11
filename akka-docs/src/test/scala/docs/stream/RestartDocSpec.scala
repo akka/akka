@@ -35,18 +35,16 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
     "demonstrate a restart with backoff source" in compileOnlySpec {
 
       //#restart-with-backoff-source
-      val restartSource = RestartSource.withBackoff(
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxRestarts = 20 // limits the amount of restarts to 20
+      val restartSource = RestartSource.withBackoff(minBackoff = 3.seconds,
+                                                    maxBackoff = 30.seconds,
+                                                    randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+                                                    maxRestarts = 20 // limits the amount of restarts to 20
       ) { () =>
         // Create a source from a future of a source
         Source.fromFutureSource {
           // Make a single request with akka-http
-          Http().singleRequest(HttpRequest(
-            uri = "http://example.com/eventstream"
-          ))
+          Http()
+            .singleRequest(HttpRequest(uri = "http://example.com/eventstream"))
             // Unmarshall it as a source of server sent events
             .flatMap(Unmarshal(_).to[Source[ServerSentEvent, NotUsed]])
         }

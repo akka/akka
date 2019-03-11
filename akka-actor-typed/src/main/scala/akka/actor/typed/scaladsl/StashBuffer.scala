@@ -29,6 +29,7 @@ object StashBuffer {
  * Not for user extension.
  */
 @DoNotInherit trait StashBuffer[T] {
+
   /**
    * Check if the message buffer is empty.
    *

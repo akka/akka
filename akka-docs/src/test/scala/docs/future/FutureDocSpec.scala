@@ -46,7 +46,7 @@ object FutureDocSpec {
     def receive = {
       case _ =>
         val future = target ? "some message"
-        future pipeTo sender() // use the pipe pattern
+        future.pipeTo(sender()) // use the pipe pattern
     }
   }
   //#pipe-to-usage
@@ -88,7 +88,7 @@ object FutureDocSpec {
       case Get =>
         // user's historical activities are retrieved
         // via the separate repository
-        repository.queryHistoricalActivities(userId) pipeTo sender()
+        repository.queryHistoricalActivities(userId).pipeTo(sender())
     }
   }
 
@@ -98,10 +98,7 @@ object FutureDocSpec {
   //#pipe-to-user-activity-actor
 
   //#pipe-to-proxy-actor
-  class UserProxyActor(
-    userData:       ActorRef,
-    userActivities: ActorRef
-  ) extends Actor {
+  class UserProxyActor(userData: ActorRef, userActivities: ActorRef) extends Actor {
     import UserProxyActor._
     import akka.pattern.{ ask, pipe }
     implicit val ec: ExecutionContext = context.dispatcher
@@ -110,9 +107,9 @@ object FutureDocSpec {
 
     def receive = {
       case GetUserData =>
-        (userData ? UserDataActor.Get) pipeTo sender()
+        (userData ? UserDataActor.Get).pipeTo(sender())
       case GetUserActivities =>
-        (userActivities ? UserActivityActor.Get) pipeTo sender()
+        (userActivities ? UserActivityActor.Get).pipeTo(sender())
     }
   }
   //#pipe-to-proxy-actor
@@ -188,7 +185,7 @@ class FutureDocSpec extends AkkaSpec {
     val future = Future {
       "Hello" + "World"
     }
-    future foreach println
+    future.foreach(println)
     //#future-eval
     Await.result(future, 3 seconds) should be("HelloWorld")
   }
@@ -198,10 +195,10 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = f1 map { x =>
+    val f2 = f1.map { x =>
       x.length
     }
-    f2 foreach println
+    f2.foreach(println)
     //#map
     val result = Await.result(f2, 3 seconds)
     result should be(10)
@@ -214,12 +211,12 @@ class FutureDocSpec extends AkkaSpec {
       "Hello" + "World"
     }
     val f2 = Future.successful(3)
-    val f3 = f1 map { x =>
-      f2 map { y =>
+    val f3 = f1.map { x =>
+      f2.map { y =>
         x.length * y
       }
     }
-    f3 foreach println
+    f3.foreach(println)
     //#wrong-nested-map
     Await.ready(f3, 3 seconds)
   }
@@ -230,12 +227,12 @@ class FutureDocSpec extends AkkaSpec {
       "Hello" + "World"
     }
     val f2 = Future.successful(3)
-    val f3 = f1 flatMap { x =>
-      f2 map { y =>
+    val f3 = f1.flatMap { x =>
+      f2.map { y =>
         x.length * y
       }
     }
-    f3 foreach println
+    f3.foreach(println)
     //#flat-map
     val result = Await.result(f3, 3 seconds)
     result should be(30)
@@ -246,14 +243,14 @@ class FutureDocSpec extends AkkaSpec {
     val future1 = Future.successful(4)
     val future2 = future1.filter(_ % 2 == 0)
 
-    future2 foreach println
+    future2.foreach(println)
 
     val failedFilter = future1.filter(_ % 2 == 1).recover {
       // When filter fails, it will have a java.util.NoSuchElementException
       case m: NoSuchElementException => 0
     }
 
-    failedFilter foreach println
+    failedFilter.foreach(println)
     //#filter
     val result = Await.result(future2, 3 seconds)
     result should be(4)
@@ -273,7 +270,7 @@ class FutureDocSpec extends AkkaSpec {
     // Note that the execution of futures a, b, and c
     // are not done in parallel.
 
-    f foreach println
+    f.foreach(println)
     //#for-comprehension
     val result = Await.result(f, 3 seconds)
     result should be(24)
@@ -323,7 +320,7 @@ class FutureDocSpec extends AkkaSpec {
       c <- ask(actor3, (a + b)).mapTo[Int]
     } yield c
 
-    f3 foreach println
+    f3.foreach(println)
     //#composing
     val result = Await.result(f3, 3 seconds).asInstanceOf[Int]
     result should be(3)
@@ -341,7 +338,7 @@ class FutureDocSpec extends AkkaSpec {
 
     // Find the sum of the odd numbers
     val oddSum = futureList.map(_.sum)
-    oddSum foreach println
+    oddSum.foreach(println)
     //#sequence-ask
     Await.result(oddSum, 3 seconds).asInstanceOf[Int] should be(10000)
   }
@@ -350,7 +347,7 @@ class FutureDocSpec extends AkkaSpec {
     //#sequence
     val futureList = Future.sequence((1 to 100).toList.map(x => Future(x * 2 - 1)))
     val oddSum = futureList.map(_.sum)
-    oddSum foreach println
+    oddSum.foreach(println)
     //#sequence
     Await.result(oddSum, 3 seconds).asInstanceOf[Int] should be(10000)
   }
@@ -359,7 +356,7 @@ class FutureDocSpec extends AkkaSpec {
     //#traverse
     val futureList = Future.traverse((1 to 100).toList)(x => Future(x * 2 - 1))
     val oddSum = futureList.map(_.sum)
-    oddSum foreach println
+    oddSum.foreach(println)
     //#traverse
     Await.result(oddSum, 3 seconds).asInstanceOf[Int] should be(10000)
   }
@@ -369,7 +366,7 @@ class FutureDocSpec extends AkkaSpec {
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
     val futureSum = Future.fold(futures)(0)(_ + _)
-    futureSum foreach println
+    futureSum.foreach(println)
     //#fold
     Await.result(futureSum, 3 seconds) should be(1001000)
   }
@@ -379,7 +376,7 @@ class FutureDocSpec extends AkkaSpec {
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
     val futureSum = Future.reduce(futures)(_ + _)
-    futureSum foreach println
+    futureSum.foreach(println)
     //#reduce
     Await.result(futureSum, 3 seconds) should be(1001000)
   }
@@ -389,10 +386,10 @@ class FutureDocSpec extends AkkaSpec {
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#recover
-    val future = akka.pattern.ask(actor, msg1) recover {
+    val future = akka.pattern.ask(actor, msg1).recover {
       case e: ArithmeticException => 0
     }
-    future foreach println
+    future.foreach(println)
     //#recover
     Await.result(future, 3 seconds) should be(0)
   }
@@ -402,12 +399,12 @@ class FutureDocSpec extends AkkaSpec {
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#try-recover
-    val future = akka.pattern.ask(actor, msg1) recoverWith {
+    val future = akka.pattern.ask(actor, msg1).recoverWith {
       case e: ArithmeticException => Future.successful(0)
       case foo: IllegalArgumentException =>
         Future.failed[Int](new IllegalStateException("All br0ken!"))
     }
-    future foreach println
+    future.foreach(println)
     //#try-recover
     Await.result(future, 3 seconds) should be(0)
   }
@@ -416,8 +413,8 @@ class FutureDocSpec extends AkkaSpec {
     val future1 = Future { "foo" }
     val future2 = Future { "bar" }
     //#zip
-    val future3 = future1 zip future2 map { case (a, b) => a + " " + b }
-    future3 foreach println
+    val future3 = future1.zip(future2).map { case (a, b) => a + " " + b }
+    future3.foreach(println)
     //#zip
     Await.result(future3, 3 seconds) should be("foo bar")
   }
@@ -428,12 +425,14 @@ class FutureDocSpec extends AkkaSpec {
     def log(cause: Throwable) = ()
     def watchSomeTV(): Unit = ()
     //#and-then
-    val result = Future { loadPage(url) } andThen {
-      case Failure(exception) => log(exception)
-    } andThen {
-      case _ => watchSomeTV()
-    }
-    result foreach println
+    val result = Future { loadPage(url) }
+      .andThen {
+        case Failure(exception) => log(exception)
+      }
+      .andThen {
+        case _ => watchSomeTV()
+      }
+    result.foreach(println)
     //#and-then
     Await.result(result, 3 seconds) should be("foo bar")
   }
@@ -443,8 +442,8 @@ class FutureDocSpec extends AkkaSpec {
     val future2 = Future { "bar" }
     val future3 = Future { "pigdog" }
     //#fallback-to
-    val future4 = future1 fallbackTo future2 fallbackTo future3
-    future4 foreach println
+    val future4 = future1.fallbackTo(future2).fallbackTo(future3)
+    future4.foreach(println)
     //#fallback-to
     Await.result(future4, 3 seconds) should be("foo")
   }
@@ -454,7 +453,7 @@ class FutureDocSpec extends AkkaSpec {
     def doSomethingOnSuccess(r: String) = ()
     def doSomethingOnFailure(t: Throwable) = ()
     //#onComplete
-    future onComplete {
+    future.onComplete {
       case Success(result)  => doSomethingOnSuccess(result)
       case Failure(failure) => doSomethingOnFailure(failure)
     }
@@ -484,10 +483,10 @@ class FutureDocSpec extends AkkaSpec {
     // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
     // import akka.pattern.after
 
-    val delayed = akka.pattern.after(200 millis, using = system.scheduler)(Future.failed(
-      new IllegalStateException("OHNOES")))
+    val delayed =
+      akka.pattern.after(200 millis, using = system.scheduler)(Future.failed(new IllegalStateException("OHNOES")))
     val future = Future { Thread.sleep(1000); "foo" }
-    val result = Future firstCompletedOf Seq(future, delayed)
+    val result = Future.firstCompletedOf(Seq(future, delayed))
     //#after
     intercept[IllegalStateException] { Await.result(result, 2 second) }
   }
@@ -504,10 +503,7 @@ class FutureDocSpec extends AkkaSpec {
       } else Future.successful(5)
     }
     //Return a new future that will retry up to 10 times
-    val retried = akka.pattern.retry(
-      () => attempt(),
-      10,
-      100 milliseconds)
+    val retried = akka.pattern.retry(() => attempt(), 10, 100 milliseconds)
     //#retry
 
     Await.result(retried, 1 second) should ===(5)

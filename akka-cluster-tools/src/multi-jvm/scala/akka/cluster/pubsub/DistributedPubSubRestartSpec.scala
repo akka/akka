@@ -50,7 +50,10 @@ class DistributedPubSubRestartMultiJvmNode1 extends DistributedPubSubRestartSpec
 class DistributedPubSubRestartMultiJvmNode2 extends DistributedPubSubRestartSpec
 class DistributedPubSubRestartMultiJvmNode3 extends DistributedPubSubRestartSpec
 
-class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestartSpec) with STMultiNodeSpec with ImplicitSender {
+class DistributedPubSubRestartSpec
+    extends MultiNodeSpec(DistributedPubSubRestartSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DistributedPubSubRestartSpec._
   import DistributedPubSubMediator._
 
@@ -58,7 +61,7 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createMediator()
     }
     enterBarrier(from.name + "-joined")
@@ -136,8 +139,7 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
         Await.result(system.whenTerminated, 10.seconds)
         val newSystem = {
           val port = Cluster(system).selfAddress.port.get
-          val config = ConfigFactory.parseString(
-            s"""
+          val config = ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
               akka.remote.netty.tcp.port=$port
               """).withFallback(system.settings.config)

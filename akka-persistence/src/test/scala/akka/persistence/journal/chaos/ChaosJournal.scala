@@ -14,13 +14,12 @@ import scala.util.Try
 import scala.util.control.NonFatal
 
 class WriteFailedException(ps: Seq[PersistentRepr])
-  extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")
+    extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")
 
 class ReplayFailedException(ps: Seq[PersistentRepr])
-  extends TestException(s"recovery failed after replaying payloads = [${ps.map(_.payload)}]")
+    extends TestException(s"recovery failed after replaying payloads = [${ps.map(_.payload)}]")
 
-class ReadHighestFailedException
-  extends TestException(s"recovery failed when reading highest sequence number")
+class ReadHighestFailedException extends TestException(s"recovery failed when reading highest sequence number")
 
 /**
  * Keep [[ChaosJournal]] state in an external singleton so that it survives journal restarts.
@@ -61,7 +60,8 @@ class ChaosJournal extends AsyncWriteJournal {
     }
   }
 
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] =
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      replayCallback: (PersistentRepr) => Unit): Future[Unit] =
     if (shouldFail(replayFailureRate)) {
       val rm = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       val sm = rm.take(random.nextInt(rm.length + 1))

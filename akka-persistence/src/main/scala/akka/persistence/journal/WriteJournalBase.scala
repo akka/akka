@@ -24,7 +24,7 @@ private[akka] trait WriteJournalBase {
 
   /** INTERNAL API */
   private[akka] final def adaptFromJournal(repr: PersistentRepr): immutable.Seq[PersistentRepr] =
-    eventAdapters.get(repr.payload.getClass).fromJournal(repr.payload, repr.manifest).events map { adaptedPayload =>
+    eventAdapters.get(repr.payload.getClass).fromJournal(repr.payload, repr.manifest).events.map { adaptedPayload =>
       repr.withPayload(adaptedPayload)
     }
 

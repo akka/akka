@@ -27,16 +27,14 @@ object MapAsyncBenchmark {
 class MapAsyncBenchmark {
   import MapAsyncBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   implicit val system = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher

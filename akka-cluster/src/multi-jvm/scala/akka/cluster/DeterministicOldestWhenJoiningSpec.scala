@@ -19,11 +19,14 @@ object DeterministicOldestWhenJoiningMultiJvmSpec extends MultiNodeConfig {
   val seed2 = role("seed2")
   val seed3 = role("seed3")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
     # not too quick to trigger problematic scenario more often
     akka.cluster.leader-actions-interval = 2000 ms
     akka.cluster.gossip-interval = 500 ms
-    """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class DeterministicOldestWhenJoiningMultiJvmNode1 extends DeterministicOldestWhenJoiningSpec
@@ -31,8 +34,8 @@ class DeterministicOldestWhenJoiningMultiJvmNode2 extends DeterministicOldestWhe
 class DeterministicOldestWhenJoiningMultiJvmNode3 extends DeterministicOldestWhenJoiningSpec
 
 abstract class DeterministicOldestWhenJoiningSpec
-  extends MultiNodeSpec(DeterministicOldestWhenJoiningMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(DeterministicOldestWhenJoiningMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import DeterministicOldestWhenJoiningMultiJvmSpec._
 

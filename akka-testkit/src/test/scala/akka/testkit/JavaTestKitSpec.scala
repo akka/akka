@@ -36,7 +36,7 @@ class JavaTestKitSpec extends AkkaSpec with DefaultTimeout {
         val actor = system.actorOf(Props(new Actor { def receive = { case _ => } }))
 
         watch(actor)
-        system stop actor
+        system.stop(actor)
         expectTerminated(actor).existenceConfirmed should ===(true)
 
         watch(actor)

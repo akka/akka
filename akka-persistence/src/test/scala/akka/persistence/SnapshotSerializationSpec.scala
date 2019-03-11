@@ -4,7 +4,7 @@
 
 package akka.persistence
 
-import akka.actor.{ Props, ActorRef }
+import akka.actor.{ ActorRef, Props }
 import akka.serialization.Serializer
 import akka.testkit.{ ImplicitSender }
 import java.io._
@@ -64,8 +64,13 @@ object SnapshotSerializationSpec {
 
 }
 
-class SnapshotSerializationSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotSerializationSpec", serialization = "off", extraConfig = Some(
-  """
+class SnapshotSerializationSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config("leveldb",
+                             "SnapshotSerializationSpec",
+                             serialization = "off",
+                             extraConfig =
+                               Some("""
     akka.actor {
       serializers {
         my-snapshot = "akka.persistence.SnapshotSerializationSpec$MySerializer"
@@ -74,7 +79,8 @@ class SnapshotSerializationSpec extends PersistenceSpec(PersistenceSpec.config("
         "akka.persistence.SnapshotSerializationSpec$SerializationMarker" = my-snapshot
       }
     }
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import SnapshotSerializationSpec._
   import SnapshotSerializationSpec.XXXXXXXXXXXXXXXXXXXX._

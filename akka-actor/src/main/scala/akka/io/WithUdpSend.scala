@@ -5,8 +5,8 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.nio.channels.{ SelectionKey, DatagramChannel }
-import akka.actor.{ ActorRef, ActorLogging, Actor }
+import java.nio.channels.{ DatagramChannel, SelectionKey }
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 
@@ -52,18 +52,14 @@ private[io] trait WithUdpSend {
             } catch {
               case NonFatal(e) =>
                 sender() ! CommandFailed(send)
-                log.debug(
-                  "Failure while sending UDP datagram to remote address [{}]: {}",
-                  send.target, e)
+                log.debug("Failure while sending UDP datagram to remote address [{}]: {}", send.target, e)
                 retriedSend = false
                 pendingSend = null
                 pendingCommander = null
             }
           case None =>
             sender() ! CommandFailed(send)
-            log.debug(
-              "Name resolution failed for remote address [{}]",
-              send.target)
+            log.debug("Name resolution failed for remote address [{}]", send.target)
             retriedSend = false
             pendingSend = null
             pendingCommander = null

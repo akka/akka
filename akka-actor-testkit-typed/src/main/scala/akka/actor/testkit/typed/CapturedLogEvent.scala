@@ -17,17 +17,20 @@ import scala.compat.java8.OptionConverters._
 /**
  * Representation of a Log Event issued by a [[akka.actor.typed.Behavior]]
  */
-final case class CapturedLogEvent(
-  logLevel: LogLevel,
-  message:  String,
-  cause:    Option[Throwable],
-  marker:   Option[LogMarker],
-  mdc:      Map[String, Any]) {
+final case class CapturedLogEvent(logLevel: LogLevel,
+                                  message: String,
+                                  cause: Option[Throwable],
+                                  marker: Option[LogMarker],
+                                  mdc: Map[String, Any]) {
 
   /**
    * Constructor for Java API
    */
-  def this(logLevel: LogLevel, message: String, errorCause: Optional[Throwable], marker: Optional[LogMarker], mdc: java.util.Map[String, Any]) {
+  def this(logLevel: LogLevel,
+           message: String,
+           errorCause: Optional[Throwable],
+           marker: Optional[LogMarker],
+           mdc: java.util.Map[String, Any]) {
     this(logLevel, message, errorCause.asScala, marker.asScala, mdc.asScala.toMap)
   }
 
@@ -76,9 +79,7 @@ object CapturedLogEvent {
     case _                 => None
   }
 
-  def apply(
-    logLevel: LogLevel,
-    message:  String): CapturedLogEvent = {
+  def apply(logLevel: LogLevel, message: String): CapturedLogEvent = {
     CapturedLogEvent(logLevel, message, None, None, Map.empty[String, Any])
   }
 
@@ -87,12 +88,11 @@ object CapturedLogEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] def apply(
-    logLevel:   LogLevel,
-    message:    String,
-    errorCause: OptionVal[Throwable],
-    logMarker:  OptionVal[LogMarker],
-    mdc:        Map[String, Any]): CapturedLogEvent = {
+  private[akka] def apply(logLevel: LogLevel,
+                          message: String,
+                          errorCause: OptionVal[Throwable],
+                          logMarker: OptionVal[LogMarker],
+                          mdc: Map[String, Any]): CapturedLogEvent = {
     new CapturedLogEvent(logLevel, message, toOption(errorCause), toOption(logMarker), mdc)
   }
 }

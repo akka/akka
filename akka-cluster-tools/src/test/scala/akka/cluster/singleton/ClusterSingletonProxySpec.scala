@@ -5,7 +5,7 @@
 package akka.cluster.singleton
 
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-import akka.testkit.{ TestProbe, TestKit }
+import akka.testkit.{ TestKit, TestProbe }
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
@@ -37,23 +37,22 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
 object ClusterSingletonProxySpec {
 
   class ActorSys(name: String = "ClusterSingletonProxySystem", joinTo: Option[Address] = None)
-    extends TestKit(ActorSystem(name, ConfigFactory.parseString(cfg))) {
+      extends TestKit(ActorSystem(name, ConfigFactory.parseString(cfg))) {
 
     val cluster = Cluster(system)
     cluster.join(joinTo.getOrElse(cluster.selfAddress))
 
     cluster.registerOnMemberUp {
       system.actorOf(
-        ClusterSingletonManager.props(
-          singletonProps = Props[Singleton],
-          terminationMessage = PoisonPill,
-          settings = ClusterSingletonManagerSettings(system).withRemovalMargin(5.seconds)),
+        ClusterSingletonManager.props(singletonProps = Props[Singleton],
+                                      terminationMessage = PoisonPill,
+                                      settings = ClusterSingletonManagerSettings(system).withRemovalMargin(5.seconds)),
         name = "singletonManager")
     }
 
-    val proxy = system.actorOf(ClusterSingletonProxy.props(
-      "user/singletonManager",
-      settings = ClusterSingletonProxySettings(system)), s"singletonProxy-${cluster.selfAddress.port.getOrElse(0)}")
+    val proxy = system.actorOf(
+      ClusterSingletonProxy.props("user/singletonManager", settings = ClusterSingletonProxySettings(system)),
+      s"singletonProxy-${cluster.selfAddress.port.getOrElse(0)}")
 
     def testProxy(msg: String): Unit = {
       val probe = TestProbe()

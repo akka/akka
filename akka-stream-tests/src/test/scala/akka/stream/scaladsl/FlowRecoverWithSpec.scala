@@ -23,7 +23,10 @@ class FlowRecoverWithSpec extends StreamSpec {
 
   "A RecoverWith" must {
     "recover when there is a handler" in assertAllStagesStopped {
-      Source(1 to 4).map { a => if (a == 3) throw ex else a }
+      Source(1 to 4)
+        .map { a =>
+          if (a == 3) throw ex else a
+        }
         .recoverWith { case t: Throwable => Source(List(0, -1)) }
         .runWith(TestSink.probe[Int])
         .request(2)
@@ -36,7 +39,10 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "cancel substream if parent is terminated when there is a handler" in assertAllStagesStopped {
-      Source(1 to 4).map { a => if (a == 3) throw ex else a }
+      Source(1 to 4)
+        .map { a =>
+          if (a == 3) throw ex else a
+        }
         .recoverWith { case t: Throwable => Source(List(0, -1)) }
         .runWith(TestSink.probe[Int])
         .request(2)
@@ -47,7 +53,10 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "failed stream if handler is not for such exception type" in assertAllStagesStopped {
-      Source(1 to 3).map { a => if (a == 2) throw ex else a }
+      Source(1 to 3)
+        .map { a =>
+          if (a == 2) throw ex else a
+        }
         .recoverWith { case t: IndexOutOfBoundsException => Source.single(0) }
         .runWith(TestSink.probe[Int])
         .request(1)
@@ -57,8 +66,11 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "be able to recover with the same unmaterialized source if configured" in assertAllStagesStopped {
-      val src = Source(1 to 3).map { a => if (a == 3) throw ex else a }
-      src.recoverWith { case t: Throwable => src }
+      val src = Source(1 to 3).map { a =>
+        if (a == 3) throw ex else a
+      }
+      src
+        .recoverWith { case t: Throwable => src }
         .runWith(TestSink.probe[Int])
         .request(2)
         .expectNextN(1 to 2)
@@ -70,7 +82,8 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "not influence stream when there is no exceptions" in assertAllStagesStopped {
-      Source(1 to 3).map(identity)
+      Source(1 to 3)
+        .map(identity)
         .recoverWith { case t: Throwable => Source.single(0) }
         .runWith(TestSink.probe[Int])
         .request(3)
@@ -79,7 +92,8 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty.map(identity)
+      Source.empty
+        .map(identity)
         .recoverWith { case t: Throwable => Source.single(0) }
         .runWith(TestSink.probe[Int])
         .request(3)
@@ -87,12 +101,16 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "switch the second time if alternative source throws exception" in assertAllStagesStopped {
-      val k = Source(1 to 3).map { a => if (a == 3) throw new IndexOutOfBoundsException() else a }
+      val k = Source(1 to 3)
+        .map { a =>
+          if (a == 3) throw new IndexOutOfBoundsException() else a
+        }
         .recoverWith {
           case t: IndexOutOfBoundsException =>
             Source(List(11, 22)).map(m => if (m == 22) throw new IllegalArgumentException() else m)
           case t: IllegalArgumentException => Source(List(33, 44))
-        }.runWith(TestSink.probe[Int])
+        }
+        .runWith(TestSink.probe[Int])
         .request(2)
         .expectNextN(List(1, 2))
         .request(2)
@@ -103,11 +121,15 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "terminate with exception if partial function fails to match after an alternative source failure" in assertAllStagesStopped {
-      Source(1 to 3).map { a => if (a == 3) throw new IndexOutOfBoundsException() else a }
+      Source(1 to 3)
+        .map { a =>
+          if (a == 3) throw new IndexOutOfBoundsException() else a
+        }
         .recoverWith {
           case t: IndexOutOfBoundsException =>
             Source(List(11, 22)).map(m => if (m == 22) throw ex else m)
-        }.runWith(TestSink.probe[Int])
+        }
+        .runWith(TestSink.probe[Int])
         .request(2)
         .expectNextN(List(1, 2))
         .request(1)
@@ -117,11 +139,15 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "terminate with exception after set number of retries" in assertAllStagesStopped {
-      Source(1 to 3).map { a => if (a == 3) throw new IndexOutOfBoundsException() else a }
+      Source(1 to 3)
+        .map { a =>
+          if (a == 3) throw new IndexOutOfBoundsException() else a
+        }
         .recoverWithRetries(3, {
           case t: Throwable =>
             Source(List(11, 22, 33)).map(m => if (m == 33) throw ex else m)
-        }).runWith(TestSink.probe[Int])
+        })
+        .runWith(TestSink.probe[Int])
         .request(100)
         .expectNextN(List(1, 2))
         .expectNextN(List(11, 22))
@@ -131,7 +157,10 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "not attempt recovering when attempts is zero" in assertAllStagesStopped {
-      Source(1 to 3).map { a => if (a == 3) throw ex else a }
+      Source(1 to 3)
+        .map { a =>
+          if (a == 3) throw ex else a
+        }
         .recoverWithRetries(0, { case t: Throwable => Source(List(22, 33)) })
         .runWith(TestSink.probe[Int])
         .request(100)
@@ -140,7 +169,9 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "recover infinitely when negative (-1) number of attempts given" in assertAllStagesStopped {
-      val oneThenBoom = Source(1 to 2).map { a => if (a == 2) throw ex else a }
+      val oneThenBoom = Source(1 to 2).map { a =>
+        if (a == 2) throw ex else a
+      }
 
       oneThenBoom
         .recoverWithRetries(-1, { case t: Throwable => oneThenBoom })
@@ -151,7 +182,9 @@ class FlowRecoverWithSpec extends StreamSpec {
     }
 
     "recover infinitely when negative (smaller than -1) number of attempts given" in assertAllStagesStopped {
-      val oneThenBoom = Source(1 to 2).map { a => if (a == 2) throw ex else a }
+      val oneThenBoom = Source(1 to 2).map { a =>
+        if (a == 2) throw ex else a
+      }
 
       oneThenBoom
         .recoverWithRetries(-10, { case t: Throwable => oneThenBoom })
@@ -171,9 +204,12 @@ class FlowRecoverWithSpec extends StreamSpec {
         }
       }
 
-      val result = Source.failed(TE("trigger")).recoverWithRetries(1, {
-        case _: TE => Source.fromGraph(FailingInnerMat)
-      }).runWith(Sink.ignore)
+      val result = Source
+        .failed(TE("trigger"))
+        .recoverWithRetries(1, {
+          case _: TE => Source.fromGraph(FailingInnerMat)
+        })
+        .runWith(Sink.ignore)
 
       result.failed.futureValue should ===(matFail)
 

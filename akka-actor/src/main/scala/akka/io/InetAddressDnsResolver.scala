@@ -33,26 +33,30 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   private final val DefaultPositive = Ttl.fromPositive(30.seconds)
 
   private lazy val defaultCachePolicy: CachePolicy =
-    Option(Security.getProperty(CachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(CachePolicyPropFallback))).filter(_ != "")
+    Option(Security.getProperty(CachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(CachePolicyPropFallback)))
+      .filter(_ != "")
       .map(x => Try(x.toInt)) match {
-        case None             => DefaultPositive
-        case Some(Success(n)) => parsePolicy(n)
-        case Some(Failure(_)) =>
-          log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
-          DefaultPositive
-      }
+      case None             => DefaultPositive
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Caching TTL misconfigured. Using default value {}.", DefaultPositive)
+        DefaultPositive
+    }
 
   private lazy val defaultNegativeCachePolicy: CachePolicy =
-    Option(Security.getProperty(NegativeCachePolicyProp)).filter(_ != "")
-      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback))).filter(_ != "")
+    Option(Security.getProperty(NegativeCachePolicyProp))
+      .filter(_ != "")
+      .orElse(Option(System.getProperty(NegativeCachePolicyPropFallback)))
+      .filter(_ != "")
       .map(x => Try(x.toInt)) match {
-        case None             => Never
-        case Some(Success(n)) => parsePolicy(n)
-        case Some(Failure(_)) =>
-          log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
-          Never
-      }
+      case None             => Never
+      case Some(Success(n)) => parsePolicy(n)
+      case Some(Failure(_)) =>
+        log.warning("Negative caching TTL misconfigured. Using default value {}.", Never)
+        Never
+    }
 
   private def parsePolicy(n: Int): CachePolicy = {
     n match {

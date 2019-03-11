@@ -30,7 +30,8 @@ class SourceWithContextSpec extends StreamSpec {
 
     "get created from a source of tuple2" in {
       val msg = Message("a", 1L)
-      SourceWithContext.fromTuples(Source(Vector((msg, msg.offset))))
+      SourceWithContext
+        .fromTuples(Source(Vector((msg, msg.offset))))
         .asSource
         .runWith(TestSink.probe[(Message, Long)])
         .request(1)
@@ -43,7 +44,8 @@ class SourceWithContextSpec extends StreamSpec {
       Source(Vector(msg))
         .asSourceWithContext(_.offset)
         .map(_.data)
-        .asSource.map { case (e, _) => e }
+        .asSource
+        .map { case (e, _) => e }
         .runWith(TestSink.probe[String])
         .request(1)
         .expectNext("a")
@@ -51,9 +53,7 @@ class SourceWithContextSpec extends StreamSpec {
     }
 
     "pass through contexts using map and filter" in {
-      Source(
-        Vector(Message("A", 1L), Message("B", 2L), Message("D", 3L), Message("C", 4L))
-      )
+      Source(Vector(Message("A", 1L), Message("B", 2L), Message("D", 3L), Message("C", 4L)))
         .asSourceWithContext(_.offset)
         .map(_.data.toLowerCase)
         .filter(_ != "b")

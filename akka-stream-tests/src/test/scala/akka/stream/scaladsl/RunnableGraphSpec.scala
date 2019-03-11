@@ -17,7 +17,8 @@ class RunnableGraphSpec extends StreamSpec {
 
     "suitably override attribute handling methods" in {
       import Attributes._
-      val r: RunnableGraph[NotUsed] = RunnableGraph.fromGraph(Source.empty.to(Sink.ignore)).async.addAttributes(none).named("useless")
+      val r: RunnableGraph[NotUsed] =
+        RunnableGraph.fromGraph(Source.empty.to(Sink.ignore)).async.addAttributes(none).named("useless")
 
       r.traversalBuilder.attributes.get[Name] shouldEqual Some(Name("useless"))
       r.traversalBuilder.attributes.get[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))

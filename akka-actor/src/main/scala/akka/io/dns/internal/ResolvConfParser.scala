@@ -35,7 +35,8 @@ private[dns] object ResolvConfParser {
     var search = List.empty[String]
     var ndots = 1
 
-    lines.map(_.trim)
+    lines
+      .map(_.trim)
       .filter { line =>
         // Ignore blank lines and comments
         line.nonEmpty && line(0) != ';' && line(0) != '#'

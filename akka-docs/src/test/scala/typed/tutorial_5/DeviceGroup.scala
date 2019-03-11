@@ -19,16 +19,14 @@ object DeviceGroup {
 
   trait DeviceGroupMessage
 
-  private final case class DeviceTerminated(
-    device:   ActorRef[Device.DeviceMessage],
-    groupId:  String,
-    deviceId: String) extends DeviceGroupMessage
+  private final case class DeviceTerminated(device: ActorRef[Device.DeviceMessage], groupId: String, deviceId: String)
+      extends DeviceGroupMessage
 
 }
 
 //#query-added
 class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId: String)
-  extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
+    extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
   import DeviceGroup._
   import DeviceManager._
 
@@ -55,10 +53,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
         this
 
       case RequestTrackDevice(gId, _, _) =>
-        context.log.warning(
-          "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-          gId, groupId
-        )
+        context.log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", gId, groupId)
         this
 
       case RequestDeviceList(requestId, gId, replyTo) =>
@@ -79,12 +74,8 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
 
       case RequestAllTemperatures(requestId, gId, replyTo) =>
         if (gId == groupId) {
-          context.spawnAnonymous(DeviceGroupQuery(
-            deviceIdToActor,
-            requestId = requestId,
-            requester = replyTo,
-            3.seconds
-          ))
+          context.spawnAnonymous(
+            DeviceGroupQuery(deviceIdToActor, requestId = requestId, requester = replyTo, 3.seconds))
           this
         } else
           Behaviors.unhandled

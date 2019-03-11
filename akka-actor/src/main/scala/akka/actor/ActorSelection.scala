@@ -43,8 +43,9 @@ abstract class ActorSelection extends Serializable {
    * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
    */
   def tell(msg: Any, sender: ActorRef): Unit =
-    ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef], sender,
-      ActorSelectionMessage(msg, path, wildcardFanOut = false))
+    ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef],
+                                    sender,
+                                    ActorSelectionMessage(msg, path, wildcardFanOut = false))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -66,7 +67,7 @@ abstract class ActorSelection extends Serializable {
   def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
     val p = Promise[ActorRef]()
-    this.ask(Identify(None)) onComplete {
+    this.ask(Identify(None)).onComplete {
       case Success(ActorIdentity(_, Some(ref))) => p.success(ref)
       case _                                    => p.failure(ActorNotFound(this))
     }
@@ -204,12 +205,14 @@ object ActorSelection {
    * intention is to send messages frequently.
    */
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
-    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator.collect({
-      case x if !x.isEmpty =>
-        if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
-        else if (x == "..") SelectParent
-        else SelectChildName(x)
-    }).to(immutable.IndexedSeq)
+    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
+      .collect({
+        case x if !x.isEmpty =>
+          if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
+          else if (x == "..") SelectParent
+          else SelectChildName(x)
+      })
+      .to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled
@@ -231,9 +234,10 @@ object ActorSelection {
       @tailrec def rec(ref: InternalActorRef): Unit = {
         ref match {
           case refWithCell: ActorRefWithCell =>
-
-            def emptyRef = new EmptyLocalActorRef(refWithCell.provider, anchor.path / sel.elements.map(_.toString),
-              refWithCell.underlying.system.eventStream)
+            def emptyRef =
+              new EmptyLocalActorRef(refWithCell.provider,
+                                     anchor.path / sel.elements.map(_.toString),
+                                     refWithCell.underlying.system.eventStream)
 
             iter.next() match {
               case SelectParent =>
@@ -267,9 +271,8 @@ object ActorSelection {
                   if (matchingChildren.isEmpty && !sel.wildcardFanOut)
                     emptyRef.tell(sel, sender)
                   else {
-                    val m = sel.copy(
-                      elements = iter.toVector,
-                      wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
+                    val m = sel.copy(elements = iter.toVector,
+                                     wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
                     matchingChildren.foreach(c => deliverSelection(c.asInstanceOf[InternalActorRef], sender, m))
                   }
                 }
@@ -302,11 +305,11 @@ trait ScalaActorSelection {
  * message is delivered by traversing the various actor paths involved.
  */
 @SerialVersionUID(2L) // it has protobuf serialization in akka-remote
-private[akka] final case class ActorSelectionMessage(
-  msg:            Any,
-  elements:       immutable.Iterable[SelectionPathElement],
-  wildcardFanOut: Boolean)
-  extends AutoReceivedMessage with PossiblyHarmful {
+private[akka] final case class ActorSelectionMessage(msg: Any,
+                                                     elements: immutable.Iterable[SelectionPathElement],
+                                                     wildcardFanOut: Boolean)
+    extends AutoReceivedMessage
+    with PossiblyHarmful {
 
   def identifyRequest: Option[Identify] = msg match {
     case x: Identify => Some(x)
@@ -351,4 +354,3 @@ private[akka] case object SelectParent extends SelectionPathElement {
  */
 @SerialVersionUID(1L)
 final case class ActorNotFound(selection: ActorSelection) extends RuntimeException("Actor not found for: " + selection)
-

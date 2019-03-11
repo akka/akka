@@ -23,8 +23,11 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable => Any)
-  extends ActorSubscriber {
+@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef,
+                                                   highWatermark: Int,
+                                                   onCompleteMessage: Any,
+                                                   onFailureMessage: Throwable => Any)
+    extends ActorSubscriber {
   import ActorSubscriberMessage._
 
   override val requestStrategy = WatermarkRequestStrategy(highWatermark)

@@ -10,9 +10,7 @@ import akka.japi.function.Procedure2
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors.
  */
-final class MessageBuffer private (
-  private var _head: MessageBuffer.Node,
-  private var _tail: MessageBuffer.Node) {
+final class MessageBuffer private (private var _head: MessageBuffer.Node, private var _tail: MessageBuffer.Node) {
   import MessageBuffer._
 
   private var _size: Int = if (_head eq null) 0 else 1

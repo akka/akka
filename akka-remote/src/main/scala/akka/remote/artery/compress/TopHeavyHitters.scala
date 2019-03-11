@@ -222,7 +222,8 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    */
   private def updateExistingHeavyHitter(foundHashIndex: Int, count: Long): Unit = {
     if (weights(foundHashIndex) > count)
-      throw new IllegalArgumentException(s"Weights can be only incremented or kept the same, not decremented. " +
+      throw new IllegalArgumentException(
+        s"Weights can be only incremented or kept the same, not decremented. " +
         s"Previous weight was [${weights(foundHashIndex)}], attempted to modify it to [$count].")
     weights(foundHashIndex) = count // we don't need to change `hashCode`, `heapIndex` or `item`, those remain the same
     // Position in the heap might have changed as count was incremented

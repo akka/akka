@@ -30,26 +30,23 @@ object MovieWatchList {
     }
   }
 
-  private val commandHandler: CommandHandler[Command, Event, MovieList] = {
-    (state, cmd) =>
-      cmd match {
-        case AddMovie(movieId) =>
-          Effect.persist(MovieAdded(movieId))
-        case RemoveMovie(movieId) =>
-          Effect.persist(MovieRemoved(movieId))
-        case GetMovieList(replyTo) =>
-          replyTo ! state
-          Effect.none
-      }
+  private val commandHandler: CommandHandler[Command, Event, MovieList] = { (state, cmd) =>
+    cmd match {
+      case AddMovie(movieId) =>
+        Effect.persist(MovieAdded(movieId))
+      case RemoveMovie(movieId) =>
+        Effect.persist(MovieRemoved(movieId))
+      case GetMovieList(replyTo) =>
+        replyTo ! state
+        Effect.none
+    }
   }
 
   def behavior(userId: String): Behavior[Command] = {
-    EventSourcedBehavior[Command, Event, MovieList](
-      persistenceId = PersistenceId(s"movies-$userId"),
-      emptyState = MovieList(Set.empty),
-      commandHandler,
-      eventHandler = (state, event) => state.applyEvent(event)
-    )
+    EventSourcedBehavior[Command, Event, MovieList](persistenceId = PersistenceId(s"movies-$userId"),
+                                                    emptyState = MovieList(Set.empty),
+                                                    commandHandler,
+                                                    eventHandler = (state, event) => state.applyEvent(event))
   }
 
 }

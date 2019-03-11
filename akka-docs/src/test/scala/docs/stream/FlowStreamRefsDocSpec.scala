@@ -38,7 +38,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
           val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
 
           // reply to sender
-          reply pipeTo sender()
+          reply.pipeTo(sender())
       }
 
       def streamLogs(streamId: Long): Source[String, NotUsed] = ???
@@ -85,7 +85,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
           val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
 
           // reply to sender
-          reply pipeTo sender()
+          reply.pipeTo(sender())
       }
 
       def logsSinkFor(nodeId: String): Sink[String, NotUsed] = ???
@@ -116,11 +116,14 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     import akka.stream.StreamRefAttributes
 
     // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
-    Source.repeat("hello")
+    Source
+      .repeat("hello")
       .runWith(StreamRefs.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
 
     // configuring SinkRef.source:
-    StreamRefs.sinkRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
+    StreamRefs
+      .sinkRef()
+      .addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
       .runWith(Sink.ignore) // not very interesting Sink, just an example
     //#attr-sub-timeout
   }

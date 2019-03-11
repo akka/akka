@@ -13,7 +13,9 @@ import concurrent.duration.FiniteDuration
 import akka.stream.impl.CancelledSubscription
 import akka.stream.impl.ReactiveStreamsCompliance._
 
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 object ActorPublisher {
 
   /**
@@ -27,7 +29,9 @@ object ActorPublisher {
    * INTERNAL API
    */
   private[akka] object Internal {
-    final case class Subscribe(subscriber: Subscriber[Any]) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+    final case class Subscribe(subscriber: Subscriber[Any])
+        extends DeadLetterSuppression
+        with NoSerializationVerificationNeeded
 
     sealed trait LifecycleState
     case object PreSubscriber extends LifecycleState
@@ -42,6 +46,7 @@ object ActorPublisher {
 sealed abstract class ActorPublisherMessage extends DeadLetterSuppression
 
 object ActorPublisherMessage {
+
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber requests
    * more elements.
@@ -49,6 +54,7 @@ object ActorPublisherMessage {
    */
   final case class Request(n: Long) extends ActorPublisherMessage with NoSerializationVerificationNeeded {
     private var processed = false
+
     /**
      * INTERNAL API: needed for stash support
      */
@@ -66,6 +72,7 @@ object ActorPublisherMessage {
    */
   final case object Cancel extends Cancel with NoSerializationVerificationNeeded
   sealed abstract class Cancel extends ActorPublisherMessage
+
   /**
    * Java API: get the singleton instance of the `Cancel` message
    */
@@ -75,8 +82,11 @@ object ActorPublisherMessage {
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
    * Once the actor receives this message, this publisher will already be in canceled state, thus the actor should clean-up and stop itself.
    */
-  final case object SubscriptionTimeoutExceeded extends SubscriptionTimeoutExceeded with NoSerializationVerificationNeeded
+  final case object SubscriptionTimeoutExceeded
+      extends SubscriptionTimeoutExceeded
+      with NoSerializationVerificationNeeded
   sealed abstract class SubscriptionTimeoutExceeded extends ActorPublisherMessage
+
   /**
    * Java API: get the singleton instance of the `SubscriptionTimeoutExceeded` message
    */
@@ -125,7 +135,9 @@ object ActorPublisherMessage {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 trait ActorPublisher[T] extends Actor {
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
@@ -210,7 +222,8 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber =>
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
-        try tryOnComplete(subscriber) finally subscriber = null
+        try tryOnComplete(subscriber)
+        finally subscriber = null
     case Completed | CompleteThenStop =>
       throw new IllegalStateException("onComplete must only be called once")
     case _: ErrorEmitted =>
@@ -231,7 +244,8 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber =>
       lifecycleState = CompleteThenStop
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
-        try tryOnComplete(subscriber) finally context.stop(self)
+        try tryOnComplete(subscriber)
+        finally context.stop(self)
     case _ => onComplete()
   }
 
@@ -243,13 +257,15 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber =>
       lifecycleState = ErrorEmitted(cause, stop = false)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
-        try tryOnError(subscriber, cause) finally subscriber = null
+        try tryOnError(subscriber, cause)
+        finally subscriber = null
     case _: ErrorEmitted =>
       throw new IllegalStateException("onError must only be called once")
     case Completed | CompleteThenStop =>
       throw new IllegalStateException("onError must not be called after onComplete")
     case Canceled => // drop
   }
+
   /**
    * Terminate the stream with failure. After that you are not allowed to
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
@@ -263,7 +279,8 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber =>
       lifecycleState = ErrorEmitted(cause, stop = true)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
-        try tryOnError(subscriber, cause) finally context.stop(self)
+        try tryOnError(subscriber, cause)
+        finally context.stop(self)
     case _ => onError(cause)
   }
 
@@ -364,7 +381,7 @@ trait ActorPublisher[T] extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
-    state.get(self) foreach { s =>
+    state.get(self).foreach { s =>
       // restore previous state
       subscriber = s.subscriber.orNull
       demand = s.demand
@@ -443,6 +460,7 @@ private[akka] class ActorPublisherState extends Extension {
  * Java API
  */
 object UntypedActorPublisher {
+
   /**
    * Java API: Create a [[org.reactivestreams.Publisher]] backed by a [[UntypedActorPublisher]] actor. It can be
    * attached to a [[org.reactivestreams.Subscriber]] or be used as an input source for a
@@ -455,13 +473,16 @@ object UntypedActorPublisher {
  * Java API
  * @see [[akka.stream.actor.ActorPublisher]]
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 abstract class UntypedActorPublisher[T] extends UntypedActor with ActorPublisher[T]
 
 /**
  * Java API compatible with lambda expressions
  */
 object AbstractActorPublisher {
+
   /**
    * Java API compatible with lambda expressions: Create a [[org.reactivestreams.Publisher]]
    * backed by a [[AbstractActorPublisher]] actor. It can be attached to a [[org.reactivestreams.Subscriber]]
@@ -476,7 +497,9 @@ object AbstractActorPublisher {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublisher[T]
 
 /**
@@ -486,7 +509,9 @@ abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublish
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with ActorPublisher[T] with Stash
 
 /**
@@ -496,8 +521,13 @@ abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with Act
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
-abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor with ActorPublisher[T] with UnboundedStash
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
+abstract class AbstractActorPublisherWithUnboundedStash[T]
+    extends AbstractActor
+    with ActorPublisher[T]
+    with UnboundedStash
 
 /**
  * Java API compatible with lambda expressions.
@@ -506,5 +536,10 @@ abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
-abstract class AbstractActorPublisherWithUnrestrictedStash[T] extends AbstractActor with ActorPublisher[T] with UnrestrictedStash
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
+abstract class AbstractActorPublisherWithUnrestrictedStash[T]
+    extends AbstractActor
+    with ActorPublisher[T]
+    with UnrestrictedStash

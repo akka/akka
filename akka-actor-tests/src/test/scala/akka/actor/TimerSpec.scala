@@ -15,13 +15,11 @@ object TimerSpec {
   sealed trait Command
   case class Tick(n: Int) extends Command
   case object Bump extends Command
-  case class SlowThenBump(latch: TestLatch) extends Command
-    with NoSerializationVerificationNeeded
+  case class SlowThenBump(latch: TestLatch) extends Command with NoSerializationVerificationNeeded
   case object End extends Command
   case class Throw(e: Throwable) extends Command
   case object Cancel extends Command
-  case class SlowThenThrow(latch: TestLatch, e: Throwable) extends Command
-    with NoSerializationVerificationNeeded
+  case class SlowThenThrow(latch: TestLatch, e: Throwable) extends Command with NoSerializationVerificationNeeded
   case object AutoReceive extends Command
 
   sealed trait Event
@@ -34,7 +32,9 @@ object TimerSpec {
   def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int): Props =
     Props(new Target(monitor, interval, repeat, initial))
 
-  class Target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int) extends Actor with Timers {
+  class Target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int)
+      extends Actor
+      with Timers {
     private var bumpCount = initial()
 
     if (repeat)
@@ -86,7 +86,8 @@ object TimerSpec {
 
   object TheState
 
-  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int) extends FSM[TheState.type, Int] {
+  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int)
+      extends FSM[TheState.type, Int] {
 
     private var restarting = false
 
@@ -104,7 +105,7 @@ object TimerSpec {
 
     def bump(bumpCount: Int): State = {
       setTimer("T", Tick(bumpCount + 1), interval, repeat)
-      stay using (bumpCount + 1)
+      stay.using(bumpCount + 1)
     }
 
     def autoReceive(): State = {
@@ -148,13 +149,19 @@ object TimerSpec {
 
 class TimerSpec extends AbstractTimerSpec {
   override def testName: String = "Timers"
-  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props =
+  override def target(monitor: ActorRef,
+                      interval: FiniteDuration,
+                      repeat: Boolean,
+                      initial: () => Int = () => 1): Props =
     TimerSpec.target(monitor, interval, repeat, initial)
 }
 
 class FsmTimerSpec extends AbstractTimerSpec {
   override def testName: String = "FSM Timers"
-  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props =
+  override def target(monitor: ActorRef,
+                      interval: FiniteDuration,
+                      repeat: Boolean,
+                      initial: () => Int = () => 1): Props =
     TimerSpec.fsmTarget(monitor, interval, repeat, initial)
 }
 
@@ -232,8 +239,8 @@ abstract class AbstractTimerSpec extends AkkaSpec {
     "discard timers from old incarnation after restart, alt 1" taggedAs TimingTest in {
       val probe = TestProbe()
       val startCounter = new AtomicInteger(0)
-      val ref = system.actorOf(target(probe.ref, dilatedInterval, repeat = true,
-        initial = () => startCounter.incrementAndGet()))
+      val ref = system.actorOf(
+        target(probe.ref, dilatedInterval, repeat = true, initial = () => startCounter.incrementAndGet()))
       probe.expectMsg(Tock(1))
 
       val latch = new TestLatch(1)

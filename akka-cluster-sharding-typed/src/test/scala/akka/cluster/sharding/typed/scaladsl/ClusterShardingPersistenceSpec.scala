@@ -34,8 +34,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ClusterShardingPersistenceSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.loglevel = INFO
       #akka.persistence.typed.log-stashing = on
 
@@ -50,8 +49,12 @@ object ClusterShardingPersistenceSpec {
 
   sealed trait Command
   final case class Add(s: String) extends Command
-  final case class AddWithConfirmation(s: String)(override val replyTo: ActorRef[Done]) extends Command with ExpectingReply[Done]
-  final case class PassivateAndPersist(s: String)(override val replyTo: ActorRef[Done]) extends Command with ExpectingReply[Done]
+  final case class AddWithConfirmation(s: String)(override val replyTo: ActorRef[Done])
+      extends Command
+      with ExpectingReply[Done]
+  final case class PassivateAndPersist(s: String)(override val replyTo: ActorRef[Done])
+      extends Command
+      with ExpectingReply[Done]
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case class Echo(msg: String, replyTo: ActorRef[String]) extends Command
   final case class Block(latch: CountDownLatch) extends Command
@@ -69,7 +72,6 @@ object ClusterShardingPersistenceSpec {
 
   def persistentEntity(entityId: String, shard: ActorRef[ShardCommand]): Behavior[Command] = {
     Behaviors.setup { ctx =>
-
       entityActorRefs.get(entityId) match {
         case null    =>
         case promise => promise.trySuccess(ctx.self.unsafeUpcast)
@@ -78,54 +80,53 @@ object ClusterShardingPersistenceSpec {
       // transient state (testing purpose)
       var stashing = false
 
-      EventSourcedEntity[Command, String, String](
-        entityTypeKey = typeKey,
-        entityId = entityId,
-        emptyState = "",
-        commandHandler = (state, cmd) => cmd match {
-          case Add(s) =>
-            if (stashing)
-              Effect.stash()
-            else
-              Effect.persist(s)
+      EventSourcedEntity[Command, String, String](entityTypeKey = typeKey,
+                                                  entityId = entityId,
+                                                  emptyState = "",
+                                                  commandHandler = (state, cmd) =>
+                                                    cmd match {
+                                                      case Add(s) =>
+                                                        if (stashing)
+                                                          Effect.stash()
+                                                        else
+                                                          Effect.persist(s)
 
-          case cmd @ AddWithConfirmation(s) =>
-            if (stashing)
-              Effect.stash()
-            else
-              Effect.persist(s)
-                .thenReply(cmd)(_ => Done)
+                                                      case cmd @ AddWithConfirmation(s) =>
+                                                        if (stashing)
+                                                          Effect.stash()
+                                                        else
+                                                          Effect.persist(s).thenReply(cmd)(_ => Done)
 
-          case Get(replyTo) =>
-            replyTo ! s"$entityId:$state"
-            Effect.none
+                                                      case Get(replyTo) =>
+                                                        replyTo ! s"$entityId:$state"
+                                                        Effect.none
 
-          case cmd @ PassivateAndPersist(s) =>
-            shard ! Passivate(ctx.self)
-            Effect.persist(s)
-              .thenReply(cmd)(_ => Done)
+                                                      case cmd @ PassivateAndPersist(s) =>
+                                                        shard ! Passivate(ctx.self)
+                                                        Effect.persist(s).thenReply(cmd)(_ => Done)
 
-          case Echo(msg, replyTo) =>
-            Effect.none.thenRun(_ => replyTo ! msg)
+                                                      case Echo(msg, replyTo) =>
+                                                        Effect.none.thenRun(_ => replyTo ! msg)
 
-          case Block(latch) =>
-            latch.await(5, TimeUnit.SECONDS)
-            Effect.none
+                                                      case Block(latch) =>
+                                                        latch.await(5, TimeUnit.SECONDS)
+                                                        Effect.none
 
-          case BeginStashingAddCommands =>
-            stashing = true
-            Effect.none
+                                                      case BeginStashingAddCommands =>
+                                                        stashing = true
+                                                        Effect.none
 
-          case UnstashAll =>
-            stashing = false
-            Effect.unstashAll()
+                                                      case UnstashAll =>
+                                                        stashing = false
+                                                        Effect.unstashAll()
 
-          case UnstashAllAndPassivate =>
-            stashing = false
-            shard ! Passivate(ctx.self)
-            Effect.unstashAll()
-        },
-        eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
+                                                      case UnstashAllAndPassivate =>
+                                                        stashing = false
+                                                        shard ! Passivate(ctx.self)
+                                                        Effect.unstashAll()
+                                                    },
+                                                  eventHandler =
+                                                    (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
         .onRecoveryCompleted { state =>
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {
@@ -137,14 +138,15 @@ object ClusterShardingPersistenceSpec {
           lifecycleProbes.get(entityId) match {
             case null => ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
             case p    => p ! "stopped"
-          }
-        )
+          })
     }
   }
 
 }
 
-class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterShardingPersistenceSpec.config) with WordSpecLike {
+class ClusterShardingPersistenceSpec
+    extends ScalaTestWithActorTestKit(ClusterShardingPersistenceSpec.config)
+    with WordSpecLike {
   import ClusterShardingPersistenceSpec._
 
   private var _entityId = 0
@@ -172,9 +174,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
 
   "Typed cluster sharding with persistent actor" must {
 
-    ClusterSharding(system).init(Entity(
-      typeKey,
-      ctx => persistentEntity(ctx.entityId, ctx.shard)))
+    ClusterSharding(system).init(Entity(typeKey, ctx => persistentEntity(ctx.entityId, ctx.shard)))
 
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 

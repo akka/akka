@@ -26,8 +26,8 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
       case "<method>" =>
         throw new IllegalArgumentException(
           "No default service discovery implementation configured in " +
-            "`akka.discovery.method`. Make sure to configure this setting to your preferred implementation such as " +
-            "'akka-dns' in your application.conf (from the akka-discovery module).")
+          "`akka.discovery.method`. Make sure to configure this setting to your preferred implementation such as " +
+          "'akka-dns' in your application.conf (from the akka-discovery module).")
       case method => method
     }
 
@@ -61,7 +61,9 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
     def classNameFromConfig(path: String): String =
       if (config.hasPath(path)) config.getString(path)
-      else throw new IllegalArgumentException(s"$path must contain field `class` that is a FQN of a `akka.discovery.ServiceDiscovery` implementation")
+      else
+        throw new IllegalArgumentException(
+          s"$path must contain field `class` that is a FQN of a `akka.discovery.ServiceDiscovery` implementation")
 
     def create(clazzName: String): Try[ServiceDiscovery] = {
       dynamic
@@ -83,8 +85,9 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
       case Failure(e @ (_: ClassNotFoundException | _: NoSuchMethodException)) =>
         throw new IllegalArgumentException(
           s"Illegal [$configName] value or incompatible class! " +
-            "The implementation class MUST extend akka.discovery.ServiceDiscovery and take an " +
-            "ExtendedActorSystem as constructor argument.", e)
+          "The implementation class MUST extend akka.discovery.ServiceDiscovery and take an " +
+          "ExtendedActorSystem as constructor argument.",
+          e)
       case Failure(e)        => throw e
       case Success(instance) => instance
     }
@@ -109,7 +112,8 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   private[akka] def checkClassPathForOldDiscovery(system: ExtendedActorSystem): Unit = {
     try {
       system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery").get
-      throw new RuntimeException("Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
+      throw new RuntimeException(
+        "Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
       case _: ClassNotFoundException => // all good
     }

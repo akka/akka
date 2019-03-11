@@ -20,12 +20,11 @@ import akka.io.Udp._
 /**
  * INTERNAL API
  */
-private[io] class UdpListener(
-  val udp:         UdpExt,
-  channelRegistry: ChannelRegistry,
-  bindCommander:   ActorRef,
-  bind:            Bind)
-  extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+private[io] class UdpListener(val udp: UdpExt, channelRegistry: ChannelRegistry, bindCommander: ActorRef, bind: Bind)
+    extends Actor
+    with ActorLogging
+    with WithUdpSend
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import udp.bufferPool
   import udp.settings._
@@ -34,9 +33,12 @@ private[io] class UdpListener(
 
   context.watch(bind.handler) // sign death pact
 
-  val channel = bind.options.collectFirst {
-    case creator: DatagramChannelCreator => creator
-  }.getOrElse(DatagramChannelCreator()).create()
+  val channel = bind.options
+    .collectFirst {
+      case creator: DatagramChannelCreator => creator
+    }
+    .getOrElse(DatagramChannelCreator())
+    .create()
   channel.configureBlocking(false)
 
   val localAddress =
@@ -65,7 +67,7 @@ private[io] class UdpListener(
   def receive: Receive = {
     case registration: ChannelRegistration =>
       bindCommander ! Bound(channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
-      context.become(readHandlers(registration) orElse sendHandlers(registration), discardOld = true)
+      context.become(readHandlers(registration).orElse(sendHandlers(registration)), discardOld = true)
   }
 
   def readHandlers(registration: ChannelRegistration): Receive = {
@@ -101,7 +103,8 @@ private[io] class UdpListener(
     }
 
     val buffer = bufferPool.acquire()
-    try innerReceive(BatchReceiveLimit, buffer) finally {
+    try innerReceive(BatchReceiveLimit, buffer)
+    finally {
       bufferPool.release(buffer)
       registration.enableInterest(OP_READ)
     }

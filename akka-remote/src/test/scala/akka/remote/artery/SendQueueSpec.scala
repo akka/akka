@@ -68,8 +68,8 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
     "deliver all messages" in {
       val queue = createQueue[String](128)
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](sendToDeadLetters))
-        .toMat(TestSink.probe)(Keep.both).run()
+      val (sendQueue, downstream) =
+        Source.fromGraph(new SendQueue[String](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()
 
       downstream.request(10)
       sendQueue.inject(queue)
@@ -87,8 +87,8 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       queue.offer("a")
       queue.offer("b")
 
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](sendToDeadLetters))
-        .toMat(TestSink.probe)(Keep.both).run()
+      val (sendQueue, downstream) =
+        Source.fromGraph(new SendQueue[String](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()
 
       downstream.request(10)
       downstream.expectNoMsg(200.millis)
@@ -105,10 +105,12 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       // this test verifies that the wakeup signal is triggered correctly
       val queue = createQueue[Int](128)
       val burstSize = 100
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Int](sendToDeadLetters))
+      val (sendQueue, downstream) = Source
+        .fromGraph(new SendQueue[Int](sendToDeadLetters))
         .grouped(burstSize)
         .async
-        .toMat(TestSink.probe)(Keep.both).run()
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
 
       downstream.request(10)
       sendQueue.inject(queue)
@@ -133,8 +135,8 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       // send 100 per producer before materializing
       producers.foreach(_ ! ProduceToQueue(0, 100, queue))
 
-      val (sendQueue, downstream) = Source.fromGraph(new SendQueue[Msg](sendToDeadLetters))
-        .toMat(TestSink.probe)(Keep.both).run()
+      val (sendQueue, downstream) =
+        Source.fromGraph(new SendQueue[Msg](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()
 
       sendQueue.inject(queue)
       producers.foreach(_ ! ProduceToQueueValue(100, 200, sendQueue))
@@ -163,8 +165,8 @@ class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
 
         (1 to 100).foreach { n =>
           val queue = createQueue[String](16)
-          val (sendQueue, downstream) = Source.fromGraph(new SendQueue[String](sendToDeadLetters))
-            .toMat(TestSink.probe)(Keep.both).run()
+          val (sendQueue, downstream) =
+            Source.fromGraph(new SendQueue[String](sendToDeadLetters)).toMat(TestSink.probe)(Keep.both).run()
 
           f(queue, sendQueue, downstream)
           downstream.expectNext("a")

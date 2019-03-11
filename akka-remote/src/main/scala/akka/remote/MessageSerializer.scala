@@ -28,10 +28,11 @@ private[akka] object MessageSerializer {
    * Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message
    */
   def deserialize(system: ExtendedActorSystem, messageProtocol: SerializedMessage): AnyRef = {
-    SerializationExtension(system).deserialize(
-      messageProtocol.getMessage.toByteArray,
-      messageProtocol.getSerializerId,
-      if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "").get
+    SerializationExtension(system)
+      .deserialize(messageProtocol.getMessage.toByteArray,
+                   messageProtocol.getSerializerId,
+                   if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else "")
+      .get
   }
 
   /**
@@ -60,11 +61,15 @@ private[akka] object MessageSerializer {
     } catch {
       case NonFatal(e) =>
         throw new SerializationException(s"Failed to serialize remote message [${message.getClass}] " +
-          s"using serializer [${serializer.getClass}].", e)
+                                         s"using serializer [${serializer.getClass}].",
+                                         e)
     } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
-  def serializeForArtery(serialization: Serialization, outboundEnvelope: OutboundEnvelope, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
+  def serializeForArtery(serialization: Serialization,
+                         outboundEnvelope: OutboundEnvelope,
+                         headerBuilder: HeaderBuilder,
+                         envelope: EnvelopeBuffer): Unit = {
     val message = outboundEnvelope.message
     val serializer = serialization.findSerializerFor(message)
     val oldInfo = Serialization.currentTransportInformation.value
@@ -84,13 +89,12 @@ private[akka] object MessageSerializer {
     } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
-  def deserializeForArtery(
-    @unused system:    ExtendedActorSystem,
-    @unused originUid: Long,
-    serialization:     Serialization,
-    serializer:        Int,
-    classManifest:     String,
-    envelope:          EnvelopeBuffer): AnyRef = {
+  def deserializeForArtery(@unused system: ExtendedActorSystem,
+                           @unused originUid: Long,
+                           serialization: Serialization,
+                           serializer: Int,
+                           classManifest: String,
+                           envelope: EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(envelope.byteBuffer, serializer, classManifest)
   }
 }

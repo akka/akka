@@ -159,4 +159,3 @@ class StashBufferSpec extends WordSpec with Matchers {
   }
 
 }
-

@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.actor.{ Actor, Props }
 
 object ControlAwareDispatcherSpec {

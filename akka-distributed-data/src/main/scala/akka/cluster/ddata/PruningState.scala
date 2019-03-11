@@ -37,7 +37,7 @@ import akka.annotation.InternalApi
       case (_, _: PruningPerformed)                     => that
       case (PruningInitialized(thisOwner, thisSeen), PruningInitialized(thatOwner, thatSeen)) =>
         if (thisOwner == thatOwner)
-          PruningInitialized(thisOwner, thisSeen union thatSeen)
+          PruningInitialized(thisOwner, thisSeen.union(thatSeen))
         else if (Member.addressOrdering.compare(thisOwner.address, thatOwner.address) > 0)
           that
         else
@@ -46,4 +46,3 @@ import akka.annotation.InternalApi
 
   def addSeen(node: Address): PruningState = this
 }
-

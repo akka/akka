@@ -39,7 +39,8 @@ private[stream] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-@InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
+@InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration)
+    extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
   val in = Inlet[ByteString]("InputStreamSink.in")
   override def initialAttributes: Attributes = DefaultAttributes.inputStreamSink
@@ -110,11 +111,10 @@ private[stream] object InputStreamSinkStage {
  * INTERNAL API
  * InputStreamAdapter that interacts with InputStreamSinkStage
  */
-@InternalApi private[akka] class InputStreamAdapter(
-  sharedBuffer: BlockingQueue[StreamToAdapterMessage],
-  sendToStage:  (AdapterToStageMessage) => Unit,
-  readTimeout:  FiniteDuration)
-  extends InputStream {
+@InternalApi private[akka] class InputStreamAdapter(sharedBuffer: BlockingQueue[StreamToAdapterMessage],
+                                                    sendToStage: (AdapterToStageMessage) => Unit,
+                                                    readTimeout: FiniteDuration)
+    extends InputStream {
 
   var isInitialized = false
   var isActive = true
@@ -194,8 +194,7 @@ private[stream] object InputStreamSinkStage {
   }
 
   @tailrec
-  private[this] def getData(arr: Array[Byte], begin: Int, length: Int,
-                            gotBytes: Int): Int = {
+  private[this] def getData(arr: Array[Byte], begin: Int, length: Int, gotBytes: Int): Int = {
     grabDataChunk() match {
       case Some(data) =>
         val size = data.size

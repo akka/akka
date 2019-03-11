@@ -33,15 +33,29 @@ private[akka] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
-private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSystem, resolverConfig: Config, cache: Dns, dispatcher: String, provider: DnsProvider) extends Actor
-  with RequiresMessageQueue[UnboundedMessageQueueSemantics] with ActorLogging with Timers {
+private[io] final class AsyncDnsManager(name: String,
+                                        system: ExtendedActorSystem,
+                                        resolverConfig: Config,
+                                        cache: Dns,
+                                        dispatcher: String,
+                                        provider: DnsProvider)
+    extends Actor
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics]
+    with ActorLogging
+    with Timers {
   import akka.pattern.ask
   import akka.pattern.pipe
 
   /**
    * Ctr expected by the DnsExt for all DnsMangers
    */
-  def this(ext: DnsExt) = this(ext.Settings.Resolver, ext.system, ext.Settings.ResolverConfig, ext.cache, ext.Settings.Dispatcher, ext.provider)
+  def this(ext: DnsExt) =
+    this(ext.Settings.Resolver,
+         ext.system,
+         ext.Settings.ResolverConfig,
+         ext.cache,
+         ext.Settings.Dispatcher,
+         ext.provider)
 
   implicit val ec = context.dispatcher
 
@@ -49,9 +63,10 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
   implicit val timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
-    val props: Props = FromConfig.props(Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) => {
-      dns.map(ns => factory.actorOf(Props(new DnsClient(ns))))
-    }).withDeploy(Deploy.local).withDispatcher(dispatcher))
+    val props: Props = FromConfig.props(
+      Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) => {
+        dns.map(ns => factory.actorOf(Props(new DnsClient(ns))))
+      }).withDeploy(Deploy.local).withDispatcher(dispatcher))
     context.actorOf(props, name)
   }
 
@@ -62,7 +77,8 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
 
   override def preStart(): Unit = {
     cacheCleanup.foreach { _ =>
-      val interval = Duration(resolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+      val interval =
+        Duration(resolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
       timers.startPeriodicTimer(CacheCleanup, CacheCleanup, interval)
     }
   }
@@ -76,15 +92,14 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
       // adapt legacy protocol to new protocol
       log.debug("Resolution request for {} from {}", name, sender())
       val adapted = DnsProtocol.Resolve(name)
-      val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
-        .map { asyncResolved =>
-          val ips = asyncResolved.records.collect {
-            case a: ARecord    => a.ip
-            case a: AAAARecord => a.ip
-          }
-          Dns.Resolved(asyncResolved.name, ips)
+      val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved].map { asyncResolved =>
+        val ips = asyncResolved.records.collect {
+          case a: ARecord    => a.ip
+          case a: AAAARecord => a.ip
         }
-      reply pipeTo sender()
+        Dns.Resolved(asyncResolved.name, ips)
+      }
+      reply.pipeTo(sender())
 
     case CacheCleanup =>
       cacheCleanup.foreach(_.cleanup())
@@ -94,4 +109,3 @@ private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSyste
 
   }
 }
-

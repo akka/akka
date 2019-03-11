@@ -24,14 +24,16 @@ object DeviceManager {
 
   //#device-registration-msgs
   final case class RequestTrackDevice(groupId: String, deviceId: String, replyTo: ActorRef[DeviceRegistered])
-    extends DeviceManagerMessage with DeviceGroupMessage
+      extends DeviceManagerMessage
+      with DeviceGroupMessage
 
   final case class DeviceRegistered(device: ActorRef[Device.DeviceMessage])
   //#device-registration-msgs
 
   //#device-list-msgs
   final case class RequestDeviceList(requestId: Long, groupId: String, replyTo: ActorRef[ReplyDeviceList])
-    extends DeviceManagerMessage with DeviceGroupMessage
+      extends DeviceManagerMessage
+      with DeviceGroupMessage
 
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
   //#device-list-msgs
@@ -41,7 +43,7 @@ object DeviceManager {
 }
 
 class DeviceManager(context: ActorContext[DeviceManager.DeviceManagerMessage])
-  extends AbstractBehavior[DeviceManager.DeviceManagerMessage] {
+    extends AbstractBehavior[DeviceManager.DeviceManagerMessage] {
   import DeviceManager._
   import DeviceGroup.DeviceGroupMessage
 

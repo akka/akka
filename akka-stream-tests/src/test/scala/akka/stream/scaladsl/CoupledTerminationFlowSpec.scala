@@ -18,8 +18,7 @@ import scala.xml.Node
 
 class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
@@ -86,9 +85,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     "completed out:Source => complete in:Sink" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(
-        Sink.onComplete(d => probe.ref ! "done"),
-        Source.empty)(Keep.none) // completes right away, should complete the sink as well
+      val f = Flow.fromSinkAndSourceCoupledMat(Sink.onComplete(d => probe.ref ! "done"), Source.empty)(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 
@@ -97,17 +94,15 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     "cancel in:Sink => cancel out:Source" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(
-        Sink.cancelled,
-        Source.fromPublisher(new Publisher[String] {
-          override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
-            subscriber.onSubscribe(new Subscription {
-              override def cancel(): Unit = probe.ref ! "cancelled"
+      val f = Flow.fromSinkAndSourceCoupledMat(Sink.cancelled, Source.fromPublisher(new Publisher[String] {
+        override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
+          subscriber.onSubscribe(new Subscription {
+            override def cancel(): Unit = probe.ref ! "cancelled"
 
-              override def request(l: Long): Unit = () // do nothing
-            })
-          }
-        }))(Keep.none) // completes right away, should complete the sink as well
+            override def request(l: Long): Unit = () // do nothing
+          })
+        }
+      }))(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 
@@ -147,11 +142,12 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     val downstreamEffect = Sink.onComplete(s => probe.ref ! s)
     val upstreamEffect = Source.fromPublisher(new Publisher[String] {
-      override def subscribe(s: Subscriber[_ >: String]): Unit = s.onSubscribe(new Subscription {
-        override def cancel(): Unit = probe.ref ! "cancel-received"
+      override def subscribe(s: Subscriber[_ >: String]): Unit =
+        s.onSubscribe(new Subscription {
+          override def cancel(): Unit = probe.ref ! "cancel-received"
 
-        override def request(n: Long): Unit = ()
-      })
+          override def request(n: Long): Unit = ()
+        })
     })
     val assertCancel = () => {
       val m = probe.expectMsgType[String]
@@ -236,10 +232,12 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     val causeComplete = Source.empty[String]
     val causeError = Source.failed(new Exception("Boom"))
 
-    val catchEffect = Source.maybe[String].mapMaterializedValue(p => {
-      p.future.onComplete(t => probe.ref ! t)
-      NotUsed
-    })
+    val catchEffect = Source
+      .maybe[String]
+      .mapMaterializedValue(p => {
+        p.future.onComplete(t => probe.ref ! t)
+        NotUsed
+      })
     val assertCancel = () => {
       val m = probe.expectMsgType[Try[Option[String]]]
       m.isFailure should ===(false)

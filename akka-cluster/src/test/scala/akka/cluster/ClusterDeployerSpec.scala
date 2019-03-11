@@ -36,7 +36,8 @@ object ClusterDeployerSpec {
       }
       akka.remote.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
-      """, ConfigParseOptions.defaults)
+      """,
+                                               ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
     def receive = { case _ => }
@@ -53,15 +54,16 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment should not be (None)
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          ClusterRouterPool(RoundRobinPool(20), ClusterRouterPoolSettings(
-            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
-          ClusterScope,
-          Deploy.NoDispatcherGiven,
-          Deploy.NoMailboxGiven)))
+      deployment should ===(
+        Some(Deploy(service,
+                    deployment.get.config,
+                    ClusterRouterPool(RoundRobinPool(20),
+                                      ClusterRouterPoolSettings(totalInstances = 20,
+                                                                maxInstancesPerNode = 3,
+                                                                allowLocalRoutees = false)),
+                    ClusterScope,
+                    Deploy.NoDispatcherGiven,
+                    Deploy.NoMailboxGiven)))
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster group" in {
@@ -69,15 +71,16 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment should not be (None)
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          ClusterRouterGroup(RoundRobinGroup(List("/user/myservice")), ClusterRouterGroupSettings(
-            totalInstances = 20, routeesPaths = List("/user/myservice"), allowLocalRoutees = false)),
-          ClusterScope,
-          "mydispatcher",
-          "mymailbox")))
+      deployment should ===(
+        Some(Deploy(service,
+                    deployment.get.config,
+                    ClusterRouterGroup(RoundRobinGroup(List("/user/myservice")),
+                                       ClusterRouterGroupSettings(totalInstances = 20,
+                                                                  routeesPaths = List("/user/myservice"),
+                                                                  allowLocalRoutees = false)),
+                    ClusterScope,
+                    "mydispatcher",
+                    "mymailbox")))
     }
 
   }

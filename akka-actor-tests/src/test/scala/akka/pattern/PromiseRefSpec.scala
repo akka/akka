@@ -5,7 +5,7 @@
 package akka.pattern
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, TestProbe, ImplicitSender }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._

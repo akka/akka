@@ -109,7 +109,8 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       expectMsg(500 millis, Tick)
       Thread.sleep(200) // this is ugly: need to wait for StateTimeout to be queued
       resume(fsm)
-      expectMsg(500 millis, Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
+      expectMsg(500 millis,
+                Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
       fsm ! Cancel
       within(500 millis) {
         expectMsg(Cancel) // if this is not received, that means StateTimeout was not properly discarded
@@ -122,7 +123,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       val seq = receiveWhile(2 seconds) {
         case Tick => Tick
       }
-      seq should have length 5
+      (seq should have).length(5)
       within(500 millis) {
         expectMsg(Transition(fsm, TestRepeatedTimer, Initial))
       }
@@ -131,18 +132,20 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     "notify unhandled messages" taggedAs TimingTest in {
       filterEvents(
         EventFilter.warning("unhandled event Tick in state TestUnhandled", source = fsm.path.toString, occurrences = 1),
-        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled", source = fsm.path.toString, occurrences = 1)) {
-          fsm ! TestUnhandled
-          within(3 second) {
-            fsm ! Tick
-            fsm ! SetHandler
-            fsm ! Tick
-            expectMsg(Unhandled(Tick))
-            fsm ! Unhandled("test")
-            fsm ! Cancel
-            expectMsg(Transition(fsm, TestUnhandled, Initial))
-          }
+        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled",
+                            source = fsm.path.toString,
+                            occurrences = 1)) {
+        fsm ! TestUnhandled
+        within(3 second) {
+          fsm ! Tick
+          fsm ! SetHandler
+          fsm ! Tick
+          expectMsg(Unhandled(Tick))
+          fsm ! Unhandled("test")
+          fsm ! Cancel
+          expectMsg(Transition(fsm, TestUnhandled, Initial))
         }
+      }
     }
 
   }
@@ -194,14 +197,14 @@ object FSMTimingSpec {
         goto(TestSingleTimer)
       case Event(TestRepeatedTimer, _) =>
         setTimer("tester", Tick, 100.millis.dilated, true)
-        goto(TestRepeatedTimer) using 4
+        goto(TestRepeatedTimer).using(4)
       case Event(TestStateTimeoutOverride, _) =>
-        goto(TestStateTimeout) forMax (Duration.Inf)
+        goto(TestStateTimeout).forMax(Duration.Inf)
       case Event(x: FSMTimingSpec.State, _) => goto(x)
     }
     when(TestStateTimeout, stateTimeout = 800.millis.dilated) {
       case Event(StateTimeout, _) => goto(Initial)
-      case Event(Cancel, _)       => goto(Initial) replying (Cancel)
+      case Event(Cancel, _)       => goto(Initial).replying(Cancel)
     }
     when(TestSingleTimer) {
       case Event(Tick, _) =>
@@ -242,7 +245,7 @@ object FSMTimingSpec {
           cancelTimer("tester")
           goto(Initial)
         } else {
-          stay using (remaining - 1)
+          stay.using(remaining - 1)
         }
     }
     when(TestCancelStateTimerInNamedTimerMessage) {
@@ -251,7 +254,7 @@ object FSMTimingSpec {
         suspend(self)
         setTimer("named", Tock, 1.millis.dilated)
         TestKit.awaitCond(context.asInstanceOf[ActorCell].mailbox.hasMessages, 1.second.dilated)
-        stay forMax (1.millis.dilated) replying Tick
+        stay.forMax(1.millis.dilated).replying(Tick)
       case Event(Tock, _) =>
         goto(TestCancelStateTimerInNamedTimerMessage2)
     }
@@ -259,7 +262,7 @@ object FSMTimingSpec {
       case Event(StateTimeout, _) =>
         goto(Initial)
       case Event(Cancel, _) =>
-        goto(Initial) replying Cancel
+        goto(Initial).replying(Cancel)
     }
     when(TestUnhandled) {
       case Event(SetHandler, _) =>
@@ -286,4 +289,3 @@ object FSMTimingSpec {
   }
 
 }
-

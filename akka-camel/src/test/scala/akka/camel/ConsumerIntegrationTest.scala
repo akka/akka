@@ -12,11 +12,11 @@ import org.scalatest.WordSpec
 import akka.camel.TestSupport._
 import org.apache.camel.model.{ RouteDefinition }
 import org.apache.camel.builder.Builder
-import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
+import org.apache.camel.{ CamelExecutionException, FailedToCreateRouteException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.actor.Status.Failure
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Await }
+import scala.concurrent.{ Await, ExecutionContext }
 import akka.testkit._
 import akka.util.Timeout
 
@@ -138,7 +138,9 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
         def endpointUri = "direct:manual-ack"
         def receive = { case _ => sender() ! Ack }
       }, name = "direct-manual-ack-1")
-      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS) should ===(null) //should not timeout
+      camel.template
+        .asyncSendBody("direct:manual-ack", "some message")
+        .get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS) should ===(null) //should not timeout
       stop(ref)
     }
 
@@ -150,7 +152,9 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
       }, name = "direct-manual-ack-2")
 
       intercept[ExecutionException] {
-        camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
+        camel.template
+          .asyncSendBody("direct:manual-ack", "some message")
+          .get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
       }.getCause.getCause should ===(someException)
       stop(ref)
     }
@@ -163,7 +167,9 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
       }, name = "direct-manual-ack-3")
 
       intercept[ExecutionException] {
-        camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
+        camel.template
+          .asyncSendBody("direct:manual-ack", "some message")
+          .get(defaultTimeoutDuration.toSeconds, TimeUnit.SECONDS)
       }.getCause.getCause.getMessage should include("Failed to get Ack")
       stop(ref)
     }
@@ -180,7 +186,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
 
 class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
-    case msg: CamelMessage => throw new TestException("error: %s" format msg.body)
+    case msg: CamelMessage => throw new TestException("error: %s".format(msg.body))
   }
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     super.preRestart(reason, message)
@@ -208,9 +214,9 @@ class FailingOnceConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
     case msg: CamelMessage =>
       if (msg.headerAs[Boolean]("CamelRedelivered").getOrElse(false))
-        sender() ! ("accepted: %s" format msg.body)
+        sender() ! ("accepted: %s".format(msg.body))
       else
-        throw new TestException("rejected: %s" format msg.body)
+        throw new TestException("rejected: %s".format(msg.body))
   }
 
   final override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

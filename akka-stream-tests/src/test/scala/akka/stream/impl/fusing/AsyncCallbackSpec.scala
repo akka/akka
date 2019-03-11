@@ -25,7 +25,7 @@ class AsyncCallbackSpec extends AkkaSpec {
   case object Stopped
 
   class AsyncCallbackGraphStage(probe: ActorRef, early: Option[AsyncCallback[AnyRef] => Unit] = None)
-    extends GraphStageWithMaterializedValue[FlowShape[Int, Int], AsyncCallback[AnyRef]] {
+      extends GraphStageWithMaterializedValue[FlowShape[Int, Int], AsyncCallback[AnyRef]] {
 
     val in = Inlet[Int]("in")
     val out = Outlet[Int]("out")
@@ -73,7 +73,8 @@ class AsyncCallbackSpec extends AkkaSpec {
       val probe = TestProbe()
       val in = TestPublisher.probe[Int]()
       val out = TestSubscriber.probe[Int]()
-      val callback = Source.fromPublisher(in)
+      val callback = Source
+        .fromPublisher(in)
         .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
         .to(Sink.fromSubscriber(out))
         .run()
@@ -98,7 +99,8 @@ class AsyncCallbackSpec extends AkkaSpec {
       val probe = TestProbe()
       val in = TestPublisher.probe[Int]()
       val out = TestSubscriber.probe[Int]()
-      val callback = Source.fromPublisher(in)
+      val callback = Source
+        .fromPublisher(in)
         .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
         .to(Sink.fromSubscriber(out))
         .run()
@@ -121,10 +123,7 @@ class AsyncCallbackSpec extends AkkaSpec {
 
     "fail the feedback future if stage is stopped" in {
       val probe = TestProbe()
-      val callback = Source.empty
-        .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
-        .to(Sink.ignore)
-        .run()
+      val callback = Source.empty.viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right).to(Sink.ignore).run()
 
       probe.expectMsg(Started)
       probe.expectMsg(Stopped)
@@ -136,11 +135,9 @@ class AsyncCallbackSpec extends AkkaSpec {
     "invoke early" in {
       val probe = TestProbe()
       val in = TestPublisher.probe[Int]()
-      val callback = Source.fromPublisher(in)
-        .viaMat(new AsyncCallbackGraphStage(
-          probe.ref,
-          Some(asyncCb => asyncCb.invoke("early"))
-        ))(Keep.right)
+      val callback = Source
+        .fromPublisher(in)
+        .viaMat(new AsyncCallbackGraphStage(probe.ref, Some(asyncCb => asyncCb.invoke("early"))))(Keep.right)
         .to(Sink.ignore)
         .run()
 
@@ -160,11 +157,12 @@ class AsyncCallbackSpec extends AkkaSpec {
       val probe = TestProbe()
       val earlyFeedback = Promise[Done]()
       val in = TestPublisher.probe[Int]()
-      val callback = Source.fromPublisher(in)
-        .viaMat(new AsyncCallbackGraphStage(
-          probe.ref,
-          Some(asyncCb => earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))
-        ))(Keep.right)
+      val callback = Source
+        .fromPublisher(in)
+        .viaMat(
+          new AsyncCallbackGraphStage(probe.ref,
+                                      Some(asyncCb =>
+                                        earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))))(Keep.right)
         .to(Sink.ignore)
         .run()
 
@@ -185,10 +183,8 @@ class AsyncCallbackSpec extends AkkaSpec {
     "accept concurrent input" in {
       val probe = TestProbe()
       val in = TestPublisher.probe[Int]()
-      val callback = Source.fromPublisher(in)
-        .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
-        .to(Sink.ignore)
-        .run()
+      val callback =
+        Source.fromPublisher(in).viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right).to(Sink.ignore).run()
 
       import system.dispatcher
       val feedbacks = (1 to 100).map { n =>
@@ -208,10 +204,8 @@ class AsyncCallbackSpec extends AkkaSpec {
     "fail the feedback if the handler throws" in {
       val probe = TestProbe()
       val in = TestPublisher.probe()
-      val callback = Source.fromPublisher(in)
-        .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
-        .to(Sink.ignore)
-        .run()
+      val callback =
+        Source.fromPublisher(in).viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right).to(Sink.ignore).run()
 
       probe.expectMsg(Started)
       callback.invokeWithFeedback("happy-case").futureValue should ===(Done)
@@ -227,10 +221,7 @@ class AsyncCallbackSpec extends AkkaSpec {
 
     "fail the feedback if the handler fails the stage" in {
       val probe = TestProbe()
-      val callback = Source.empty
-        .viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right)
-        .to(Sink.ignore)
-        .run()
+      val callback = Source.empty.viaMat(new AsyncCallbackGraphStage(probe.ref))(Keep.right).to(Sink.ignore).run()
 
       probe.expectMsg(Started)
       probe.expectMsg(Stopped)
@@ -243,7 +234,8 @@ class AsyncCallbackSpec extends AkkaSpec {
     "behave with multiple async callbacks" in {
       import system.dispatcher
 
-      class ManyAsyncCallbacksStage(probe: ActorRef) extends GraphStageWithMaterializedValue[SourceShape[String], Set[AsyncCallback[AnyRef]]] {
+      class ManyAsyncCallbacksStage(probe: ActorRef)
+          extends GraphStageWithMaterializedValue[SourceShape[String], Set[AsyncCallback[AnyRef]]] {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
@@ -261,14 +253,11 @@ class AsyncCallbackSpec extends AkkaSpec {
 
       val out = TestSubscriber.probe[String]()
 
-      val acbs = Source.fromGraph(new ManyAsyncCallbacksStage(acbProbe.ref))
-        .toMat(Sink.fromSubscriber(out))(Keep.left)
-        .run()
+      val acbs =
+        Source.fromGraph(new ManyAsyncCallbacksStage(acbProbe.ref)).toMat(Sink.fromSubscriber(out))(Keep.left).run()
 
       val happyPathFeedbacks =
-        acbs.map(acb =>
-          Future { acb.invokeWithFeedback("bö") }.flatMap(identity)
-        )
+        acbs.map(acb => Future { acb.invokeWithFeedback("bö") }.flatMap(identity))
       Future.sequence(happyPathFeedbacks).futureValue // will throw on fail or timeout on not completed
 
       for (_ <- 0 to 10) acbProbe.expectMsg("bö")

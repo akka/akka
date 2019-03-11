@@ -10,7 +10,7 @@ class SupervisorActor(childProps: Props, override val supervisorStrategy: Superv
   val child = context.actorOf(childProps, "supervised-child")
 
   def receive = {
-    case msg => child forward msg
+    case msg => child.forward(msg)
   }
 }
 //#singleton-supervisor-actor
@@ -23,10 +23,9 @@ abstract class ClusterSingletonSupervision extends Actor {
     import akka.actor.{ PoisonPill, Props }
     import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
     context.system.actorOf(
-      ClusterSingletonManager.props(
-        singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
-        terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(context.system)),
+      ClusterSingletonManager.props(singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
+                                    terminationMessage = PoisonPill,
+                                    settings = ClusterSingletonManagerSettings(context.system)),
       name = name)
     //#singleton-supervisor-actor-usage
   }

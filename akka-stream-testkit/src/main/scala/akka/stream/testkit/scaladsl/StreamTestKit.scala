@@ -51,9 +51,7 @@ object StreamTestKit {
       try probe.awaitAssert {
         supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
         val children = probe.expectMsgType[StreamSupervisor.Children].children
-        assert(
-          children.isEmpty,
-          s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
+        assert(children.isEmpty, s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
       } catch {
         case ex: Throwable =>
           import sys.dispatcher
@@ -65,10 +63,9 @@ object StreamTestKit {
 
   /** INTERNAL API */
   @InternalApi private[akka] def printDebugDump(streamSupervisor: ActorRef)(implicit ec: ExecutionContext): Unit = {
-    val doneDumping = MaterializerState.requestFromSupervisor(streamSupervisor)
-      .map(snapshots =>
-        snapshots.foreach(s => println(snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
-        ))
+    val doneDumping = MaterializerState
+      .requestFromSupervisor(streamSupervisor)
+      .map(snapshots => snapshots.foreach(s => println(snapshotString(s.asInstanceOf[StreamSnapshotImpl]))))
     Await.result(doneDumping, 5.seconds)
   }
 
@@ -98,7 +95,8 @@ object StreamTestKit {
     builder.append("GraphInterpreterShell(\n  logics: [\n")
     val logicsToPrint = shell.logics
     logicsToPrint.foreach { logic =>
-      builder.append("    ")
+      builder
+        .append("    ")
         .append(logic.label)
         .append(" attrs: [")
         .append(logic.attributes.attributeList.mkString(", "))
@@ -109,7 +107,8 @@ object StreamTestKit {
       case running: RunningInterpreter =>
         builder.append("\n  ],\n  connections: [\n")
         running.connections.foreach { connection =>
-          builder.append("    ")
+          builder
+            .append("    ")
             .append("Connection(")
             .append(connection.asInstanceOf[ConnectionSnapshotImpl].id)
             .append(", ")
@@ -157,7 +156,8 @@ object StreamTestKit {
       }
 
       builder.append("}\n================================================================\n")
-      builder.append(s"// ${snapshot.queueStatus} (running=${snapshot.runningLogicsCount}, shutdown=${snapshot.stoppedLogics.mkString(",")})")
+      builder.append(
+        s"// ${snapshot.queueStatus} (running=${snapshot.runningLogicsCount}, shutdown=${snapshot.stoppedLogics.mkString(",")})")
       builder.toString()
     } catch {
       case _: NoSuchElementException => builder.append("Not all logics has a stage listed, cannot create graph")
@@ -165,4 +165,3 @@ object StreamTestKit {
   }
 
 }
-

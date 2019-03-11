@@ -27,9 +27,10 @@ object ManyRecoveriesSpec {
         latch.foreach(Await.ready(_, 10.seconds))
     }
     override def receiveCommand: Receive = {
-      case Cmd(s) => persist(Evt(s)) { _ =>
-        sender() ! s"$persistenceId-$s-${lastSequenceNr}"
-      }
+      case Cmd(s) =>
+        persist(Evt(s)) { _ =>
+          sender() ! s"$persistenceId-$s-${lastSequenceNr}"
+        }
       case "stop" =>
         context.stop(self)
     }
@@ -37,8 +38,7 @@ object ManyRecoveriesSpec {
 
 }
 
-class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -77,4 +77,3 @@ class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(
   }
 
 }
-

@@ -4,7 +4,7 @@
 
 package akka.remote.transport
 
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Failure

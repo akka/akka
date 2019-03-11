@@ -60,10 +60,12 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       val restarts = new AtomicInteger(0)
 
       class FailingActor extends Actor {
-        override def receive = msg => msg match {
-          case _ =>
-            throw new RuntimeException("simulated failure")
-        }
+        override def receive =
+          msg =>
+            msg match {
+              case _ =>
+                throw new RuntimeException("simulated failure")
+            }
 
         override def postRestart(reason: Throwable): Unit = {
           restarts.incrementAndGet()
@@ -194,7 +196,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       }))
       system.stop(target)
       probe.ref ! "hello"
-      probe watch target
+      probe.watch(target)
       probe.expectMsg(1.seconds, "hello")
       probe.expectMsg(1.seconds, Terminated(target)(false, false))
     }

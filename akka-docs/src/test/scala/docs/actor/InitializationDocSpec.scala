@@ -4,8 +4,8 @@
 
 package docs.actor
 
-import akka.actor.{ Props, Actor }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 object InitializationDocSpec {
 
@@ -45,7 +45,7 @@ object InitializationDocSpec {
     }
 
     def initialized: Receive = {
-      case "U OK?" => initializeMe foreach { sender() ! _ }
+      case "U OK?" => initializeMe.foreach { sender() ! _ }
     }
     //#messageInit
 

@@ -42,8 +42,10 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
   val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)
-      .withPruning(pruningInterval = 1.second, maxPruningDissemination)), "replicator")
+                                    ReplicatorSettings(system)
+                                      .withGossipInterval(1.second)
+                                      .withPruning(pruningInterval = 1.second, maxPruningDissemination)),
+                                  "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = GCounterKey("A")
@@ -54,7 +56,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -77,10 +79,13 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       val memberProbe = TestProbe()
       cluster.subscribe(memberProbe.ref, initialStateMode = InitialStateAsEvents, classOf[MemberUp])
       val thirdUniqueAddress = {
-        val member = memberProbe.fishForMessage(3.seconds) {
-          case MemberUp(m) if m.address == node(third).address => true
-          case _ => false
-        }.asInstanceOf[MemberUp].member
+        val member = memberProbe
+          .fishForMessage(3.seconds) {
+            case MemberUp(m) if m.address == node(third).address => true
+            case _                                               => false
+          }
+          .asInstanceOf[MemberUp]
+          .member
         member.uniqueAddress
       }
 
@@ -90,13 +95,17 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ :+ "a" :+ "b" :+ "c")
       expectMsg(UpdateSuccess(KeyB, None))
 
-      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _.incrementBy("x", 1).incrementBy("y", 1) }
+      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) {
+        _.incrementBy("x", 1).incrementBy("y", 1)
+      }
       expectMsg(UpdateSuccess(KeyC, None))
 
       replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" -> Set("A")) }
       expectMsg(UpdateSuccess(KeyD, None))
 
-      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ :+ ("a" -> GSet.empty[String].add("A")) }
+      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) {
+        _ :+ ("a" -> GSet.empty[String].add("A"))
+      }
       expectMsg(UpdateSuccess(KeyE, None))
 
       enterBarrier("updates-done")
@@ -126,7 +135,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       enterBarrier("get-old")
 
       runOn(third) {
-        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _ remove "a" }
+        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _.remove("a") }
         expectMsg(UpdateSuccess(KeyE, None))
       }
 
@@ -246,4 +255,3 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   }
 
 }
-

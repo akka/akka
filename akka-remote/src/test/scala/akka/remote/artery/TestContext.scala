@@ -20,11 +20,11 @@ import akka.util.OptionVal
 import akka.dispatch.ExecutionContexts
 import com.typesafe.config.ConfigFactory
 
-private[remote] class TestInboundContext(
-  override val localAddress: UniqueAddress,
-  val controlSubject:        TestControlMessageSubject = new TestControlMessageSubject,
-  val controlProbe:          Option[ActorRef]          = None,
-  val replyDropRate:         Double                    = 0.0) extends InboundContext {
+private[remote] class TestInboundContext(override val localAddress: UniqueAddress,
+                                         val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
+                                         val controlProbe: Option[ActorRef] = None,
+                                         val replyDropRate: Double = 0.0)
+    extends InboundContext {
 
   private val associationsByAddress = new ConcurrentHashMap[Address, OutboundContext]()
   private val associationsByUid = new ConcurrentHashMap[Long, OutboundContext]()
@@ -64,11 +64,11 @@ private[remote] class TestInboundContext(
     ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
 }
 
-private[remote] class TestOutboundContext(
-  override val localAddress:   UniqueAddress,
-  override val remoteAddress:  Address,
-  override val controlSubject: TestControlMessageSubject,
-  val controlProbe:            Option[ActorRef]          = None) extends OutboundContext {
+private[remote] class TestOutboundContext(override val localAddress: UniqueAddress,
+                                          override val remoteAddress: Address,
+                                          override val controlSubject: TestControlMessageSubject,
+                                          val controlProbe: Option[ActorRef] = None)
+    extends OutboundContext {
 
   // access to this is synchronized (it's a test utility)
   private var _associationState = AssociationState()
@@ -95,8 +95,8 @@ private[remote] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid,
-      OptionVal.None))
+    controlSubject.sendControl(
+      InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid, OptionVal.None))
   }
 
   override lazy val settings: ArterySettings =
@@ -119,16 +119,15 @@ private[remote] class TestControlMessageSubject extends ControlMessageSubject {
 
   def sendControl(env: InboundEnvelope): Unit = {
     val iter = observers.iterator()
-    while (iter.hasNext())
-      iter.next().notify(env)
+    while (iter.hasNext()) iter.next().notify(env)
   }
 
 }
 
-private[remote] class ManualReplyInboundContext(
-  replyProbe:     ActorRef,
-  localAddress:   UniqueAddress,
-  controlSubject: TestControlMessageSubject) extends TestInboundContext(localAddress, controlSubject) {
+private[remote] class ManualReplyInboundContext(replyProbe: ActorRef,
+                                                localAddress: UniqueAddress,
+                                                controlSubject: TestControlMessageSubject)
+    extends TestInboundContext(localAddress, controlSubject) {
 
   private var lastReply: Option[(Address, ControlMessage)] = None
 

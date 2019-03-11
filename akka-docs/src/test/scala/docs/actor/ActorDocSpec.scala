@@ -17,7 +17,7 @@ import akka.event.Logging
 //#imports1
 
 import scala.concurrent.Future
-import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated, ActorLogging }
+import akka.actor.{ ActorLogging, ActorRef, ActorSystem, PoisonPill, Terminated }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import akka.testkit._
 import akka.util._
@@ -71,6 +71,7 @@ object ValueClassActor {
 class DemoActorWrapper extends Actor {
   //#props-factory
   object DemoActor {
+
     /**
      * Create Props for an actor of this type.
      *
@@ -164,10 +165,10 @@ class StoppingActorsWrapper {
 
     def receive = {
       case "interrupt-child" =>
-        context stop child
+        context.stop(child)
 
       case "done" =>
-        context stop self
+        context.stop(self)
     }
 
   }
@@ -188,13 +189,13 @@ class Manager extends Actor {
     case "job" => worker ! "crunch"
     case Shutdown =>
       worker ! PoisonPill
-      context become shuttingDown
+      context.become(shuttingDown)
   }
 
   def shuttingDown: Receive = {
     case "job" => sender() ! "service unavailable, shutting down"
     case Terminated(`worker`) =>
-      context stop self
+      context.stop(self)
   }
 }
 //#gracefulStop-actor
@@ -265,8 +266,7 @@ class Consumer extends Actor with ActorLogging with ConsumerBehavior {
   def receive = consumerBehavior
 }
 
-class ProducerConsumer extends Actor with ActorLogging
-  with ProducerBehavior with ConsumerBehavior {
+class ProducerConsumer extends Actor with ActorLogging with ProducerBehavior with ConsumerBehavior {
 
   def receive = producerBehavior.orElse[Any, Unit](consumerBehavior)
 }
@@ -278,7 +278,7 @@ final case class Give(thing: Any)
 //#receive-orElse
 
 //#fiddle_code
-import akka.actor.{ ActorSystem, Actor, ActorRef, Props, PoisonPill }
+import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
 import language.postfixOps
 import scala.concurrent.duration._
 
@@ -382,9 +382,9 @@ class ActorDocSpec extends AkkaSpec("""
     //#fiddle_code
 
     val testProbe = new TestProbe(system)
-    testProbe watch pinger
+    testProbe.watch(pinger)
     testProbe.expectTerminated(pinger)
-    testProbe watch ponger
+    testProbe.watch(ponger)
     testProbe.expectTerminated(ponger)
     system.terminate()
   }
@@ -440,7 +440,7 @@ class ActorDocSpec extends AkkaSpec("""
         case message =>
           val target = testActor
           //#forward
-          target forward message
+          target.forward(message)
         //#forward
       }
     }
@@ -451,8 +451,7 @@ class ActorDocSpec extends AkkaSpec("""
       //#creating-indirectly
       import akka.actor.IndirectActorProducer
 
-      class DependencyInjector(applicationContext: AnyRef, beanName: String)
-        extends IndirectActorProducer {
+      class DependencyInjector(applicationContext: AnyRef, beanName: String) extends IndirectActorProducer {
 
         override def actorClass = classOf[Actor]
         override def produce =
@@ -463,9 +462,7 @@ class ActorDocSpec extends AkkaSpec("""
         //#obtain-fresh-Actor-instance-from-DI-framework
       }
 
-      val actorRef = system.actorOf(
-        Props(classOf[DependencyInjector], applicationContext, "hello"),
-        "helloBean")
+      val actorRef = system.actorOf(Props(classOf[DependencyInjector], applicationContext, "hello"), "helloBean")
       //#creating-indirectly
     }
     val actorRef = {
@@ -633,7 +630,7 @@ class ActorDocSpec extends AkkaSpec("""
   "using Identify" in {
     new AnyRef {
       //#identify
-      import akka.actor.{ Actor, Props, Identify, ActorIdentity, Terminated }
+      import akka.actor.{ Actor, ActorIdentity, Identify, Props, Terminated }
 
       class Follower extends Actor {
         val identifyId = 1
@@ -691,11 +688,11 @@ class ActorDocSpec extends AkkaSpec("""
     val f: Future[Result] =
       for {
         x <- ask(actorA, Request).mapTo[Int] // call pattern directly
-        s <- (actorB ask Request).mapTo[String] // call by implicit conversion
+        s <- actorB.ask(Request).mapTo[String] // call by implicit conversion
         d <- (actorC ? Request).mapTo[Double] // call by symbolic name
       } yield Result(x, s, d)
 
-    f pipeTo actorD // .. or ..
+    f.pipeTo(actorD) // .. or ..
     pipe(f) to actorD
     //#ask-pipeTo
   }
@@ -738,13 +735,12 @@ class ActorDocSpec extends AkkaSpec("""
   "using CoordinatedShutdown" in {
     val someActor = system.actorOf(Props(classOf[Replier], this))
     //#coordinated-shutdown-addTask
-    CoordinatedShutdown(system).addTask(
-      CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-        import akka.pattern.ask
-        import system.dispatcher
-        implicit val timeout = Timeout(5.seconds)
-        (someActor ? "stop").map(_ => Done)
-      }
+    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
+      import akka.pattern.ask
+      import system.dispatcher
+      implicit val timeout = Timeout(5.seconds)
+      (someActor ? "stop").map(_ => Done)
+    }
     //#coordinated-shutdown-addTask
 
     //#coordinated-shutdown-jvm-hook

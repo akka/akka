@@ -19,19 +19,18 @@ object Device {
 
   sealed trait DeviceMessage
 
-  final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature])
-    extends DeviceMessage
+  final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends DeviceMessage
   final case class RespondTemperature(requestId: Long, value: Option[Double])
 
   //#write-protocol
   final case class RecordTemperature(requestId: Long, value: Double, replyTo: ActorRef[TemperatureRecorded])
-    extends DeviceMessage
+      extends DeviceMessage
   final case class TemperatureRecorded(requestId: Long)
   //#write-protocol
 }
 
 class Device(context: ActorContext[Device.DeviceMessage], groupId: String, deviceId: String)
-  extends AbstractBehavior[Device.DeviceMessage] {
+    extends AbstractBehavior[Device.DeviceMessage] {
   import Device._
 
   var lastTemperatureReading: Option[Double] = None

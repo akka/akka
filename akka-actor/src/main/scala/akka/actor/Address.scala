@@ -68,6 +68,7 @@ final case class Address private (protocol: String, system: String, host: Option
 }
 
 object Address {
+
   /**
    * Constructs a new Address with the specified protocol and system name
    */
@@ -76,7 +77,8 @@ object Address {
   /**
    * Constructs a new Address with the specified protocol, system name, host and port
    */
-  def apply(protocol: String, system: String, host: String, port: Int) = new Address(protocol, system, Some(host), Some(port))
+  def apply(protocol: String, system: String, host: String, port: Int) =
+    new Address(protocol, system, Some(host), Some(port))
 
   /**
    * `Address` ordering type class, sorts addresses by protocol, name, host and port.
@@ -129,7 +131,9 @@ object RelativeActorPath extends PathUtils {
  * This object serves as extractor for Scala and as address parser for Java.
  */
 object AddressFromURIString {
-  def unapply(addr: String): Option[Address] = try unapply(new URI(addr)) catch { case _: URISyntaxException => None }
+  def unapply(addr: String): Option[Address] =
+    try unapply(new URI(addr))
+    catch { case _: URISyntaxException => None }
 
   def unapply(uri: URI): Option[Address] =
     if (uri eq null) None
@@ -139,9 +143,10 @@ object AddressFromURIString {
       else Some(Address(uri.getScheme, uri.getHost))
     } else { // case 2: “akka://system@host:port”
       if (uri.getHost == null || uri.getPort == -1) None
-      else Some(
-        if (uri.getUserInfo == null) Address(uri.getScheme, uri.getHost)
-        else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort))
+      else
+        Some(
+          if (uri.getUserInfo == null) Address(uri.getScheme, uri.getHost)
+          else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort))
     }
 
   /**

@@ -15,8 +15,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 
 object SnapshotStoreSpec {
-  val config: Config = ConfigFactory.parseString(
-    s"""
+  val config: Config = ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.actor {
       serializers {
@@ -40,8 +39,11 @@ object SnapshotStoreSpec {
  *
  * @see [[akka.persistence.japi.snapshot.JavaSnapshotStoreSpec]]
  */
-abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
-  with MayVerb with OptionalTests with SnapshotStoreCapabilityFlags {
+abstract class SnapshotStoreSpec(config: Config)
+    extends PluginSpec(config)
+    with MayVerb
+    with OptionalTests
+    with SnapshotStoreCapabilityFlags {
   implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _
@@ -59,7 +61,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
     extension.snapshotStoreFor(null)
 
   def writeSnapshots(): Seq[SnapshotMetadata] = {
-    1 to 5 map { i =>
+    (1 to 5).map { i =>
       val metadata = SnapshotMetadata(pid, i + 10)
       snapshotStore.tell(SaveSnapshot(metadata, s"s-${i}"), senderProbe.ref)
       senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
@@ -79,7 +81,8 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }
     "not load a snapshot given non-matching timestamp criteria" in {
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = 100), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = 100), Long.MaxValue),
+                         senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }
     "not load a snapshot given non-matching sequence number criteria" in {
@@ -99,9 +102,12 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), 13))
     }
     "load the most recent snapshot matching upper sequence number and timestamp bounds" in {
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(13, metadata(2).timestamp), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(13, metadata(2).timestamp), Long.MaxValue),
+                         senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), Long.MaxValue))
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = metadata(2).timestamp), 13), senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = metadata(2).timestamp), 13),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), 13))
     }
     "delete a single snapshot identified by sequenceNr in snapshot metadata" in {
@@ -128,9 +134,12 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       sub.expectMsg(cmd)
       senderProbe.expectMsg(DeleteSnapshotsSuccess(criteria))
 
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue),
+                         senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(3), s"s-4")), Long.MaxValue))
     }
     "not delete snapshots with non-matching upper timestamp bounds" in {
@@ -144,7 +153,9 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       sub.expectMsg(cmd)
       senderProbe.expectMsg(DeleteSnapshotsSuccess(criteria))
 
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue), senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(3), s"s-4")), Long.MaxValue))
     }
     "save and overwrite snapshot with same sequence number" in {
@@ -166,7 +177,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
     }
   }
 
-  "A snapshot store optionally" may {
+  "A snapshot store optionally".may {
     optional(flag = supportsSerialization) {
       "serialize snapshots" in {
         val probe = TestProbe()

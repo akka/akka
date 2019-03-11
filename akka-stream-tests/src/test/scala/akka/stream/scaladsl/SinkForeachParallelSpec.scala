@@ -78,13 +78,16 @@ class SinkForeachParallelSpec extends StreamSpec {
       val probe = TestProbe()
       val latch = TestLatch(1)
 
-      val p = Source(1 to 5).runWith(Sink.foreachParallel(4)((n: Int) => {
-        if (n == 3) throw new RuntimeException("err1") with NoStackTrace
-        else {
-          probe.ref ! n
-          Await.ready(latch, 10.seconds)
-        }
-      }).withAttributes(supervisionStrategy(resumingDecider)))
+      val p = Source(1 to 5).runWith(
+        Sink
+          .foreachParallel(4)((n: Int) => {
+            if (n == 3) throw new RuntimeException("err1") with NoStackTrace
+            else {
+              probe.ref ! n
+              Await.ready(latch, 10.seconds)
+            }
+          })
+          .withAttributes(supervisionStrategy(resumingDecider)))
 
       latch.countDown()
       probe.expectMsgAllOf(1, 2, 4, 5)
@@ -99,17 +102,22 @@ class SinkForeachParallelSpec extends StreamSpec {
       val element4Latch = new CountDownLatch(1)
       val errorLatch = new CountDownLatch(2)
 
-      val p = Source.fromIterator(() => Iterator.from(1)).runWith(Sink.foreachParallel(3)((n: Int) => {
-        if (n == 3) {
-          // Error will happen only after elements 1, 2 has been processed
-          errorLatch.await(5, TimeUnit.SECONDS)
-          throw new RuntimeException("err2") with NoStackTrace
-        } else {
-          probe.ref ! n
-          errorLatch.countDown()
-          element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
-        }
-      }).withAttributes(supervisionStrategy(stoppingDecider)))
+      val p = Source
+        .fromIterator(() => Iterator.from(1))
+        .runWith(
+          Sink
+            .foreachParallel(3)((n: Int) => {
+              if (n == 3) {
+                // Error will happen only after elements 1, 2 has been processed
+                errorLatch.await(5, TimeUnit.SECONDS)
+                throw new RuntimeException("err2") with NoStackTrace
+              } else {
+                probe.ref ! n
+                errorLatch.countDown()
+                element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
+              }
+            })
+            .withAttributes(supervisionStrategy(stoppingDecider)))
 
       // Only the first two messages are guaranteed to arrive due to their enforced ordering related to the time
       // of failure.

@@ -17,7 +17,7 @@ hand checking:
 [info] a.a.ActorCreationBenchmark.synchronousStarting       ss    120000       21.496        0.502       us
 
 
-*/
+ */
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))
 @Fork(5)

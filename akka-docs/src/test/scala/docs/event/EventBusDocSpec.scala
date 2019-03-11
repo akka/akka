@@ -6,7 +6,7 @@ package docs.event
 
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.testkit.TestProbe
 
 object EventBusDocSpec {
@@ -127,7 +127,10 @@ object EventBusDocSpec {
 
   final case class Notification(ref: ActorRef, id: Int)
 
-  class ActorBusImpl(val system: ActorSystem) extends ActorEventBus with ActorClassifier with ManagedActorClassification {
+  class ActorBusImpl(val system: ActorSystem)
+      extends ActorEventBus
+      with ActorClassifier
+      with ManagedActorClassification {
     type Event = Notification
 
     // is used for extracting the classifier from the incoming events

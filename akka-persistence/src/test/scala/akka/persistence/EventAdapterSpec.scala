@@ -7,7 +7,7 @@ package akka.persistence
 import akka.actor._
 import akka.event.Logging
 import akka.persistence.EventAdapterSpec.{ Tagged, UserDataChanged }
-import akka.persistence.journal.{ SingleEventSeq, EventSeq, EventAdapter }
+import akka.persistence.journal.{ EventAdapter, EventSeq, SingleEventSeq }
 import akka.testkit.ImplicitSender
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -71,7 +71,8 @@ object EventAdapterSpec {
   }
 
   class PersistAllIncomingActor(name: String, override val journalPluginId: String)
-    extends NamedPersistentActor(name) with PersistentActor {
+      extends NamedPersistentActor(name)
+      with PersistentActor {
 
     var state: List[Any] = Nil
 
@@ -95,13 +96,15 @@ object EventAdapterSpec {
 }
 
 abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adapterConfig: Config)
-  extends PersistenceSpec(journalConfig.withFallback(adapterConfig)) with ImplicitSender {
+    extends PersistenceSpec(journalConfig.withFallback(adapterConfig))
+    with ImplicitSender {
 
   import EventAdapterSpec._
 
   def this(journalName: String) {
-    this("inmem", PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"), ConfigFactory.parseString(
-      s"""
+    this("inmem",
+         PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
+         ConfigFactory.parseString(s"""
          |akka.persistence.journal {
          |
          |  common-event-adapters {

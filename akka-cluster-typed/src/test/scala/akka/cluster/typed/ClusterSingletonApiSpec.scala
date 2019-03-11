@@ -22,8 +22,7 @@ import org.scalatest.WordSpecLike
 
 object ClusterSingletonApiSpec {
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
       akka.actor {
         provider = cluster
         serialize-messages = off
@@ -51,7 +50,6 @@ object ClusterSingletonApiSpec {
   case object Perish extends PingProtocol
 
   val pingPong = Behaviors.receive[PingProtocol] { (_, msg) =>
-
     msg match {
       case Ping(respondTo) =>
         respondTo ! Pong
@@ -95,10 +93,8 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
   val clusterNode1 = Cluster(system)
   val untypedSystem1 = system.toUntyped
 
-  val system2 = akka.actor.ActorSystem(
-    system.name,
-    ConfigFactory.parseString(
-      """
+  val system2 = akka.actor.ActorSystem(system.name,
+                                       ConfigFactory.parseString("""
         akka.cluster.roles = ["singleton"]
       """).withFallback(system.settings.config))
   val adaptedSystem2 = system2.toTyped
@@ -127,8 +123,10 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
       val node2ref = cs2.init(SingletonActor(pingPong, "ping-pong").withStopMessage(Perish).withSettings(settings))
 
       // subsequent spawning returns the same refs
-      cs1.init(SingletonActor(pingPong, "ping-pong").withStopMessage(Perish).withSettings(settings)) should ===(node1ref)
-      cs2.init(SingletonActor(pingPong, "ping-pong").withStopMessage(Perish).withSettings(settings)) should ===(node2ref)
+      cs1.init(SingletonActor(pingPong, "ping-pong").withStopMessage(Perish).withSettings(settings)) should ===(
+        node1ref)
+      cs2.init(SingletonActor(pingPong, "ping-pong").withStopMessage(Perish).withSettings(settings)) should ===(
+        node2ref)
 
       val node1PongProbe = TestProbe[Pong.type]()(system)
       val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2)

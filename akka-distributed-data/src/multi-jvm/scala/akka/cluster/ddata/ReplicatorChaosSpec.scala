@@ -45,8 +45,9 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
 
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
-  val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withRole("backend").withGossipInterval(1.second)), "replicator")
+  val replicator = system.actorOf(
+    Replicator.props(ReplicatorSettings(system).withRole("backend").withGossipInterval(1.second)),
+    "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = GCounterKey("A")
@@ -59,7 +60,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -69,12 +70,13 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       awaitAssert {
         replicator ! Get(key, ReadLocal)
         val value = expectMsgPF() {
-          case g @ GetSuccess(`key`, _) => g.dataValue match {
-            case c: GCounter  => c.value
-            case c: PNCounter => c.value
-            case c: GSet[_]   => c.elements
-            case c: ORSet[_]  => c.elements
-          }
+          case g @ GetSuccess(`key`, _) =>
+            g.dataValue match {
+              case c: GCounter  => c.value
+              case c: PNCounter => c.value
+              case c: GSet[_]   => c.elements
+              case c: ORSet[_]  => c.elements
+            }
         }
         value should be(expected)
       }
@@ -107,7 +109,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       runOn(first) {
         for (_ <- 0 until 5) {
           replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 1)
-          replicator ! Update(KeyB, PNCounter(), WriteLocal)(_ decrement 1)
+          replicator ! Update(KeyB, PNCounter(), WriteLocal)(_.decrement(1))
           replicator ! Update(KeyC, GCounter(), WriteAll(timeout))(_ :+ 1)
         }
         receiveN(15).map(_.getClass).toSet should be(Set(classOf[UpdateSuccess[_]]))
@@ -117,9 +119,8 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
         replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 20)
         replicator ! Update(KeyB, PNCounter(), WriteTo(2, timeout))(_ :+ 20)
         replicator ! Update(KeyC, GCounter(), WriteAll(timeout))(_ :+ 20)
-        receiveN(3).toSet should be(Set(
-          UpdateSuccess(KeyA, None),
-          UpdateSuccess(KeyB, None), UpdateSuccess(KeyC, None)))
+        receiveN(3).toSet should be(
+          Set(UpdateSuccess(KeyA, None), UpdateSuccess(KeyB, None), UpdateSuccess(KeyC, None)))
 
         replicator ! Update(KeyE, GSet(), WriteLocal)(_ + "e1" + "e2")
         expectMsg(UpdateSuccess(KeyE, None))
@@ -180,7 +181,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
         replicator ! Update(KeyE, GSet(), WriteTo(2, timeout))(_ + "e4")
         expectMsg(UpdateSuccess(KeyE, None))
 
-        replicator ! Update(KeyF, ORSet(), WriteTo(2, timeout))(_ remove "e2")
+        replicator ! Update(KeyF, ORSet(), WriteTo(2, timeout))(_.remove("e2"))
         expectMsg(UpdateSuccess(KeyF, None))
       }
       runOn(fourth) {
@@ -234,4 +235,3 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
   }
 
 }
-

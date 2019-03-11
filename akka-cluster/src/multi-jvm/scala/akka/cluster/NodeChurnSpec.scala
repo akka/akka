@@ -20,8 +20,8 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
       akka.remote.log-frame-size-exceeding = 1200b
@@ -30,8 +30,7 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
         embedded-media-driver = off
         aeron-dir = "target/aeron-NodeChurnSpec"
       }
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   class LogListener(testActor: ActorRef) extends Actor {
     def receive = {
@@ -47,11 +46,13 @@ class NodeChurnMultiJvmNode2 extends NodeChurnSpec
 class NodeChurnMultiJvmNode3 extends NodeChurnSpec
 
 abstract class NodeChurnSpec
-  extends MultiNodeSpec({
-    // Aeron media driver must be started before ActorSystem
-    SharedMediaDriverSupport.startMediaDriver(NodeChurnMultiJvmSpec)
-    NodeChurnMultiJvmSpec
-  }) with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec({
+      // Aeron media driver must be started before ActorSystem
+      SharedMediaDriverSupport.startMediaDriver(NodeChurnMultiJvmSpec)
+      NodeChurnMultiJvmSpec
+    })
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import NodeChurnMultiJvmSpec._
 

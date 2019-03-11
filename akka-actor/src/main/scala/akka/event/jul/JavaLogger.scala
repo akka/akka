@@ -54,6 +54,7 @@ trait JavaLogging {
  * Logger is a factory for obtaining JUL Loggers
  */
 object Logger {
+
   /**
    * @param logger - which logger
    * @return a Logger that corresponds for the given logger name
@@ -67,7 +68,7 @@ object Logger {
    */
   def apply(logClass: Class[_], logSource: String): logging.Logger = logClass match {
     case c if c == classOf[DummyClassForStringSources] => apply(logSource)
-    case _ => logging.Logger.getLogger(logClass.getName)
+    case _                                             => logging.Logger.getLogger(logClass.getName)
   }
 
   /**

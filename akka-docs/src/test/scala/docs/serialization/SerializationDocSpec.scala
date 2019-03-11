@@ -43,9 +43,7 @@ package docs.serialization {
 
     // "fromBinary" deserializes the given array,
     // using the type hint (if any, see "includeManifest" above)
-    def fromBinary(
-      bytes: Array[Byte],
-      clazz: Option[Class[_]]): AnyRef = {
+    def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
       // Put your code that deserializes here
       //#...
       null
@@ -234,13 +232,13 @@ package docs.serialization {
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
         def addressFor(remoteAddr: Address): Address =
-          system.provider.getExternalAddressFor(remoteAddr) getOrElse
-            (throw new UnsupportedOperationException("cannot send to " + remoteAddr))
+          system.provider
+            .getExternalAddressFor(remoteAddr)
+            .getOrElse(throw new UnsupportedOperationException("cannot send to " + remoteAddr))
       }
 
       def serializeTo(ref: ActorRef, remote: Address): String =
-        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).
-          addressFor(remote))
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(extendedSystem).addressFor(remote))
       //#external-address
     }
 
@@ -262,8 +260,7 @@ package docs.serialization {
       }
 
       def serializeAkkaDefault(ref: ActorRef): String =
-        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).
-          addressForAkka)
+        ref.path.toSerializationFormatWithAddress(ExternalAddress(theActorSystem).addressForAkka)
       //#external-address-default
     }
   }

@@ -30,9 +30,14 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
     akka.loglevel=DEBUG # test verifies debug
     akka.actor.serialize-messages = off # debug noise from serialization
     """).withFallback(AkkaSpec.testConf)
-  val appLogging = ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))
-  val appAuto = ActorSystem("autoreceive", ConfigFactory.parseMap(Map("akka.actor.debug.autoreceive" -> true).asJava).withFallback(config))
-  val appLifecycle = ActorSystem("lifecycle", ConfigFactory.parseMap(Map("akka.actor.debug.lifecycle" -> true).asJava).withFallback(config))
+  val appLogging =
+    ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))
+  val appAuto = ActorSystem(
+    "autoreceive",
+    ConfigFactory.parseMap(Map("akka.actor.debug.autoreceive" -> true).asJava).withFallback(config))
+  val appLifecycle = ActorSystem(
+    "lifecycle",
+    ConfigFactory.parseMap(Map("akka.actor.debug.lifecycle" -> true).asJava).withFallback(config))
 
   val filter = TestEvent.Mute(EventFilter.custom {
     case _: Logging.Debug => true
@@ -62,13 +67,16 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
         val a = system.actorOf(Props(new Actor {
-          def receive = new LoggingReceive(Some("funky"), {
-            case null =>
-          })
+          def receive =
+            new LoggingReceive(Some("funky"), {
+              case null =>
+            })
         }))
         a ! "hallo"
-        expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources],
-          "received unhandled message hallo from " + system.deadLetters))
+        expectMsg(1 second,
+                  Logging.Debug("funky",
+                                classOf[DummyClassForStringSources],
+                                "received unhandled message hallo from " + system.deadLetters))
         expectMsgType[UnhandledMessage](1 second)
       }
     }
@@ -85,15 +93,17 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
         val actor = TestActorRef(new Actor {
           def switch: Actor.Receive = { case "becomenull" => context.become(r, false) }
-          def receive = switch orElse LoggingReceive {
-            case x => sender() ! "x"
-          }
+          def receive =
+            switch.orElse(LoggingReceive {
+              case x => sender() ! "x"
+            })
         })
 
         val name = actor.path.toString
         actor ! "buh"
-        expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass,
-          "received handled message buh from " + self))
+        expectMsg(
+          Logging
+            .Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh from " + self))
         expectMsg("x")
 
         actor ! "becomenull"
@@ -109,13 +119,15 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
       new TestKit(appLogging) with ImplicitSender {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         val actor = TestActorRef(new Actor {
-          def receive = LoggingReceive(LoggingReceive {
-            case _ => sender() ! "x"
-          })
+          def receive =
+            LoggingReceive(LoggingReceive {
+              case _ => sender() ! "x"
+            })
         })
         actor ! "buh"
-        expectMsg(Logging.Debug(actor.path.toString, actor.underlyingActor.getClass,
-          "received handled message buh from " + self))
+        expectMsg(
+          Logging
+            .Debug(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh from " + self))
         expectMsg("x")
       }
     }
@@ -146,8 +158,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           }
         })
         actor ! "buh"
-        expectMsg(Logging.Info(actor.path.toString, actor.underlyingActor.getClass,
-          "received handled message buh from " + self))
+        expectMsg(
+          Logging
+            .Info(actor.path.toString, actor.underlyingActor.getClass, "received handled message buh from " + self))
         expectMsg("x")
       }
     }
@@ -167,7 +180,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
         val name = actor.path.toString
         actor ! PoisonPill
         fishForMessage(hint = "received AutoReceiveMessage Envelope(PoisonPill") {
-          case Logging.Debug(`name`, _, msg: String) if msg startsWith "received AutoReceiveMessage Envelope(PoisonPill" => true
+          case Logging.Debug(`name`, _, msg: String)
+              if msg.startsWith("received AutoReceiveMessage Envelope(PoisonPill") =>
+            true
           case _ => false
         }
         awaitCond(actor.isTerminated)
@@ -184,15 +199,15 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val sname = supervisor.path.toString
 
           fishForMessage(hint = "now supervising") {
-            case Logging.Debug(`lname`, _, msg: String) if msg startsWith "now supervising" => true
-            case _ => false
+            case Logging.Debug(`lname`, _, msg: String) if msg.startsWith("now supervising") => true
+            case _                                                                           => false
           }
 
           TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
 
           fishForMessage(hint = "now supervising") {
-            case Logging.Debug(`sname`, _, msg: String) if msg startsWith "now supervising" => true
-            case _ => false
+            case Logging.Debug(`sname`, _, msg: String) if msg.startsWith("now supervising") => true
+            case _                                                                           => false
           }
         }
       }
@@ -207,16 +222,16 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
           val aname = actor.path.toString
 
-          supervisor watch actor
+          supervisor.watch(actor)
           fishForMessage(hint = "now watched by") {
             case Logging.Debug(`aname`, `sclass`, msg: String) if msg.startsWith("now watched by") => true
-            case m => false
+            case m                                                                                 => false
           }
 
-          supervisor unwatch actor
+          supervisor.unwatch(actor)
           fishForMessage(hint = "no longer watched by") {
             case Logging.Debug(`aname`, `sclass`, msg: String) if msg.startsWith("no longer watched by") => true
-            case _ => false
+            case _                                                                                       => false
           }
         }
       }
@@ -232,8 +247,8 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val sclass = classOf[TestLogActor]
 
           expectMsgAllPF(messages = 2) {
-            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" => 0
-            case Logging.Debug(_, _, msg: String) if msg startsWith "now supervising"      => 1
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg.startsWith("started") => 0
+            case Logging.Debug(_, _, msg: String) if msg.startsWith("now supervising")      => 1
           }
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
@@ -241,11 +256,13 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           val aclass = classOf[TestLogActor]
 
           expectMsgAllPF(messages = 2) {
-            case Logging.Debug(`aname`, `aclass`, msg: String) if msg.startsWith("started (" + classOf[TestLogActor].getName) => 0
-            case Logging.Debug(`sname`, `sclass`, msg: String) if msg == s"now supervising TestActor[$aname]"                 => 1
+            case Logging.Debug(`aname`, `aclass`, msg: String)
+                if msg.startsWith("started (" + classOf[TestLogActor].getName) =>
+              0
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg == s"now supervising TestActor[$aname]" => 1
           }
 
-          EventFilter[ActorKilledException](occurrences = 1) intercept {
+          EventFilter[ActorKilledException](occurrences = 1).intercept {
             actor ! Kill
             expectMsgAllPF(messages = 3) {
               case Logging.Error(_: ActorKilledException, `aname`, _, "Kill") => 0
@@ -255,10 +272,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           }
 
           system.stop(supervisor)
-          expectMsgAllOf(
-            Logging.Debug(aname, aclass, "stopped"),
-            Logging.Debug(sname, sclass, "stopping"),
-            Logging.Debug(sname, sclass, "stopped"))
+          expectMsgAllOf(Logging.Debug(aname, aclass, "stopped"),
+                         Logging.Debug(sname, sclass, "stopping"),
+                         Logging.Debug(sname, sclass, "stopped"))
         }
 
         def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, Int]): Set[Int] = {
@@ -269,8 +285,9 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             else if (gotMatching.size == messages) gotMatching
             else {
               val msg = receiveOne(remainingOrDefault)
-              assert(msg ne null, s"timeout ($max) during expectMsgAllPF, got matching " +
-                s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
+              assert(msg ne null,
+                     s"timeout ($max) during expectMsgAllPF, got matching " +
+                     s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
               if (matchers.isDefinedAt(msg)) receiveNMatching(gotMatching + matchers(msg), Vector.empty)
               else receiveNMatching(gotMatching, unknown :+ msg) // unknown message, just ignore
             }

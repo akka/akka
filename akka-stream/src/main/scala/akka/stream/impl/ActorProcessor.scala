@@ -28,8 +28,9 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
-  with Processor[I, O] {
+@InternalApi private[akka] class ActorProcessor[I, O](impl: ActorRef)
+    extends ActorPublisher[O](impl)
+    with Processor[I, O] {
   override def onSubscribe(s: Subscription): Unit = {
     ReactiveStreamsCompliance.requireNonNullSubscription(s)
     impl ! OnSubscribe(s)
@@ -48,7 +49,8 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
+@InternalApi private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump)
+    extends DefaultInputTransferStates {
   if (size < 1) throw new IllegalArgumentException(s"buffer size must be positive (was: $size)")
   if ((size & (size - 1)) != 0) throw new IllegalArgumentException(s"buffer size must be a power of two (was: $size)")
 
@@ -160,7 +162,8 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
+@InternalApi private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump)
+    extends DefaultOutputTransferStates {
   import ReactiveStreamsCompliance._
 
   protected var exposedPublisher: ActorPublisher[Any] = _
@@ -210,7 +213,7 @@ import akka.event.Logging
   protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 
   private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
-    subscribers foreach { sub =>
+    subscribers.foreach { sub =>
       if (subscriber eq null) {
         subscriber = sub
         tryOnSubscribe(subscriber, createSubscription())
@@ -249,10 +252,11 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes, val settings: ActorMaterializerSettings)
-  extends Actor
-  with ActorLogging
-  with Pump {
+@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes,
+                                                             val settings: ActorMaterializerSettings)
+    extends Actor
+    with ActorLogging
+    with Pump {
 
   protected val primaryInputs: Inputs = {
     val initialInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].initial
@@ -269,7 +273,7 @@ import akka.event.Logging
   final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
     override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
       primaryOutputs.subreceive(ep)
-      context become activeReceive
+      context.become(activeReceive)
     }
   }
 

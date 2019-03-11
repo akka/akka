@@ -18,7 +18,9 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
-@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext, adapter: ActorAdapter[T]) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext,
+                                                              adapter: ActorAdapter[T])
+    extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
 
@@ -52,14 +54,14 @@ import scala.concurrent.duration._
     } else if (self == child) {
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
-          s"but you tried to stop [$self] by passing its ActorRef to the `stop` method. " +
-          "Stopping self has to be expressed as explicitly returning a Stop Behavior " +
-          "with `Behaviors.stopped`.")
+        s"but you tried to stop [$self] by passing its ActorRef to the `stop` method. " +
+        "Stopping self has to be expressed as explicitly returning a Stop Behavior " +
+        "with `Behaviors.stopped`.")
     } else {
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
-          s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
-          "an explicit stop message that the actor accepts.")
+        s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+        "an explicit stop message that the actor accepts.")
     }
 
   override def watch[U](other: ActorRef[U]): Unit = { untypedContext.watch(toUntyped(other)) }
@@ -89,7 +91,8 @@ import scala.concurrent.duration._
   private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
     val logSource = self.path.toString
     val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
+    val logger =
+      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
     actorLogger = OptionVal.Some(logger)
     logger
   }
@@ -117,7 +120,8 @@ import scala.concurrent.duration._
     context match {
       case adapter: ActorContextAdapter[_] => adapter.untypedContext
       case _ =>
-        throw new UnsupportedOperationException("only adapted untyped ActorContext permissible " +
+        throw new UnsupportedOperationException(
+          "only adapted untyped ActorContext permissible " +
           s"($context of class ${context.getClass.getName})")
     }
 
@@ -127,7 +131,8 @@ import scala.concurrent.duration._
     context match {
       case c: TypedActorContext[_] => toUntypedImp(c)
       case _ =>
-        throw new UnsupportedOperationException("unknown ActorContext type " +
+        throw new UnsupportedOperationException(
+          "unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 
@@ -135,7 +140,8 @@ import scala.concurrent.duration._
     context match {
       case c: TypedActorContext[_] => toUntypedImp(c)
       case _ =>
-        throw new UnsupportedOperationException("unknown ActorContext type " +
+        throw new UnsupportedOperationException(
+          "unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 

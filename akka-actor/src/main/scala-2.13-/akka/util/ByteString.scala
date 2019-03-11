@@ -267,7 +267,9 @@ object ByteString {
   /**
    * An unfragmented ByteString.
    */
-  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString with Serializable {
+  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int)
+      extends ByteString
+      with Serializable {
 
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
@@ -354,14 +356,15 @@ object ByteString {
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
       else if (this.isEmpty) that
-      else that match {
-        case b: ByteString1C => ByteStrings(this, b.toByteString1)
-        case b: ByteString1 =>
-          if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
-            new ByteString1(bytes, startIndex, length + b.length)
-          else ByteStrings(this, b)
-        case bs: ByteStrings => ByteStrings(this, bs)
-      }
+      else
+        that match {
+          case b: ByteString1C => ByteStrings(this, b.toByteString1)
+          case b: ByteString1 =>
+            if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
+              new ByteString1(bytes, startIndex, length + b.length)
+            else ByteStrings(this, b)
+          case bs: ByteStrings => ByteStrings(this, bs)
+        }
     }
 
     override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
@@ -382,7 +385,8 @@ object ByteString {
   }
 
   private[akka] object ByteStrings extends Companion {
-    def apply(bytestrings: Vector[ByteString1]): ByteString = new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
+    def apply(bytestrings: Vector[ByteString1]): ByteString =
+      new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
 
     def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
 
@@ -418,7 +422,8 @@ object ByteString {
     def compare(b1: ByteString, b2: ByteString): Int =
       if (b1.isEmpty)
         if (b2.isEmpty) 0 else 2
-      else if (b2.isEmpty) 1 else 3
+      else if (b2.isEmpty) 1
+      else 3
 
     val SerializationIdentity = 2.toByte
 
@@ -443,7 +448,9 @@ object ByteString {
   /**
    * A ByteString with 2 or more fragments.
    */
-  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString with Serializable {
+  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int)
+      extends ByteString
+      with Serializable {
     if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
     if (bytestrings.head.isEmpty) throw new IllegalArgumentException("bytestrings.head must not be empty")
 
@@ -461,16 +468,17 @@ object ByteString {
 
     /** Avoid `iterator` in performance sensitive code, call ops directly on ByteString instead */
     override def iterator: ByteIterator.MultiByteArrayIterator =
-      ByteIterator.MultiByteArrayIterator(bytestrings.toStream map { _.iterator })
+      ByteIterator.MultiByteArrayIterator(bytestrings.toStream.map { _.iterator })
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
       else if (this.isEmpty) that
-      else that match {
-        case b: ByteString1C => ByteStrings(this, b.toByteString1)
-        case b: ByteString1  => ByteStrings(this, b)
-        case bs: ByteStrings => ByteStrings(this, bs)
-      }
+      else
+        that match {
+          case b: ByteString1C => ByteStrings(this, b.toByteString1)
+          case b: ByteString1  => ByteStrings(this, b)
+          case bs: ByteStrings => ByteStrings(this, bs)
+        }
     }
 
     private[akka] def byteStringCompanion = ByteStrings
@@ -490,7 +498,7 @@ object ByteString {
       else {
         val ar = new Array[Byte](length)
         var pos = 0
-        bytestrings foreach { b =>
+        bytestrings.foreach { b =>
           b.copyToArray(ar, pos, b.length)
           pos += b.length
         }
@@ -500,7 +508,7 @@ object ByteString {
 
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
 
-    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
+    def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings.map { _.asByteBuffer }
 
     def decodeString(charset: String): String = compact.decodeString(charset)
 
@@ -545,7 +553,9 @@ object ByteString {
           else if (remainingToDrop == 0)
             new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
           else
-            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1).dropRight1(remainingToDrop), length - n)
+            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1)
+                              .dropRight1(remainingToDrop),
+                            length - n)
         } else {
           dropRightWithFullDropsAndRemainig(fullDrops + 1, remainingToDrop - bs.length)
         }
@@ -633,9 +643,10 @@ object ByteString {
   }
 
   private[akka] object Companion {
-    private val companionMap = Seq(ByteString1, ByteString1C, ByteStrings).
-      map(x => x.SerializationIdentity -> x).toMap.
-      withDefault(x => throw new IllegalArgumentException("Invalid serialization id " + x))
+    private val companionMap = Seq(ByteString1, ByteString1C, ByteStrings)
+      .map(x => x.SerializationIdentity -> x)
+      .toMap
+      .withDefault(x => throw new IllegalArgumentException("Invalid serialization id " + x))
 
     def apply(from: Byte): Companion = companionMap(from)
   }
@@ -668,7 +679,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   // a parent trait.
   //
   // Avoid `iterator` in performance sensitive code, call ops directly on ByteString instead
-  override def iterator: ByteIterator = throw new UnsupportedOperationException("Method iterator is not implemented in ByteString")
+  override def iterator: ByteIterator =
+    throw new UnsupportedOperationException("Method iterator is not implemented in ByteString")
 
   override def head: Byte = apply(0)
   override def tail: ByteString = drop(1)
@@ -676,23 +688,28 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def init: ByteString = dropRight(1)
 
   // *must* be overridden by derived classes.
-  override def take(n: Int): ByteString = throw new UnsupportedOperationException("Method take is not implemented in ByteString")
+  override def take(n: Int): ByteString =
+    throw new UnsupportedOperationException("Method take is not implemented in ByteString")
   override def takeRight(n: Int): ByteString = slice(length - n, length)
 
   // these methods are optimized in derived classes utilising the maximum knowlage about data layout available to them:
   // *must* be overridden by derived classes.
-  override def slice(from: Int, until: Int): ByteString = throw new UnsupportedOperationException("Method slice is not implemented in ByteString")
+  override def slice(from: Int, until: Int): ByteString =
+    throw new UnsupportedOperationException("Method slice is not implemented in ByteString")
 
   // *must* be overridden by derived classes.
-  override def drop(n: Int): ByteString = throw new UnsupportedOperationException("Method drop is not implemented in ByteString")
+  override def drop(n: Int): ByteString =
+    throw new UnsupportedOperationException("Method drop is not implemented in ByteString")
 
   // *must* be overridden by derived classes.
-  override def dropRight(n: Int): ByteString = throw new UnsupportedOperationException("Method dropRight is not implemented in ByteString")
+  override def dropRight(n: Int): ByteString =
+    throw new UnsupportedOperationException("Method dropRight is not implemented in ByteString")
 
   override def takeWhile(p: Byte => Boolean): ByteString = iterator.takeWhile(p).toByteString
   override def dropWhile(p: Byte => Boolean): ByteString = iterator.dropWhile(p).toByteString
-  override def span(p: Byte => Boolean): (ByteString, ByteString) =
-    { val (a, b) = iterator.span(p); (a.toByteString, b.toByteString) }
+  override def span(p: Byte => Boolean): (ByteString, ByteString) = {
+    val (a, b) = iterator.span(p); (a.toByteString, b.toByteString)
+  }
 
   override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
 
@@ -706,9 +723,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
       throw new IllegalArgumentException(s"size=$size must be positive")
     }
 
-    Iterator.iterate(this)(_.drop(size))
-      .takeWhile(_.nonEmpty)
-      .map(_.take(size))
+    Iterator.iterate(this)(_.drop(size)).takeWhile(_.nonEmpty).map(_.take(size))
   }
 
   override def toString(): String = {
@@ -730,7 +745,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
     iterator.copyToArray(xs, start, len)
 
-  override def foreach[@specialized U](f: Byte => U): Unit = iterator foreach f
+  override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
   private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit
 
@@ -752,8 +767,9 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * @return the number of bytes actually copied
    */
   // *must* be overridden by derived classes.
-  def copyToBuffer(buffer: ByteBuffer): Int = throw new UnsupportedOperationException(
-    s"Method copyToBuffer is not implemented in ByteString, failed for buffer $buffer")
+  def copyToBuffer(buffer: ByteBuffer): Int =
+    throw new UnsupportedOperationException(
+      s"Method copyToBuffer is not implemented in ByteString, failed for buffer $buffer")
 
   /**
    * Create a new ByteString with all contents compacted into a single,
@@ -818,10 +834,11 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * map method that will automatically cast Int back into Byte.
    */
-  final def mapI(f: Byte => Int): ByteString = map(f andThen (_.toByte))
+  final def mapI(f: Byte => Int): ByteString = map(f.andThen(_.toByte))
 }
 
 object CompactByteString {
+
   /**
    * Creates a new CompactByteString by copying a byte array.
    */
@@ -914,7 +931,7 @@ sealed abstract class CompactByteString extends ByteString with Serializable {
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
   builder =>
 
-  import ByteString.{ ByteString1C, ByteString1, ByteStrings }
+  import ByteString.{ ByteString1, ByteString1C, ByteStrings }
   private var _length: Int = 0
   private val _builder: VectorBuilder[ByteString1] = new VectorBuilder[ByteString1]()
   private var _temp: Array[Byte] = _
@@ -1099,9 +1116,13 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     fillArray(n) { (target, offset) =>
       if (byteOrder == ByteOrder.BIG_ENDIAN) {
         val start = n * 8 - 8
-        (0 until n) foreach { i => target(offset + i) = (x >>> start - 8 * i).toByte }
+        (0 until n).foreach { i =>
+          target(offset + i) = (x >>> start - 8 * i).toByte
+        }
       } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
-        (0 until n) foreach { i => target(offset + i) = (x >>> 8 * i).toByte }
+        (0 until n).foreach { i =>
+          target(offset + i) = (x >>> 8 * i).toByte
+        }
       } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
     }
   }

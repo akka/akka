@@ -15,8 +15,9 @@ object DirectMemorySpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
@@ -25,7 +26,8 @@ object DirectMemorySpec extends MultiNodeConfig {
       akka.remote.artery.maximum-frame-size = 256 KiB
       akka.remote.artery.large-buffer-pool-size = 4
       akka.remote.artery.maximum-large-frame-size = 2 MiB
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   // buffer pool + large buffer pool = 16M, see DirectMemorySpecMultiJvmNode1.opts
 
@@ -58,7 +60,7 @@ abstract class DirectMemorySpec extends MultiNodeSpec(DirectMemorySpec) with STM
   "This test" should {
     "override JVM start-up options" in {
       // it's important that *.opts files have been processed
-      assert(System.getProperty("DirectMemorySpec.marker") equals "true")
+      assert(System.getProperty("DirectMemorySpec.marker").equals("true"))
     }
   }
 

@@ -9,10 +9,7 @@ import java.nio.ByteBuffer
 /**
  * LevelDB key.
  */
-private[leveldb] final case class Key(
-  persistenceId: Int,
-  sequenceNr:    Long,
-  mappingId:     Int)
+private[leveldb] final case class Key(persistenceId: Int, sequenceNr: Long, mappingId: Int)
 
 private[leveldb] object Key {
   def keyToBytes(key: Key): Array[Byte] = {
@@ -41,4 +38,3 @@ private[leveldb] object Key {
   def deletionKey(persistenceId: Int, sequenceNr: Long): Key = Key(persistenceId, sequenceNr, 1)
   def isDeletionKey(key: Key): Boolean = key.mappingId == 1
 }
-

@@ -119,4 +119,3 @@ class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
   }
 
 }
-

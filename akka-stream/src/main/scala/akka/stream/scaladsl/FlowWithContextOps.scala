@@ -51,7 +51,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.viaMat]]
    */
-  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]
+  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
+      combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.map]].
@@ -67,7 +68,9 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.mapAsync]]
    */
   def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
-    via(flow.mapAsync(parallelism) { case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext) })
+    via(flow.mapAsync(parallelism) {
+      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext)
+    })
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.collect]].
@@ -171,7 +174,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
+  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
   }

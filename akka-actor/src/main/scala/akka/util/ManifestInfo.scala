@@ -30,14 +30,12 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
   private val BundleVersion = "Bundle-Version"
   private val BundleVendor = "Bundle-Vendor"
 
-  private val knownVendors = Set(
-    "com.typesafe.akka",
-    "com.lightbend.akka",
-    "Lightbend Inc.",
-    "Lightbend",
-    "com.lightbend.lagom",
-    "com.typesafe.play"
-  )
+  private val knownVendors = Set("com.typesafe.akka",
+                                 "com.lightbend.akka",
+                                 "Lightbend Inc.",
+                                 "Lightbend",
+                                 "com.lightbend.lagom",
+                                 "com.typesafe.play")
 
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
 
@@ -143,9 +141,9 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           }
 
           if (title != null
-            && version != null
-            && vendor != null
-            && knownVendors(vendor)) {
+              && version != null
+              && vendor != null
+              && knownVendors(vendor)) {
             manifests = manifests.updated(title, new Version(version))
           }
         } finally {
@@ -172,11 +170,13 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
         val highestVersion = values.max
         Logging(system, getClass).warning(
           "Detected possible incompatible versions on the classpath. " +
-            s"Please note that a given $productName version MUST be the same across all modules of $productName " +
-            "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
-            "same version. Make sure you're using a compatible set of libraries. " +
-            "Possibly conflicting versions [{}] in libraries [{}]",
-          highestVersion, conflictingVersions, fullInfo)
+          s"Please note that a given $productName version MUST be the same across all modules of $productName " +
+          "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
+          "same version. Make sure you're using a compatible set of libraries. " +
+          "Possibly conflicting versions [{}] in libraries [{}]",
+          highestVersion,
+          conflictingVersions,
+          fullInfo)
       }
       false
     } else

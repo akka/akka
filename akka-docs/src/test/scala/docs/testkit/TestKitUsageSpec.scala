@@ -19,7 +19,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.testkit.{ TestActors, DefaultTimeout, ImplicitSender, TestKit }
+import akka.testkit.{ DefaultTimeout, ImplicitSender, TestActors, TestKit }
 import scala.concurrent.duration._
 import scala.collection.immutable
 
@@ -27,11 +27,12 @@ import scala.collection.immutable
  * a Test to show some TestKit examples
  */
 class TestKitUsageSpec
-  extends TestKit(ActorSystem(
-    "TestKitUsageSpec",
-    ConfigFactory.parseString(TestKitUsageSpec.config)))
-  with DefaultTimeout with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+    extends TestKit(ActorSystem("TestKitUsageSpec", ConfigFactory.parseString(TestKitUsageSpec.config)))
+    with DefaultTimeout
+    with ImplicitSender
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
   import TestKitUsageSpec._
 
   val echoRef = system.actorOf(TestActors.echoActorProps)
@@ -137,13 +138,12 @@ object TestKitUsageSpec {
    * like to test that the interesting value is received and that you cant
    * be bothered with the rest
    */
-  class SequencingActor(next: ActorRef, head: immutable.Seq[String],
-                        tail: immutable.Seq[String]) extends Actor {
+  class SequencingActor(next: ActorRef, head: immutable.Seq[String], tail: immutable.Seq[String]) extends Actor {
     def receive = {
       case msg => {
-        head foreach { next ! _ }
+        head.foreach { next ! _ }
         next ! msg
-        tail foreach { next ! _ }
+        tail.foreach { next ! _ }
       }
     }
   }

@@ -87,9 +87,8 @@ object SupervisingActor {
 }
 
 class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[String] {
-  private val child = context.spawn(
-    Behaviors.supervise(SupervisedActor()).onFailure(SupervisorStrategy.restart),
-    name = "supervised-actor")
+  private val child = context.spawn(Behaviors.supervise(SupervisedActor()).onFailure(SupervisorStrategy.restart),
+                                    name = "supervised-actor")
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {

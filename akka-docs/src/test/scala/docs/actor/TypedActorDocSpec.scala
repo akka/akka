@@ -11,7 +11,7 @@ import akka.actor.{ ActorContext, ActorRef, TypedActor, TypedProps }
 import akka.routing.RoundRobinGroup
 import akka.testkit._
 
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 //#imports
 
@@ -123,9 +123,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-create1
     //#typed-actor-create2
     val otherSquarer: Squarer =
-      TypedActor(system).typedActorOf(TypedProps(
-        classOf[Squarer],
-        new SquarerImpl("foo")), "name")
+      TypedActor(system).typedActorOf(TypedProps(classOf[Squarer], new SquarerImpl("foo")), "name")
     //#typed-actor-create2
 
     //#typed-actor-calls
@@ -165,10 +163,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val actorRefToRemoteActor: ActorRef = system.deadLetters
     //#typed-actor-remote
     val typedActor: Foo with Bar =
-      TypedActor(system).
-        typedActorOf(
-          TypedProps[FooBar],
-          actorRefToRemoteActor)
+      TypedActor(system).typedActorOf(TypedProps[FooBar], actorRefToRemoteActor)
     //Use "typedActor" as a FooBar
     //#typed-actor-remote
   }
@@ -205,7 +200,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     // prepare routees
     val routees: List[HasName] = List.fill(5) { namedActor() }
-    val routeePaths = routees map { r =>
+    val routeePaths = routees.map { r =>
       TypedActor(system).getActorRefFor(r).path.toStringWithoutAddress
     }
 
@@ -222,7 +217,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     println("actor was: " + typedRouter.name()) // name-164
     //#typed-router
 
-    routees foreach { TypedActor(system).poisonPill(_) }
+    routees.foreach { TypedActor(system).poisonPill(_) }
     TypedActor(system).poisonPill(router)
   }
 }

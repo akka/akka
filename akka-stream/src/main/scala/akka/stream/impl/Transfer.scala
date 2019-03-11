@@ -130,7 +130,8 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase) extends TransferState {
+@InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase)
+    extends TransferState {
   def isReady = false
   def isCompleted = false
 }
@@ -190,8 +191,8 @@ import akka.annotation.InternalApi
 
   final def isPumpFinished: Boolean = transferState.isCompleted
 
-  protected final val completedPhase = TransferPhase(Completed) {
-    () => throw new IllegalStateException("The action of completed phase must be never executed")
+  protected final val completedPhase = TransferPhase(Completed) { () =>
+    throw new IllegalStateException("The action of completed phase must be never executed")
   }
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.

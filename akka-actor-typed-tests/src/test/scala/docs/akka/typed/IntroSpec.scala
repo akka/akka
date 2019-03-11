@@ -28,12 +28,12 @@ object IntroSpec {
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
     val greeter: Behavior[Greet] = Behaviors.receive { (context, message) =>
-  //#fiddle_code
+      //#fiddle_code
       context.log.info("Hello {}!", message.whom)
-  //#fiddle_code
-  //#hello-world-actor
+      //#fiddle_code
+      //#hello-world-actor
       println(s"Hello ${message.whom}!")
-  //#hello-world-actor
+      //#hello-world-actor
       message.replyTo ! Greeted(message.whom, context.self)
       Behaviors.same
     }
@@ -46,12 +46,12 @@ object IntroSpec {
     def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
       Behaviors.receive { (context, message) =>
         val n = greetingCounter + 1
-  //#fiddle_code
+        //#fiddle_code
         context.log.info("Greeting {} for {}", n, message.whom)
-  //#fiddle_code
-  //#hello-world-bot
+        //#fiddle_code
+        //#hello-world-bot
         println(s"Greeting ${n} for ${message.whom}")
-  //#hello-world-bot
+        //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
         } else {
@@ -107,12 +107,10 @@ object IntroSpec {
   object ChatRoom {
     //#chatroom-protocol
     sealed trait RoomCommand
-    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent])
-      extends RoomCommand
+    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PublishSessionMessage(screenName: String, message: String)
-      extends RoomCommand
+    private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -135,22 +133,20 @@ object IntroSpec {
         message match {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
-            val ses = context.spawn(
-              session(context.self, screenName, client),
-              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            val ses = context.spawn(session(context.self, screenName, client),
+                                    name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             chatRoom(ses :: sessions)
           case PublishSessionMessage(screenName, message) =>
             val notification = NotifyClient(MessagePosted(screenName, message))
-            sessions foreach (_ ! notification)
+            sessions.foreach(_ ! notification)
             Behaviors.same
         }
       }
 
-    private def session(
-      room:       ActorRef[PublishSessionMessage],
-      screenName: String,
-      client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
+    private def session(room: ActorRef[PublishSessionMessage],
+                        screenName: String,
+                        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receive { (context, message) =>
         message match {
           case PostMessage(message) =>

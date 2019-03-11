@@ -78,21 +78,18 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
     }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  val roleConfig = ConfigFactory.parseString(
-    """
+  val roleConfig = ConfigFactory.parseString("""
       akka.cluster.roles = [sharding]
     """)
 
   // we pretend node 4 and 5 are new incarnations of node 2 and 3 as they never run in parallel
   // so we can use the same lmdb store for them and have node 4 pick up the persisted data of node 2
-  val ddataNodeAConfig = ConfigFactory.parseString(
-    """
+  val ddataNodeAConfig = ConfigFactory.parseString("""
       akka.cluster.sharding.distributed-data.durable.lmdb {
         dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-a
       }
     """)
-  val ddataNodeBConfig = ConfigFactory.parseString(
-    """
+  val ddataNodeBConfig = ConfigFactory.parseString("""
       akka.cluster.sharding.distributed-data.durable.lmdb {
         dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-b
       }
@@ -103,26 +100,37 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
 
 }
 
-object PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(
-  ClusterShardingSettings.StateStoreModePersistence)
-object DDataClusterShardingRememberEntitiesNewExtractorSpecConfig extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(
-  ClusterShardingSettings.StateStoreModeDData)
+object PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig
+    extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingRememberEntitiesNewExtractorSpecConfig
+    extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(ClusterShardingSettings.StateStoreModeDData)
 
-class PersistentClusterShardingRememberEntitiesNewExtractorSpec extends ClusterShardingRememberEntitiesNewExtractorSpec(
-  PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig)
+class PersistentClusterShardingRememberEntitiesNewExtractorSpec
+    extends ClusterShardingRememberEntitiesNewExtractorSpec(
+      PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig)
 
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode1 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode2 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode3 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode1
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode2
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode3
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
 
-class DDataClusterShardingRememberEntitiesNewExtractorSpec extends ClusterShardingRememberEntitiesNewExtractorSpec(
-  DDataClusterShardingRememberEntitiesNewExtractorSpecConfig)
+class DDataClusterShardingRememberEntitiesNewExtractorSpec
+    extends ClusterShardingRememberEntitiesNewExtractorSpec(DDataClusterShardingRememberEntitiesNewExtractorSpecConfig)
 
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode1 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode2 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode3 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode1
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode2
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode3
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
 
-abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterShardingRememberEntitiesNewExtractorSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
+    config: ClusterShardingRememberEntitiesNewExtractorSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingRememberEntitiesNewExtractorSpec._
   import config._
 
@@ -130,8 +138,8 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  val storageLocations = List(
+    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
     storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
@@ -144,7 +152,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -152,21 +160,21 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
   val cluster = Cluster(system)
 
   def startShardingWithExtractor1(): Unit = {
-    ClusterSharding(system).start(
-      typeName = typeName,
-      entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId1)
+    ClusterSharding(system).start(typeName = typeName,
+                                  entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
+                                  settings =
+                                    ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+                                  extractEntityId = extractEntityId,
+                                  extractShardId = extractShardId1)
   }
 
   def startShardingWithExtractor2(sys: ActorSystem, probe: ActorRef): Unit = {
-    ClusterSharding(sys).start(
-      typeName = typeName,
-      entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId2)
+    ClusterSharding(sys).start(typeName = typeName,
+                               entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
+                               settings =
+                                 ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+                               extractEntityId = extractEntityId,
+                               extractShardId = extractShardId2)
   }
 
   def region(sys: ActorSystem = system) = ClusterSharding(sys).shardRegion(typeName)
@@ -297,4 +305,3 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
   }
 }
-

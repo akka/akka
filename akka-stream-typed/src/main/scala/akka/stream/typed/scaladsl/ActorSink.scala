@@ -46,17 +46,17 @@ object ActorSink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
    */
-  def actorRefWithAck[T, M, A](
-    ref:               ActorRef[M],
-    messageAdapter:    (ActorRef[A], T) => M,
-    onInitMessage:     ActorRef[A] => M,
-    ackMessage:        A,
-    onCompleteMessage: M,
-    onFailureMessage:  Throwable => M): Sink[T, NotUsed] =
-    Sink.actorRefWithAck(
-      ref.toUntyped,
-      messageAdapter.curried.compose(actorRefAdapter),
-      onInitMessage.compose(actorRefAdapter),
-      ackMessage, onCompleteMessage, onFailureMessage)
+  def actorRefWithAck[T, M, A](ref: ActorRef[M],
+                               messageAdapter: (ActorRef[A], T) => M,
+                               onInitMessage: ActorRef[A] => M,
+                               ackMessage: A,
+                               onCompleteMessage: M,
+                               onFailureMessage: Throwable => M): Sink[T, NotUsed] =
+    Sink.actorRefWithAck(ref.toUntyped,
+                         messageAdapter.curried.compose(actorRefAdapter),
+                         onInitMessage.compose(actorRefAdapter),
+                         ackMessage,
+                         onCompleteMessage,
+                         onFailureMessage)
 
 }

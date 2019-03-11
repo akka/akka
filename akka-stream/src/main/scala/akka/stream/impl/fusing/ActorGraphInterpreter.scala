@@ -55,11 +55,12 @@ import scala.util.control.NonFatal
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
-  class BatchingActorInputBoundary(
-    size:             Int,
-    shell:            GraphInterpreterShell,
-    publisher:        Publisher[Any],
-    internalPortName: String) extends UpstreamBoundaryStageLogic[Any] with OutHandler {
+  class BatchingActorInputBoundary(size: Int,
+                                   shell: GraphInterpreterShell,
+                                   publisher: Publisher[Any],
+                                   internalPortName: String)
+      extends UpstreamBoundaryStageLogic[Any]
+      with OutHandler {
 
     final case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
@@ -116,27 +117,26 @@ import scala.util.control.NonFatal
     def setActor(actor: ActorRef): Unit = this.actor = actor
 
     override def preStart(): Unit = {
-      publisher.subscribe(
-        new Subscriber[Any] {
-          override def onError(t: Throwable): Unit = {
-            ReactiveStreamsCompliance.requireNonNullException(t)
-            actor ! OnError(shell, t)
-          }
+      publisher.subscribe(new Subscriber[Any] {
+        override def onError(t: Throwable): Unit = {
+          ReactiveStreamsCompliance.requireNonNullException(t)
+          actor ! OnError(shell, t)
+        }
 
-          override def onSubscribe(s: Subscription): Unit = {
-            ReactiveStreamsCompliance.requireNonNullSubscription(s)
-            actor ! OnSubscribe(shell, s)
-          }
+        override def onSubscribe(s: Subscription): Unit = {
+          ReactiveStreamsCompliance.requireNonNullSubscription(s)
+          actor ! OnSubscribe(shell, s)
+        }
 
-          override def onComplete(): Unit = {
-            actor ! OnComplete(shell)
-          }
+        override def onComplete(): Unit = {
+          actor ! OnComplete(shell)
+        }
 
-          override def onNext(t: Any): Unit = {
-            ReactiveStreamsCompliance.requireNonNullElement(t)
-            actor ! OnNext(shell, t)
-          }
-        })
+        override def onNext(t: Any): Unit = {
+          ReactiveStreamsCompliance.requireNonNullElement(t)
+          actor ! OnNext(shell, t)
+        }
+      })
     }
 
     private def dequeue(): Any = {
@@ -240,7 +240,8 @@ import scala.util.control.NonFatal
         case s: SpecViolation => shell.tryAbort(s)
       }
 
-    override def toString: String = s"BatchingActorInputBoundary(forPort=$internalPortName, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
+    override def toString: String =
+      s"BatchingActorInputBoundary(forPort=$internalPortName, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
   }
 
   final case class SubscribePending(boundary: ActorOutputBoundary) extends SimpleBoundaryEvent {
@@ -253,7 +254,8 @@ import scala.util.control.NonFatal
 
   final case class RequestMore(boundary: ActorOutputBoundary, demand: Long) extends SimpleBoundaryEvent {
     override def execute(): Unit = {
-      if (GraphInterpreter.Debug) println(s"${boundary.shell.interpreter.Name}  request  $demand port=${boundary.internalPortName}")
+      if (GraphInterpreter.Debug)
+        println(s"${boundary.shell.interpreter.Name}  request  $demand port=${boundary.internalPortName}")
       boundary.requestMore(demand)
     }
     override def shell: GraphInterpreterShell = boundary.shell
@@ -261,7 +263,8 @@ import scala.util.control.NonFatal
   }
   final case class Cancel(boundary: ActorOutputBoundary) extends SimpleBoundaryEvent {
     override def execute(): Unit = {
-      if (GraphInterpreter.Debug) println(s"${boundary.shell.interpreter.Name}  cancel port=${boundary.internalPortName}")
+      if (GraphInterpreter.Debug)
+        println(s"${boundary.shell.interpreter.Name}  cancel port=${boundary.internalPortName}")
       boundary.cancel()
     }
 
@@ -269,7 +272,8 @@ import scala.util.control.NonFatal
     override def logic: GraphStageLogic = boundary
   }
 
-  private[stream] class OutputBoundaryPublisher(boundary: ActorOutputBoundary, internalPortName: String) extends Publisher[Any] {
+  private[stream] class OutputBoundaryPublisher(boundary: ActorOutputBoundary, internalPortName: String)
+      extends Publisher[Any] {
     import ReactiveStreamsCompliance._
 
     // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
@@ -308,7 +312,7 @@ import scala.util.control.NonFatal
       shutdownReason = OptionVal(reason.orNull)
       pendingSubscribers.getAndSet(null) match {
         case null    => // already called earlier
-        case pending => pending foreach reportSubscribeFailure
+        case pending => pending.foreach(reportSubscribeFailure)
       }
     }
 
@@ -331,7 +335,8 @@ import scala.util.control.NonFatal
   }
 
   private[stream] class ActorOutputBoundary(val shell: GraphInterpreterShell, val internalPortName: String)
-    extends DownstreamBoundaryStageLogic[Any] with InHandler {
+      extends DownstreamBoundaryStageLogic[Any]
+      with InHandler {
 
     val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary:" + internalPortName)
     in.id = 0
@@ -398,7 +403,7 @@ import scala.util.control.NonFatal
       }
 
     def subscribePending(): Unit =
-      publisher.takePendingSubscribers() foreach { sub =>
+      publisher.takePendingSubscribers().foreach { sub =>
         if (subscriber eq null) {
           subscriber = sub
           val subscription = new Subscription {
@@ -433,7 +438,8 @@ import scala.util.control.NonFatal
       cancel(in)
     }
 
-    override def toString: String = s"ActorOutputBoundary(port=$internalPortName, demand=$downstreamDemand, finished=$downstreamCompleted)"
+    override def toString: String =
+      s"ActorOutputBoundary(port=$internalPortName, demand=$downstreamDemand, finished=$downstreamCompleted)"
   }
 
 }
@@ -441,12 +447,11 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GraphInterpreterShell(
-  var connections: Array[Connection],
-  var logics:      Array[GraphStageLogic],
-  settings:        ActorMaterializerSettings,
-  attributes:      Attributes,
-  val mat:         ExtendedActorMaterializer) {
+@InternalApi private[akka] final class GraphInterpreterShell(var connections: Array[Connection],
+                                                             var logics: Array[GraphStageLogic],
+                                                             settings: ActorMaterializerSettings,
+                                                             attributes: Attributes,
+                                                             val mat: ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
@@ -457,12 +462,12 @@ import scala.util.control.NonFatal
    * @param promise Will be completed upon processing the event, or failed if processing the event throws
    *                if the event isn't ever processed the promise (the operator stops) is failed elsewhere
    */
-  final case class AsyncInput(
-    shell:   GraphInterpreterShell,
-    logic:   GraphStageLogic,
-    evt:     Any,
-    promise: Promise[Done],
-    handler: (Any) => Unit) extends BoundaryEvent {
+  final case class AsyncInput(shell: GraphInterpreterShell,
+                              logic: GraphStageLogic,
+                              evt: Any,
+                              promise: Promise[Done],
+                              handler: (Any) => Unit)
+      extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
         interpreter.runAsyncInput(logic, evt, promise, handler)
@@ -488,7 +493,8 @@ import scala.util.control.NonFatal
     override def execute(eventLimit: Int): Int = {
       if (waitingForShutdown) {
         subscribesPending = 0
-        tryAbort(new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
+        tryAbort(
+          new TimeoutException("Streaming actor has been already stopped processing (normally), but not all of its " +
           s"inputs or outputs have been subscribed in [${settings.subscriptionTimeoutSettings.timeout}}]. Aborting actor now."))
       }
       0
@@ -497,8 +503,8 @@ import scala.util.control.NonFatal
 
   private var enqueueToShortCircuit: (Any) => Unit = _
 
-  lazy val interpreter: GraphInterpreter = new GraphInterpreter(mat, log, logics, connections,
-    (logic, event, promise, handler) => {
+  lazy val interpreter: GraphInterpreter =
+    new GraphInterpreter(mat, log, logics, connections, (logic, event, promise, handler) => {
       val asyncInput = AsyncInput(this, logic, event, promise, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
       if (currentInterpreter == null || (currentInterpreter.context ne self))
@@ -533,7 +539,10 @@ import scala.util.control.NonFatal
   private var resumeScheduled = false
 
   def isInitialized: Boolean = self != null
-  def init(self: ActorRef, subMat: SubFusingActorMaterializerImpl, enqueueToShortCircuit: (Any) => Unit, eventLimit: Int): Int = {
+  def init(self: ActorRef,
+           subMat: SubFusingActorMaterializerImpl,
+           enqueueToShortCircuit: (Any) => Unit,
+           eventLimit: Int): Int = {
     this.self = self
     this.enqueueToShortCircuit = enqueueToShortCircuit
     var i = 0
@@ -637,12 +646,10 @@ import scala.util.control.NonFatal
 
   def toSnapshot: InterpreterSnapshot = {
     if (!isInitialized)
-      UninitializedInterpreterImpl(
-        logics.zipWithIndex.map {
-          case (logic, idx) =>
-            LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
-        }.toVector
-      )
+      UninitializedInterpreterImpl(logics.zipWithIndex.map {
+        case (logic, idx) =>
+          LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+      }.toVector)
     else interpreter.toSnapshot
   }
 }
@@ -650,7 +657,9 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+@InternalApi private[akka] final class ActorGraphInterpreter(_initial: GraphInterpreterShell)
+    extends Actor
+    with ActorLogging {
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]
@@ -660,7 +669,8 @@ import scala.util.control.NonFatal
   def tryInit(shell: GraphInterpreterShell): Boolean =
     try {
       currentLimit = shell.init(self, subFusingMaterializerImpl, enqueueToShortCircuit, currentLimit)
-      if (GraphInterpreter.Debug) println(s"registering new shell in ${_initial}\n  ${shell.toString.replace("\n", "\n  ")}")
+      if (GraphInterpreter.Debug)
+        println(s"registering new shell in ${_initial}\n  ${shell.toString.replace("\n", "\n  ")}")
       if (shell.isTerminated) false
       else {
         activeInterpreters += shell
@@ -713,11 +723,11 @@ import scala.util.control.NonFatal
   }
 
   private def shortCircuitBatch(): Unit = {
-    while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty)
-      shortCircuitBuffer.poll() match {
-        case b: BoundaryEvent => processEvent(b)
-        case Resume           => finishShellRegistration()
-      }
+    while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty) shortCircuitBuffer
+      .poll() match {
+      case b: BoundaryEvent => processEvent(b)
+      case Resume           => finishShellRegistration()
+    }
     if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }
 
@@ -748,11 +758,11 @@ import scala.util.control.NonFatal
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
     case Snapshot =>
-      sender() ! StreamSnapshotImpl(
-        self.path,
-        activeInterpreters.map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
-        newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter])
-      )
+      sender() ! StreamSnapshotImpl(self.path,
+                                    activeInterpreters
+                                      .map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter])
+                                      .toSeq,
+                                    newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
   }
 
   override def postStop(): Unit = {

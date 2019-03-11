@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.SupervisorStrategy.{ Restart, Stop }
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.EventStream
@@ -12,15 +12,16 @@ import scala.util.control.NoStackTrace
 
 object UidClashTest {
 
-  class TerminatedForNonWatchedActor extends Exception("Received Terminated for actor that was not actually watched")
-    with NoStackTrace
+  class TerminatedForNonWatchedActor
+      extends Exception("Received Terminated for actor that was not actually watched")
+      with NoStackTrace
 
   @volatile var oldActor: ActorRef = _
 
-  private[akka] class EvilCollidingActorRef(
-    override val provider: ActorRefProvider,
-    override val path:     ActorPath,
-    val eventStream:       EventStream) extends MinimalActorRef {
+  private[akka] class EvilCollidingActorRef(override val provider: ActorRefProvider,
+                                            override val path: ActorPath,
+                                            val eventStream: EventStream)
+      extends MinimalActorRef {
 
     //Ignore everything
     override def isTerminated: Boolean = true
@@ -52,7 +53,7 @@ object UidClashTest {
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-      context.children foreach { child =>
+      context.children.foreach { child =>
         oldActor = child
         context.unwatch(child)
         context.stop(child)

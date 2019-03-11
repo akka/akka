@@ -16,7 +16,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   override type Outputs = Int
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val mergePrioritized = b add MergePrioritized[Outputs](Seq(2, 8))
+    val mergePrioritized = b.add(MergePrioritized[Outputs](Seq(2, 8)))
 
     override def left: Inlet[Outputs] = mergePrioritized.in(0)
     override def right: Inlet[Outputs] = mergePrioritized.in(1)
@@ -136,7 +136,11 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     }
   }
 
-  private def threeSourceMerge[T](source1: Source[T, NotUsed], source2: Source[T, NotUsed], source3: Source[T, NotUsed], priorities: Seq[Int], probe: ManualProbe[T]) = {
+  private def threeSourceMerge[T](source1: Source[T, NotUsed],
+                                  source2: Source[T, NotUsed],
+                                  source3: Source[T, NotUsed],
+                                  priorities: Seq[Int],
+                                  probe: ManualProbe[T]) = {
     RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b => (s1, s2, s3) =>
       val merge = b.add(MergePrioritized[T](priorities))
       // introduce a delay on the consuming side making it more likely that

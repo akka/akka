@@ -35,7 +35,6 @@ object ConsistencySpec {
     var lastStep = -1L
     def receive = {
       case step: Long =>
-
         if (lastStep != (step - 1))
           sender() ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 

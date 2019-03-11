@@ -125,7 +125,10 @@ class DistributedPubSubMediatorMultiJvmNode1 extends DistributedPubSubMediatorSp
 class DistributedPubSubMediatorMultiJvmNode2 extends DistributedPubSubMediatorSpec
 class DistributedPubSubMediatorMultiJvmNode3 extends DistributedPubSubMediatorSpec
 
-class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMediatorSpec) with STMultiNodeSpec with ImplicitSender {
+class DistributedPubSubMediatorSpec
+    extends MultiNodeSpec(DistributedPubSubMediatorSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DistributedPubSubMediatorSpec._
   import DistributedPubSubMediatorSpec.TestChatUser._
   import DistributedPubSubMediator._
@@ -134,7 +137,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createMediator()
     }
     enterBarrier(from.name + "-joined")
@@ -558,8 +561,10 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       runOn(first) {
         mediator ! GetTopics
         expectMsgPF() {
-          case CurrentTopics(topics) if topics.contains("topic_a1")
-            && topics.contains("topic_a2") => true
+          case CurrentTopics(topics)
+              if topics.contains("topic_a1")
+              && topics.contains("topic_a2") =>
+            true
         }
       }
 

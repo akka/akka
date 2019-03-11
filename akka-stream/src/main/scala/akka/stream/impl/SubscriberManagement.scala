@@ -154,7 +154,8 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         case head :: tail => maxRequested(tail, math.max(head.totalDemand, result))
         case _            => result
       }
-    val desired = Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
+    val desired =
+      Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
     if (desired > 0) {
       pendingFromUpstream += desired
       requestFromUpstream(desired)
@@ -222,10 +223,11 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    * Register a new subscriber.
    */
   protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
-    case NotReached if subscriptions.exists(_.subscriber == subscriber) => ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
-    case NotReached => addSubscription(subscriber)
+    case NotReached if subscriptions.exists(_.subscriber == subscriber) =>
+      ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
+    case NotReached                   => addSubscription(subscriber)
     case Completed if buffer.nonEmpty => addSubscription(subscriber)
-    case eos => eos(subscriber)
+    case eos                          => eos(subscriber)
   }
 
   private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
@@ -267,4 +269,3 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     } // else ignore, we need to be idempotent
   }
 }
-

@@ -18,21 +18,22 @@ import scala.util.control.NoStackTrace
 
 class FlowFilterSpec extends StreamSpec with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
 
   "A Filter" must {
 
     "filter" in {
-      def script = Script(TestConfig.RandomTestRange map { _ => val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq()) }: _*)
-      TestConfig.RandomTestRange foreach (_ => runScript(script, settings)(_.filter(_ % 2 == 0)))
+      def script =
+        Script(TestConfig.RandomTestRange.map { _ =>
+          val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq())
+        }: _*)
+      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.filter(_ % 2 == 0)))
     }
 
     "not blow up with high request counts" in {
-      val settings = ActorMaterializerSettings(system)
-        .withInputBuffer(initialSize = 1, maxSize = 1)
+      val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
       implicit val materializer = ActorMaterializer(settings)
 
       val probe = TestSubscriber.manualProbe[Int]()
@@ -52,7 +53,9 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
         override def toString = "TE"
       }
 
-      Source(1 to 3).filter((x: Int) => if (x == 2) throw TE else true).withAttributes(supervisionStrategy(resumingDecider))
+      Source(1 to 3)
+        .filter((x: Int) => if (x == 2) throw TE else true)
+        .withAttributes(supervisionStrategy(resumingDecider))
         .runWith(TestSink.probe[Int])
         .request(3)
         .expectNext(1, 3)
@@ -63,12 +66,12 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
 
   "A FilterNot" must {
     "filter based on inverted predicate" in {
-      def script = Script(TestConfig.RandomTestRange map
-        { _ =>
+      def script =
+        Script(TestConfig.RandomTestRange.map { _ =>
           val x = random.nextInt()
           Seq(x) -> (if ((x & 1) == 1) Seq(x) else Seq())
         }: _*)
-      TestConfig.RandomTestRange foreach (_ => runScript(script, settings)(_.filterNot(_ % 2 == 0)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.filterNot(_ % 2 == 0)))
     }
   }
 

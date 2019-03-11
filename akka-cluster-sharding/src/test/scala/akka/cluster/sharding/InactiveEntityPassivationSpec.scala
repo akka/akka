@@ -60,21 +60,17 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
       Cluster(system).join(Cluster(system).selfAddress)
       val probe = TestProbe()
       val settings = ClusterShardingSettings(system)
-      val region = ClusterSharding(system).start(
-        "myType",
-        InactiveEntityPassivationSpec.Entity.props(probe.ref),
-        settings,
-        extractEntityId,
-        extractShardId,
-        ClusterSharding(system).defaultShardAllocationStrategy(settings),
-        Passivate
-      )
+      val region = ClusterSharding(system).start("myType",
+                                                 InactiveEntityPassivationSpec.Entity.props(probe.ref),
+                                                 settings,
+                                                 extractEntityId,
+                                                 extractShardId,
+                                                 ClusterSharding(system).defaultShardAllocationStrategy(settings),
+                                                 Passivate)
 
       region ! 1
       region ! 2
-      val responses = Set(
-        probe.expectMsgType[GotIt],
-        probe.expectMsgType[GotIt])
+      val responses = Set(probe.expectMsgType[GotIt], probe.expectMsgType[GotIt])
       responses.map(_.id) should ===(Set("1", "2"))
       val timeOneSawMessage = responses.find(_.id == "1").get.when
       Thread.sleep(1000)
@@ -92,9 +88,7 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
       // but it can be re activated just fine:
       region ! 1
       region ! 2
-      Set(
-        probe.expectMsgType[GotIt],
-        probe.expectMsgType[GotIt]).map(_.id) should ===(Set("1", "2"))
+      Set(probe.expectMsgType[GotIt], probe.expectMsgType[GotIt]).map(_.id) should ===(Set("1", "2"))
 
     }
   }

@@ -47,9 +47,11 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
     }
 
     "send dead letters on remote if actor does not exist" in {
-      EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/dead-letters-on-remote") ! "buh"
-      }(remoteSystem)
+      EventFilter
+        .warning(pattern = "dead.*buh", occurrences = 1)
+        .intercept {
+          localSystem.actorFor(s"akka://${remoteSystem.name}@localhost:$remotePort/dead-letters-on-remote") ! "buh"
+        }(remoteSystem)
     }
 
     // FIXME needs remote deployment section
@@ -74,11 +76,12 @@ class RemoteActorForSpec extends ArteryMultiNodeSpec("akka.loglevel=INFO") with 
       myref ! 44
       expectMsg(44)
       lastSender should ===(grandchild)
-      lastSender should be theSameInstanceAs grandchild
+      (lastSender should be).theSameInstanceAs(grandchild)
       child.asInstanceOf[RemoteActorRef].getParent should ===(l)
-      localSystem.actorFor("/user/looker1/child") should be theSameInstanceAs child
-      (l ? ActorForReq("child/..")).mapTo[AnyRef].futureValue should be theSameInstanceAs l
-      (localSystem.actorFor(system / "looker1" / "child") ? ActorForReq("..")).mapTo[AnyRef].futureValue should be theSameInstanceAs l
+      (localSystem.actorFor("/user/looker1/child") should be).theSameInstanceAs(child)
+      (l ? ActorForReq("child/..")).mapTo[AnyRef].futureValue should be.theSameInstanceAs(l)
+      (localSystem.actorFor(system / "looker1" / "child") ? ActorForReq("..")).mapTo[AnyRef].futureValue should be
+        .theSameInstanceAs(l)
 
       watch(child)
       child ! PoisonPill

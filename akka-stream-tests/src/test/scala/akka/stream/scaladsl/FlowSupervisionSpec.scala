@@ -52,10 +52,10 @@ class FlowSupervisionSpec extends StreamSpec {
     }
 
     "resume stream when null is emitted" in {
-      val nullMap = Flow[String].map(elem => if (elem == "b") null else elem)
+      val nullMap = Flow[String]
+        .map(elem => if (elem == "b") null else elem)
         .withAttributes(supervisionStrategy(Supervision.resumingDecider))
-      val result = Await.result(Source(List("a", "b", "c")).via(nullMap)
-        .limit(1000).runWith(Sink.seq), 3.seconds)
+      val result = Await.result(Source(List("a", "b", "c")).via(nullMap).limit(1000).runWith(Sink.seq), 3.seconds)
       result should be(List("a", "c"))
     }
 

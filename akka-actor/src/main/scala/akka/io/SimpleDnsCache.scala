@@ -20,9 +20,8 @@ private[io] trait PeriodicCacheCleanup {
 class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
   import SimpleDnsCache._
 
-  private val cache = new AtomicReference(new Cache[String, Dns.Resolved](
-    immutable.SortedSet()(expiryEntryOrdering[String]()),
-    Map(), () => clock))
+  private val cache = new AtomicReference(
+    new Cache[String, Dns.Resolved](immutable.SortedSet()(expiryEntryOrdering[String]()), Map(), () => clock))
 
   private val nanoBase = System.nanoTime()
 
@@ -57,7 +56,9 @@ object SimpleDnsCache {
    * INTERNAL API
    */
   @InternalApi
-  private[io] class Cache[K, V](queue: immutable.SortedSet[ExpiryEntry[K]], cache: immutable.Map[K, CacheEntry[V]], clock: () => Long) {
+  private[io] class Cache[K, V](queue: immutable.SortedSet[ExpiryEntry[K]],
+                                cache: immutable.Map[K, CacheEntry[V]],
+                                clock: () => Long) {
     def get(name: K): Option[V] = {
       for {
         e <- cache.get(name)
@@ -72,10 +73,7 @@ object SimpleDnsCache {
         case Ttl(ttl) => clock() + ttl.toMillis
       }
 
-      new Cache[K, V](
-        queue + new ExpiryEntry[K](name, until),
-        cache + (name -> CacheEntry(answer, until)),
-        clock)
+      new Cache[K, V](queue + new ExpiryEntry[K](name, until), cache + (name -> CacheEntry(answer, until)), clock)
     }
 
     def cleanup(): Cache[K, V] = {

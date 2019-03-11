@@ -43,21 +43,18 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
     case trackMsg @ RequestTrackDevice(`groupId`, _) =>
       deviceIdToActor.get(trackMsg.deviceId) match {
         case Some(ref) =>
-          ref forward trackMsg
+          ref.forward(trackMsg)
         case None =>
           log.info("Creating device actor for {}", trackMsg.deviceId)
           val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId)
           context.watch(deviceActor)
-          deviceActor forward trackMsg
+          deviceActor.forward(trackMsg)
           deviceIdToActor += trackMsg.deviceId -> deviceActor
           actorToDeviceId += deviceActor -> trackMsg.deviceId
       }
 
     case RequestTrackDevice(groupId, deviceId) =>
-      log.warning(
-        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-        groupId, this.groupId
-      )
+      log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", groupId, this.groupId)
 
     case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
@@ -72,12 +69,9 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
     // ... other cases omitted
 
     case RequestAllTemperatures(requestId) =>
-      context.actorOf(DeviceGroupQuery.props(
-        actorToDeviceId = actorToDeviceId,
-        requestId = requestId,
-        requester = sender(),
-        3.seconds
-      ))
+      context.actorOf(
+        DeviceGroupQuery
+          .props(actorToDeviceId = actorToDeviceId, requestId = requestId, requester = sender(), 3.seconds))
   }
 
 }

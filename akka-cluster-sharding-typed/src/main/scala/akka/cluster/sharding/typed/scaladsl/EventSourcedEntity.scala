@@ -19,11 +19,10 @@ object EventSourcedEntity {
    * automatically from the [[EntityTypeKey]] and `entityId` constructor parameters by using
    * [[EntityTypeKey.persistenceIdFrom]].
    */
-  def apply[Command, Event, State](
-    entityTypeKey:  EntityTypeKey[Command],
-    entityId:       String,
-    emptyState:     State,
-    commandHandler: (State, Command) => Effect[Event, State],
-    eventHandler:   (State, Event) => State): EventSourcedBehavior[Command, Event, State] =
+  def apply[Command, Event, State](entityTypeKey: EntityTypeKey[Command],
+                                   entityId: String,
+                                   emptyState: State,
+                                   commandHandler: (State, Command) => Effect[Event, State],
+                                   eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior(entityTypeKey.persistenceIdFrom(entityId), emptyState, commandHandler, eventHandler)
 }
