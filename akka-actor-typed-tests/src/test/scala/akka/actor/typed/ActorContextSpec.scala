@@ -39,7 +39,7 @@ object ActorSpecMessages {
 
   case class StopRef[T](ref: ActorRef[T]) extends Command
 
-  case class GotSignal(signal: Signal) extends Event
+  case class ReceivedSignal(signal: Signal) extends Event
 
   case class GotChildSignal(signal: Signal) extends Event
 
@@ -130,7 +130,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
           throw new TestException("Boom")
       } receiveSignal {
         case (_, signal) ⇒
-          probe.ref ! GotSignal(signal)
+          probe.ref ! ReceivedSignal(signal)
           Behaviors.same
       }).decorate
 
@@ -139,7 +139,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       EventFilter[TestException](occurrences = 1).intercept {
         actor ! Fail
       }
-      probe.expectMessage(GotSignal(PreRestart))
+      probe.expectMessage(ReceivedSignal(PreRestart))
     }
 
     "signal post stop after voluntary termination" in {
@@ -150,13 +150,13 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
           case (_, Stop) ⇒ Behaviors.stopped
         } receiveSignal {
           case (_, signal) ⇒
-            probe.ref ! GotSignal(signal)
+            probe.ref ! ReceivedSignal(signal)
             Behaviors.same
         }).decorate
 
       val actor = spawn(behavior)
       actor ! Stop
-      probe.expectMessage(GotSignal(PostStop))
+      probe.expectMessage(ReceivedSignal(PostStop))
     }
 
     "restart and stop a child actor" in {
@@ -186,7 +186,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
             Behavior.same
         } receiveSignal {
           case (_, signal) ⇒
-            probe.ref ! GotSignal(signal)
+            probe.ref ! ReceivedSignal(signal)
             Behavior.stopped
         }).decorate
       })
@@ -217,7 +217,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
             Behaviors.same
         } receiveSignal {
           case (_, signal) ⇒
-            probe.ref ! GotSignal(signal)
+            probe.ref ! ReceivedSignal(signal)
             Behavior.stopped
         }
       }).decorate
@@ -285,7 +285,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
           throw new TestException("boom")
       } receiveSignal {
         case (_, PostStop) ⇒
-          probe.ref ! GotSignal(PostStop)
+          probe.ref ! ReceivedSignal(PostStop)
           Behavior.same
       }).decorate
       val actorToWatch = spawn(behavior)
@@ -297,7 +297,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
             Behavior.same
         } receiveSignal {
           case (_, signal) ⇒
-            probe.ref ! GotSignal(signal)
+            probe.ref ! ReceivedSignal(signal)
             Behavior.same
         }
       ).decorate)
@@ -308,7 +308,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       EventFilter[TestException](occurrences = 1).intercept {
         actorToWatch ! Fail
       }
-      probe.expectMessage(GotSignal(PostStop))
+      probe.expectMessage(ReceivedSignal(PostStop))
       probe.expectTerminated(actorToWatch, timeout.duration)
     }
 
@@ -352,7 +352,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
               Behaviors.same
           } receiveSignal {
             case (_, signal) ⇒
-              probe.ref ! GotSignal(signal)
+              probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
         }).decorate
@@ -379,7 +379,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
               Behaviors.same
           } receiveSignal {
             case (_, signal) ⇒
-              probe.ref ! GotSignal(signal)
+              probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
         }).decorate
@@ -414,7 +414,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
               Behaviors.same
           } receiveSignal {
             case (_, signal) ⇒
-              probe.ref ! GotSignal(signal)
+              probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
         }).decorate
@@ -451,12 +451,12 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
               } receiveSignal {
                 case (_, Terminated(_)) ⇒ Behaviors.unhandled
                 case (_, signal) ⇒
-                  probe.ref ! GotSignal(signal)
+                  probe.ref ! ReceivedSignal(signal)
                   Behaviors.same
               }
           } receiveSignal {
             case (_, signal) ⇒
-              probe.ref ! GotSignal(signal)
+              probe.ref ! ReceivedSignal(signal)
               Behaviors.same
           }
         }).decorate
@@ -467,7 +467,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       EventFilter[DeathPactException](occurrences = 1).intercept {
         childRef ! Stop
         probe.expectMessage(GotChildSignal(PostStop))
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
         probe.expectTerminated(actor, timeout.duration)
       }
     }
