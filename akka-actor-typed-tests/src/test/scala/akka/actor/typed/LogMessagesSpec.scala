@@ -90,7 +90,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
           logEvent.message should ===("received message Hello")
           logEvent.mdc should ===(Map("mdc" -> true))
           true
-        case _⇒
+        case _ ⇒
           false
 
       }, occurrences = 1).intercept {
