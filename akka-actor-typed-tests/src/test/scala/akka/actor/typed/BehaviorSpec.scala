@@ -48,7 +48,7 @@ object BehaviorSpec {
   case object Stop extends Command
 
   sealed trait Event
-  case class GotSignal(signal: Signal) extends Event
+  case class ReceivedSignal(signal: Signal) extends Event
   case class Self(self: ActorRef[Command]) extends Event
   case object Missed extends Event
   case object Ignored extends Event
@@ -100,7 +100,7 @@ object BehaviorSpec {
     implicit class Check(val setup: Setup) {
       def check(signal: Signal): Setup = {
         setup.testKit.signal(signal)
-        setup.inbox.receiveAll() should ===(GotSignal(signal) :: Nil)
+        setup.inbox.receiveAll() should ===(ReceivedSignal(signal) :: Nil)
         checkAux(signal, setup.aux)
         setup
       }
@@ -166,7 +166,7 @@ object BehaviorSpec {
       case (_, _)    ⇒ SBehaviors.unhandled
     } receiveSignal {
       case (_, signal) ⇒
-        monitor ! GotSignal(signal)
+        monitor ! ReceivedSignal(signal)
         SBehaviors.same
     }
   }
@@ -372,7 +372,7 @@ class ReceiveBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppab
       case (_, _: AuxPing) ⇒ SBehaviors.unhandled
     } receiveSignal {
       case (_, signal) ⇒
-        monitor ! GotSignal(signal)
+        monitor ! ReceivedSignal(signal)
         SBehaviors.same
     }
   }
@@ -409,7 +409,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends Messages with BecomeWithLifec
         }
     } receiveSignal {
       case (_, sig) ⇒
-        monitor ! GotSignal(sig)
+        monitor ! ReceivedSignal(sig)
         SBehaviors.same
     }
 }
@@ -559,7 +559,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
         case _: AuxPing ⇒ SBehaviors.unhandled
       }),
       fs((_, sig) ⇒ {
-        monitor ! GotSignal(sig)
+        monitor ! ReceivedSignal(sig)
         SBehaviors.same
       }))
 }

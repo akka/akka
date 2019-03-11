@@ -10,11 +10,12 @@ import java.lang.reflect.InvocationTargetException
 
 import akka.actor.ActorInitializationException
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
-
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.control.Exception.Catcher
+
 import akka.{ actor ⇒ untyped }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -63,9 +64,9 @@ import akka.util.OptionVal
           failures -= ref
           ChildFailed(ActorRefAdapter(ref), ex)
         } else Terminated(ActorRefAdapter(ref))
-      next(Behavior.interpretSignal(behavior, ctx, msg), msg)
+      handleSignal(msg)
     case untyped.ReceiveTimeout ⇒
-      next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+      handleMessage(ctx.receiveTimeoutMsg)
     case wrapped: AdaptMessage[Any, T] @unchecked ⇒
       withSafelyAdapted(() ⇒ wrapped.adapt()) {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
@@ -80,7 +81,27 @@ import akka.util.OptionVal
   }
 
   private def handleMessage(msg: T): Unit = {
-    next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+    try {
+      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+    } catch handleUnstashException
+  }
+
+  private def handleSignal(sig: Signal): Unit = {
+    try {
+      next(Behavior.interpretSignal(behavior, ctx, sig), sig)
+    } catch handleUnstashException
+  }
+
+  private def handleUnstashException: Catcher[Unit] = {
+    case e: UnstashException[T] @unchecked ⇒
+      behavior = e.behavior
+      throw e.cause
+    case TypedActorFailedException(e: UnstashException[T] @unchecked) ⇒
+      behavior = e.behavior
+      throw TypedActorFailedException(e.cause)
+    case ActorInitializationException(actor, message, e: UnstashException[T] @unchecked) ⇒
+      behavior = e.behavior
+      throw ActorInitializationException(actor, message, e.cause)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
@@ -102,7 +123,7 @@ import akka.util.OptionVal
           context.stop(self)
         case f: FailedBehavior ⇒
           // For the parent untyped supervisor to pick up the exception
-          throw new TypedActorFailedException(f.cause)
+          throw TypedActorFailedException(f.cause)
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }

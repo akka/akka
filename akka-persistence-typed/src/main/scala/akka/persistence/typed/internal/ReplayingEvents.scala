@@ -5,17 +5,17 @@
 package akka.persistence.typed.internal
 
 import scala.util.control.NonFatal
-import scala.util.control.NoStackTrace
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.Signal
-import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors }
+import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.internal.UnstashException
+import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.persistence.typed.internal.ReplayingEvents.FailureWhileUnstashing
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 
@@ -54,8 +54,6 @@ private[akka] object ReplayingEvents {
       setup.startRecoveryTimer(snapshot = false)
       new ReplayingEvents[C, E, S](setup.setMdc(MDC.ReplayingEvents), state)
     }
-
-  private final case class FailureWhileUnstashing(cause: Throwable) extends Exception(cause) with NoStackTrace
 
 }
 
@@ -113,7 +111,9 @@ private[akka] final class ReplayingEvents[C, E, S](
           Behaviors.unhandled
       }
     } catch {
-      case FailureWhileUnstashing(ex) ⇒ throw ex
+      case ex: UnstashException[_] ⇒
+        // let supervisor handle it, don't treat it as recovery failure
+        throw ex
       case NonFatal(cause) ⇒
         onRecoveryFailure(cause, state.seqNr, None)
     }
@@ -190,11 +190,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill)
       )
 
-      try {
-        tryUnstashOne(running)
-      } catch {
-        case NonFatal(t) ⇒ throw FailureWhileUnstashing(t)
-      }
+      tryUnstashOne(running)
     }
   } finally {
     setup.cancelRecoveryTimer()

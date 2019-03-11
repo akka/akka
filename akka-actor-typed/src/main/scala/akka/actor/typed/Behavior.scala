@@ -424,27 +424,5 @@ object Behavior {
     }
   }
 
-  /**
-   * INTERNAL API
-   *
-   * Execute the behavior with the given messages (or signals).
-   * The returned [[Behavior]] from each processed message is used for the next message.
-   */
-  @InternalApi private[akka] def interpretMessages[T](behavior: Behavior[T], ctx: TypedActorContext[T], messages: Iterator[T]): Behavior[T] = {
-    @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
-      val b2 = Behavior.start(b, ctx)
-      if (!Behavior.isAlive(b2) || !messages.hasNext) b2
-      else {
-        val nextB = messages.next() match {
-          case sig: Signal ⇒ Behavior.interpretSignal(b2, ctx, sig)
-          case msg         ⇒ Behavior.interpretMessage(b2, ctx, msg)
-        }
-        interpretOne(Behavior.canonicalize(nextB, b, ctx)) // recursive
-      }
-    }
-
-    interpretOne(Behavior.start(behavior, ctx))
-  }
-
 }
 

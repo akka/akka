@@ -7,7 +7,12 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function ⇒ JFunction }
 
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
 import akka.actor.typed.Behavior
+import akka.actor.typed.Signal
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
 import akka.annotation.InternalApi
@@ -86,7 +91,7 @@ import akka.util.ConstantFun
     }
   }
 
-  override def forEach(f: Consumer[T]): Unit = foreach(f.accept(_))
+  override def forEach(f: Consumer[T]): Unit = foreach(f.accept)
 
   override def unstashAll(ctx: scaladsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstash(ctx, behavior, size, ConstantFun.scalaIdentityFunction[T])
@@ -96,11 +101,36 @@ import akka.util.ConstantFun
 
   override def unstash(ctx: scaladsl.ActorContext[T], behavior: Behavior[T],
                        numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {
-    val iter = new Iterator[T] {
-      override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-      override def next(): T = wrap(StashBufferImpl.this.dropHead())
-    }.take(numberOfMessages)
-    Behavior.interpretMessages[T](behavior, ctx, iter)
+    if (isEmpty)
+      behavior // optimization
+    else {
+      val iter = new Iterator[T] {
+        override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
+        override def next(): T = wrap(StashBufferImpl.this.dropHead())
+      }.take(numberOfMessages)
+      interpretUnstashedMessages(behavior, ctx, iter)
+    }
+  }
+
+  private def interpretUnstashedMessages(behavior: Behavior[T], ctx: TypedActorContext[T], messages: Iterator[T]): Behavior[T] = {
+    @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
+      val b2 = Behavior.start(b, ctx)
+      if (!Behavior.isAlive(b2) || !messages.hasNext) b2
+      else {
+        val nextB = try {
+          messages.next() match {
+            case sig: Signal ⇒ Behavior.interpretSignal(b2, ctx, sig)
+            case msg         ⇒ Behavior.interpretMessage(b2, ctx, msg)
+          }
+        } catch {
+          case NonFatal(e) ⇒ throw UnstashException(e, b2)
+        }
+
+        interpretOne(Behavior.canonicalize(nextB, b2, ctx)) // recursive
+      }
+    }
+
+    interpretOne(Behavior.start(behavior, ctx))
   }
 
   override def unstash(ctx: javadsl.ActorContext[T], behavior: Behavior[T],
@@ -111,3 +141,23 @@ import akka.util.ConstantFun
     s"StashBuffer($size/$capacity)"
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object UnstashException {
+  def unwrap(t: Throwable): Throwable = t match {
+    case UnstashException(e, _) ⇒ e
+    case _                      ⇒ t
+  }
+
+}
+
+/**
+ * INTERNAL API:
+ *
+ * When unstashing, the exception is wrapped in UnstashException because supervisor strategy
+ * and ActorAdapter need the behavior that threw. It will use the behavior in the `UnstashException`
+ * to emit the PreRestart and PostStop to the right behavior and install the latest behavior for resume strategy.
+ */
+@InternalApi private[akka] final case class UnstashException[T](cause: Throwable, behavior: Behavior[T])
+  extends RuntimeException(s"[$cause] when unstashing in [$behavior]", cause)
