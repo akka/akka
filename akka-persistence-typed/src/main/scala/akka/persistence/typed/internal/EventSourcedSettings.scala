@@ -36,13 +36,24 @@ import com.typesafe.config.Config
     val recoveryEventTimeout: FiniteDuration =
       journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
 
+    // Long to allow retention algorithms by time, size or count
+    val snapshotSize: Long = typedConfig.getLong("retention.snapshot-size")
+
+    // Long to allow retention algorithms by time, size or count
+    val keepNSnapshots: Long = typedConfig.getLong("retention.total-snapshots")
+
+    val retainSnapshotsOnly: Boolean = typedConfig.getBoolean("retention.retain-snapshots-only")
+
     EventSourcedSettings(
       stashCapacity = stashCapacity,
       stashOverflowStrategyConfigurator,
       logOnStashing = logOnStashing,
       recoveryEventTimeout,
       journalPluginId,
-      snapshotPluginId
+      snapshotPluginId,
+      snapshotSize,
+      keepNSnapshots,
+      retainSnapshotsOnly
     )
   }
 
@@ -65,7 +76,10 @@ private[akka] final case class EventSourcedSettings(
   logOnStashing:                     Boolean,
   recoveryEventTimeout:              FiniteDuration,
   journalPluginId:                   String,
-  snapshotPluginId:                  String) {
+  snapshotPluginId:                  String,
+  snapshotSize:                      Long,
+  keepNSnapshots:                    Long,
+  retainSnapshotsOnly:               Boolean) {
 
   require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
   require(snapshotPluginId != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
