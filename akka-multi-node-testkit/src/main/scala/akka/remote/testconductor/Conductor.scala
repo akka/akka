@@ -580,7 +580,7 @@ private[akka] class BarrierCoordinator
     with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import Controller._
-  import FSM.`->`
+  import FSM._
 
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
