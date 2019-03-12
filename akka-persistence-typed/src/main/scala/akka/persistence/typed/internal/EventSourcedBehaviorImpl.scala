@@ -132,7 +132,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             }
             override def toString: String = "onStopInterceptor"
           }
-          val widened = RequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
+          val widened = RequestingRecoveryPermit(eventSourcedSetup).widen[Any] {
             case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
             case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
             case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
