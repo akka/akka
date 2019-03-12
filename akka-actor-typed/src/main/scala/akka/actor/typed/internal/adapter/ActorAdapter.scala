@@ -69,12 +69,6 @@ import akka.annotation.InternalApi
         } else Terminated(ActorRefAdapter(ref))
       handleSignal(msg)
     case untyped.ReceiveTimeout =>
-      next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
-    case wrapped: AdaptMessage[Any, T] @unchecked =>
-      withSafelyAdapted(() => wrapped.adapt()) {
-        case AdaptWithRegisteredMessageAdapter(msg) =>
-      handleSignal(msg)
-    case untyped.ReceiveTimeout =>
       handleMessage(ctx.receiveTimeoutMsg)
     case wrapped: AdaptMessage[Any, T] @unchecked =>
       withSafelyAdapted(() => wrapped.adapt()) {
