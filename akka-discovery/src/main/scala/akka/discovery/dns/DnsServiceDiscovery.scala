@@ -20,7 +20,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.discovery._
 import akka.io.dns.DnsProtocol.{ Ip, Srv }
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.util.Failure
 import scala.util.Success
 
@@ -37,23 +37,23 @@ private object DnsServiceDiscovery {
   def srvRecordsToResolved(srvRequest: String, resolved: DnsProtocol.Resolved): Resolved = {
     val ips: Map[String, im.Seq[InetAddress]] =
       resolved.additionalRecords.foldLeft(Map.empty[String, im.Seq[InetAddress]]) {
-        case (acc, a: ARecord) ⇒
+        case (acc, a: ARecord) =>
           acc.updated(a.name, a.ip +: acc.getOrElse(a.name, Nil))
-        case (acc, a: AAAARecord) ⇒
+        case (acc, a: AAAARecord) =>
           acc.updated(a.name, a.ip +: acc.getOrElse(a.name, Nil))
-        case (acc, _) ⇒
+        case (acc, _) =>
           acc
       }
 
     val addresses = resolved.records.flatMap {
-      case srv: SRVRecord ⇒
-        val addresses = ips.getOrElse(srv.target, Nil).map(ip ⇒ ResolvedTarget(srv.target, Some(srv.port), Some(ip)))
+      case srv: SRVRecord =>
+        val addresses = ips.getOrElse(srv.target, Nil).map(ip => ResolvedTarget(srv.target, Some(srv.port), Some(ip)))
         if (addresses.isEmpty) {
           im.Seq(ResolvedTarget(srv.target, Some(srv.port), None))
         } else {
           addresses
         }
-      case _ ⇒ im.Seq.empty[ResolvedTarget]
+      case _ => im.Seq.empty[ResolvedTarget]
     }
 
     Resolved(srvRequest, addresses)
@@ -87,11 +87,11 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   import system.dispatcher
 
   dns.ask(AsyncDnsManager.GetCache)(Timeout(30.seconds)).onComplete {
-    case Success(cache: AsyncDnsCache) ⇒
+    case Success(cache: AsyncDnsCache) =>
       asyncDnsCache = OptionVal.Some(cache)
-    case Success(other) ⇒
+    case Success(other) =>
       log.error("Expected AsyncDnsCache but got [{}]", other.getClass.getName)
-    case Failure(e) ⇒
+    case Failure(e) =>
       log.error(e, "Couldn't retrieve DNS cache: {}")
   }
 
@@ -112,25 +112,25 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
 
     def askResolve(): Future[Resolved] = {
       dns.ask(DnsProtocol.Resolve(srvRequest, mode))(resolveTimeout).map {
-        case resolved: DnsProtocol.Resolved ⇒
+        case resolved: DnsProtocol.Resolved =>
           log.debug("{} lookup result: {}", mode, resolved)
           srvRecordsToResolved(srvRequest, resolved)
-        case resolved ⇒
+        case resolved =>
           log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
           Resolved(srvRequest, Nil)
       }
     }
 
     asyncDnsCache match {
-      case OptionVal.Some(cache) ⇒
+      case OptionVal.Some(cache) =>
         cache.get((srvRequest, mode)) match {
-          case Some(resolved) ⇒
+          case Some(resolved) =>
             log.debug("{} lookup cached: {}", mode, resolved)
             Future.successful(srvRecordsToResolved(srvRequest, resolved))
-          case None ⇒
+          case None =>
             askResolve()
         }
-      case OptionVal.None ⇒
+      case OptionVal.None =>
         askResolve()
 
     }
@@ -142,18 +142,18 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
 
     def ipRecordsToResolved(resolved: DnsProtocol.Resolved): Resolved = {
       val addresses = resolved.records.collect {
-        case a: ARecord    ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
-        case a: AAAARecord ⇒ ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
+        case a: ARecord    => ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
+        case a: AAAARecord => ResolvedTarget(cleanIpString(a.ip.getHostAddress), None, Some(a.ip))
       }
       Resolved(lookup.serviceName, addresses)
     }
 
     def askResolve(): Future[Resolved] = {
       dns.ask(DnsProtocol.Resolve(lookup.serviceName, mode))(resolveTimeout).map {
-        case resolved: DnsProtocol.Resolved ⇒
+        case resolved: DnsProtocol.Resolved =>
           log.debug("{} lookup result: {}", mode, resolved)
           ipRecordsToResolved(resolved)
-        case resolved ⇒
+        case resolved =>
           log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
           Resolved(lookup.serviceName, Nil)
 
@@ -161,15 +161,15 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     }
 
     asyncDnsCache match {
-      case OptionVal.Some(cache) ⇒
+      case OptionVal.Some(cache) =>
         cache.get((lookup.serviceName, mode)) match {
-          case Some(resolved) ⇒
+          case Some(resolved) =>
             log.debug("{} lookup cached: {}", mode, resolved)
             Future.successful(ipRecordsToResolved(resolved))
-          case None ⇒
+          case None =>
             askResolve()
         }
-      case OptionVal.None ⇒
+      case OptionVal.None =>
         askResolve()
 
     }

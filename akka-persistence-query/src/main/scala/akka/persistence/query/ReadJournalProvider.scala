@@ -18,6 +18,7 @@ package akka.persistence.query
  *
  */
 trait ReadJournalProvider {
+
   /**
    * The `ReadJournal` implementation for the Scala API.
    * This corresponds to the instance that is returned by [[PersistenceQuery#readJournalFor]].

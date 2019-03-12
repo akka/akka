@@ -11,7 +11,7 @@ import java.time.Instant
 
 import org.agrona.concurrent.MappedResizeableBuffer
 
-import scala.collection.{ SortedSet, immutable }
+import scala.collection.{ immutable, SortedSet }
 
 /**
  * Internal API
@@ -35,13 +35,12 @@ private[akka] object FlightRecorderReader {
   case object Live extends LogState
   case object Snapshot extends LogState
 
-  case class SectionParameters(
-    offset:           Long,
-    sectionSize:      Long,
-    logSize:          Long,
-    window:           Long,
-    recordSize:       Long,
-    entriesPerRecord: Long) {
+  case class SectionParameters(offset: Long,
+                               sectionSize: Long,
+                               logSize: Long,
+                               window: Long,
+                               recordSize: Long,
+                               entriesPerRecord: Long) {
     override def toString: String =
       s"""
          |  offset             = $offset
@@ -54,29 +53,26 @@ private[akka] object FlightRecorderReader {
        """.stripMargin
   }
 
-  val AlertSectionParameters = SectionParameters(
-    offset = AlertSectionOffset,
-    sectionSize = AlertSectionSize,
-    logSize = AlertLogSize,
-    window = AlertWindow,
-    recordSize = AlertRecordSize,
-    entriesPerRecord = 1)
+  val AlertSectionParameters = SectionParameters(offset = AlertSectionOffset,
+                                                 sectionSize = AlertSectionSize,
+                                                 logSize = AlertLogSize,
+                                                 window = AlertWindow,
+                                                 recordSize = AlertRecordSize,
+                                                 entriesPerRecord = 1)
 
-  val LoFreqSectionParameters = SectionParameters(
-    offset = LoFreqSectionOffset,
-    sectionSize = LoFreqSectionSize,
-    logSize = LoFreqLogSize,
-    window = LoFreqWindow,
-    recordSize = LoFreqRecordSize,
-    entriesPerRecord = 1)
+  val LoFreqSectionParameters = SectionParameters(offset = LoFreqSectionOffset,
+                                                  sectionSize = LoFreqSectionSize,
+                                                  logSize = LoFreqLogSize,
+                                                  window = LoFreqWindow,
+                                                  recordSize = LoFreqRecordSize,
+                                                  entriesPerRecord = 1)
 
-  val HiFreqSectionParameters = SectionParameters(
-    offset = HiFreqSectionOffset,
-    sectionSize = HiFreqSectionSize,
-    logSize = HiFreqLogSize,
-    window = HiFreqWindow,
-    recordSize = HiFreqRecordSize,
-    entriesPerRecord = HiFreqBatchSize)
+  val HiFreqSectionParameters = SectionParameters(offset = HiFreqSectionOffset,
+                                                  sectionSize = HiFreqSectionSize,
+                                                  logSize = HiFreqLogSize,
+                                                  window = HiFreqWindow,
+                                                  recordSize = HiFreqRecordSize,
+                                                  entriesPerRecord = HiFreqBatchSize)
 
   def dumpToStdout(flightRecorderFile: Path): Unit = {
     var raFile: RandomAccessFile = null
@@ -91,7 +87,8 @@ private[akka] object FlightRecorderReader {
       val hiFreq: Seq[FlightRecorderReader#Entry] = reader.structure.hiFreqLog.logs.flatMap(_.compactEntries)
       val loFreq: Seq[FlightRecorderReader#Entry] = reader.structure.loFreqLog.logs.flatMap(_.richEntries)
 
-      implicit val ordering = Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) ⇒ a.timeStamp.isBefore(b.timeStamp))
+      implicit val ordering =
+        Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) => a.timeStamp.isBefore(b.timeStamp))
       val sorted = SortedSet[FlightRecorderReader#Entry](alerts: _*) ++ hiFreq ++ loFreq
 
       println("--- FLIGHT RECORDER LOG")
@@ -155,7 +152,9 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
           fileBuffer.getBytes(recordStartOffset + 21, metadata)
 
           val entry = RichEntry(
-            timeStamp = Instant.ofEpochMilli(fileBuffer.getLong(recordStartOffset)).plusNanos(fileBuffer.getLong(recordStartOffset + 8)),
+            timeStamp = Instant
+              .ofEpochMilli(fileBuffer.getLong(recordStartOffset))
+              .plusNanos(fileBuffer.getLong(recordStartOffset + 8)),
             dirty = fileBuffer.getLong(recordOffset) == RollingEventLogSection.Dirty,
             code = fileBuffer.getInt(recordStartOffset + 16),
             metadata = metadata)
@@ -179,7 +178,8 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
           dirty = fileBuffer.getLong(recordOffset) == RollingEventLogSection.Dirty
           val entiresHeaderOffset = recordOffset + RollingEventLogSection.CommitEntrySize
           entriesLeft = fileBuffer.getLong(entiresHeaderOffset + HiFreqEntryCountFieldOffset)
-          timeStamp = Instant.ofEpochMilli(fileBuffer.getLong(entiresHeaderOffset))
+          timeStamp = Instant
+            .ofEpochMilli(fileBuffer.getLong(entiresHeaderOffset))
             .plusNanos(fileBuffer.getLong(entiresHeaderOffset + 8))
           entryOffset = entiresHeaderOffset + 32
         }
@@ -189,11 +189,10 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
         override def next(): CompactEntry = {
           if (entriesLeft == -1L) readHeader()
 
-          val entry = CompactEntry(
-            timeStamp,
-            dirty,
-            code = fileBuffer.getLong(entryOffset),
-            param = fileBuffer.getLong(entryOffset + 8))
+          val entry = CompactEntry(timeStamp,
+                                   dirty,
+                                   code = fileBuffer.getLong(entryOffset),
+                                   param = fileBuffer.getLong(entryOffset + 8))
 
           entriesLeft -= 1
           if (entriesLeft == 0) {
@@ -247,7 +246,7 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
   }
 
   private def readRollingLog(sectionParameters: SectionParameters): RollingLog = {
-    val logs = Vector.tabulate(SnapshotCount) { idx ⇒
+    val logs = Vector.tabulate(SnapshotCount) { idx =>
       readLog(idx, sectionParameters.offset + (idx * sectionParameters.logSize), sectionParameters)
     }
     RollingLog(sectionParameters, logs)
@@ -255,10 +254,10 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
 
   private def readLog(id: Int, offset: Long, sectionParameters: SectionParameters): Log = {
     val state = fileBuffer.getLong(offset + RollingEventLogSection.LogStateOffset) match {
-      case RollingEventLogSection.Empty    ⇒ Empty
-      case RollingEventLogSection.Live     ⇒ Live
-      case RollingEventLogSection.Snapshot ⇒ Snapshot
-      case other                           ⇒ throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
+      case RollingEventLogSection.Empty    => Empty
+      case RollingEventLogSection.Live     => Live
+      case RollingEventLogSection.Snapshot => Snapshot
+      case other                           => throw new IOException(s"Unrecognized log state: $other in log at offset $offset")
     }
     Log(sectionParameters, offset, id, state, fileBuffer.getLong(offset + RollingEventLogSection.HeadPointerOffset))
   }

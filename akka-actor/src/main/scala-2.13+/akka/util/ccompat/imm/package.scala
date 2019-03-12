@@ -6,5 +6,4 @@ package akka.util.ccompat
 
 import scala.collection.immutable
 
-package object imm {
-}
+package object imm {}

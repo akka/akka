@@ -18,13 +18,13 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class GraphZipLatestSpec
-  extends TestKit(ActorSystem("ZipLatestSpec"))
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with PropertyChecks
-  with GivenWhenThen
-  with ScalaFutures {
+    extends TestKit(ActorSystem("ZipLatestSpec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with PropertyChecks
+    with GivenWhenThen
+    with ScalaFutures {
   implicit val materializer = ActorMaterializer()
   override def afterAll = TestKit.shutdownActorSystem(system)
   implicit val patience = PatienceConfig(5 seconds)
@@ -155,11 +155,11 @@ class GraphZipLatestSpec
       probe.expectNext((a3, b2))
     }
 
-    val first = (t: (Probe[Boolean], Probe[Int])) ⇒ t._1
-    val second = (t: (Probe[Boolean], Probe[Int])) ⇒ t._2
+    val first = (t: (Probe[Boolean], Probe[Int])) => t._1
+    val second = (t: (Probe[Boolean], Probe[Int])) => t._2
 
     "complete when either source completes" in {
-      forAll(Gen.oneOf(first, second)) { select ⇒
+      forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
         Given("either source completes")
@@ -171,7 +171,7 @@ class GraphZipLatestSpec
     }
 
     "complete when either source completes and requesting element" in {
-      forAll(Gen.oneOf(first, second)) { select ⇒
+      forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
         Given("either source completes")
@@ -186,7 +186,7 @@ class GraphZipLatestSpec
     }
 
     "complete when either source completes with some pending element" in {
-      forAll(Gen.oneOf(first, second)) { select ⇒
+      forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
         Given("one element pushed on each source")
@@ -221,7 +221,7 @@ class GraphZipLatestSpec
     }
 
     "complete if no pending demand" in {
-      forAll(Gen.oneOf(first, second)) { select ⇒
+      forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
 
         Given("request for one element")
@@ -241,7 +241,7 @@ class GraphZipLatestSpec
     }
 
     "fail when either source has error" in {
-      forAll(Gen.oneOf(first, second)) { select ⇒
+      forAll(Gen.oneOf(first, second)) { select =>
         val (probe, bools, ints) = testGraph[Boolean, Int]
         val error = new RuntimeException
 
@@ -282,15 +282,15 @@ class GraphZipLatestSpec
 
       Given(s"numbers up to 99 in tuples")
       val allNumbers = for {
-        firstDigit ← 0 to 9
-        secondDigit ← 0 to 9
+        firstDigit <- 0 to 9
+        secondDigit <- 0 to 9
       } yield (firstDigit, secondDigit)
 
       allNumbers.groupBy(_._1).toList.sortBy(_._1).foreach {
-        case (firstDigit, pairs) ⇒ {
+        case (firstDigit, pairs) => {
           When(s"sending first digit $firstDigit")
           firstDigits.sendNext(firstDigit)
-          pairs.map { case (_, digits) ⇒ digits }.foreach { secondDigit ⇒
+          pairs.map { case (_, digits) => digits }.foreach { secondDigit =>
             And(s"sending second digit $secondDigit")
             secondDigits.sendNext(secondDigit)
             probe.request(1)
@@ -312,20 +312,15 @@ class GraphZipLatestSpec
 
   private def testGraph[A, B] =
     RunnableGraph
-      .fromGraph(
-        GraphDSL
-          .create(
-            TestSink.probe[(A, B)],
-            TestSource.probe[A],
-            TestSource.probe[B])(Tuple3.apply) { implicit b ⇒ (ts, as, bs) ⇒
-              import GraphDSL.Implicits._
-              val zipLatest = b.add(new ZipLatest[A, B]())
-              as ~> zipLatest.in0
-              bs ~> zipLatest.in1
-              zipLatest.out ~> ts
-              ClosedShape
-            }
-      )
+      .fromGraph(GraphDSL.create(TestSink.probe[(A, B)], TestSource.probe[A], TestSource.probe[B])(Tuple3.apply) {
+        implicit b => (ts, as, bs) =>
+          import GraphDSL.Implicits._
+          val zipLatest = b.add(new ZipLatest[A, B]())
+          as ~> zipLatest.in0
+          bs ~> zipLatest.in1
+          zipLatest.out ~> ts
+          ClosedShape
+      })
       .run()
 
 }

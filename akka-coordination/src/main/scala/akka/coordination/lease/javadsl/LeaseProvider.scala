@@ -39,4 +39,3 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
     new LeaseAdapter(scalaLease)
   }
 }
-

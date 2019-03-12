@@ -25,6 +25,7 @@ import scala.concurrent.duration.Duration
  * @param definition the processor definition
  */
 class ActorRouteDefinition[T <: ProcessorDefinition[T]](definition: ProcessorDefinition[T]) {
+
   /**
    * Sends the message to an ActorRef endpoint.
    * @param actorRef the actorRef to the actor.
@@ -43,6 +44,6 @@ class ActorRouteDefinition[T <: ProcessorDefinition[T]](definition: ProcessorDef
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    * @return the path to the actor, as a camel uri String
    */
-  def to(actorRef: ActorRef, autoAck: Boolean, replyTimeout: Duration): T = definition.to(CamelPath.toUri(actorRef, autoAck, replyTimeout))
+  def to(actorRef: ActorRef, autoAck: Boolean, replyTimeout: Duration): T =
+    definition.to(CamelPath.toUri(actorRef, autoAck, replyTimeout))
 }
-

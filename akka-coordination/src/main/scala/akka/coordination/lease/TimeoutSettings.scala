@@ -14,32 +14,31 @@ object TimeoutSettings {
   def apply(config: Config): TimeoutSettings = {
     val heartBeatTimeout = config.getDuration("heartbeat-timeout").asScala
     val heartBeatInterval = config.getValue("heartbeat-interval").valueType() match {
-      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty ⇒ (heartBeatTimeout / 10).max(5.seconds)
+      case ConfigValueType.STRING if config.getString("heartbeat-interval").isEmpty ⇒
+        (heartBeatTimeout / 10).max(5.seconds)
       case _ ⇒ config.getDuration("heartbeat-interval").asScala
     }
     require(heartBeatInterval < (heartBeatTimeout / 2), "heartbeat-interval must be less than half heartbeat-timeout")
-    new TimeoutSettings(
-      heartBeatInterval,
-      heartBeatTimeout,
-      config.getDuration("lease-operation-timeout").asScala)
+    new TimeoutSettings(heartBeatInterval, heartBeatTimeout, config.getDuration("lease-operation-timeout").asScala)
   }
 
 }
 
 @ApiMayChange
-final class TimeoutSettings(
-  val heartbeatInterval: FiniteDuration,
-  val heartbeatTimeout:  FiniteDuration,
-  val operationTimeout:  FiniteDuration
-) {
+final class TimeoutSettings(val heartbeatInterval: FiniteDuration,
+                            val heartbeatTimeout: FiniteDuration,
+                            val operationTimeout: FiniteDuration) {
+
   /**
    * Java API
    */
   def getHeartbeatInterval(): java.time.Duration = heartbeatInterval.asJava
+
   /**
    * Java API
    */
   def getHeartbeatTimeout(): java.time.Duration = heartbeatTimeout.asJava
+
   /**
    * Java API
    */
@@ -51,12 +50,14 @@ final class TimeoutSettings(
   def withHeartbeatInterval(heartbeatInterval: java.time.Duration): TimeoutSettings = {
     copy(heartbeatInterval = heartbeatInterval.asScala)
   }
+
   /**
    * Java API
    */
   def withHeartbeatTimeout(heartbeatTimeout: java.time.Duration): TimeoutSettings = {
     copy(heartbeatTimeout = heartbeatTimeout.asScala)
   }
+
   /**
    * Java API
    */
@@ -74,14 +75,11 @@ final class TimeoutSettings(
     copy(operationTimeout = operationTimeout)
   }
 
-  private def copy(
-    heartbeatInterval: FiniteDuration = heartbeatInterval,
-    heartbeatTimeout:  FiniteDuration = heartbeatTimeout,
-    operationTimeout:  FiniteDuration = operationTimeout
-  ): TimeoutSettings = {
+  private def copy(heartbeatInterval: FiniteDuration = heartbeatInterval,
+                   heartbeatTimeout: FiniteDuration = heartbeatTimeout,
+                   operationTimeout: FiniteDuration = operationTimeout): TimeoutSettings = {
     new TimeoutSettings(heartbeatInterval, heartbeatTimeout, operationTimeout)
   }
 
   override def toString = s"TimeoutSettings($heartbeatInterval, $heartbeatTimeout, $operationTimeout)"
 }
-

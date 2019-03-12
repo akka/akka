@@ -47,11 +47,13 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "work if used multiple times in a flow" in {
       val (((upstream, switch1), switch2), downstream) =
-        TestSource.probe[Int]
+        TestSource
+          .probe[Int]
           .viaMat(KillSwitches.single)(Keep.both)
-          .recover { case TE(_) ⇒ -1 }
+          .recover { case TE(_) => -1 }
           .viaMat(KillSwitches.single)(Keep.both)
-          .toMat(TestSink.probe)(Keep.both).run()
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -274,15 +276,17 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch1 = KillSwitches.shared("switch")
       val switch2 = KillSwitches.shared("switch")
 
-      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b ⇒ snk ⇒
-        import GraphDSL.Implicits._
-        val merge = b.add(Merge[Int](2))
+      val downstream = RunnableGraph
+        .fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b => snk =>
+          import GraphDSL.Implicits._
+          val merge = b.add(Merge[Int](2))
 
-        Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
-        Source.maybe[Int].via(switch2.flow) ~> merge
+          Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
+          Source.maybe[Int].via(switch2.flow) ~> merge
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(100.millis)

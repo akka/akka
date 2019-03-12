@@ -15,6 +15,7 @@ import akka.event.Logging.LogLevel
  */
 @DoNotInherit
 sealed abstract class DelayOverflowStrategy extends Serializable {
+
   /** INTERNAL API */
   @InternalApi private[akka] def isBackpressure: Boolean
 }
@@ -27,12 +28,14 @@ final case class BufferOverflowException(msg: String) extends RuntimeException(m
  */
 @DoNotInherit
 sealed abstract class OverflowStrategy extends DelayOverflowStrategy {
+
   /** INTERNAL API */
   @InternalApi private[akka] def logLevel: LogLevel
   def withLogLevel(logLevel: Logging.LogLevel): OverflowStrategy
 }
 
 private[akka] object OverflowStrategies {
+
   /**
    * INTERNAL API
    */
@@ -40,6 +43,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): DropHead = DropHead(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
+
   /**
    * INTERNAL API
    */
@@ -47,6 +51,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): DropTail = DropTail(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
+
   /**
    * INTERNAL API
    */
@@ -54,6 +59,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): DropBuffer = DropBuffer(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
+
   /**
    * INTERNAL API
    */
@@ -61,6 +67,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): DropNew = DropNew(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
+
   /**
    * INTERNAL API
    */
@@ -68,6 +75,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): Backpressure = Backpressure(logLevel)
     private[akka] override def isBackpressure: Boolean = true
   }
+
   /**
    * INTERNAL API
    */
@@ -75,6 +83,7 @@ private[akka] object OverflowStrategies {
     override def withLogLevel(logLevel: LogLevel): Fail = Fail(logLevel)
     private[akka] override def isBackpressure: Boolean = false
   }
+
   /**
    * INTERNAL API
    */
@@ -84,6 +93,7 @@ private[akka] object OverflowStrategies {
 }
 
 object OverflowStrategy {
+
   /**
    * If the buffer is full when a new element arrives, drops the oldest element from the buffer to make space for
    * the new element.
@@ -119,6 +129,7 @@ object OverflowStrategy {
 }
 
 object DelayOverflowStrategy {
+
   /**
    * If the buffer is full when a new element is available this strategy send next element downstream without waiting
    */

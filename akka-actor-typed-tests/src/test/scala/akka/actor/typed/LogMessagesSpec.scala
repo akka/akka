@@ -78,15 +78,19 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
       val behavior = Behaviors.withMdc[String](Map("mdc" -> true))(Behaviors.logMessages(Behaviors.empty))
 
       val ref = spawn(behavior)
-      EventFilter.custom({
-        case logEvent if logEvent.level == Logging.DebugLevel ⇒
-          logEvent.message should ===("received message Hello")
-          logEvent.mdc should ===(Map("mdc" -> true))
-          true
-        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
-      }, occurrences = 1).intercept {
-        ref ! "Hello"
-      }
+      EventFilter
+        .custom(
+          {
+            case logEvent if logEvent.level == Logging.DebugLevel =>
+              logEvent.message should ===("received message Hello")
+              logEvent.mdc should ===(Map("mdc" -> true))
+              true
+            case other => system.log.error(s"Unexpected log event: {}", other); false
+          },
+          occurrences = 1)
+        .intercept {
+          ref ! "Hello"
+        }
     }
   }
 }

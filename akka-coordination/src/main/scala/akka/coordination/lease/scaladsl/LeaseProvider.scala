@@ -60,30 +60,27 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   private def loadLease(leaseSettings: LeaseSettings, configPath: String): Lease = {
     val fqcn = leaseSettings.leaseConfig.getString("lease-class")
     val dynamicAccess = system.dynamicAccess
-    dynamicAccess.createInstanceFor[Lease](
-      fqcn,
-      immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system))
-    )
+    dynamicAccess
+      .createInstanceFor[Lease](
+        fqcn,
+        immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system)))
       .recoverWith {
         case _: NoSuchMethodException ⇒
-          dynamicAccess.createInstanceFor[Lease](
-            fqcn,
-            immutable.Seq((classOf[LeaseSettings], leaseSettings))
-          )
+          dynamicAccess.createInstanceFor[Lease](fqcn, immutable.Seq((classOf[LeaseSettings], leaseSettings)))
 
       } match {
-        case Success(value) ⇒ value
-        case Failure(e) ⇒
-          log.error(
-            e,
-            "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
-              "The class must implement Lease and have constructor with LeaseSettings parameter and " +
-              "optionally ActorSystem parameter.",
-            leaseSettings.leaseName, configPath, fqcn)
-          throw e
-      }
+      case Success(value) ⇒ value
+      case Failure(e) ⇒
+        log.error(e,
+                  "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
+                  "The class must implement Lease and have constructor with LeaseSettings parameter and " +
+                  "optionally ActorSystem parameter.",
+                  leaseSettings.leaseName,
+                  configPath,
+                  fqcn)
+        throw e
+    }
   }
 
   // TODO how to clean up a lease? Not important for this use case as we'll only have one lease
 }
-

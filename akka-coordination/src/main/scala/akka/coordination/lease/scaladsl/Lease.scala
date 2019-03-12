@@ -53,4 +53,3 @@ abstract class Lease(val settings: LeaseSettings) {
   def checkLease(): Boolean
 
 }
-

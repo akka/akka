@@ -22,6 +22,6 @@ import akka.annotation.InternalApi
  * function. Used by `ActorContext.spawnMessageAdapter` and `ActorContext.ask` so that the function is
  * applied in the "parent" actor (for better thread safety)..
  */
-@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U ⇒ T) extends InternalMessage {
+@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U => T) extends InternalMessage {
   def adapt(): T = adapter(msg)
 }

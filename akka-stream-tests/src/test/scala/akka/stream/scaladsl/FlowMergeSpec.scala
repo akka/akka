@@ -27,13 +27,12 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val source3 = Source(4 to 9)
       val probe = TestSubscriber.manualProbe[Int]()
 
-      source1.merge(source2).merge(source3)
-        .map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink.fromSubscriber(probe))
+      source1.merge(source2).merge(source3).map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink.fromSubscriber(probe))
 
       val subscription = probe.expectSubscription()
 
       var collected = Set.empty[Int]
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         subscription.request(1)
         collected += probe.expectNext()
       }
@@ -87,8 +86,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val (graphSubscriber1, graphSubscriber2) = Source.asSubscriber[Int]
-        .mergeMat(Source.asSubscriber[Int])((_, _)).toMat(Sink.fromSubscriber(down))(Keep.left).run
+      val (graphSubscriber1, graphSubscriber2) = Source
+        .asSubscriber[Int]
+        .mergeMat(Source.asSubscriber[Int])((_, _))
+        .toMat(Sink.fromSubscriber(down))(Keep.left)
+        .run
 
       val downstream = down.expectSubscription()
       downstream.cancel()
@@ -104,10 +106,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.probe[Int]()
       val down = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(up1)
-        .merge(Source.fromPublisher(up2), eagerComplete = true)
-        .to(Sink.fromSubscriber(down))
-        .run
+      Source.fromPublisher(up1).merge(Source.fromPublisher(up2), eagerComplete = true).to(Sink.fromSubscriber(down)).run
 
       up1.ensureSubscription()
       up2.ensureSubscription()

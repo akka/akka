@@ -48,7 +48,8 @@ object LoggerSpec {
       }
     """).withFallback(AkkaSpec.testConf)
 
-  val multipleConfig = ConfigFactory.parseString("""
+  val multipleConfig =
+    ConfigFactory.parseString("""
       akka {
         stdout-loglevel = "OFF"
         loglevel = "WARNING"
@@ -89,29 +90,29 @@ object LoggerSpec {
   abstract class TestLogger(qualifier: Int) extends Actor with Logging.StdOutLogger {
     var target: Option[ActorRef] = None
     override def receive: Receive = {
-      case InitializeLogger(bus) ⇒
+      case InitializeLogger(bus) =>
         bus.subscribe(context.self, classOf[SetTarget])
         sender() ! LoggerInitialized
-      case SetTarget(ref, `qualifier`) ⇒
+      case SetTarget(ref, `qualifier`) =>
         target = Some(ref)
         ref ! ("OK")
-      case event: LogEvent if !event.mdc.isEmpty ⇒
+      case event: LogEvent if !event.mdc.isEmpty =>
         print(event)
-        target foreach { _ ! event }
-      case event: LogEvent ⇒
+        target.foreach { _ ! event }
+      case event: LogEvent =>
         print(event)
-        target foreach { _ ! event.message }
+        target.foreach { _ ! event.message }
     }
   }
 
   class SlowLogger extends Logging.DefaultLogger {
     override def aroundReceive(r: Receive, msg: Any): Unit = {
       msg match {
-        case event: LogEvent ⇒
+        case event: LogEvent =>
           if (event.message.toString.startsWith("msg1"))
             Thread.sleep(500) // slow
           super.aroundReceive(r, msg)
-        case _ ⇒ super.aroundReceive(r, msg)
+        case _ => super.aroundReceive(r, msg)
       }
 
     }
@@ -122,17 +123,17 @@ object LoggerSpec {
 
     override def mdc(currentMessage: Any): MDC = {
       reqId += 1
-      val always = Map("requestId" → reqId)
+      val always = Map("requestId" -> reqId)
       val cmim = "Current Message in MDC"
       val perMessage = currentMessage match {
-        case `cmim` ⇒ Map[String, Any]("currentMsg" → cmim, "currentMsgLength" → cmim.length)
-        case _      ⇒ Map()
+        case `cmim` => Map[String, Any]("currentMsg" -> cmim, "currentMsgLength" -> cmim.length)
+        case _      => Map()
       }
       always ++ perMessage
     }
 
     def receive: Receive = {
-      case m: String ⇒ log.warning(m)
+      case m: String => log.warning(m)
     }
   }
 
@@ -154,8 +155,8 @@ class LoggerSpec extends WordSpec with Matchers {
         // since logging is asynchronous ensure that it propagates
         if (shouldLog) {
           probe.fishForMessage(0.5.seconds.dilated) {
-            case "Danger! Danger!" ⇒ true
-            case _                 ⇒ false
+            case "Danger! Danger!" => true
+            case _                 => false
           }
         } else {
           probe.expectNoMsg(0.5.seconds.dilated)
@@ -238,25 +239,26 @@ class LoggerSpec extends WordSpec with Matchers {
 
         ref ! "Processing new Request"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Processing new Request") if w.mdc.size == 1 && w.mdc("requestId") == 1 ⇒
+          case w @ Warning(_, _, "Processing new Request") if w.mdc.size == 1 && w.mdc("requestId") == 1 =>
         }
 
         ref ! "Processing another Request"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Processing another Request") if w.mdc.size == 1 && w.mdc("requestId") == 2 ⇒
+          case w @ Warning(_, _, "Processing another Request") if w.mdc.size == 1 && w.mdc("requestId") == 2 =>
         }
 
         ref ! "Current Message in MDC"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Current Message in MDC") if w.mdc.size == 3 &&
-            w.mdc("requestId") == 3 &&
-            w.mdc("currentMsg") == "Current Message in MDC" &&
-            w.mdc("currentMsgLength") == 22 ⇒
+          case w @ Warning(_, _, "Current Message in MDC")
+              if w.mdc.size == 3 &&
+              w.mdc("requestId") == 3 &&
+              w.mdc("currentMsg") == "Current Message in MDC" &&
+              w.mdc("currentMsgLength") == 22 =>
         }
 
         ref ! "Current Message removed from MDC"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Current Message removed from MDC") if w.mdc.size == 1 && w.mdc("requestId") == 4 ⇒
+          case w @ Warning(_, _, "Current Message removed from MDC") if w.mdc.size == 1 && w.mdc("requestId") == 4 =>
         }
 
       } finally {

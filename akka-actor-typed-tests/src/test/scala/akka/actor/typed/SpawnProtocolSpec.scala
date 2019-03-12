@@ -18,7 +18,7 @@ object SpawnProtocolSpec {
 
   val target: Behavior[Message] =
     Behaviors.receiveMessage {
-      case Ping(replyTo) ⇒
+      case Ping(replyTo) =>
         replyTo ! Pong
         Behaviors.same
     }
@@ -119,4 +119,3 @@ class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
   }
 
 }
-

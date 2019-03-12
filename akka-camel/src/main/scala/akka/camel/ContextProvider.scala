@@ -12,6 +12,7 @@ import org.apache.camel.impl.DefaultCamelContext
  * An instance of this class must be instantiable using a no-arg constructor.
  */
 trait ContextProvider {
+
   /**
    * Retrieve or create a Camel Context for the given actor system
    * Called once per actor system

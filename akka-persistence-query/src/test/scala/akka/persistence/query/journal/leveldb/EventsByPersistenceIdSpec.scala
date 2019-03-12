@@ -25,8 +25,7 @@ object EventsByPersistenceIdSpec {
     """
 }
 
-class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config)
-  with Cleanup with ImplicitSender {
+class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config) with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
@@ -57,7 +56,9 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       val ref = setup("a")
 
       val src = queries.currentEventsByPersistenceId("a", 0L, Long.MaxValue)
-      src.map(_.event).runWith(TestSink.probe[Any])
+      src
+        .map(_.event)
+        .runWith(TestSink.probe[Any])
         .request(2)
         .expectNext("a-1", "a-2")
         .expectNoMessage(500.millis)
@@ -69,28 +70,19 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     "find existing events up to a sequence number" in {
       val ref = setup("b")
       val src = queries.currentEventsByPersistenceId("b", 0L, 2L)
-      src.map(_.event).runWith(TestSink.probe[Any])
-        .request(5)
-        .expectNext("b-1", "b-2")
-        .expectComplete()
+      src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("b-1", "b-2").expectComplete()
     }
 
     "not see new events after demand request" in {
       val ref = setup("f")
       val src = queries.currentEventsByPersistenceId("f", 0L, Long.MaxValue)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any])
-        .request(2)
-        .expectNext("f-1", "f-2")
-        .expectNoMessage(100.millis)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2).expectNext("f-1", "f-2").expectNoMessage(100.millis)
 
       ref ! "f-4"
       expectMsg("f-4-done")
 
-      probe
-        .expectNoMessage(100.millis)
-        .request(5)
-        .expectNext("f-3")
-        .expectComplete() // f-4 not seen
+      probe.expectNoMessage(100.millis).request(5).expectNext("f-3").expectComplete() // f-4 not seen
     }
 
     "return empty stream for cleaned journal from 0 to MaxLong" in {
@@ -157,9 +149,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     "find new events" in {
       val ref = setup("c")
       val src = queries.eventsByPersistenceId("c", 0L, Long.MaxValue)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any])
-        .request(5)
-        .expectNext("c-1", "c-2", "c-3")
+      val probe = src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("c-1", "c-2", "c-3")
 
       ref ! "c-4"
       expectMsg("c-4-done")
@@ -170,9 +160,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     "find new events up to a sequence number" in {
       val ref = setup("d")
       val src = queries.eventsByPersistenceId("d", 0L, 4L)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any])
-        .request(5)
-        .expectNext("d-1", "d-2", "d-3")
+      val probe = src.map(_.event).runWith(TestSink.probe[Any]).request(5).expectNext("d-1", "d-2", "d-3")
 
       ref ! "d-4"
       expectMsg("d-4-done")
@@ -183,19 +171,13 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     "find new events after demand request" in {
       val ref = setup("e")
       val src = queries.eventsByPersistenceId("e", 0L, Long.MaxValue)
-      val probe = src.map(_.event).runWith(TestSink.probe[Any])
-        .request(2)
-        .expectNext("e-1", "e-2")
-        .expectNoMessage(100.millis)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2).expectNext("e-1", "e-2").expectNoMessage(100.millis)
 
       ref ! "e-4"
       expectMsg("e-4-done")
 
-      probe
-        .expectNoMessage(100.millis)
-        .request(5)
-        .expectNext("e-3")
-        .expectNext("e-4")
+      probe.expectNoMessage(100.millis).request(5).expectNext("e-3").expectNext("e-4")
     }
   }
 

@@ -84,8 +84,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#source-actorref
     val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold("")(_ + _))(Keep.right)
 
-    val (ref, future) = Source.actorRef(8, OverflowStrategy.fail)
-      .toMat(sinkUnderTest)(Keep.both).run()
+    val (ref, future) = Source.actorRef(8, OverflowStrategy.fail).toMat(sinkUnderTest)(Keep.both).run()
 
     ref ! 1
     ref ! 2
@@ -101,11 +100,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#test-sink-probe
     val sourceUnderTest = Source(1 to 4).filter(_ % 2 == 0).map(_ * 2)
 
-    sourceUnderTest
-      .runWith(TestSink.probe[Int])
-      .request(2)
-      .expectNext(4, 8)
-      .expectComplete()
+    sourceUnderTest.runWith(TestSink.probe[Int]).request(2).expectNext(4, 8).expectComplete()
     //#test-sink-probe
   }
 
@@ -113,10 +108,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#test-source-probe
     val sinkUnderTest = Sink.cancelled
 
-    TestSource.probe[Int]
-      .toMat(sinkUnderTest)(Keep.left)
-      .run()
-      .expectCancellation()
+    TestSource.probe[Int].toMat(sinkUnderTest)(Keep.left).run().expectCancellation()
     //#test-source-probe
   }
 
@@ -124,9 +116,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#injecting-failure
     val sinkUnderTest = Sink.head[Int]
 
-    val (probe, future) = TestSource.probe[Int]
-      .toMat(sinkUnderTest)(Keep.both)
-      .run()
+    val (probe, future) = TestSource.probe[Int].toMat(sinkUnderTest)(Keep.both).run()
     probe.sendError(new Exception("boom"))
 
     Await.ready(future, 3.seconds)
@@ -138,14 +128,11 @@ class StreamTestKitDocSpec extends AkkaSpec {
   "test source and a sink" in {
     import system.dispatcher
     //#test-source-and-sink
-    val flowUnderTest = Flow[Int].mapAsyncUnordered(2) { sleep ⇒
+    val flowUnderTest = Flow[Int].mapAsyncUnordered(2) { sleep =>
       pattern.after(10.millis * sleep, using = system.scheduler)(Future.successful(sleep))
     }
 
-    val (pub, sub) = TestSource.probe[Int]
-      .via(flowUnderTest)
-      .toMat(TestSink.probe[Int])(Keep.both)
-      .run()
+    val (pub, sub) = TestSource.probe[Int].via(flowUnderTest).toMat(TestSink.probe[Int])(Keep.both).run()
 
     sub.request(n = 3)
     pub.sendNext(3)

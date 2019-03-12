@@ -13,34 +13,25 @@ import org.scalatest.WordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 
-  private val conf = ConfigFactory.parseString(
-    s"""
+  private val conf = ConfigFactory.parseString(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 
 }
 
-class EventSourcedSequenceNumberSpec extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf) with WordSpecLike {
+class EventSourcedSequenceNumberSpec
+    extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf)
+    with WordSpecLike {
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.setup(ctx ⇒
-      EventSourcedBehavior[String, String, String](
-        pid,
-        "",
-        { (_, command) ⇒
-          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
-          Effect.persist(command).thenRun(_ ⇒
-            probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun")
-          )
-        },
-        { (state, evt) ⇒
-          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
-          state + evt
-        }
-      ).onRecoveryCompleted(_ ⇒
-          probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
-        )
-    )
+    Behaviors.setup(ctx =>
+      EventSourcedBehavior[String, String, String](pid, "", { (_, command) =>
+        probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onCommand")
+        Effect.persist(command).thenRun(_ => probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " thenRun"))
+      }, { (state, evt) =>
+        probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
+        state + evt
+      }).onRecoveryCompleted(_ => probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")))
 
   "The sequence number" must {
 

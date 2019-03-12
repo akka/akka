@@ -11,4 +11,3 @@ class LeaseException(message: String) extends RuntimeException(message)
 
 @ApiMayChange
 final class LeaseTimeoutException(message: String) extends LeaseException(message)
-

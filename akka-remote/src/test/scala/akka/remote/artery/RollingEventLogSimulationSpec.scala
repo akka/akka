@@ -101,9 +101,9 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
 
     val instructions: Array[Instruction] =
       (Array(AdvanceHeader, TryMarkDirty) :+
-        WriteId) ++
-        Array.fill(EntrySize - 2)(WriteByte) :+
-        Commit
+      WriteId) ++
+      Array.fill(EntrySize - 2)(WriteByte) :+
+      Commit
 
     def step(simulator: Simulator): String = {
       instructions(instructionPtr)(simulator)
@@ -145,7 +145,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
           consistencyChecks()
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           println(log.reverse.mkString("\n"))
           println("----------- BUFFER CONTENT -------------")
           println(simulatedBuffer.grouped(EntrySize).map(_.mkString("[", ",", "]")).mkString(", "))
@@ -161,7 +161,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
 
     // No Committed records should contain bytes from two different writes (Dirty records might, though).
     def checkNoPartialWrites(): Unit = {
-      for (entry ← 0 until entryCount if simulatedBuffer(entry * EntrySize) == Committed) {
+      for (entry <- 0 until entryCount if simulatedBuffer(entry * EntrySize) == Committed) {
         val ofs = entry * EntrySize
         if (simulatedBuffer(ofs + 2) != simulatedBuffer(ofs + 3))
           fail(s"Entry $entry is corrupted, partial writes are visible")
@@ -180,13 +180,13 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
     // [2, 3]
     // [2, 4]
     def checkGaplessWrites(): Unit = {
-      for (id ← 0 until writerCount) {
+      for (id <- 0 until writerCount) {
         val writeCount = writers(id).writeCount
         val lastWrittenSlot = (headPointer - EntrySize) % EntrySize
         var nextExpected = writeCount
         val totalWrittenEntries = headPointer % EntrySize
 
-        for (i ← 0 until math.min(entryCount, totalWrittenEntries)) {
+        for (i <- 0 until math.min(entryCount, totalWrittenEntries)) {
           val slot = (entryCount + lastWrittenSlot - i) % entryCount
           val offs = slot * EntrySize
           if (simulatedBuffer(offs) == Committed && simulatedBuffer(offs + 1) == id) {
@@ -199,7 +199,7 @@ class RollingEventLogSimulationSpec extends AkkaSpec {
     }
 
     def allRecordsCommitted(): Unit = {
-      for (entry ← 0 until entryCount) {
+      for (entry <- 0 until entryCount) {
         if (simulatedBuffer(entry * EntrySize) != Committed)
           fail(s"Entry $entry is not Committed")
       }

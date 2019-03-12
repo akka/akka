@@ -32,9 +32,8 @@ class HandshakeFailureSpec extends ArteryMultiNodeSpec(HandshakeFailureSpec.comm
       sel ! "hello"
       expectNoMessage(3.seconds) // longer than handshake-timeout
 
-      val systemB = newRemoteSystem(
-        name = Some("systemB"),
-        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
+      val systemB =
+        newRemoteSystem(name = Some("systemB"), extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       within(10.seconds) {

@@ -56,7 +56,7 @@ object Scaladoc extends AutoPlugin {
         val curr = dirs.head
         val (newDirs, files) = curr.listFiles.partition(_.isDirectory)
         val rest = dirs.tail ++ newDirs
-        val hasDiagram = files exists { f ⇒
+        val hasDiagram = files exists { f =>
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
             !name.equals("index.html") && !name.equals("package.html")) {
@@ -66,7 +66,7 @@ object Scaladoc extends AutoPlugin {
               lines.contains("<svg id=\"graph")
             )
             catch {
-              case e: Exception ⇒ throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
+              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
             hd
           } else false

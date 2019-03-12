@@ -5,7 +5,7 @@
 package akka.testkit.metrics
 
 import com.codahale.metrics.Metric
-import org.{ HdrHistogram ⇒ hdr }
+import org.{ HdrHistogram => hdr }
 
 /**
  * Adapts Gil Tene's HdrHistogram to Metric's Metric interface.
@@ -16,33 +16,32 @@ import org.{ HdrHistogram ⇒ hdr }
  *                                       maintain value resolution and separation. Must be a non-negative
  *                                       integer between 0 and 5.
  */
-private[akka] class HdrHistogram(
-  highestTrackableValue:          Long,
-  numberOfSignificantValueDigits: Int,
-  val unit:                       String = "")
-  extends Metric {
+private[akka] class HdrHistogram(highestTrackableValue: Long,
+                                 numberOfSignificantValueDigits: Int,
+                                 val unit: String = "")
+    extends Metric {
 
   private val hist = new hdr.Histogram(highestTrackableValue, numberOfSignificantValueDigits)
 
   def update(value: Long): Unit = {
-    try
-      hist.recordValue(value)
+    try hist.recordValue(value)
     catch {
-      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+      case ex: ArrayIndexOutOfBoundsException => throw wrapHistogramOutOfBoundsException(value, ex)
     }
   }
 
   def updateWithCount(value: Long, count: Long): Unit = {
-    try
-      hist.recordValueWithCount(value, count)
+    try hist.recordValueWithCount(value, count)
     catch {
-      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+      case ex: ArrayIndexOutOfBoundsException => throw wrapHistogramOutOfBoundsException(value, ex)
     }
   }
 
-  private def wrapHistogramOutOfBoundsException(value: Long, ex: ArrayIndexOutOfBoundsException): IllegalArgumentException =
+  private def wrapHistogramOutOfBoundsException(value: Long,
+                                                ex: ArrayIndexOutOfBoundsException): IllegalArgumentException =
     new IllegalArgumentException(s"Given value $value can not be stored in this histogram " +
-      s"(min: ${hist.getLowestDiscernibleValue}, max: ${hist.getHighestTrackableValue}})", ex)
+                                 s"(min: ${hist.getLowestDiscernibleValue}, max: ${hist.getHighestTrackableValue}})",
+                                 ex)
 
   def getData = hist.copy()
 

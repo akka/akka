@@ -19,7 +19,8 @@ trait CurrentEventsByPersistenceIdQuery extends ReadJournal {
    * the "result set". Events that are stored after the query is completed are
    * not included in the event stream.
    */
-  def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
+  def currentEventsByPersistenceId(persistenceId: String,
+                                   fromSequenceNr: Long,
                                    toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }

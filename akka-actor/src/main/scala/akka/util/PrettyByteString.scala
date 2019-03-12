@@ -17,7 +17,7 @@ private[akka] object PrettyByteString {
   }
 
   def formatBytes(bs: ByteString, maxBytes: Int = 16 * 5): Iterator[String] = {
-    def asHex(b: Byte): String = b formatted "%02X"
+    def asHex(b: Byte): String = b.formatted("%02X")
     def asASCII(b: Byte): Char =
       if (b >= 0x20 && b < 0x7f) b.toChar
       else '.'
@@ -35,11 +35,10 @@ private[akka] object PrettyByteString {
 
     if (bs.size <= maxBytes) Iterator(prefix + "\n", formatBytes(bs))
     else
-      Iterator(
-        s"$prefix first + last $maxBytes:\n",
-        formatBytes(bs.take(maxBytes)),
-        s"\n$indent                    ... [${bs.size - maxBytes} bytes omitted] ...\n",
-        formatBytes(bs.takeRight(maxBytes)))
+      Iterator(s"$prefix first + last $maxBytes:\n",
+               formatBytes(bs.take(maxBytes)),
+               s"\n$indent                    ... [${bs.size - maxBytes} bytes omitted] ...\n",
+               formatBytes(bs.takeRight(maxBytes)))
   }
 
 }

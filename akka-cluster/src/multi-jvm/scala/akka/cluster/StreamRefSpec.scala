@@ -37,12 +37,10 @@ object StreamRefSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
         akka.cluster {
           auto-down-unreachable-after = 1s
-        }""")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+        }""")).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
@@ -59,29 +57,30 @@ object StreamRefSpec extends MultiNodeConfig {
     implicit val mat = ActorMaterializer()(context)
 
     def receive = {
-      case RequestLogs(streamId) ⇒
+      case RequestLogs(streamId) =>
         // materialize the SourceRef:
         val (done: Future[Done], ref: Future[SourceRef[String]]) =
-          Source.fromIterator(() ⇒ Iterator.from(1))
-            .map(n ⇒ s"elem-$n")
+          Source
+            .fromIterator(() => Iterator.from(1))
+            .map(n => s"elem-$n")
             .watchTermination()(Keep.right)
             .toMat(StreamRefs.sourceRef())(Keep.both)
-            .mapMaterializedValue { m ⇒
+            .mapMaterializedValue { m =>
               streamLifecycleProbe ! s"started-$streamId"
               m
             }
             .run()
 
         done.onComplete {
-          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$streamId"
-          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$streamId"
+          case Success(_) => streamLifecycleProbe ! s"completed-$streamId"
+          case Failure(_) => streamLifecycleProbe ! s"failed-$streamId"
         }
 
         // wrap the SourceRef in some domain message, such that the sender knows what source it is
         val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
 
         // reply to sender
-        reply pipeTo sender()
+        reply.pipeTo(sender())
     }
 
   }
@@ -100,29 +99,29 @@ object StreamRefSpec extends MultiNodeConfig {
     implicit val mat = ActorMaterializer()(context)
 
     def receive = {
-      case PrepareUpload(nodeId) ⇒
-
+      case PrepareUpload(nodeId) =>
         // materialize the SinkRef (the remote is like a source of data for us):
         val (ref: Future[SinkRef[String]], done: Future[Done]) =
-          StreamRefs.sinkRef[String]()
+          StreamRefs
+            .sinkRef[String]()
             .throttle(1, 1.second)
             .toMat(Sink.ignore)(Keep.both)
-            .mapMaterializedValue { m ⇒
+            .mapMaterializedValue { m =>
               streamLifecycleProbe ! s"started-$nodeId"
               m
             }
             .run()
 
         done.onComplete {
-          case Success(_) ⇒ streamLifecycleProbe ! s"completed-$nodeId"
-          case Failure(_) ⇒ streamLifecycleProbe ! s"failed-$nodeId"
+          case Success(_) => streamLifecycleProbe ! s"completed-$nodeId"
+          case Failure(_) => streamLifecycleProbe ! s"failed-$nodeId"
         }
 
         // wrap the SinkRef in some domain message, such that the sender knows what source it is
         val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
 
         // reply to sender
-        reply pipeTo sender()
+        reply.pipeTo(sender())
     }
 
   }
@@ -133,8 +132,7 @@ class StreamRefMultiJvmNode1 extends StreamRefSpec
 class StreamRefMultiJvmNode2 extends StreamRefSpec
 class StreamRefMultiJvmNode3 extends StreamRefSpec
 
-abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNodeClusterSpec with ImplicitSender {
   import StreamRefSpec._
 
   private implicit val mat: ActorMaterializer = ActorMaterializer()
@@ -163,11 +161,7 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
         ref ! RequestLogs(1337)
         val dataSourceRef = expectMsgType[LogsOffer].sourceRef
         destinationForSource = dataSourceRef.runWith(TestSink.probe)
-        destinationForSource
-          .request(3)
-          .expectNext("elem-1")
-          .expectNext("elem-2")
-          .expectNext("elem-3")
+        destinationForSource.request(3).expectNext("elem-1").expectNext("elem-2").expectNext("elem-3")
       }
       runOn(second) {
         dataSourceLifecycle.expectMsg("started-1337")
@@ -182,10 +176,10 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
 
       // auto-down
       runOn(first, third) {
-        awaitMembersUp(2, Set(second) map address)
+        awaitMembersUp(2, Set(second).map(address))
       }
       runOn(second) {
-        awaitMembersUp(1, Set(first, third) map address)
+        awaitMembersUp(1, Set(first, third).map(address))
       }
       enterBarrier("members-removed")
 
@@ -215,14 +209,15 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
         ref ! PrepareUpload("system-42-tmp")
         val ready = expectMsgType[MeasurementsSinkReady]
 
-        Source.fromIterator(() ⇒ Iterator.from(1))
-          .map(n ⇒ s"elem-$n")
+        Source
+          .fromIterator(() => Iterator.from(1))
+          .map(n => s"elem-$n")
           .watchTermination()(Keep.right)
           .to(ready.sinkRef)
           .run()
           .onComplete {
-            case Success(_) ⇒ streamLifecycle1.ref ! s"completed-system-42-tmp"
-            case Failure(_) ⇒ streamLifecycle1.ref ! s"failed-system-42-tmp"
+            case Success(_) => streamLifecycle1.ref ! s"completed-system-42-tmp"
+            case Failure(_) => streamLifecycle1.ref ! s"failed-system-42-tmp"
           }
       }
       runOn(third) {
@@ -237,10 +232,10 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec)
 
       // auto-down
       runOn(first) {
-        awaitMembersUp(1, Set(third) map address)
+        awaitMembersUp(1, Set(third).map(address))
       }
       runOn(third) {
-        awaitMembersUp(1, Set(first) map address)
+        awaitMembersUp(1, Set(first).map(address))
       }
       enterBarrier("members-removed")
 

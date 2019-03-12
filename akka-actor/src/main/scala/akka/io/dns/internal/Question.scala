@@ -19,6 +19,7 @@ private[akka] final case class Question(name: String, qType: RecordType, qClass:
     RecordClassSerializer.write(out, qClass)
   }
 }
+
 /**
  * INTERNAL API
  */

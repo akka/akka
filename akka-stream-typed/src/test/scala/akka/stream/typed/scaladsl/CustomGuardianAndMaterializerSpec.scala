@@ -26,8 +26,8 @@ object CustomGuardianAndMaterializerSpec {
 class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import CustomGuardianAndMaterializerSpec._
 
-  val guardian = Behaviors.receive[GuardianProtocol] {
-    (_, msg) ⇒ Behaviors.same
+  val guardian = Behaviors.receive[GuardianProtocol] { (_, msg) =>
+    Behaviors.same
   }
 
   implicit val mat = ActorMaterializer()
@@ -43,11 +43,11 @@ class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with W
     "should kill streams with bound actor context" in {
       var doneF: Future[Done] = null
       val behavior =
-        Behaviors.setup[String] { ctx ⇒
+        Behaviors.setup[String] { ctx =>
           implicit val mat: ActorMaterializer = ActorMaterializer.boundToActor(ctx)
           doneF = Source.repeat("hello").runWith(Sink.ignore)
 
-          Behaviors.receiveMessage[String](_ ⇒ Behaviors.stopped)
+          Behaviors.receiveMessage[String](_ => Behaviors.stopped)
         }
 
       val actorRef = spawn(behavior)

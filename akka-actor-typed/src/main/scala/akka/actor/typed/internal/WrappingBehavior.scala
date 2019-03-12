@@ -21,10 +21,12 @@ import akka.annotation.InternalApi
 @DoNotInherit
 @InternalApi
 private[akka] trait WrappingBehavior[O, I] {
+
   /**
    * @return The behavior that is wrapped by this behavior
    */
   def nestedBehavior: Behavior[I]
+
   /**
    * Replace the behavior that is wrapped by this behavior with a new nested behavior
    * @return a new instance of this wrapping behavior with `newNested` as nestedBehavior

@@ -24,8 +24,8 @@ import scala.util.control.NonFatal
  */
 @InternalApi
 private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehavior: Behavior[T])
-  extends akka.actor.testkit.typed.javadsl.BehaviorTestKit[T]
-  with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
+    extends akka.actor.testkit.typed.javadsl.BehaviorTestKit[T]
+    with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
   private[akka] val context = new EffectfulActorContext[T](_path)
@@ -39,8 +39,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   runAllTasks()
 
   override def retrieveEffect(): Effect = context.effectQueue.poll() match {
-    case null ⇒ NoEffects
-    case x    ⇒ x
+    case null => NoEffects
+    case x    => x
   }
 
   override def childInbox[U](name: String): TestInboxImpl[U] = {
@@ -58,8 +58,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def retrieveAllEffects(): immutable.Seq[Effect] = {
     @tailrec def rec(acc: List[Effect]): List[Effect] = context.effectQueue.poll() match {
-      case null ⇒ acc.reverse
-      case x    ⇒ rec(x :: acc)
+      case null => acc.reverse
+      case x    => rec(x :: acc)
     }
 
     rec(Nil)
@@ -71,27 +71,28 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def expectEffect(expectedEffect: Effect): Unit = {
     context.effectQueue.poll() match {
-      case null   ⇒ assert(expectedEffect == NoEffects, s"expected: $expectedEffect but no effects were recorded")
-      case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
+      case null   => assert(expectedEffect == NoEffects, s"expected: $expectedEffect but no effects were recorded")
+      case effect => assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
 
   def expectEffectClass[E <: Effect](effectClass: Class[E]): E = {
     context.effectQueue.poll() match {
-      case null if effectClass.isAssignableFrom(NoEffects.getClass) ⇒ effectClass.cast(NoEffects)
-      case null ⇒ throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
-      case effect if effectClass.isAssignableFrom(effect.getClass) ⇒ effect.asInstanceOf[E]
-      case other ⇒ throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
+      case null if effectClass.isAssignableFrom(NoEffects.getClass) => effectClass.cast(NoEffects)
+      case null =>
+        throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
+      case effect if effectClass.isAssignableFrom(effect.getClass) => effect.asInstanceOf[E]
+      case other                                                   => throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
     }
   }
 
   def expectEffectPF[R](f: PartialFunction[Effect, R]): R = {
     context.effectQueue.poll() match {
-      case null if f.isDefinedAt(NoEffects) ⇒
+      case null if f.isDefinedAt(NoEffects) =>
         f.apply(NoEffects)
-      case eff if f.isDefinedAt(eff) ⇒
+      case eff if f.isDefinedAt(eff) =>
         f.apply(eff)
-      case other ⇒
+      case other =>
         throw new AssertionError(s"expected matching effect but got: $other")
     }
   }
@@ -104,18 +105,18 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   def isAlive: Boolean = Behavior.isAlive(current)
 
   private def handleException: Catcher[Unit] = {
-    case NonFatal(e) ⇒
+    case NonFatal(e) =>
       try Behavior.canonicalize(Behavior.interpretSignal(current, context, PostStop), current, context) // TODO why canonicalize here?
       catch {
-        case NonFatal(_) ⇒ /* ignore, real is logging */
+        case NonFatal(_) => /* ignore, real is logging */
       }
       throw e
   }
 
   private def runAllTasks(): Unit = {
     context.executionContext match {
-      case controlled: ControlledExecutor ⇒ controlled.runAll()
-      case _                              ⇒
+      case controlled: ControlledExecutor => controlled.runAll()
+      case _                              =>
     }
   }
 

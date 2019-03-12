@@ -12,7 +12,7 @@ import akka.event.LoggingAdapter
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
-import akka.util.{ OptionVal, unused }
+import akka.util.{ unused, OptionVal }
 
 /**
  * RemoteTransportException represents a general failure within a RemoteTransport,
@@ -28,7 +28,8 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  */
 @SerialVersionUID(1L)
 class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
-  extends RemoteTransportException(message, cause) with NoStackTrace
+    extends RemoteTransportException(message, cause)
+    with NoStackTrace
 
 /**
  * INTERNAL API
@@ -41,6 +42,7 @@ class RemoteTransportExceptionNoStackTrace(message: String, cause: Throwable)
  * received or when the start() method returns, whatever happens first.
  */
 private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
+
   /**
    * Shuts down the remoting
    */

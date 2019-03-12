@@ -20,7 +20,7 @@ import akka.actor.typed.ExtensionSetup
  * INTERNAL API
  */
 @InternalApi
-trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
+trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
@@ -36,30 +36,33 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
 
-      settings.config.getStringList(key).asScala.foreach { extensionIdFQCN ⇒
+      settings.config.getStringList(key).asScala.foreach { extensionIdFQCN =>
         // it is either a Scala object or it is a Java class with a static singleton accessor
-        val idTry = dynamicAccess.getObjectFor[AnyRef](extensionIdFQCN)
-          .recoverWith { case _ ⇒ idFromJavaSingletonAccessor(extensionIdFQCN) }
+        val idTry = dynamicAccess.getObjectFor[AnyRef](extensionIdFQCN).recoverWith {
+          case _ => idFromJavaSingletonAccessor(extensionIdFQCN)
+        }
 
         idTry match {
-          case Success(id: ExtensionId[_]) ⇒ registerExtension(id)
-          case Success(_) ⇒
+          case Success(id: ExtensionId[_]) => registerExtension(id)
+          case Success(_) =>
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionId', skipping...", extensionIdFQCN)
             else throw new RuntimeException(s"[$extensionIdFQCN] is not an 'ExtensionId'")
-          case Failure(problem) ⇒
-            if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", extensionIdFQCN)
+          case Failure(problem) =>
+            if (!throwOnLoadFail)
+              log.error(problem, "While trying to load extension [{}], skipping...", extensionIdFQCN)
             else throw new RuntimeException(s"While trying to load extension [$extensionIdFQCN]", problem)
         }
       }
     }
 
     def idFromJavaSingletonAccessor(extensionIdFQCN: String): Try[ExtensionId[Extension]] =
-      dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] { clazz: Class[_] ⇒
-        Try {
+      dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] {
+        clazz: Class[_] =>
+          Try {
 
-          val singletonAccessor = clazz.getDeclaredMethod("getInstance")
-          singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
-        }
+            val singletonAccessor = clazz.getDeclaredMethod("getInstance")
+            singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
+          }
       }
 
     loadExtensions("akka.actor.typed.library-extensions", throwOnLoadFail = true)
@@ -69,41 +72,44 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
   final override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   final override def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
-    case null ⇒ throw new IllegalArgumentException(s"Trying to get non-registered extension [$ext]")
-    case some ⇒ some.asInstanceOf[T]
+    case null => throw new IllegalArgumentException(s"Trying to get non-registered extension [$ext]")
+    case some => some.asInstanceOf[T]
   }
 
   final override def registerExtension[T <: Extension](ext: ExtensionId[T]): T =
     findExtension(ext) match {
-      case null     ⇒ createExtensionInstance(ext)
-      case existing ⇒ existing.asInstanceOf[T]
+      case null     => createExtensionInstance(ext)
+      case existing => existing.asInstanceOf[T]
     }
 
   private def createExtensionInstance[T <: Extension](ext: ExtensionId[T]): T = {
     val inProcessOfRegistration = new CountDownLatch(1)
     extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
-      case null ⇒ try { // Signal was successfully sent
-        // Create and initialize the extension, first look for ExtensionSetup
-        val instance = self.settings.setup.setups.collectFirst {
-          case (_, extSetup: ExtensionSetup[_]) if extSetup.extId == ext ⇒ extSetup.createExtension(self)
-        }.getOrElse(ext.createExtension(self))
-        instance match {
-          case null ⇒ throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
-          case instance: T @unchecked ⇒
-            // Replace our in process signal with the initialized extension
-            extensions.replace(ext, inProcessOfRegistration, instance)
-            instance
+      case null =>
+        try { // Signal was successfully sent
+          // Create and initialize the extension, first look for ExtensionSetup
+          val instance = self.settings.setup.setups
+            .collectFirst {
+              case (_, extSetup: ExtensionSetup[_]) if extSetup.extId == ext => extSetup.createExtension(self)
+            }
+            .getOrElse(ext.createExtension(self))
+          instance match {
+            case null                   => throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
+            case instance: T @unchecked =>
+              // Replace our in process signal with the initialized extension
+              extensions.replace(ext, inProcessOfRegistration, instance)
+              instance
+          }
+        } catch {
+          case t: Throwable =>
+            //In case shit hits the fan, remove the inProcess signal and escalate to caller
+            extensions.replace(ext, inProcessOfRegistration, t)
+            throw t
+        } finally {
+          //Always notify listeners of the inProcess signal
+          inProcessOfRegistration.countDown()
         }
-      } catch {
-        case t: Throwable ⇒
-          //In case shit hits the fan, remove the inProcess signal and escalate to caller
-          extensions.replace(ext, inProcessOfRegistration, t)
-          throw t
-      } finally {
-        //Always notify listeners of the inProcess signal
-        inProcessOfRegistration.countDown()
-      }
-      case _ ⇒
+      case _ =>
         //Someone else is in process of registering an extension for this Extension, retry
         registerExtension(ext)
     }
@@ -114,11 +120,11 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
    */
   @tailrec
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
-    case c: CountDownLatch ⇒
+    case c: CountDownLatch =>
       //Registration in process, await completion and retry
       c.await()
       findExtension(ext)
-    case t: Throwable ⇒ throw t //Initialization failed, throw same again
-    case other        ⇒ other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
+    case t: Throwable => throw t //Initialization failed, throw same again
+    case other        => other.asInstanceOf[T] //could be a T or null, in which case we return the null as T
   }
 }

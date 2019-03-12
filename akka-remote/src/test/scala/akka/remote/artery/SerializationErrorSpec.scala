@@ -18,9 +18,8 @@ object SerializationErrorSpec {
 class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SerializationErrorSpec._
 
-  val systemB = newRemoteSystem(
-    name = Some("systemB"),
-    extraConfig = Some("""
+  val systemB = newRemoteSystem(name = Some("systemB"),
+                                extraConfig = Some("""
        akka.actor.serialization-identifiers {
          # this will cause deserialization error
          "akka.serialization.ByteArraySerializer" = -4
@@ -58,10 +57,11 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       remoteRef ! "ping"
       expectMsg("ping")
 
-      EventFilter.warning(
-        pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1).intercept {
-        remoteRef ! "boom".getBytes("utf-8")
-      }(systemB)
+      EventFilter
+        .warning(pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1)
+        .intercept {
+          remoteRef ! "boom".getBytes("utf-8")
+        }(systemB)
 
       remoteRef ! "ping2"
       expectMsg("ping2")

@@ -16,18 +16,22 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
 
 object FishingOutcomes {
+
   /**
    * Complete fishing and return all messages up until this
    */
   val complete: FishingOutcome = FishingOutcome.Complete
+
   /**
    * Consume this message, collect it into the result, and continue with the next message
    */
   val continue: FishingOutcome = FishingOutcome.Continue
+
   /**
    * Consume this message, but do not collect it into the result, and continue with the next message
    */
   val continueAndIgnore: FishingOutcome = FishingOutcome.ContinueAndIgnore
+
   /**
    * Fail fishing with a custom error message
    */
@@ -96,12 +100,12 @@ object TestProbe {
    * }
    * }}}
    */
-  def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T
+  def within[T](min: FiniteDuration, max: FiniteDuration)(f: => T): T
 
   /**
    * Same as calling `within(0 seconds, max)(f)`.
    */
-  def within[T](max: FiniteDuration)(f: ⇒ T): T
+  def within[T](max: FiniteDuration)(f: => T): T
 
   /**
    * Same as `expectMessage(remainingOrDefault, obj)`, but using the default timeout as deadline.
@@ -189,12 +193,12 @@ object TestProbe {
    *            The timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    * @return The messages accepted in the order they arrived
    */
-  def fishForMessage(max: FiniteDuration, hint: String)(fisher: M ⇒ FishingOutcome): immutable.Seq[M]
+  def fishForMessage(max: FiniteDuration, hint: String)(fisher: M => FishingOutcome): immutable.Seq[M]
 
   /**
    * Same as the other `fishForMessage` but with no hint
    */
-  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): immutable.Seq[M]
+  def fishForMessage(max: FiniteDuration)(fisher: M => FishingOutcome): immutable.Seq[M]
 
   /**
    * Expect the given actor to be stopped or stop within the given timeout or
@@ -215,7 +219,7 @@ object TestProbe {
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: FiniteDuration): A
+  def awaitAssert[A](a: => A, max: FiniteDuration, interval: FiniteDuration): A
 
   /**
    * Evaluate the given assert every 100 ms until it does not throw an exception and return the
@@ -223,7 +227,7 @@ object TestProbe {
    *
    * If the `max` timeout expires the last exception is thrown.
    */
-  def awaitAssert[A](a: ⇒ A, max: FiniteDuration): A
+  def awaitAssert[A](a: => A, max: FiniteDuration): A
 
   /**
    * Evaluate the given assert every 100 ms until it does not throw an exception and return the
@@ -231,7 +235,7 @@ object TestProbe {
    *
    * If the default timeout expires the last exception is thrown.
    */
-  def awaitAssert[A](a: ⇒ A): A
+  def awaitAssert[A](a: => A): A
 
   /**
    * Stops the [[TestProbe.ref]], which is useful when testing watch and termination.

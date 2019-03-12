@@ -11,7 +11,8 @@ import akka.testkit.AkkaSpec
 class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
 
   def fakeTimeGenerator(timeIntervals: Seq[Long]): Clock = new Clock {
-    @volatile var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))
+    @volatile var times =
+      timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) => acc ::: List[Long](acc.last + c))
     override def apply(): Long = {
       val currentTime = times.head
       times = times.tail
@@ -19,34 +20,32 @@ class FailureDetectorRegistrySpec extends AkkaSpec("akka.loglevel = INFO") {
     }
   }
 
-  def createFailureDetector(
-    threshold:              Double         = 8.0,
-    maxSampleSize:          Int            = 1000,
-    minStdDeviation:        FiniteDuration = 10.millis,
-    acceptableLostDuration: FiniteDuration = Duration.Zero,
-    firstHeartbeatEstimate: FiniteDuration = 1.second,
-    clock:                  Clock          = FailureDetector.defaultClock) =
-    new PhiAccrualFailureDetector(
-      threshold,
-      maxSampleSize,
-      minStdDeviation,
-      acceptableLostDuration,
-      firstHeartbeatEstimate = firstHeartbeatEstimate)(clock = clock)
+  def createFailureDetector(threshold: Double = 8.0,
+                            maxSampleSize: Int = 1000,
+                            minStdDeviation: FiniteDuration = 10.millis,
+                            acceptableLostDuration: FiniteDuration = Duration.Zero,
+                            firstHeartbeatEstimate: FiniteDuration = 1.second,
+                            clock: Clock = FailureDetector.defaultClock) =
+    new PhiAccrualFailureDetector(threshold,
+                                  maxSampleSize,
+                                  minStdDeviation,
+                                  acceptableLostDuration,
+                                  firstHeartbeatEstimate = firstHeartbeatEstimate)(clock = clock)
 
-  def createFailureDetectorRegistry(
-    threshold:              Double         = 8.0,
-    maxSampleSize:          Int            = 1000,
-    minStdDeviation:        FiniteDuration = 10.millis,
-    acceptableLostDuration: FiniteDuration = Duration.Zero,
-    firstHeartbeatEstimate: FiniteDuration = 1.second,
-    clock:                  Clock          = FailureDetector.defaultClock): FailureDetectorRegistry[String] = {
-    new DefaultFailureDetectorRegistry[String](() ⇒ createFailureDetector(
-      threshold,
-      maxSampleSize,
-      minStdDeviation,
-      acceptableLostDuration,
-      firstHeartbeatEstimate,
-      clock))
+  def createFailureDetectorRegistry(threshold: Double = 8.0,
+                                    maxSampleSize: Int = 1000,
+                                    minStdDeviation: FiniteDuration = 10.millis,
+                                    acceptableLostDuration: FiniteDuration = Duration.Zero,
+                                    firstHeartbeatEstimate: FiniteDuration = 1.second,
+                                    clock: Clock = FailureDetector.defaultClock): FailureDetectorRegistry[String] = {
+    new DefaultFailureDetectorRegistry[String](
+      () =>
+        createFailureDetector(threshold,
+                              maxSampleSize,
+                              minStdDeviation,
+                              acceptableLostDuration,
+                              firstHeartbeatEstimate,
+                              clock))
   }
 
   "mark node as available after a series of successful heartbeats" in {

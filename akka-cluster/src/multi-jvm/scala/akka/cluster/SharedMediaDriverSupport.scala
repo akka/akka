@@ -45,8 +45,9 @@ object SharedMediaDriverSupport {
             override def accept(msg: String): Unit = {
               println(msg)
             }
-          }) catch {
-            case NonFatal(e) ⇒
+          })
+          catch {
+            case NonFatal(e) =>
               println(e.getMessage)
               false
           }
@@ -77,7 +78,7 @@ object SharedMediaDriverSupport {
           }
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           println(s"Failed to start media driver in [${aeronDir}]: ${e.getMessage}")
       }
     }
@@ -87,7 +88,7 @@ object SharedMediaDriverSupport {
 
   def stopMediaDriver(config: MultiNodeConfig): Unit = {
     val maybeDriver = mediaDriver.getAndSet(None)
-    maybeDriver.foreach { driver ⇒
+    maybeDriver.foreach { driver =>
       val arterySettings = loadArterySettings(config)
 
       // let other nodes shutdown first
@@ -100,10 +101,10 @@ object SharedMediaDriverSupport {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           println(
             s"Couldn't delete Aeron embedded media driver files in [${driver.aeronDirectoryName}] " +
-              s"due to [${e.getMessage}]")
+            s"due to [${e.getMessage}]")
       }
     }
   }

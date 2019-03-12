@@ -27,7 +27,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to 12) {
+      for (_ <- 1 to 12) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -51,7 +51,10 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val source1 = TestPublisher.probe[Int]()
       val source2 = TestPublisher.probe[Int]()
 
-      Source.fromPublisher(source1).interleave(Source.fromPublisher(source2), 2, eagerClose = true).runWith(Sink.fromSubscriber(probe))
+      Source
+        .fromPublisher(source1)
+        .interleave(Source.fromPublisher(source2), 2, eagerClose = true)
+        .runWith(Sink.fromSubscriber(probe))
       probe.expectSubscription().request(10)
 
       // just to make it extra clear that it eagerly pulls all inputs
@@ -82,7 +85,10 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val source1 = TestPublisher.probe[Int]()
       val source2 = TestPublisher.probe[Int]()
 
-      Source.fromPublisher(source1).interleave(Source.fromPublisher(source2), 2, eagerClose = true).runWith(Sink.fromSubscriber(probe))
+      Source
+        .fromPublisher(source1)
+        .interleave(Source.fromPublisher(source2), 2, eagerClose = true)
+        .runWith(Sink.fromSubscriber(probe))
       probe.expectSubscription().request(10)
 
       // just to make it extra clear that it eagerly pulls all inputs
@@ -110,12 +116,10 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val source1 = TestPublisher.probe[Int]()
       val source2 = TestPublisher.probe[Int]()
 
-      Source.fromPublisher(source1)
-        .interleave(
-          Source.fromPublisher(source2),
-          2,
-          eagerClose = true
-        ).runWith(Sink.fromSubscriber(probe))
+      Source
+        .fromPublisher(source1)
+        .interleave(Source.fromPublisher(source2), 2, eagerClose = true)
+        .runWith(Sink.fromSubscriber(probe))
 
       probe.expectSubscription().request(10)
 
@@ -207,8 +211,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(4)
       subscriber2.expectNextOrError(1, TestException).isLeft ||
-        subscriber2.expectNextOrError(2, TestException).isLeft ||
-        { subscriber2.expectError(TestException); true }
+      subscriber2.expectNextOrError(2, TestException).isLeft || { subscriber2.expectError(TestException); true }
     }
 
     "work with one delayed failed and one nonempty publisher" in {
@@ -221,8 +224,11 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val (graphSubscriber1, graphSubscriber2) = Source.asSubscriber[Int]
-        .interleaveMat(Source.asSubscriber[Int], 2)((_, _)).toMat(Sink.fromSubscriber(down))(Keep.left).run
+      val (graphSubscriber1, graphSubscriber2) = Source
+        .asSubscriber[Int]
+        .interleaveMat(Source.asSubscriber[Int], 2)((_, _))
+        .toMat(Sink.fromSubscriber(down))(Keep.left)
+        .run
 
       val downstream = down.expectSubscription()
       downstream.cancel()

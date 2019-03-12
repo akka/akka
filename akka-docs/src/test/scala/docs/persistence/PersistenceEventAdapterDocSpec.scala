@@ -76,12 +76,15 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
         override def journalPluginId: String = "akka.persistence.journal.auto-json-store"
 
         override def receiveRecover: Receive = {
-          case RecoveryCompleted ⇒ // ignore...
-          case e                 ⇒ p.ref ! e
+          case RecoveryCompleted => // ignore...
+          case e                 => p.ref ! e
         }
 
         override def receiveCommand: Receive = {
-          case c ⇒ persist(c) { e ⇒ p.ref ! e }
+          case c =>
+            persist(c) { e =>
+              p.ref ! e
+            }
         }
       })
 
@@ -108,12 +111,15 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
         override def journalPluginId: String = "akka.persistence.journal.manual-json-store"
 
         override def receiveRecover: Receive = {
-          case RecoveryCompleted ⇒ // ignore...
-          case e                 ⇒ p.ref ! e
+          case RecoveryCompleted => // ignore...
+          case e                 => p.ref ! e
         }
 
         override def receiveCommand: Receive = {
-          case c ⇒ persist(c) { e ⇒ p.ref ! e }
+          case c =>
+            persist(c) { e =>
+              p.ref ! e
+            }
         }
       })
 
@@ -165,7 +171,7 @@ class MyAutoJsonEventAdapter(system: ExtendedActorSystem) extends EventAdapter {
 
   override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
     event match {
-      case json: JsonElement ⇒
+      case json: JsonElement =>
         val clazz = system.dynamicAccess.getClassFor[Any](manifest).get
         gson.fromJson(json, clazz)
     }
@@ -202,7 +208,7 @@ class MyManualJsonEventAdapter(system: ExtendedActorSystem) extends EventAdapter
   }
 
   override def fromJournal(event: Any, m: String): EventSeq = event match {
-    case json: JsonElement ⇒
+    case json: JsonElement =>
       val manifest = json.getAsJsonObject.get("_manifest").getAsString
 
       val clazz = system.dynamicAccess.getClassFor[Any](manifest).get
@@ -214,14 +220,14 @@ class MyTaggingEventAdapter(system: ExtendedActorSystem) extends EventAdapter {
   override def manifest(event: Any): String = ""
 
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-    case j: MyTaggingJournalModel ⇒ EventSeq.single(j)
+    case j: MyTaggingJournalModel => EventSeq.single(j)
   }
 
   override def toJournal(event: Any): Any = {
     event match {
-      case Person(_, age) if age >= 18 ⇒ MyTaggingJournalModel(event, tags = Set("adult"))
-      case Person(_, age)              ⇒ MyTaggingJournalModel(event, tags = Set("minor"))
-      case _                           ⇒ MyTaggingJournalModel(event, tags = Set.empty)
+      case Person(_, age) if age >= 18 => MyTaggingJournalModel(event, tags = Set("adult"))
+      case Person(_, age)              => MyTaggingJournalModel(event, tags = Set("minor"))
+      case _                           => MyTaggingJournalModel(event, tags = Set.empty)
     }
   }
 }

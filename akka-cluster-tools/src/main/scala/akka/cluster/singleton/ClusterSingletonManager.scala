@@ -49,8 +49,8 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      // note that this setting has some additional logic inside the ClusterSingletonManager
-      // falling back to DowningProvider.downRemovalMargin if it is off/Zero
+    // note that this setting has some additional logic inside the ClusterSingletonManager
+    // falling back to DowningProvider.downRemovalMargin if it is off/Zero
       .withRemovalMargin(Cluster(system).settings.DownRemovalMargin)
 
   /**
@@ -60,15 +60,14 @@ object ClusterSingletonManagerSettings {
   def apply(config: Config): ClusterSingletonManagerSettings = {
     val lease = config.getString("lease-implementation") match {
       case s if s.isEmpty ⇒ None
-      case other          ⇒ Some(new ClusterSingletonLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
+      case other ⇒ Some(new ClusterSingletonLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
-    new ClusterSingletonManagerSettings(
-      singletonName = config.getString("singleton-name"),
-      role = roleOption(config.getString("role")),
-      removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
-      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis,
-      lease
-    )
+    new ClusterSingletonManagerSettings(singletonName = config.getString("singleton-name"),
+                                        role = roleOption(config.getString("role")),
+                                        removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
+                                        handOverRetryInterval =
+                                          config.getDuration("hand-over-retry-interval", MILLISECONDS).millis,
+                                        lease)
   }
 
   /**
@@ -113,23 +112,24 @@ object ClusterSingletonManagerSettings {
  *
  * @param leaseSettings LeaseSettings for acquiring before creating the singleton actor
  */
-final class ClusterSingletonManagerSettings(
-  val singletonName:         String,
-  val role:                  Option[String],
-  val removalMargin:         FiniteDuration,
-  val handOverRetryInterval: FiniteDuration,
-  val leaseSettings:         Option[ClusterSingletonLeaseSettings]) extends NoSerializationVerificationNeeded {
+final class ClusterSingletonManagerSettings(val singletonName: String,
+                                            val role: Option[String],
+                                            val removalMargin: FiniteDuration,
+                                            val handOverRetryInterval: FiniteDuration,
+                                            val leaseSettings: Option[ClusterSingletonLeaseSettings])
+    extends NoSerializationVerificationNeeded {
 
   // bin compat for akka 2.5.21
-  def this(
-    singletonName:         String,
-    role:                  Option[String],
-    removalMargin:         FiniteDuration,
-    handOverRetryInterval: FiniteDuration) = this(singletonName, role, removalMargin, handOverRetryInterval, None)
+  def this(singletonName: String,
+           role: Option[String],
+           removalMargin: FiniteDuration,
+           handOverRetryInterval: FiniteDuration) =
+    this(singletonName, role, removalMargin, handOverRetryInterval, None)
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 
-  def withRole(role: String): ClusterSingletonManagerSettings = copy(role = ClusterSingletonManagerSettings.roleOption(role))
+  def withRole(role: String): ClusterSingletonManagerSettings =
+    copy(role = ClusterSingletonManagerSettings.roleOption(role))
 
   def withRole(role: Option[String]) = copy(role = role)
 
@@ -143,18 +143,15 @@ final class ClusterSingletonManagerSettings(
     copy(leaseSettings = Some(leaseSettings))
 
   private def copy(
-    singletonName:         String                                = singletonName,
-    role:                  Option[String]                        = role,
-    removalMargin:         FiniteDuration                        = removalMargin,
-    handOverRetryInterval: FiniteDuration                        = handOverRetryInterval,
-    leaseSettings:         Option[ClusterSingletonLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+      leaseSettings: Option[ClusterSingletonLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
 
-class ClusterSingletonLeaseSettings(
-  val leaseImplementation: String,
-  val leaseRetryInterval:  FiniteDuration
-)
+class ClusterSingletonLeaseSettings(val leaseImplementation: String, val leaseRetryInterval: FiniteDuration)
 
 /**
  * Marker trait for remote messages with special serializer.
@@ -166,10 +163,7 @@ object ClusterSingletonManager {
   /**
    * Scala API: Factory method for `ClusterSingletonManager` [[akka.actor.Props]].
    */
-  def props(
-    singletonProps:     Props,
-    terminationMessage: Any,
-    settings:           ClusterSingletonManagerSettings): Props =
+  def props(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings): Props =
     Props(new ClusterSingletonManager(singletonProps, terminationMessage, settings)).withDeploy(Deploy.local)
 
   /**
@@ -177,6 +171,7 @@ object ClusterSingletonManager {
    * public due to the `with FSM` type parameters
    */
   sealed trait State
+
   /**
    * INTERNAL API
    * public due to the `with FSM` type parameters
@@ -187,24 +182,28 @@ object ClusterSingletonManager {
    * INTERNAL API
    */
   private[akka] object Internal {
+
     /**
      * Sent from new oldest to previous oldest to initiate the
      * hand-over process. `HandOverInProgress` and `HandOverDone`
      * are expected replies.
      */
     case object HandOverToMe extends ClusterSingletonMessage with DeadLetterSuppression
+
     /**
      * Confirmation by the previous oldest that the hand
      * over process, shut down of the singleton actor, has
      * started.
      */
     case object HandOverInProgress extends ClusterSingletonMessage
+
     /**
      * Confirmation by the previous oldest that the singleton
      * actor has been terminated and the hand-over process is
      * completed.
      */
     case object HandOverDone extends ClusterSingletonMessage
+
     /**
      * Sent from from previous oldest to new oldest to
      * initiate the normal hand-over process.
@@ -249,10 +248,12 @@ object ClusterSingletonManager {
     val LeaseRetryTimer = "lease-retry"
 
     object OldestChangedBuffer {
+
       /**
        * Request to deliver one more event.
        */
       case object GetNext
+
       /**
        * The first event, corresponding to CurrentClusterState.
        */
@@ -296,7 +297,7 @@ object ClusterSingletonManager {
         // Using PhaseClusterExiting in the singleton because the graceful shutdown of sharding region
         // should preferably complete before stopping the singleton sharding coordinator on same node.
         val coordShutdown = CoordinatedShutdown(context.system)
-        coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-1") { () ⇒
+        coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-1") { () =>
           if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
             Future.successful(Done)
           } else {
@@ -312,7 +313,7 @@ object ClusterSingletonManager {
       def matchingRole(member: Member): Boolean =
         member.hasRole(selfDc) && role.forall(member.hasRole)
 
-      def trackChange(block: () ⇒ Unit): Unit = {
+      def trackChange(block: () => Unit): Unit = {
         val before = membersByAge.headOption
         block()
         val after = membersByAge.headOption
@@ -321,13 +322,16 @@ object ClusterSingletonManager {
       }
 
       def handleInitial(state: CurrentClusterState): Unit = {
-        membersByAge = immutable.SortedSet.empty(ageOrdering) union state.members.filter(m ⇒
-          m.status == MemberStatus.Up && matchingRole(m))
+        membersByAge = immutable.SortedSet
+          .empty(ageOrdering)
+          .union(state.members.filter(m => m.status == MemberStatus.Up && matchingRole(m)))
         // If there is some removal in progress of an older node it's not safe to immediately become oldest,
         // removal of younger nodes doesn't matter. Note that it can also be started via restart after
         // ClusterSingletonManagerIsStuck.
-        val selfUpNumber = state.members.collectFirst { case m if m.uniqueAddress == cluster.selfUniqueAddress ⇒ m.upNumber }.getOrElse(Int.MaxValue)
-        val safeToBeOldest = !state.members.exists { m ⇒
+        val selfUpNumber = state.members
+          .collectFirst { case m if m.uniqueAddress == cluster.selfUniqueAddress => m.upNumber }
+          .getOrElse(Int.MaxValue)
+        val safeToBeOldest = !state.members.exists { m =>
           m.upNumber <= selfUpNumber && matchingRole(m) && (m.status == MemberStatus.Down || m.status == MemberStatus.Exiting || m.status == MemberStatus.Leaving)
         }
         val initial = InitialOldestState(membersByAge.headOption.map(_.uniqueAddress), safeToBeOldest)
@@ -336,7 +340,7 @@ object ClusterSingletonManager {
 
       def add(m: Member): Unit = {
         if (matchingRole(m))
-          trackChange { () ⇒
+          trackChange { () =>
             // replace, it's possible that the upNumber is changed
             membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
             membersByAge += m
@@ -345,7 +349,7 @@ object ClusterSingletonManager {
 
       def remove(m: Member): Unit = {
         if (matchingRole(m))
-          trackChange { () ⇒
+          trackChange { () =>
             membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
           }
       }
@@ -360,36 +364,36 @@ object ClusterSingletonManager {
       }
 
       def receive = {
-        case state: CurrentClusterState ⇒ handleInitial(state)
-        case MemberUp(m)                ⇒ add(m)
-        case MemberRemoved(m, _)        ⇒ remove(m)
-        case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
+        case state: CurrentClusterState => handleInitial(state)
+        case MemberUp(m)                => add(m)
+        case MemberRemoved(m, _)        => remove(m)
+        case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress =>
           remove(m)
-        case SelfExiting ⇒
+        case SelfExiting =>
           remove(cluster.readView.self)
           sender() ! Done // reply to ask
-        case GetNext if changes.isEmpty ⇒
+        case GetNext if changes.isEmpty =>
           context.become(deliverNext, discardOld = false)
-        case GetNext ⇒
+        case GetNext =>
           sendFirstChange()
       }
 
       // the buffer was empty when GetNext was received, deliver next event immediately
       def deliverNext: Actor.Receive = {
-        case state: CurrentClusterState ⇒
+        case state: CurrentClusterState =>
           handleInitial(state)
           sendFirstChange()
           context.unbecome()
-        case MemberUp(m) ⇒
+        case MemberUp(m) =>
           add(m)
           deliverChanges()
-        case MemberRemoved(m, _) ⇒
+        case MemberRemoved(m, _) =>
           remove(m)
           deliverChanges()
-        case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
+        case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress =>
           remove(m)
           deliverChanges()
-        case SelfExiting ⇒
+        case SelfExiting =>
           remove(cluster.readView.self)
           deliverChanges()
           sender() ! Done // reply to ask
@@ -404,8 +408,8 @@ object ClusterSingletonManager {
 
       override def unhandled(msg: Any): Unit = {
         msg match {
-          case _: MemberEvent ⇒ // ok, silence
-          case _              ⇒ super.unhandled(msg)
+          case _: MemberEvent => // ok, silence
+          case _              => super.unhandled(msg)
         }
       }
     }
@@ -468,36 +472,31 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * @param settings see [[ClusterSingletonManagerSettings]]
  */
 @DoNotInherit
-class ClusterSingletonManager(
-  singletonProps:     Props,
-  terminationMessage: Any,
-  settings:           ClusterSingletonManagerSettings)
-  extends Actor with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
+class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, settings: ClusterSingletonManagerSettings)
+    extends Actor
+    with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
   import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import settings._
-  import FSM.`→`
+  import FSM.`->`
 
   val cluster = Cluster(context.system)
   val selfUniqueAddressOption = Some(cluster.selfUniqueAddress)
   import cluster.settings.LogInfo
 
-  require(
-    role.forall(cluster.selfRoles.contains),
-    s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+  require(role.forall(cluster.selfRoles.contains),
+          s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   private val singletonLeaseName = s"singleton-${context.system.name}-${settings.singletonName}"
 
-  val lease: Option[Lease] = settings.leaseSettings.map(settings ⇒
-    LeaseProvider(context.system).getLease(
-      singletonLeaseName,
-      settings.leaseImplementation,
-      cluster.selfUniqueAddress.address.hostPort)
-  )
+  val lease: Option[Lease] = settings.leaseSettings.map(
+    settings ⇒
+      LeaseProvider(context.system)
+        .getLease(singletonLeaseName, settings.leaseImplementation, cluster.selfUniqueAddress.address.hostPort))
   val leaseRetryInterval: FiniteDuration = settings.leaseSettings match {
     case Some(s) ⇒ s.leaseRetryInterval
-    case None    ⇒ 5.seconds // won't be used
+    case None ⇒ 5.seconds // won't be used
   }
 
   val removalMargin =
@@ -506,8 +505,7 @@ class ClusterSingletonManager(
 
   val (maxHandOverRetries, maxTakeOverRetries) = {
     val n = (removalMargin.toMillis / handOverRetryInterval.toMillis).toInt
-    val minRetries = context.system.settings.config.getInt(
-      "akka.cluster.singleton.min-number-of-hand-over-retries")
+    val minRetries = context.system.settings.config.getInt("akka.cluster.singleton.min-number-of-hand-over-retries")
     require(minRetries >= 1, "min-number-of-hand-over-retries must be >= 1")
     val handOverRetries = math.max(minRetries, n + 3)
     val takeOverRetries = math.max(1, handOverRetries - 3)
@@ -526,22 +524,22 @@ class ClusterSingletonManager(
   var removed = Map.empty[UniqueAddress, Deadline]
 
   def addRemoved(node: UniqueAddress): Unit =
-    removed += node → (Deadline.now + 15.minutes)
+    removed += node -> (Deadline.now + 15.minutes)
 
   def cleanupOverdueNotMemberAnyMore(): Unit = {
-    removed = removed filter { case (_, deadline) ⇒ deadline.hasTimeLeft }
+    removed = removed.filter { case (_, deadline) => deadline.hasTimeLeft }
   }
 
   // for CoordinatedShutdown
   val coordShutdown = CoordinatedShutdown(context.system)
   val memberExitingProgress = Promise[Done]()
-  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-singleton-exiting") { () ⇒
+  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-singleton-exiting") { () =>
     if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down)
       Future.successful(Done)
     else
       memberExitingProgress.future
   }
-  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-2") { () ⇒
+  coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "singleton-exiting-2") { () =>
     if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
       Future.successful(Done)
     } else {
@@ -594,60 +592,62 @@ class ClusterSingletonManager(
   startWith(Start, Uninitialized)
 
   when(Start) {
-    case Event(StartOldestChangedBuffer, _) ⇒
-      oldestChangedBuffer = context.actorOf(Props(classOf[OldestChangedBuffer], role).
-        withDispatcher(context.props.dispatcher))
+    case Event(StartOldestChangedBuffer, _) =>
+      oldestChangedBuffer =
+        context.actorOf(Props(classOf[OldestChangedBuffer], role).withDispatcher(context.props.dispatcher))
       getNextOldestChanged()
       stay
 
-    case Event(InitialOldestState(oldestOption, safeToBeOldest), _) ⇒
+    case Event(InitialOldestState(oldestOption, safeToBeOldest), _) =>
       oldestChangedReceived = true
       if (oldestOption == selfUniqueAddressOption && safeToBeOldest)
         // oldest immediately
         tryGoToOldest()
       else if (oldestOption == selfUniqueAddressOption)
-        goto(BecomingOldest) using BecomingOldestData(None)
+        goto(BecomingOldest).using(BecomingOldestData(None))
       else
-        goto(Younger) using YoungerData(oldestOption)
+        goto(Younger).using(YoungerData(oldestOption))
   }
 
   when(Younger) {
-    case Event(OldestChanged(oldestOption), YoungerData(previousOldestOption)) ⇒
+    case Event(OldestChanged(oldestOption), YoungerData(previousOldestOption)) =>
       oldestChangedReceived = true
       if (oldestOption == selfUniqueAddressOption) {
         logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldestOption.map(_.address))
         previousOldestOption match {
-          case None                                 ⇒ tryGoToOldest()
+          case None ⇒ tryGoToOldest()
           case Some(prev) if removed.contains(prev) ⇒ tryGoToOldest()
           case Some(prev) ⇒
             peer(prev.address) ! HandOverToMe
-            goto(BecomingOldest) using BecomingOldestData(previousOldestOption)
+            goto(BecomingOldest).using(BecomingOldestData(previousOldestOption))
         }
       } else {
-        logInfo("Younger observed OldestChanged: [{} -> {}]", previousOldestOption.map(_.address), oldestOption.map(_.address))
+        logInfo("Younger observed OldestChanged: [{} -> {}]",
+                previousOldestOption.map(_.address),
+                oldestOption.map(_.address))
         getNextOldestChanged()
-        stay using YoungerData(oldestOption)
+        stay.using(YoungerData(oldestOption))
       }
 
-    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self downed, stopping ClusterSingletonManager")
       stop()
 
-    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
-    case Event(MemberRemoved(m, _), _) ⇒
+    case Event(MemberRemoved(m, _), _) =>
       scheduleDelayedMemberRemoved(m)
       stay
 
-    case Event(DelayedMemberRemoved(m), YoungerData(Some(previousOldest))) if m.uniqueAddress == previousOldest ⇒
+    case Event(DelayedMemberRemoved(m), YoungerData(Some(previousOldest))) if m.uniqueAddress == previousOldest =>
       logInfo("Previous oldest removed [{}]", m.address)
       addRemoved(m.uniqueAddress)
       // transition when OldestChanged
-      stay using YoungerData(None)
+      stay.using(YoungerData(None))
 
-    case Event(HandOverToMe, _) ⇒
+    case Event(HandOverToMe, _) =>
       // this node was probably quickly restarted with same hostname:port,
       // confirm that the old singleton instance has been stopped
       sender() ! HandOverDone
@@ -656,70 +656,71 @@ class ClusterSingletonManager(
 
   when(BecomingOldest) {
 
-    case Event(HandOverInProgress, _) ⇒
+    case Event(HandOverInProgress, _) =>
       // confirmation that the hand-over process has started
       logInfo("Hand-over in progress at [{}]", sender().path.address)
       cancelTimer(HandOverRetryTimer)
       stay
 
-    case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) ⇒
+    case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) =>
       if (sender().path.address == previousOldest.address)
         tryGoToOldest()
       else {
-        logInfo(
-          "Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
-          sender().path.address, previousOldest.address)
+        logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
+                sender().path.address,
+                previousOldest.address)
         stay
       }
 
-    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+    case Event(MemberDowned(m), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self downed, stopping ClusterSingletonManager")
       stop()
 
-    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
-    case Event(MemberRemoved(m, _), _) ⇒
+    case Event(MemberRemoved(m, _), _) =>
       scheduleDelayedMemberRemoved(m)
       stay
 
-    case Event(DelayedMemberRemoved(m), BecomingOldestData(Some(previousOldest))) if m.uniqueAddress == previousOldest ⇒
+    case Event(DelayedMemberRemoved(m), BecomingOldestData(Some(previousOldest)))
+        if m.uniqueAddress == previousOldest =>
       logInfo("Previous oldest [{}] removed", previousOldest.address)
       addRemoved(m.uniqueAddress)
       tryGoToOldest()
 
-    case Event(TakeOverFromMe, BecomingOldestData(previousOldestOption)) ⇒
+    case Event(TakeOverFromMe, BecomingOldestData(previousOldestOption)) =>
       val senderAddress = sender().path.address
       // it would have been better to include the UniqueAddress in the TakeOverFromMe message,
       // but can't change due to backwards compatibility
-      cluster.state.members.collectFirst { case m if m.address == senderAddress ⇒ m.uniqueAddress } match {
-        case None ⇒
+      cluster.state.members.collectFirst { case m if m.address == senderAddress => m.uniqueAddress } match {
+        case None =>
           // from unknown node, ignore
-          logInfo(
-            "Ignoring TakeOver request from unknown node in BecomingOldest from [{}].", senderAddress)
+          logInfo("Ignoring TakeOver request from unknown node in BecomingOldest from [{}].", senderAddress)
           stay
-        case Some(senderUniqueAddress) ⇒
+        case Some(senderUniqueAddress) =>
           previousOldestOption match {
-            case Some(previousOldest) ⇒
+            case Some(previousOldest) =>
               if (previousOldest == senderUniqueAddress) sender() ! HandOverToMe
-              else logInfo(
-                "Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
-                sender().path.address, previousOldest.address)
+              else
+                logInfo("Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
+                        sender().path.address,
+                        previousOldest.address)
               stay
-            case None ⇒
+            case None =>
               sender() ! HandOverToMe
-              stay using BecomingOldestData(Some(senderUniqueAddress))
+              stay.using(BecomingOldestData(Some(senderUniqueAddress)))
           }
       }
 
-    case Event(HandOverRetry(count), BecomingOldestData(previousOldestOption)) ⇒
+    case Event(HandOverRetry(count), BecomingOldestData(previousOldestOption)) =>
       if (count <= maxHandOverRetries) {
         logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldestOption.map(_.address))
-        previousOldestOption.foreach(node ⇒ peer(node.address) ! HandOverToMe)
+        previousOldestOption.foreach(node => peer(node.address) ! HandOverToMe)
         setTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay()
-      } else if (previousOldestOption forall removed.contains) {
+      } else if (previousOldestOption.forall(removed.contains)) {
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
         // previous oldest might be down or removed, so no TakeOverFromMe message is received
         logInfo("Timeout in BecomingOldest. Previous oldest unknown, removed and no TakeOver request.")
@@ -744,7 +745,7 @@ class ClusterSingletonManager(
     pipe(lease.get.acquire(reason ⇒ self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
       case NonFatal(t) ⇒ AcquireLeaseFailure(t)
     }).to(self)
-    goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = true, None)
+    goto(AcquiringLease).using(AcquiringLeaseData(leaseRequestInProgress = true, None))
   }
 
   // Try and go to oldest, taking the lease if needed
@@ -766,7 +767,7 @@ class ClusterSingletonManager(
         goToOldest()
       } else {
         setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
-        stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
+        stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton ⇒
       logInfo("Singleton actor terminated. Trying to acquire lease again before re-creating.")
@@ -775,7 +776,7 @@ class ClusterSingletonManager(
     case Event(AcquireLeaseFailure(t), _) ⇒
       log.error(t, "failed to get lease (will be retried)")
       setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
-      stay using AcquiringLeaseData(leaseRequestInProgress = false, None)
+      stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
     case Event(LeaseRetry, _) ⇒
       // If lease was lost (so previous state was oldest) then we don't try and get the lease
       // until the old singleton instance has been terminated so we know there isn't an
@@ -800,9 +801,9 @@ class ClusterSingletonManager(
   }
 
   def goToOldest(): State = {
-    val singleton = context watch context.actorOf(singletonProps, singletonName)
+    val singleton = context.watch(context.actorOf(singletonProps, singletonName))
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
-    goto(Oldest) using OldestData(Some(singleton))
+    goto(Oldest).using(OldestData(Some(singleton)))
   }
 
   def handleOldestChanged(singleton: Option[ActorRef], oldestOption: Option[UniqueAddress]) = {
@@ -821,11 +822,11 @@ class ClusterSingletonManager(
         // send TakeOver request in case the new oldest doesn't know previous oldest
         peer(a.address) ! TakeOverFromMe
         setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-        goto(WasOldest) using WasOldestData(singleton, newOldestOption = Some(a))
+        goto(WasOldest).using(WasOldestData(singleton, newOldestOption = Some(a)))
       case None ⇒
         // new oldest will initiate the hand-over
         setTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval, repeat = false)
-        goto(WasOldest) using WasOldestData(singleton, newOldestOption = None)
+        goto(WasOldest).using(WasOldestData(singleton, newOldestOption = None))
     }
   }
 
@@ -841,9 +842,9 @@ class ClusterSingletonManager(
 
     case Event(Terminated(ref), d @ OldestData(Some(singleton))) if ref == singleton ⇒
       logInfo("Singleton actor [{}] was terminated", singleton.path)
-      stay using d.copy(singleton = None)
+      stay.using(d.copy(singleton = None))
 
-    case Event(SelfExiting, _) ⇒
+    case Event(SelfExiting, _) =>
       selfMemberExited()
       // complete memberExitingProgress when handOverDone
       sender() ! Done // reply to ask
@@ -864,7 +865,7 @@ class ClusterSingletonManager(
       singleton match {
         case Some(s) ⇒
           s ! terminationMessage
-          goto(AcquiringLease) using AcquiringLeaseData(leaseRequestInProgress = false, singleton)
+          goto(AcquiringLease).using(AcquiringLeaseData(leaseRequestInProgress = false, singleton))
         case None ⇒
           tryAcquireLease()
       }
@@ -875,14 +876,14 @@ class ClusterSingletonManager(
       if ((cluster.isTerminated || selfExited) && (newOldestOption.isEmpty || count > maxTakeOverRetries)) {
         singleton match {
           case Some(s) ⇒ gotoStopping(s)
-          case None    ⇒ stop()
+          case None ⇒ stop()
         }
       } else if (count <= maxTakeOverRetries) {
         if (maxTakeOverRetries - count <= 3)
           logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
         else
           log.debug("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
-        newOldestOption.foreach(node ⇒ peer(node.address) ! TakeOverFromMe)
+        newOldestOption.foreach(node => peer(node.address) ! TakeOverFromMe)
         setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay
       } else
@@ -894,15 +895,16 @@ class ClusterSingletonManager(
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
 
-    case Event(MemberRemoved(m, _), WasOldestData(singleton, Some(newOldest))) if !selfExited && m.uniqueAddress == newOldest ⇒
+    case Event(MemberRemoved(m, _), WasOldestData(singleton, Some(newOldest)))
+        if !selfExited && m.uniqueAddress == newOldest ⇒
       addRemoved(m.uniqueAddress)
       gotoHandingOver(singleton, None)
 
     case Event(Terminated(ref), d @ WasOldestData(singleton, _)) if singleton.contains(ref) ⇒
       logInfo("Singleton actor [{}] was terminated", ref.path)
-      stay using d.copy(singleton = None)
+      stay.using(d.copy(singleton = None))
 
-    case Event(SelfExiting, _) ⇒
+    case Event(SelfExiting, _) =>
       selfMemberExited()
       // complete memberExitingProgress when handOverDone
       sender() ! Done // reply to ask
@@ -925,10 +927,10 @@ class ClusterSingletonManager(
       case None ⇒
         handOverDone(handOverTo)
       case Some(s) ⇒
-        handOverTo foreach { _ ! HandOverInProgress }
+        handOverTo.foreach { _ ! HandOverInProgress }
         logInfo("Singleton manager stopping singleton actor [{}]", s.path)
         s ! terminationMessage
-        goto(HandingOver) using HandingOverData(s, handOverTo)
+        goto(HandingOver).using(HandingOverData(s, handOverTo))
     }
   }
 
@@ -941,7 +943,7 @@ class ClusterSingletonManager(
       sender() ! HandOverInProgress
       stay
 
-    case Event(SelfExiting, _) ⇒
+    case Event(SelfExiting, _) =>
       selfMemberExited()
       // complete memberExitingProgress when handOverDone
       sender() ! Done // reply to ask
@@ -951,21 +953,21 @@ class ClusterSingletonManager(
   def handOverDone(handOverTo: Option[ActorRef]): State = {
     val newOldest = handOverTo.map(_.path.address)
     logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newOldest)
-    handOverTo foreach { _ ! HandOverDone }
+    handOverTo.foreach { _ ! HandOverDone }
     memberExitingProgress.trySuccess(Done)
     if (removed.contains(cluster.selfUniqueAddress)) {
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
     } else if (handOverTo.isEmpty)
-      goto(Younger) using YoungerData(None)
+      goto(Younger).using(YoungerData(None))
     else
-      goto(End) using EndData
+      goto(End).using(EndData)
   }
 
   def gotoStopping(singleton: ActorRef): State = {
     logInfo("Singleton manager stopping singleton actor [{}]", singleton.path)
     singleton ! terminationMessage
-    goto(Stopping) using StoppingData(singleton)
+    goto(Stopping).using(StoppingData(singleton))
   }
 
   when(Stopping) {
@@ -975,10 +977,10 @@ class ClusterSingletonManager(
   }
 
   when(End) {
-    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
+    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
-    case Event(_: OldestChanged, _) ⇒
+    case Event(_: OldestChanged, _) =>
       // not interested anymore - waiting for removal
       stay
   }
@@ -989,57 +991,59 @@ class ClusterSingletonManager(
   }
 
   whenUnhandled {
-    case Event(SelfExiting, _) ⇒
+    case Event(SelfExiting, _) =>
       selfMemberExited()
       memberExitingProgress.trySuccess(Done)
       sender() ! Done // reply to ask
       stay
-    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress && !selfExited ⇒
+    case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress && !selfExited =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
-    case Event(MemberRemoved(m, _), _) ⇒
+    case Event(MemberRemoved(m, _), _) =>
       if (!selfExited) logInfo("Member removed [{}]", m.address)
       addRemoved(m.uniqueAddress)
       stay
-    case Event(DelayedMemberRemoved(m), _) ⇒
+    case Event(DelayedMemberRemoved(m), _) =>
       if (!selfExited) logInfo("Member removed [{}]", m.address)
       addRemoved(m.uniqueAddress)
       stay
-    case Event(TakeOverFromMe, _) ⇒
+    case Event(TakeOverFromMe, _) =>
       log.debug("Ignoring TakeOver request in [{}] from [{}].", stateName, sender().path.address)
       stay
-    case Event(Cleanup, _) ⇒
+    case Event(Cleanup, _) =>
       cleanupOverdueNotMemberAnyMore()
       stay
-    case Event(MemberDowned(m), _) ⇒
+    case Event(MemberDowned(m), _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         logInfo("Self downed, waiting for removal")
       stay
     case Event(ReleaseLeaseFailure(t), _) ⇒
       // TODO we could retry
-      log.error(t, "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
+      log.error(t,
+                "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       stay
     case Event(ReleaseLeaseResult(released), _) ⇒
       if (released) {
         logInfo("Lease released")
       } else {
         // TODO we could retry
-        log.error("Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
+        log.error(
+          "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       }
       stay
   }
 
   onTransition {
-    case from → to ⇒ logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
+    case from -> to => logInfo("ClusterSingletonManager state change [{} -> {}]", from, to)
   }
 
   onTransition {
-    case _ → BecomingOldest ⇒ setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
+    case _ -> BecomingOldest => setTimer(HandOverRetryTimer, HandOverRetry(1), handOverRetryInterval, repeat = false)
   }
 
   onTransition {
-    case BecomingOldest → _ ⇒ cancelTimer(HandOverRetryTimer)
-    case WasOldest → _      ⇒ cancelTimer(TakeOverRetryTimer)
+    case BecomingOldest -> _ => cancelTimer(HandOverRetryTimer)
+    case WasOldest -> _      => cancelTimer(TakeOverRetryTimer)
   }
 
   onTransition {
@@ -1048,9 +1052,10 @@ class ClusterSingletonManager(
         case AcquiringLeaseData(true, _) ⇒
           logInfo("Releasing lease as leaving AcquiringLease going to [{}]", to)
           import context.dispatcher
-          lease.foreach(l ⇒ pipe(l.release().map[Any](ReleaseLeaseResult).recover {
-            case t ⇒ ReleaseLeaseFailure(t)
-          }).to(self))
+          lease.foreach(l ⇒
+            pipe(l.release().map[Any](ReleaseLeaseResult).recover {
+              case t ⇒ ReleaseLeaseFailure(t)
+            }).to(self))
         case _ ⇒
       }
   }
@@ -1065,11 +1070,11 @@ class ClusterSingletonManager(
   }
 
   onTransition {
-    case _ → (Younger | Oldest) ⇒ getNextOldestChanged()
+    case _ -> (Younger | Oldest) => getNextOldestChanged()
   }
 
   onTransition {
-    case _ → (Younger | End) if removed.contains(cluster.selfUniqueAddress) ⇒
+    case _ -> (Younger | End) if removed.contains(cluster.selfUniqueAddress) =>
       logInfo("Self removed, stopping ClusterSingletonManager")
       // note that FSM.stop() can't be used in onTransition
       context.stop(self)

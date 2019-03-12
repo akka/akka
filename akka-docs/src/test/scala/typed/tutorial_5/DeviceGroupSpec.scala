@@ -131,12 +131,10 @@ class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val allTempProbe = createTestProbe[RespondAllTemperatures]()
       groupActor ! RequestAllTemperatures(requestId = 0, groupId = "group", allTempProbe.ref)
       allTempProbe.expectMessage(
-        RespondAllTemperatures(
-          requestId = 0,
-          temperatures = Map(
-            "device1" -> Temperature(1.0),
-            "device2" -> Temperature(2.0),
-            "device3" -> TemperatureNotAvailable)))
+        RespondAllTemperatures(requestId = 0,
+                               temperatures = Map("device1" -> Temperature(1.0),
+                                                  "device2" -> Temperature(2.0),
+                                                  "device3" -> TemperatureNotAvailable)))
     }
     //#group-query-integration-test
 

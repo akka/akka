@@ -19,24 +19,21 @@ import akka.remote.artery.MaxThroughputSpec._
 object FanOutThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
     System.getProperty("akka.test.FanOutThroughputSpec.nrOfNodes") match {
-      case null  ⇒ 4
-      case value ⇒ value.toInt
+      case null  => 4
+      case value => value.toInt
     }
   val senderReceiverPairs = totalNumberOfNodes - 1
 
-  for (n ← 1 to totalNumberOfNodes) role("node-" + n)
+  for (n <- 1 to totalNumberOfNodes) role("node-" + n)
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.FanOutThroughputSpec.totalMessagesFactor = 10.0
        akka.test.FanOutThroughputSpec.real-message = off
        akka.test.FanOutThroughputSpec.actor-selection = off
-       """))
-    .withFallback(MaxThroughputSpec.cfg)
-    .withFallback(RemotingMultiNodeSpec.commonConfig))
+       """)).withFallback(MaxThroughputSpec.cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
 
 }
 
@@ -62,7 +59,8 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
   override def initialParticipants = roles.size
 
-  def remoteSettings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
+  def remoteSettings =
+    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
 
   lazy val reporterExecutor = Executors.newFixedThreadPool(1)
   def reporter(name: String): TestRateReporter = {
@@ -90,34 +88,30 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
   // each sender may have 3 bursts in flight
   val burstSize = 3000 / senderReceiverPairs / 3
   val scenarios = List(
-    TestSettings(
-      testName = "warmup",
-      totalMessages = adjustedTotalMessages(20000),
-      burstSize = burstSize,
-      payloadSize = 100,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-100",
-      totalMessages = adjustedTotalMessages(50000),
-      burstSize = burstSize,
-      payloadSize = 100,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-1k",
-      totalMessages = adjustedTotalMessages(10000),
-      burstSize = burstSize,
-      payloadSize = 1000,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage),
-    TestSettings(
-      testName = "size-10k",
-      totalMessages = adjustedTotalMessages(2000),
-      burstSize = burstSize,
-      payloadSize = 10000,
-      senderReceiverPairs = senderReceiverPairs,
-      realMessage))
+    TestSettings(testName = "warmup",
+                 totalMessages = adjustedTotalMessages(20000),
+                 burstSize = burstSize,
+                 payloadSize = 100,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-100",
+                 totalMessages = adjustedTotalMessages(50000),
+                 burstSize = burstSize,
+                 payloadSize = 100,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-1k",
+                 totalMessages = adjustedTotalMessages(10000),
+                 burstSize = burstSize,
+                 payloadSize = 1000,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage),
+    TestSettings(testName = "size-10k",
+                 totalMessages = adjustedTotalMessages(2000),
+                 burstSize = burstSize,
+                 payloadSize = 10000,
+                 senderReceiverPairs = senderReceiverPairs,
+                 realMessage))
 
   def test(testSettings: TestSettings, resultReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
@@ -129,9 +123,8 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
     runOn(targetNodes: _*) {
       val rep = reporter(testName)
-      val receiver = system.actorOf(
-        receiverProps(rep, payloadSize, printTaskRunnerMetrics = true, senderReceiverPairs),
-        receiverName)
+      val receiver = system.actorOf(receiverProps(rep, payloadSize, printTaskRunnerMetrics = true, senderReceiverPairs),
+                                    receiverName)
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
       receiver ! PoisonPill
@@ -141,20 +134,24 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
     runOn(roles.head) {
       enterBarrier(receiverName + "-started")
       val ignore = TestProbe()
-      val receivers = targetNodes.map(target ⇒ identifyReceiver(receiverName, target)).toArray[Target]
-      val senders = for ((target, i) ← targetNodes.zipWithIndex) yield {
+      val receivers = targetNodes.map(target => identifyReceiver(receiverName, target)).toArray[Target]
+      val senders = for ((target, i) <- targetNodes.zipWithIndex) yield {
         val receiver = receivers(i)
         val plotProbe = TestProbe()
-        val snd = system.actorOf(
-          senderProps(receiver, receivers, testSettings, plotProbe.ref, printTaskRunnerMetrics = i == 0, resultReporter),
-          testName + "-snd" + (i + 1))
+        val snd = system.actorOf(senderProps(receiver,
+                                             receivers,
+                                             testSettings,
+                                             plotProbe.ref,
+                                             printTaskRunnerMetrics = i == 0,
+                                             resultReporter),
+                                 testName + "-snd" + (i + 1))
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)
         snd ! Run
         (snd, terminationProbe, plotProbe)
       }
       senders.foreach {
-        case (snd, terminationProbe, plotProbe) ⇒
+        case (snd, terminationProbe, plotProbe) =>
           terminationProbe.expectTerminated(snd, barrierTimeout)
           if (snd == senders.head._1) {
             val plotResult = plotProbe.expectMsgType[PlotResult]
@@ -169,7 +166,7 @@ abstract class FanOutThroughputSpec extends RemotingMultiNodeSpec(FanOutThroughp
 
   "Max throughput of fan-out" must {
     val reporter = BenchmarkFileReporter("FanOutThroughputSpec", system)
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
   }

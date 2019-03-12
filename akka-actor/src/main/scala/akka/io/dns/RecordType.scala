@@ -12,6 +12,7 @@ import akka.util.OptionVal
 final case class RecordType(code: Short, name: String)
 
 object RecordType {
+
   /**
    * array for fast lookups by id
    * wasteful, but we get trivial indexing into it for lookup
@@ -31,34 +32,49 @@ object RecordType {
 
   /** A host address */
   final val A: RecordType = register(RecordType(1, "A"))
+
   /** An authoritative name server */
   final val NS: RecordType = register(RecordType(2, "NS"))
+
   /** A mail destination (Obsolete - use MX) */
   final val MD: RecordType = register(RecordType(3, "MD"))
+
   /** A mail forwarder (Obsolete - use MX) */
   final val MF: RecordType = register(RecordType(4, "MF"))
+
   /** the canonical name for an alias */
   final val CNAME: RecordType = register(RecordType(5, "CNAME"))
+
   /** marks the start of a zone of authority */
   final val SOA: RecordType = register(RecordType(6, "SOA"))
+
   /** A mailbox domain name (EXPERIMENTAL) */
   final val MB: RecordType = register(RecordType(7, "MB"))
+
   /** A mail group member (EXPERIMENTAL) */
   final val MG: RecordType = register(RecordType(8, "MG"))
+
   /** A mail rename domain name (EXPERIMENTAL) */
   final val MR: RecordType = register(RecordType(9, "MR"))
+
   /** A null RR (EXPERIMENTAL) */
   final val NULL: RecordType = register(RecordType(10, "NULL"))
+
   /** A well known service description */
   final val WKS: RecordType = register(RecordType(11, "WKS"))
+
   /** A domain name pointer */
   final val PTR: RecordType = register(RecordType(12, "PTR"))
+
   /** host information */
   final val HINFO: RecordType = register(RecordType(13, "HINFO"))
+
   /** mailbox or mail list information */
   final val MINFO: RecordType = register(RecordType(14, "MINFO"))
+
   /** mail exchange */
   final val MX: RecordType = register(RecordType(15, "MX"))
+
   /** text strings */
   final val TXT: RecordType = register(RecordType(16, "TXT"))
 
@@ -80,4 +96,3 @@ object RecordType {
   final val MAILA: RecordType = register(RecordType(254, "MAILA"))
   final val WILDCARD: RecordType = register(RecordType(255, "WILDCARD"))
 }
-

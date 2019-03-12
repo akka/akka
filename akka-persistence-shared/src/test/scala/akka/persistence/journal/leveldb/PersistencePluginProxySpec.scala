@@ -7,12 +7,12 @@ package akka.persistence.journal.leveldb
 import akka.actor._
 import akka.persistence._
 import akka.persistence.journal.PersistencePluginProxy
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object PersistencePluginProxySpec {
-  lazy val config = ConfigFactory.parseString(
-    """
+  lazy val config =
+    ConfigFactory.parseString("""
       akka {
         actor {
           provider = remote
@@ -42,8 +42,8 @@ object PersistencePluginProxySpec {
       }
     """)
 
-  lazy val startTargetConfig = ConfigFactory.parseString(
-    """
+  lazy val startTargetConfig =
+    ConfigFactory.parseString("""
       |akka.extensions = ["akka.persistence.journal.PersistencePluginProxyExtension"]
       |akka.persistence {
       |  journal.proxy.start-target-journal = on
@@ -51,23 +51,29 @@ object PersistencePluginProxySpec {
       |}
     """.stripMargin)
 
-  def targetAddressConfig(system: ActorSystem) = ConfigFactory.parseString(
-    s"""
+  def targetAddressConfig(system: ActorSystem) =
+    ConfigFactory.parseString(s"""
       |akka.extensions = ["akka.persistence.Persistence"]
       |akka.persistence.journal.auto-start-journals = [""]
-      |akka.persistence.journal.proxy.target-journal-address = "${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}"
-      |akka.persistence.snapshot-store.proxy.target-snapshot-store-address = "${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}"
+      |akka.persistence.journal.proxy.target-journal-address = "${system
+                                   .asInstanceOf[ExtendedActorSystem]
+                                   .provider
+                                   .getDefaultAddress}"
+      |akka.persistence.snapshot-store.proxy.target-snapshot-store-address = "${system
+                                   .asInstanceOf[ExtendedActorSystem]
+                                   .provider
+                                   .getDefaultAddress}"
     """.stripMargin)
 
   class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
     override def receiveRecover = {
-      case RecoveryCompleted ⇒ // ignore
-      case payload ⇒
+      case RecoveryCompleted => // ignore
+      case payload =>
         probe ! payload
     }
     override def receiveCommand = {
-      case payload ⇒
-        persist(payload) { _ ⇒
+      case payload =>
+        persist(payload) { _ =>
           probe ! payload
         }
     }
@@ -77,17 +83,19 @@ object PersistencePluginProxySpec {
     val p = context.actorOf(Props(classOf[ExamplePersistentActor], probe, context.system.name))
 
     def receive = {
-      case m ⇒ p forward m
+      case m => p.forward(m)
     }
 
   }
 }
 
-class PersistencePluginProxySpec extends AkkaSpec(PersistencePluginProxySpec.startTargetConfig withFallback PersistencePluginProxySpec.config) with Cleanup {
+class PersistencePluginProxySpec
+    extends AkkaSpec(PersistencePluginProxySpec.startTargetConfig.withFallback(PersistencePluginProxySpec.config))
+    with Cleanup {
   import PersistencePluginProxySpec._
 
   val systemA = ActorSystem("SysA", config)
-  val systemB = ActorSystem("SysB", targetAddressConfig(system) withFallback PersistencePluginProxySpec.config)
+  val systemB = ActorSystem("SysB", targetAddressConfig(system).withFallback(PersistencePluginProxySpec.config))
 
   override protected def afterTermination(): Unit = {
     shutdown(systemA)
@@ -95,7 +103,7 @@ class PersistencePluginProxySpec extends AkkaSpec(PersistencePluginProxySpec.sta
     super.afterTermination()
   }
 
-  "A persistence proxy" can {
+  "A persistence proxy".can {
     "be shared by multiple actor systems" in {
 
       val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
