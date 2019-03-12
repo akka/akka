@@ -6,7 +6,19 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, DeadLetterSuppression, Deploy, NoSerializationVerificationNeeded, Props, Stash, Terminated, Timers }
+import akka.actor.{
+  Actor,
+  ActorLogging,
+  ActorRef,
+  ActorSystem,
+  DeadLetterSuppression,
+  Deploy,
+  NoSerializationVerificationNeeded,
+  Props,
+  Stash,
+  Terminated,
+  Timers
+}
 import akka.util.{ ConstantFun, MessageBufferMap }
 
 import scala.concurrent.Future
@@ -141,14 +153,16 @@ private[akka] object Shard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] class Shard(
-  typeName:           String,
-  shardId:            ShardRegion.ShardId,
-  entityProps:        String ⇒ Props,
-  settings:           ClusterShardingSettings,
-  extractEntityId:    ShardRegion.ExtractEntityId,
-  extractShardId:     ShardRegion.ExtractShardId,
-  handOffStopMessage: Any) extends Actor with ActorLogging with Timers {
+private[akka] class Shard(typeName: String,
+                          shardId: ShardRegion.ShardId,
+                          entityProps: String ⇒ Props,
+                          settings: ClusterShardingSettings,
+                          extractEntityId: ShardRegion.ExtractEntityId,
+                          extractShardId: ShardRegion.ExtractShardId,
+                          handOffStopMessage: Any)
+    extends Actor
+    with ActorLogging
+    with Timers {
 
   import ShardRegion.{ handOffStopperProps, EntityId, Msg, Passivate, ShardInitialized }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
@@ -174,12 +188,15 @@ private[akka] class Shard(
     None
   }
 
-  val lease = settings.leaseSettings.map(ls ⇒ LeaseProvider(context.system)
-    .getLease(s"${context.system.name}-shard-$typeName-$shardId", ls.leaseImplementation, Cluster(context.system).selfAddress.hostPort))
+  val lease = settings.leaseSettings.map(
+    ls ⇒
+      LeaseProvider(context.system).getLease(s"${context.system.name}-shard-$typeName-$shardId",
+                                             ls.leaseImplementation,
+                                             Cluster(context.system).selfAddress.hostPort))
 
   val leaseRetryInterval = settings.leaseSettings match {
     case Some(l) ⇒ l.leaseRetryInterval
-    case None    ⇒ 5.seconds // not used
+    case None ⇒ 5.seconds // not used
   }
 
   initialized()
@@ -217,7 +234,11 @@ private[akka] class Shard(
       log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseAcquireResult(false, Some(t)) ⇒
-      log.error(t, "Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval)
+      log.error(t,
+                "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
+                typeName,
+                shardId,
+                leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseRetry ⇒
       tryGetLease(lease.get)
@@ -226,15 +247,15 @@ private[akka] class Shard(
   }
 
   def receiveCommand: Receive = {
-    case Terminated(ref)                         ⇒ receiveTerminated(ref)
-    case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
-    case msg: ShardCommand                       ⇒ receiveShardCommand(msg)
-    case msg: ShardRegion.StartEntity            ⇒ receiveStartEntity(msg)
-    case msg: ShardRegion.StartEntityAck         ⇒ receiveStartEntityAck(msg)
-    case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
-    case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
-    case PassivateIdleTick                       ⇒ passivateIdleEntities()
-    case msg: LeaseLost                          ⇒ receiveLeaseLost(msg)
+    case Terminated(ref) ⇒ receiveTerminated(ref)
+    case msg: CoordinatorMessage ⇒ receiveCoordinatorMessage(msg)
+    case msg: ShardCommand ⇒ receiveShardCommand(msg)
+    case msg: ShardRegion.StartEntity ⇒ receiveStartEntity(msg)
+    case msg: ShardRegion.StartEntityAck ⇒ receiveStartEntityAck(msg)
+    case msg: ShardRegionCommand ⇒ receiveShardRegionCommand(msg)
+    case msg: ShardQuery ⇒ receiveShardQuery(msg)
+    case PassivateIdleTick ⇒ passivateIdleEntities()
+    case msg: LeaseLost ⇒ receiveLeaseLost(msg)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 

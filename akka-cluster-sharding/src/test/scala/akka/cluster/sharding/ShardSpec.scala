@@ -86,7 +86,7 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
       parent.expectMsg(ShardInitialized(shardId))
     }
 
-    "shutdown if lease is lost?" in new Setup {
+    "shutdown if lease is lost" in new Setup {
       val probe = TestProbe()
       probe.watch(shard)
       lease.initialPromise.complete(Success(true))
