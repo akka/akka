@@ -22,7 +22,10 @@ import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, onPersistFailure: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (
+    val persistenceId: PersistenceId,
+    onPersistFailure: Optional[BackoffSupervisorStrategy])
+    extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
@@ -148,7 +151,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-    val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
+    val snapshotWhen: (State, Event, Long) => Boolean = { (state, event, seqNr) =>
       val n = snapshotEvery()
       if (n > 0)
         seqNr % n == 0
@@ -156,7 +159,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
         shouldSnapshot(state, event, seqNr)
     }
 
-    val tagger: Event ⇒ Set[String] = { event ⇒
+    val tagger: Event => Set[String] = { event =>
       import scala.collection.JavaConverters._
       val tags = tagsFor(event)
       if (tags.isEmpty) Set.empty
@@ -166,25 +169,25 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
     val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
-      (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
       getClass)
       .onRecoveryCompleted(onRecoveryCompleted)
-      .onPostStop(() ⇒ onPostStop())
-      .onPreRestart(() ⇒ onPreRestart())
+      .onPostStop(() => onPostStop())
+      .onPreRestart(() => onPreRestart())
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
-      .onSnapshot((meta, result) ⇒ {
+      .onSnapshot((meta, result) => {
         result match {
-          case Success(_) ⇒
+          case Success(_) =>
             context.asScala.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          case Failure(e) ⇒
+          case Failure(e) =>
             context.asScala.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
         }
 
         onSnapshot(meta, result match {
-          case Success(_) ⇒ Optional.empty()
-          case Failure(t) ⇒ Optional.of(t)
+          case Success(_) => Optional.empty()
+          case Failure(t) => Optional.of(t)
         })
       })
       .eventAdapter(eventAdapter())
@@ -211,8 +214,10 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @ApiMayChange
-abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](persistenceId: PersistenceId, backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
-  extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](
+    persistenceId: PersistenceId,
+    backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
+    extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])

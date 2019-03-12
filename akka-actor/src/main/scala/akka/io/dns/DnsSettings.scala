@@ -29,20 +29,21 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   val NameServers: List[InetSocketAddress] = {
     c.getValue("nameservers").valueType() match {
-      case ConfigValueType.STRING ⇒
+      case ConfigValueType.STRING =>
         c.getString("nameservers") match {
-          case "default" ⇒
+          case "default" =>
             val osAddresses = getDefaultNameServers(system).getOrElse(failUnableToDetermineDefaultNameservers)
             if (osAddresses.isEmpty) failUnableToDetermineDefaultNameservers
             osAddresses
-          case other ⇒
+          case other =>
             parseNameserverAddress(other) :: Nil
         }
-      case ConfigValueType.LIST ⇒
-        val userAddresses = c.getStringList("nameservers").asScala.iterator.map(parseNameserverAddress).to(immutable.IndexedSeq)
+      case ConfigValueType.LIST =>
+        val userAddresses =
+          c.getStringList("nameservers").asScala.iterator.map(parseNameserverAddress).to(immutable.IndexedSeq)
         require(userAddresses.nonEmpty, "nameservers can not be empty")
         userAddresses.toList
-      case _ ⇒ throw new IllegalArgumentException("Invalid type for nameservers. Must be a string or string list")
+      case _ => throw new IllegalArgumentException("Invalid type for nameservers. Must be a string or string list")
     }
   }
 
@@ -56,8 +57,8 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
     } else if (etcResolvConf.exists()) {
       val parsed = ResolvConfParser.parseFile(etcResolvConf)
       parsed match {
-        case Success(value) ⇒ Some(value)
-        case Failure(exception) ⇒
+        case Success(value) => Some(value)
+        case Failure(exception) =>
           if (system.log.isWarningEnabled) {
             system.log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
           }
@@ -68,40 +69,42 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   val SearchDomains: List[String] = {
     c.getValue("search-domains").valueType() match {
-      case ConfigValueType.STRING ⇒
+      case ConfigValueType.STRING =>
         c.getString("search-domains") match {
-          case "default" ⇒ resolvConf.map(_.search).getOrElse(Nil)
-          case single    ⇒ List(single)
+          case "default" => resolvConf.map(_.search).getOrElse(Nil)
+          case single    => List(single)
         }
-      case ConfigValueType.LIST ⇒
+      case ConfigValueType.LIST =>
         c.getStringList("search-domains").asScala.toList
-      case _ ⇒ throw new IllegalArgumentException("Invalid type for search-domains. Must be a string or string list.")
+      case _ => throw new IllegalArgumentException("Invalid type for search-domains. Must be a string or string list.")
     }
   }
 
   val NDots: Int = {
     c.getValue("ndots").valueType() match {
-      case ConfigValueType.STRING ⇒
+      case ConfigValueType.STRING =>
         c.getString("ndots") match {
-          case "default" ⇒ resolvConf.map(_.ndots).getOrElse(1)
-          case _         ⇒ throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
+          case "default" => resolvConf.map(_.ndots).getOrElse(1)
+          case _ =>
+            throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
         }
-      case ConfigValueType.NUMBER ⇒
+      case ConfigValueType.NUMBER =>
         val ndots = c.getInt("ndots")
         if (ndots < 0) {
           throw new IllegalArgumentException("Invalid value for ndots, ndots must not be negative.")
         }
         ndots
-      case _ ⇒ throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
+      case _ =>
+        throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
     }
   }
 
   // -------------------------
 
   def failUnableToDetermineDefaultNameservers =
-    throw new IllegalStateException("Unable to obtain default nameservers from JNDI or via reflection. " +
-      "Please set `akka.io.dns.async-dns.nameservers` explicitly in order to be able to resolve domain names. "
-    )
+    throw new IllegalStateException(
+      "Unable to obtain default nameservers from JNDI or via reflection. " +
+      "Please set `akka.io.dns.async-dns.nameservers` explicitly in order to be able to resolve domain names. ")
 
 }
 
@@ -133,8 +136,8 @@ object DnsSettings {
         val uri = new URI(server)
         val host = uri.getHost
         val port = uri.getPort match {
-          case -1       ⇒ DnsFallbackPort
-          case selected ⇒ selected
+          case -1       => DnsFallbackPort
+          case selected => selected
         }
         new InetSocketAddress(host, port)
       }
@@ -160,7 +163,9 @@ object DnsSettings {
         // Only try if not empty as otherwise we will produce an exception
         if (dnsUrls != null && !dnsUrls.isEmpty) {
           val servers = dnsUrls.split(" ")
-          servers.flatMap { server ⇒ asInetSocketAddress(server).toOption }.toList
+          servers.flatMap { server =>
+            asInetSocketAddress(server).toOption
+          }.toList
         } else Nil
       }
     }
@@ -168,20 +173,21 @@ object DnsSettings {
     // this method is used as a fallback in case JNDI results in an empty list
     // this method will not work when running modularised of course since it needs access to internal sun classes
     def getNameserversUsingReflection: Try[List[InetSocketAddress]] = {
-      system.dynamicAccess.getClassFor("sun.net.dns.ResolverConfiguration")
-        .flatMap { c ⇒
-          Try {
-            val open = c.getMethod("open")
-            val nameservers = c.getMethod("nameservers")
-            val instance = open.invoke(null)
-            val ns = nameservers.invoke(instance).asInstanceOf[util.List[String]]
-            val res = if (ns.isEmpty) throw new IllegalStateException("Empty nameservers list discovered using reflection. Consider configuring default nameservers manually!")
-            else ns.asScala.toList
-            res.flatMap(s ⇒ asInetSocketAddress(s).toOption)
-          }
+      system.dynamicAccess.getClassFor("sun.net.dns.ResolverConfiguration").flatMap { c =>
+        Try {
+          val open = c.getMethod("open")
+          val nameservers = c.getMethod("nameservers")
+          val instance = open.invoke(null)
+          val ns = nameservers.invoke(instance).asInstanceOf[util.List[String]]
+          val res = if (ns.isEmpty)
+            throw new IllegalStateException(
+              "Empty nameservers list discovered using reflection. Consider configuring default nameservers manually!")
+          else ns.asScala.toList
+          res.flatMap(s => asInetSocketAddress(s).toOption)
         }
+      }
     }
 
-    getNameserversUsingJNDI orElse getNameserversUsingReflection
+    getNameserversUsingJNDI.orElse(getNameserversUsingReflection)
   }
 }

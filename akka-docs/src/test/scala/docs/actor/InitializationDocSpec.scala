@@ -4,14 +4,14 @@
 
 package docs.actor
 
-import akka.actor.{ Props, Actor }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 object InitializationDocSpec {
 
   class PreStartInitExample extends Actor {
     override def receive = {
-      case _ ⇒ // Ignore
+      case _ => // Ignore
     }
 
     //#preStartInit
@@ -38,14 +38,14 @@ object InitializationDocSpec {
     var initializeMe: Option[String] = None
 
     override def receive = {
-      case "init" ⇒
+      case "init" =>
         initializeMe = Some("Up and running")
         context.become(initialized, discardOld = true)
 
     }
 
     def initialized: Receive = {
-      case "U OK?" ⇒ initializeMe foreach { sender() ! _ }
+      case "U OK?" => initializeMe.foreach { sender() ! _ }
     }
     //#messageInit
 

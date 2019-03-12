@@ -43,7 +43,7 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
       runOn(master) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case x ⇒ testActor ! x; sender() ! x
+            case x => testActor ! x; sender() ! x
           }
         }).withDeploy(Deploy.local), "echo")
       }
@@ -67,7 +67,7 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
       enterBarrier("throttled_send")
 
       runOn(slave) {
-        for (i ← 0 to 9) echo ! i
+        for (i <- 0 to 9) echo ! i
       }
 
       within(0.5 seconds, 2 seconds) {
@@ -85,7 +85,7 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
       enterBarrier("throttled_recv")
 
       runOn(slave) {
-        for (i ← 10 to 19) echo ! i
+        for (i <- 10 to 19) echo ! i
       }
 
       val (min, max) =

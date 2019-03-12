@@ -21,6 +21,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 * [interaction patterns](interaction-patterns.md)
 * [fault-tolerance](fault-tolerance.md)
 * [actor-discovery](actor-discovery.md)
+* [routers](routers.md)
 * [stash](stash.md)
 * [stream](stream.md)
 * [cluster](cluster.md)

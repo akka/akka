@@ -28,11 +28,12 @@ object LotsOfDataBot {
   }
 
   def startup(ports: Seq[String]): Unit = {
-    ports.foreach { port ⇒
+    ports.foreach { port =>
       // Override the configuration of the port
-      val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-        withFallback(ConfigFactory.load(
-          ConfigFactory.parseString("""
+      val config = ConfigFactory
+        .parseString("akka.remote.netty.tcp.port=" + port)
+        .withFallback(
+          ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
@@ -87,9 +88,9 @@ class LotsOfDataBot extends Actor with ActorLogging {
   def receive = if (isPassive) passive else active
 
   def active: Receive = {
-    case Tick ⇒
+    case Tick =>
       val loop = if (count >= maxEntries) 1 else 100
-      for (_ ← 1 to loop) {
+      for (_ <- 1 to loop) {
         count += 1
         if (count % 10000 == 0)
           log.info("Reached {} entries", count)
@@ -107,28 +108,28 @@ class LotsOfDataBot extends Actor with ActorLogging {
           replicator ! Update(key, ORSet(), WriteLocal)(_ :+ s)
         } else {
           // remove
-          replicator ! Update(key, ORSet(), WriteLocal)(_ remove s)
+          replicator ! Update(key, ORSet(), WriteLocal)(_.remove(s))
         }
       }
 
-    case _: UpdateResponse[_] ⇒ // ignore
+    case _: UpdateResponse[_] => // ignore
 
-    case c @ Changed(ORSetKey(id)) ⇒
+    case c @ Changed(ORSetKey(id)) =>
       val ORSet(elements) = c.dataValue
       log.info("Current elements: {} -> {}", id, elements)
   }
 
   def passive: Receive = {
-    case Tick ⇒
+    case Tick =>
       if (!tickTask.isCancelled)
         replicator ! GetKeyIds
-    case GetKeyIdsResult(keys) ⇒
+    case GetKeyIdsResult(keys) =>
       if (keys.size >= maxEntries) {
         tickTask.cancel()
         val duration = (System.nanoTime() - startTime).nanos.toMillis
         log.info("It took {} ms to replicate {} entries", duration, keys.size)
       }
-    case c @ Changed(ORSetKey(id)) ⇒
+    case c @ Changed(ORSetKey(id)) =>
       val ORSet(elements) = c.dataValue
       log.info("Current elements: {} -> {}", id, elements)
   }
@@ -136,4 +137,3 @@ class LotsOfDataBot extends Actor with ActorLogging {
   override def postStop(): Unit = tickTask.cancel()
 
 }
-

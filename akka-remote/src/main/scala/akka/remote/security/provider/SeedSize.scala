@@ -17,4 +17,3 @@ private[provider] object SeedSize {
   val Seed192 = 24
   val Seed256 = 32
 }
-

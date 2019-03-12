@@ -11,7 +11,7 @@ import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Measurement
 import org.openjdk.jmh.annotations.Mode
 import org.openjdk.jmh.annotations.OutputTimeUnit
-import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.Warmup
 import akka.cluster.UniqueAddress
@@ -47,7 +47,7 @@ class VersionVectorBenchmark {
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, n) ⇒ vv + nextNode())
+    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, n) => vv + nextNode())
     vv2 = vv1 + nextNode()
     vv3 = vv1 + nextNode()
     dot1 = VersionVector(nodeA, vv1.versionAt(nodeA))

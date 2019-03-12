@@ -52,21 +52,21 @@ class AgentDocSpec extends AkkaSpec {
     //#send
     // send a value, enqueues this change
     // of the value of the Agent
-    agent send 7
+    agent.send(7)
 
     // send a function, enqueues this change
     // to the value of the Agent
-    agent send (_ + 1)
-    agent send (_ * 2)
+    agent.send(_ + 1)
+    agent.send(_ * 2)
     //#send
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = scala.concurrent.ExecutionContext.Implicits.global // Just for the example code
     //#send-off
     // the ExecutionContext you want to run the function on
     implicit val ec = someExecutionContext()
     // sendOff a function
-    agent sendOff longRunningOrBlockingFunction
+    agent.sendOff(longRunningOrBlockingFunction)
     //#send-off
 
     Await.result(agent.future, 5 seconds) should be(16)
@@ -76,21 +76,21 @@ class AgentDocSpec extends AkkaSpec {
     val agent = Agent(0)(ExecutionContext.global)
     //#alter
     // alter a value
-    val f1: Future[Int] = agent alter 7
+    val f1: Future[Int] = agent.alter(7)
 
     // alter a function
-    val f2: Future[Int] = agent alter (_ + 1)
-    val f3: Future[Int] = agent alter (_ * 2)
+    val f2: Future[Int] = agent.alter(_ + 1)
+    val f3: Future[Int] = agent.alter(_ * 2)
     //#alter
 
-    def longRunningOrBlockingFunction = (i: Int) ⇒ i * 1 // Just for the example code
+    def longRunningOrBlockingFunction = (i: Int) => i * 1 // Just for the example code
     def someExecutionContext() = ExecutionContext.global // Just for the example code
 
     //#alter-off
     // the ExecutionContext you want to run the function on
     implicit val ec = someExecutionContext()
     // alterOff a function
-    val f4: Future[Int] = agent alterOff longRunningOrBlockingFunction
+    val f4: Future[Int] = agent.alterOff(longRunningOrBlockingFunction)
     //#alter-off
 
     Await.result(f4, 5 seconds) should be(16)
@@ -104,11 +104,11 @@ class AgentDocSpec extends AkkaSpec {
     import scala.concurrent.stm._
 
     def transfer(from: Agent[Int], to: Agent[Int], amount: Int): Boolean = {
-      atomic { txn ⇒
+      atomic { txn =>
         if (from.get < amount) false
         else {
-          from send (_ - amount)
-          to send (_ + amount)
+          from.send(_ - amount)
+          to.send(_ + amount)
           true
         }
       }
@@ -135,19 +135,19 @@ class AgentDocSpec extends AkkaSpec {
     val agent2 = Agent(5)
 
     // uses foreach
-    for (value ← agent1)
+    for (value <- agent1)
       println(value)
 
     // uses map
-    val agent3 = for (value ← agent1) yield value + 1
+    val agent3 = for (value <- agent1) yield value + 1
 
     // or using map directly
-    val agent4 = agent1 map (_ + 1)
+    val agent4 = agent1.map(_ + 1)
 
     // uses flatMap
     val agent5 = for {
-      value1 ← agent1
-      value2 ← agent2
+      value1 <- agent1
+      value2 <- agent2
     } yield value1 + value2
     //#monadic-example
 

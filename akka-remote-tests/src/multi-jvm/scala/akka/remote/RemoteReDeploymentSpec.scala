@@ -23,8 +23,8 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = true).withFallback(ConfigFactory.parseString(
-    s"""akka.remote.transport-failure-detector {
+  commonConfig(
+    debugConfig(on = true).withFallback(ConfigFactory.parseString(s"""akka.remote.transport-failure-detector {
          threshold=0.1
          heartbeat-interval=0.1s
          acceptable-heartbeat-pause=1s
@@ -49,8 +49,8 @@ class RemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvm
 class ArteryRemoteReDeploymentFastMultiJvmNode1 extends RemoteReDeploymentFastMultiJvmSpec(artery = true)
 class ArteryRemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvmSpec(artery = true)
 
-abstract class RemoteReDeploymentFastMultiJvmSpec(artery: Boolean) extends RemoteReDeploymentMultiJvmSpec(
-  new RemoteReDeploymentConfig(artery)) {
+abstract class RemoteReDeploymentFastMultiJvmSpec(artery: Boolean)
+    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
   override def sleepAfterKill = 0.seconds // new association will come in while old is still “healthy”
   override def expectQuarantine = false
 }
@@ -61,9 +61,10 @@ class RemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMult
 class ArteryRemoteReDeploymentMediumMultiJvmNode1 extends RemoteReDeploymentMediumMultiJvmSpec(artery = true)
 class ArteryRemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMultiJvmSpec(artery = true)
 
-abstract class RemoteReDeploymentMediumMultiJvmSpec(artery: Boolean) extends RemoteReDeploymentMultiJvmSpec(
-  new RemoteReDeploymentConfig(artery)) {
-  override def sleepAfterKill = 1.seconds // new association will come in while old is gated in ReliableDeliverySupervisor
+abstract class RemoteReDeploymentMediumMultiJvmSpec(artery: Boolean)
+    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
+  override def sleepAfterKill =
+    1.seconds // new association will come in while old is gated in ReliableDeliverySupervisor
   override def expectQuarantine = false
 }
 
@@ -73,8 +74,8 @@ class RemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvm
 class ArteryRemoteReDeploymentSlowMultiJvmNode1 extends RemoteReDeploymentSlowMultiJvmSpec(artery = true)
 class ArteryRemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvmSpec(artery = true)
 
-abstract class RemoteReDeploymentSlowMultiJvmSpec(artery: Boolean) extends RemoteReDeploymentMultiJvmSpec(
-  new RemoteReDeploymentConfig(artery)) {
+abstract class RemoteReDeploymentSlowMultiJvmSpec(artery: Boolean)
+    extends RemoteReDeploymentMultiJvmSpec(new RemoteReDeploymentConfig(artery)) {
   override def sleepAfterKill = 10.seconds // new association will come in after old has been quarantined
   override def expectQuarantine = true
 }
@@ -84,8 +85,8 @@ object RemoteReDeploymentMultiJvmSpec {
     val monitor = context.actorSelection("/user/echo")
     log.info(s"Started Parent on path ${self.path}")
     def receive = {
-      case (p: Props, n: String) ⇒ context.actorOf(p, n)
-      case msg                   ⇒ monitor ! msg
+      case (p: Props, n: String) => context.actorOf(p, n)
+      case msg                   => monitor ! msg
     }
   }
 
@@ -100,7 +101,7 @@ object RemoteReDeploymentMultiJvmSpec {
 
   class Echo(target: ActorRef) extends Actor with ActorLogging {
     def receive = {
-      case msg ⇒
+      case msg =>
         log.info(s"received $msg from ${sender()}")
         target ! msg
     }
@@ -109,7 +110,7 @@ object RemoteReDeploymentMultiJvmSpec {
 }
 
 abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymentConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
 
   def sleepAfterKill: FiniteDuration
   def expectQuarantine: Boolean
@@ -150,8 +151,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
             // The quarantine of node 2, where the Parent lives, should cause the Hello child to be stopped:
             expectMsg("PostStop")
             expectNoMsg()
-          }
-        else expectNoMsg(sleepAfterKill)
+          } else expectNoMsg(sleepAfterKill)
         awaitAssert(node(second), 10.seconds, 100.millis)
       }
 

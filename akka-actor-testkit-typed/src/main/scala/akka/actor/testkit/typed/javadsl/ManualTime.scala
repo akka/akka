@@ -29,9 +29,11 @@ object ManualTime {
    */
   def get[A](system: ActorSystem[A]): ManualTime =
     system.scheduler match {
-      case sc: akka.testkit.ExplicitlyTriggeredScheduler ⇒ new ManualTime(sc)
-      case _ ⇒ throw new IllegalArgumentException("ActorSystem not configured with explicitly triggered scheduler, " +
-        "make sure to include akka.actor.testkit.typed.javadsl.ManualTime.config() when setting up the test")
+      case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
+      case _ =>
+        throw new IllegalArgumentException(
+          "ActorSystem not configured with explicitly triggered scheduler, " +
+          "make sure to include akka.actor.testkit.typed.javadsl.ManualTime.config() when setting up the test")
     }
 
 }

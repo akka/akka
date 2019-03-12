@@ -30,9 +30,9 @@ object ActorPublisherDocSpec {
     var buf = Vector.empty[Job]
 
     def receive = {
-      case job: Job if buf.size == MaxBufferSize ⇒
+      case job: Job if buf.size == MaxBufferSize =>
         sender() ! JobDenied
-      case job: Job ⇒
+      case job: Job =>
         sender() ! JobAccepted
         if (buf.isEmpty && totalDemand > 0)
           onNext(job)
@@ -40,9 +40,9 @@ object ActorPublisherDocSpec {
           buf :+= job
           deliverBuf()
         }
-      case Request(_) ⇒
+      case Request(_) =>
         deliverBuf()
-      case Cancel ⇒
+      case Cancel =>
         context.stop(self)
     }
 
@@ -55,11 +55,11 @@ object ActorPublisherDocSpec {
         if (totalDemand <= Int.MaxValue) {
           val (use, keep) = buf.splitAt(totalDemand.toInt)
           buf = keep
-          use foreach onNext
+          use.foreach(onNext)
         } else {
           val (use, keep) = buf.splitAt(Int.MaxValue)
           buf = keep
-          use foreach onNext
+          use.foreach(onNext)
           deliverBuf()
         }
       }
@@ -80,7 +80,9 @@ class ActorPublisherDocSpec extends AkkaSpec {
     val jobManagerSource = Source.actorPublisher[JobManager.Job](JobManager.props)
     val ref = Flow[JobManager.Job]
       .map(_.payload.toUpperCase)
-      .map { elem ⇒ println(elem); elem }
+      .map { elem =>
+        println(elem); elem
+      }
       .to(Sink.ignore)
       .runWith(jobManagerSource)
 

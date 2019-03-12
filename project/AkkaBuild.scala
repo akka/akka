@@ -9,6 +9,7 @@ import java.util.Properties
 
 import sbt.Keys._
 import sbt._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
 
 import scala.collection.breakOut
 
@@ -25,7 +26,6 @@ object AkkaBuild {
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
-    Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       version in ThisBuild := "2.5-SNAPSHOT"
@@ -46,8 +46,8 @@ object AkkaBuild {
 
   val (mavenLocalResolver, mavenLocalResolverSettings) =
     System.getProperty("akka.build.M2Dir") match {
-      case null ⇒ (Resolver.mavenLocal, Seq.empty)
-      case path ⇒
+      case null => (Resolver.mavenLocal, Seq.empty)
+      case path =>
         // Maven resolver settings
         def deliverPattern(outputPath: File): String =
           (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
@@ -78,7 +78,7 @@ object AkkaBuild {
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
-    pomIncludeRepository := (_ ⇒ false) // do not leak internal repositories during staging
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
@@ -107,7 +107,7 @@ object AkkaBuild {
             // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
             Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       javacOptions in compile ++= DefaultJavacOptions ++ (
         if (System.getProperty("java.version").startsWith("1."))
@@ -199,7 +199,7 @@ object AkkaBuild {
         val base = (javaOptions in Test).value
         val akkaSysProps: Seq[String] =
           sys.props.filter(_._1.startsWith("akka"))
-            .map { case (key, value) ⇒ s"-D$key=$value" }(breakOut)
+            .map { case (key, value) => s"-D$key=$value" }(breakOut)
 
         base ++ akkaSysProps
       },
@@ -209,12 +209,12 @@ object AkkaBuild {
       testGrouping in Test := {
         val original: Seq[Tests.Group] = (testGrouping in Test).value
 
-        original.map { group ⇒
+        original.map { group =>
           group.runPolicy match {
-            case Tests.SubProcess(forkOptions) ⇒
+            case Tests.SubProcess(forkOptions) =>
               group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
                 workingDirectory = Some(new File(System.getProperty("user.dir"))))))
-            case _ ⇒ group
+            case _ => group
           }
         }
       },

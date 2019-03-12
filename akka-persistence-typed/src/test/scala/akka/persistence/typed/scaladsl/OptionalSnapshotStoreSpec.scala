@@ -24,19 +24,15 @@ object OptionalSnapshotStoreSpec {
 
   case class Event(id: Long = System.currentTimeMillis())
 
-  def persistentBehavior(
-    probe: TestProbe[State],
-    name:  String           = UUID.randomUUID().toString) =
-    EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
-      emptyState = State(),
-      commandHandler = CommandHandler.command {
-        _ ⇒ Effect.persist(Event()).thenRun(probe.ref ! _)
-      },
-      eventHandler = {
-        case (_, _) ⇒ State()
-      }
-    ).snapshotWhen { case _ ⇒ true }
+  def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
+    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId(name),
+                                                emptyState = State(),
+                                                commandHandler = CommandHandler.command { _ =>
+                                                  Effect.persist(Event()).thenRun(probe.ref ! _)
+                                                },
+                                                eventHandler = {
+                                                  case (_, _) => State()
+                                                }).snapshotWhen { case _ => true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
     persistentBehavior(probe).withSnapshotPluginId("akka.persistence.snapshot-store.local")

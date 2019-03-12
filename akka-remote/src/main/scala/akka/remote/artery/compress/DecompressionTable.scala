@@ -15,7 +15,8 @@ private[remote] final case class DecompressionTable[T](originUid: Long, version:
 
   def get(idx: Int): T = {
     if (idx >= length)
-      throw new IllegalArgumentException(s"Attempted decompression of unknown id: [$idx]! " +
+      throw new IllegalArgumentException(
+        s"Attempted decompression of unknown id: [$idx]! " +
         s"Only $length ids allocated in table version [$version] for origin [$originUid].")
     table(idx)
   }
@@ -26,7 +27,7 @@ private[remote] final case class DecompressionTable[T](originUid: Long, version:
   /** Writes complete table as String (heavy operation) */
   override def toString =
     s"DecompressionTable($originUid, $version, " +
-      s"Map(${table.zipWithIndex.map({ case (t, i) ⇒ s"$i -> $t" }).mkString(",")}))"
+    s"Map(${table.zipWithIndex.map({ case (t, i) => s"$i -> $t" }).mkString(",")}))"
 }
 
 /** INTERNAL API */

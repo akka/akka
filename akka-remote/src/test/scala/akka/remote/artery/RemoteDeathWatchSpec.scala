@@ -37,11 +37,14 @@ object RemoteDeathWatchSpec {
     """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
-class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+class RemoteDeathWatchSpec
+    extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config)
+    with ImplicitSender
+    with DefaultTimeout
+    with DeathWatchSpec {
   import RemoteDeathWatchSpec._
 
-  system.eventStream.publish(TestEvent.Mute(
-    EventFilter[io.aeron.exceptions.RegistrationException]()))
+  system.eventStream.publish(TestEvent.Mute(EventFilter[io.aeron.exceptions.RegistrationException]()))
 
   val other = newRemoteSystem(name = Some("other"), extraConfig = Some(s"akka.remote.artery.canonical.port=$otherPort"))
 
@@ -64,7 +67,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
           context.watch(ref)
 
           def receive = {
-            case Terminated(r) ⇒ testActor ! r
+            case Terminated(r) => testActor ! r
           }
         }).withDeploy(Deploy.local))
 
@@ -78,7 +81,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
       def receive = {
-        case t: Terminated ⇒ testActor ! t.actor.path
+        case t: Terminated => testActor ! t.actor.path
       }
     }).withDeploy(Deploy.local), name = "observer2")
 

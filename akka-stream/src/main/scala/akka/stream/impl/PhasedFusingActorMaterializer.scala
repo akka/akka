@@ -8,7 +8,16 @@ import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
-import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill }
+import akka.actor.{
+  ActorContext,
+  ActorRef,
+  ActorRefFactory,
+  ActorSystem,
+  Cancellable,
+  Deploy,
+  ExtendedActorSystem,
+  PoisonPill
+}
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
@@ -35,74 +44,80 @@ import akka.util.OptionVal
   val Debug = false
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
-    override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
-                       materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
-      new GraphStageIsland(settings, effectiveAttributes, materializer, islandName, subflowFuser = OptionVal.None).asInstanceOf[PhaseIsland[Any]]
+    override def apply(settings: ActorMaterializerSettings,
+                       effectiveAttributes: Attributes,
+                       materializer: PhasedFusingActorMaterializer,
+                       islandName: String): PhaseIsland[Any] =
+      new GraphStageIsland(settings, effectiveAttributes, materializer, islandName, subflowFuser = OptionVal.None)
+        .asInstanceOf[PhaseIsland[Any]]
   }
 
   val DefaultPhases: Map[IslandTag, Phase[Any]] = Map[IslandTag, Phase[Any]](
-    SinkModuleIslandTag → new Phase[Any] {
-      override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
+    SinkModuleIslandTag -> new Phase[Any] {
+      override def apply(settings: ActorMaterializerSettings,
+                         effectiveAttributes: Attributes,
                          materializer: PhasedFusingActorMaterializer,
-                         islandName:   String): PhaseIsland[Any] =
+                         islandName: String): PhaseIsland[Any] =
         new SinkModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
-    SourceModuleIslandTag → new Phase[Any] {
-      override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
+    SourceModuleIslandTag -> new Phase[Any] {
+      override def apply(settings: ActorMaterializerSettings,
+                         effectiveAttributes: Attributes,
                          materializer: PhasedFusingActorMaterializer,
-                         islandName:   String): PhaseIsland[Any] =
+                         islandName: String): PhaseIsland[Any] =
         new SourceModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
-    ProcessorModuleIslandTag → new Phase[Any] {
-      override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
+    ProcessorModuleIslandTag -> new Phase[Any] {
+      override def apply(settings: ActorMaterializerSettings,
+                         effectiveAttributes: Attributes,
                          materializer: PhasedFusingActorMaterializer,
-                         islandName:   String): PhaseIsland[Any] =
+                         islandName: String): PhaseIsland[Any] =
         new ProcessorModulePhase().asInstanceOf[PhaseIsland[Any]]
     },
-    TlsModuleIslandTag → new Phase[Any] {
-      def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
-                materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
+    TlsModuleIslandTag -> new Phase[Any] {
+      def apply(settings: ActorMaterializerSettings,
+                effectiveAttributes: Attributes,
+                materializer: PhasedFusingActorMaterializer,
+                islandName: String): PhaseIsland[Any] =
         new TlsModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
-    GraphStageTag → DefaultPhase)
+    GraphStageTag -> DefaultPhase)
 
   @InternalApi private[akka] def apply()(implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
     val materializerSettings = ActorMaterializerSettings(system)
 
-    val streamSupervisor = context.actorOf(
-      StreamSupervisor.props(materializerSettings, haveShutDown),
-      StreamSupervisor.nextName())
+    val streamSupervisor =
+      context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown), StreamSupervisor.nextName())
 
-    PhasedFusingActorMaterializer(
-      system,
-      materializerSettings,
-      system.dispatchers,
-      streamSupervisor,
-      haveShutDown,
-      FlowNames(system).name.copy("flow"))
+    PhasedFusingActorMaterializer(system,
+                                  materializerSettings,
+                                  system.dispatchers,
+                                  streamSupervisor,
+                                  haveShutDown,
+                                  FlowNames(system).name.copy("flow"))
   }
 
   private def actorSystemOf(context: ActorRefFactory): ActorSystem = {
     val system = context match {
-      case s: ExtendedActorSystem ⇒ s
-      case c: ActorContext        ⇒ c.system
-      case null                   ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
-      case _ ⇒
-        throw new IllegalArgumentException(s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
+      case s: ExtendedActorSystem => s
+      case c: ActorContext        => c.system
+      case null                   => throw new IllegalArgumentException("ActorRefFactory context must be defined")
+      case _ =>
+        throw new IllegalArgumentException(
+          s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
     }
     system
   }
 
 }
 
-private final case class SegmentInfo(
-  globalislandOffset: Int, // The island to which the segment belongs
-  length:             Int, // How many slots are contained by the segment
-  globalBaseOffset:   Int, // The global slot where this segment starts
-  relativeBaseOffset: Int, // the local offset of the slot where this segment starts
-  phase:              PhaseIsland[Any]) {
+private final case class SegmentInfo(globalislandOffset: Int, // The island to which the segment belongs
+                                     length: Int, // How many slots are contained by the segment
+                                     globalBaseOffset: Int, // The global slot where this segment starts
+                                     relativeBaseOffset: Int, // the local offset of the slot where this segment starts
+                                     phase: PhaseIsland[Any]) {
 
   override def toString: String =
     s"""
@@ -115,25 +130,27 @@ private final case class SegmentInfo(
        """.stripMargin
 }
 
-private final case class ForwardWire(
-  islandGlobalOffset: Int,
-  from:               OutPort,
-  toGlobalOffset:     Int,
-  outStage:           Any,
-  phase:              PhaseIsland[Any]) {
+private final case class ForwardWire(islandGlobalOffset: Int,
+                                     from: OutPort,
+                                     toGlobalOffset: Int,
+                                     outStage: Any,
+                                     phase: PhaseIsland[Any]) {
 
-  override def toString: String = s"ForwardWire(islandId = $islandGlobalOffset, from = $from, toGlobal = $toGlobalOffset, phase = $phase)"
+  override def toString: String =
+    s"ForwardWire(islandId = $islandGlobalOffset, from = $from, toGlobal = $toGlobalOffset, phase = $phase)"
 }
 
-private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOffset: Int, skippedSlots: Int, phase: PhaseIsland[Any])
+private final case class SavedIslandData(islandGlobalOffset: Int,
+                                         lastVisitedOffset: Int,
+                                         skippedSlots: Int,
+                                         phase: PhaseIsland[Any])
 
-@InternalApi private[akka] class IslandTracking(
-  val phases:       Map[IslandTag, Phase[Any]],
-  val settings:     ActorMaterializerSettings,
-  attributes:       Attributes,
-  defaultPhase:     Phase[Any],
-  val materializer: PhasedFusingActorMaterializer,
-  islandNamePrefix: String) {
+@InternalApi private[akka] class IslandTracking(val phases: Map[IslandTag, Phase[Any]],
+                                                val settings: ActorMaterializerSettings,
+                                                attributes: Attributes,
+                                                defaultPhase: Phase[Any],
+                                                val materializer: PhasedFusingActorMaterializer,
+                                                islandNamePrefix: String) {
 
   import PhasedFusingActorMaterializer.Debug
 
@@ -171,12 +188,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
     if (length > 0) {
       // We just finished a segment by entering an island.
-      val previousSegment = SegmentInfo(
-        globalislandOffset = currentIslandGlobalOffset,
-        length = currentGlobalOffset - currentSegmentGlobalOffset,
-        globalBaseOffset = currentSegmentGlobalOffset,
-        relativeBaseOffset = currentSegmentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippedSlots,
-        currentPhase)
+      val previousSegment = SegmentInfo(globalislandOffset = currentIslandGlobalOffset,
+                                        length = currentGlobalOffset - currentSegmentGlobalOffset,
+                                        globalBaseOffset = currentSegmentGlobalOffset,
+                                        relativeBaseOffset = currentSegmentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippedSlots,
+                                        currentPhase)
 
       // Segment tracking is by demand, we only allocate this list if it is used.
       // If there are no islands, then there is no need to track segments
@@ -192,7 +208,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     completeSegment()
     val previousPhase = currentPhase
     val previousIslandOffset = currentIslandGlobalOffset
-    islandStateStack.add(SavedIslandData(previousIslandOffset, currentGlobalOffset, currentIslandSkippedSlots, previousPhase))
+    islandStateStack.add(
+      SavedIslandData(previousIslandOffset, currentGlobalOffset, currentIslandSkippedSlots, previousPhase))
 
     currentPhase = phases(tag)(settings, attributes, materializer, nextIslandName())
     activePhases.add(currentPhase)
@@ -252,10 +269,12 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     if (forwardWire ne null) {
       // The forward wire ends up in the same island
       if (forwardWire.phase eq currentPhase) {
-        if (Debug) println(s"    in-island forward wiring from port ${forwardWire.from} wired to local slot = $localInSlot")
+        if (Debug)
+          println(s"    in-island forward wiring from port ${forwardWire.from} wired to local slot = $localInSlot")
         forwardWire.phase.assignPort(forwardWire.from, localInSlot, forwardWire.outStage)
       } else {
-        if (Debug) println(s"    cross island forward wiring from port ${forwardWire.from} wired to local slot = $localInSlot")
+        if (Debug)
+          println(s"    cross island forward wiring from port ${forwardWire.from} wired to local slot = $localInSlot")
         val publisher = forwardWire.phase.createPublisher(forwardWire.from, forwardWire.outStage)
         currentPhase.takePublisher(localInSlot, publisher)
       }
@@ -278,7 +297,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       if (absoluteOffset >= currentSegmentGlobalOffset) {
         // Wiring is in the same segment, no complex lookup needed
         val localInSlot = absoluteOffset - currentIslandGlobalOffset - currentIslandSkippedSlots
-        if (Debug) println(s"    in-segment wiring to local ($absoluteOffset - $currentIslandGlobalOffset - $currentIslandSkippedSlots) = $localInSlot")
+        if (Debug)
+          println(
+            s"    in-segment wiring to local ($absoluteOffset - $currentIslandGlobalOffset - $currentIslandSkippedSlots) = $localInSlot")
         currentPhase.assignPort(out, localInSlot, logic)
       } else {
         // Wiring is cross-segment, but we don't know if it is cross-island or not yet
@@ -315,12 +336,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         forwardWires = new java.util.ArrayList[ForwardWire](8)
       }
 
-      val forwardWire = ForwardWire(
-        islandGlobalOffset = currentIslandGlobalOffset,
-        from = out,
-        toGlobalOffset = absoluteOffset,
-        logic,
-        currentPhase)
+      val forwardWire = ForwardWire(islandGlobalOffset = currentIslandGlobalOffset,
+                                    from = out,
+                                    toGlobalOffset = absoluteOffset,
+                                    logic,
+                                    currentPhase)
 
       if (Debug) println(s"    wiring is forward, recording $forwardWire")
       forwardWires.add(forwardWire)
@@ -343,24 +363,26 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] case class PhasedFusingActorMaterializer(
-  system:                ActorSystem,
-  override val settings: ActorMaterializerSettings,
-  dispatchers:           Dispatchers,
-  supervisor:            ActorRef,
-  haveShutDown:          AtomicBoolean,
-  flowNames:             SeqActorName) extends ExtendedActorMaterializer {
+@InternalApi private[akka] case class PhasedFusingActorMaterializer(system: ActorSystem,
+                                                                    override val settings: ActorMaterializerSettings,
+                                                                    dispatchers: Dispatchers,
+                                                                    supervisor: ActorRef,
+                                                                    haveShutDown: AtomicBoolean,
+                                                                    flowNames: SeqActorName)
+    extends ExtendedActorMaterializer {
   import PhasedFusingActorMaterializer._
 
   private val _logger = Logging.getLogger(system, this)
   override def logger: LoggingAdapter = _logger
 
   if (settings.fuzzingMode && !system.settings.config.hasPath("akka.stream.secret-test-fuzzing-warning-disable")) {
-    _logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
+    _logger.warning(
+      "Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
       "set akka.stream.materializer.debug.fuzzing-mode to off.")
   }
   if (!settings.autoFusing) {
-    _logger.warning("Deprecated setting auto-fusing set to false. Since Akka 2.5.0 it does not have any effect " +
+    _logger.warning(
+      "Deprecated setting auto-fusing set to false. Since Akka 2.5.0 it does not have any effect " +
       "and streams are always fused.")
   }
 
@@ -385,19 +407,19 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   val defaultAttributes: Attributes = {
     Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
-        ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-        ActorAttributes.Dispatcher(
-          if (settings.dispatcher == Deploy.NoDispatcherGiven) Dispatchers.DefaultDispatcherId
-          else settings.dispatcher
-        ) :: Nil)
+      ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
+      ActorAttributes.Dispatcher(if (settings.dispatcher == Deploy.NoDispatcherGiven) Dispatchers.DefaultDispatcherId
+      else settings.dispatcher) :: Nil)
   }
 
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
-    case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
-    case other                    ⇒ other
+    case Deploy.NoDispatcherGiven => Dispatchers.DefaultDispatcherId
+    case other                    => other
   })
 
-  override def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
+  override def schedulePeriodically(initialDelay: FiniteDuration,
+                                    interval: FiniteDuration,
+                                    task: Runnable): Cancellable =
     system.scheduler.schedule(initialDelay, interval, task)(executionContext)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
@@ -406,22 +428,23 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
     materialize(_runnableGraph, defaultAttributes)
 
-  override def materialize[Mat](
-    _runnableGraph:    Graph[ClosedShape, Mat],
-    defaultAttributes: Attributes): Mat =
-    materialize(
-      _runnableGraph,
-      defaultAttributes,
-      PhasedFusingActorMaterializer.DefaultPhase,
-      PhasedFusingActorMaterializer.DefaultPhases)
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
+    materialize(_runnableGraph,
+                defaultAttributes,
+                PhasedFusingActorMaterializer.DefaultPhase,
+                PhasedFusingActorMaterializer.DefaultPhases)
 
-  override def materialize[Mat](
-    graph:             Graph[ClosedShape, Mat],
-    defaultAttributes: Attributes,
-    defaultPhase:      Phase[Any],
-    phases:            Map[IslandTag, Phase[Any]]): Mat = {
+  override def materialize[Mat](graph: Graph[ClosedShape, Mat],
+                                defaultAttributes: Attributes,
+                                defaultPhase: Phase[Any],
+                                phases: Map[IslandTag, Phase[Any]]): Mat = {
     if (isShutdown) throw new IllegalStateException("Trying to materialize stream after materializer has been shutdown")
-    val islandTracking = new IslandTracking(phases, settings, defaultAttributes, defaultPhase, this, islandNamePrefix = createFlowName() + "-")
+    val islandTracking = new IslandTracking(phases,
+                                            settings,
+                                            defaultAttributes,
+                                            defaultPhase,
+                                            this,
+                                            islandNamePrefix = createFlowName() + "-")
 
     var current: Traversal = graph.traversalBuilder.traversal
 
@@ -446,7 +469,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
       while (current ne EmptyTraversal) {
         var nextStep: Traversal = EmptyTraversal
         current match {
-          case MaterializeAtomic(mod, outToSlot) ⇒
+          case MaterializeAtomic(mod, outToSlot) =>
             if (Debug) println(s"materializing module: $mod")
             val matAndStage = islandTracking.getCurrentPhase.materializeAtomic(mod, attributesStack.getLast)
             val logic = matAndStage._1
@@ -461,37 +484,37 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
             if (Debug) println(s"PUSH: $matValue => $matValueStack")
 
-          case Concat(first, next) ⇒
+          case Concat(first, next) =>
             if (next ne EmptyTraversal) traversalStack.add(next)
             nextStep = first
-          case Pop ⇒
+          case Pop =>
             val popped = matValueStack.removeLast()
             if (Debug) println(s"POP: $popped => $matValueStack")
-          case PushNotUsed ⇒
+          case PushNotUsed =>
             matValueStack.addLast(NotUsed)
             if (Debug) println(s"PUSH: NotUsed => $matValueStack")
-          case transform: Transform ⇒
+          case transform: Transform =>
             val prev = matValueStack.removeLast()
             val result = transform(prev)
             matValueStack.addLast(result)
             if (Debug) println(s"TRFM: $matValueStack")
-          case compose: Compose ⇒
+          case compose: Compose =>
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
             val result = compose(first, second)
             matValueStack.addLast(result)
             if (Debug) println(s"COMP: $matValueStack")
-          case PushAttributes(attr) ⇒
+          case PushAttributes(attr) =>
             attributesStack.addLast(attributesStack.getLast and attr)
             if (Debug) println(s"ATTR PUSH: $attr")
-          case PopAttributes ⇒
+          case PopAttributes =>
             attributesStack.removeLast()
             if (Debug) println(s"ATTR POP")
-          case EnterIsland(tag) ⇒
+          case EnterIsland(tag) =>
             islandTracking.enterIsland(tag, attributesStack.getLast)
-          case ExitIsland ⇒
+          case ExitIsland =>
             islandTracking.exitIsland()
-          case _ ⇒
+          case _ =>
         }
         current = nextStep
       }
@@ -512,7 +535,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   }
 
-  private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
+  private def wireInlets(islandTracking: IslandTracking,
+                         mod: StreamLayout.AtomicModule[Shape, Any],
+                         logic: Any): Unit = {
     val inlets = mod.shape.inlets
     if (inlets.nonEmpty) {
       if (Shape.hasOnePort(inlets)) {
@@ -528,8 +553,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     }
   }
 
-  private def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
-                          stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
+  private def wireOutlets(islandTracking: IslandTracking,
+                          mod: StreamLayout.AtomicModule[Shape, Any],
+                          logic: Any,
+                          stageGlobalOffset: Int,
+                          outToSlot: Array[Int]): Unit = {
     val outlets = mod.shape.outlets
     if (outlets.nonEmpty) {
       if (Shape.hasOnePort(outlets)) {
@@ -564,11 +592,10 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
  * INTERNAL API
  */
 @DoNotInherit private[akka] trait Phase[M] {
-  def apply(
-    settings:            ActorMaterializerSettings,
-    effectiveAttributes: Attributes,
-    materializer:        PhasedFusingActorMaterializer,
-    islandName:          String): PhaseIsland[M]
+  def apply(settings: ActorMaterializerSettings,
+            effectiveAttributes: Attributes,
+            materializer: PhasedFusingActorMaterializer,
+            islandName: String): PhaseIsland[M]
 }
 
 /**
@@ -600,12 +627,12 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GraphStageIsland(
-  settings:            ActorMaterializerSettings,
-  effectiveAttributes: Attributes,
-  materializer:        PhasedFusingActorMaterializer,
-  islandName:          String,
-  subflowFuser:        OptionVal[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
+@InternalApi private[akka] final class GraphStageIsland(settings: ActorMaterializerSettings,
+                                                        effectiveAttributes: Attributes,
+                                                        materializer: PhasedFusingActorMaterializer,
+                                                        islandName: String,
+                                                        subflowFuser: OptionVal[GraphInterpreterShell => ActorRef])
+    extends PhaseIsland[GraphStageLogic] {
   // TODO: remove these
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new util.ArrayList[GraphStageLogic](16)
@@ -615,12 +642,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   private var outConnections: List[Connection] = Nil
   private var fullIslandName: OptionVal[String] = OptionVal.None
 
-  val shell = new GraphInterpreterShell(
-    connections = null,
-    logics = null,
-    settings,
-    effectiveAttributes,
-    materializer)
+  val shell = new GraphInterpreterShell(connections = null, logics = null, settings, effectiveAttributes, materializer)
 
   override def name: String = "Fusing GraphStages phase"
 
@@ -635,8 +657,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     logics.add(logic)
     logic.stageId = logics.size() - 1
     fullIslandName match {
-      case OptionVal.Some(_) ⇒ // already set
-      case OptionVal.None    ⇒ fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
+      case OptionVal.Some(_) => // already set
+      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
     }
     matAndLogic
   }
@@ -733,16 +755,17 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     shell.logics = logics.toArray(logicArrayType)
 
     subflowFuser match {
-      case OptionVal.Some(fuseIntoExistingInterpreter) ⇒
+      case OptionVal.Some(fuseIntoExistingInterpreter) =>
         fuseIntoExistingInterpreter(shell)
 
-      case _ ⇒
-
-        val props = ActorGraphInterpreter.props(shell).withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
+      case _ =>
+        val props = ActorGraphInterpreter
+          .props(shell)
+          .withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
 
         val actorName = fullIslandName match {
-          case OptionVal.Some(n) ⇒ n
-          case OptionVal.None    ⇒ islandName
+          case OptionVal.Some(n) => n
+          case OptionVal.None    => islandName
         }
 
         val ref = materializer.actorOf(props, actorName)
@@ -756,14 +779,15 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     val missingHandlerIdx = logic.handlers.indexWhere(_.asInstanceOf[AnyRef] eq null)
     val isIn = missingHandlerIdx < logic.inCount
     val portLabel = logic.originalStage match {
-      case OptionVal.Some(stage) ⇒
+      case OptionVal.Some(stage) =>
         if (isIn) s"in port [${stage.shape.inlets(missingHandlerIdx)}]"
         else s"out port [${stage.shape.outlets(missingHandlerIdx - logic.inCount)}"
-      case OptionVal.None ⇒
+      case OptionVal.None =>
         if (isIn) s"in port id [$missingHandlerIdx]"
         else s"out port id [$missingHandlerIdx]"
     }
-    throw new IllegalStateException(s"No handler defined in stage [${logic.originalStage.getOrElse(logic).toString}] for $portLabel." +
+    throw new IllegalStateException(
+      s"No handler defined in stage [${logic.originalStage.getOrElse(logic).toString}] for $portLabel." +
       " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
   }
 
@@ -778,14 +802,15 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SourceModulePhase(
-  materializer: PhasedFusingActorMaterializer,
-  islandName:   String) extends PhaseIsland[Publisher[Any]] {
+@InternalApi private[akka] final class SourceModulePhase(materializer: PhasedFusingActorMaterializer,
+                                                         islandName: String)
+    extends PhaseIsland[Publisher[Any]] {
   override def name: String = s"SourceModule phase"
 
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Publisher[Any], Any) = {
-    mod.asInstanceOf[SourceModule[Any, Any]].create(MaterializationContext(materializer, attributes,
-      islandName + "-" + attributes.nameOrDefault()))
+    mod
+      .asInstanceOf[SourceModule[Any, Any]]
+      .create(MaterializationContext(materializer, attributes, islandName + "-" + attributes.nameOrDefault()))
   }
 
   override def assignPort(in: InPort, slot: Int, logic: Publisher[Any]): Unit = ()
@@ -809,14 +834,15 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
  * INTERNAL API
  */
 @InternalApi private[akka] final class SinkModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
-  extends PhaseIsland[AnyRef] {
+    extends PhaseIsland[AnyRef] {
   override def name: String = s"SinkModule phase"
   var subscriberOrVirtualPublisher: AnyRef = _
 
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (AnyRef, Any) = {
     val subAndMat =
-      mod.asInstanceOf[SinkModule[Any, Any]].create(MaterializationContext(materializer, attributes,
-        islandName + "-" + attributes.nameOrDefault()))
+      mod
+        .asInstanceOf[SinkModule[Any, Any]]
+        .create(MaterializationContext(materializer, attributes, islandName + "-" + attributes.nameOrDefault()))
 
     subscriberOrVirtualPublisher = subAndMat._1
     (subscriberOrVirtualPublisher, subAndMat._2)
@@ -832,8 +858,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
     subscriberOrVirtualPublisher match {
-      case v: VirtualPublisher[_]        ⇒ v.registerPublisher(publisher)
-      case s: Subscriber[Any] @unchecked ⇒ publisher.subscribe(s)
+      case v: VirtualPublisher[_]        => v.registerPublisher(publisher)
+      case s: Subscriber[Any] @unchecked => publisher.subscribe(s)
     }
   }
 
@@ -848,8 +874,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ProcessorModulePhase()
-  extends PhaseIsland[Processor[Any, Any]] {
+@InternalApi private[akka] final class ProcessorModulePhase() extends PhaseIsland[Processor[Any, Any]] {
   override def name: String = "ProcessorModulePhase"
   private[this] var processor: Processor[Any, Any] = _
 
@@ -876,7 +901,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class TlsModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String) extends PhaseIsland[NotUsed] {
+@InternalApi private[akka] final class TlsModulePhase(materializer: PhasedFusingActorMaterializer, islandName: String)
+    extends PhaseIsland[NotUsed] {
   def name: String = "TlsModulePhase"
 
   var tlsActor: ActorRef = _

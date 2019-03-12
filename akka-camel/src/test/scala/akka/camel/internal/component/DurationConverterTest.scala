@@ -39,4 +39,3 @@ class DurationConverterSpec extends WordSpec with Matchers {
   }
 
 }
-

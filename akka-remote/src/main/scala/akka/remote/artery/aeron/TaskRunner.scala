@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
  */
 private[akka] object TaskRunner {
 
-  type Task = () ⇒ Boolean
+  type Task = () => Boolean
   sealed trait Command
   case object Shutdown extends Command
   final case class Add(task: Task) extends Command
@@ -126,9 +126,9 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   def start(): Unit = {
     val tf = system.threadFactory match {
-      case m: MonitorableThreadFactory ⇒
+      case m: MonitorableThreadFactory =>
         m.withName(m.name + "-taskrunner")
-      case other ⇒ other
+      case other => other
     }
     val thread = tf.newThread(this)
     thread.start()
@@ -158,7 +158,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
         }
       }
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, e.getMessage)
     }
   }
@@ -175,7 +175,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
           reset = true
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.error(e, "Task failed")
           tasks.remove(task)
       }
@@ -185,10 +185,10 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   private def processCommand(cmd: Command): Unit = {
     cmd match {
-      case null         ⇒ // no command
-      case Add(task)    ⇒ tasks.add(task)
-      case Remove(task) ⇒ tasks.remove(task)
-      case Shutdown ⇒
+      case null         => // no command
+      case Add(task)    => tasks.add(task)
+      case Remove(task) => tasks.remove(task)
+      case Shutdown =>
         running = false
         tasks.removeAll() // gc friendly
         while (cmdQueue.poll() != null) () // gc friendly

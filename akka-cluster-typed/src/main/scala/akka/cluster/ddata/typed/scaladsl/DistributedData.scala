@@ -10,7 +10,7 @@ import akka.actor.typed.ExtensionId
 import akka.actor.typed.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.Props
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {
@@ -43,7 +43,8 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
    */
   val replicator: ActorRef[Replicator.Command] =
     if (isTerminated) {
-      system.log.warning("Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      system.log.warning(
+        "Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
       system.deadLetters
     } else {
       val underlyingReplicator = dd.DistributedData(untypedSystem).replicator
@@ -58,4 +59,3 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
   private def isTerminated: Boolean = dd.DistributedData(system.toUntyped).isTerminated
 
 }
-

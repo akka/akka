@@ -48,15 +48,11 @@ abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with Impl
 
   /** The expected log info pattern to intercept after a `cluster.join`. */
   protected def join(expected: String): Unit =
-    EventFilter.
-      info(occurrences = 1, pattern = expected).
-      intercept(cluster.join(selfAddress))
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.join(selfAddress))
 
   /** The expected log info pattern to intercept after a `cluster.down`. */
   protected def down(expected: String): Unit =
-    EventFilter.
-      info(occurrences = 1, pattern = expected).
-      intercept(cluster.down(selfAddress))
+    EventFilter.info(occurrences = 1, pattern = expected).intercept(cluster.down(selfAddress))
 }
 
 class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
@@ -73,8 +69,7 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
   }
 }
 
-class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(
-  ConfigFactory.parseString(ClusterLogSpec.config)) {
+class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(ConfigFactory.parseString(ClusterLogSpec.config)) {
 
   "A Cluster" must {
 
@@ -87,9 +82,11 @@ class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(
   }
 }
 
-class ClusterLogVerboseEnabledSpec extends ClusterLogSpec(
-  ConfigFactory.parseString("akka.cluster.log-info-verbose = on").
-    withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
+class ClusterLogVerboseEnabledSpec
+    extends ClusterLogSpec(
+      ConfigFactory
+        .parseString("akka.cluster.log-info-verbose = on")
+        .withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
 
   "A Cluster" must {
 

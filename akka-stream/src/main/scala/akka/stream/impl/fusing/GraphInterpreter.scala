@@ -24,6 +24,7 @@ import akka.stream.snapshot._
  * (See the class for the documentation of the internals)
  */
 @InternalApi private[akka] object GraphInterpreter {
+
   /**
    * Compile time constant, enable it for debug logging to the console.
    */
@@ -77,12 +78,11 @@ import akka.stream.snapshot._
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
    */
-  final class Connection(
-    var id:         Int,
-    var inOwner:    GraphStageLogic,
-    var outOwner:   GraphStageLogic,
-    var inHandler:  InHandler,
-    var outHandler: OutHandler) {
+  final class Connection(var id: Int,
+                         var inOwner: GraphStageLogic,
+                         var outOwner: GraphStageLogic,
+                         var inHandler: InHandler,
+                         var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
   }
@@ -188,13 +188,13 @@ import akka.stream.snapshot._
  * edge of a balance is pulled, dissolving the original cycle).
  */
 @InternalApi private[akka] final class GraphInterpreter(
-  val materializer: Materializer,
-  val log:          LoggingAdapter,
-  val logics:       Array[GraphStageLogic], // Array of stage logics
-  val connections:  Array[GraphInterpreter.Connection],
-  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) ⇒ Unit) ⇒ Unit,
-  val fuzzingMode:  Boolean,
-  val context:      ActorRef) {
+    val materializer: Materializer,
+    val log: LoggingAdapter,
+    val logics: Array[GraphStageLogic], // Array of stage logics
+    val connections: Array[GraphInterpreter.Connection],
+    val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) => Unit) => Unit,
+    val fuzzingMode: Boolean,
+    val context: ActorRef) {
 
   import GraphInterpreter._
 
@@ -210,7 +210,7 @@ import akka.stream.snapshot._
   private[this] var runningStages = logics.length
 
   // Counts how many active connections a stage has. Once it reaches zero, the stage is automatically stopped.
-  private[this] val shutdownCounter = Array.tabulate(logics.length) { i ⇒
+  private[this] val shutdownCounter = Array.tabulate(logics.length) { i =>
     logics(i).handlers.length
   }
 
@@ -229,7 +229,7 @@ import akka.stream.snapshot._
   private[this] var chasedPull: Connection = NoEvent
 
   private def queueStatus: String = {
-    val contents = (queueHead until queueTail).map(idx ⇒ {
+    val contents = (queueHead until queueTail).map(idx => {
       val conn = eventQueue(idx & mask)
       conn
     })
@@ -290,7 +290,7 @@ import akka.stream.snapshot._
         logic.beforePreStart()
         logic.preStart()
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.error(e, "Error during preStart in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
           logic.failStage(e)
       }
@@ -324,14 +324,15 @@ import akka.stream.snapshot._
   private def outLogicName(connection: Connection): String = logics(connection.outOwner.stageId).toString
 
   private def shutdownCounters: String =
-    shutdownCounter.map(x ⇒ if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
+    shutdownCounter.map(x => if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
 
   /**
    * Executes pending events until the given limit is met. If there were remaining events, isSuspended will return
    * true.
    */
   def execute(eventLimit: Int): Int = {
-    if (Debug) println(s"$Name ---------------- EXECUTE $queueStatus (running=$runningStages, shutdown=$shutdownCounters)")
+    if (Debug)
+      println(s"$Name ---------------- EXECUTE $queueStatus (running=$runningStages, shutdown=$shutdownCounters)")
     val currentInterpreterHolder = _currentInterpreter.get()
     val previousInterpreter = currentInterpreterHolder(0)
     currentInterpreterHolder(0) = this
@@ -346,8 +347,8 @@ import akka.stream.snapshot._
           if (activeStage == null) throw e
           else {
             val loggingEnabled = activeStage.attributes.get[LogLevels] match {
-              case Some(levels) ⇒ levels.onFailure != LogLevels.Off
-              case None         ⇒ true
+              case Some(levels) => levels.onFailure != LogLevels.Off
+              case None         => true
             }
             if (loggingEnabled)
               log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
@@ -373,7 +374,7 @@ import akka.stream.snapshot._
          */
         try processEvent(connection)
         catch {
-          case NonFatal(e) ⇒ reportStageError(e)
+          case NonFatal(e) => reportStageError(e)
         }
         afterStageHasRun(activeStage)
 
@@ -406,7 +407,7 @@ import akka.stream.snapshot._
           chasedPush = NoEvent
           try processPush(connection)
           catch {
-            case NonFatal(e) ⇒ reportStageError(e)
+            case NonFatal(e) => reportStageError(e)
           }
           afterStageHasRun(activeStage)
         }
@@ -417,7 +418,7 @@ import akka.stream.snapshot._
           chasedPull = NoEvent
           try processPull(connection)
           catch {
-            case NonFatal(e) ⇒ reportStageError(e)
+            case NonFatal(e) => reportStageError(e)
           }
           afterStageHasRun(activeStage)
         }
@@ -438,7 +439,7 @@ import akka.stream.snapshot._
     eventsRemaining
   }
 
-  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) ⇒ Unit): Unit =
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) => Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
       val currentInterpreterHolder = _currentInterpreter.get()
@@ -453,7 +454,7 @@ import akka.stream.snapshot._
             logic.onFeedbackDispatched()
           }
         } catch {
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             if (promise ne GraphStageLogic.NoPromise) {
               promise.failure(ex)
               logic.onFeedbackDispatched()
@@ -484,7 +485,9 @@ import akka.stream.snapshot._
       // CANCEL
     } else if ((code & (OutClosed | InClosed)) == InClosed) {
       activeStage = connection.outOwner
-      if (Debug) println(s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
+      if (Debug)
+        println(
+          s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
       connection.outHandler.onDownstreamFinish()
@@ -493,7 +496,9 @@ import akka.stream.snapshot._
 
       if ((code & Pushing) == 0) {
         // Normal completion (no push pending)
-        if (Debug) println(s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${connection.inHandler}) [${inLogicName(connection)}]")
+        if (Debug)
+          println(
+            s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${connection.inHandler}) [${inLogicName(connection)}]")
         connection.portState |= InClosed
         activeStage = connection.inOwner
         completeConnection(connection.inOwner.stageId)
@@ -509,14 +514,18 @@ import akka.stream.snapshot._
   }
 
   private def processPush(connection: Connection): Unit = {
-    if (Debug) println(s"$Name PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connection.slot} (${connection.inHandler}) [${inLogicName(connection)}]")
+    if (Debug)
+      println(
+        s"$Name PUSH ${outOwnerName(connection)} -> ${inOwnerName(connection)}, ${connection.slot} (${connection.inHandler}) [${inLogicName(connection)}]")
     activeStage = connection.inOwner
     connection.portState ^= PushEndFlip
     connection.inHandler.onPush()
   }
 
   private def processPull(connection: Connection): Unit = {
-    if (Debug) println(s"$Name PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
+    if (Debug)
+      println(
+        s"$Name PULL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
     activeStage = connection.outOwner
     connection.portState ^= PullEndFlip
     connection.outHandler.onPull()
@@ -537,7 +546,9 @@ import akka.stream.snapshot._
   }
 
   def enqueue(connection: Connection): Unit = {
-    if (Debug) if (queueTail - queueHead > mask) new Exception(s"$Name internal queue full ($queueStatus) + $connection").printStackTrace()
+    if (Debug)
+      if (queueTail - queueHead > mask)
+        new Exception(s"$Name internal queue full ($queueStatus) + $connection").printStackTrace()
     eventQueue(queueTail & mask) = connection
     queueTail += 1
   }
@@ -567,7 +578,7 @@ import akka.stream.snapshot._
       logic.postStop()
       logic.afterPostStop()
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
     }
   }
@@ -645,31 +656,28 @@ import akka.stream.snapshot._
   def toSnapshot: RunningInterpreter = {
 
     val logicSnapshots = logics.zipWithIndex.map {
-      case (logic, idx) ⇒
+      case (logic, idx) =>
         val label = logic.originalStage.getOrElse(logic).toString
         LogicSnapshotImpl(idx, label, logic.attributes)
     }
-    val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
-    val connectionSnapshots = connections.filter(_ != null)
-      .map { connection ⇒
-        ConnectionSnapshotImpl(
-          connection.id,
-          logicSnapshots(logicIndexes(connection.inOwner)),
-          logicSnapshots(logicIndexes(connection.outOwner)),
-          connection.portState match {
-            case InReady ⇒ ConnectionSnapshot.ShouldPull
-            case OutReady ⇒ ConnectionSnapshot.ShouldPush
-            case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒ ConnectionSnapshot.Closed
-          }
-        )
-      }
+    val logicIndexes = logics.zipWithIndex.map { case (stage, idx) => stage -> idx }.toMap
+    val connectionSnapshots = connections.filter(_ != null).map { connection =>
+      ConnectionSnapshotImpl(connection.id,
+                             logicSnapshots(logicIndexes(connection.inOwner)),
+                             logicSnapshots(logicIndexes(connection.outOwner)),
+                             connection.portState match {
+                               case InReady  => ConnectionSnapshot.ShouldPull
+                               case OutReady => ConnectionSnapshot.ShouldPush
+                               case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) =>
+                                 ConnectionSnapshot.Closed
+                             })
+    }
 
-    RunningInterpreterImpl(
-      logicSnapshots.toVector,
-      connectionSnapshots.toVector,
-      queueStatus,
-      runningStages,
-      shutdownCounter.toList.map(n ⇒ logicSnapshots(n)))
+    RunningInterpreterImpl(logicSnapshots.toVector,
+                           connectionSnapshots.toVector,
+                           queueStatus,
+                           runningStages,
+                           shutdownCounter.toList.map(n => logicSnapshots(n)))
   }
 
 }

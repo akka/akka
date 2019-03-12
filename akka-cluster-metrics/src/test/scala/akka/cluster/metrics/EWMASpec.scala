@@ -5,7 +5,7 @@
 package akka.cluster.metrics
 
 import scala.concurrent.duration._
-import akka.testkit.{ LongRunningTest, AkkaSpec }
+import akka.testkit.{ AkkaSpec, LongRunningTest }
 import java.util.concurrent.ThreadLocalRandom
 
 class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
@@ -32,7 +32,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
       val d4 = d3 :+ 10.0
       d4.value should ===(453.64 +- 0.01)
 
-      val dn = (1 to 100).foldLeft(d0)((d, _) ⇒ d :+ 10.0)
+      val dn = (1 to 100).foldLeft(d0)((d, _) => d :+ 10.0)
       dn.value should ===(10.0 +- 0.1)
     }
 
@@ -75,14 +75,14 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
     "calculate the ewma for multiple, variable, data streams" taggedAs LongRunningTest in {
       var streamingDataSet = Map.empty[String, Metric]
       var usedMemory = Array.empty[Byte]
-      (1 to 50) foreach { _ ⇒
+      (1 to 50).foreach { _ =>
         // wait a while between each message to give the metrics a chance to change
         Thread.sleep(100)
         usedMemory = usedMemory ++ Array.fill(1024)(ThreadLocalRandom.current.nextInt(127).toByte)
-        val changes = collector.sample.metrics.flatMap { latest ⇒
+        val changes = collector.sample.metrics.flatMap { latest =>
           streamingDataSet.get(latest.name) match {
-            case None ⇒ Some(latest)
-            case Some(previous) ⇒
+            case None => Some(latest)
+            case Some(previous) =>
               if (latest.isSmooth && latest.value != previous.value) {
                 val updated = previous :+ latest
                 updated.isSmooth should ===(true)
@@ -91,7 +91,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
               } else None
           }
         }
-        streamingDataSet ++= changes.map(m ⇒ m.name → m)
+        streamingDataSet ++= changes.map(m => m.name -> m)
       }
     }
   }

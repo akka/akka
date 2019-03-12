@@ -20,8 +20,13 @@ import org.scalatest.time.Span
  * Note that ScalaTest is not provided as a transitive dependency of the testkit module but must be added explicitly
  * to your project to use this.
  */
-abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit) extends ActorTestKitBase(testKit)
-  with TestSuite with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
+abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
+    extends ActorTestKitBase(testKit)
+    with TestSuite
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with Eventually {
 
   def this() = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack()))
 
@@ -57,4 +62,3 @@ abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit) extends ActorTes
     testKit.shutdownTestKit()
   }
 }
-

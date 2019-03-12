@@ -13,8 +13,10 @@ import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
 
 abstract class AkkaSubscriberBlackboxVerification[T](env: TestEnvironment)
-  extends SubscriberBlackboxVerification[T](env) with TestNGSuiteLike
-  with AkkaSubscriberVerificationLike with ActorSystemLifecycle {
+    extends SubscriberBlackboxVerification[T](env)
+    with TestNGSuiteLike
+    with AkkaSubscriberVerificationLike
+    with ActorSystemLifecycle {
 
   def this(printlnDebug: Boolean) =
     this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug))
@@ -23,8 +25,9 @@ abstract class AkkaSubscriberBlackboxVerification[T](env: TestEnvironment)
 }
 
 abstract class AkkaSubscriberWhiteboxVerification[T](env: TestEnvironment)
-  extends SubscriberWhiteboxVerification[T](env) with TestNGSuiteLike
-  with AkkaSubscriberVerificationLike {
+    extends SubscriberWhiteboxVerification[T](env)
+    with TestNGSuiteLike
+    with AkkaSubscriberVerificationLike {
 
   def this(printlnDebug: Boolean) =
     this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug))

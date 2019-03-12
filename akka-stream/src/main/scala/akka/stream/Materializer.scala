@@ -46,9 +46,8 @@ abstract class Materializer {
    * The result can be highly implementation specific, ranging from local actor chains to remote-deployed
    * processing networks.
    */
-  def materialize[Mat](
-    runnable:                                              Graph[ClosedShape, Mat],
-    @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
+  def materialize[Mat](runnable: Graph[ClosedShape, Mat],
+                       @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -108,7 +107,6 @@ private[akka] object NoMaterializer extends Materializer {
  * INTERNAL API
  */
 @InternalApi
-private[akka] case class MaterializationContext(
-  materializer:        Materializer,
-  effectiveAttributes: Attributes,
-  islandName:          String)
+private[akka] case class MaterializationContext(materializer: Materializer,
+                                                effectiveAttributes: Attributes,
+                                                islandName: String)

@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 final class UnsupportedAkkaVersion private[akka] (msg: String) extends RuntimeException(msg)
 
 object AkkaVersion {
+
   /**
    * Check that the version of Akka is a specific patch version or higher and throw an [[UnsupportedAkkaVersion]]
    * exception if the version requirement is not fulfilled.
@@ -30,21 +31,22 @@ object AkkaVersion {
   private[akka] def require(libraryName: String, requiredVersion: String, currentVersion: String): Unit = {
     val VersionPattern = """(\d+)\.(\d+)\.(\d+)(-(?:M|RC)\d+)?""".r
     currentVersion match {
-      case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc) ⇒
+      case VersionPattern(currentMajorStr, currentMinorStr, currentPatchStr, mOrRc) =>
         requiredVersion match {
-          case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, _) ⇒
+          case requiredVersion @ VersionPattern(requiredMajorStr, requiredMinorStr, requiredPatchStr, _) =>
             // a M or RC is basically in-between versions, so offset
             val currentPatch =
               if (mOrRc ne null) currentPatchStr.toInt - 1
               else currentPatchStr.toInt
             if (requiredMajorStr.toInt != currentMajorStr.toInt ||
-              requiredMinorStr.toInt > currentMinorStr.toInt ||
-              (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
-              throw new UnsupportedAkkaVersion(s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
-          case _ ⇒ throw new IllegalArgumentException(s"Required version string is invalid: [$requiredVersion]")
+                requiredMinorStr.toInt > currentMinorStr.toInt ||
+                (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
+              throw new UnsupportedAkkaVersion(
+                s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
+          case _ => throw new IllegalArgumentException(s"Required version string is invalid: [$requiredVersion]")
         }
 
-      case _ ⇒ // SNAPSHOT or unknown - you're on your own
+      case _ => // SNAPSHOT or unknown - you're on your own
     }
   }
 

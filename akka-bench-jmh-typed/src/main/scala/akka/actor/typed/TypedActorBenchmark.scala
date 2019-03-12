@@ -56,8 +56,7 @@ class TypedActorBenchmark {
     system = ActorSystem(
       TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize, timeout),
       "TypedActorBenchmark",
-      ConfigFactory.parseString(
-        s"""
+      ConfigFactory.parseString(s"""
        akka.actor {
 
          default-mailbox.mailbox-capacity = 512
@@ -86,8 +85,7 @@ class TypedActorBenchmark {
             mailbox-type = "$mailbox"
          }
        }
-      """
-      ))
+      """))
   }
 
   @TearDown(Level.Trial)
@@ -103,4 +101,3 @@ class TypedActorBenchmark {
   }
 
 }
-

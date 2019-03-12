@@ -25,14 +25,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
  *                   always continues until the mailbox is empty.
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
-class Dispatcher(
-  _configurator:                  MessageDispatcherConfigurator,
-  val id:                         String,
-  val throughput:                 Int,
-  val throughputDeadlineTime:     Duration,
-  executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  val shutdownTimeout:            FiniteDuration)
-  extends MessageDispatcher(_configurator) {
+class Dispatcher(_configurator: MessageDispatcherConfigurator,
+                 val id: String,
+                 val throughput: Int,
+                 val throughputDeadlineTime: Duration,
+                 executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
+                 val shutdownTimeout: FiniteDuration)
+    extends MessageDispatcher(_configurator) {
 
   import configurator.prerequisites._
 
@@ -69,13 +68,13 @@ class Dispatcher(
    */
   protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
     try {
-      executorService execute invocation
+      executorService.execute(invocation)
     } catch {
-      case e: RejectedExecutionException ⇒
+      case e: RejectedExecutionException =>
         try {
-          executorService execute invocation
+          executorService.execute(invocation)
         } catch {
-          case e2: RejectedExecutionException ⇒
+          case e2: RejectedExecutionException =>
             eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
@@ -89,10 +88,9 @@ class Dispatcher(
     new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
   }
 
-  private val esUpdater = AtomicReferenceFieldUpdater.newUpdater(
-    classOf[Dispatcher],
-    classOf[LazyExecutorServiceDelegate],
-    "executorServiceDelegate")
+  private val esUpdater = AtomicReferenceFieldUpdater.newUpdater(classOf[Dispatcher],
+                                                                 classOf[LazyExecutorServiceDelegate],
+                                                                 "executorServiceDelegate")
 
   /**
    * INTERNAL API
@@ -108,19 +106,21 @@ class Dispatcher(
    *
    * INTERNAL API
    */
-  protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
+  protected[akka] override def registerForExecution(mbox: Mailbox,
+                                                    hasMessageHint: Boolean,
+                                                    hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {
-          executorService execute mbox
+          executorService.execute(mbox)
           true
         } catch {
-          case _: RejectedExecutionException ⇒
+          case _: RejectedExecutionException =>
             try {
-              executorService execute mbox
+              executorService.execute(mbox)
               true
             } catch { //Retry once
-              case e: RejectedExecutionException ⇒
+              case e: RejectedExecutionException =>
                 mbox.setAsIdle()
                 eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
                 throw e
@@ -134,10 +134,11 @@ class Dispatcher(
 }
 
 object PriorityGenerator {
+
   /**
    * Creates a PriorityGenerator that uses the supplied function as priority generator
    */
-  def apply(priorityFunction: Any ⇒ Int): PriorityGenerator = new PriorityGenerator {
+  def apply(priorityFunction: Any => Int): PriorityGenerator = new PriorityGenerator {
     def gen(message: Any): Int = priorityFunction(message)
   }
 }

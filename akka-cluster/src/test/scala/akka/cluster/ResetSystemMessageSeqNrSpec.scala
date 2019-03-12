@@ -32,8 +32,8 @@ class ResetSystemMessageSeqNrSpec extends ArteryMultiNodeSpec("""
       Cluster(sys2).join(Cluster(system).selfAddress)
       within(10.seconds) {
         awaitAssert {
-          Cluster(system).state.members.map(_.uniqueAddress) should ===(Set(
-            Cluster(system).selfUniqueAddress, Cluster(sys2).selfUniqueAddress))
+          Cluster(system).state.members.map(_.uniqueAddress) should ===(
+            Set(Cluster(system).selfUniqueAddress, Cluster(sys2).selfUniqueAddress))
         }
       }
 
@@ -59,14 +59,14 @@ class ResetSystemMessageSeqNrSpec extends ArteryMultiNodeSpec("""
       expectTerminated(echo1)
       shutdown(sys2)
 
-      val sys3 = newRemoteSystem(
-        name = Some(system.name),
-        extraConfig = Some(s"akka.remote.artery.canonical.port=${Cluster(sys2).selfAddress.port.get}"))
+      val sys3 = newRemoteSystem(name = Some(system.name),
+                                 extraConfig =
+                                   Some(s"akka.remote.artery.canonical.port=${Cluster(sys2).selfAddress.port.get}"))
       Cluster(sys3).join(Cluster(system).selfAddress)
       within(10.seconds) {
         awaitAssert {
-          Cluster(system).state.members.map(_.uniqueAddress) should ===(Set(
-            Cluster(system).selfUniqueAddress, Cluster(sys3).selfUniqueAddress))
+          Cluster(system).state.members.map(_.uniqueAddress) should ===(
+            Set(Cluster(system).selfUniqueAddress, Cluster(sys3).selfUniqueAddress))
         }
       }
 

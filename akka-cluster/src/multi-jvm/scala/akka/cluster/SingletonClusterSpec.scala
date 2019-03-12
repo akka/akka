@@ -16,26 +16,26 @@ final case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean)
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster {
         auto-down-unreachable-after = 0s
         failure-detector.threshold = 4
       }
-    """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+    """)).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 
 }
 
 class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = true)
 class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = true)
 
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = false)
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = false)
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1
+    extends SingletonClusterSpec(failureDetectorPuppet = false)
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2
+    extends SingletonClusterSpec(failureDetectorPuppet = false)
 
 abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(SingletonClusterMultiNodeConfig(failureDetectorPuppet))
 

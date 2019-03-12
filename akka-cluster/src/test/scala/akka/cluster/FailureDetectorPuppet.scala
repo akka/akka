@@ -26,8 +26,8 @@ class FailureDetectorPuppet(config: Config, ev: EventStream) extends FailureDete
   def markNodeAsAvailable(): Unit = status.set(Up)
 
   override def isAvailable: Boolean = status.get match {
-    case Unknown | Up ⇒ true
-    case Down         ⇒ false
+    case Unknown | Up => true
+    case Down         => false
   }
 
   override def isMonitoring: Boolean = status.get != Unknown
@@ -35,4 +35,3 @@ class FailureDetectorPuppet(config: Config, ev: EventStream) extends FailureDete
   override def heartbeat(): Unit = status.compareAndSet(Unknown, Up)
 
 }
-

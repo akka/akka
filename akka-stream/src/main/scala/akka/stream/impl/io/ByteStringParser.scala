@@ -70,7 +70,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
               DontRecurse
           }
         } catch {
-          case NeedMoreData ⇒
+          case NeedMoreData =>
             acceptUpstreamFinish = false
             if (current.canWorkWithPartialData) buffer = reader.remainingData
 
@@ -79,7 +79,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
             else pull(bytesIn)
 
             DontRecurse
-          case NonFatal(ex) ⇒
+          case NonFatal(ex) =>
             failStage(new ParsingException(s"Parsing failed in step $current", ex))
 
             DontRecurse
@@ -98,10 +98,10 @@ import scala.util.control.{ NoStackTrace, NonFatal }
     @tailrec private def doParse(remainingRecursions: Int = recursionLimit): Unit =
       if (remainingRecursions == 0)
         failStage(
-          new IllegalStateException(s"Parsing logic didn't produce result after $recursionLimit steps. " +
+          new IllegalStateException(
+            s"Parsing logic didn't produce result after $recursionLimit steps. " +
             "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic " +
-            "needs more recursion, override ParsingLogic.recursionLimit.")
-        )
+            "needs more recursion, override ParsingLogic.recursionLimit."))
       else {
         val recurse = doParseInner()
         if (recurse) doParse(remainingRecursions - 1)
@@ -159,12 +159,10 @@ import scala.util.control.{ NoStackTrace, NonFatal }
    * @param acceptUpstreamFinish - if true - stream will complete when received `onUpstreamFinish`, if "false"
    *                             - onTruncation will be called
    */
-  case class ParseResult[+T](
-    result:               Option[T],
-    nextStep:             ParseStep[T],
-    acceptUpstreamFinish: Boolean      = true)
+  case class ParseResult[+T](result: Option[T], nextStep: ParseStep[T], acceptUpstreamFinish: Boolean = true)
 
   trait ParseStep[+T] {
+
     /**
      * Must return true when NeedMoreData will clean buffer. If returns false - next pulled
      * data will be appended to existing data in buffer
@@ -215,11 +213,11 @@ import scala.util.control.{ NoStackTrace, NonFatal }
       } else throw NeedMoreData
     def readShortLE(): Int = readByte() | (readByte() << 8)
     def readIntLE(): Int = readShortLE() | (readShortLE() << 16)
-    def readLongLE(): Long = (readIntLE() & 0xffffffffL) | ((readIntLE() & 0xffffffffL) << 32)
+    def readLongLE(): Long = (readIntLE() & 0XFFFFFFFFL) | ((readIntLE() & 0XFFFFFFFFL) << 32)
 
     def readShortBE(): Int = (readByte() << 8) | readByte()
     def readIntBE(): Int = (readShortBE() << 16) | readShortBE()
-    def readLongBE(): Long = ((readIntBE() & 0xffffffffL) << 32) | (readIntBE() & 0xffffffffL)
+    def readLongBE(): Long = ((readIntBE() & 0XFFFFFFFFL) << 32) | (readIntBE() & 0XFFFFFFFFL)
 
     def skip(numBytes: Int): Unit =
       if (off + numBytes <= input.length) off += numBytes

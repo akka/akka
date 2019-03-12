@@ -17,11 +17,11 @@ class TerminatedSpec extends WordSpec with Matchers {
       val childFailed = new ChildFailed(probe.ref, ex)
 
       (childFailed match {
-        case Terminated(r) ⇒ r
+        case Terminated(r) => r
       }) shouldEqual probe.ref
 
       (childFailed match {
-        case ChildFailed(ref, e) ⇒ (ref, e)
+        case ChildFailed(ref, e) => (ref, e)
       }) shouldEqual (probe.ref, ex)
 
     }

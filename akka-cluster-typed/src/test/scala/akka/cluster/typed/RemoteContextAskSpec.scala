@@ -25,26 +25,25 @@ import org.scalatest.WordSpecLike
 class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   override def identifier = 41
   override def manifest(o: AnyRef) = o match {
-    case _: RemoteContextAskSpec.Ping ⇒ "a"
-    case RemoteContextAskSpec.Pong    ⇒ "b"
+    case _: RemoteContextAskSpec.Ping => "a"
+    case RemoteContextAskSpec.Pong    => "b"
   }
   override def toBinary(o: AnyRef) = o match {
-    case RemoteContextAskSpec.Ping(who) ⇒
+    case RemoteContextAskSpec.Ping(who) =>
       ActorRefResolver(system.toTyped).toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
-    case RemoteContextAskSpec.Pong ⇒ Array.emptyByteArray
+    case RemoteContextAskSpec.Pong => Array.emptyByteArray
   }
   override def fromBinary(bytes: Array[Byte], manifest: String) = manifest match {
-    case "a" ⇒
+    case "a" =>
       val str = new String(bytes, StandardCharsets.UTF_8)
       val ref = ActorRefResolver(system.toTyped).resolveActorRef[RemoteContextAskSpec.Pong.type](str)
       RemoteContextAskSpec.Ping(ref)
-    case "b" ⇒ RemoteContextAskSpec.Pong
+    case "b" => RemoteContextAskSpec.Pong
   }
 }
 
 object RemoteContextAskSpec {
-  def config = ConfigFactory.parseString(
-    s"""
+  def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = debug
       actor {
@@ -73,9 +72,9 @@ object RemoteContextAskSpec {
   case object Pong
   case class Ping(respondTo: ActorRef[Pong.type])
 
-  def pingPong = Behaviors.receive[Ping] { (_, msg) ⇒
+  def pingPong = Behaviors.receive[Ping] { (_, msg) =>
     msg match {
-      case Ping(sender) ⇒
+      case Ping(sender) =>
         sender ! Pong
         Behaviors.same
     }
@@ -110,15 +109,15 @@ class RemoteContextAskSpec extends ScalaTestWithActorTestKit(RemoteContextAskSpe
       // wait until the service is seen on the first node
       val remoteRef = node1Probe.expectMessageType[Receptionist.Listing].serviceInstances(pingPongKey).head
 
-      spawn(Behaviors.setup[AnyRef] { ctx ⇒
+      spawn(Behaviors.setup[AnyRef] { ctx =>
         implicit val timeout: Timeout = 3.seconds
 
         ctx.ask(remoteRef)(Ping) {
-          case Success(pong) ⇒ pong
-          case Failure(ex)   ⇒ ex
+          case Success(pong) => pong
+          case Failure(ex)   => ex
         }
 
-        Behaviors.receiveMessage { msg ⇒
+        Behaviors.receiveMessage { msg =>
           node1Probe.ref ! msg
           Behaviors.same
         }

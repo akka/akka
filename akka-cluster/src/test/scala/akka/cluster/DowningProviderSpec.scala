@@ -33,8 +33,7 @@ class DummyDowningProvider(system: ActorSystem) extends DowningProvider {
 
 class DowningProviderSpec extends WordSpec with Matchers {
 
-  val baseConf = ConfigFactory.parseString(
-    """
+  val baseConf = ConfigFactory.parseString("""
       akka {
         loglevel = WARNING
         actor.provider = "cluster"
@@ -56,8 +55,8 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "use akka.cluster.AutoDowning if 'auto-down-unreachable-after' is configured" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem("auto-downing",
+                               ConfigFactory.parseString("""
           akka.cluster.auto-down-unreachable-after = 18d
         """).withFallback(baseConf))
       Cluster(system).downingProvider shouldBe an[AutoDowning]
@@ -65,10 +64,12 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "use the specified downing provider" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem("auto-downing",
+                               ConfigFactory
+                                 .parseString("""
           akka.cluster.downing-provider-class="akka.cluster.DummyDowningProvider"
-        """).withFallback(baseConf))
+        """)
+                                 .withFallback(baseConf))
 
       Cluster(system).downingProvider shouldBe a[DummyDowningProvider]
       awaitCond(Cluster(system).downingProvider.asInstanceOf[DummyDowningProvider].actorPropsAccessed.get(), 3.seconds)
@@ -76,10 +77,12 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      val system = ActorSystem("auto-downing", ConfigFactory.parseString(
-        """
+      val system = ActorSystem("auto-downing",
+                               ConfigFactory
+                                 .parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
-        """).withFallback(baseConf))
+        """)
+                                 .withFallback(baseConf))
       val cluster = Cluster(system)
       cluster.join(cluster.selfAddress)
 

@@ -171,7 +171,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       val endpoint = new InetSocketAddress("192.0.2.1", 23825)
       connectCommander.send(IO(Tcp), Connect(endpoint))
       // expecting CommandFailed or no reply (within timeout)
-      val replies = connectCommander.receiveWhile(1.second) { case m: Connected ⇒ m }
+      val replies = connectCommander.receiveWhile(1.second) { case m: Connected => m }
       replies should ===(Nil)
     }
 
@@ -188,22 +188,21 @@ class TcpIntegrationSpec extends AkkaSpec("""
         try {
           accept.getInputStream.read() should ===(-1)
         } catch {
-          case e: IOException ⇒ // this is also fine
+          case e: IOException => // this is also fine
         }
       }
       verifyActorTermination(connectionActor)
     }
   }
 
-  def chitchat(
-    clientHandler:    TestProbe,
-    clientConnection: ActorRef,
-    serverHandler:    TestProbe,
-    serverConnection: ActorRef,
-    rounds:           Int       = 100) = {
+  def chitchat(clientHandler: TestProbe,
+               clientConnection: ActorRef,
+               serverHandler: TestProbe,
+               serverConnection: ActorRef,
+               rounds: Int = 100) = {
 
     val testData = ByteString(0)
-    (1 to rounds) foreach { _ ⇒
+    (1 to rounds).foreach { _ =>
       clientHandler.send(clientConnection, Write(testData))
       serverHandler.expectMsg(Received(testData))
       serverHandler.send(serverConnection, Write(testData))

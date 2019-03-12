@@ -19,7 +19,7 @@ class FlightRecorderSpec extends AkkaSpec {
 
   "Flight Recorder" must {
 
-    "properly initialize AFR file when created" in withFlightRecorder { (_, reader, channel) ⇒
+    "properly initialize AFR file when created" in withFlightRecorder { (_, reader, channel) =>
       channel.force(false)
 
       // otherwise isAfter assertion below can randomly fail
@@ -58,13 +58,13 @@ class FlightRecorderSpec extends AkkaSpec {
       checkLogInitialized(reader.structure.hiFreqLog)
     }
 
-    "properly rotate logs when snapshotting" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly rotate logs when snapshotting" in withFlightRecorder { (recorder, reader, channel) =>
       recorder.snapshot()
       channel.force(false)
       reader.rereadStructure()
 
       def checkLogRotated(log: reader.RollingLog, states: Seq[LogState]): Unit =
-        log.logs.zip(states).foreach { case (log, state) ⇒ log.state should ===(state) }
+        log.logs.zip(states).foreach { case (log, state) => log.state should ===(state) }
 
       checkLogRotated(reader.structure.alertLog, List(Snapshot, Live, Empty, Empty))
       checkLogRotated(reader.structure.loFreqLog, List(Snapshot, Live, Empty, Empty))
@@ -86,7 +86,7 @@ class FlightRecorderSpec extends AkkaSpec {
       checkLogRotated(reader.structure.hiFreqLog, List(Live, Snapshot, Snapshot, Snapshot))
     }
 
-    "properly report zero low frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly report zero low frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       channel.force(false)
       reader.rereadStructure()
 
@@ -95,7 +95,7 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.isEmpty should be(true)
     }
 
-    "properly report zero high frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly report zero high frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       channel.force(false)
       reader.rereadStructure()
 
@@ -104,7 +104,7 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.isEmpty should be(true)
     }
 
-    "properly store one low frequency event" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store one low frequency event" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
 
@@ -118,7 +118,7 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.map(_.code.toInt) should ===(List(42))
     }
 
-    "properly store one high frequency event" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store one high frequency event" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
 
       sink.hiFreq(42, 64)
@@ -133,11 +133,11 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.map(_.param.toInt) should ===(List(64))
     }
 
-    "properly store low frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store low frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
 
-      for (i ← 0 until FlightRecorder.LoFreqWindow)
+      for (i <- 0 until FlightRecorder.LoFreqWindow)
         sink.loFreq(i, helloBytes)
 
       channel.force(false)
@@ -147,13 +147,13 @@ class FlightRecorderSpec extends AkkaSpec {
 
       entries.exists(_.dirty) should be(false)
       entries.map(_.code.toInt) should ===(0 until FlightRecorder.LoFreqWindow)
-      entries.forall(entry ⇒ Arrays.equals(entry.metadata, helloBytes)) should be(true)
+      entries.forall(entry => Arrays.equals(entry.metadata, helloBytes)) should be(true)
 
       // Timestamps are monotonic
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
-    "properly truncate low frequency event metadata if necessary" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly truncate low frequency event metadata if necessary" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val longMetadata = new Array[Byte](1024)
 
@@ -168,11 +168,11 @@ class FlightRecorderSpec extends AkkaSpec {
 
     }
 
-    "properly store high frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store high frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       val EffectiveHighFreqWindow = FlightRecorder.HiFreqWindow * FlightRecorder.HiFreqBatchSize
       val sink = recorder.createEventSink()
 
-      for (i ← 0 until EffectiveHighFreqWindow)
+      for (i <- 0 until EffectiveHighFreqWindow)
         sink.hiFreq(i, 42)
 
       sink.flushHiFreqBatch()
@@ -183,17 +183,17 @@ class FlightRecorderSpec extends AkkaSpec {
 
       entries.exists(_.dirty) should be(false)
       entries.map(_.code.toInt) should ===(0 until EffectiveHighFreqWindow)
-      entries.forall(entry ⇒ entry.param == 42) should be(true)
+      entries.forall(entry => entry.param == 42) should be(true)
 
       // Timestamps are monotonic
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
-    "properly store and rotate low frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store and rotate low frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
 
-      for (i ← 0 until FlightRecorder.LoFreqWindow + 100)
+      for (i <- 0 until FlightRecorder.LoFreqWindow + 100)
         sink.loFreq(i, helloBytes)
 
       channel.force(false)
@@ -203,17 +203,17 @@ class FlightRecorderSpec extends AkkaSpec {
 
       entries.exists(_.dirty) should be(false)
       entries.map(_.code.toInt).sorted should ===(100 until (FlightRecorder.LoFreqWindow + 100))
-      entries.forall(entry ⇒ Arrays.equals(entry.metadata, helloBytes)) should be(true)
+      entries.forall(entry => Arrays.equals(entry.metadata, helloBytes)) should be(true)
 
       // Timestamps are monotonic
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
-    "properly store and rotate high frequency events" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store and rotate high frequency events" in withFlightRecorder { (recorder, reader, channel) =>
       val EffectiveHighFreqWindow = FlightRecorder.HiFreqWindow * FlightRecorder.HiFreqBatchSize
       val sink = recorder.createEventSink()
 
-      for (i ← 0 until EffectiveHighFreqWindow + 100)
+      for (i <- 0 until EffectiveHighFreqWindow + 100)
         sink.hiFreq(i, 42)
 
       sink.flushHiFreqBatch()
@@ -225,24 +225,25 @@ class FlightRecorderSpec extends AkkaSpec {
       entries.exists(_.dirty) should be(false)
       // Note the (2 * FlightRecorder.HiFreqBatchSize) initial sequence number.
       // This is because the overflow by 100 events rotates out two records, not just 100.
-      entries.map(_.code.toInt).sorted should ===((2 * FlightRecorder.HiFreqBatchSize) until (EffectiveHighFreqWindow + 100))
-      entries.forall(entry ⇒ entry.param == 42) should be(true)
+      entries.map(_.code.toInt).sorted should ===(
+        (2 * FlightRecorder.HiFreqBatchSize) until (EffectiveHighFreqWindow + 100))
+      entries.forall(entry => entry.param == 42) should be(true)
 
       // Timestamps are monotonic
       entries.sortBy(_.code) should ===(entries.sortBy(_.timeStamp))
     }
 
-    "properly store low frequency events after snapshot" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store low frequency events after snapshot" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
       val hello2Bytes = "Hello2".getBytes("US-ASCII")
 
-      for (i ← 0 until 100)
+      for (i <- 0 until 100)
         sink.loFreq(i, helloBytes)
 
       recorder.snapshot()
 
-      for (i ← 0 until 50)
+      for (i <- 0 until 50)
         sink.loFreq(i, hello2Bytes)
 
       reader.rereadStructure()
@@ -255,29 +256,29 @@ class FlightRecorderSpec extends AkkaSpec {
 
       snapshotEntries.exists(_.dirty) should be(false)
       snapshotEntries.map(_.code.toInt) should ===(0 until 100)
-      snapshotEntries.forall(entry ⇒ Arrays.equals(entry.metadata, helloBytes)) should be(true)
+      snapshotEntries.forall(entry => Arrays.equals(entry.metadata, helloBytes)) should be(true)
 
       // Timestamps are monotonic
       snapshotEntries.sortBy(_.code) should ===(snapshotEntries.sortBy(_.timeStamp))
 
       liveEntries.exists(_.dirty) should be(false)
       liveEntries.map(_.code.toInt) should ===(0 until 50)
-      liveEntries.forall(entry ⇒ Arrays.equals(entry.metadata, hello2Bytes)) should be(true)
+      liveEntries.forall(entry => Arrays.equals(entry.metadata, hello2Bytes)) should be(true)
 
       // Timestamps are monotonic
       liveEntries.sortBy(_.code) should ===(liveEntries.sortBy(_.timeStamp))
     }
 
-    "properly store high frequency events after snapshot" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store high frequency events after snapshot" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
 
-      for (i ← 0 until 100)
+      for (i <- 0 until 100)
         sink.hiFreq(i, 0)
 
       sink.flushHiFreqBatch()
       recorder.snapshot()
 
-      for (i ← 0 until 50)
+      for (i <- 0 until 50)
         sink.hiFreq(i, 1)
 
       sink.flushHiFreqBatch()
@@ -305,12 +306,12 @@ class FlightRecorderSpec extends AkkaSpec {
       liveEntries.sortBy(_.code) should ===(liveEntries.sortBy(_.timeStamp))
     }
 
-    "properly store alerts and make a snapshot" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store alerts and make a snapshot" in withFlightRecorder { (recorder, reader, channel) =>
       val sink = recorder.createEventSink()
       val helloBytes = "Hello".getBytes("US-ASCII")
       val alertBytes = "An alert".getBytes("US-ASCII")
 
-      for (i ← 0 until 100) {
+      for (i <- 0 until 100) {
         sink.hiFreq(i, 1)
         sink.loFreq(i, helloBytes)
       }
@@ -335,23 +336,23 @@ class FlightRecorderSpec extends AkkaSpec {
       hiFreqEntries.map(_.code.toInt) should ===(0 until 100)
       hiFreqEntries.forall(_.param == 1) should be(true)
       loFreqEntries.map(_.code.toInt) should ===(0 until 100)
-      loFreqEntries.forall(entry ⇒ Arrays.equals(entry.metadata, helloBytes)) should be(true)
+      loFreqEntries.forall(entry => Arrays.equals(entry.metadata, helloBytes)) should be(true)
       alertEntries.map(_.code.toInt) should ===(List(42))
       Arrays.equals(alertEntries.head.metadata, alertBytes) should be(true)
     }
 
-    "properly store events from multiple threads" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly store events from multiple threads" in withFlightRecorder { (recorder, reader, channel) =>
       val Threads = 4
       val startLatch = new CountDownLatch(1)
       val finishLatch = new CountDownLatch(Threads)
 
-      for (i ← 1 to Threads) {
+      for (i <- 1 to Threads) {
         new Thread {
           override def run(): Unit = {
             val sink = recorder.createEventSink()
             startLatch.await(3, TimeUnit.SECONDS)
 
-            for (j ← 0 until 100) sink.loFreq(code = i, Array(j.toByte))
+            for (j <- 0 until 100) sink.loFreq(code = i, Array(j.toByte))
             finishLatch.countDown()
           }
         }.start()
@@ -364,7 +365,7 @@ class FlightRecorderSpec extends AkkaSpec {
 
       reader.structure.loFreqLog.logs.head.richEntries.size should ===(FlightRecorder.LoFreqWindow)
 
-      for (i ← 1 to Threads) {
+      for (i <- 1 to Threads) {
         val entries = reader.structure.loFreqLog.logs.head.richEntries.filter(_.code == i).toSeq
 
         entries.exists(_.dirty) should be(false)
@@ -407,7 +408,7 @@ class FlightRecorderSpec extends AkkaSpec {
 
   }
 
-  private def withFlightRecorder(body: (FlightRecorder, FlightRecorderReader, FileChannel) ⇒ Unit): Unit = {
+  private def withFlightRecorder(body: (FlightRecorder, FlightRecorderReader, FileChannel) => Unit): Unit = {
     val file = File.createTempFile("artery", ".afr")
     file.deleteOnExit()
 
@@ -421,7 +422,8 @@ class FlightRecorderSpec extends AkkaSpec {
       randomAccessFile.setLength(FlightRecorder.TotalSize)
       randomAccessFile.close()
 
-      channel = FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+      channel =
+        FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
       recorder = new FlightRecorder(channel)
       reader = new FlightRecorderReader(channel)
       body(recorder, reader, channel)
@@ -433,7 +435,7 @@ class FlightRecorderSpec extends AkkaSpec {
         if (reader ne null) reader.close()
         if (channel ne null) channel.close()
         file.delete()
-      } catch { case e: IOException ⇒ e.printStackTrace() }
+      } catch { case e: IOException => e.printStackTrace() }
     }
   }
 

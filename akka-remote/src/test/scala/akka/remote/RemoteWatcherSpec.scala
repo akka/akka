@@ -13,7 +13,7 @@ object RemoteWatcherSpec {
 
   class TestActorProxy(testActor: ActorRef) extends Actor {
     def receive = {
-      case msg ⇒ testActor forward msg
+      case msg => testActor.forward(msg)
     }
   }
 
@@ -26,14 +26,13 @@ object RemoteWatcherSpec {
 
   def createFailureDetector(): FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
-      new PhiAccrualFailureDetector(
-        threshold = 8.0,
-        maxSampleSize = 200,
-        minStdDeviation = 100.millis,
-        acceptableHeartbeatPause = 3.seconds,
-        firstHeartbeatEstimate = 1.second)
+      new PhiAccrualFailureDetector(threshold = 8.0,
+                                    maxSampleSize = 200,
+                                    minStdDeviation = 100.millis,
+                                    acceptableHeartbeatPause = 3.seconds,
+                                    firstHeartbeatEstimate = 1.second)
 
-    new DefaultFailureDetectorRegistry(() ⇒ createFailureDetector())
+    new DefaultFailureDetectorRegistry(() => createFailureDetector())
   }
 
   object TestRemoteWatcher {
@@ -41,11 +40,11 @@ object RemoteWatcherSpec {
     final case class Quarantined(address: Address, uid: Option[Long])
   }
 
-  class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration) extends RemoteWatcher(
-    createFailureDetector,
-    heartbeatInterval = TurnOff,
-    unreachableReaperInterval = TurnOff,
-    heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
+  class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration)
+      extends RemoteWatcher(createFailureDetector,
+                            heartbeatInterval = TurnOff,
+                            unreachableReaperInterval = TurnOff,
+                            heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
 
     def this() = this(heartbeatExpectedResponseAfter = TurnOff)
 
@@ -63,8 +62,7 @@ object RemoteWatcherSpec {
 
 }
 
-class RemoteWatcherSpec extends AkkaSpec(
-  """akka {
+class RemoteWatcherSpec extends AkkaSpec("""akka {
        loglevel = INFO
        log-dead-letters-during-shutdown = false
        actor.provider = remote
@@ -83,9 +81,9 @@ class RemoteWatcherSpec extends AkkaSpec(
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
-  Seq(system, remoteSystem).foreach(muteDeadLetters(
-    akka.remote.transport.AssociationHandle.Disassociated.getClass,
-    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
+  Seq(system, remoteSystem).foreach(
+    muteDeadLetters(akka.remote.transport.AssociationHandle.Disassociated.getClass,
+                    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
   override def afterTermination(): Unit = {
     shutdown(remoteSystem)

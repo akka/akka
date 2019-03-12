@@ -26,8 +26,7 @@ class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -45,21 +44,26 @@ class RemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec(new Remot
 class RemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
 class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
 
-class ArteryRemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
-class ArteryRemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode1
+    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode2
+    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode3
+    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode4
+    extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
 
 object RemoteScatterGatherSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender() ! self
+      case "hit" => sender() ! self
     }
   }
 }
 
-class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
-  with DefaultTimeout {
+class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig)
+    extends RemotingMultiNodeSpec(multiNodeConfig)
+    with DefaultTimeout {
   import multiNodeConfig._
   import RemoteScatterGatherSpec._
 
@@ -76,7 +80,9 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 10.seconds).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(
+          ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 10.seconds).props(Props[SomeActor]),
+          "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3
@@ -85,14 +91,14 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         // let them start
         Thread.sleep(2000)
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5.seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+          case ref: ActorRef => ref.path.address
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")

@@ -24,7 +24,7 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
   def nodeList = Seq(first, second, third)
 
   // Extract individual sigar library for every node.
-  nodeList foreach { role ⇒
+  nodeList.foreach { role =>
     nodeConfig(role) {
       ConfigFactory.parseString(s"""
       # Enable metrics extension in akka-cluster-metrics.
@@ -71,9 +71,12 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
-abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
-  with WordSpecLike with Matchers with BeforeAndAfterAll
-  with ImplicitSender {
+abstract class StatsSampleSpec
+    extends MultiNodeSpec(StatsSampleSpecConfig)
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ImplicitSender {
 
   import StatsSampleSpecConfig._
 
@@ -99,13 +102,13 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
       //#addresses
 
       //#join
-      Cluster(system) join firstAddress
+      Cluster(system).join(firstAddress)
       //#join
 
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
-      receiveN(3).collect { case MemberUp(m) ⇒ m.address }.toSet should be(
+      receiveN(3).collect { case MemberUp(m) => m.address }.toSet should be(
         Set(firstAddress, secondAddress, thirdAddress))
 
       Cluster(system).unsubscribe(testActor)
@@ -129,8 +132,7 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
       // first attempts might fail because worker actors not started yet
       awaitAssert {
         service ! StatsJob("this is the text that will be analyzed")
-        expectMsgType[StatsResult](1.second).meanWordLength should be(
-          3.875 +- 0.001)
+        expectMsgType[StatsResult](1.second).meanWordLength should be(3.875 +- 0.001)
       }
 
     }
