@@ -7,7 +7,7 @@ in production but the API may change without warning or a deprecation period.
 
 @@@
 
-Akka Coordination is a set of tools for distributed coordination. So far
+Akka Coordination is a set of tools for distributed coordination.
 
 ## Dependency
 
@@ -16,3 +16,12 @@ Akka Coordination is a set of tools for distributed coordination. So far
   artifact="akka-coordination_$scala.binary_version$"
   version="$akka.version$"
 }
+
+## Lease
+
+The lease is a pluggable API for a distributed lock. Implementations extend
+the @scala[`akka.coordination.lease.scaladsl.Lease`]@java[`akka.coordination.lease.javadsl.Lease`].
+
+
+
+
