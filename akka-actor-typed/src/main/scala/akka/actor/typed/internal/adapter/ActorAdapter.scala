@@ -222,7 +222,7 @@ import akka.annotation.InternalApi
       case null                   => // skip PostStop
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case b                      => Behavior.interpretSignal(b, ctx, PostStop)
+      case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
 
     behavior = Behavior.stopped
@@ -283,14 +283,15 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ComposedStoppingBehavior[T](
-  lastBehavior: Behavior[T],
-  stopBehavior: StoppedBehavior[T]) extends ExtensibleBehavior[T] {
+@InternalApi private[typed] final class ComposedStoppingBehavior[T](lastBehavior: Behavior[T],
+                                                                    stopBehavior: StoppedBehavior[T])
+    extends ExtensibleBehavior[T] {
   override def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
     throw new IllegalStateException("Stopping, should never receieve a message")
   override def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
     if (msg != PostStop)
-      throw new IllegalArgumentException(s"The ComposedStoppingBehavior should never receive any other signal than PostStop but got $msg")
+      throw new IllegalArgumentException(
+        s"The ComposedStoppingBehavior should never receive any other signal than PostStop but got $msg")
     // first pass the signal to the previous behavior, so that it and potential interceptors
     // will get the PostStop signal, unless it is deferred, we don't start a behavior while stopping
     if (!lastBehavior.isInstanceOf[DeferredBehavior[_]])

@@ -267,7 +267,7 @@ object Behavior {
    * INTERNAL API: When the cell is stopping this behavior is used, so
    * that PostStop can be sent to previous behavior from `finishTerminate`.
    */
-  private[akka] sealed class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] ⇒ Unit])
+  private[akka] sealed class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] => Unit])
       extends Behavior[T] {
 
     def onPostStop(ctx: TypedActorContext[T]): Unit = {
