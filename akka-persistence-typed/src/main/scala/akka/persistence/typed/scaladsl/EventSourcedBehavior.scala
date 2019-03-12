@@ -6,11 +6,11 @@ package akka.persistence.typed.scaladsl
 
 import scala.util.Try
 import scala.annotation.tailrec
-
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.Signal
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.adapter.ActorContextAdapter
@@ -127,30 +127,18 @@ object EventSourcedBehavior {
   def persistenceId: PersistenceId
 
   /**
-   * The `callback` function is called to notify that the recovery process has finished.
+   * Allows the event sourced behavior to react on signals.
+   *
+   * The regular lifecycle signals can be handled as well as
+   * Akka Persistence specific signals (snapshot and recovery related). Those are all subtypes of
+   * [[akka.persistence.typed.EventSourcedSignal]]
    */
-  def onRecoveryCompleted(callback: State => Unit): EventSourcedBehavior[Command, Event, State]
+  def receiveSignal(signalHandler: PartialFunction[Signal, Unit]): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * The `callback` function is called to notify that recovery has failed. For setting a supervision
-   * strategy `onPersistFailure`
+   * @return The currently defined signal handler or an empty handler if no custom handler previously defined
    */
-  def onRecoveryFailure(callback: Throwable => Unit): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * The `callback` function is called to notify that the actor has stopped.
-   */
-  def onPostStop(callback: () => Unit): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * The `callback` function is called to notify that the actor is restarted.
-   */
-  def onPreRestart(callback: () => Unit): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * The `callback` function is called to notify when a snapshot is complete.
-   */
-  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) => Unit): EventSourcedBehavior[Command, Event, State]
+  def signalHandler: PartialFunction[Signal, Unit]
 
   /**
    * Initiates a snapshot if the given function returns true.

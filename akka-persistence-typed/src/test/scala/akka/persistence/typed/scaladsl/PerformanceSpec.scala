@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -15,6 +14,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -74,16 +74,17 @@ object PerformanceSpec {
         EventSourcedBehavior[Command, String, String](persistenceId = PersistenceId(name),
                                                       "",
                                                       commandHandler = CommandHandler.command {
-                                                        case StopMeasure =>
+                                                        case StopMeasure ⇒
                                                           Effect.none.thenRun(_ => probe.ref ! StopMeasure)
-                                                        case FailAt(sequence) =>
+                                                        case FailAt(sequence) ⇒
                                                           Effect.none.thenRun(_ => parameters.failAt = sequence)
-                                                        case command => other(command, parameters)
+                                                        case command ⇒ other(command, parameters)
                                                       },
                                                       eventHandler = {
                                                         case (state, _) => state
-                                                      }).onRecoveryCompleted { _ =>
-          if (parameters.every(1000)) print("r")
+                                                      }).receiveSignal {
+          case RecoveryCompleted(_) =>
+            if (parameters.every(1000)) print("r")
         }
       })
       .onFailure(SupervisorStrategy.restart)

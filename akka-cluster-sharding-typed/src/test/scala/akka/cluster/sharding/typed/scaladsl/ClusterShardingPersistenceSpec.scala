@@ -8,17 +8,16 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
@@ -29,6 +28,7 @@ import akka.cluster.sharding.{ ClusterSharding => UntypedClusterSharding }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.Effect
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -120,25 +120,25 @@ object ClusterShardingPersistenceSpec {
                                                         stashing = false
                                                         Effect.unstashAll()
 
-                                                      case UnstashAllAndPassivate =>
+                                                      case UnstashAllAndPassivate ⇒
                                                         stashing = false
                                                         shard ! Passivate(ctx.self)
                                                         Effect.unstashAll()
                                                     },
-                                                  eventHandler =
-                                                    (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
-        .onRecoveryCompleted { state =>
+                                                  eventHandler = (state, evt) ⇒
+                                                    if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
+        case RecoveryCompleted(state) ⇒
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {
-            case null => ctx.log.debug("no lifecycleProbe (onRecoveryCompleted) for [{}]", entityId)
-            case p    => p ! s"recoveryCompleted:$state"
+            case null ⇒ ctx.log.debug("no lifecycleProbe (onRecoveryCompleted) for [{}]", entityId)
+            case p ⇒ p ! s"recoveryCompleted:$state"
           }
-        }
-        .onPostStop(() =>
+        case PostStop ⇒
           lifecycleProbes.get(entityId) match {
-            case null => ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
-            case p    => p ! "stopped"
-          })
+            case null ⇒ ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
+            case p ⇒ p ! "stopped"
+          }
+      }
     }
   }
 

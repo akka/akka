@@ -9,6 +9,7 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -35,8 +36,9 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
                                         eventHandler = (state, event) => {
                                           probe.tell("eventHandler:" + state + ":" + event)
                                           state + event
-                                        }).onRecoveryCompleted { n =>
-      probe.tell("onRecoveryCompleted:" + n)
+                                        }).receiveSignal {
+      case RecoveryCompleted(n) =>
+        probe.tell("onRecoveryCompleted:" + n)
     }
 
   "A typed persistent actor with primitive state" must {
