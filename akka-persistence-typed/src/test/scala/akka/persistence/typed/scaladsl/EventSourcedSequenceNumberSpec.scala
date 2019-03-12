@@ -35,7 +35,7 @@ class EventSourcedSequenceNumberSpec
       }).receiveSignal {
         case RecoveryCompleted(_) ⇒
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
-    })
+      })
 
   "The sequence number" must {
 

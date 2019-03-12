@@ -89,7 +89,7 @@ object PersistentActorCompileOnlyTest {
                                                                    case AcknowledgeSideEffect(correlationId) =>
                                                                      Effect.persist(
                                                                        SideEffectAcknowledged(correlationId))
-                                                               },
+                                                                 },
                                                                eventHandler = (state, evt) =>
                                                                  evt match {
                                                                    case IntentRecorded(correlationId, data) =>
@@ -99,12 +99,12 @@ object PersistentActorCompileOnlyTest {
                                                                    case SideEffectAcknowledged(correlationId) =>
                                                                      state.copy(
                                                                        dataByCorrelationId = state.dataByCorrelationId - correlationId)
-                                                               }).receiveSignal {
+                                                                 }).receiveSignal {
             case RecoveryCompleted(state: EventsInFlight) =>
               state.dataByCorrelationId.foreach {
                 case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
               }
-        })
+          })
 
   }
 
@@ -175,7 +175,7 @@ object PersistentActorCompileOnlyTest {
                                                     case TaskRegistered(task) => State(task :: state.tasksInFlight)
                                                     case TaskRemoved(task) =>
                                                       State(state.tasksInFlight.filter(_ != task))
-                                                }).snapshotWhen { (state, e, seqNr) =>
+                                                  }).snapshotWhen { (state, e, seqNr) =>
       state.tasksInFlight.isEmpty
     }
   }
@@ -207,13 +207,13 @@ object PersistentActorCompileOnlyTest {
                                                             ctx.watchWith(child, TaskDone(task))
                                                           }
                                                         case TaskDone(task) => Effect.persist(TaskRemoved(task))
-                                                    },
+                                                      },
                                                     eventHandler = (state, evt) =>
                                                       evt match {
                                                         case TaskRegistered(task) => State(task :: state.tasksInFlight)
                                                         case TaskRemoved(task) =>
                                                           State(state.tasksInFlight.filter(_ != task))
-                                                    }))
+                                                      }))
 
   }
 
@@ -290,7 +290,7 @@ object PersistentActorCompileOnlyTest {
                                                        evt match {
                                                          case ItemAdded(id)   => id +: state
                                                          case ItemRemoved(id) => state.filter(_ != id)
-                                                     }).receiveSignal {
+                                                       }).receiveSignal {
         case RecoveryCompleted(state: List[Id]) =>
           state.foreach(id => metadataRegistry ! GetMetaData(id, adapt))
       }

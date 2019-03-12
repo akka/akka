@@ -152,10 +152,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       emptyState,
       (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
-      getClass)
-      .snapshotWhen(snapshotWhen)
-      .withTagger(tagger)
-      .eventAdapter(eventAdapter())
+      getClass).snapshotWhen(snapshotWhen).withTagger(tagger).eventAdapter(eventAdapter())
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =

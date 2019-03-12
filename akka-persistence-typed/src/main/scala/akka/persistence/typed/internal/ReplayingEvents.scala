@@ -178,9 +178,10 @@ private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorS
     throw new JournalFailureException(msg, cause)
   }
 
-  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
-    tryReturnRecoveryPermit("replay completed successfully")
-    setup.onSignal(RecoveryCompleted(state.state))
+  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
+    try {
+      tryReturnRecoveryPermit("replay completed successfully")
+      setup.onSignal(RecoveryCompleted(state.state))
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped

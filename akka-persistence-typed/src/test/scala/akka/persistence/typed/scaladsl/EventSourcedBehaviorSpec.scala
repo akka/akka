@@ -200,7 +200,7 @@ object EventSourcedBehaviorSpec {
                                                           Behaviors.receive((_, msg) =>
                                                             msg match {
                                                               case Tick => Behaviors.stopped
-                                                          })
+                                                            })
                                                       })
                                                       ctx.watchWith(delay, DelayFinished)
                                                       Effect.none
@@ -252,13 +252,13 @@ object EventSourcedBehaviorSpec {
                                                     case StopIt =>
                                                       Effect.none.thenStop()
 
-                                                },
+                                                  },
                                                 eventHandler = (state, evt) ⇒
                                                   evt match {
                                                     case Incremented(delta) ⇒
                                                       probe ! ((state, evt))
                                                       State(state.value + delta, state.history :+ state.value)
-                                                }).receiveSignal {
+                                                  }).receiveSignal {
       case RecoveryCompleted(_) ⇒ ()
       case SnapshotCompleted(_) ⇒
         snapshotProbe ! Success(Done)
@@ -472,7 +472,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val snapshotAtTwo = Behaviors.setup[Command](ctx =>
         counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotWhen { (s, _, _) =>
           s.value == 2
-      })
+        })
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()

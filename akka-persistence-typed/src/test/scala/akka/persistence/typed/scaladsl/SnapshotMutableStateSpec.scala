@@ -85,14 +85,14 @@ object SnapshotMutableStateSpec {
                                                            case GetValue(replyTo) =>
                                                              replyTo ! state.value
                                                              Effect.none
-                                                       },
+                                                         },
                                                        eventHandler = (state, evt) =>
                                                          evt match {
                                                            case Incremented =>
                                                              state.value += 1
                                                              probe ! s"incremented-${state.value}"
                                                              state
-                                                       }).receiveSignal {
+                                                         }).receiveSignal {
       case SnapshotCompleted(meta) =>
         probe ! s"snapshot-success-${meta.sequenceNr}"
       case SnapshotFailed(meta, _) =>

@@ -124,7 +124,7 @@ object ClusterShardingPersistenceSpec {
                                                         stashing = false
                                                         shard ! Passivate(ctx.self)
                                                         Effect.unstashAll()
-                                                  },
+                                                    },
                                                   eventHandler = (state, evt) ⇒
                                                     if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
         case RecoveryCompleted(state) ⇒

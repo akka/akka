@@ -14,6 +14,7 @@ object SignalHandler {
 }
 
 final class SignalHandler(_handler: PartialFunction[Signal, Unit]) {
+
   /**
    * INTERNAL API
    */

@@ -44,7 +44,7 @@ class ChaosJournal extends InmemJournal {
       Future.successful(messages.map(_ =>
         Try {
           throw TestException("I don't like it")
-      }))
+        }))
     } else {
       super.asyncWriteMessages(messages)
     }
@@ -83,7 +83,7 @@ class EventSourcedBehaviorFailureSpec
   def failingPersistentActor(pid: PersistenceId,
                              probe: ActorRef[String],
                              additionalSignalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
-    : EventSourcedBehavior[String, String, String] =
+      : EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior[String, String, String](pid,
                                                  "",
                                                  (_, cmd) ⇒ {
