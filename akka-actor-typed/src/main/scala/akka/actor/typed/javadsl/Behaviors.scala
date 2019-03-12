@@ -10,7 +10,7 @@ import java.util.function.{ Function => JFunction }
 import akka.actor.typed._
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.annotation.ApiMayChange
-import akka.japi.function.{ Effect, Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
 

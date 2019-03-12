@@ -177,8 +177,8 @@ object Behavior {
    * given `postStop` behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T](postStop: () ⇒ Unit): Behavior[T] =
-    new StoppedBehavior[T](OptionVal.Some((_: TypedActorContext[T]) ⇒ postStop()))
+  def stopped[T](postStop: () => Unit): Behavior[T] =
+    new StoppedBehavior[T](OptionVal.Some((_: TypedActorContext[T]) => postStop()))
 
   /**
    * A behavior that treats every incoming message as unhandled.

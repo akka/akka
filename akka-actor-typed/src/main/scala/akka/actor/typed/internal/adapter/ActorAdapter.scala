@@ -69,6 +69,12 @@ import akka.annotation.InternalApi
         } else Terminated(ActorRefAdapter(ref))
       handleSignal(msg)
     case untyped.ReceiveTimeout =>
+      next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+    case wrapped: AdaptMessage[Any, T] @unchecked =>
+      withSafelyAdapted(() => wrapped.adapt()) {
+        case AdaptWithRegisteredMessageAdapter(msg) =>
+      handleSignal(msg)
+    case untyped.ReceiveTimeout =>
       handleMessage(ctx.receiveTimeoutMsg)
     case wrapped: AdaptMessage[Any, T] @unchecked =>
       withSafelyAdapted(() => wrapped.adapt()) {
@@ -111,7 +117,7 @@ import akka.annotation.InternalApi
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
       b match {
-        case f: FailedBehavior ⇒
+        case f: FailedBehavior =>
           // For the parent untyped supervisor to pick up the exception
           throw TypedActorFailedException(f.cause)
         case stopped: StoppedBehavior[T] =>
@@ -216,7 +222,7 @@ import akka.annotation.InternalApi
       case null                   => // skip PostStop
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case b                      ⇒ Behavior.interpretSignal(b, ctx, PostStop)
+      case b                      => Behavior.interpretSignal(b, ctx, PostStop)
     }
 
     behavior = Behavior.stopped

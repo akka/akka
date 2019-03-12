@@ -332,20 +332,24 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
     "intercept PostStop" in {
       val probe = TestProbe[String]()
       val postStopInterceptor = new BehaviorInterceptor[String, String] {
-        def aroundReceive(ctx: TypedActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
+        def aroundReceive(ctx: TypedActorContext[String],
+                          msg: String,
+                          target: ReceiveTarget[String]): Behavior[String] = {
           target(ctx, msg)
         }
-        def aroundSignal(ctx: TypedActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] = {
+        def aroundSignal(ctx: TypedActorContext[String],
+                         signal: Signal,
+                         target: SignalTarget[String]): Behavior[String] = {
           signal match {
-            case PostStop ⇒
+            case PostStop =>
               probe.ref ! "interceptor-post-stop"
           }
           target(ctx, signal)
         }
       }
 
-      val ref = spawn(Behaviors.intercept(postStopInterceptor)(Behaviors.receiveMessage[String] { _ ⇒
-        Behaviors.stopped { () ⇒
+      val ref = spawn(Behaviors.intercept(postStopInterceptor)(Behaviors.receiveMessage[String] { _ =>
+        Behaviors.stopped { () =>
           probe.ref ! "callback-post-stop"
         }
       }))

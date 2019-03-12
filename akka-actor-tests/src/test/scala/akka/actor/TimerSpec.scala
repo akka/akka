@@ -87,7 +87,7 @@ object TimerSpec {
 
   object TheState
 
-  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int)
+  class FsmTarget(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int)
       extends FSM[TheState.type, Int] {
 
     private var restarting = false
@@ -150,19 +150,13 @@ object TimerSpec {
 
 class TimerSpec extends AbstractTimerSpec {
   override def testName: String = "Timers"
-  override def target(monitor: ActorRef,
-                      interval: FiniteDuration,
-                      repeat: Boolean,
-                      initial: () => Int = () => 1): Props =
+  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props =
     TimerSpec.target(monitor, interval, repeat, initial)
 }
 
 class FsmTimerSpec extends AbstractTimerSpec {
   override def testName: String = "FSM Timers"
-  override def target(monitor: ActorRef,
-                      interval: FiniteDuration,
-                      repeat: Boolean,
-                      initial: () => Int = () => 1): Props =
+  override def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props =
     TimerSpec.fsmTarget(monitor, interval, repeat, initial)
 }
 
@@ -172,7 +166,7 @@ abstract class AbstractTimerSpec extends AkkaSpec {
   val interval = 1.second
   val dilatedInterval = interval.dilated
 
-  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () => Int = () => 1): Props
+  def target(monitor: ActorRef, interval: FiniteDuration, repeat: Boolean, initial: () ⇒ Int = () ⇒ 1): Props
 
   def testName: String
 
@@ -240,8 +234,8 @@ abstract class AbstractTimerSpec extends AkkaSpec {
     "discard timers from old incarnation after restart, alt 1" taggedAs TimingTest in {
       val probe = TestProbe()
       val startCounter = new AtomicInteger(0)
-      val ref = system.actorOf(
-        target(probe.ref, dilatedInterval, repeat = true, initial = () => startCounter.incrementAndGet()))
+      val ref =
+        system.actorOf(target(probe.ref, dilatedInterval, repeat = true, initial = () ⇒ startCounter.incrementAndGet()))
       probe.expectMsg(Tock(1))
 
       val latch = new TestLatch(1)

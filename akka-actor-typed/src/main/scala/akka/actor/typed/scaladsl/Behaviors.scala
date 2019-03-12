@@ -66,7 +66,7 @@ object Behaviors {
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
    */
-  def stopped[T](postStop: () ⇒ Unit): Behavior[T] = Behavior.stopped(postStop)
+  def stopped[T](postStop: () => Unit): Behavior[T] = Behavior.stopped(postStop)
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -215,6 +215,7 @@ object Behaviors {
    * Support for scheduled `self` messages in an actor.
    * It takes care of the lifecycle of the timers such as cancelling them when the actor
    * is restarted or stopped.
+   *
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: TimerScheduler[T] => Behavior[T]): Behavior[T] =
