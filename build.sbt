@@ -534,7 +534,7 @@ def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
   val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
   val optionalExternalTestFormat = externalTest.map(t => s";${t.id}/scalafmtAll").getOrElse("")
-  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox;${test.id}:validateCompile"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
