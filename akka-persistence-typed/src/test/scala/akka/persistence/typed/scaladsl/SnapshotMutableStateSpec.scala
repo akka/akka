@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -19,6 +18,8 @@ import akka.persistence.SnapshotMetadata
 import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.SnapshotCompleted
+import akka.persistence.typed.SnapshotFailed
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -91,9 +92,11 @@ object SnapshotMutableStateSpec {
                                                              state.value += 1
                                                              probe ! s"incremented-${state.value}"
                                                              state
-                                                         }).onSnapshot {
-      case (meta, Success(_)) => probe ! s"snapshot-success-${meta.sequenceNr}"
-      case (meta, Failure(_)) => probe ! s"snapshot-failure-${meta.sequenceNr}"
+                                                         }).receiveSignal {
+      case SnapshotCompleted(meta) =>
+        probe ! s"snapshot-success-${meta.sequenceNr}"
+      case SnapshotFailed(meta, _) =>
+        probe ! s"snapshot-failure-${meta.sequenceNr}"
     }
   }
 

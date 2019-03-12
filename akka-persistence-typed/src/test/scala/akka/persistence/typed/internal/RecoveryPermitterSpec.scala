@@ -14,11 +14,12 @@ import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecove
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.testkit.EventFilter
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -51,9 +52,10 @@ object RecoveryPermitterSpec {
                                                 },
                                                 eventHandler = { (state, event) =>
                                                   eventProbe.ref ! event; state
-                                                }).onRecoveryCompleted { _ =>
-      eventProbe.ref ! Recovered
-      if (throwOnRecovery) throw new TE
+                                                }).receiveSignal {
+      case RecoveryCompleted(state) =>
+        eventProbe.ref ! Recovered
+        if (throwOnRecovery) throw new TE
     }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
