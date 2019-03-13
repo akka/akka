@@ -21,7 +21,7 @@ object Publish extends AutoPlugin {
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
-    organizationHomepage := Some(url("http://www.lightbend.com")),
+    organizationHomepage := Some(url("https://www.lightbend.com")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository")
