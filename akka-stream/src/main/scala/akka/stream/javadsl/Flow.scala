@@ -67,7 +67,8 @@ object Flow {
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Flow]] returned by this method.
    */
-  def setup[I, O, M](factory: BiFunction[ActorMaterializer, Attributes, Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
+  def setup[I, O, M](
+      factory: BiFunction[ActorMaterializer, Attributes, Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
     scaladsl.Flow.setup(mat ⇒ attr ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**

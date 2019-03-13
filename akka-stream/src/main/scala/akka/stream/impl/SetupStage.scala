@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 
 /** Internal Api */
 @InternalApi private[stream] final class SetupSinkStage[T, M](factory: ActorMaterializer ⇒ Attributes ⇒ Sink[T, M])
-  extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
 
   private val in = Inlet[T]("SetupSinkStage.in")
   override val shape = SinkShape(in)
@@ -48,8 +48,9 @@ import scala.util.control.NonFatal
 }
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupFlowStage[T, U, M](factory: ActorMaterializer ⇒ Attributes ⇒ Flow[T, U, M])
-  extends GraphStageWithMaterializedValue[FlowShape[T, U], Future[M]] {
+@InternalApi private[stream] final class SetupFlowStage[T, U, M](
+    factory: ActorMaterializer ⇒ Attributes ⇒ Flow[T, U, M])
+    extends GraphStageWithMaterializedValue[FlowShape[T, U], Future[M]] {
 
   private val in = Inlet[T]("SetupFlowStage.in")
   private val out = Outlet[U]("SetupFlowStage.out")
@@ -93,7 +94,7 @@ import scala.util.control.NonFatal
 
 /** Internal Api */
 @InternalApi private[stream] final class SetupSourceStage[T, M](factory: ActorMaterializer ⇒ Attributes ⇒ Source[T, M])
-  extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
 
   private val out = Outlet[T]("SetupSourceStage.out")
   override val shape = SourceShape(out)
@@ -114,10 +115,7 @@ import scala.util.control.NonFatal
       try {
         val source = factory(ActorMaterializerHelper.downcast(materializer))(attributes)
 
-        val mat = source
-          .withAttributes(attributes)
-          .to(Sink.fromGraph(subInlet.sink))
-          .run()(subFusingMaterializer)
+        val mat = source.withAttributes(attributes).to(Sink.fromGraph(subInlet.sink)).run()(subFusingMaterializer)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) ⇒
@@ -138,11 +136,10 @@ private object SetupStage {
       subOutlet.fail(ex)
   }
 
-  def delegateToOutlet[T](
-    push:     T ⇒ Unit,
-    complete: () ⇒ Unit,
-    fail:     Throwable ⇒ Unit,
-    subInlet: GraphStageLogic#SubSinkInlet[T]) = new InHandler {
+  def delegateToOutlet[T](push: T ⇒ Unit,
+                          complete: () ⇒ Unit,
+                          fail: Throwable ⇒ Unit,
+                          subInlet: GraphStageLogic#SubSinkInlet[T]) = new InHandler {
     override def onPush(): Unit =
       push(subInlet.grab())
     override def onUpstreamFinish(): Unit =
