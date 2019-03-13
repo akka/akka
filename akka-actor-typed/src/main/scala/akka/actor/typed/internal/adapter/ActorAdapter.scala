@@ -164,9 +164,9 @@ import akka.util.OptionVal
       // this should never get here, because if it did, the death pact could
       // not be supervised - interpretSignal is where this actually happens
       throw DeathPactException(ref)
-    case _: Signal       =>
+    case _: Signal =>
     // that's ok
-    case other           =>
+    case other =>
       super.unhandled(other)
   }
 
