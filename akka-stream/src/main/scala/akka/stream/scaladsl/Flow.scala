@@ -7,7 +7,16 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl._
+import akka.stream.impl.{
+  fusing,
+  LinearTraversalBuilder,
+  ProcessorModule,
+  SetupFlowStage,
+  SubFlowImpl,
+  Throttle,
+  Timers,
+  TraversalBuilder
+}
 import akka.stream.impl.fusing._
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }
