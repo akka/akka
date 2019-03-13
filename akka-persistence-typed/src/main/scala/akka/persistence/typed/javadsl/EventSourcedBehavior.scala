@@ -14,6 +14,7 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
@@ -122,6 +123,26 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
 
   /**
+   * Override and define the journal plugin id that this actor should use instead of the default.
+   */
+  def journalPluginId: String = ""
+
+  /**
+   * Override and define the snapshot store plugin id that this actor should use instead of the default.
+   */
+  def snapshotPluginId: String = ""
+
+  /**
+   * Override and define the snapshot selection criteria used by this actor instead of the default.
+   * By default the most recent snapshot is used, and the remaining state updates are recovered by replaying events
+   * from the sequence number up until which the snapshot reached.
+   *
+   * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
+   * performed by replaying all events -- which may take a long time.
+   */
+  def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest
+
+  /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
@@ -152,7 +173,13 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       emptyState,
       (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
-      getClass).snapshotWhen(snapshotWhen).withTagger(tagger).eventAdapter(eventAdapter())
+      getClass)
+      .snapshotWhen(snapshotWhen)
+      .withTagger(tagger)
+      .eventAdapter(eventAdapter())
+      .withJournalPluginId(journalPluginId)
+      .withSnapshotPluginId(snapshotPluginId)
+      .withSnapshotSelectionCriteria(snapshotSelectionCriteria)
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =
