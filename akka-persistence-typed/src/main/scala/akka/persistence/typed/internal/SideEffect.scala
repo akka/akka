@@ -21,7 +21,7 @@ private[akka] sealed abstract class SideEffect[State]
 
 /** INTERNAL API */
 @InternalApi
-private[akka] class Callback[State](val sideEffect: State => Unit) extends SideEffect[State] {
+private[akka] sealed class Callback[State](val sideEffect: State => Unit) extends SideEffect[State] {
   override def toString: String = "Callback"
 }
 
@@ -36,7 +36,7 @@ final private[akka] class ReplyEffectImpl[ReplyMessage, State](
 
 /** INTERNAL API */
 @InternalApi
-final private[akka] class NoReplyEffectImpl[State] extends Callback[State](_ => ()) {
+private[akka] final class NoReplyEffectImpl[State] extends Callback[State](_ => ()) {
   override def toString: String = "NoReply"
 }
 
@@ -48,7 +48,9 @@ private[akka] case object Stop extends SideEffect[Nothing]
 @InternalApi
 private[akka] case object UnstashAll extends SideEffect[Nothing]
 
-object SideEffect {
+/** INTERNAL API */
+@InternalApi
+private[akka] object SideEffect {
 
   /**
    * Create a ChainedEffect that can be run after Effects

@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{immutable => im}
+import scala.collection.{ immutable => im }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.internal.ReplyEffectImpl

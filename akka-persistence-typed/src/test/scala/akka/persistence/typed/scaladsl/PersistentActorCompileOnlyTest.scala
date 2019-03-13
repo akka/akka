@@ -6,7 +6,7 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
