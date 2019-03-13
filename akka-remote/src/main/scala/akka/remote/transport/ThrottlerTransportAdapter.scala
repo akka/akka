@@ -115,9 +115,11 @@ object ThrottlerTransportAdapter {
 
     override def tryConsumeTokens(nanoTimeOfSend: Long, tokens: Int): (ThrottleMode, Boolean) = {
       if (isAvailable(nanoTimeOfSend, tokens))
-        (this.copy(nanoTimeOfLastSend = nanoTimeOfSend,
-                   availableTokens = min(availableTokens - tokens + tokensGenerated(nanoTimeOfSend), capacity)),
-         true)
+        (
+          this.copy(
+            nanoTimeOfLastSend = nanoTimeOfSend,
+            availableTokens = min(availableTokens - tokens + tokensGenerated(nanoTimeOfSend), capacity)),
+          true)
       else (this, false)
     }
 
@@ -328,9 +330,10 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
     }
   }
 
-  private def setMode(handle: ThrottlerHandle,
-                      mode: ThrottleMode,
-                      direction: Direction): Future[SetThrottleAck.type] = {
+  private def setMode(
+      handle: ThrottlerHandle,
+      mode: ThrottleMode,
+      direction: Direction): Future[SetThrottleAck.type] = {
     if (direction.includes(Direction.Send))
       handle.outboundThrottleMode.set(mode)
     if (direction.includes(Direction.Receive))
@@ -354,17 +357,18 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
     }
   }
 
-  private def wrapHandle(originalHandle: AssociationHandle,
-                         listener: AssociationEventListener,
-                         inbound: Boolean): ThrottlerHandle = {
+  private def wrapHandle(
+      originalHandle: AssociationHandle,
+      listener: AssociationEventListener,
+      inbound: Boolean): ThrottlerHandle = {
     val managerRef = self
-    ThrottlerHandle(originalHandle,
-                    context.actorOf(
-                      RARP(context.system)
-                        .configureDispatcher(
-                          Props(classOf[ThrottledAssociation], managerRef, listener, originalHandle, inbound))
-                        .withDeploy(Deploy.local),
-                      "throttler" + nextId()))
+    ThrottlerHandle(
+      originalHandle,
+      context.actorOf(
+        RARP(context.system)
+          .configureDispatcher(Props(classOf[ThrottledAssociation], managerRef, listener, originalHandle, inbound))
+          .withDeploy(Deploy.local),
+        "throttler" + nextId()))
   }
 }
 
@@ -408,10 +412,11 @@ private[transport] object ThrottledAssociation {
 /**
  * INTERNAL API
  */
-private[transport] class ThrottledAssociation(val manager: ActorRef,
-                                              val associationHandler: AssociationEventListener,
-                                              val originalHandle: AssociationHandle,
-                                              val inbound: Boolean)
+private[transport] class ThrottledAssociation(
+    val manager: ActorRef,
+    val associationHandler: AssociationEventListener,
+    val originalHandle: AssociationHandle,
+    val inbound: Boolean)
     extends Actor
     with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

@@ -267,8 +267,9 @@ trait AssociationHandle {
    * could be called arbitrarily many times.
    *
    */
-  @deprecated(message = "Use method that states reasons to make sure disassociation reasons are logged.",
-              since = "2.5.3")
+  @deprecated(
+    message = "Use method that states reasons to make sure disassociation reasons are logged.",
+    since = "2.5.3")
   def disassociate(): Unit
 
   /**
@@ -279,10 +280,11 @@ trait AssociationHandle {
    */
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
-      log.debug("Association between local [{}] and remote [{}] was disassociated because {}",
-                localAddress,
-                remoteAddress,
-                reason)
+      log.debug(
+        "Association between local [{}] and remote [{}] was disassociated because {}",
+        localAddress,
+        remoteAddress,
+        reason)
 
     disassociate()
   }

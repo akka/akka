@@ -44,9 +44,10 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   override def initialParticipants = 2
 
-  def identifyWithUid(role: RoleName,
-                      actorName: String,
-                      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(
+      role: RoleName,
+      actorName: String,
+      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -108,8 +109,9 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name,
-                                      ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
 

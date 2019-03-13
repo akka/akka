@@ -69,13 +69,15 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override def isInfoEnabled(marker: LogMarker): Boolean = true
   override def isDebugEnabled(marker: LogMarker): Boolean = true
 
-  override private[akka] def notifyError(message: String,
-                                         cause: OptionVal[Throwable],
-                                         marker: OptionVal[LogMarker]): Unit =
+  override private[akka] def notifyError(
+      message: String,
+      cause: OptionVal[Throwable],
+      marker: OptionVal[LogMarker]): Unit =
     logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker, mdc) :: logBuffer
-  override private[akka] def notifyWarning(message: String,
-                                           cause: OptionVal[Throwable],
-                                           marker: OptionVal[LogMarker]): Unit =
+  override private[akka] def notifyWarning(
+      message: String,
+      cause: OptionVal[Throwable],
+      marker: OptionVal[LogMarker]): Unit =
     logBuffer = CapturedLogEvent(Logging.WarningLevel, message, OptionVal.None, marker, mdc) :: logBuffer
 
   override private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit =
@@ -111,18 +113,20 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override def isInfoEnabled(marker: LogMarker): Boolean = actual.isInfoEnabled(marker)
   override def isDebugEnabled(marker: LogMarker): Boolean = actual.isDebugEnabled(marker)
 
-  override private[akka] def notifyError(message: String,
-                                         cause: OptionVal[Throwable],
-                                         marker: OptionVal[LogMarker]): Unit = {
+  override private[akka] def notifyError(
+      message: String,
+      cause: OptionVal[Throwable],
+      marker: OptionVal[LogMarker]): Unit = {
     val original = actual.mdc
     actual.mdc = mdc
     actual.notifyError(message, cause, marker)
     actual.mdc = original
   }
 
-  override private[akka] def notifyWarning(message: String,
-                                           cause: OptionVal[Throwable],
-                                           marker: OptionVal[LogMarker]): Unit = {
+  override private[akka] def notifyWarning(
+      message: String,
+      cause: OptionVal[Throwable],
+      marker: OptionVal[LogMarker]): Unit = {
     val original = actual.mdc
     actual.mdc = mdc
     actual.notifyWarning(message, cause, marker)

@@ -71,12 +71,13 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def apply(sslContext: SSLContext,
-            sslConfig: Option[AkkaSSLConfig],
-            firstSession: NegotiateNewSession,
-            role: TLSRole,
-            closing: TLSClosing = IgnoreComplete,
-            hostInfo: Option[(String, Int)] = None)
+  def apply(
+      sslContext: SSLContext,
+      sslConfig: Option[AkkaSSLConfig],
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      closing: TLSClosing = IgnoreComplete,
+      hostInfo: Option[(String, Int)] = None)
       : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] = {
     def theSslConfig(system: ActorSystem): AkkaSSLConfig =
       sslConfig.getOrElse(AkkaSSLConfig(system))
@@ -139,11 +140,12 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def apply(sslContext: SSLContext,
-            firstSession: NegotiateNewSession,
-            role: TLSRole,
-            closing: TLSClosing,
-            hostInfo: Option[(String, Int)])
+  def apply(
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      closing: TLSClosing,
+      hostInfo: Option[(String, Int)])
       : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, closing, hostInfo)
 
@@ -156,9 +158,10 @@ object TLS {
    * that is not a requirement and depends entirely on the application
    * protocol.
    */
-  def apply(sslContext: SSLContext,
-            firstSession: NegotiateNewSession,
-            role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+  def apply(
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, IgnoreComplete, None)
 
   /**

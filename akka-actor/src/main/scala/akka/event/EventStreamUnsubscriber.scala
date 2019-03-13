@@ -34,9 +34,10 @@ protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: B
     case Register(actor) =>
       if (debug)
         eventStream.publish(
-          Logging.Debug(simpleName(getClass),
-                        getClass,
-                        s"watching $actor in order to unsubscribe from EventStream when it terminates"))
+          Logging.Debug(
+            simpleName(getClass),
+            getClass,
+            s"watching $actor in order to unsubscribe from EventStream when it terminates"))
       context.watch(actor)
 
     case UnregisterIfNoMoreSubscribedChannels(actor) if eventStream.hasSubscriptions(actor) =>

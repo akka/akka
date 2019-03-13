@@ -137,8 +137,9 @@ object Sink {
         // behave as it is the stage with regards to attributes
         val attrs = g.traversalBuilder.attributes
         val noAttrStage = g.withAttributes(Attributes.none)
-        new Sink(LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
-                 noAttrStage.shape).withAttributes(attrs)
+        new Sink(
+          LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+          noAttrStage.shape).withAttributes(attrs)
 
       case other =>
         new Sink(LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right), other.shape)
@@ -427,9 +428,10 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting operator in front of this `Sink`.
    */
-  @InternalApi private[akka] def actorRef[T](ref: ActorRef,
-                                             onCompleteMessage: Any,
-                                             onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
+  @InternalApi private[akka] def actorRef[T](
+      ref: ActorRef,
+      onCompleteMessage: Any,
+      onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
     fromGraph(
       new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
@@ -450,11 +452,12 @@ object Sink {
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
     fromGraph(
-      new ActorRefSink(ref,
-                       onCompleteMessage,
-                       t => Status.Failure(t),
-                       DefaultAttributes.actorRefSink,
-                       shape("ActorRefSink")))
+      new ActorRefSink(
+        ref,
+        onCompleteMessage,
+        t => Status.Failure(t),
+        DefaultAttributes.actorRefSink,
+        shape("ActorRefSink")))
 
   /**
    * INTERNAL API
@@ -476,19 +479,21 @@ object Sink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
    */
-  @InternalApi private[akka] def actorRefWithAck[T](ref: ActorRef,
-                                                    messageAdapter: ActorRef => T => Any,
-                                                    onInitMessage: ActorRef => Any,
-                                                    ackMessage: Any,
-                                                    onCompleteMessage: Any,
-                                                    onFailureMessage: (Throwable) => Any): Sink[T, NotUsed] =
+  @InternalApi private[akka] def actorRefWithAck[T](
+      ref: ActorRef,
+      messageAdapter: ActorRef => T => Any,
+      onInitMessage: ActorRef => Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: (Throwable) => Any): Sink[T, NotUsed] =
     Sink.fromGraph(
-      new ActorRefBackpressureSinkStage(ref,
-                                        messageAdapter,
-                                        onInitMessage,
-                                        ackMessage,
-                                        onCompleteMessage,
-                                        onFailureMessage))
+      new ActorRefBackpressureSinkStage(
+        ref,
+        messageAdapter,
+        onInitMessage,
+        ackMessage,
+        onCompleteMessage,
+        onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -504,11 +509,12 @@ object Sink {
    * function will be sent to the destination actor.
    *
    */
-  def actorRefWithAck[T](ref: ActorRef,
-                         onInitMessage: Any,
-                         ackMessage: Any,
-                         onCompleteMessage: Any,
-                         onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
+  def actorRefWithAck[T](
+      ref: ActorRef,
+      onInitMessage: Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
 
   /**

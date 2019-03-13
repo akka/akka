@@ -311,21 +311,22 @@ import org.reactivestreams.Subscription
     extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
-  initialPhase(1,
-               TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () =>
-                 primaryInputs.dequeueInputElement() match {
-                   case (a, b) =>
-                     outputBunch.enqueue(0, a)
-                     outputBunch.enqueue(1, b)
+  initialPhase(
+    1,
+    TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () =>
+      primaryInputs.dequeueInputElement() match {
+        case (a, b) =>
+          outputBunch.enqueue(0, a)
+          outputBunch.enqueue(1, b)
 
-                   case t: akka.japi.Pair[_, _] =>
-                     outputBunch.enqueue(0, t.first)
-                     outputBunch.enqueue(1, t.second)
+        case t: akka.japi.Pair[_, _] =>
+          outputBunch.enqueue(0, t.first)
+          outputBunch.enqueue(1, t.second)
 
-                   case t =>
-                     throw new IllegalArgumentException(
-                       s"Unable to unzip elements of type ${t.getClass.getName}, " +
-                       s"can only handle Tuple2 and akka.japi.Pair!")
-                 }
-               })
+        case t =>
+          throw new IllegalArgumentException(
+            s"Unable to unzip elements of type ${t.getClass.getName}, " +
+            s"can only handle Tuple2 and akka.japi.Pair!")
+      }
+    })
 }

@@ -137,10 +137,10 @@ object ConsistentHashingRoutingLogic {
  *
  */
 @SerialVersionUID(1L)
-final case class ConsistentHashingRoutingLogic(system: ActorSystem,
-                                               virtualNodesFactor: Int = 0,
-                                               hashMapping: ConsistentHashingRouter.ConsistentHashMapping =
-                                                 ConsistentHashingRouter.emptyConsistentHashMapping)
+final case class ConsistentHashingRoutingLogic(
+    system: ActorSystem,
+    virtualNodesFactor: Int = 0,
+    hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
     extends RoutingLogic {
 
   import ConsistentHashingRouter._
@@ -225,10 +225,11 @@ final case class ConsistentHashingRoutingLogic(system: ActorSystem,
         case _ if hashMapping.isDefinedAt(message) => target(hashMapping(message))
         case hashable: ConsistentHashable          => target(hashable.consistentHashKey)
         case _ =>
-          log.warning("Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
-                      message.getClass.getName,
-                      classOf[ConsistentHashable].getName,
-                      classOf[ConsistentHashableEnvelope].getName)
+          log.warning(
+            "Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
+            message.getClass.getName,
+            classOf[ConsistentHashable].getName,
+            classOf[ConsistentHashableEnvelope].getName)
           NoRoutee
       }
     }
@@ -284,9 +285,10 @@ final case class ConsistentHashingPool(
     with PoolOverrideUnsetConfig[ConsistentHashingPool] {
 
   def this(config: Config) =
-    this(nrOfInstances = config.getInt("nr-of-instances"),
-         resizer = Resizer.fromConfig(config),
-         usePoolDispatcher = config.hasPath("pool-dispatcher"))
+    this(
+      nrOfInstances = config.getInt("nr-of-instances"),
+      resizer = Resizer.fromConfig(config),
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -360,11 +362,11 @@ final case class ConsistentHashingPool(
  *   router management messages
  */
 @SerialVersionUID(1L)
-final case class ConsistentHashingGroup(val paths: immutable.Iterable[String],
-                                        val virtualNodesFactor: Int = 0,
-                                        val hashMapping: ConsistentHashingRouter.ConsistentHashMapping =
-                                          ConsistentHashingRouter.emptyConsistentHashMapping,
-                                        override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+final case class ConsistentHashingGroup(
+    val paths: immutable.Iterable[String],
+    val virtualNodesFactor: Int = 0,
+    val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 
   def this(config: Config) =

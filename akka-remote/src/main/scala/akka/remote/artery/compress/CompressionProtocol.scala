@@ -27,8 +27,9 @@ private[remote] object CompressionProtocol {
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given [[akka.actor.ActorRef]]
    */
-  private[remote] final case class ActorRefCompressionAdvertisement(from: UniqueAddress,
-                                                                    table: CompressionTable[ActorRef])
+  private[remote] final case class ActorRefCompressionAdvertisement(
+      from: UniqueAddress,
+      table: CompressionTable[ActorRef])
       extends CompressionAdvertisement[ActorRef]
 
   /**
@@ -46,8 +47,9 @@ private[remote] object CompressionProtocol {
    * INTERNAL API
    * Sent by the "receiving" node after allocating a compression id to a given class manifest
    */
-  private[remote] final case class ClassManifestCompressionAdvertisement(from: UniqueAddress,
-                                                                         table: CompressionTable[String])
+  private[remote] final case class ClassManifestCompressionAdvertisement(
+      from: UniqueAddress,
+      table: CompressionTable[String])
       extends CompressionAdvertisement[String]
 
   /**

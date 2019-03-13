@@ -206,18 +206,16 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
 
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
 
-  private def addCase(predicate: Command => Boolean,
-                      handler: BiFunction[S, Command, ReplyEffect[Event, State]]): Unit = {
-    cases = CommandHandlerCase[Command, Event, State](commandPredicate = predicate,
-                                                      statePredicate = state =>
-                                                        if (state == null) statePredicate.test(state.asInstanceOf[S])
-                                                        else
-                                                          statePredicate.test(state.asInstanceOf[S]) && stateClass
-                                                            .isAssignableFrom(state.getClass),
-                                                      handler
-                                                        .asInstanceOf[BiFunction[State,
-                                                                                 Command,
-                                                                                 ReplyEffect[Event, State]]]) :: cases
+  private def addCase(
+      predicate: Command => Boolean,
+      handler: BiFunction[S, Command, ReplyEffect[Event, State]]): Unit = {
+    cases = CommandHandlerCase[Command, Event, State](
+        commandPredicate = predicate,
+        statePredicate = state =>
+          if (state == null) statePredicate.test(state.asInstanceOf[S])
+          else
+            statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+        handler.asInstanceOf[BiFunction[State, Command, ReplyEffect[Event, State]]]) :: cases
   }
 
   /**
@@ -260,8 +258,9 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    */
   def onCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, ReplyEffect[Event, State]])
       : CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
-    addCase(cmd => commandClass.isAssignableFrom(cmd.getClass),
-            handler.asInstanceOf[BiFunction[S, Command, ReplyEffect[Event, State]]])
+    addCase(
+      cmd => commandClass.isAssignableFrom(cmd.getClass),
+      handler.asInstanceOf[BiFunction[S, Command, ReplyEffect[Event, State]]])
     this
   }
 

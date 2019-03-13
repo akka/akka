@@ -31,11 +31,12 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
       sender() ! DeviceManager.DeviceRegistered
 
     case DeviceManager.RequestTrackDevice(groupId, deviceId) =>
-      log.warning("Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
-                  groupId,
-                  deviceId,
-                  this.groupId,
-                  this.deviceId)
+      log.warning(
+        "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
+        groupId,
+        deviceId,
+        this.groupId,
+        this.deviceId)
 
     case RecordTemperature(id, value) =>
       log.info("Recorded temperature reading {} with {}", value, id)

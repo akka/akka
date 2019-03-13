@@ -107,8 +107,9 @@ object TestPublisher {
     }
 
     def executeAfterSubscription[T](f: => T): T = {
-      subscribed.await(probe.testKitSettings.DefaultTimeout.duration.length,
-                       probe.testKitSettings.DefaultTimeout.duration.unit)
+      subscribed.await(
+        probe.testKitSettings.DefaultTimeout.duration.length,
+        probe.testKitSettings.DefaultTimeout.duration.unit)
       f
     }
 
@@ -167,9 +168,10 @@ object TestPublisher {
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
      */
-    def receiveWhile[T](max: Duration = Duration.Undefined,
-                        idle: Duration = Duration.Inf,
-                        messages: Int = Int.MaxValue)(f: PartialFunction[PublisherEvent, T]): immutable.Seq[T] =
+    def receiveWhile[T](
+        max: Duration = Duration.Undefined,
+        idle: Duration = Duration.Inf,
+        messages: Int = Int.MaxValue)(f: PartialFunction[PublisherEvent, T]): immutable.Seq[T] =
       executeAfterSubscription { probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]]) }
 
     def expectEventPF[T](f: PartialFunction[PublisherEvent, T]): T =
@@ -674,9 +676,10 @@ object TestSubscriber {
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
      */
-    def receiveWhile[T](max: Duration = Duration.Undefined,
-                        idle: Duration = Duration.Inf,
-                        messages: Int = Int.MaxValue)(f: PartialFunction[SubscriberEvent, T]): immutable.Seq[T] =
+    def receiveWhile[T](
+        max: Duration = Duration.Undefined,
+        idle: Duration = Duration.Inf,
+        messages: Int = Int.MaxValue)(f: PartialFunction[SubscriberEvent, T]): immutable.Seq[T] =
       probe.receiveWhile(max, idle, messages)(f.asInstanceOf[PartialFunction[AnyRef, T]])
 
     /**

@@ -35,10 +35,11 @@ private[akka] object PrettyByteString {
 
     if (bs.size <= maxBytes) Iterator(prefix + "\n", formatBytes(bs))
     else
-      Iterator(s"$prefix first + last $maxBytes:\n",
-               formatBytes(bs.take(maxBytes)),
-               s"\n$indent                    ... [${bs.size - maxBytes} bytes omitted] ...\n",
-               formatBytes(bs.takeRight(maxBytes)))
+      Iterator(
+        s"$prefix first + last $maxBytes:\n",
+        formatBytes(bs.take(maxBytes)),
+        s"\n$indent                    ... [${bs.size - maxBytes} bytes omitted] ...\n",
+        formatBytes(bs.takeRight(maxBytes)))
   }
 
 }

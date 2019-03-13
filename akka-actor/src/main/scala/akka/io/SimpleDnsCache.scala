@@ -56,9 +56,10 @@ object SimpleDnsCache {
    * INTERNAL API
    */
   @InternalApi
-  private[io] class Cache[K, V](queue: immutable.SortedSet[ExpiryEntry[K]],
-                                cache: immutable.Map[K, CacheEntry[V]],
-                                clock: () => Long) {
+  private[io] class Cache[K, V](
+      queue: immutable.SortedSet[ExpiryEntry[K]],
+      cache: immutable.Map[K, CacheEntry[V]],
+      clock: () => Long) {
     def get(name: K): Option[V] = {
       for {
         e <- cache.get(name)

@@ -76,10 +76,11 @@ trait LoggingBus extends ActorEventBus {
     val level = levelFor(config.StdoutLogLevel).getOrElse {
       // only log initialization errors directly with StandardOutLogger.print
       StandardOutLogger.print(
-        Error(new LoggerException,
-              simpleName(this),
-              this.getClass,
-              "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
+        Error(
+          new LoggerException,
+          simpleName(this),
+          this.getClass,
+          "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
     AllLogLevels.filter(level >= _).foreach(l => subscribe(StandardOutLogger, classFor(l)))
@@ -125,9 +126,10 @@ trait LoggingBus extends ActorEventBus {
             })
             .recover({
               case e =>
-                throw new ConfigurationException("Logger specified in config can't be loaded [" + loggerName +
-                                                 "] due to [" + e.toString + "]",
-                                                 e)
+                throw new ConfigurationException(
+                  "Logger specified in config can't be loaded [" + loggerName +
+                  "] due to [" + e.toString + "]",
+                  e)
             })
             .get
         }
@@ -186,10 +188,11 @@ trait LoggingBus extends ActorEventBus {
   /**
    * INTERNAL API
    */
-  private def addLogger(system: ActorSystemImpl,
-                        clazz: Class[_ <: Actor],
-                        level: LogLevel,
-                        logName: String): ActorRef = {
+  private def addLogger(
+      system: ActorSystemImpl,
+      clazz: Class[_ <: Actor],
+      level: LogLevel,
+      logName: String): ActorRef = {
     val name = "log" + LogExt(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
     implicit def timeout = system.settings.LoggerStartTimeout
@@ -198,9 +201,10 @@ trait LoggingBus extends ActorEventBus {
     catch {
       case _: TimeoutException =>
         publish(
-          Warning(logName,
-                  this.getClass,
-                  "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
+          Warning(
+            logName,
+            this.getClass,
+            "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
         "[TIMEOUT]"
     }
     if (response != LoggerInitialized)
@@ -761,12 +765,13 @@ object Logging {
       case level        => throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
-    def apply(level: LogLevel,
-              logSource: String,
-              logClass: Class[_],
-              message: Any,
-              mdc: MDC,
-              marker: LogMarker): LogEvent = level match {
+    def apply(
+        level: LogLevel,
+        logSource: String,
+        logClass: Class[_],
+        message: Any,
+        mdc: MDC,
+        marker: LogMarker): LogEvent = level match {
       case ErrorLevel   => Error(logSource, logClass, message, mdc, marker)
       case WarningLevel => Warning(logSource, logClass, message, mdc, marker)
       case InfoLevel    => Info(logSource, logClass, message, mdc, marker)
@@ -789,21 +794,23 @@ object Logging {
     def this(logSource: String, logClass: Class[_], message: Any) = this(Error.NoCause, logSource, logClass, message)
     override def level = ErrorLevel
   }
-  class Error2(override val cause: Throwable,
-               logSource: String,
-               logClass: Class[_],
-               message: Any = "",
-               override val mdc: MDC)
+  class Error2(
+      override val cause: Throwable,
+      logSource: String,
+      logClass: Class[_],
+      message: Any = "",
+      override val mdc: MDC)
       extends Error(cause, logSource, logClass, message) {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
       this(Error.NoCause, logSource, logClass, message, mdc)
   }
-  class Error3(override val cause: Throwable,
-               logSource: String,
-               logClass: Class[_],
-               message: Any,
-               override val mdc: MDC,
-               override val marker: LogMarker)
+  class Error3(
+      override val cause: Throwable,
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
       extends Error2(cause, logSource, logClass, message, mdc)
       with LogEventWithMarker {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
@@ -839,19 +846,21 @@ object Logging {
   }
   class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
       extends Warning(logSource, logClass, message)
-  class Warning3(logSource: String,
-                 logClass: Class[_],
-                 message: Any,
-                 override val mdc: MDC,
-                 override val marker: LogMarker)
+  class Warning3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
       extends Warning2(logSource, logClass, message, mdc)
       with LogEventWithMarker
-  class Warning4(logSource: String,
-                 logClass: Class[_],
-                 message: Any,
-                 override val mdc: MDC,
-                 override val marker: LogMarker,
-                 override val cause: Throwable)
+  class Warning4(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker,
+      override val cause: Throwable)
       extends Warning2(logSource, logClass, message, mdc)
       with LogEventWithMarker
       with LogEventWithCause
@@ -875,11 +884,12 @@ object Logging {
   }
   class Info2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
       extends Info(logSource, logClass, message)
-  class Info3(logSource: String,
-              logClass: Class[_],
-              message: Any,
-              override val mdc: MDC,
-              override val marker: LogMarker)
+  class Info3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
       extends Info2(logSource, logClass, message, mdc)
       with LogEventWithMarker
   object Info {
@@ -897,11 +907,12 @@ object Logging {
   }
   class Debug2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
       extends Debug(logSource, logClass, message)
-  class Debug3(logSource: String,
-               logClass: Class[_],
-               message: Any,
-               override val mdc: MDC,
-               override val marker: LogMarker)
+  class Debug3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
       extends Debug2(logSource, logClass, message, mdc)
       with LogEventWithMarker
   object Debug {
@@ -979,33 +990,36 @@ object Logging {
       case e: Error3 => // has marker
         val f = if (event.cause == Error.NoCause) ErrorWithoutCauseWithMarkerFormat else ErrorFormatWithMarker
         println(
-          f.format(e.marker.name,
-                   timestamp(event),
-                   event.thread.getName,
-                   event.logSource,
-                   formatMDC(event.mdc),
-                   event.message,
-                   stackTraceFor(event.cause)))
+          f.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message,
+            stackTraceFor(event.cause)))
       case _ =>
         val f = if (event.cause == Error.NoCause) ErrorFormatWithoutCause else ErrorFormat
         println(
-          f.format(timestamp(event),
-                   event.thread.getName,
-                   event.logSource,
-                   formatMDC(event.mdc),
-                   event.message,
-                   stackTraceFor(event.cause)))
+          f.format(
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message,
+            stackTraceFor(event.cause)))
     }
 
     def warning(event: Warning): Unit = event match {
       case e: Warning3 => // has marker
         println(
-          WarningWithMarkerFormat.format(e.marker.name,
-                                         timestamp(event),
-                                         event.thread.getName,
-                                         event.logSource,
-                                         formatMDC(event.mdc),
-                                         event.message))
+          WarningWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
       case _ =>
         println(
           WarningFormat
@@ -1015,12 +1029,13 @@ object Logging {
     def info(event: Info): Unit = event match {
       case e: Info3 => // has marker
         println(
-          InfoWithMarkerFormat.format(e.marker.name,
-                                      timestamp(event),
-                                      event.thread.getName,
-                                      event.logSource,
-                                      formatMDC(event.mdc),
-                                      event.message))
+          InfoWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
       case _ =>
         println(
           InfoFormat
@@ -1030,12 +1045,13 @@ object Logging {
     def debug(event: Debug): Unit = event match {
       case e: Debug3 => // has marker
         println(
-          DebugWithMarkerFormat.format(e.marker.name,
-                                       timestamp(event),
-                                       event.thread.getName,
-                                       event.logSource,
-                                       formatMDC(event.mdc),
-                                       event.message))
+          DebugWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
       case _ =>
         println(
           DebugFormat
@@ -1622,10 +1638,11 @@ object LogMarker {
 /**
  * [[LoggingAdapter]] extension which adds Marker support.
  */
-class MarkerLoggingAdapter(override val bus: LoggingBus,
-                           override val logSource: String,
-                           override val logClass: Class[_],
-                           loggingFilter: LoggingFilter)
+class MarkerLoggingAdapter(
+    override val bus: LoggingBus,
+    override val logSource: String,
+    override val logClass: Class[_],
+    loggingFilter: LoggingFilter)
     extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
@@ -1872,10 +1889,11 @@ class MarkerLoggingAdapter(override val bus: LoggingBus,
   }
 }
 
-final class DiagnosticMarkerBusLoggingAdapter(override val bus: LoggingBus,
-                                              override val logSource: String,
-                                              override val logClass: Class[_],
-                                              loggingFilter: LoggingFilter)
+final class DiagnosticMarkerBusLoggingAdapter(
+    override val bus: LoggingBus,
+    override val logSource: String,
+    override val logClass: Class[_],
+    loggingFilter: LoggingFilter)
     extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter)
     with DiagnosticLoggingAdapter
 
@@ -1956,19 +1974,21 @@ object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[Stri
   final override def error(marker: LogMarker, cause: Throwable, message: String): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = ()
-  final override def error(marker: LogMarker,
-                           cause: Throwable,
-                           template: String,
-                           arg1: Any,
-                           arg2: Any,
-                           arg3: Any): Unit = ()
-  final override def error(marker: LogMarker,
-                           cause: Throwable,
-                           template: String,
-                           arg1: Any,
-                           arg2: Any,
-                           arg3: Any,
-                           arg4: Any): Unit = ()
+  final override def error(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any): Unit = ()
+  final override def error(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any,
+      arg4: Any): Unit = ()
   final override def error(marker: LogMarker, message: String): Unit = ()
   final override def error(marker: LogMarker, template: String, arg1: Any): Unit = ()
   final override def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()

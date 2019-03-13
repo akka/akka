@@ -32,17 +32,18 @@ class SystemMessageSerializationSpec extends AkkaSpec(PrimitivesSerializationSpe
   val testRef2 = TestProbe().ref.asInstanceOf[InternalActorRef]
 
   "ByteStringSerializer" must {
-    Seq("Create(None)" -> Create(None),
-        "Recreate(ex)" -> Recreate(new TestException("test2")),
-        "Suspend()" -> Suspend(),
-        "Resume(ex)" -> Resume(new TestException("test3")),
-        "Terminate()" -> Terminate(),
-        "Supervise(ref, async)" -> Supervise(testRef, async = true),
-        "Watch(ref, ref)" -> Watch(testRef, testRef2),
-        "Unwatch(ref, ref)" -> Unwatch(testRef, testRef2),
-        "Failed(ref, ex, uid)" -> Failed(testRef, new TestException("test4"), 42),
-        "DeathWatchNotification(ref, confimed, addressTerminated)" ->
-        DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)).foreach {
+    Seq(
+      "Create(None)" -> Create(None),
+      "Recreate(ex)" -> Recreate(new TestException("test2")),
+      "Suspend()" -> Suspend(),
+      "Resume(ex)" -> Resume(new TestException("test3")),
+      "Terminate()" -> Terminate(),
+      "Supervise(ref, async)" -> Supervise(testRef, async = true),
+      "Watch(ref, ref)" -> Watch(testRef, testRef2),
+      "Unwatch(ref, ref)" -> Unwatch(testRef, testRef2),
+      "Failed(ref, ex, uid)" -> Failed(testRef, new TestException("test4"), 42),
+      "DeathWatchNotification(ref, confimed, addressTerminated)" ->
+      DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)).foreach {
       case (scenario, item) =>
         s"resolve serializer for [$scenario]" in {
           val serializer = SerializationExtension(system)

@@ -92,10 +92,11 @@ import scala.util.control.NoStackTrace
 
       case p: Publisher[_] =>
         log.debug("Cancelling {} (after: {} ms)", p, millis)
-        handleSubscriptionTimeout(target,
-                                  new SubscriptionTimeoutException(
-                                    s"Publisher ($p) you are trying to subscribe to has been shut-down " +
-                                    s"because exceeding it's subscription-timeout.") with NoStackTrace)
+        handleSubscriptionTimeout(
+          target,
+          new SubscriptionTimeoutException(
+            s"Publisher ($p) you are trying to subscribe to has been shut-down " +
+            s"because exceeding it's subscription-timeout.") with NoStackTrace)
     }
   }
 

@@ -109,8 +109,9 @@ object JoinConfigCompatChecker {
    * from the passed `requiredKeys` Seq.
    */
   @InternalApi
-  private[cluster] def removeSensitiveKeys(requiredKeys: im.Seq[String],
-                                           clusterSettings: ClusterSettings): im.Seq[String] = {
+  private[cluster] def removeSensitiveKeys(
+      requiredKeys: im.Seq[String],
+      clusterSettings: ClusterSettings): im.Seq[String] = {
     requiredKeys.filter { key =>
       !clusterSettings.SensitiveConfigPaths.exists(s => key.startsWith(s))
     }

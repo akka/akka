@@ -40,9 +40,10 @@ class FlowSplitWhenSpec extends StreamSpec {
     def cancel(): Unit = subscription.cancel()
   }
 
-  class SubstreamsSupport(splitWhen: Int = 3,
-                          elementCount: Int = 6,
-                          substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
+  class SubstreamsSupport(
+      splitWhen: Int = 3,
+      elementCount: Int = 6,
+      substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
 
     val source = Source(1 to elementCount)
     val groupStream = source.splitWhen(substreamCancelStrategy)(_ == splitWhen).lift.runWith(Sink.asPublisher(false))

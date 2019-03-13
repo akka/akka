@@ -511,9 +511,10 @@ class ORSetSpec extends WordSpec with Matchers {
 
     "verify mergeDisjointKeys" in {
       val keys: Set[Any] = Set("K3", "K4", "K5")
-      val elements: Map[Any, VersionVector] = Map("K3" -> VersionVector(nodeA, 4L),
-                                                  "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
-                                                  "K5" -> VersionVector(nodeA, 2L))
+      val elements: Map[Any, VersionVector] = Map(
+        "K3" -> VersionVector(nodeA, 4L),
+        "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
+        "K5" -> VersionVector(nodeA, 2L))
       val vvector = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
       val acc: Map[Any, VersionVector] = Map("K1" -> VersionVector(nodeA, 3L))
       val expectedDots = acc ++ Map("K3" -> VersionVector(nodeA, 4L), "K4" -> VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen

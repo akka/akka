@@ -144,10 +144,11 @@ private object RestartSupervisor {
   /**
    * Calculates an exponential back off delay.
    */
-  def calculateDelay(restartCount: Int,
-                     minBackoff: FiniteDuration,
-                     maxBackoff: FiniteDuration,
-                     randomFactor: Double): FiniteDuration = {
+  def calculateDelay(
+      restartCount: Int,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
     if (restartCount >= 30) // Duration overflow protection (> 100 years)
       maxBackoff
@@ -250,8 +251,9 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
   }
 
-  override protected def handleExceptionOnStart(ctx: TypedActorContext[O],
-                                                @unused target: PreStartTarget[T]): Catcher[Behavior[T]] = {
+  override protected def handleExceptionOnStart(
+      ctx: TypedActorContext[O],
+      @unused target: PreStartTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       strategy match {
         case _: Restart =>
@@ -267,15 +269,17 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       }
   }
 
-  override protected def handleSignalException(ctx: TypedActorContext[O],
-                                               target: SignalTarget[T]): Catcher[Behavior[T]] = {
+  override protected def handleSignalException(
+      ctx: TypedActorContext[O],
+      target: SignalTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, signalRestart = {
       case e: UnstashException[O] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
       case _                                 => target(ctx, PreRestart)
     })
   }
-  override protected def handleReceiveException(ctx: TypedActorContext[O],
-                                                target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
+  override protected def handleReceiveException(
+      ctx: TypedActorContext[O],
+      target: ReceiveTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, signalRestart = {
       case e: UnstashException[O] @unchecked => Behavior.interpretSignal(e.behavior, ctx, PreRestart)
       case _                                 => target.signalRestart(ctx)
@@ -335,9 +339,10 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     strategy match {
       case backoff: Backoff =>
         gotScheduledRestart = false
-        ctx.asScala.scheduleOnce(backoff.resetBackoffAfter,
-                                 ctx.asScala.self.unsafeUpcast[Any],
-                                 ResetRestartCount(restartCount, this))
+        ctx.asScala.scheduleOnce(
+          backoff.resetBackoffAfter,
+          ctx.asScala.self.unsafeUpcast[Any],
+          ResetRestartCount(restartCount, this))
       case _: Restart =>
     }
 

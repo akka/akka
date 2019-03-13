@@ -98,8 +98,9 @@ class TcpSpec extends StreamSpec("""
       val tcpWriteProbe = new TcpWriteProbe()
       val future = Source
         .fromPublisher(tcpWriteProbe.publisherProbe)
-        .viaMat(Tcp().outgoingConnection(InetSocketAddress.createUnresolved("example.com", 666),
-                                         connectTimeout = 1.second))(Keep.right)
+        .viaMat(
+          Tcp().outgoingConnection(InetSocketAddress.createUnresolved("example.com", 666), connectTimeout = 1.second))(
+          Keep.right)
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
@@ -454,8 +455,9 @@ class TcpSpec extends StreamSpec("""
     }
 
     "handle when connection actor terminates unexpectedly" in {
-      val system2 = ActorSystem("TcpSpec-unexpected-system2",
-                                ConfigFactory.parseString("""
+      val system2 = ActorSystem(
+        "TcpSpec-unexpected-system2",
+        ConfigFactory.parseString("""
           akka.loglevel = DEBUG # issue #21660
         """).withFallback(system.settings.config))
 
@@ -783,13 +785,13 @@ class TcpSpec extends StreamSpec("""
 
       Tcp()
         .bindAndHandleTls(
-                          // just echo charactes until we reach '\n', then complete stream
-                          // also - byte is our framing
-                          Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
-                          address.getHostName,
-                          address.getPort,
-                          sslContext,
-                          firstSession)
+          // just echo charactes until we reach '\n', then complete stream
+          // also - byte is our framing
+          Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
+          address.getHostName,
+          address.getPort,
+          sslContext,
+          firstSession)
         .futureValue
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
@@ -862,10 +864,11 @@ class TcpSpec extends StreamSpec("""
 
   }
 
-  def validateServerClientCommunication(testData: ByteString,
-                                        serverConnection: ServerConnection,
-                                        readProbe: TcpReadProbe,
-                                        writeProbe: TcpWriteProbe): Unit = {
+  def validateServerClientCommunication(
+      testData: ByteString,
+      serverConnection: ServerConnection,
+      readProbe: TcpReadProbe,
+      writeProbe: TcpWriteProbe): Unit = {
     serverConnection.write(testData)
     serverConnection.read(5)
     readProbe.read(5) should be(testData)

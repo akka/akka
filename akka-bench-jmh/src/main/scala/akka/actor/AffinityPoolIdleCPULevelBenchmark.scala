@@ -35,8 +35,9 @@ class AffinityPoolIdleCPULevelBenchmark {
 
     requireRightNumberOfCores(numThreads)
 
-    system = ActorSystem("AffinityPoolWaitingStrategyBenchmark",
-                         ConfigFactory.parseString(s""" | akka {
+    system = ActorSystem(
+      "AffinityPoolWaitingStrategyBenchmark",
+      ConfigFactory.parseString(s""" | akka {
          |   log-dead-letters = off
          |   actor {
          |     affinity-dispatcher {

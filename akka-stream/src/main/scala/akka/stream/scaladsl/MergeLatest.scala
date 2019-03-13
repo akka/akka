@@ -55,22 +55,23 @@ final class MergeLatest[T, M](val inputPorts: Int, val eagerClose: Boolean)(buil
 
       in.zipWithIndex.foreach {
         case (input, index) =>
-          setHandler(input,
-                     new InHandler {
-                       override def onPush(): Unit = {
-                         messages.update(index, grab(input))
-                         activeStreams.add(index)
-                         if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
-                         tryPull(input)
-                       }
+          setHandler(
+            input,
+            new InHandler {
+              override def onPush(): Unit = {
+                messages.update(index, grab(input))
+                activeStreams.add(index)
+                if (allMessagesReady) emit(out, buildElem(messages.asInstanceOf[Array[T]]))
+                tryPull(input)
+              }
 
-                       override def onUpstreamFinish(): Unit = {
-                         if (!eagerClose) {
-                           runningUpstreams -= 1
-                           if (upstreamsClosed) completeStage()
-                         } else completeStage()
-                       }
-                     })
+              override def onUpstreamFinish(): Unit = {
+                if (!eagerClose) {
+                  runningUpstreams -= 1
+                  if (upstreamsClosed) completeStage()
+                } else completeStage()
+              }
+            })
       }
 
       override def onPull(): Unit = {

@@ -68,9 +68,10 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
         identify(second, "subject")
 
         EventFilter.warning(pattern = "address is now gated", occurrences = 1).intercept {
-          Await.result(RARP(system).provider.transport.managementCommand(
-                         ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)),
-                       3.seconds)
+          Await.result(
+            RARP(system).provider.transport
+              .managementCommand(ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)),
+            3.seconds)
         }
 
         enterBarrier("gated")
@@ -95,8 +96,9 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
 
         Await.ready(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name,
-                                      ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
                     akka.remote.netty.tcp {
                       hostname = ${address.host.get}

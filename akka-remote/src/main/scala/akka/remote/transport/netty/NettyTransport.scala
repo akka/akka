@@ -193,9 +193,10 @@ class NettyTransportSettings(config: Config) {
   val ClientSocketWorkerPoolSize: Int = computeWPS(config.getConfig("client-socket-worker-pool"))
 
   private def computeWPS(config: Config): Int =
-    ThreadPoolConfig.scaledPoolSize(config.getInt("pool-size-min"),
-                                    config.getDouble("pool-size-factor"),
-                                    config.getInt("pool-size-max"))
+    ThreadPoolConfig.scaledPoolSize(
+      config.getInt("pool-size-min"),
+      config.getDouble("pool-size-factor"),
+      config.getInt("pool-size-max"))
 
   // Check Netty version >= 3.10.6
   {
@@ -230,21 +231,24 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 
   protected def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle
 
-  protected def registerListener(channel: Channel,
-                                 listener: HandleEventListener,
-                                 msg: ChannelBuffer,
-                                 remoteSocketAddress: InetSocketAddress): Unit
+  protected def registerListener(
+      channel: Channel,
+      listener: HandleEventListener,
+      msg: ChannelBuffer,
+      remoteSocketAddress: InetSocketAddress): Unit
 
-  final protected def init(channel: Channel,
-                           remoteSocketAddress: SocketAddress,
-                           remoteAddress: Address,
-                           msg: ChannelBuffer)(op: (AssociationHandle => Any)): Unit = {
+  final protected def init(
+      channel: Channel,
+      remoteSocketAddress: SocketAddress,
+      remoteAddress: Address,
+      msg: ChannelBuffer)(op: (AssociationHandle => Any)): Unit = {
     import transport._
-    NettyTransport.addressFromSocketAddress(channel.getLocalAddress,
-                                            schemeIdentifier,
-                                            system.name,
-                                            Some(settings.Hostname),
-                                            None) match {
+    NettyTransport.addressFromSocketAddress(
+      channel.getLocalAddress,
+      schemeIdentifier,
+      system.name,
+      Some(settings.Hostname),
+      None) match {
       case Some(localAddress) =>
         val handle = createHandle(channel, localAddress, remoteAddress)
         handle.readHandlerPromise.future.foreach { listener =>
@@ -273,11 +277,12 @@ private[netty] abstract class ServerHandler(
     channel.setReadable(false)
     associationListenerFuture.foreach { listener =>
       val remoteAddress = NettyTransport
-        .addressFromSocketAddress(remoteSocketAddress,
-                                  transport.schemeIdentifier,
-                                  transport.system.name,
-                                  hostName = None,
-                                  port = None)
+        .addressFromSocketAddress(
+          remoteSocketAddress,
+          transport.schemeIdentifier,
+          transport.system.name,
+          hostName = None,
+          port = None)
         .getOrElse(throw new NettyTransportException(
           s"Unknown inbound remote address type [${remoteSocketAddress.getClass.getName}]"))
       init(channel, remoteSocketAddress, remoteAddress, msg) { a =>
@@ -319,21 +324,23 @@ private[transport] object NettyTransport {
 
   val uniqueIdCounter = new AtomicInteger(0)
 
-  def addressFromSocketAddress(addr: SocketAddress,
-                               schemeIdentifier: String,
-                               systemName: String,
-                               hostName: Option[String],
-                               port: Option[Int]): Option[Address] = addr match {
+  def addressFromSocketAddress(
+      addr: SocketAddress,
+      schemeIdentifier: String,
+      systemName: String,
+      hostName: Option[String],
+      port: Option[Int]): Option[Address] = addr match {
     case sa: InetSocketAddress =>
       Some(Address(schemeIdentifier, systemName, hostName.getOrElse(sa.getHostString), port.getOrElse(sa.getPort)))
     case _ => None
   }
 
   // Need to do like this for binary compatibility reasons
-  def addressFromSocketAddress(addr: SocketAddress,
-                               schemeIdentifier: String,
-                               systemName: String,
-                               hostName: Option[String]): Option[Address] =
+  def addressFromSocketAddress(
+      addr: SocketAddress,
+      schemeIdentifier: String,
+      systemName: String,
+      hostName: Option[String]): Option[Address] =
     addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
 }
 
@@ -388,10 +395,11 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       val boss, worker = createExecutorService()
       // We need to create a HashedWheelTimer here since Netty creates one with a thread that
       // doesn't respect the akka.daemonic setting
-      new NioClientSocketChannelFactory(boss,
-                                        1,
-                                        new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
-                                        new HashedWheelTimer(system.threadFactory))
+      new NioClientSocketChannelFactory(
+        boss,
+        1,
+        new NioWorkerPool(worker, ClientSocketWorkerPoolSize),
+        new HashedWheelTimer(system.threadFactory))
     case Udp =>
       // This does not create a HashedWheelTimer internally
       new NioDatagramChannelFactory(createExecutorService(), ClientSocketWorkerPoolSize)
@@ -411,13 +419,15 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     val pipeline = new DefaultChannelPipeline
 
     if (!isDatagram) {
-      pipeline.addLast("FrameDecoder",
-                       new LengthFieldBasedFrameDecoder(maximumPayloadBytes,
-                                                        0,
-                                                        FrameLengthFieldLength,
-                                                        0,
-                                                        FrameLengthFieldLength, // Strip the header
-                                                        true))
+      pipeline.addLast(
+        "FrameDecoder",
+        new LengthFieldBasedFrameDecoder(
+          maximumPayloadBytes,
+          0,
+          FrameLengthFieldLength,
+          0,
+          FrameLengthFieldLength, // Strip the header
+          true))
       pipeline.addLast("FrameEncoder", new LengthFieldPrepender(FrameLengthFieldLength))
     }
 
@@ -483,8 +493,9 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
     bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
     if (isDatagram)
-      bootstrap.setOption("receiveBufferSizePredictorFactory",
-                          new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
+      bootstrap.setOption(
+        "receiveBufferSizePredictorFactory",
+        new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
     settings.ReceiveBufferSize.foreach(sz => bootstrap.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz => bootstrap.setOption("sendBufferSize", sz))
     settings.WriteBufferHighWaterMark.foreach(sz => bootstrap.setOption("writeBufferHighWaterMark", sz))
@@ -534,11 +545,12 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
-        addressFromSocketAddress(newServerChannel.getLocalAddress,
-                                 schemeIdentifier,
-                                 system.name,
-                                 Some(settings.Hostname),
-                                 if (settings.PortSelector == 0) None else Some(settings.PortSelector)) match {
+        addressFromSocketAddress(
+          newServerChannel.getLocalAddress,
+          schemeIdentifier,
+          system.name,
+          Some(settings.Hostname),
+          if (settings.PortSelector == 0) None else Some(settings.PortSelector)) match {
           case Some(address) =>
             addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, None, None) match {
               case Some(address) => boundTo = address

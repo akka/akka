@@ -17,9 +17,10 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
 
   def createAllocations(aCount: Int, bCount: Int = 0, cCount: Int = 0): Map[ActorRef, Vector[String]] = {
     val shards = (1 to (aCount + bCount + cCount)).map(n => ("00" + n.toString).takeRight(3))
-    Map(regionA -> shards.take(aCount).toVector,
-        regionB -> shards.slice(aCount, aCount + bCount).toVector,
-        regionC -> shards.takeRight(cCount).toVector)
+    Map(
+      regionA -> shards.take(aCount).toVector,
+      regionB -> shards.slice(aCount, aCount + bCount).toVector,
+      regionC -> shards.takeRight(cCount).toVector)
   }
 
   "LeastShardAllocationStrategy" must {

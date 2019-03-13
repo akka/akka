@@ -51,9 +51,10 @@ object SingletonCompileOnlySpec {
 
   //#backoff
   val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
-    SingletonActor(Behaviors
-                     .supervise(counter(0))
-                     .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
-                   "GlobalCounter"))
+    SingletonActor(
+      Behaviors
+        .supervise(counter(0))
+        .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
+      "GlobalCounter"))
   //#backoff
 }

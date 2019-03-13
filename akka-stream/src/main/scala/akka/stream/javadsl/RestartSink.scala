@@ -44,10 +44,11 @@ object RestartSink {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def withBackoff[T](minBackoff: FiniteDuration,
-                     maxBackoff: FiniteDuration,
-                     randomFactor: Double,
-                     sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     akka.stream.scaladsl.RestartSink
       .withBackoff(minBackoff, maxBackoff, randomFactor) { () =>
         sinkFactory.create().asScala
@@ -79,10 +80,11 @@ object RestartSink {
    *   In order to skip this additional delay pass in `0`.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: java.time.Duration,
-                     maxBackoff: java.time.Duration,
-                     randomFactor: Double,
-                     sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, sinkFactory)
   }
@@ -115,11 +117,12 @@ object RestartSink {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def withBackoff[T](minBackoff: FiniteDuration,
-                     maxBackoff: FiniteDuration,
-                     randomFactor: Double,
-                     maxRestarts: Int,
-                     sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     akka.stream.scaladsl.RestartSink
       .withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
         sinkFactory.create().asScala
@@ -153,11 +156,12 @@ object RestartSink {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
-  def withBackoff[T](minBackoff: java.time.Duration,
-                     maxBackoff: java.time.Duration,
-                     randomFactor: Double,
-                     maxRestarts: Int,
-                     sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestarts, sinkFactory)
   }

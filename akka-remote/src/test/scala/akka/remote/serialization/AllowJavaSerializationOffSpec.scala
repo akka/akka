@@ -24,10 +24,9 @@ object AllowJavaSerializationOffSpec {
   val serializationSettings = SerializationSetup { _ =>
     List(SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])))
   }
-  val bootstrapSettings = BootstrapSetup(None,
-                                         Some(
-                                           ConfigFactory.parseString(
-                                             """
+  val bootstrapSettings = BootstrapSetup(
+    None,
+    Some(ConfigFactory.parseString("""
     akka {
       actor {
         serialize-messages = off
@@ -40,12 +39,12 @@ object AllowJavaSerializationOffSpec {
       }
     }
     """)),
-                                         None)
+    None)
   val actorSystemSettings = ActorSystemSetup(bootstrapSettings, serializationSettings)
 
-  val noJavaSerializationSystem = ActorSystem("AllowJavaSerializationOffSpec" + "NoJavaSerialization",
-                                              ConfigFactory.parseString(
-                                                """
+  val noJavaSerializationSystem = ActorSystem(
+    "AllowJavaSerializationOffSpec" + "NoJavaSerialization",
+    ConfigFactory.parseString("""
     akka {
       actor {
         allow-java-serialization = off
@@ -68,15 +67,18 @@ class AllowJavaSerializationOffSpec
   // allow-java-serialization=on to create the SerializationSetup and use that SerializationSetup
   // in another system with allow-java-serialization=off
   val addedJavaSerializationSettings = SerializationSetup { _ =>
-    List(SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])),
-         SerializerDetails("java-manual",
-                           new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]),
-                           List(classOf[ProgrammaticJavaDummy])))
+    List(
+      SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])),
+      SerializerDetails(
+        "java-manual",
+        new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]),
+        List(classOf[ProgrammaticJavaDummy])))
   }
-  val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(None,
-                                                                                Some(
-                                                                                  ConfigFactory.parseString(
-                                                                                    """
+  val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(
+    None,
+    Some(
+      ConfigFactory.parseString(
+        """
     akka {
       loglevel = debug
       actor {
@@ -87,7 +89,7 @@ class AllowJavaSerializationOffSpec
       }
     }
     """)),
-                                                                                None)
+    None)
 
   val dontAllowJavaSystem =
     ActorSystem(

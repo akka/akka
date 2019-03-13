@@ -105,8 +105,9 @@ class InmemEventAdaptersSpec extends AkkaSpec {
 
       // combined-read-side only adapter
       val r: EventAdapter = adapters.get(classOf[ReadMeTwiceEvent])
-      r.fromJournal(r.toJournal(ReadMeTwiceEvent()), "").events.map(_.toString) shouldBe Seq("from-ReadMeTwiceEvent()",
-                                                                                             "again-ReadMeTwiceEvent()")
+      r.fromJournal(r.toJournal(ReadMeTwiceEvent()), "").events.map(_.toString) shouldBe Seq(
+        "from-ReadMeTwiceEvent()",
+        "again-ReadMeTwiceEvent()")
     }
   }
 

@@ -417,9 +417,10 @@ class SupervisorSpec
       supervisor ! dyingProps
       val dyingActor = expectMsgType[ActorRef]
 
-      filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
-                   EventFilter[PreRestartException]("Don't wanna!", occurrences = 1),
-                   EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)) {
+      filterEvents(
+        EventFilter[RuntimeException]("Expected", occurrences = 1),
+        EventFilter[PreRestartException]("Don't wanna!", occurrences = 1),
+        EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)) {
         intercept[RuntimeException] {
           Await.result(dyingActor.?(DieReply)(DilatedTimeout), DilatedTimeout)
         }
@@ -468,8 +469,9 @@ class SupervisorSpec
       parent ! latch
       parent ! "testchildAndAck"
       expectMsg("ack")
-      filterEvents(EventFilter[IllegalStateException]("OHNOES", occurrences = 1),
-                   EventFilter.warning(pattern = "dead.*test", occurrences = 1)) {
+      filterEvents(
+        EventFilter[IllegalStateException]("OHNOES", occurrences = 1),
+        EventFilter.warning(pattern = "dead.*test", occurrences = 1)) {
         latch.countDown()
       }
       expectMsg("parent restarted")

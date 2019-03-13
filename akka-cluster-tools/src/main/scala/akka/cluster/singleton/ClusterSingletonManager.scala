@@ -53,11 +53,11 @@ object ClusterSingletonManagerSettings {
    * the default configuration `akka.cluster.singleton`.
    */
   def apply(config: Config): ClusterSingletonManagerSettings =
-    new ClusterSingletonManagerSettings(singletonName = config.getString("singleton-name"),
-                                        role = roleOption(config.getString("role")),
-                                        removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
-                                        handOverRetryInterval =
-                                          config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
+    new ClusterSingletonManagerSettings(
+      singletonName = config.getString("singleton-name"),
+      role = roleOption(config.getString("role")),
+      removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
+      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
 
   /**
    * Java API: Create settings from the default configuration
@@ -99,10 +99,11 @@ object ClusterSingletonManagerSettings {
  *   over has started or the previous oldest member is removed from the cluster
  *   (+ `removalMargin`).
  */
-final class ClusterSingletonManagerSettings(val singletonName: String,
-                                            val role: Option[String],
-                                            val removalMargin: FiniteDuration,
-                                            val handOverRetryInterval: FiniteDuration)
+final class ClusterSingletonManagerSettings(
+    val singletonName: String,
+    val role: Option[String],
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration)
     extends NoSerializationVerificationNeeded {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
@@ -118,10 +119,11 @@ final class ClusterSingletonManagerSettings(val singletonName: String,
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
 
-  private def copy(singletonName: String = singletonName,
-                   role: Option[String] = role,
-                   removalMargin: FiniteDuration = removalMargin,
-                   handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
+  private def copy(
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
 
@@ -204,9 +206,10 @@ object ClusterSingletonManager {
     final case class YoungerData(oldestOption: Option[UniqueAddress]) extends Data
     final case class BecomingOldestData(previousOldestOption: Option[UniqueAddress]) extends Data
     final case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
-    final case class WasOldestData(singleton: ActorRef,
-                                   singletonTerminated: Boolean,
-                                   newOldestOption: Option[UniqueAddress])
+    final case class WasOldestData(
+        singleton: ActorRef,
+        singletonTerminated: Boolean,
+        newOldestOption: Option[UniqueAddress])
         extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     final case class StoppingData(singleton: ActorRef) extends Data
@@ -450,8 +453,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   val selfUniqueAddressOption = Some(cluster.selfUniqueAddress)
   import cluster.settings.LogInfo
 
-  require(role.forall(cluster.selfRoles.contains),
-          s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+  require(
+    role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   val removalMargin =
     if (settings.removalMargin <= Duration.Zero) cluster.downingProvider.downRemovalMargin
@@ -573,9 +577,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
             goto(BecomingOldest).using(BecomingOldestData(previousOldestOption))
         }
       } else {
-        logInfo("Younger observed OldestChanged: [{} -> {}]",
-                previousOldestOption.map(_.address),
-                oldestOption.map(_.address))
+        logInfo(
+          "Younger observed OldestChanged: [{} -> {}]",
+          previousOldestOption.map(_.address),
+          oldestOption.map(_.address))
         getNextOldestChanged()
         stay.using(YoungerData(oldestOption))
       }
@@ -617,9 +622,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (sender().path.address == previousOldest.address)
         gotoOldest()
       else {
-        logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
-                sender().path.address,
-                previousOldest.address)
+        logInfo(
+          "Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
+          sender().path.address,
+          previousOldest.address)
         stay
       }
 
@@ -655,9 +661,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
             case Some(previousOldest) =>
               if (previousOldest == senderUniqueAddress) sender() ! HandOverToMe
               else
-                logInfo("Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
-                        sender().path.address,
-                        previousOldest.address)
+                logInfo(
+                  "Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
+                  sender().path.address,
+                  previousOldest.address)
               stay
             case None =>
               sender() ! HandOverToMe

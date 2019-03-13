@@ -213,15 +213,17 @@ object Entity {
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
    * @tparam M The type of message the entity accepts
    */
-  def of[M](typeKey: EntityTypeKey[M],
-            createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
-    new Entity(createBehavior,
-               typeKey,
-               Optional.empty(),
-               Props.empty,
-               Optional.empty(),
-               Optional.empty(),
-               Optional.empty())
+  def of[M](
+      typeKey: EntityTypeKey[M],
+      createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
+    new Entity(
+      createBehavior,
+      typeKey,
+      Optional.empty(),
+      Props.empty,
+      Optional.empty(),
+      Optional.empty(),
+      Optional.empty())
   }
 
   /**
@@ -240,17 +242,18 @@ object Entity {
       createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
       : Entity[Command, ShardingEnvelope[Command]] = {
 
-    of(typeKey,
-       new JFunction[EntityContext[Command], Behavior[Command]] {
-         override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
-           val persistentEntity = createPersistentEntity(ctx)
-           if (persistentEntity.entityTypeKey != typeKey)
-             throw new IllegalArgumentException(
-               s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
-               s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
-           persistentEntity
-         }
-       })
+    of(
+      typeKey,
+      new JFunction[EntityContext[Command], Behavior[Command]] {
+        override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
+          val persistentEntity = createPersistentEntity(ctx)
+          if (persistentEntity.entityTypeKey != typeKey)
+            throw new IllegalArgumentException(
+              s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
+              s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
+          persistentEntity
+        }
+      })
   }
 
 }
@@ -258,13 +261,14 @@ object Entity {
 /**
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
-final class Entity[M, E] private (val createBehavior: JFunction[EntityContext[M], Behavior[M]],
-                                  val typeKey: EntityTypeKey[M],
-                                  val stopMessage: Optional[M],
-                                  val entityProps: Props,
-                                  val settings: Optional[ClusterShardingSettings],
-                                  val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
-                                  val allocationStrategy: Optional[ShardAllocationStrategy]) {
+final class Entity[M, E] private (
+    val createBehavior: JFunction[EntityContext[M], Behavior[M]],
+    val typeKey: EntityTypeKey[M],
+    val stopMessage: Optional[M],
+    val entityProps: Props,
+    val settings: Optional[ClusterShardingSettings],
+    val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
+    val allocationStrategy: Optional[ShardAllocationStrategy]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -296,13 +300,14 @@ final class Entity[M, E] private (val createBehavior: JFunction[EntityContext[M]
    * is configured with `akka.cluster.sharding.number-of-shards`.
    */
   def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): Entity[M, Envelope] =
-    new Entity(createBehavior,
-               typeKey,
-               stopMessage,
-               entityProps,
-               settings,
-               Optional.ofNullable(newExtractor),
-               allocationStrategy)
+    new Entity(
+      createBehavior,
+      typeKey,
+      stopMessage,
+      entityProps,
+      settings,
+      Optional.ofNullable(newExtractor),
+      allocationStrategy)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -311,12 +316,13 @@ final class Entity[M, E] private (val createBehavior: JFunction[EntityContext[M]
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Optional.ofNullable(newAllocationStrategy))
 
-  private def copy(createBehavior: JFunction[EntityContext[M], Behavior[M]] = createBehavior,
-                   typeKey: EntityTypeKey[M] = typeKey,
-                   stopMessage: Optional[M] = stopMessage,
-                   entityProps: Props = entityProps,
-                   settings: Optional[ClusterShardingSettings] = settings,
-                   allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
+  private def copy(
+      createBehavior: JFunction[EntityContext[M], Behavior[M]] = createBehavior,
+      typeKey: EntityTypeKey[M] = typeKey,
+      stopMessage: Optional[M] = stopMessage,
+      entityProps: Props = entityProps,
+      settings: Optional[ClusterShardingSettings] = settings,
+      allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
     new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
   }
 
@@ -325,9 +331,10 @@ final class Entity[M, E] private (val createBehavior: JFunction[EntityContext[M]
 /**
  * Parameter to [[Entity.of]]
  */
-final class EntityContext[M](entityId: String,
-                             shard: ActorRef[ClusterSharding.ShardCommand],
-                             actorContext: ActorContext[M]) {
+final class EntityContext[M](
+    entityId: String,
+    shard: ActorRef[ClusterSharding.ShardCommand],
+    actorContext: ActorContext[M]) {
 
   def getEntityId: String = entityId
 

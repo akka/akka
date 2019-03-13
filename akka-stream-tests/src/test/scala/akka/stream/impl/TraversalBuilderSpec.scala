@@ -352,8 +352,9 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(
-        List(source -> (Attributes.name("test") and Attributes.name("testSource")),
-             sink -> (Attributes.name("test") and Attributes.name("testSink"))))
+        List(
+          source -> (Attributes.name("test") and Attributes.name("testSource")),
+          sink -> (Attributes.name("test") and Attributes.name("testSink"))))
     }
 
     "overwrite last attributes until embedded in other builder" in {
@@ -373,8 +374,9 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(
-        List(source -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
-             sink -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))))
+        List(
+          source -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSource")),
+          sink -> (Attributes.name("outer2") and Attributes.name("test2") and Attributes.name("testSinkB"))))
     }
 
     "propagate attributes to embedded flow" in {
@@ -391,9 +393,10 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.attributesAssignments should ===(
-        List(source -> (Attributes.name("test") and Attributes.name("testSource")),
-             flow1 -> (Attributes.name("test") and Attributes.name("flow")),
-             sink -> (Attributes.name("test") and Attributes.name("testSink"))))
+        List(
+          source -> (Attributes.name("test") and Attributes.name("testSource")),
+          flow1 -> (Attributes.name("test") and Attributes.name("flow")),
+          sink -> (Attributes.name("test") and Attributes.name("testSink"))))
     }
 
     "properly track embedded island and its attributes" in {
@@ -410,9 +413,10 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.islandAssignments should ===(
-        List((source, Attributes.none, TestDefaultIsland),
-             (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
-             (sink, Attributes.none, TestDefaultIsland)))
+        List(
+          (source, Attributes.none, TestDefaultIsland),
+          (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+          (sink, Attributes.none, TestDefaultIsland)))
     }
 
     "properly ignore redundant island assignment" in {
@@ -429,9 +433,10 @@ class TraversalBuilderSpec extends AkkaSpec {
       val mat = testMaterialize(builder)
 
       mat.islandAssignments should ===(
-        List((source, Attributes.none, TestDefaultIsland),
-             (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
-             (sink, Attributes.none, TestDefaultIsland)))
+        List(
+          (source, Attributes.none, TestDefaultIsland),
+          (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+          (sink, Attributes.none, TestDefaultIsland)))
     }
 
     //TODO: Dummy test cases just for smoke-testing. Should be removed.

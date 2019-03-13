@@ -55,12 +55,13 @@ object Configuration {
     }
                      """
 
-  final case class CipherConfig(runTest: Boolean,
-                                config: Config,
-                                cipher: String,
-                                localPort: Int,
-                                remotePort: Int,
-                                provider: Option[ConfigSSLEngineProvider])
+  final case class CipherConfig(
+      runTest: Boolean,
+      config: Config,
+      cipher: String,
+      localPort: Int,
+      remotePort: Int,
+      provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
     val localPort, remotePort = {
@@ -121,10 +122,11 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
-  lazy val other: ActorSystem = ActorSystem("remote-sys",
-                                            ConfigFactory
-                                              .parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort)
-                                              .withFallback(system.settings.config))
+  lazy val other: ActorSystem = ActorSystem(
+    "remote-sys",
+    ConfigFactory
+      .parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort)
+      .withFallback(system.settings.config))
 
   override def afterTermination(): Unit = {
     if (cipherConfig.runTest) {

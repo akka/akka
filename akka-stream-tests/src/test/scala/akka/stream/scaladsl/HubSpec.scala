@@ -464,9 +464,10 @@ class HubSpec extends StreamSpec {
 
     "be able to use as fastest consumer router" in assertAllStagesStopped {
       val source = Source(0 until 1000).runWith(
-        PartitionHub.statefulSink(() => (info, elem) => info.consumerIds.toVector.minBy(id => info.queueSize(id)),
-                                  startAfterNrOfConsumers = 2,
-                                  bufferSize = 4))
+        PartitionHub.statefulSink(
+          () => (info, elem) => info.consumerIds.toVector.minBy(id => info.queueSize(id)),
+          startAfterNrOfConsumers = 2,
+          bufferSize = 4))
       val result1 = source.runWith(Sink.seq)
       val result2 = source.throttle(10, 100.millis, 10, ThrottleMode.Shaping).runWith(Sink.seq)
 
@@ -662,9 +663,10 @@ class HubSpec extends StreamSpec {
 
     "drop elements with negative index" in assertAllStagesStopped {
       val source = Source(0 until 10).runWith(
-        PartitionHub.sink((size, elem) => if (elem == 3 || elem == 4) -1 else elem % size,
-                          startAfterNrOfConsumers = 2,
-                          bufferSize = 8))
+        PartitionHub.sink(
+          (size, elem) => if (elem == 3 || elem == 4) -1 else elem % size,
+          startAfterNrOfConsumers = 2,
+          bufferSize = 8))
       val result1 = source.runWith(Sink.seq)
       val result2 = source.runWith(Sink.seq)
       result1.futureValue should ===((0 to 8 by 2).filterNot(_ == 4))

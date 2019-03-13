@@ -45,8 +45,9 @@ class AffinityPoolComparativeBenchmark {
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
 
-    system = ActorSystem("AffinityPoolComparativeBenchmark",
-                         ConfigFactory.parseString(s"""| akka {
+    system = ActorSystem(
+      "AffinityPoolComparativeBenchmark",
+      ConfigFactory.parseString(s"""| akka {
           |   log-dead-letters = off
           |   actor {
           |     default-fj-dispatcher {

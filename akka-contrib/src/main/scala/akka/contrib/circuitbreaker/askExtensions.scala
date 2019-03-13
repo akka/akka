@@ -49,8 +49,9 @@ object Implicits {
    */
   @throws[akka.contrib.circuitbreaker.OpenCircuitException](
     "if the call failed because the circuit breaker proxy state was OPEN")
-  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(implicit executionContext: ExecutionContext,
-                                                                         timeout: Timeout): Future[Any] =
+  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, ActorRef.noSender)
 
   /**
@@ -89,9 +90,10 @@ final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyVal {
-  def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext,
-                                          timeout: Timeout,
-                                          sender: ActorRef = Actor.noSender): Future[Any] =
+  def askWithCircuitBreaker(message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout,
+      sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)
 
   @throws[OpenCircuitException]
@@ -106,9 +108,10 @@ final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyV
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActorSelection(val actorSelection: ActorSelection) extends AnyVal {
-  def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext,
-                                          timeout: Timeout,
-                                          sender: ActorRef = Actor.noSender): Future[Any] =
+  def askWithCircuitBreaker(message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout,
+      sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)
 
   private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(

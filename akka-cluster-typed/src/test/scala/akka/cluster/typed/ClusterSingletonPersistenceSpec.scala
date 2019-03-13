@@ -35,18 +35,18 @@ object ClusterSingletonPersistenceSpec {
   private final case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
-    EventSourcedBehavior[Command, String, String](persistenceId = PersistenceId("TheSingleton"),
-                                                  emptyState = "",
-                                                  commandHandler = (state, cmd) =>
-                                                    cmd match {
-                                                      case Add(s) => Effect.persist(s)
-                                                      case Get(replyTo) =>
-                                                        replyTo ! state
-                                                        Effect.none
-                                                      case StopPlz => Effect.stop()
-                                                    },
-                                                  eventHandler =
-                                                    (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
+    EventSourcedBehavior[Command, String, String](
+      persistenceId = PersistenceId("TheSingleton"),
+      emptyState = "",
+      commandHandler = (state, cmd) =>
+        cmd match {
+          case Add(s) => Effect.persist(s)
+          case Get(replyTo) =>
+            replyTo ! state
+            Effect.none
+          case StopPlz => Effect.stop()
+        },
+      eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
 
 }
 

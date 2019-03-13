@@ -42,8 +42,9 @@ object Sink {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def foldAsync[U, In](zero: U,
-                       f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] =
+  def foldAsync[U, In](
+      zero: U,
+      f: function.Function2[U, In, CompletionStage[U]]): javadsl.Sink[In, CompletionStage[U]] =
     new Sink(scaladsl.Sink.foldAsync[U, In](zero)(f(_, _).toScala).toCompletionStage())
 
   /**
@@ -252,11 +253,12 @@ object Sink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * message will be sent to the destination actor.
    */
-  def actorRefWithAck[In](ref: ActorRef,
-                          onInitMessage: Any,
-                          ackMessage: Any,
-                          onCompleteMessage: Any,
-                          onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
+  def actorRefWithAck[In](
+      ref: ActorRef,
+      onInitMessage: Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(
       scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply _))
 
@@ -329,12 +331,14 @@ object Sink {
   @deprecated(
     "Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)",
     "2.5.11")
-  def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]],
-                     fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
+  def lazyInit[T, M](
+      sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]],
+      fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
     new Sink(
       scaladsl.Sink
-        .lazyInit[T, M](t => sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
-                        () => fallback.create())
+        .lazyInit[T, M](
+          t => sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
+          () => fallback.create())
         .mapMaterializedValue(_.toJava))
 
   /**

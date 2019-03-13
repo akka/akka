@@ -122,9 +122,10 @@ class FlowLogSpec extends StreamSpec("""
       }
 
       "allow configuring log levels via Attributes" in {
-        val logAttrs = Attributes.logLevels(onElement = Logging.WarningLevel,
-                                            onFinish = Logging.InfoLevel,
-                                            onFailure = Logging.DebugLevel)
+        val logAttrs = Attributes.logLevels(
+          onElement = Logging.WarningLevel,
+          onFinish = Logging.InfoLevel,
+          onFailure = Logging.DebugLevel)
 
         Source
           .single(42)

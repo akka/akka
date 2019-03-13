@@ -13,10 +13,10 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class PoolRouterBuilder[T](poolSize: Int,
-                                                    behavior: Behavior[T],
-                                                    logicFactory: () => RoutingLogic[T] = () =>
-                                                      new RoutingLogics.RoundRobinLogic[T])
+private[akka] final case class PoolRouterBuilder[T](
+    poolSize: Int,
+    behavior: Behavior[T],
+    logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RoundRobinLogic[T])
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
@@ -36,10 +36,11 @@ private[akka] final case class PoolRouterBuilder[T](poolSize: Int,
  * INTERNAL API
  */
 @InternalApi
-private final class PoolRouterImpl[T](ctx: ActorContext[T],
-                                      poolSize: Int,
-                                      behavior: Behavior[T],
-                                      logic: RoutingLogic[T])
+private final class PoolRouterImpl[T](
+    ctx: ActorContext[T],
+    poolSize: Int,
+    behavior: Behavior[T],
+    logic: RoutingLogic[T])
     extends AbstractBehavior[T] {
 
   (1 to poolSize).foreach { _ =>

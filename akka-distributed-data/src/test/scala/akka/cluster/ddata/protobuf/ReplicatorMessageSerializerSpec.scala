@@ -31,8 +31,9 @@ import akka.cluster.ddata.ORMultiMap
 
 class ReplicatorMessageSerializerSpec
     extends TestKit(
-      ActorSystem("ReplicatorMessageSerializerSpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "ReplicatorMessageSerializerSpec",
+        ConfigFactory.parseString("""
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
@@ -87,9 +88,11 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(Changed(keyA)(data1))
       checkSerialization(DataEnvelope(data1))
       checkSerialization(
-        DataEnvelope(data1,
-                     pruning = Map(address1 -> PruningPerformed(System.currentTimeMillis()),
-                                   address3 -> PruningInitialized(address2, Set(address1.address)))))
+        DataEnvelope(
+          data1,
+          pruning = Map(
+            address1 -> PruningPerformed(System.currentTimeMillis()),
+            address3 -> PruningInitialized(address2, Set(address1.address)))))
       checkSerialization(Write("A", DataEnvelope(data1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
@@ -102,16 +105,19 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(
         Gossip(Map("A" -> DataEnvelope(data1), "B" -> DataEnvelope(GSet() + "b" + "c")), sendBack = true))
       checkSerialization(
-        DeltaPropagation(address1,
-                         reply = true,
-                         Map("A" -> Delta(DataEnvelope(delta1), 1L, 1L),
-                             "B" -> Delta(DataEnvelope(delta2), 3L, 5L),
-                             "C" -> Delta(DataEnvelope(delta3), 1L, 1L),
-                             "DC" -> Delta(DataEnvelope(delta4), 1L, 1L))))
+        DeltaPropagation(
+          address1,
+          reply = true,
+          Map(
+            "A" -> Delta(DataEnvelope(delta1), 1L, 1L),
+            "B" -> Delta(DataEnvelope(delta2), 3L, 5L),
+            "C" -> Delta(DataEnvelope(delta3), 1L, 1L),
+            "DC" -> Delta(DataEnvelope(delta4), 1L, 1L))))
 
       checkSerialization(new DurableDataEnvelope(data1))
-      val pruning = Map(address1 -> PruningPerformed(System.currentTimeMillis()),
-                        address3 -> PruningInitialized(address2, Set(address1.address)))
+      val pruning = Map(
+        address1 -> PruningPerformed(System.currentTimeMillis()),
+        address3 -> PruningInitialized(address2, Set(address1.address)))
       val deserializedDurableDataEnvelope =
         checkSerialization(
           new DurableDataEnvelope(DataEnvelope(data1, pruning, deltaVersions = VersionVector(address1, 13L))))

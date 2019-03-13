@@ -20,8 +20,9 @@ import akka.util.OptionVal
  *
  * @tparam T the common superclass of all supported messages.
  */
-final class ReceiveBuilder[T] private (private var messageHandlers: List[ReceiveBuilder.Case[T, T]],
-                                       private var signalHandlers: List[ReceiveBuilder.Case[T, Signal]]) {
+final class ReceiveBuilder[T] private (
+    private var messageHandlers: List[ReceiveBuilder.Case[T, T]],
+    private var signalHandlers: List[ReceiveBuilder.Case[T, Signal]]) {
 
   import ReceiveBuilder.Case
 
@@ -108,9 +109,10 @@ final class ReceiveBuilder[T] private (private var messageHandlers: List[Receive
    * @tparam M type of signal to match
    * @return this behavior builder
    */
-  def onSignal[M <: Signal](`type`: Class[M],
-                            test: JPredicate[M],
-                            handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onSignal[M <: Signal](
+      `type`: Class[M],
+      test: JPredicate[M],
+      handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(`type`, OptionVal.Some(test), handler)
 
   /**
@@ -127,16 +129,18 @@ final class ReceiveBuilder[T] private (private var messageHandlers: List[Receive
       override def apply(param: Signal): Behavior[T] = handler.create()
     })
 
-  private def withMessage[M <: T](`type`: OptionVal[Class[M]],
-                                  test: OptionVal[JPredicate[M]],
-                                  handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
+  private def withMessage[M <: T](
+      `type`: OptionVal[Class[M]],
+      test: OptionVal[JPredicate[M]],
+      handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
     messageHandlers = Case[T, M](`type`, test, handler).asInstanceOf[Case[T, T]] +: messageHandlers
     this
   }
 
-  private def withSignal[M <: Signal](`type`: Class[M],
-                                      test: OptionVal[JPredicate[M]],
-                                      handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
+  private def withSignal[M <: Signal](
+      `type`: Class[M],
+      test: OptionVal[JPredicate[M]],
+      handler: JFunction[M, Behavior[T]]): ReceiveBuilder[T] = {
     signalHandlers = Case[T, M](OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] +: signalHandlers
     this
   }
@@ -149,9 +153,10 @@ object ReceiveBuilder {
 
   /** INTERNAL API */
   @InternalApi
-  private[javadsl] final case class Case[BT, MT](`type`: OptionVal[Class[_ <: MT]],
-                                                 test: OptionVal[JPredicate[MT]],
-                                                 handler: JFunction[MT, Behavior[BT]])
+  private[javadsl] final case class Case[BT, MT](
+      `type`: OptionVal[Class[_ <: MT]],
+      test: OptionVal[JPredicate[MT]],
+      handler: JFunction[MT, Behavior[BT]])
 
 }
 
@@ -161,8 +166,9 @@ object ReceiveBuilder {
  * INTERNAL API
  */
 @InternalApi
-private final class BuiltReceive[T](messageHandlers: List[ReceiveBuilder.Case[T, T]],
-                                    signalHandlers: List[ReceiveBuilder.Case[T, Signal]])
+private final class BuiltReceive[T](
+    messageHandlers: List[ReceiveBuilder.Case[T, T]],
+    signalHandlers: List[ReceiveBuilder.Case[T, Signal]])
     extends Receive[T] {
   import ReceiveBuilder.Case
 

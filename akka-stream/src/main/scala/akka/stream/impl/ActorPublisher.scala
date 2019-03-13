@@ -100,8 +100,9 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorSubscription[T](final val impl: ActorRef,
-                                                      final val subscriber: Subscriber[_ >: T])
+@InternalApi private[akka] class ActorSubscription[T](
+    final val impl: ActorRef,
+    final val subscriber: Subscriber[_ >: T])
     extends Subscription {
   override def request(elements: Long): Unit = impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)

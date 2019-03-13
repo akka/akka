@@ -64,6 +64,7 @@ object SerializerDetails {
  * Constructor is internal API: Use the factories [[SerializerDetails#create]] or [[SerializerDetails#apply]]
  * to construct
  */
-final class SerializerDetails private (val alias: String,
-                                       val serializer: Serializer,
-                                       val useFor: immutable.Seq[Class[_]])
+final class SerializerDetails private (
+    val alias: String,
+    val serializer: Serializer,
+    val useFor: immutable.Seq[Class[_]])

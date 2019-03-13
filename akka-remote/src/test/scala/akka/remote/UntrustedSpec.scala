@@ -69,8 +69,9 @@ akka.loglevel = DEBUG # test verifies debug
 
   import UntrustedSpec._
 
-  val client = ActorSystem("UntrustedSpec-client",
-                           ConfigFactory.parseString("""
+  val client = ActorSystem(
+    "UntrustedSpec-client",
+    ConfigFactory.parseString("""
       akka.actor.provider = remote
       akka.remote.netty.tcp.port = 0
   """))

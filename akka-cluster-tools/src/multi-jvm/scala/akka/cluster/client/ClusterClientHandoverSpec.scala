@@ -74,9 +74,9 @@ class ClusterClientHandoverSpec
 
     "establish connection to first node" in {
       runOn(client) {
-        clusterClient =
-          system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                         "client1")
+        clusterClient = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         clusterClient ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
       }

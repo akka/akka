@@ -44,11 +44,12 @@ final case class DisassociatedEvent(localAddress: Address, remoteAddress: Addres
 }
 
 @SerialVersionUID(1L)
-final case class AssociationErrorEvent(cause: Throwable,
-                                       localAddress: Address,
-                                       remoteAddress: Address,
-                                       inbound: Boolean,
-                                       logLevel: Logging.LogLevel)
+final case class AssociationErrorEvent(
+    cause: Throwable,
+    localAddress: Address,
+    remoteAddress: Address,
+    inbound: Boolean,
+    logLevel: Logging.LogLevel)
     extends AssociationEvent {
   protected override def eventName: String = "AssociationError"
   override def toString: String = s"${super.toString}: Error [${cause.getMessage}] [${Logging.stackTraceFor(cause)}]"

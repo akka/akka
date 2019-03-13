@@ -26,10 +26,11 @@ import com.typesafe.config.ConfigFactory
  * extension, i.e. the cluster will automatically be started when
  * the `ClusterActorRefProvider` is used.
  */
-private[akka] class ClusterActorRefProvider(_systemName: String,
-                                            _settings: ActorSystem.Settings,
-                                            _eventStream: EventStream,
-                                            _dynamicAccess: DynamicAccess)
+private[akka] class ClusterActorRefProvider(
+    _systemName: String,
+    _settings: ActorSystem.Settings,
+    _eventStream: EventStream,
+    _dynamicAccess: DynamicAccess)
     extends RemoteActorRefProvider(_systemName, _settings, _eventStream, _dynamicAccess) {
 
   override def init(system: ActorSystemImpl): Unit = {
@@ -46,10 +47,11 @@ private[akka] class ClusterActorRefProvider(_systemName: String,
     import remoteSettings._
     val failureDetector = createRemoteWatcherFailureDetector(system)
     system.systemActorOf(
-      ClusterRemoteWatcher.props(failureDetector,
-                                 heartbeatInterval = WatchHeartBeatInterval,
-                                 unreachableReaperInterval = WatchUnreachableReaperInterval,
-                                 heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
+      ClusterRemoteWatcher.props(
+        failureDetector,
+        heartbeatInterval = WatchHeartBeatInterval,
+        unreachableReaperInterval = WatchUnreachableReaperInterval,
+        heartbeatExpectedResponseAfter = WatchHeartbeatExpectedResponseAfter),
       "remote-watcher")
   }
 
@@ -93,12 +95,14 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           deploy.routerConfig match {
             case r: Pool =>
               Some(
-                deploy.copy(routerConfig = ClusterRouterPool(r, ClusterRouterPoolSettings.fromConfig(deploy.config)),
-                            scope = ClusterScope))
+                deploy.copy(
+                  routerConfig = ClusterRouterPool(r, ClusterRouterPoolSettings.fromConfig(deploy.config)),
+                  scope = ClusterScope))
             case r: Group =>
               Some(
-                deploy.copy(routerConfig = ClusterRouterGroup(r, ClusterRouterGroupSettings.fromConfig(deploy.config)),
-                            scope = ClusterScope))
+                deploy.copy(
+                  routerConfig = ClusterRouterGroup(r, ClusterRouterGroupSettings.fromConfig(deploy.config)),
+                  scope = ClusterScope))
             case other =>
               throw new IllegalArgumentException(
                 s"Cluster aware router can only wrap Pool or Group, got [${other.getClass.getName}]")

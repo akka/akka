@@ -33,9 +33,10 @@ object Framing {
    * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
    *                           exceeded this Flow will fail the stream.
    */
-  def delimiter(delimiter: ByteString,
-                maximumFrameLength: Int,
-                allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
+  def delimiter(
+      delimiter: ByteString,
+      maximumFrameLength: Int,
+      allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString]
       .via(new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
       .named("delimiterFraming")
@@ -54,10 +55,11 @@ object Framing {
    *                           the length of the size field)
    * @param byteOrder          The ''ByteOrder'' to be used when decoding the field
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int = 0,
-                  maximumFrameLength: Int,
-                  byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
+  def lengthField(
+      fieldLength: Int,
+      fieldOffset: Int = 0,
+      maximumFrameLength: Int,
+      byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString]
       .via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder))
@@ -83,11 +85,12 @@ object Framing {
    *                           ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the operator fails otherwise.
    *
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int,
-                  maximumFrameLength: Int,
-                  byteOrder: ByteOrder,
-                  computeFrameSize: (Array[Byte], Int) => Int): Flow[ByteString, ByteString, NotUsed] = {
+  def lengthField(
+      fieldLength: Int,
+      fieldOffset: Int,
+      maximumFrameLength: Int,
+      byteOrder: ByteOrder,
+      computeFrameSize: (Array[Byte], Int) => Int): Flow[ByteString, ByteString, NotUsed] = {
     require(fieldLength >= 1 && fieldLength <= 4, "Length field length must be 1, 2, 3 or 4.")
     Flow[ByteString]
       .via(new LengthFieldFramingStage(fieldLength, fieldOffset, maximumFrameLength, byteOrder, Some(computeFrameSize)))
@@ -126,8 +129,9 @@ object Framing {
    */
   def simpleFramingProtocol(
       maximumMessageLength: Int): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
-    BidiFlow.fromFlowsMat(simpleFramingProtocolEncoder(maximumMessageLength),
-                          simpleFramingProtocolDecoder(maximumMessageLength))(Keep.left)
+    BidiFlow.fromFlowsMat(
+      simpleFramingProtocolEncoder(maximumMessageLength),
+      simpleFramingProtocolDecoder(maximumMessageLength))(Keep.left)
   }
 
   /**
@@ -192,9 +196,10 @@ object Framing {
       }
   }
 
-  private class DelimiterFramingStage(val separatorBytes: ByteString,
-                                      val maximumLineBytes: Int,
-                                      val allowTruncation: Boolean)
+  private class DelimiterFramingStage(
+      val separatorBytes: ByteString,
+      val maximumLineBytes: Int,
+      val allowTruncation: Boolean)
       extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     val in = Inlet[ByteString]("DelimiterFramingStage.in")
@@ -357,11 +362,12 @@ object Framing {
       }
   }
 
-  private final class LengthFieldFramingStage(val lengthFieldLength: Int,
-                                              val lengthFieldOffset: Int,
-                                              val maximumFrameLength: Int,
-                                              val byteOrder: ByteOrder,
-                                              computeFrameSize: Option[(Array[Byte], Int) => Int])
+  private final class LengthFieldFramingStage(
+      val lengthFieldLength: Int,
+      val lengthFieldOffset: Int,
+      val maximumFrameLength: Int,
+      val byteOrder: ByteOrder,
+      computeFrameSize: Option[(Array[Byte], Int) => Int])
       extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     //for the sake of binary compatibility

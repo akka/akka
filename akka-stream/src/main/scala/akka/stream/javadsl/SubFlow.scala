@@ -699,9 +699,10 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWeightedWithin(maxWeight: Long,
-                            costFn: function.Function[Out, java.lang.Long],
-                            d: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+  def groupedWeightedWithin(
+      maxWeight: Long,
+      costFn: function.Function[Out, java.lang.Long],
+      d: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new SubFlow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
@@ -722,9 +723,10 @@ class SubFlow[In, Out, Mat](
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWeightedWithin(maxWeight: Long,
-                            costFn: function.Function[Out, java.lang.Long],
-                            d: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+  def groupedWeightedWithin(
+      maxWeight: Long,
+      costFn: function.Function[Out, java.lang.Long],
+      d: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     groupedWeightedWithin(maxWeight, costFn, d.asScala)
 
   /**
@@ -955,8 +957,9 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  def recoverWithRetries(attempts: Int,
-                         pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubFlow[In, Out, Mat] =
+  def recoverWithRetries(
+      attempts: Int,
+      pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.recoverWithRetries(attempts, pf))
 
   /**
@@ -1070,8 +1073,9 @@ class SubFlow[In, Out, Mat](
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
    */
-  def conflateWithSeed[S](seed: function.Function[Out, S],
-                          aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+  def conflateWithSeed[S](
+      seed: function.Function[Out, S],
+      aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
     new SubFlow(delegate.conflateWithSeed(seed.apply)(aggregate.apply))
 
   /**
@@ -1127,9 +1131,10 @@ class SubFlow[In, Out, Mat](
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
    * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
    */
-  def batch[S](max: Long,
-               seed: function.Function[Out, S],
-               aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+  def batch[S](
+      max: Long,
+      seed: function.Function[Out, S],
+      aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
     new SubFlow(delegate.batch(max, seed.apply)(aggregate.apply))
 
   /**
@@ -1160,10 +1165,11 @@ class SubFlow[In, Out, Mat](
    * @param seed Provides the first state for a batched value using the first unconsumed element as a start
    * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
    */
-  def batchWeighted[S](max: Long,
-                       costFn: function.Function[Out, java.lang.Long],
-                       seed: function.Function[Out, S],
-                       aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
+  def batchWeighted[S](
+      max: Long,
+      costFn: function.Function[Out, java.lang.Long],
+      seed: function.Function[Out, S],
+      aggregate: function.Function2[S, Out, S]): SubFlow[In, S, Mat] =
     new SubFlow(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
@@ -1249,8 +1255,9 @@ class SubFlow[In, Out, Mat](
    * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream.
    * @see [[#expand]]
    */
-  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]],
-                  initial: Out @uncheckedVariance): SubFlow[In, Out, Mat] =
+  def extrapolate(
+      extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]],
+      initial: Out @uncheckedVariance): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.extrapolate(in => extrapolator(in).asScala, Some(initial)))
 
   /**
@@ -1298,10 +1305,10 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int)
-      : SubFlow[In,
-                akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]],
-                Mat] =
+  def prefixAndTail(n: Int): SubFlow[
+    In,
+    akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]],
+    Mat] =
     new SubFlow(delegate.prefixAndTail(n).map { case (taken, tail) => akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**
@@ -1555,8 +1562,9 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWith[Out2, Out3](that: Graph[SourceShape[Out2], _],
-                          combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
+  def zipWith[Out2, Out3](
+      that: Graph[SourceShape[Out2], _],
+      combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
     new SubFlow(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
@@ -1572,8 +1580,9 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipLatestWith[Out2, Out3](that: Graph[SourceShape[Out2], _],
-                                combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
+  def zipLatestWith[Out2, Out3](
+      that: Graph[SourceShape[Out2], _],
+      combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
     new SubFlow(delegate.zipLatestWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
@@ -1836,10 +1845,11 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def throttle(elements: Int,
-               per: FiniteDuration,
-               maximumBurst: Int,
-               mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttle(
+      elements: Int,
+      per: FiniteDuration,
+      maximumBurst: Int,
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, maximumBurst, mode))
 
   /**
@@ -1878,10 +1888,11 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  def throttle(elements: Int,
-               per: java.time.Duration,
-               maximumBurst: Int,
-               mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttle(
+      elements: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per.asScala, maximumBurst, mode))
 
   /**
@@ -1916,9 +1927,10 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  def throttle(cost: Int,
-               per: java.time.Duration,
-               costCalculation: function.Function[Out, Integer]): javadsl.SubFlow[In, Out, Mat] =
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer]): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per.asScala, costCalculation.apply))
 
   /**
@@ -1962,11 +1974,12 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def throttle(cost: Int,
-               per: FiniteDuration,
-               maximumBurst: Int,
-               costCalculation: function.Function[Out, Integer],
-               mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttle(
+      cost: Int,
+      per: FiniteDuration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
 
   /**
@@ -2008,11 +2021,12 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  def throttle(cost: Int,
-               per: java.time.Duration,
-               maximumBurst: Int,
-               costCalculation: function.Function[Out, Integer],
-               mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   /**
@@ -2057,10 +2071,11 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
-  def throttleEven(cost: Int,
-                   per: FiniteDuration,
-                   costCalculation: function.Function[Out, Integer],
-                   mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttleEven(
+      cost: Int,
+      per: FiniteDuration,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttleEven(cost, per, costCalculation.apply, mode))
 
   /**
@@ -2075,10 +2090,11 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
-  def throttleEven(cost: Int,
-                   per: java.time.Duration,
-                   costCalculation: function.Function[Out, Integer],
-                   mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
+  def throttleEven(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     throttleEven(cost, per.asScala, costCalculation, mode)
 
   /**

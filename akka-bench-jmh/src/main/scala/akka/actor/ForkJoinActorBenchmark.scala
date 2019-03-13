@@ -29,9 +29,10 @@ class ForkJoinActorBenchmark {
   var threads = ""
 
   @Param(
-    Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
-          "akka.actor.ManyToOneArrayMailbox",
-          "akka.actor.JCToolsMailbox"))
+    Array(
+      "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
+      "akka.actor.ManyToOneArrayMailbox",
+      "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
   implicit var system: ActorSystem = _
@@ -41,8 +42,9 @@ class ForkJoinActorBenchmark {
 
     requireRightNumberOfCores(cores)
 
-    system = ActorSystem("ForkJoinActorBenchmark",
-                         ConfigFactory.parseString(s"""
+    system = ActorSystem(
+      "ForkJoinActorBenchmark",
+      ConfigFactory.parseString(s"""
         akka {
            log-dead-letters = off
            default-mailbox.mailbox-capacity = 512

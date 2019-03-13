@@ -129,9 +129,10 @@ final class RemoteSettings(val config: Config) {
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name =>
     val transportConfig = transportConfigFor(name)
-    (transportConfig.getString("transport-class"),
-     immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
-     transportConfig)
+    (
+      transportConfig.getString("transport-class"),
+      immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
+      transportConfig)
   }
 
   val Adapters: Map[String, String] = configToMap(getConfig("akka.remote.adapters"))

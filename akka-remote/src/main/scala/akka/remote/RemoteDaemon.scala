@@ -55,12 +55,13 @@ private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, pat
  *
  * It acts as the brain of the remote that responds to system remote events (messages) and undertakes action.
  */
-private[akka] class RemoteSystemDaemon(system: ActorSystemImpl,
-                                       _path: ActorPath,
-                                       _parent: InternalActorRef,
-                                       terminator: ActorRef,
-                                       _log: MarkerLoggingAdapter,
-                                       val untrustedMode: Boolean)
+private[akka] class RemoteSystemDaemon(
+    system: ActorSystemImpl,
+    _path: ActorPath,
+    _parent: InternalActorRef,
+    terminator: ActorRef,
+    _log: MarkerLoggingAdapter,
+    val untrustedMode: Boolean)
     extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   import akka.actor.SystemGuardian._
@@ -169,12 +170,13 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl,
             else {
               val ex =
                 new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
-              log.error(LogMarker.Security,
-                        ex,
-                        "Received command to create remote Actor, but class [{}] is not white-listed! " +
-                        "Target path: [{}]",
-                        props.actorClass,
-                        path)
+              log.error(
+                LogMarker.Security,
+                ex,
+                "Received command to create remote Actor, but class [{}] is not white-listed! " +
+                "Target path: [{}]",
+                props.actorClass,
+                path)
             }
           case DaemonMsgCreate(props, deploy, path, supervisor) =>
             doCreateActor(message, props, deploy, path, supervisor)
@@ -242,14 +244,15 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl,
         }
         val isTerminating = !terminating.whileOff {
           val parent = supervisor.asInstanceOf[InternalActorRef]
-          val actor = system.provider.actorOf(system,
-                                              props,
-                                              parent,
-                                              p,
-                                              systemService = false,
-                                              Some(deploy),
-                                              lookupDeploy = true,
-                                              async = false)
+          val actor = system.provider.actorOf(
+            system,
+            props,
+            parent,
+            p,
+            systemService = false,
+            Some(deploy),
+            lookupDeploy = true,
+            async = false)
           addChild(childName, actor)
           actor.sendSystemMessage(Watch(actor, this))
           actor.start()

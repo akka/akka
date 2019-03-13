@@ -164,9 +164,10 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
 
   protected[akka] override def throughput = 0
   protected[akka] override def throughputDeadlineTime = Duration.Zero
-  protected[akka] override def registerForExecution(mbox: Mailbox,
-                                                    hasMessageHint: Boolean,
-                                                    hasSystemMessageHint: Boolean): Boolean = false
+  protected[akka] override def registerForExecution(
+      mbox: Mailbox,
+      hasMessageHint: Boolean,
+      hasSystemMessageHint: Boolean): Boolean = false
 
   protected[akka] override def shutdownTimeout = 1 second
 
@@ -245,9 +246,10 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
    * it is suspendSwitch and resumed.
    */
   @tailrec
-  private def runQueue(mbox: CallingThreadMailbox,
-                       queue: MessageQueue,
-                       interruptedEx: InterruptedException = null): Unit = {
+  private def runQueue(
+      mbox: CallingThreadMailbox,
+      queue: MessageQueue,
+      interruptedEx: InterruptedException = null): Unit = {
     def checkThreadInterruption(intEx: InterruptedException): InterruptedException = {
       if (Thread.interrupted()) { // clear interrupted flag before we continue, exception will be thrown later
         val ie = new InterruptedException("Interrupted during message processing")

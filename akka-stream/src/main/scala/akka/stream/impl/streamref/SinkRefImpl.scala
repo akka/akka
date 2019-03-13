@@ -89,9 +89,10 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
         initialPartnerRef match {
           case OptionVal.Some(ref) =>
             // this will set the `partnerRef`
-            observeAndValidateSender(ref,
-                                     "Illegal initialPartnerRef! This may be a bug, please report your " +
-                                     "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
+            observeAndValidateSender(
+              ref,
+              "Illegal initialPartnerRef! This may be a bug, please report your " +
+              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
             tryPull()
           case OptionVal.None =>
             // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
@@ -99,9 +100,10 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
         }
 
-        log.debug("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
-                  initialPartnerRef,
-                  self.ref)
+        log.debug(
+          "Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
+          initialPartnerRef,
+          self.ref)
 
         promise.success(SourceRefImpl(self.ref))
       }
@@ -127,9 +129,10 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
           if (remoteCumulativeDemandReceived < d) {
             remoteCumulativeDemandReceived = d
-            log.debug("Received cumulative demand [{}], consumable demand: [{}]",
-                      StreamRefsProtocol.CumulativeDemand(d),
-                      remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
+            log.debug(
+              "Received cumulative demand [{}], consumable demand: [{}]",
+              StreamRefsProtocol.CumulativeDemand(d),
+              remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
           }
 
           tryPull()

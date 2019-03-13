@@ -77,26 +77,27 @@ object EventSourcedBehaviorStashSpec {
 
   def eventSourcedCounter(persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
     EventSourcedBehavior
-      .withEnforcedReplies[Command[_], Event, State](persistenceId,
-                                                     emptyState = State(0, active = true),
-                                                     commandHandler = (state, command) => {
-                                                       if (state.active) active(state, command)
-                                                       else inactive(state, command)
-                                                     },
-                                                     eventHandler = (state, evt) =>
-                                                       evt match {
-                                                         case Incremented(delta) =>
-                                                           if (!state.active) throw new IllegalStateException
-                                                           State(state.value + delta, active = true)
-                                                         case ValueUpdated(value) =>
-                                                           State(value, active = state.active)
-                                                         case Activated =>
-                                                           if (state.active) throw new IllegalStateException
-                                                           state.copy(active = true)
-                                                         case Deactivated =>
-                                                           if (!state.active) throw new IllegalStateException
-                                                           state.copy(active = false)
-                                                       })
+      .withEnforcedReplies[Command[_], Event, State](
+        persistenceId,
+        emptyState = State(0, active = true),
+        commandHandler = (state, command) => {
+          if (state.active) active(state, command)
+          else inactive(state, command)
+        },
+        eventHandler = (state, evt) =>
+          evt match {
+            case Incremented(delta) =>
+              if (!state.active) throw new IllegalStateException
+              State(state.value + delta, active = true)
+            case ValueUpdated(value) =>
+              State(value, active = state.active)
+            case Activated =>
+              if (state.active) throw new IllegalStateException
+              state.copy(active = true)
+            case Deactivated =>
+              if (!state.active) throw new IllegalStateException
+              state.copy(active = false)
+          })
       .onPersistFailure(SupervisorStrategy
         .restartWithBackoff(1.second, maxBackoff = 2.seconds, 0.0)
         .withLoggingEnabled(enabled = false))
@@ -488,40 +489,40 @@ class EventSourcedBehaviorStashSpec
     "discard when stash has reached limit with default dropped setting" in {
       val probe = TestProbe[AnyRef]()
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
-      val behavior = EventSourcedBehavior[String, String, Boolean](persistenceId = PersistenceId("stash-is-full-drop"),
-                                                                   emptyState = false,
-                                                                   commandHandler = { (state, command) =>
-                                                                     state match {
-                                                                       case false =>
-                                                                         command match {
-                                                                           case "ping" =>
-                                                                             probe.ref ! "pong"
-                                                                             Effect.none
-                                                                           case "start-stashing" =>
-                                                                             Effect.persist("start-stashing")
-                                                                           case msg =>
-                                                                             probe.ref ! msg
-                                                                             Effect.none
-                                                                         }
+      val behavior = EventSourcedBehavior[String, String, Boolean](
+        persistenceId = PersistenceId("stash-is-full-drop"),
+        emptyState = false,
+        commandHandler = { (state, command) =>
+          state match {
+            case false =>
+              command match {
+                case "ping" =>
+                  probe.ref ! "pong"
+                  Effect.none
+                case "start-stashing" =>
+                  Effect.persist("start-stashing")
+                case msg =>
+                  probe.ref ! msg
+                  Effect.none
+              }
 
-                                                                       case true =>
-                                                                         command match {
-                                                                           case "unstash" =>
-                                                                             Effect
-                                                                               .persist("unstash")
-                                                                               .thenUnstashAll()
-                                                                               // FIXME #26489: this is run before unstash, so not sequentially as the docs say
-                                                                               .thenRun(_ =>
-                                                                                 probe.ref ! "done-unstashing")
-                                                                           case _ =>
-                                                                             Effect.stash()
-                                                                         }
-                                                                     }
-                                                                   }, {
-                                                                     case (_, "start-stashing") => true
-                                                                     case (_, "unstash")        => false
-                                                                     case (_, _)                => throw new IllegalArgumentException()
-                                                                   })
+            case true =>
+              command match {
+                case "unstash" =>
+                  Effect
+                    .persist("unstash")
+                    .thenUnstashAll()
+                    // FIXME #26489: this is run before unstash, so not sequentially as the docs say
+                    .thenRun(_ => probe.ref ! "done-unstashing")
+                case _ =>
+                  Effect.stash()
+              }
+          }
+        }, {
+          case (_, "start-stashing") => true
+          case (_, "unstash")        => false
+          case (_, _)                => throw new IllegalArgumentException()
+        })
 
       val c = spawn(behavior)
 
@@ -552,10 +553,11 @@ class EventSourcedBehaviorStashSpec
 
     "fail when stash has reached limit if configured to fail" in {
       // persistence settings is system wide, so we need to have a custom testkit/actorsystem here
-      val failStashTestKit = ActorTestKit("EventSourcedBehaviorStashSpec-stash-overflow-fail",
-                                          ConfigFactory
-                                            .parseString("akka.persistence.typed.stash-overflow-strategy=fail")
-                                            .withFallback(EventSourcedBehaviorStashSpec.conf))
+      val failStashTestKit = ActorTestKit(
+        "EventSourcedBehaviorStashSpec-stash-overflow-fail",
+        ConfigFactory
+          .parseString("akka.persistence.typed.stash-overflow-strategy=fail")
+          .withFallback(EventSourcedBehaviorStashSpec.conf))
       try {
         val probe = failStashTestKit.createTestProbe[AnyRef]()
         val behavior =

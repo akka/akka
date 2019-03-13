@@ -40,10 +40,11 @@ object RestartSource {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def withBackoff[T](minBackoff: FiniteDuration,
-                     maxBackoff: FiniteDuration,
-                     randomFactor: Double,
-                     sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource
       .withBackoff(minBackoff, maxBackoff, randomFactor) { () =>
         sourceFactory.create().asScala
@@ -71,10 +72,11 @@ object RestartSource {
    *   In order to skip this additional delay pass in `0`.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
-  def withBackoff[T](minBackoff: java.time.Duration,
-                     maxBackoff: java.time.Duration,
-                     randomFactor: Double,
-                     sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, sourceFactory)
   }
@@ -104,11 +106,12 @@ object RestartSource {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def withBackoff[T](minBackoff: FiniteDuration,
-                     maxBackoff: FiniteDuration,
-                     randomFactor: Double,
-                     maxRestarts: Int,
-                     sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource
       .withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
         sourceFactory.create().asScala
@@ -139,11 +142,12 @@ object RestartSource {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
-  def withBackoff[T](minBackoff: java.time.Duration,
-                     maxBackoff: java.time.Duration,
-                     randomFactor: Double,
-                     maxRestarts: Int,
-                     sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def withBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestarts, sourceFactory)
   }
@@ -170,10 +174,11 @@ object RestartSource {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def onFailuresWithBackoff[T](minBackoff: FiniteDuration,
-                               maxBackoff: FiniteDuration,
-                               randomFactor: Double,
-                               sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource
       .onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor) { () =>
         sourceFactory.create().asScala
@@ -201,10 +206,11 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](minBackoff: java.time.Duration,
-                               maxBackoff: java.time.Duration,
-                               randomFactor: Double,
-                               sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     onFailuresWithBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, sourceFactory)
   }
@@ -233,11 +239,12 @@ object RestartSource {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def onFailuresWithBackoff[T](minBackoff: FiniteDuration,
-                               maxBackoff: FiniteDuration,
-                               randomFactor: Double,
-                               maxRestarts: Int,
-                               sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource
       .onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
         sourceFactory.create().asScala
@@ -267,11 +274,12 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](minBackoff: java.time.Duration,
-                               maxBackoff: java.time.Duration,
-                               randomFactor: Double,
-                               maxRestarts: Int,
-                               sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxRestarts: Int,
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     import akka.util.JavaDurationConverters._
     onFailuresWithBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestarts, sourceFactory)
   }

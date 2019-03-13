@@ -161,21 +161,23 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       Behaviors.withTimers(timers => idle(timers, target, after, maxSize))
     }
 
-    def idle(timers: TimerScheduler[Msg],
-             target: ActorRef[Batch],
-             after: FiniteDuration,
-             maxSize: Int): Behavior[Msg] = {
+    def idle(
+        timers: TimerScheduler[Msg],
+        target: ActorRef[Batch],
+        after: FiniteDuration,
+        maxSize: Int): Behavior[Msg] = {
       Behaviors.receiveMessage[Msg] { message =>
         timers.startSingleTimer(TimerKey, Timeout, after)
         active(Vector(message), timers, target, after, maxSize)
       }
     }
 
-    def active(buffer: Vector[Msg],
-               timers: TimerScheduler[Msg],
-               target: ActorRef[Batch],
-               after: FiniteDuration,
-               maxSize: Int): Behavior[Msg] = {
+    def active(
+        buffer: Vector[Msg],
+        timers: TimerScheduler[Msg],
+        target: ActorRef[Batch],
+        after: FiniteDuration,
+        maxSize: Int): Behavior[Msg] = {
       Behaviors.receiveMessage[Msg] {
         case Timeout =>
           target ! Batch(buffer)
@@ -298,10 +300,11 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     }
 
     // per session actor behavior
-    def prepareToLeaveHome(whoIsLeaving: String,
-                           respondTo: ActorRef[ReadyToLeaveHome],
-                           keyCabinet: ActorRef[GetKeys],
-                           drawer: ActorRef[GetWallet]): Behavior[NotUsed] =
+    def prepareToLeaveHome(
+        whoIsLeaving: String,
+        respondTo: ActorRef[ReadyToLeaveHome],
+        keyCabinet: ActorRef[GetKeys],
+        drawer: ActorRef[GetWallet]): Behavior[NotUsed] =
       // we don't _really_ care about the actor protocol here as nobody will send us
       // messages except for responses to our queries, so we just accept any kind of message
       // but narrow that to more limited types then we interact

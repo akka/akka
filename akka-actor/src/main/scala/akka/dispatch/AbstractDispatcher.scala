@@ -282,9 +282,10 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
-  protected[akka] def registerForExecution(mbox: Mailbox,
-                                           hasMessageHint: Boolean,
-                                           hasSystemMessageHint: Boolean): Boolean
+  protected[akka] def registerForExecution(
+      mbox: Mailbox,
+      hasMessageHint: Boolean,
+      hasSystemMessageHint: Boolean): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
   /**
@@ -362,9 +363,10 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
 
     config.getString("executor") match {
       case "default-executor" =>
-        new DefaultExecutorServiceConfigurator(config.getConfig("default-executor"),
-                                               prerequisites,
-                                               configurator(config.getString("default-executor.fallback")))
+        new DefaultExecutorServiceConfigurator(
+          config.getConfig("default-executor"),
+          prerequisites,
+          configurator(config.getString("default-executor.fallback")))
       case other => configurator(other)
     }
   }
@@ -400,12 +402,14 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
 
     if (config.getString("fixed-pool-size") == "off")
       builder
-        .setCorePoolSizeFromFactor(config.getInt("core-pool-size-min"),
-                                   config.getDouble("core-pool-size-factor"),
-                                   config.getInt("core-pool-size-max"))
-        .setMaxPoolSizeFromFactor(config.getInt("max-pool-size-min"),
-                                  config.getDouble("max-pool-size-factor"),
-                                  config.getInt("max-pool-size-max"))
+        .setCorePoolSizeFromFactor(
+          config.getInt("core-pool-size-min"),
+          config.getDouble("core-pool-size-factor"),
+          config.getInt("core-pool-size-max"))
+        .setMaxPoolSizeFromFactor(
+          config.getInt("max-pool-size-min"),
+          config.getDouble("max-pool-size-factor"),
+          config.getInt("max-pool-size-max"))
     else
       builder.setFixedPoolSize(config.getInt("fixed-pool-size"))
   }
@@ -414,17 +418,19 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
     threadPoolConfig.createExecutorServiceFactory(id, threadFactory)
 }
 
-class DefaultExecutorServiceConfigurator(config: Config,
-                                         prerequisites: DispatcherPrerequisites,
-                                         fallback: ExecutorServiceConfigurator)
+class DefaultExecutorServiceConfigurator(
+    config: Config,
+    prerequisites: DispatcherPrerequisites,
+    fallback: ExecutorServiceConfigurator)
     extends ExecutorServiceConfigurator(config, prerequisites) {
   val provider: ExecutorServiceFactoryProvider =
     prerequisites.defaultExecutionContext match {
       case Some(ec) =>
         prerequisites.eventStream.publish(
-          Debug("DefaultExecutorServiceConfigurator",
-                this.getClass,
-                s"Using passed in ExecutionContext as default executor for this ActorSystem. If you want to use a different executor, please specify one in akka.actor.default-dispatcher.default-executor."))
+          Debug(
+            "DefaultExecutorServiceConfigurator",
+            this.getClass,
+            s"Using passed in ExecutionContext as default executor for this ActorSystem. If you want to use a different executor, please specify one in akka.actor.default-dispatcher.default-executor."))
 
         new AbstractExecutorService with ExecutorServiceFactory with ExecutorServiceFactoryProvider {
           def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this

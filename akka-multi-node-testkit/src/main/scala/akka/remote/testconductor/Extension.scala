@@ -65,9 +65,10 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =
-      ThreadPoolConfig.scaledPoolSize(config.getInt("pool-size-min"),
-                                      config.getDouble("pool-size-factor"),
-                                      config.getInt("pool-size-max"))
+      ThreadPoolConfig.scaledPoolSize(
+        config.getInt("pool-size-min"),
+        config.getDouble("pool-size-factor"),
+        config.getInt("pool-size-max"))
 
     val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("netty.server-socket-worker-pool"))
 

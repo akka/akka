@@ -160,9 +160,10 @@ private[akka] object ChildrenContainer {
    * type of container, depending on whether or not children are left and whether or not
    * the reason was “Terminating”.
    */
-  final case class TerminatingChildrenContainer(c: immutable.TreeMap[String, ChildStats],
-                                                toDie: Set[ActorRef],
-                                                reason: SuspendReason)
+  final case class TerminatingChildrenContainer(
+      c: immutable.TreeMap[String, ChildStats],
+      toDie: Set[ActorRef],
+      reason: SuspendReason)
       extends ChildrenContainer {
 
     override def add(name: String, stats: ChildRestartStats): ChildrenContainer = copy(c.updated(name, stats))

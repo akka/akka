@@ -62,10 +62,11 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
        }
        """)))
 
-  final case class TestSettings(testName: String,
-                                messageRate: Int, // msg/s
-                                payloadSize: Int,
-                                repeat: Int)
+  final case class TestSettings(
+      testName: String,
+      messageRate: Int, // msg/s
+      payloadSize: Int,
+      repeat: Int)
 
 }
 
@@ -141,11 +142,12 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(testName: String,
-                 payloadSize: Long,
-                 histogram: Histogram,
-                 totalDurationNanos: Long,
-                 lastRepeat: Boolean): Unit = {
+  def printTotal(
+      testName: String,
+      payloadSize: Long,
+      histogram: Histogram,
+      totalDurationNanos: Long,
+      lastRepeat: Boolean): Unit = {
     def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
@@ -160,9 +162,10 @@ abstract class AeronStreamLatencySpec
 
     // only use the last repeat for the plots
     if (lastRepeat) {
-      plots = plots.copy(plot50 = plots.plot50.add(testName, percentile(50.0)),
-                         plot90 = plots.plot90.add(testName, percentile(90.0)),
-                         plot99 = plots.plot99.add(testName, percentile(99.0)))
+      plots = plots.copy(
+        plot50 = plots.plot50.add(testName, percentile(50.0)),
+        plot90 = plots.plot90.add(testName, percentile(90.0)),
+        plot99 = plots.plot99.add(testName, percentile(99.0)))
     }
   }
 

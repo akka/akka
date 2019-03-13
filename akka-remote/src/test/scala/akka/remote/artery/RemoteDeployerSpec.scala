@@ -39,11 +39,12 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) with 
 
       deployment should ===(
         Some(
-          Deploy(service,
-                 deployment.get.config,
-                 RoundRobinPool(3),
-                 RemoteScope(Address("akka", "sys", "wallace", 2552)),
-                 "mydispatcher")))
+          Deploy(
+            service,
+            deployment.get.config,
+            RoundRobinPool(3),
+            RemoteScope(Address("akka", "sys", "wallace", 2552)),
+            "mydispatcher")))
     }
 
     "reject remote deployment when the source requires LocalScope" in {

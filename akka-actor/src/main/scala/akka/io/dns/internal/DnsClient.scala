@@ -142,11 +142,12 @@ import scala.concurrent.duration._
 
   def createTcpClient() = {
     context.actorOf(
-      BackoffSupervisor.props(Props(classOf[TcpDnsClient], tcp, ns, self),
-                              childName = "tcpDnsClient",
-                              minBackoff = 10.millis,
-                              maxBackoff = 20.seconds,
-                              randomFactor = 0.1),
+      BackoffSupervisor.props(
+        Props(classOf[TcpDnsClient], tcp, ns, self),
+        childName = "tcpDnsClient",
+        minBackoff = 10.millis,
+        maxBackoff = 20.seconds,
+        randomFactor = 0.1),
       "tcpDnsClientSupervisor")
   }
 }

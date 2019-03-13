@@ -69,12 +69,13 @@ object Backoff {
    *
    */
   @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
-  def onFailure(childProps: Props,
-                childName: String,
-                minBackoff: FiniteDuration,
-                maxBackoff: FiniteDuration,
-                randomFactor: Double,
-                maxNrOfRetries: Int): BackoffOptions =
+  def onFailure(
+      childProps: Props,
+      childName: String,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxNrOfRetries: Int): BackoffOptions =
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
       .withMaxNrOfRetries(maxNrOfRetries)
 
@@ -125,11 +126,12 @@ object Backoff {
    *                     In order to skip this additional delay pass in `0`.
    */
   @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
-  def onFailure(childProps: Props,
-                childName: String,
-                minBackoff: FiniteDuration,
-                maxBackoff: FiniteDuration,
-                randomFactor: Double): BackoffOptions =
+  def onFailure(
+      childProps: Props,
+      childName: String,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double): BackoffOptions =
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
@@ -183,12 +185,13 @@ object Backoff {
    */
   @Deprecated
   @deprecated("Use BackoffOpts.onFailure instead", "2.5.22")
-  def onFailure(childProps: Props,
-                childName: String,
-                minBackoff: java.time.Duration,
-                maxBackoff: java.time.Duration,
-                randomFactor: Double,
-                maxNrOfRetries: Int): BackoffOptions =
+  def onFailure(
+      childProps: Props,
+      childName: String,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxNrOfRetries: Int): BackoffOptions =
     onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxNrOfRetries)
 
   /**
@@ -239,11 +242,12 @@ object Backoff {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts maxNrOfRetries instead.", "2.5.17")
-  def onFailure(childProps: Props,
-                childName: String,
-                minBackoff: java.time.Duration,
-                maxBackoff: java.time.Duration,
-                randomFactor: Double): BackoffOptions =
+  def onFailure(
+      childProps: Props,
+      childName: String,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double): BackoffOptions =
     onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1)
 
   /**
@@ -303,12 +307,13 @@ object Backoff {
    *                       In order to restart infinitely pass in `-1`.
    */
   @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
-  def onStop(childProps: Props,
-             childName: String,
-             minBackoff: FiniteDuration,
-             maxBackoff: FiniteDuration,
-             randomFactor: Double,
-             maxNrOfRetries: Int): BackoffOptions =
+  def onStop(
+      childProps: Props,
+      childName: String,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxNrOfRetries: Int): BackoffOptions =
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
       .withMaxNrOfRetries(maxNrOfRetries)
 
@@ -366,11 +371,12 @@ object Backoff {
    *                     In order to skip this additional delay pass in `0`.
    */
   @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
-  def onStop(childProps: Props,
-             childName: String,
-             minBackoff: FiniteDuration,
-             maxBackoff: FiniteDuration,
-             randomFactor: Double): BackoffOptions =
+  def onStop(
+      childProps: Props,
+      childName: String,
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double): BackoffOptions =
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
@@ -431,12 +437,13 @@ object Backoff {
    */
   @Deprecated
   @deprecated("Use BackoffOpts.onStop instead", "2.5.22")
-  def onStop(childProps: Props,
-             childName: String,
-             minBackoff: java.time.Duration,
-             maxBackoff: java.time.Duration,
-             randomFactor: Double,
-             maxNrOfRetries: Int): BackoffOptions =
+  def onStop(
+      childProps: Props,
+      childName: String,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxNrOfRetries: Int): BackoffOptions =
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxNrOfRetries)
 
   /**
@@ -494,11 +501,12 @@ object Backoff {
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts maxNrOfRetries instead.", "2.5.17")
-  def onStop(childProps: Props,
-             childName: String,
-             minBackoff: java.time.Duration,
-             maxBackoff: java.time.Duration,
-             randomFactor: Double): BackoffOptions =
+  def onStop(
+      childProps: Props,
+      childName: String,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double): BackoffOptions =
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1)
 }
 
@@ -557,17 +565,17 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
-private final case class BackoffOptionsImpl(backoffType: BackoffType = RestartImpliesFailure,
-                                            childProps: Props,
-                                            childName: String,
-                                            minBackoff: FiniteDuration,
-                                            maxBackoff: FiniteDuration,
-                                            randomFactor: Double,
-                                            reset: Option[BackoffReset] = None,
-                                            supervisorStrategy: OneForOneStrategy =
-                                              OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-                                            replyWhileStopped: Option[Any] = None,
-                                            finalStopMessage: Option[Any => Boolean] = None)
+private final case class BackoffOptionsImpl(
+    backoffType: BackoffType = RestartImpliesFailure,
+    childProps: Props,
+    childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    reset: Option[BackoffReset] = None,
+    supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
+    replyWhileStopped: Option[Any] = None,
+    finalStopMessage: Option[Any => Boolean] = None)
     extends akka.pattern.BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -598,26 +606,28 @@ private final case class BackoffOptionsImpl(backoffType: BackoffType = RestartIm
       //onFailure method in companion object
       case RestartImpliesFailure =>
         Props(
-          new BackoffOnRestartSupervisor(childProps,
-                                         childName,
-                                         minBackoff,
-                                         maxBackoff,
-                                         backoffReset,
-                                         randomFactor,
-                                         supervisorStrategy,
-                                         replyWhileStopped))
+          new BackoffOnRestartSupervisor(
+            childProps,
+            childName,
+            minBackoff,
+            maxBackoff,
+            backoffReset,
+            randomFactor,
+            supervisorStrategy,
+            replyWhileStopped))
       //onStop method in companion object
       case StopImpliesFailure =>
         Props(
-          new BackoffOnStopSupervisor(childProps,
-                                      childName,
-                                      minBackoff,
-                                      maxBackoff,
-                                      backoffReset,
-                                      randomFactor,
-                                      supervisorStrategy,
-                                      replyWhileStopped,
-                                      finalStopMessage))
+          new BackoffOnStopSupervisor(
+            childProps,
+            childName,
+            minBackoff,
+            maxBackoff,
+            backoffReset,
+            randomFactor,
+            supervisorStrategy,
+            replyWhileStopped,
+            finalStopMessage))
     }
   }
 }

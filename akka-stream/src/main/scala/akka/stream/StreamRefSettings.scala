@@ -28,12 +28,11 @@ object StreamRefSettings {
 
   /** Scala API */
   def apply(c: Config): StreamRefSettings = {
-    StreamRefSettingsImpl(bufferCapacity = c.getInt("buffer-capacity"),
-                          demandRedeliveryInterval =
-                            c.getDuration("demand-redelivery-interval", TimeUnit.MILLISECONDS).millis,
-                          subscriptionTimeout = c.getDuration("subscription-timeout", TimeUnit.MILLISECONDS).millis,
-                          finalTerminationSignalDeadline =
-                            c.getDuration("final-termination-signal-deadline", TimeUnit.MILLISECONDS).millis)
+    StreamRefSettingsImpl(
+      bufferCapacity = c.getInt("buffer-capacity"),
+      demandRedeliveryInterval = c.getDuration("demand-redelivery-interval", TimeUnit.MILLISECONDS).millis,
+      subscriptionTimeout = c.getDuration("subscription-timeout", TimeUnit.MILLISECONDS).millis,
+      finalTerminationSignalDeadline = c.getDuration("final-termination-signal-deadline", TimeUnit.MILLISECONDS).millis)
   }
 }
 

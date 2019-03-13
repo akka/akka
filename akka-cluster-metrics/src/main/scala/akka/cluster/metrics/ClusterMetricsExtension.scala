@@ -45,8 +45,9 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
    * Supervision strategy.
    */
   private[metrics] val strategy = system.dynamicAccess
-    .createInstanceFor[SupervisorStrategy](SupervisorStrategyProvider,
-                                           immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
+    .createInstanceFor[SupervisorStrategy](
+      SupervisorStrategyProvider,
+      immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
     .getOrElse {
       val log: LoggingAdapter = Logging(system, getClass.getName)
       log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[

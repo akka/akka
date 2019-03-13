@@ -42,9 +42,10 @@ abstract class Receptionist extends Extension {
           .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {
             case e =>
-              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have " +
-                                         "'akka-cluster-typed' in the classpath.",
-                                         e)
+              throw new RuntimeException(
+                "ClusterReceptionist could not be loaded dynamically. Make sure you have " +
+                "'akka-cluster-typed' in the classpath.",
+                e)
           }
           .get
       } else LocalReceptionist

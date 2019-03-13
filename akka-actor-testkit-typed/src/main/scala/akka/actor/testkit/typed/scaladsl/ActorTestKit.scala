@@ -29,9 +29,10 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-                     config = noConfigSet,
-                     settings = None)
+    new ActorTestKit(
+      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      config = noConfigSet,
+      settings = None)
 
   /**
    * Create a named testkit.
@@ -119,9 +120,10 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 
   def shutdownTestKit(): Unit = {
-    ActorTestKit.shutdown(system,
-                          testKitSettings.DefaultActorSystemShutdownTimeout,
-                          testKitSettings.ThrowOnShutdownTimeout)
+    ActorTestKit.shutdown(
+      system,
+      testKitSettings.DefaultActorSystemShutdownTimeout,
+      testKitSettings.ThrowOnShutdownTimeout)
   }
 
   /**

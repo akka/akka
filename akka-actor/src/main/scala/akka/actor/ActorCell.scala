@@ -706,9 +706,10 @@ private[akka] class ActorCell(
             publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
         case None =>
           publish(
-            Error(self.path.toString,
-                  clazz(actor),
-                  "received Supervise from unregistered child " + child + ", this will not end well"))
+            Error(
+              self.path.toString,
+              clazz(actor),
+              "received Supervise from unregistered child " + child + ", this will not end well"))
       }
     }
 

@@ -19,9 +19,10 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](create: () => Future[S],
-                                                                       readData: (S) => Future[Option[T]],
-                                                                       close: (S) => Future[Done])
+@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
+    create: () => Future[S],
+    readData: (S) => Future[Option[T]],
+    close: (S) => Future[Done])
     extends GraphStage[SourceShape[T]] {
   val out = Outlet[T]("UnfoldResourceSourceAsync.out")
   override val shape = SourceShape(out)

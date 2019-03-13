@@ -346,12 +346,11 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                 }
 
                 if (!unique(possibilitiesWithoutJavaSerializer)) {
-                  _log.warning(LogMarker.Security,
-                               "Multiple serializers found for [{}], choosing first of: [{}]",
-                               clazz.getName,
-                               possibilitiesWithoutJavaSerializer
-                                 .map { case (_, s) => s.getClass.getName }
-                                 .mkString(", "))
+                  _log.warning(
+                    LogMarker.Security,
+                    "Multiple serializers found for [{}], choosing first of: [{}]",
+                    clazz.getName,
+                    possibilitiesWithoutJavaSerializer.map { case (_, s) => s.getClass.getName }.mkString(", "))
                 }
                 possibilitiesWithoutJavaSerializer.head._2
 
@@ -363,11 +362,12 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         serializerMap.putIfAbsent(clazz, ser) match {
           case null =>
             if (shouldWarnAboutJavaSerializer(clazz, ser)) {
-              _log.warning(LogMarker.Security,
-                           "Using the default Java serializer for class [{}] which is not recommended because of " +
-                           "performance implications. Use another serializer or disable this warning using the setting " +
-                           "'akka.actor.warn-about-java-serializer-usage'",
-                           clazz.getName)
+              _log.warning(
+                LogMarker.Security,
+                "Using the default Java serializer for class [{}] which is not recommended because of " +
+                "performance implications. Use another serializer or disable this warning using the setting " +
+                "'akka.actor.warn-about-java-serializer-usage'",
+                clazz.getName)
             }
 
             if (!warnUnexpectedNonAkkaSerializer(clazz, ser))
@@ -456,11 +456,12 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
   private def warnUnexpectedNonAkkaSerializer(clazz: Class[_], ser: Serializer): Boolean = {
     if (clazz.getName.startsWith("akka.") && !ser.getClass.getName.startsWith("akka.")) {
-      log.warning("Using serializer [{}] for message [{}]. Note that this serializer " +
-                  "is not implemented by Akka. It's not recommended to replace serializers for messages " +
-                  "provided by Akka.",
-                  ser.getClass.getName,
-                  clazz.getName)
+      log.warning(
+        "Using serializer [{}] for message [{}]. Note that this serializer " +
+        "is not implemented by Akka. It's not recommended to replace serializers for messages " +
+        "provided by Akka.",
+        ser.getClass.getName,
+        clazz.getName)
       true
     } else false
   }

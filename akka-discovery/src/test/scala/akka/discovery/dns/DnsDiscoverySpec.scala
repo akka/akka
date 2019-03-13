@@ -56,9 +56,10 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBind
         .lookup(Lookup("foo.test.").withPortName("service").withProtocol("tcp"), resolveTimeout = 10.seconds)
         .futureValue
 
-    val expected = Set(ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
-                       ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
-                       ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
+    val expected = Set(
+      ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
 
     val result1 = lookup()
     result1.addresses.toSet shouldEqual expected

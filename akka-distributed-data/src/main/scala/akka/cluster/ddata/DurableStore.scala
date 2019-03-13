@@ -103,10 +103,11 @@ object LmdbDurableStore {
 
   private case object WriteBehind extends DeadLetterSuppression
 
-  private final case class Lmdb(env: Env[ByteBuffer],
-                                db: Dbi[ByteBuffer],
-                                keyBuffer: ByteBuffer,
-                                valueBuffer: ByteBuffer)
+  private final case class Lmdb(
+      env: Env[ByteBuffer],
+      db: Dbi[ByteBuffer],
+      keyBuffer: ByteBuffer,
+      valueBuffer: ByteBuffer)
 }
 
 final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
@@ -150,9 +151,10 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       val valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
 
       if (log.isDebugEnabled)
-        log.debug("Init of LMDB in directory [{}] took [{} ms]",
-                  dir.getCanonicalPath,
-                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+        log.debug(
+          "Init of LMDB in directory [{}] took [{} ms]",
+          dir.getCanonicalPath,
+          TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       val l = Lmdb(env, db, keyBuffer, valueBuffer)
       _lmdb = OptionVal.Some(l)
       l
@@ -293,9 +295,10 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
         }
         tx.commit()
         if (log.isDebugEnabled)
-          log.debug("store and commit of [{}] entries took [{} ms]",
-                    pending.size,
-                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+          log.debug(
+            "store and commit of [{}] entries took [{} ms]",
+            pending.size,
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       } catch {
         case NonFatal(e) =>
           import scala.collection.JavaConverters._

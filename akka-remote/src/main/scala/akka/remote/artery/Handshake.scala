@@ -48,13 +48,14 @@ private[remote] object OutboundHandshake {
 /**
  * INTERNAL API
  */
-private[remote] class OutboundHandshake(@unused system: ActorSystem,
-                                        outboundContext: OutboundContext,
-                                        outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-                                        timeout: FiniteDuration,
-                                        retryInterval: FiniteDuration,
-                                        injectHandshakeInterval: FiniteDuration,
-                                        livenessProbeInterval: Duration)
+private[remote] class OutboundHandshake(
+    @unused system: ActorSystem,
+    outboundContext: OutboundContext,
+    outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
+    timeout: FiniteDuration,
+    retryInterval: FiniteDuration,
+    injectHandshakeInterval: FiniteDuration,
+    livenessProbeInterval: Duration)
     extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundHandshake.in")
@@ -159,9 +160,10 @@ private[remote] class OutboundHandshake(@unused system: ActorSystem,
         if (handshakeState == Completed && isAvailable(out) && pendingMessage.isEmpty) {
           val lastUsedDuration = (System.nanoTime() - outboundContext.associationState.lastUsedTimestamp.get()).nanos
           if (lastUsedDuration >= livenessProbeInterval) {
-            log.info("Association to [{}] has been idle for [{}] seconds, sending HandshakeReq to validate liveness",
-                     outboundContext.remoteAddress,
-                     lastUsedDuration.toSeconds)
+            log.info(
+              "Association to [{}] has been idle for [{}] seconds, sending HandshakeReq to validate liveness",
+              outboundContext.remoteAddress,
+              lastUsedDuration.toSeconds)
             push(out, createHandshakeReqEnvelope())
           }
         }
@@ -170,9 +172,10 @@ private[remote] class OutboundHandshake(@unused system: ActorSystem,
       private def createHandshakeReqEnvelope(): OutboundEnvelope = {
         outboundEnvelopePool
           .acquire()
-          .init(recipient = OptionVal.None,
-                message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress),
-                sender = OptionVal.None)
+          .init(
+            recipient = OptionVal.None,
+            message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress),
+            sender = OptionVal.None)
       }
 
       private def handshakeCompleted(): Unit = {
@@ -217,30 +220,27 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
 
       // InHandler
       if (inControlStream)
-        setHandler(in,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       val env = grab(in)
-                       env.message match {
-                         case HandshakeReq(from, to) => onHandshakeReq(from, to)
-                         case HandshakeRsp(from)     =>
-                           // Touch the lastUsedTimestamp here also because when sending the extra low frequency HandshakeRsp
-                           // the timestamp is not supposed to be updated when sending but when receiving reply, which confirms
-                           // that the other system is alive.
-                           inboundContext
-                             .association(from.address)
-                             .associationState
-                             .lastUsedTimestamp
-                             .set(System.nanoTime())
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val env = grab(in)
+              env.message match {
+                case HandshakeReq(from, to) => onHandshakeReq(from, to)
+                case HandshakeRsp(from)     =>
+                  // Touch the lastUsedTimestamp here also because when sending the extra low frequency HandshakeRsp
+                  // the timestamp is not supposed to be updated when sending but when receiving reply, which confirms
+                  // that the other system is alive.
+                  inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
 
-                           after(inboundContext.completeHandshake(from)) {
-                             pull(in)
-                           }
-                         case _ =>
-                           onMessage(env)
-                       }
-                     }
-                   })
+                  after(inboundContext.completeHandshake(from)) {
+                    pull(in)
+                  }
+                case _ =>
+                  onMessage(env)
+              }
+            }
+          })
       else
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
@@ -260,14 +260,15 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             pull(in)
           }
         } else {
-          log.warning("Dropping Handshake Request from [{}] addressed to unknown local address [{}]. " +
-                      "Local address is [{}]. Check that the sending system uses the same " +
-                      "address to contact recipient system as defined in the " +
-                      "'akka.remote.artery.canonical.hostname' of the recipient system. " +
-                      "The name of the ActorSystem must also match.",
-                      from,
-                      to,
-                      inboundContext.localAddress.address)
+          log.warning(
+            "Dropping Handshake Request from [{}] addressed to unknown local address [{}]. " +
+            "Local address is [{}]. Check that the sending system uses the same " +
+            "address to contact recipient system as defined in the " +
+            "'akka.remote.artery.canonical.hostname' of the recipient system. " +
+            "The name of the ActorSystem must also match.",
+            from,
+            to,
+            inboundContext.localAddress.address)
 
           pull(in)
         }
@@ -294,12 +295,13 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
           push(out, env)
         else {
           if (log.isDebugEnabled)
-            log.debug(s"Dropping message [{}] from unknown system with UID [{}]. " +
-                      "This system with UID [{}] was probably restarted. " +
-                      "Messages will be accepted when new handshake has been completed.",
-                      env.message.getClass.getName,
-                      env.originUid,
-                      inboundContext.localAddress.uid)
+            log.debug(
+              s"Dropping message [{}] from unknown system with UID [{}]. " +
+              "This system with UID [{}] was probably restarted. " +
+              "Messages will be accepted when new handshake has been completed.",
+              env.message.getClass.getName,
+              env.originUid,
+              inboundContext.localAddress.uid)
           pull(in)
         }
       }

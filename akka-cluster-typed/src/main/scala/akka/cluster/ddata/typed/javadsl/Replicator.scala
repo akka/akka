@@ -121,10 +121,11 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Get[A <: ReplicatedData](key: Key[A],
-                                            consistency: ReadConsistency,
-                                            replyTo: ActorRef[GetResponse[A]],
-                                            request: Optional[Any])
+  final case class Get[A <: ReplicatedData](
+      key: Key[A],
+      consistency: ReadConsistency,
+      replyTo: ActorRef[GetResponse[A]],
+      request: Optional[Any])
       extends Command {
 
     def this(key: Key[A], consistency: ReadConsistency, replyTo: ActorRef[GetResponse[A]]) =
@@ -185,10 +186,11 @@ object Replicator {
    * function that only uses the data parameter and stable fields from enclosing scope. It must
    * for example not access `sender()` reference of an enclosing actor.
    */
-  final case class Update[A <: ReplicatedData] private (key: Key[A],
-                                                        writeConsistency: WriteConsistency,
-                                                        replyTo: ActorRef[UpdateResponse[A]],
-                                                        request: Optional[Any])(val modify: Option[A] => A)
+  final case class Update[A <: ReplicatedData] private (
+      key: Key[A],
+      writeConsistency: WriteConsistency,
+      replyTo: ActorRef[UpdateResponse[A]],
+      request: Optional[Any])(val modify: Option[A] => A)
       extends Command
       with NoSerializationVerificationNeeded {
 
@@ -199,11 +201,12 @@ object Replicator {
      * If there is no current data value for the `key` the `initial` value will be
      * passed to the `modify` function.
      */
-    def this(key: Key[A],
-             initial: A,
-             writeConsistency: WriteConsistency,
-             replyTo: ActorRef[UpdateResponse[A]],
-             modify: JFunction[A, A]) =
+    def this(
+        key: Key[A],
+        initial: A,
+        writeConsistency: WriteConsistency,
+        replyTo: ActorRef[UpdateResponse[A]],
+        modify: JFunction[A, A]) =
       this(key, writeConsistency, replyTo, Optional.empty[Any])(
         Update.modifyWithInitial(initial, data => modify.apply(data)))
 
@@ -218,12 +221,13 @@ object Replicator {
      * way to pass contextual information (e.g. original sender) without having to use `ask`
      * or local correlation data structures.
      */
-    def this(key: Key[A],
-             initial: A,
-             writeConsistency: WriteConsistency,
-             replyTo: ActorRef[UpdateResponse[A]],
-             request: Optional[Any],
-             modify: JFunction[A, A]) =
+    def this(
+        key: Key[A],
+        initial: A,
+        writeConsistency: WriteConsistency,
+        replyTo: ActorRef[UpdateResponse[A]],
+        request: Optional[Any],
+        modify: JFunction[A, A]) =
       this(key, writeConsistency, replyTo, request)(Update.modifyWithInitial(initial, data => modify.apply(data)))
 
   }
@@ -254,10 +258,11 @@ object Replicator {
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
-  final case class ModifyFailure[A <: ReplicatedData](key: Key[A],
-                                                      errorMessage: String,
-                                                      cause: Throwable,
-                                                      request: Optional[Any])
+  final case class ModifyFailure[A <: ReplicatedData](
+      key: Key[A],
+      errorMessage: String,
+      cause: Throwable,
+      request: Optional[Any])
       extends UpdateFailure[A] {
     override def toString: String = s"ModifyFailure [$key]: $errorMessage"
   }
@@ -332,10 +337,11 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Delete[A <: ReplicatedData](key: Key[A],
-                                               consistency: WriteConsistency,
-                                               replyTo: ActorRef[DeleteResponse[A]],
-                                               request: Optional[Any])
+  final case class Delete[A <: ReplicatedData](
+      key: Key[A],
+      consistency: WriteConsistency,
+      replyTo: ActorRef[DeleteResponse[A]],
+      request: Optional[Any])
       extends Command
       with NoSerializationVerificationNeeded {
 

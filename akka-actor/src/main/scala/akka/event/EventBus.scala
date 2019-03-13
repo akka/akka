@@ -266,8 +266,9 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
 
   protected def system: ActorSystem
 
-  private class ManagedActorClassificationMappings(val seqNr: Int,
-                                                   val backing: Map[ActorRef, immutable.TreeSet[ActorRef]]) {
+  private class ManagedActorClassificationMappings(
+      val seqNr: Int,
+      val backing: Map[ActorRef, immutable.TreeSet[ActorRef]]) {
 
     def get(monitored: ActorRef): immutable.TreeSet[ActorRef] = backing.getOrElse(monitored, empty)
 

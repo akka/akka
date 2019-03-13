@@ -60,13 +60,14 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
       Cluster(system).join(Cluster(system).selfAddress)
       val probe = TestProbe()
       val settings = ClusterShardingSettings(system)
-      val region = ClusterSharding(system).start("myType",
-                                                 InactiveEntityPassivationSpec.Entity.props(probe.ref),
-                                                 settings,
-                                                 extractEntityId,
-                                                 extractShardId,
-                                                 ClusterSharding(system).defaultShardAllocationStrategy(settings),
-                                                 Passivate)
+      val region = ClusterSharding(system).start(
+        "myType",
+        InactiveEntityPassivationSpec.Entity.props(probe.ref),
+        settings,
+        extractEntityId,
+        extractShardId,
+        ClusterSharding(system).defaultShardAllocationStrategy(settings),
+        Passivate)
 
       region ! 1
       region ! 2
