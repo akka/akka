@@ -215,9 +215,10 @@ private[remote] final class SerializationFormatCache
 /**
  * INTERNAL API
  */
-private[remote] final class HeaderBuilderImpl(inboundCompression: InboundCompressions,
-                                              var _outboundActorRefCompression: CompressionTable[ActorRef],
-                                              var _outboundClassManifestCompression: CompressionTable[String])
+private[remote] final class HeaderBuilderImpl(
+    inboundCompression: InboundCompressions,
+    var _outboundActorRefCompression: CompressionTable[ActorRef],
+    var _outboundClassManifestCompression: CompressionTable[String])
     extends HeaderBuilder {
   import HeaderBuilder.DeadLettersCode
 

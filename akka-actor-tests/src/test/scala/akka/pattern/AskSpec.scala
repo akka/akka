@@ -143,8 +143,9 @@ class AskSpec extends AkkaSpec {
       val deadListener = TestProbe()
       system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
 
-      val echo = system.actorOf(Props(new Actor { def receive = { case x => context.actorSelection("/temp/*") ! x } }),
-                                "select-echo3")
+      val echo = system.actorOf(
+        Props(new Actor { def receive = { case x => context.actorSelection("/temp/*") ! x } }),
+        "select-echo3")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
         Await.result(f, 1 seconds)

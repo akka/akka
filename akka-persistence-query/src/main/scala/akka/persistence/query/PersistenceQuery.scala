@@ -62,9 +62,10 @@ class PersistenceQuery(system: ExtendedActorSystem)
    * Java API: Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given
    * read journal configuration entry.
    */
-  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T],
-                                                        readJournalPluginId: String,
-                                                        readJournalPluginConfig: Config): T =
+  final def getReadJournalFor[T <: javadsl.ReadJournal](
+      clazz: Class[T],
+      readJournalPluginId: String,
+      readJournalPluginConfig: Config): T =
     pluginFor(readJournalPluginId, readJournalPluginConfig).javadslPlugin.asInstanceOf[T]
 
   final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T =

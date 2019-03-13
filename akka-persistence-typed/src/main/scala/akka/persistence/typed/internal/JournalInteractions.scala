@@ -33,11 +33,12 @@ private[akka] trait JournalInteractions[C, E, S] {
     val newState = state.nextSequenceNr()
 
     val senderNotKnownBecauseAkkaTyped = null
-    val repr = PersistentRepr(event,
-                              persistenceId = setup.persistenceId.id,
-                              sequenceNr = newState.seqNr,
-                              writerUuid = setup.writerIdentity.writerUuid,
-                              sender = senderNotKnownBecauseAkkaTyped)
+    val repr = PersistentRepr(
+      event,
+      persistenceId = setup.persistenceId.id,
+      sequenceNr = newState.seqNr,
+      writerUuid = setup.writerIdentity.writerUuid,
+      sender = senderNotKnownBecauseAkkaTyped)
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
@@ -46,18 +47,20 @@ private[akka] trait JournalInteractions[C, E, S] {
     newState
   }
 
-  protected def internalPersistAll(events: immutable.Seq[EventOrTagged],
-                                   state: Running.RunningState[S]): Running.RunningState[S] = {
+  protected def internalPersistAll(
+      events: immutable.Seq[EventOrTagged],
+      state: Running.RunningState[S]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
       val writes = events.map { event =>
         newState = newState.nextSequenceNr()
-        PersistentRepr(event,
-                       persistenceId = setup.persistenceId.id,
-                       sequenceNr = newState.seqNr,
-                       writerUuid = setup.writerIdentity.writerUuid,
-                       sender = ActorRef.noSender)
+        PersistentRepr(
+          event,
+          persistenceId = setup.persistenceId.id,
+          sequenceNr = newState.seqNr,
+          writerUuid = setup.writerIdentity.writerUuid,
+          sender = ActorRef.noSender)
       }
       val write = AtomicWrite(writes)
 
@@ -71,11 +74,12 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
-    setup.journal ! ReplayMessages(fromSeqNr,
-                                   toSeqNr,
-                                   setup.recovery.replayMax,
-                                   setup.persistenceId.id,
-                                   setup.selfUntyped)
+    setup.journal ! ReplayMessages(
+      fromSeqNr,
+      toSeqNr,
+      setup.recovery.replayMax,
+      setup.persistenceId.id,
+      setup.selfUntyped)
   }
 
   protected def requestRecoveryPermit(): Unit = {

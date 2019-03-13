@@ -81,12 +81,13 @@ object ActorSourceSinkExample {
 
     val actor: ActorRef[Protocol] = ???
 
-    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithAck(ref = actor,
-                                                                onCompleteMessage = Complete,
-                                                                onFailureMessage = Fail.apply,
-                                                                messageAdapter = Message.apply,
-                                                                onInitMessage = Init.apply,
-                                                                ackMessage = Ack)
+    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithAck(
+      ref = actor,
+      onCompleteMessage = Complete,
+      onFailureMessage = Fail.apply,
+      messageAdapter = Message.apply,
+      onInitMessage = Init.apply,
+      ackMessage = Ack)
 
     Source.single("msg1").runWith(sink)
     // #actor-sink-ref-with-ack

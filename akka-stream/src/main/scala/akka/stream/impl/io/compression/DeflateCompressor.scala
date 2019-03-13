@@ -69,9 +69,10 @@ import scala.annotation.tailrec
   val MinBufferSize = 1024
 
   @tailrec
-  def drainDeflater(deflater: Deflater,
-                    buffer: Array[Byte],
-                    result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {
+  def drainDeflater(
+      deflater: Deflater,
+      buffer: Array[Byte],
+      result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {
     val len = deflater.deflate(buffer)
     if (len > 0) {
       result ++= ByteString.fromArray(buffer, 0, len)

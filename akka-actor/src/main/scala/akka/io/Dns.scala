@@ -115,29 +115,26 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   @InternalApi
   private[akka] def loadAsyncDns(managerName: String): ActorRef = {
     // This can't pass in `this` as then AsyncDns would pick up the system settings
-    asyncDns.computeIfAbsent(managerName,
-                             new JFunction[String, ActorRef] {
-                               override def apply(r: String): ActorRef = {
-                                 val settings =
-                                   new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
-                                 val provider = system.dynamicAccess
-                                   .getClassFor[DnsProvider](settings.ProviderObjectName)
-                                   .get
-                                   .newInstance()
-                                 system.log.info("Creating async dns resolver {} with manager name {}",
-                                                 settings.Resolver,
-                                                 managerName)
-                                 system.systemActorOf(
-                                   props = Props(provider.managerClass,
-                                                 settings.Resolver,
-                                                 system,
-                                                 settings.ResolverConfig,
-                                                 provider.cache,
-                                                 settings.Dispatcher,
-                                                 provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
-                                   name = managerName)
-                               }
-                             })
+    asyncDns.computeIfAbsent(
+      managerName,
+      new JFunction[String, ActorRef] {
+        override def apply(r: String): ActorRef = {
+          val settings =
+            new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
+          val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
+          system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
+          system.systemActorOf(
+            props = Props(
+              provider.managerClass,
+              settings.Resolver,
+              system,
+              settings.ResolverConfig,
+              provider.cache,
+              settings.Dispatcher,
+              provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
+            name = managerName)
+        }
+      })
   }
 
   /**

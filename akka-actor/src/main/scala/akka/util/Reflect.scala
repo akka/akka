@@ -140,10 +140,11 @@ private[akka] object Reflect {
    * INTERNAL API
    * Set a val inside a class.
    */
-  @tailrec protected[akka] final def lookupAndSetField(clazz: Class[_],
-                                                       instance: AnyRef,
-                                                       name: String,
-                                                       value: Any): Boolean = {
+  @tailrec protected[akka] final def lookupAndSetField(
+      clazz: Class[_],
+      instance: AnyRef,
+      name: String,
+      value: Any): Boolean = {
     @tailrec def clearFirst(fields: Array[java.lang.reflect.Field], idx: Int): Boolean =
       if (idx < fields.length) {
         val field = fields(idx)

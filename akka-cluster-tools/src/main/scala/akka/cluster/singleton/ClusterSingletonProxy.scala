@@ -36,11 +36,11 @@ object ClusterSingletonProxySettings {
    * the default configuration `akka.cluster.singleton-proxy`.
    */
   def apply(config: Config): ClusterSingletonProxySettings =
-    new ClusterSingletonProxySettings(singletonName = config.getString("singleton-name"),
-                                      role = roleOption(config.getString("role")),
-                                      singletonIdentificationInterval =
-                                        config.getDuration("singleton-identification-interval", MILLISECONDS).millis,
-                                      bufferSize = config.getInt("buffer-size"))
+    new ClusterSingletonProxySettings(
+      singletonName = config.getString("singleton-name"),
+      role = roleOption(config.getString("role")),
+      singletonIdentificationInterval = config.getDuration("singleton-identification-interval", MILLISECONDS).millis,
+      bufferSize = config.getInt("buffer-size"))
 
   /**
    * Java API: Create settings from the default configuration
@@ -72,18 +72,20 @@ object ClusterSingletonProxySettings {
  *   when new messages are sent viea the proxy. Use 0 to disable buffering, i.e. messages will be dropped
  *   immediately if the location of the singleton is unknown.
  */
-final class ClusterSingletonProxySettings(val singletonName: String,
-                                          val role: Option[String],
-                                          val dataCenter: Option[DataCenter],
-                                          val singletonIdentificationInterval: FiniteDuration,
-                                          val bufferSize: Int)
+final class ClusterSingletonProxySettings(
+    val singletonName: String,
+    val role: Option[String],
+    val dataCenter: Option[DataCenter],
+    val singletonIdentificationInterval: FiniteDuration,
+    val bufferSize: Int)
     extends NoSerializationVerificationNeeded {
 
   // for backwards compatibility
-  def this(singletonName: String,
-           role: Option[String],
-           singletonIdentificationInterval: FiniteDuration,
-           bufferSize: Int) =
+  def this(
+      singletonName: String,
+      role: Option[String],
+      singletonIdentificationInterval: FiniteDuration,
+      bufferSize: Int) =
     this(singletonName, role, None, singletonIdentificationInterval, bufferSize)
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
@@ -106,11 +108,12 @@ final class ClusterSingletonProxySettings(val singletonName: String,
   def withBufferSize(bufferSize: Int): ClusterSingletonProxySettings =
     copy(bufferSize = bufferSize)
 
-  private def copy(singletonName: String = singletonName,
-                   role: Option[String] = role,
-                   dataCenter: Option[DataCenter] = dataCenter,
-                   singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
-                   bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
+  private def copy(
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      dataCenter: Option[DataCenter] = dataCenter,
+      singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+      bufferSize: Int = bufferSize): ClusterSingletonProxySettings =
     new ClusterSingletonProxySettings(singletonName, role, dataCenter, singletonIdentificationInterval, bufferSize)
 }
 
@@ -291,9 +294,10 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
       singleton match {
         case Some(s) =>
           if (log.isDebugEnabled)
-            log.debug("Forwarding message of type [{}] to current singleton instance at [{}]",
-                      Logging.simpleName(msg.getClass),
-                      s.path)
+            log.debug(
+              "Forwarding message of type [{}] to current singleton instance at [{}]",
+              Logging.simpleName(msg.getClass),
+              s.path)
           s.forward(msg)
         case None =>
           buffer(msg)

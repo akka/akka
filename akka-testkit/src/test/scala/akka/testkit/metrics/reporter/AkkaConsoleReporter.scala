@@ -15,19 +15,21 @@ import scala.reflect.ClassTag
  * Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor).
  */
 class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output: PrintStream = System.out)
-    extends ScheduledReporter(registry.asInstanceOf[MetricRegistry],
-                              "akka-console-reporter",
-                              MetricFilter.ALL,
-                              TimeUnit.SECONDS,
-                              TimeUnit.NANOSECONDS) {
+    extends ScheduledReporter(
+      registry.asInstanceOf[MetricRegistry],
+      "akka-console-reporter",
+      MetricFilter.ALL,
+      TimeUnit.SECONDS,
+      TimeUnit.NANOSECONDS) {
 
   private final val ConsoleWidth = 80
 
-  override def report(gauges: util.SortedMap[String, Gauge[_]],
-                      counters: util.SortedMap[String, Counter],
-                      histograms: util.SortedMap[String, Histogram],
-                      meters: util.SortedMap[String, Meter],
-                      timers: util.SortedMap[String, Timer]): Unit = {
+  override def report(
+      gauges: util.SortedMap[String, Gauge[_]],
+      counters: util.SortedMap[String, Counter],
+      histograms: util.SortedMap[String, Histogram],
+      meters: util.SortedMap[String, Meter],
+      timers: util.SortedMap[String, Timer]): Unit = {
     import collection.JavaConverters._
 
     // default Metrics types

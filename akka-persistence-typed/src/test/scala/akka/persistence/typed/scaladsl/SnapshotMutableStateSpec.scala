@@ -73,26 +73,28 @@ object SnapshotMutableStateSpec {
 
   final class MutableState(var value: Int)
 
-  def counter(persistenceId: PersistenceId,
-              probe: ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
-    EventSourcedBehavior[Command, Event, MutableState](persistenceId,
-                                                       emptyState = new MutableState(0),
-                                                       commandHandler = (state, cmd) =>
-                                                         cmd match {
-                                                           case Increment =>
-                                                             Effect.persist(Incremented)
+  def counter(
+      persistenceId: PersistenceId,
+      probe: ActorRef[String]): EventSourcedBehavior[Command, Event, MutableState] = {
+    EventSourcedBehavior[Command, Event, MutableState](
+      persistenceId,
+      emptyState = new MutableState(0),
+      commandHandler = (state, cmd) =>
+        cmd match {
+          case Increment =>
+            Effect.persist(Incremented)
 
-                                                           case GetValue(replyTo) =>
-                                                             replyTo ! state.value
-                                                             Effect.none
-                                                         },
-                                                       eventHandler = (state, evt) =>
-                                                         evt match {
-                                                           case Incremented =>
-                                                             state.value += 1
-                                                             probe ! s"incremented-${state.value}"
-                                                             state
-                                                         }).receiveSignal {
+          case GetValue(replyTo) =>
+            replyTo ! state.value
+            Effect.none
+        },
+      eventHandler = (state, evt) =>
+        evt match {
+          case Incremented =>
+            state.value += 1
+            probe ! s"incremented-${state.value}"
+            state
+        }).receiveSignal {
       case SnapshotCompleted(meta) =>
         probe ! s"snapshot-success-${meta.sequenceNr}"
       case SnapshotFailed(meta, _) =>

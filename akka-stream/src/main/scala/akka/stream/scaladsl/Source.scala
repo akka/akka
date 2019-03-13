@@ -32,8 +32,9 @@ import scala.compat.java8.FutureConverters._
  * an “atomic” source, e.g. from a collection or a file. Materialization turns a Source into
  * a Reactive Streams `Publisher` (at least conceptually).
  */
-final class Source[+Out, +Mat](override val traversalBuilder: LinearTraversalBuilder,
-                               override val shape: SourceShape[Out])
+final class Source[+Out, +Mat](
+    override val traversalBuilder: LinearTraversalBuilder,
+    override val shape: SourceShape[Out])
     extends FlowOpsMat[Out, Mat]
     with Graph[SourceShape[Out], Mat] {
 
@@ -55,14 +56,17 @@ final class Source[+Out, +Mat](override val traversalBuilder: LinearTraversalBui
         this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
       else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
         //optimization with LinearTraversalBuilder.empty()
-        new Source[T, Mat3](traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
-                            SourceShape(shape.out).asInstanceOf[SourceShape[T]])
+        new Source[T, Mat3](
+          traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
+          SourceShape(shape.out).asInstanceOf[SourceShape[T]])
       else
-        new Source[T, Mat3](traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
-                            SourceShape(flow.shape.out))
+        new Source[T, Mat3](
+          traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+          SourceShape(flow.shape.out))
     else
-      new Source[T, Mat3](traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
-                          SourceShape(flow.shape.out))
+      new Source[T, Mat3](
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        SourceShape(flow.shape.out))
   }
 
   /**
@@ -283,8 +287,9 @@ object Source {
       // behave as it is the stage with regards to attributes
       val attrs = g.traversalBuilder.attributes
       val noAttrStage = g.withAttributes(Attributes.none)
-      new Source(LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
-                 noAttrStage.shape).withAttributes(attrs)
+      new Source(
+        LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+        noAttrStage.shape).withAttributes(attrs)
     case other =>
       // composite source shaped graph
       new Source(LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right), other.shape)
@@ -502,19 +507,21 @@ object Source {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @InternalApi private[akka] def actorRef[T](completionMatcher: PartialFunction[Any, Unit],
-                                             failureMatcher: PartialFunction[Any, Throwable],
-                                             bufferSize: Int,
-                                             overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
+  @InternalApi private[akka] def actorRef[T](
+      completionMatcher: PartialFunction[Any, Unit],
+      failureMatcher: PartialFunction[Any, Throwable],
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     require(!overflowStrategy.isBackpressure, "Backpressure overflowStrategy not supported")
     fromGraph(
-      new ActorRefSource(completionMatcher,
-                         failureMatcher,
-                         bufferSize,
-                         overflowStrategy,
-                         DefaultAttributes.actorRefSource,
-                         shape("ActorRefSource")))
+      new ActorRefSource(
+        completionMatcher,
+        failureMatcher,
+        bufferSize,
+        overflowStrategy,
+        DefaultAttributes.actorRefSource,
+        shape("ActorRefSource")))
   }
 
   /**
@@ -691,9 +698,10 @@ object Source {
    *             is received. Stream calls close and completes when `Future` from read function returns None.
    * @param close - function that closes resource
    */
-  def unfoldResourceAsync[T, S](create: () => Future[S],
-                                read: (S) => Future[Option[T]],
-                                close: (S) => Future[Done]): Source[T, NotUsed] =
+  def unfoldResourceAsync[T, S](
+      create: () => Future[S],
+      read: (S) => Future[Option[T]],
+      close: (S) => Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
 }

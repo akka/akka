@@ -360,7 +360,8 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
       override val log = mock[MarkerLoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
       override lazy val context = mock[DefaultCamelContext]
-      override val settings = new CamelSettings(ConfigFactory.parseString("""
+      override val settings = new CamelSettings(
+        ConfigFactory.parseString("""
           akka {
             camel {
               jmx = off
@@ -373,7 +374,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
             }
           }
         """).withFallback(config),
-                                                sys.dynamicAccess)
+        sys.dynamicAccess)
     }
     camel = camelWithMocks
 
@@ -391,10 +392,11 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
 
   def msg(s: String) = CamelMessage(s, Map.empty)
 
-  def given(actor: ActorRef = probe.ref,
-            outCapable: Boolean = true,
-            autoAck: Boolean = true,
-            replyTimeout: FiniteDuration = 20 seconds) = {
+  def given(
+      actor: ActorRef = probe.ref,
+      outCapable: Boolean = true,
+      autoAck: Boolean = true,
+      replyTimeout: FiniteDuration = 20 seconds) = {
     prepareMocks(actor, outCapable = outCapable)
     new ActorProducer(configure(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }
@@ -425,9 +427,10 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
 
   }
 
-  def configure(endpointUri: String = "test-uri",
-                isAutoAck: Boolean = true,
-                _replyTimeout: FiniteDuration = 20 seconds) = {
+  def configure(
+      endpointUri: String = "test-uri",
+      isAutoAck: Boolean = true,
+      _replyTimeout: FiniteDuration = 20 seconds) = {
     val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
     endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout

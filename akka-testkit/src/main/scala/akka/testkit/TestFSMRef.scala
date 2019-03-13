@@ -54,10 +54,11 @@ class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName,
-               stateData: D = fsm.stateData,
-               timeout: FiniteDuration = null,
-               stopReason: Option[FSM.Reason] = None): Unit = {
+  def setState(
+      stateName: S = fsm.stateName,
+      stateData: D = fsm.stateData,
+      timeout: FiniteDuration = null,
+      stopReason: Option[FSM.Reason] = None): Unit = {
     fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
   }
 
@@ -86,14 +87,15 @@ class TestFSMRef[S, D, T <: Actor](system: ActorSystem, props: Props, supervisor
 
 object TestFSMRef {
 
-  def apply[S, D, T <: Actor: ClassTag](factory: => T)(implicit ev: T <:< FSM[S, D],
-                                                       system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](
+      factory: => T)(implicit ev: T <:< FSM[S, D], system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], TestActorRef.randomName)
   }
 
-  def apply[S, D, T <: Actor: ClassTag](factory: => T, name: String)(implicit ev: T <:< FSM[S, D],
-                                                                     system: ActorSystem): TestFSMRef[S, D, T] = {
+  def apply[S, D, T <: Actor: ClassTag](factory: => T, name: String)(
+      implicit ev: T <:< FSM[S, D],
+      system: ActorSystem): TestFSMRef[S, D, T] = {
     val impl = system.asInstanceOf[ActorSystemImpl]
     new TestFSMRef(impl, Props(factory), impl.guardian.asInstanceOf[InternalActorRef], name)
   }

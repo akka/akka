@@ -33,12 +33,13 @@ private[akka] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
-private[io] final class AsyncDnsManager(name: String,
-                                        system: ExtendedActorSystem,
-                                        resolverConfig: Config,
-                                        cache: Dns,
-                                        dispatcher: String,
-                                        provider: DnsProvider)
+private[io] final class AsyncDnsManager(
+    name: String,
+    system: ExtendedActorSystem,
+    resolverConfig: Config,
+    cache: Dns,
+    dispatcher: String,
+    provider: DnsProvider)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics]
     with ActorLogging
@@ -50,12 +51,13 @@ private[io] final class AsyncDnsManager(name: String,
    * Ctr expected by the DnsExt for all DnsMangers
    */
   def this(ext: DnsExt) =
-    this(ext.Settings.Resolver,
-         ext.system,
-         ext.Settings.ResolverConfig,
-         ext.cache,
-         ext.Settings.Dispatcher,
-         ext.provider)
+    this(
+      ext.Settings.Resolver,
+      ext.system,
+      ext.Settings.ResolverConfig,
+      ext.cache,
+      ext.Settings.Dispatcher,
+      ext.provider)
 
   implicit val ec = context.dispatcher
 

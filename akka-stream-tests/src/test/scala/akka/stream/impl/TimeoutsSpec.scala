@@ -57,12 +57,13 @@ class TimeoutsSpec extends StreamSpec {
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
-        Await.result(Source(1 to 100)
-                       .concat(Source.failed(TE("test")))
-                       .completionTimeout(2.seconds)
-                       .grouped(200)
-                       .runWith(Sink.head),
-                     3.seconds)
+        Await.result(
+          Source(1 to 100)
+            .concat(Source.failed(TE("test")))
+            .completionTimeout(2.seconds)
+            .grouped(200)
+            .runWith(Sink.head),
+          3.seconds)
       }
     }
 

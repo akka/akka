@@ -62,8 +62,9 @@ final class CommandHandlerBuilder[Command, Event, State]() {
    *
    * @return A new, mutable, CommandHandlerBuilderByState
    */
-  def forState[S <: State](stateClass: Class[S],
-                           statePredicate: Predicate[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
+  def forState[S <: State](
+      stateClass: Class[S],
+      statePredicate: Predicate[S]): CommandHandlerBuilderByState[Command, Event, S, State] = {
     val builder = new CommandHandlerBuilderByState[Command, Event, S, State](stateClass, statePredicate)
     builders = builder.asInstanceOf[CommandHandlerBuilderByState[Command, Event, State, State]] :: builders
     builder
@@ -196,15 +197,13 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
 
   private def addCase(predicate: Command => Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
-    cases = CommandHandlerCase[Command, Event, State](commandPredicate = predicate,
-                                                      statePredicate = state =>
-                                                        if (state == null) statePredicate.test(state.asInstanceOf[S])
-                                                        else
-                                                          statePredicate.test(state.asInstanceOf[S]) && stateClass
-                                                            .isAssignableFrom(state.getClass),
-                                                      handler.asInstanceOf[BiFunction[State,
-                                                                                      Command,
-                                                                                      Effect[Event, State]]]) :: cases
+    cases = CommandHandlerCase[Command, Event, State](
+        commandPredicate = predicate,
+        statePredicate = state =>
+          if (state == null) statePredicate.test(state.asInstanceOf[S])
+          else
+            statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+        handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
   }
 
   /**
@@ -250,8 +249,9 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
   def onCommand[C <: Command](
       commandClass: Class[C],
       handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilderByState[Command, Event, S, State] = {
-    addCase(cmd => commandClass.isAssignableFrom(cmd.getClass),
-            handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
+    addCase(
+      cmd => commandClass.isAssignableFrom(cmd.getClass),
+      handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
     this
   }
 

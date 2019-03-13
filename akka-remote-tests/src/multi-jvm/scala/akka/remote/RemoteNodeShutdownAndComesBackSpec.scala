@@ -81,8 +81,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
         // Drop all messages from this point so no SHUTDOWN is ever received
         testConductor.blackhole(second, first, Direction.Send).await
         // Shut down all existing connections so that the system can enter recovery mode (association attempts)
-        Await.result(RARP(system).provider.transport.managementCommand(ForceDisassociate(node(second).address)),
-                     3.seconds)
+        Await.result(
+          RARP(system).provider.transport.managementCommand(ForceDisassociate(node(second).address)),
+          3.seconds)
 
         // Trigger reconnect attempt and also queue up a system message to be in limbo state (UID of remote system
         // is unknown, and system message is pending)
@@ -133,8 +134,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
 
         Await.ready(system.whenTerminated, 30.seconds)
 
-        val freshSystem = ActorSystem(system.name,
-                                      ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))

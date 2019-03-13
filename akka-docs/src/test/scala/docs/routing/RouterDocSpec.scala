@@ -400,8 +400,9 @@ router-dispatcher {}
     for (i <- 1 to 100) router10b ! i
     val threads10b = Thread.getAllStackTraces.keySet.asScala.filter { _.getName contains "router10b" }
     val threads10bNr = threads10b.size
-    require(threads10bNr == 5,
-            s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
+    require(
+      threads10bNr == 5,
+      s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
 
     //#smallest-mailbox-pool-1
     val router11: ActorRef =
@@ -537,10 +538,10 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   "demonstrate dispatcher" in {
     //#dispatchers
     val router: ActorRef = system.actorOf(
-                                          // “head” router actor will run on "router-dispatcher" dispatcher
-                                          // Worker routees will run on "pool-dispatcher" dispatcher
-                                          RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
-                                          name = "poolWithDispatcher")
+      // “head” router actor will run on "router-dispatcher" dispatcher
+      // Worker routees will run on "pool-dispatcher" dispatcher
+      RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
+      name = "poolWithDispatcher")
     //#dispatchers
   }
 
@@ -595,8 +596,9 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     //#remoteRoutees
     import akka.actor.{ Address, AddressFromURIString }
     import akka.remote.routing.RemoteRouterConfig
-    val addresses = Seq(Address("akka.tcp", "remotesys", "otherhost", 1234),
-                        AddressFromURIString("akka.tcp://othersys@anotherhost:1234"))
+    val addresses = Seq(
+      Address("akka.tcp", "remotesys", "otherhost", 1234),
+      AddressFromURIString("akka.tcp://othersys@anotherhost:1234"))
     val routerRemote = system.actorOf(RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
     //#remoteRoutees
   }

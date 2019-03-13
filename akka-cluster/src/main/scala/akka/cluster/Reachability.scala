@@ -55,8 +55,9 @@ private[cluster] object Reachability {
  */
 @SerialVersionUID(1L)
 @InternalApi
-private[cluster] class Reachability private (val records: immutable.IndexedSeq[Reachability.Record],
-                                             val versions: Map[UniqueAddress, Long])
+private[cluster] class Reachability private (
+    val records: immutable.IndexedSeq[Reachability.Record],
+    val versions: Map[UniqueAddress, Long])
     extends Serializable {
 
   import Reachability._

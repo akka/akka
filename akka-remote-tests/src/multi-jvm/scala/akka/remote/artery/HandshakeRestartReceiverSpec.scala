@@ -55,9 +55,10 @@ abstract class HandshakeRestartReceiverSpec
     super.afterAll()
   }
 
-  def identifyWithUid(rootPath: ActorPath,
-                      actorName: String,
-                      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(
+      rootPath: ActorPath,
+      actorName: String,
+      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(rootPath / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -106,8 +107,9 @@ abstract class HandshakeRestartReceiverSpec
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name,
-                                      ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject2")

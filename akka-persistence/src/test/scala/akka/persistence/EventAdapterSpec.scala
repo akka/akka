@@ -102,9 +102,10 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
   import EventAdapterSpec._
 
   def this(journalName: String) {
-    this("inmem",
-         PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
-         ConfigFactory.parseString(s"""
+    this(
+      "inmem",
+      PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
+      ConfigFactory.parseString(s"""
          |akka.persistence.journal {
          |
          |  common-event-adapters {

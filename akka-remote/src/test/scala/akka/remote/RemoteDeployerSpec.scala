@@ -11,7 +11,8 @@ import com.typesafe.config._
 import akka.ConfigurationException
 
 object RemoteDeployerSpec {
-  val deployerConf = ConfigFactory.parseString("""
+  val deployerConf = ConfigFactory.parseString(
+    """
       akka.actor.provider = remote
       akka.actor.deployment {
         /service2 {
@@ -23,7 +24,7 @@ object RemoteDeployerSpec {
       }
       akka.remote.netty.tcp.port = 0
       """,
-                                               ConfigParseOptions.defaults)
+    ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
     def receive = { case _ => }
@@ -41,11 +42,12 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
 
       deployment should ===(
         Some(
-          Deploy(service,
-                 deployment.get.config,
-                 RoundRobinPool(3),
-                 RemoteScope(Address("akka", "sys", "wallace", 2552)),
-                 "mydispatcher")))
+          Deploy(
+            service,
+            deployment.get.config,
+            RoundRobinPool(3),
+            RemoteScope(Address("akka", "sys", "wallace", 2552)),
+            "mydispatcher")))
     }
 
     "reject remote deployment when the source requires LocalScope" in {

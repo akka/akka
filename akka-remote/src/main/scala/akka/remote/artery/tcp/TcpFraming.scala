@@ -49,10 +49,11 @@ import akka.util.ByteString
    * of the frame. The `frameLength` is encoded as 4 bytes (little endian).
    */
   def encodeFrameHeader(frameLength: Int): ByteString =
-    ByteString((frameLength & 0xff).toByte,
-               ((frameLength & 0xff00) >> 8).toByte,
-               ((frameLength & 0xff0000) >> 16).toByte,
-               ((frameLength & 0xff000000) >> 24).toByte)
+    ByteString(
+      (frameLength & 0xff).toByte,
+      ((frameLength & 0xff00) >> 8).toByte,
+      ((frameLength & 0xff0000) >> 16).toByte,
+      ((frameLength & 0xff000000) >> 24).toByte)
 }
 
 /**

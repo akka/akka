@@ -148,8 +148,9 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
           case BarrierOp.Failed    => BarrierResult(barrier.getName, false)
           case BarrierOp.Fail      => FailBarrier(barrier.getName)
           case BarrierOp.Enter =>
-            EnterBarrier(barrier.getName,
-                         if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
+            EnterBarrier(
+              barrier.getName,
+              if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
         }
       } else if (w.hasFailure) {
         val f = w.getFailure

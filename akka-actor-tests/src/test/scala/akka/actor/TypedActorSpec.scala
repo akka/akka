@@ -393,8 +393,9 @@ class TypedActorSpec
             case p: TypedProps[_] => context.sender() ! TypedActor(context).typedActorOf(p)
           }
         }))
-        val t = Await.result((boss ? TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(2 seconds)).mapTo[Foo],
-                             timeout.duration)
+        val t = Await.result(
+          (boss ? TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(2 seconds)).mapTo[Foo],
+          timeout.duration)
 
         t.incr()
         t.failingPigdog()

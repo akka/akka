@@ -26,8 +26,9 @@ private[akka] class Callback[State](val sideEffect: State => Unit) extends SideE
 
 /** INTERNAL API */
 @InternalApi
-final private[akka] class ReplyEffectImpl[ReplyMessage, State](replyTo: ActorRef[ReplyMessage],
-                                                               replyWithMessage: State => ReplyMessage)
+final private[akka] class ReplyEffectImpl[ReplyMessage, State](
+    replyTo: ActorRef[ReplyMessage],
+    replyWithMessage: State => ReplyMessage)
     extends Callback[State](state => replyTo ! replyWithMessage(state)) {
   override def toString: String = "Reply"
 }

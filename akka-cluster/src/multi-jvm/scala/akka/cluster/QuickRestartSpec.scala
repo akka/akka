@@ -64,9 +64,10 @@ abstract class QuickRestartSpec
                 system.name,
                 ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config))
             else
-              ActorSystem(system.name,
-                          // use the same port
-                          ConfigFactory.parseString(s"""
+              ActorSystem(
+                system.name,
+                // use the same port
+                ConfigFactory.parseString(s"""
                        akka.cluster.roles = [round-$n]
                        akka.remote.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}
                        akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}

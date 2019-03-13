@@ -237,8 +237,9 @@ abstract class MultiDcSplitBrainSpec extends MultiNodeSpec(MultiDcSplitBrainMult
         Await.ready(system.whenTerminated, remaining)
 
         val port = Cluster(system).selfAddress.port.get
-        val restartedSystem = ActorSystem(system.name,
-                                          ConfigFactory.parseString(s"""
+        val restartedSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
             akka.remote.netty.tcp.port = $port
             akka.remote.artery.canonical.port = $port
             akka.coordinated-shutdown.terminate-actor-system = on

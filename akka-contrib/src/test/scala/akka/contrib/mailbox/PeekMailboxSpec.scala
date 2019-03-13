@@ -115,8 +115,9 @@ class MyActor extends Actor {
 }
 
 object MyApp extends App {
-  val system = ActorSystem("MySystem",
-                           ConfigFactory.parseString("""
+  val system = ActorSystem(
+    "MySystem",
+    ConfigFactory.parseString("""
     peek-dispatcher {
       mailbox-type = "akka.contrib.mailbox.PeekMailboxType"
       max-retries = 2

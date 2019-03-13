@@ -33,39 +33,40 @@ import scala.collection.JavaConverters._
 
 object ClusterRouterGroupSettings {
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
-  def apply(totalInstances: Int,
-            routeesPaths: immutable.Seq[String],
-            allowLocalRoutees: Boolean,
-            useRole: Option[String]): ClusterRouterGroupSettings =
+  def apply(
+      totalInstances: Int,
+      routeesPaths: immutable.Seq[String],
+      allowLocalRoutees: Boolean,
+      useRole: Option[String]): ClusterRouterGroupSettings =
     ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRole.toSet)
 
   @varargs
-  def apply(totalInstances: Int,
-            routeesPaths: immutable.Seq[String],
-            allowLocalRoutees: Boolean,
-            useRoles: String*): ClusterRouterGroupSettings =
+  def apply(
+      totalInstances: Int,
+      routeesPaths: immutable.Seq[String],
+      allowLocalRoutees: Boolean,
+      useRoles: String*): ClusterRouterGroupSettings =
     ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles.toSet)
 
   // For backwards compatibility, useRoles is the combination of use-roles and use-role
   def fromConfig(config: Config): ClusterRouterGroupSettings =
-    ClusterRouterGroupSettings(totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
-                               routeesPaths = immutableSeq(config.getStringList("routees.paths")),
-                               allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-                               useRoles = config
-                                   .getStringList("cluster.use-roles")
-                                   .asScala
-                                   .toSet ++ ClusterRouterSettingsBase.useRoleOption(
-                                   config.getString("cluster.use-role")))
+    ClusterRouterGroupSettings(
+      totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
+      routeesPaths = immutableSeq(config.getStringList("routees.paths")),
+      allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
+      useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
+          config.getString("cluster.use-role")))
 }
 
 /**
  * `totalInstances` of cluster router must be > 0
  */
 @SerialVersionUID(1L)
-final case class ClusterRouterGroupSettings(totalInstances: Int,
-                                            routeesPaths: immutable.Seq[String],
-                                            allowLocalRoutees: Boolean,
-                                            useRoles: Set[String])
+final case class ClusterRouterGroupSettings(
+    totalInstances: Int,
+    routeesPaths: immutable.Seq[String],
+    allowLocalRoutees: Boolean,
+    useRoles: Set[String])
     extends ClusterRouterSettingsBase {
 
   // For binary compatibility
@@ -73,10 +74,11 @@ final case class ClusterRouterGroupSettings(totalInstances: Int,
   def useRole: Option[String] = useRoles.headOption
 
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
-  def this(totalInstances: Int,
-           routeesPaths: immutable.Seq[String],
-           allowLocalRoutees: Boolean,
-           useRole: Option[String]) =
+  def this(
+      totalInstances: Int,
+      routeesPaths: immutable.Seq[String],
+      allowLocalRoutees: Boolean,
+      useRole: Option[String]) =
     this(totalInstances, routeesPaths, allowLocalRoutees, useRole.toSet)
 
   /**
@@ -89,18 +91,20 @@ final case class ClusterRouterGroupSettings(totalInstances: Int,
   /**
    * Java API
    */
-  def this(totalInstances: Int,
-           routeesPaths: java.lang.Iterable[String],
-           allowLocalRoutees: Boolean,
-           useRoles: java.util.Set[String]) =
+  def this(
+      totalInstances: Int,
+      routeesPaths: java.lang.Iterable[String],
+      allowLocalRoutees: Boolean,
+      useRoles: java.util.Set[String]) =
     this(totalInstances, immutableSeq(routeesPaths), allowLocalRoutees, useRoles.asScala.toSet)
 
   // For binary compatibility
   @deprecated("Use constructor with useRoles instead", since = "2.5.4")
-  def copy(totalInstances: Int = totalInstances,
-           routeesPaths: immutable.Seq[String] = routeesPaths,
-           allowLocalRoutees: Boolean = allowLocalRoutees,
-           useRole: Option[String] = useRole): ClusterRouterGroupSettings =
+  def copy(
+      totalInstances: Int = totalInstances,
+      routeesPaths: immutable.Seq[String] = routeesPaths,
+      allowLocalRoutees: Boolean = allowLocalRoutees,
+      useRole: Option[String] = useRole): ClusterRouterGroupSettings =
     new ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRole)
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
@@ -129,29 +133,29 @@ final case class ClusterRouterGroupSettings(totalInstances: Int,
 
 object ClusterRouterPoolSettings {
   @deprecated("useRole has been replaced with useRoles", since = "2.5.4")
-  def apply(totalInstances: Int,
-            maxInstancesPerNode: Int,
-            allowLocalRoutees: Boolean,
-            useRole: Option[String]): ClusterRouterPoolSettings =
+  def apply(
+      totalInstances: Int,
+      maxInstancesPerNode: Int,
+      allowLocalRoutees: Boolean,
+      useRole: Option[String]): ClusterRouterPoolSettings =
     ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole.toSet)
 
   @varargs
-  def apply(totalInstances: Int,
-            maxInstancesPerNode: Int,
-            allowLocalRoutees: Boolean,
-            useRoles: String*): ClusterRouterPoolSettings =
+  def apply(
+      totalInstances: Int,
+      maxInstancesPerNode: Int,
+      allowLocalRoutees: Boolean,
+      useRoles: String*): ClusterRouterPoolSettings =
     ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRoles.toSet)
 
   // For backwards compatibility, useRoles is the combination of use-roles and use-role
   def fromConfig(config: Config): ClusterRouterPoolSettings =
-    ClusterRouterPoolSettings(totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
-                              maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
-                              allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
-                              useRoles = config
-                                  .getStringList("cluster.use-roles")
-                                  .asScala
-                                  .toSet ++ ClusterRouterSettingsBase.useRoleOption(
-                                  config.getString("cluster.use-role")))
+    ClusterRouterPoolSettings(
+      totalInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
+      maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
+      allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
+      useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
+          config.getString("cluster.use-role")))
 }
 
 /**
@@ -160,10 +164,11 @@ object ClusterRouterPoolSettings {
  * `maxInstancesPerNode` of cluster router must be 1 when routeesPath is defined
  */
 @SerialVersionUID(1L)
-final case class ClusterRouterPoolSettings(totalInstances: Int,
-                                           maxInstancesPerNode: Int,
-                                           allowLocalRoutees: Boolean,
-                                           useRoles: Set[String])
+final case class ClusterRouterPoolSettings(
+    totalInstances: Int,
+    maxInstancesPerNode: Int,
+    allowLocalRoutees: Boolean,
+    useRoles: Set[String])
     extends ClusterRouterSettingsBase {
 
   // For binary compatibility
@@ -189,10 +194,11 @@ final case class ClusterRouterPoolSettings(totalInstances: Int,
 
   // For binary compatibility
   @deprecated("Use copy with useRoles instead", since = "2.5.4")
-  def copy(totalInstances: Int = totalInstances,
-           maxInstancesPerNode: Int = maxInstancesPerNode,
-           allowLocalRoutees: Boolean = allowLocalRoutees,
-           useRole: Option[String] = useRole): ClusterRouterPoolSettings =
+  def copy(
+      totalInstances: Int = totalInstances,
+      maxInstancesPerNode: Int = maxInstancesPerNode,
+      allowLocalRoutees: Boolean = allowLocalRoutees,
+      useRole: Option[String] = useRole): ClusterRouterPoolSettings =
     new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees, useRole)
 
   if (maxInstancesPerNode <= 0)
@@ -362,8 +368,9 @@ private[akka] trait ClusterRouterConfigBase extends RouterConfig {
 /**
  * INTERNAL API
  */
-private[akka] class ClusterRouterPoolActor(supervisorStrategy: SupervisorStrategy,
-                                           val settings: ClusterRouterPoolSettings)
+private[akka] class ClusterRouterPoolActor(
+    supervisorStrategy: SupervisorStrategy,
+    val settings: ClusterRouterPoolSettings)
     extends RouterPoolActor(supervisorStrategy)
     with ClusterRouterActor {
 

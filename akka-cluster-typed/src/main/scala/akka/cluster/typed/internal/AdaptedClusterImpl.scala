@@ -76,9 +76,8 @@ private[akka] object AdapterClusterImpl {
               Behaviors.same
 
             case Subscribe(subscriber, eventClass) =>
-              adaptedCluster.subscribe(subscriber.toUntyped,
-                                       initialStateMode = ClusterEvent.initialStateAsEvents,
-                                       eventClass)
+              adaptedCluster
+                .subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
               Behaviors.same
 
             case Unsubscribe(subscriber) =>

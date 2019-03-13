@@ -80,17 +80,18 @@ class ClusterDomainEventPublisherSpec
   val state6 = state(g6, aUp.uniqueAddress, DefaultDataCenter)
   val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
   val state7 = state(g7, aUp.uniqueAddress, DefaultDataCenter)
-  val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp),
-                  overview =
-                    GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress)))
+  val g8 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress)))
     .seen(aUp.uniqueAddress)
   val state8 = state(g8, aUp.uniqueAddress, DefaultDataCenter)
-  val g9 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
-                  overview =
-                    GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
+  val g9 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
   val state9 = state(g9, aUp.uniqueAddress, DefaultDataCenter)
-  val g10 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
-                   overview = GossipOverview(reachability = Reachability.empty))
+  val g10 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty))
   val state10 = state(g10, aUp.uniqueAddress, DefaultDataCenter)
 
   // created in beforeEach
@@ -166,9 +167,9 @@ class ClusterDomainEventPublisherSpec
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! PublishChanges(
         state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
-      subscriber.expectMsgAllOf(RoleLeaderChanged("GRP", Some(dUp.address)),
-                                RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter,
-                                                  Some(dUp.address)))
+      subscriber.expectMsgAllOf(
+        RoleLeaderChanged("GRP", Some(dUp.address)),
+        RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(dUp.address)))
       publisher ! PublishChanges(state(Gossip(members = SortedSet(cUp, dUp)), dUp.uniqueAddress, DefaultDataCenter))
       subscriber.expectMsg(RoleLeaderChanged("GRP", Some(cUp.address)))
     }

@@ -74,8 +74,9 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       upstream.sendNext("msg1")
       downstream.expectNext("msg1")
       val uniqueRemoteAddress =
-        Await.result(inboundContext.association(addressA.address).associationState.uniqueRemoteAddress,
-                     remainingOrDefault)
+        Await.result(
+          inboundContext.association(addressA.address).associationState.uniqueRemoteAddress,
+          remainingOrDefault)
       uniqueRemoteAddress should ===(addressA)
       downstream.cancel()
     }

@@ -70,10 +70,11 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[remote] class SystemMessageDelivery(outboundContext: OutboundContext,
-                                                         deadLetters: ActorRef,
-                                                         resendInterval: FiniteDuration,
-                                                         maxBufferSize: Int)
+@InternalApi private[remote] class SystemMessageDelivery(
+    outboundContext: OutboundContext,
+    deadLetters: ActorRef,
+    resendInterval: FiniteDuration,
+    maxBufferSize: Int)
     extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   import SystemMessageDelivery._
@@ -165,9 +166,10 @@ import akka.util.OptionVal
       private val nackCallback = getAsyncCallback[Nack] { reply =>
         if (reply.seqNo <= seqNo) {
           ack(reply.seqNo)
-          log.warning("Received negative acknowledgement of system message from [{}], highest acknowledged [{}]",
-                      outboundContext.remoteAddress,
-                      reply.seqNo)
+          log.warning(
+            "Received negative acknowledgement of system message from [{}], highest acknowledged [{}]",
+            outboundContext.remoteAddress,
+            reply.seqNo)
           // Nack should be very rare (connection issue) so no urgency of resending, it will be resent
           // by the scheduled tick.
         }
@@ -363,10 +365,11 @@ import akka.util.OptionVal
               push(out, unwrapped)
             } else if (n < expectedSeqNo) {
               if (log.isDebugEnabled)
-                log.debug("Deduplicate system message [{}] from [{}], expected [{}]",
-                          n,
-                          fromRemoteAddressStr,
-                          expectedSeqNo)
+                log.debug(
+                  "Deduplicate system message [{}] from [{}], expected [{}]",
+                  n,
+                  fromRemoteAddressStr,
+                  expectedSeqNo)
               inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {

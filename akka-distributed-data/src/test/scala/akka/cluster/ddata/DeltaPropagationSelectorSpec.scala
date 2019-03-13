@@ -53,9 +53,10 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.hasDeltaEntries("A") should ===(true)
       selector.hasDeltaEntries("B") should ===(true)
       val expected =
-        DeltaPropagation(selfUniqueAddress,
-                         false,
-                         Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
+        DeltaPropagation(
+          selfUniqueAddress,
+          false,
+          Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) -> expected))
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
       selector.cleanupDeltaEntries()
@@ -68,9 +69,10 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.update("A", deltaA)
       selector.update("B", deltaB)
       val expected =
-        DeltaPropagation(selfUniqueAddress,
-                         false,
-                         Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
+        DeltaPropagation(
+          selfUniqueAddress,
+          false,
+          Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) -> expected, nodes(1) -> expected))
       selector.cleanupDeltaEntries()
       selector.hasDeltaEntries("A") should ===(true)
@@ -87,17 +89,20 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.update("A", deltaA)
       selector.update("B", deltaB)
       val expected1 =
-        DeltaPropagation(selfUniqueAddress,
-                         false,
-                         Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
+        DeltaPropagation(
+          selfUniqueAddress,
+          false,
+          Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L), "B" -> Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) -> expected1, nodes(1) -> expected1))
       // new update before previous was propagated to all nodes
       selector.update("C", deltaC)
-      val expected2 = DeltaPropagation(selfUniqueAddress,
-                                       false,
-                                       Map("A" -> Delta(DataEnvelope(deltaA), 1L, 1L),
-                                           "B" -> Delta(DataEnvelope(deltaB), 1L, 1L),
-                                           "C" -> Delta(DataEnvelope(deltaC), 1L, 1L)))
+      val expected2 = DeltaPropagation(
+        selfUniqueAddress,
+        false,
+        Map(
+          "A" -> Delta(DataEnvelope(deltaA), 1L, 1L),
+          "B" -> Delta(DataEnvelope(deltaB), 1L, 1L),
+          "C" -> Delta(DataEnvelope(deltaC), 1L, 1L)))
       val expected3 = DeltaPropagation(selfUniqueAddress, false, Map("C" -> Delta(DataEnvelope(deltaC), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(2) -> expected2, nodes(0) -> expected3))
       selector.cleanupDeltaEntries()
@@ -146,9 +151,10 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.collectPropagations() should ===(Map(nodes(1) -> expected2))
 
       selector.update("A", delta3)
-      val expected3 = DeltaPropagation(selfUniqueAddress,
-                                       false,
-                                       Map("A" -> Delta(DataEnvelope(delta1.merge(delta2).merge(delta3)), 1L, 3L)))
+      val expected3 = DeltaPropagation(
+        selfUniqueAddress,
+        false,
+        Map("A" -> Delta(DataEnvelope(delta1.merge(delta2).merge(delta3)), 1L, 3L)))
       selector.collectPropagations() should ===(Map(nodes(2) -> expected3))
 
       val expected4 =

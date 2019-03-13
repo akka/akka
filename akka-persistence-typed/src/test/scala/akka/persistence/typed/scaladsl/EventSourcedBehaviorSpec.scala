@@ -129,20 +129,22 @@ object EventSourcedBehaviorSpec {
 
   def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx,
-            persistenceId,
-            loggingActor = TestProbe[String].ref,
-            probe = TestProbe[(State, Event)].ref,
-            TestProbe[Try[Done]].ref)
+    counter(
+      ctx,
+      persistenceId,
+      loggingActor = TestProbe[String].ref,
+      probe = TestProbe[(State, Event)].ref,
+      TestProbe[Try[Done]].ref)
 
   def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
-  def counterWithProbe(ctx: ActorContext[Command],
-                       persistenceId: PersistenceId,
-                       probe: ActorRef[(State, Event)],
-                       snapshotProbe: ActorRef[Try[Done]])(
+  def counterWithProbe(
+      ctx: ActorContext[Command],
+      persistenceId: PersistenceId,
+      probe: ActorRef[(State, Event)],
+      snapshotProbe: ActorRef[Try[Done]])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, probe, snapshotProbe)
 
@@ -154,111 +156,112 @@ object EventSourcedBehaviorSpec {
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
 
-  def counter(ctx: ActorContext[Command],
-              persistenceId: PersistenceId,
-              loggingActor: ActorRef[String],
-              probe: ActorRef[(State, Event)],
-              snapshotProbe: ActorRef[Try[Done]]): EventSourcedBehavior[Command, Event, State] = {
-    EventSourcedBehavior[Command, Event, State](persistenceId,
-                                                emptyState = State(0, Vector.empty),
-                                                commandHandler = (state, cmd) =>
-                                                  cmd match {
-                                                    case Increment =>
-                                                      Effect.persist(Incremented(1))
+  def counter(
+      ctx: ActorContext[Command],
+      persistenceId: PersistenceId,
+      loggingActor: ActorRef[String],
+      probe: ActorRef[(State, Event)],
+      snapshotProbe: ActorRef[Try[Done]]): EventSourcedBehavior[Command, Event, State] = {
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId,
+      emptyState = State(0, Vector.empty),
+      commandHandler = (state, cmd) =>
+        cmd match {
+          case Increment =>
+            Effect.persist(Incremented(1))
 
-                                                    case IncrementThenLogThenStop =>
-                                                      Effect
-                                                        .persist(Incremented(1))
-                                                        .thenRun { (_: State) =>
-                                                          loggingActor ! firstLogging
-                                                        }
-                                                        .thenStop
+          case IncrementThenLogThenStop =>
+            Effect
+              .persist(Incremented(1))
+              .thenRun { (_: State) =>
+                loggingActor ! firstLogging
+              }
+              .thenStop
 
-                                                    case IncrementTwiceThenLogThenStop =>
-                                                      Effect
-                                                        .persist(Incremented(1), Incremented(2))
-                                                        .thenRun { (_: State) =>
-                                                          loggingActor ! firstLogging
-                                                        }
-                                                        .thenStop
+          case IncrementTwiceThenLogThenStop =>
+            Effect
+              .persist(Incremented(1), Incremented(2))
+              .thenRun { (_: State) =>
+                loggingActor ! firstLogging
+              }
+              .thenStop
 
-                                                    case IncrementWithPersistAll(n) =>
-                                                      Effect.persist((0 until n).map(_ => Incremented(1)))
+          case IncrementWithPersistAll(n) =>
+            Effect.persist((0 until n).map(_ => Incremented(1)))
 
-                                                    case cmd: IncrementWithConfirmation =>
-                                                      Effect.persist(Incremented(1)).thenReply(cmd)(_ => Done)
+          case cmd: IncrementWithConfirmation =>
+            Effect.persist(Incremented(1)).thenReply(cmd)(_ => Done)
 
-                                                    case GetValue(replyTo) =>
-                                                      replyTo ! state
-                                                      Effect.none
+          case GetValue(replyTo) =>
+            replyTo ! state
+            Effect.none
 
-                                                    case IncrementLater =>
-                                                      // purpose is to test signals
-                                                      val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] {
-                                                        timers =>
-                                                          timers.startSingleTimer(Tick, Tick, 10.millis)
-                                                          Behaviors.receive((_, msg) =>
-                                                            msg match {
-                                                              case Tick => Behaviors.stopped
-                                                            })
-                                                      })
-                                                      ctx.watchWith(delay, DelayFinished)
-                                                      Effect.none
+          case IncrementLater =>
+            // purpose is to test signals
+            val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers =>
+              timers.startSingleTimer(Tick, Tick, 10.millis)
+              Behaviors.receive((_, msg) =>
+                msg match {
+                  case Tick => Behaviors.stopped
+                })
+            })
+            ctx.watchWith(delay, DelayFinished)
+            Effect.none
 
-                                                    case DelayFinished =>
-                                                      Effect.persist(Incremented(10))
+          case DelayFinished =>
+            Effect.persist(Incremented(10))
 
-                                                    case IncrementAfterReceiveTimeout =>
-                                                      ctx.setReceiveTimeout(10.millis, Timeout)
-                                                      Effect.none
+          case IncrementAfterReceiveTimeout =>
+            ctx.setReceiveTimeout(10.millis, Timeout)
+            Effect.none
 
-                                                    case Timeout =>
-                                                      ctx.cancelReceiveTimeout()
-                                                      Effect.persist(Incremented(100))
+          case Timeout =>
+            ctx.cancelReceiveTimeout()
+            Effect.persist(Incremented(100))
 
-                                                    case IncrementTwiceAndThenLog =>
-                                                      Effect
-                                                        .persist(Incremented(1), Incremented(1))
-                                                        .thenRun { (_: State) =>
-                                                          loggingActor ! firstLogging
-                                                        }
-                                                        .thenRun { _ =>
-                                                          loggingActor ! secondLogging
-                                                        }
+          case IncrementTwiceAndThenLog =>
+            Effect
+              .persist(Incremented(1), Incremented(1))
+              .thenRun { (_: State) =>
+                loggingActor ! firstLogging
+              }
+              .thenRun { _ =>
+                loggingActor ! secondLogging
+              }
 
-                                                    case EmptyEventsListAndThenLog =>
-                                                      Effect
-                                                        .persist(List.empty) // send empty list of events
-                                                        .thenRun { _ =>
-                                                          loggingActor ! firstLogging
-                                                        }
+          case EmptyEventsListAndThenLog =>
+            Effect
+              .persist(List.empty) // send empty list of events
+              .thenRun { _ =>
+                loggingActor ! firstLogging
+              }
 
-                                                    case DoNothingAndThenLog =>
-                                                      Effect.none.thenRun { _ =>
-                                                        loggingActor ! firstLogging
-                                                      }
+          case DoNothingAndThenLog =>
+            Effect.none.thenRun { _ =>
+              loggingActor ! firstLogging
+            }
 
-                                                    case LogThenStop =>
-                                                      Effect
-                                                        .none[Event, State]
-                                                        .thenRun { _ =>
-                                                          loggingActor ! firstLogging
-                                                        }
-                                                        .thenStop
+          case LogThenStop =>
+            Effect
+              .none[Event, State]
+              .thenRun { _ =>
+                loggingActor ! firstLogging
+              }
+              .thenStop
 
-                                                    case Fail =>
-                                                      throw new TestException("boom!")
+          case Fail =>
+            throw new TestException("boom!")
 
-                                                    case StopIt =>
-                                                      Effect.none.thenStop()
+          case StopIt =>
+            Effect.none.thenStop()
 
-                                                  },
-                                                eventHandler = (state, evt) ⇒
-                                                  evt match {
-                                                    case Incremented(delta) ⇒
-                                                      probe ! ((state, evt))
-                                                      State(state.value + delta, state.history :+ state.value)
-                                                  }).receiveSignal {
+        },
+      eventHandler = (state, evt) ⇒
+        evt match {
+          case Incremented(delta) ⇒
+            probe ! ((state, evt))
+            State(state.value + delta, state.history :+ state.value)
+        }).receiveSignal {
       case RecoveryCompleted(_) ⇒ ()
       case SnapshotCompleted(_) ⇒
         snapshotProbe ! Success(Done)
@@ -606,8 +609,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       replyProbe.expectMessage(State(2, Vector(0, 1)))
 
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))),
-                              EventEnvelope(Sequence(2), pid.id, 2, Wrapper(Incremented(1))))
+      events shouldEqual List(
+        EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))),
+        EventEnvelope(Sequence(2), pid.id, 2, Wrapper(Incremented(1))))
 
       val c2 = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])))
       c2 ! GetValue(replyProbe.ref)

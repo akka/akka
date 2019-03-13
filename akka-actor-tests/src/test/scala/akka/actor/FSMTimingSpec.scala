@@ -109,8 +109,9 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       expectMsg(500 millis, Tick)
       Thread.sleep(200) // this is ugly: need to wait for StateTimeout to be queued
       resume(fsm)
-      expectMsg(500 millis,
-                Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
+      expectMsg(
+        500 millis,
+        Transition(fsm, TestCancelStateTimerInNamedTimerMessage, TestCancelStateTimerInNamedTimerMessage2))
       fsm ! Cancel
       within(500 millis) {
         expectMsg(Cancel) // if this is not received, that means StateTimeout was not properly discarded
@@ -132,9 +133,10 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
     "notify unhandled messages" taggedAs TimingTest in {
       filterEvents(
         EventFilter.warning("unhandled event Tick in state TestUnhandled", source = fsm.path.toString, occurrences = 1),
-        EventFilter.warning("unhandled event Unhandled(test) in state TestUnhandled",
-                            source = fsm.path.toString,
-                            occurrences = 1)) {
+        EventFilter.warning(
+          "unhandled event Unhandled(test) in state TestUnhandled",
+          source = fsm.path.toString,
+          occurrences = 1)) {
         fsm ! TestUnhandled
         within(3 second) {
           fsm ! Tick

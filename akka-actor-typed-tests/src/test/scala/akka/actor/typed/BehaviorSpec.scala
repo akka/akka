@@ -517,16 +517,18 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: TypedActorContext[Command],
-                                 message: Command,
-                                 target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(
+          context: TypedActorContext[Command],
+          message: Command,
+          target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: TypedActorContext[Command],
-                                signal: Signal,
-                                target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(
+          context: TypedActorContext[Command],
+          signal: Signal,
+          target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }
@@ -567,7 +569,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
             SBehaviors.same
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
-      }),
+        }),
       fs((_, sig) => {
         monitor ! ReceivedSignal(sig)
         SBehaviors.same
@@ -600,7 +602,7 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
             SBehaviors.same
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
-      })
+        })
     }
 }
 
@@ -635,16 +637,18 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: TypedActorContext[Command],
-                                 message: Command,
-                                 target: ReceiveTarget[Command]): Behavior[Command] = {
+      override def aroundReceive(
+          context: TypedActorContext[Command],
+          message: Command,
+          target: ReceiveTarget[Command]): Behavior[Command] = {
         inbox.ref ! Right(message)
         target(context, message)
       }
 
-      override def aroundSignal(context: TypedActorContext[Command],
-                                signal: Signal,
-                                target: SignalTarget[Command]): Behavior[Command] = {
+      override def aroundSignal(
+          context: TypedActorContext[Command],
+          signal: Signal,
+          target: SignalTarget[Command]): Behavior[Command] = {
         inbox.ref ! Left(signal)
         target(context, signal)
       }

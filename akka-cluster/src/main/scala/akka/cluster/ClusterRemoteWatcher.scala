@@ -25,15 +25,17 @@ private[cluster] object ClusterRemoteWatcher {
   /**
    * Factory method for `ClusterRemoteWatcher` [[akka.actor.Props]].
    */
-  def props(failureDetector: FailureDetectorRegistry[Address],
-            heartbeatInterval: FiniteDuration,
-            unreachableReaperInterval: FiniteDuration,
-            heartbeatExpectedResponseAfter: FiniteDuration): Props =
-    Props(classOf[ClusterRemoteWatcher],
-          failureDetector,
-          heartbeatInterval,
-          unreachableReaperInterval,
-          heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
+  def props(
+      failureDetector: FailureDetectorRegistry[Address],
+      heartbeatInterval: FiniteDuration,
+      unreachableReaperInterval: FiniteDuration,
+      heartbeatExpectedResponseAfter: FiniteDuration): Props =
+    Props(
+      classOf[ClusterRemoteWatcher],
+      failureDetector,
+      heartbeatInterval,
+      unreachableReaperInterval,
+      heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded
@@ -51,10 +53,11 @@ private[cluster] object ClusterRemoteWatcher {
  * over responsibility from `RemoteWatcher` if a watch is added before a node is member
  * of the cluster and then later becomes cluster member.
  */
-private[cluster] class ClusterRemoteWatcher(failureDetector: FailureDetectorRegistry[Address],
-                                            heartbeatInterval: FiniteDuration,
-                                            unreachableReaperInterval: FiniteDuration,
-                                            heartbeatExpectedResponseAfter: FiniteDuration)
+private[cluster] class ClusterRemoteWatcher(
+    failureDetector: FailureDetectorRegistry[Address],
+    heartbeatInterval: FiniteDuration,
+    unreachableReaperInterval: FiniteDuration,
+    heartbeatExpectedResponseAfter: FiniteDuration)
     extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter) {
 
   import ClusterRemoteWatcher.DelayedQuarantine
@@ -110,10 +113,11 @@ private[cluster] class ClusterRemoteWatcher(failureDetector: FailureDetectorRegi
       clusterNodes -= m.address
 
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address,
-                   Some(m.uniqueAddress.longUid),
-                   s"Cluster member removed, previous status [$previousStatus]",
-                   harmless = false)
+        quarantine(
+          m.address,
+          Some(m.uniqueAddress.longUid),
+          s"Cluster member removed, previous status [$previousStatus]",
+          harmless = false)
       } else if (arteryEnabled) {
         // Don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
@@ -133,20 +137,22 @@ private[cluster] class ClusterRemoteWatcher(failureDetector: FailureDetectorRegi
     if (pendingDelayedQuarantine.nonEmpty)
       pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation =>
         pendingDelayedQuarantine -= oldIncarnation
-        quarantine(oldIncarnation.address,
-                   Some(oldIncarnation.longUid),
-                   s"Cluster member removed, new incarnation joined",
-                   harmless = true)
+        quarantine(
+          oldIncarnation.address,
+          Some(oldIncarnation.longUid),
+          s"Cluster member removed, new incarnation joined",
+          harmless = true)
       }
   }
 
   def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit = {
     if (pendingDelayedQuarantine(m.uniqueAddress)) {
       pendingDelayedQuarantine -= m.uniqueAddress
-      quarantine(m.address,
-                 Some(m.uniqueAddress.longUid),
-                 s"Cluster member removed, previous status [$previousStatus]",
-                 harmless = true)
+      quarantine(
+        m.address,
+        Some(m.uniqueAddress.longUid),
+        s"Cluster member removed, previous status [$previousStatus]",
+        harmless = true)
     }
   }
 

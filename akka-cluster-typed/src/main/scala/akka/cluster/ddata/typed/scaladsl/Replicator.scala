@@ -62,10 +62,11 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Get[A <: ReplicatedData](key: Key[A],
-                                            consistency: ReadConsistency,
-                                            replyTo: ActorRef[GetResponse[A]],
-                                            request: Option[Any] = None)
+  final case class Get[A <: ReplicatedData](
+      key: Key[A],
+      consistency: ReadConsistency,
+      replyTo: ActorRef[GetResponse[A]],
+      request: Option[Any] = None)
       extends Command
 
   /**
@@ -97,11 +98,12 @@ object Replicator {
      * way to pass contextual information (e.g. original sender) without having to use `ask`
      * or local correlation data structures.
      */
-    def apply[A <: ReplicatedData](key: Key[A],
-                                   initial: A,
-                                   writeConsistency: WriteConsistency,
-                                   replyTo: ActorRef[UpdateResponse[A]],
-                                   request: Option[Any] = None)(modify: A => A): Update[A] =
+    def apply[A <: ReplicatedData](
+        key: Key[A],
+        initial: A,
+        writeConsistency: WriteConsistency,
+        replyTo: ActorRef[UpdateResponse[A]],
+        request: Option[Any] = None)(modify: A => A): Update[A] =
       Update(key, writeConsistency, replyTo, request)(modifyWithInitial(initial, modify))
 
     /**
@@ -133,10 +135,11 @@ object Replicator {
    * function that only uses the data parameter and stable fields from enclosing scope. It must
    * for example not access `sender()` reference of an enclosing actor.
    */
-  final case class Update[A <: ReplicatedData](key: Key[A],
-                                               writeConsistency: WriteConsistency,
-                                               replyTo: ActorRef[UpdateResponse[A]],
-                                               request: Option[Any])(val modify: Option[A] => A)
+  final case class Update[A <: ReplicatedData](
+      key: Key[A],
+      writeConsistency: WriteConsistency,
+      replyTo: ActorRef[UpdateResponse[A]],
+      request: Option[Any])(val modify: Option[A] => A)
       extends Command
       with NoSerializationVerificationNeeded {}
 
@@ -212,8 +215,9 @@ object Replicator {
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A],
-                                   consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
+    def apply[A <: ReplicatedData](
+        key: Key[A],
+        consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
       (replyTo => Delete(key, consistency, replyTo, None))
   }
 
@@ -225,10 +229,11 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Delete[A <: ReplicatedData](key: Key[A],
-                                               consistency: WriteConsistency,
-                                               replyTo: ActorRef[DeleteResponse[A]],
-                                               request: Option[Any])
+  final case class Delete[A <: ReplicatedData](
+      key: Key[A],
+      consistency: WriteConsistency,
+      replyTo: ActorRef[DeleteResponse[A]],
+      request: Option[Any])
       extends Command
       with NoSerializationVerificationNeeded
 

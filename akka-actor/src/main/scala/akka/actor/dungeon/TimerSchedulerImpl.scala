@@ -116,10 +116,11 @@ import akka.util.OptionVal
           OptionVal.Some(t.msg.asInstanceOf[AnyRef])
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          log.debug("Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
-                    timerMsg.key,
-                    timerMsg.generation,
-                    t.generation)
+          log.debug(
+            "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
+            timerMsg.key,
+            timerMsg.generation,
+            t.generation)
           OptionVal.None // message should be ignored
         }
     }

@@ -483,9 +483,10 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
     }
 
     "call future subscribers' onError should be called instead of onSubscribed after initial upstream reported an error" in {
-      new ChainSetup[Int, String, NotUsed](_.map(_ => throw TestException),
-                                           settings.withInputBuffer(initialSize = 1, maxSize = 1),
-                                           toFanoutPublisher(1)) {
+      new ChainSetup[Int, String, NotUsed](
+        _.map(_ => throw TestException),
+        settings.withInputBuffer(initialSize = 1, maxSize = 1),
+        toFanoutPublisher(1)) {
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
 

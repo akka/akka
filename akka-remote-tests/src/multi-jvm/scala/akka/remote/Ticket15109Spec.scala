@@ -86,9 +86,10 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
       runOn(second) {
         // Force a disassociation. Using the message Shutdown, which is suboptimal here, but this is the only
         // DisassociateInfo that triggers the code-path we want to test
-        Await.result(RARP(system).provider.transport
-                       .managementCommand(ForceDisassociateExplicitly(node(first).address, AssociationHandle.Shutdown)),
-                     3.seconds)
+        Await.result(
+          RARP(system).provider.transport
+            .managementCommand(ForceDisassociateExplicitly(node(first).address, AssociationHandle.Shutdown)),
+          3.seconds)
       }
 
       enterBarrier("disassociated")

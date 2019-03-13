@@ -18,8 +18,9 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
-@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext,
-                                                              adapter: ActorAdapter[T])
+@InternalApi private[akka] final class ActorContextAdapter[T](
+    val untypedContext: untyped.ActorContext,
+    adapter: ActorAdapter[T])
     extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped

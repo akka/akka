@@ -181,15 +181,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
           probe1.expectMessageType[MemberUp].member.address shouldEqual cluster3.selfMember.address
         }
         eventually {
-          cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up,
-                                                                       MemberStatus.up,
-                                                                       MemberStatus.up)
-          cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up,
-                                                                       MemberStatus.up,
-                                                                       MemberStatus.up)
-          cluster3.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up,
-                                                                       MemberStatus.up,
-                                                                       MemberStatus.up)
+          cluster1.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
+          cluster2.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
+          cluster3.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
         }
 
         //#cluster-leave-example

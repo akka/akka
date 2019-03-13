@@ -67,9 +67,10 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
           case Error.NoCause | null =>
             Logger(logClass, logSource).error(markerIfPresent(event), if (message != null) message.toString else null)
           case _ =>
-            Logger(logClass, logSource).error(markerIfPresent(event),
-                                              if (message != null) message.toString else cause.getLocalizedMessage,
-                                              cause)
+            Logger(logClass, logSource).error(
+              markerIfPresent(event),
+              if (message != null) message.toString else cause.getLocalizedMessage,
+              cause)
         }
       }
 
@@ -77,9 +78,10 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       withMdc(logSource, event) {
         event match {
           case e: LogEventWithCause =>
-            Logger(logClass, logSource).warn(markerIfPresent(event),
-                                             if (message != null) message.toString else e.cause.getLocalizedMessage,
-                                             e.cause)
+            Logger(logClass, logSource).warn(
+              markerIfPresent(event),
+              if (message != null) message.toString else e.cause.getLocalizedMessage,
+              e.cause)
           case _ =>
             Logger(logClass, logSource).warn(markerIfPresent(event), if (message != null) message.toString else null)
         }

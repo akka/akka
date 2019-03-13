@@ -52,9 +52,10 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @tparam M type of message to match
    * @return a new behavior builder with the specified handling appended
    */
-  def onMessage[M <: T](`type`: Class[M],
-                        test: JPredicate[M],
-                        handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+  def onMessage[M <: T](
+      `type`: Class[M],
+      test: JPredicate[M],
+      handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
     withMessage(OptionVal.Some(`type`), OptionVal.Some((t: T) => test.test(t.asInstanceOf[M])), handler)
 
   /**
@@ -67,8 +68,9 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @param handler action to apply when the type matches
    * @return a new behavior builder with the specified handling appended
    */
-  def onMessageUnchecked[M <: T](`type`: Class[_ <: T],
-                                 handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+  def onMessageUnchecked[M <: T](
+      `type`: Class[_ <: T],
+      handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
     withMessage[M](OptionVal.Some(`type`.asInstanceOf[Class[M]]), OptionVal.None, handler)
 
   /**
@@ -79,11 +81,12 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @return a new behavior builder with the specified handling appended
    */
   def onMessageEquals(msg: T, handler: JFunction[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
-    withMessage[T](OptionVal.Some(msg.getClass.asInstanceOf[Class[T]]),
-                   OptionVal.Some(_.equals(msg)),
-                   new JFunction2[ActorContext[T], T, Behavior[T]] {
-                     override def apply(ctx: ActorContext[T], msg: T): Behavior[T] = handler.apply(ctx)
-                   })
+    withMessage[T](
+      OptionVal.Some(msg.getClass.asInstanceOf[Class[T]]),
+      OptionVal.Some(_.equals(msg)),
+      new JFunction2[ActorContext[T], T, Behavior[T]] {
+        override def apply(ctx: ActorContext[T], msg: T): Behavior[T] = handler.apply(ctx)
+      })
 
   /**
    * Add a new case to the message handling matching any message. Subsequent `onMessage` clauses will
@@ -103,8 +106,9 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @tparam M type of signal to match
    * @return a new behavior builder with the specified handling appended
    */
-  def onSignal[M <: Signal](`type`: Class[M],
-                            handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+  def onSignal[M <: Signal](
+      `type`: Class[M],
+      handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
     withSignal(`type`, OptionVal.None, handler.asInstanceOf[JFunction2[ActorContext[T], Signal, Behavior[T]]])
 
   /**
@@ -116,12 +120,14 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @tparam M type of signal to match
    * @return a new behavior builder with the specified handling appended
    */
-  def onSignal[M <: Signal](`type`: Class[M],
-                            test: JPredicate[M],
-                            handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(`type`,
-               OptionVal.Some((t: Signal) => test.test(t.asInstanceOf[M])),
-               handler.asInstanceOf[JFunction2[ActorContext[T], Signal, Behavior[T]]])
+  def onSignal[M <: Signal](
+      `type`: Class[M],
+      test: JPredicate[M],
+      handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    withSignal(
+      `type`,
+      OptionVal.Some((t: Signal) => test.test(t.asInstanceOf[M])),
+      handler.asInstanceOf[JFunction2[ActorContext[T], Signal, Behavior[T]]])
 
   /**
    * Add a new case to the signal handling matching equal signals.
@@ -137,18 +143,21 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
       }
     })
 
-  private def withMessage[M <: T](clazz: OptionVal[Class[M]],
-                                  test: OptionVal[M => Boolean],
-                                  handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] = {
+  private def withMessage[M <: T](
+      clazz: OptionVal[Class[M]],
+      test: OptionVal[M => Boolean],
+      handler: JFunction2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] = {
     val newCase = Case(clazz, test, handler)
     new BehaviorBuilder[T](newCase.asInstanceOf[Case[T, T]] +: messageHandlers, signalHandlers)
   }
 
-  private def withSignal[M <: Signal](`type`: Class[M],
-                                      test: OptionVal[Signal => Boolean],
-                                      handler: JFunction2[ActorContext[T], Signal, Behavior[T]]): BehaviorBuilder[T] = {
-    new BehaviorBuilder[T](messageHandlers,
-                           Case(OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] +: signalHandlers)
+  private def withSignal[M <: Signal](
+      `type`: Class[M],
+      test: OptionVal[Signal => Boolean],
+      handler: JFunction2[ActorContext[T], Signal, Behavior[T]]): BehaviorBuilder[T] = {
+    new BehaviorBuilder[T](
+      messageHandlers,
+      Case(OptionVal.Some(`type`), test, handler).asInstanceOf[Case[T, Signal]] +: signalHandlers)
   }
 }
 
@@ -159,9 +168,10 @@ object BehaviorBuilder {
   // used for both matching signals and messages so we throw away types after they are enforced by the builder API above
   /** INTERNAL API */
   @InternalApi
-  private[javadsl] final case class Case[BT, MT](`type`: OptionVal[Class[_ <: MT]],
-                                                 test: OptionVal[MT => Boolean],
-                                                 handler: JFunction2[ActorContext[BT], MT, Behavior[BT]])
+  private[javadsl] final case class Case[BT, MT](
+      `type`: OptionVal[Class[_ <: MT]],
+      test: OptionVal[MT => Boolean],
+      handler: JFunction2[ActorContext[BT], MT, Behavior[BT]])
 
   /**
    * @return new empty immutable behavior builder.

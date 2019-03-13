@@ -51,41 +51,48 @@ class MembershipStateSpec extends WordSpec with Matchers {
     }
 
     "find two oldest per role as targets for Exiting change" in {
-      val a5 = TestMember(Address("akka.tcp", "sys", "a5", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role1", "role2"),
-                          upNumber = 5,
-                          dataCenter = "dc-a")
-      val a6 = TestMember(Address("akka.tcp", "sys", "a6", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role1", "role3"),
-                          upNumber = 6,
-                          dataCenter = "dc-a")
-      val a7 = TestMember(Address("akka.tcp", "sys", "a7", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role1"),
-                          upNumber = 7,
-                          dataCenter = "dc-a")
-      val a8 = TestMember(Address("akka.tcp", "sys", "a8", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role1"),
-                          upNumber = 8,
-                          dataCenter = "dc-a")
-      val a9 = TestMember(Address("akka.tcp", "sys", "a9", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role2"),
-                          upNumber = 9,
-                          dataCenter = "dc-a")
-      val b5 = TestMember(Address("akka.tcp", "sys", "b5", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role1"),
-                          upNumber = 5,
-                          dataCenter = "dc-b")
-      val b6 = TestMember(Address("akka.tcp", "sys", "b6", 2552),
-                          MemberStatus.Exiting,
-                          roles = Set("role2"),
-                          upNumber = 6,
-                          dataCenter = "dc-b")
+      val a5 = TestMember(
+        Address("akka.tcp", "sys", "a5", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role1", "role2"),
+        upNumber = 5,
+        dataCenter = "dc-a")
+      val a6 = TestMember(
+        Address("akka.tcp", "sys", "a6", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role1", "role3"),
+        upNumber = 6,
+        dataCenter = "dc-a")
+      val a7 = TestMember(
+        Address("akka.tcp", "sys", "a7", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role1"),
+        upNumber = 7,
+        dataCenter = "dc-a")
+      val a8 = TestMember(
+        Address("akka.tcp", "sys", "a8", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role1"),
+        upNumber = 8,
+        dataCenter = "dc-a")
+      val a9 = TestMember(
+        Address("akka.tcp", "sys", "a9", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role2"),
+        upNumber = 9,
+        dataCenter = "dc-a")
+      val b5 = TestMember(
+        Address("akka.tcp", "sys", "b5", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role1"),
+        upNumber = 5,
+        dataCenter = "dc-b")
+      val b6 = TestMember(
+        Address("akka.tcp", "sys", "b6", 2552),
+        MemberStatus.Exiting,
+        roles = Set("role2"),
+        upNumber = 6,
+        dataCenter = "dc-b")
       val theExiting = Set(a5, a6)
       val gossip = Gossip(SortedSet(a1, a2, a3, a4, a5, a6, a7, a8, a9, b1, b2, b3, b5, b6))
       val membershipState = MembershipState(gossip, a1.uniqueAddress, "dc-a", 2)

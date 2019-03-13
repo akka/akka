@@ -95,10 +95,11 @@ object AccountExampleWithEventHandlersInState {
 
     //#withEnforcedReplies
     def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      EventSourcedBehavior.withEnforcedReplies(PersistenceId(s"Account|$accountNumber"),
-                                               EmptyAccount,
-                                               commandHandler,
-                                               eventHandler)
+      EventSourcedBehavior.withEnforcedReplies(
+        PersistenceId(s"Account|$accountNumber"),
+        EmptyAccount,
+        commandHandler,
+        eventHandler)
     }
     //#withEnforcedReplies
 

@@ -79,13 +79,14 @@ case object DefaultResizer {
    * Creates a new DefaultResizer from the given configuration
    */
   def apply(resizerConfig: Config): DefaultResizer =
-    DefaultResizer(lowerBound = resizerConfig.getInt("lower-bound"),
-                   upperBound = resizerConfig.getInt("upper-bound"),
-                   pressureThreshold = resizerConfig.getInt("pressure-threshold"),
-                   rampupRate = resizerConfig.getDouble("rampup-rate"),
-                   backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
-                   backoffRate = resizerConfig.getDouble("backoff-rate"),
-                   messagesPerResize = resizerConfig.getInt("messages-per-resize"))
+    DefaultResizer(
+      lowerBound = resizerConfig.getInt("lower-bound"),
+      upperBound = resizerConfig.getInt("upper-bound"),
+      pressureThreshold = resizerConfig.getInt("pressure-threshold"),
+      rampupRate = resizerConfig.getDouble("rampup-rate"),
+      backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
+      backoffRate = resizerConfig.getDouble("backoff-rate"),
+      messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 
   def fromConfig(resizerConfig: Config): Option[DefaultResizer] =
     if (resizerConfig.getBoolean("resizer.enabled"))
@@ -126,13 +127,14 @@ case object DefaultResizer {
  * Use 1 to resize before each message.
  */
 @SerialVersionUID(1L)
-case class DefaultResizer(val lowerBound: Int = 1,
-                          val upperBound: Int = 10,
-                          val pressureThreshold: Int = 1,
-                          val rampupRate: Double = 0.2,
-                          val backoffThreshold: Double = 0.3,
-                          val backoffRate: Double = 0.1,
-                          val messagesPerResize: Int = 10)
+case class DefaultResizer(
+    val lowerBound: Int = 1,
+    val upperBound: Int = 10,
+    val pressureThreshold: Int = 1,
+    val rampupRate: Double = 0.2,
+    val backoffThreshold: Double = 0.3,
+    val backoffRate: Double = 0.1,
+    val messagesPerResize: Int = 10)
     extends Resizer {
 
   /**
@@ -250,13 +252,14 @@ case class DefaultResizer(val lowerBound: Int = 1,
 /**
  * INTERNAL API
  */
-private[akka] final class ResizablePoolCell(_system: ActorSystemImpl,
-                                            _ref: InternalActorRef,
-                                            _routerProps: Props,
-                                            _routerDispatcher: MessageDispatcher,
-                                            _routeeProps: Props,
-                                            _supervisor: InternalActorRef,
-                                            val pool: Pool)
+private[akka] final class ResizablePoolCell(
+    _system: ActorSystemImpl,
+    _ref: InternalActorRef,
+    _routerProps: Props,
+    _routerDispatcher: MessageDispatcher,
+    _routeeProps: Props,
+    _supervisor: InternalActorRef,
+    val pool: Pool)
     extends RoutedActorCell(_system, _ref, _routerProps, _routerDispatcher, _routeeProps, _supervisor) {
 
   require(pool.resizer.isDefined, "RouterConfig must be a Pool with defined resizer")

@@ -58,11 +58,12 @@ class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   }
 
   private def dummySettings(capacity: Int = 42) =
-    EventSourcedSettings(stashCapacity = capacity,
-                         stashOverflowStrategy = StashOverflowStrategy.Fail,
-                         logOnStashing = false,
-                         recoveryEventTimeout = 3.seconds,
-                         journalPluginId = "",
-                         snapshotPluginId = "")
+    EventSourcedSettings(
+      stashCapacity = capacity,
+      stashOverflowStrategy = StashOverflowStrategy.Fail,
+      logOnStashing = false,
+      recoveryEventTimeout = 3.seconds,
+      journalPluginId = "",
+      snapshotPluginId = "")
 
 }

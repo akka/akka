@@ -19,9 +19,10 @@ class FanInShape1N[-T0, -T1, +O](val n: Int, _init: FanInShape.Init[O]) extends 
 
   def this(n: Int) = this(n, FanInShape.Name[O]("FanInShape1N"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
-  def this(outlet: Outlet[O @uncheckedVariance],
-           in0: Inlet[T0 @uncheckedVariance],
-           inlets1: Array[Inlet[T1 @uncheckedVariance]]) =
+  def this(
+      outlet: Outlet[O @uncheckedVariance],
+      in0: Inlet[T0 @uncheckedVariance],
+      inlets1: Array[Inlet[T1 @uncheckedVariance]]) =
     this(inlets1.length, FanInShape.Ports(outlet, in0 :: inlets1.toList))
   override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] =
     new FanInShape1N(n, init)

@@ -93,9 +93,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(stateName: S,
-                 stateTimeout: FiniteDuration,
-                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+  final def when(
+      stateName: S,
+      stateTimeout: FiniteDuration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
@@ -108,9 +109,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(stateName: S,
-                 stateTimeout: java.time.Duration,
-                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
+  final def when(
+      stateName: S,
+      stateTimeout: java.time.Duration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
     import JavaDurationConverters._
     when(stateName, stateTimeout.asScala, stateFunctionBuilder)
   }
@@ -199,10 +201,11 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET],
-                                    dataType: Class[DT],
-                                    predicate: TypedPredicate2[ET, DT],
-                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      predicate: TypedPredicate2[ET, DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, predicate, apply)
 
   /**
@@ -215,9 +218,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET],
-                                    dataType: Class[DT],
-                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, apply)
 
   /**
@@ -230,9 +234,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET](eventType: Class[ET],
-                           predicate: TypedPredicate2[ET, D],
-                           apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET](
+      eventType: Class[ET],
+      predicate: TypedPredicate2[ET, D],
+      apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, predicate, apply)
 
   /**
@@ -256,8 +261,9 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(predicate: TypedPredicate2[AnyRef, D],
-                       apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent(
+      predicate: TypedPredicate2[AnyRef, D],
+      apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(predicate, apply)
 
   /**
@@ -271,9 +277,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef],
-                                dataType: Class[DT],
-                                apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[DT <: D](
+      eventMatches: JList[AnyRef],
+      dataType: Class[DT],
+      apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply)
 
   /**
@@ -299,9 +306,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals[E, DT <: D](event: E,
-                                         dataType: Class[DT],
-                                         apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEventEquals[E, DT <: D](
+      event: E,
+      dataType: Class[DT],
+      apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply)
 
   /**
@@ -387,9 +395,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param predicate  a predicate that will be evaluated on the reason if the type matches
    * @return the builder with the case statement added
    */
-  final def matchStop[RT <: Reason](reasonType: Class[RT],
-                                    predicate: TypedPredicate[RT],
-                                    apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+  final def matchStop[RT <: Reason](
+      reasonType: Class[RT],
+      predicate: TypedPredicate[RT],
+      apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
     new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
 
   /**
@@ -410,9 +419,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    */
-  final def matchData[DT <: D](dataType: Class[DT],
-                               predicate: TypedPredicate[DT],
-                               apply: UnitApply[DT]): UnitPFBuilder[D] =
+  final def matchData[DT <: D](
+      dataType: Class[DT],
+      predicate: TypedPredicate[DT],
+      apply: UnitApply[DT]): UnitPFBuilder[D] =
     UnitMatch.`match`(dataType, predicate, apply)
 
   /**

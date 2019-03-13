@@ -36,8 +36,9 @@ class ActorGraphInterpreterSpec extends StreamSpec {
     "be able to reuse a simple identity graph stage" in assertAllStagesStopped {
       val identity = GraphStages.identity[Int]
 
-      Await.result(Source(1 to 100).via(identity).via(identity).via(identity).grouped(200).runWith(Sink.head),
-                   3.seconds) should ===(1 to 100)
+      Await.result(
+        Source(1 to 100).via(identity).via(identity).via(identity).grouped(200).runWith(Sink.head),
+        3.seconds) should ===(1 to 100)
     }
 
     "be able to interpret a simple bidi stage" in assertAllStagesStopped {

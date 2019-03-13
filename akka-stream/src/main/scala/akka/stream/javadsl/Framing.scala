@@ -47,9 +47,10 @@ object Framing {
    * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
    *                           exceeded this Flow will fail the stream.
    */
-  def delimiter(delimiter: ByteString,
-                maximumFrameLength: Int,
-                allowTruncation: FramingTruncation): Flow[ByteString, ByteString, NotUsed] = {
+  def delimiter(
+      delimiter: ByteString,
+      maximumFrameLength: Int,
+      allowTruncation: FramingTruncation): Flow[ByteString, ByteString, NotUsed] = {
     val truncationAllowed = allowTruncation == FramingTruncation.ALLOW
     scaladsl.Framing.delimiter(delimiter, maximumFrameLength, truncationAllowed).asJava
   }
@@ -86,10 +87,11 @@ object Framing {
    *                           the length of the size field)
    * @param byteOrder The ''ByteOrder'' to be used when decoding the field
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int,
-                  maximumFrameLength: Int,
-                  byteOrder: ByteOrder): Flow[ByteString, ByteString, NotUsed] =
+  def lengthField(
+      fieldLength: Int,
+      fieldOffset: Int,
+      maximumFrameLength: Int,
+      byteOrder: ByteOrder): Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing.lengthField(fieldLength, fieldOffset, maximumFrameLength, byteOrder).asJava
 
   /**
@@ -111,18 +113,20 @@ object Framing {
    *                         ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the operator fails otherwise.
    *
    */
-  def lengthField(fieldLength: Int,
-                  fieldOffset: Int,
-                  maximumFrameLength: Int,
-                  byteOrder: ByteOrder,
-                  computeFrameSize: akka.japi.function.Function2[Array[Byte], Integer, Integer])
+  def lengthField(
+      fieldLength: Int,
+      fieldOffset: Int,
+      maximumFrameLength: Int,
+      byteOrder: ByteOrder,
+      computeFrameSize: akka.japi.function.Function2[Array[Byte], Integer, Integer])
       : Flow[ByteString, ByteString, NotUsed] =
     scaladsl.Framing
-      .lengthField(fieldLength,
-                   fieldOffset,
-                   maximumFrameLength,
-                   byteOrder,
-                   (a: Array[Byte], s: Int) => computeFrameSize.apply(a, s))
+      .lengthField(
+        fieldLength,
+        fieldOffset,
+        maximumFrameLength,
+        byteOrder,
+        (a: Array[Byte], s: Int) => computeFrameSize.apply(a, s))
       .asJava
 
   /**

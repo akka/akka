@@ -553,9 +553,10 @@ object ByteString {
           else if (remainingToDrop == 0)
             new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
           else
-            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1)
-                              .dropRight1(remainingToDrop),
-                            length - n)
+            new ByteStrings(
+              bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1)
+                .dropRight1(remainingToDrop),
+              length - n)
         } else {
           dropRightWithFullDropsAndRemainig(fullDrops + 1, remainingToDrop - bs.length)
         }

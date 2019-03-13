@@ -111,14 +111,15 @@ import akka.util.OptionVal
    * but it should be overridable from external configuration; the lookup of
    * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
-  private[akka] def actorOf(system: ActorSystemImpl,
-                            props: Props,
-                            supervisor: InternalActorRef,
-                            path: ActorPath,
-                            systemService: Boolean,
-                            deploy: Option[Deploy],
-                            lookupDeploy: Boolean,
-                            async: Boolean): InternalActorRef
+  private[akka] def actorOf(
+      system: ActorSystemImpl,
+      props: Props,
+      supervisor: InternalActorRef,
+      path: ActorPath,
+      systemService: Boolean,
+      deploy: Option[Deploy],
+      lookupDeploy: Boolean,
+      async: Boolean): InternalActorRef
 
   /**
    * INTERNAL API
@@ -475,19 +476,21 @@ private[akka] object LocalActorRefProvider {
  *
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
-private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
-                                                         override val settings: ActorSystem.Settings,
-                                                         val eventStream: EventStream,
-                                                         val dynamicAccess: DynamicAccess,
-                                                         override val deployer: Deployer,
-                                                         _deadLetters: Option[ActorPath => InternalActorRef])
+private[akka] class LocalActorRefProvider private[akka] (
+    _systemName: String,
+    override val settings: ActorSystem.Settings,
+    val eventStream: EventStream,
+    val dynamicAccess: DynamicAccess,
+    override val deployer: Deployer,
+    _deadLetters: Option[ActorPath => InternalActorRef])
     extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
-  def this(_systemName: String,
-           settings: ActorSystem.Settings,
-           eventStream: EventStream,
-           dynamicAccess: DynamicAccess) =
+  def this(
+      _systemName: String,
+      settings: ActorSystem.Settings,
+      eventStream: EventStream,
+      dynamicAccess: DynamicAccess) =
     this(_systemName, settings, eventStream, dynamicAccess, new Deployer(settings, dynamicAccess), None)
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
@@ -605,12 +608,13 @@ private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
   private lazy val defaultMailbox = system.mailboxes.lookup(Mailboxes.DefaultMailboxId)
 
   override lazy val rootGuardian: LocalActorRef =
-    new LocalActorRef(system,
-                      Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
-                      defaultDispatcher,
-                      defaultMailbox,
-                      theOneWhoWalksTheBubblesOfSpaceTime,
-                      rootPath) {
+    new LocalActorRef(
+      system,
+      Props(classOf[LocalActorRefProvider.Guardian], rootGuardianStrategy),
+      defaultDispatcher,
+      defaultMailbox,
+      theOneWhoWalksTheBubblesOfSpaceTime,
+      rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp"        => tempContainer
@@ -641,12 +645,13 @@ private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
   override lazy val systemGuardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("system")
-    val ref = new LocalActorRef(system,
-                                Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
-                                defaultDispatcher,
-                                defaultMailbox,
-                                rootGuardian,
-                                rootPath / "system")
+    val ref = new LocalActorRef(
+      system,
+      Props(classOf[LocalActorRefProvider.SystemGuardian], systemGuardianStrategy, guardian),
+      defaultDispatcher,
+      defaultMailbox,
+      rootGuardian,
+      rootPath / "system")
     cell.initChild(ref)
     ref.start()
     ref
@@ -718,9 +723,10 @@ private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
   def resolveActorRef(path: ActorPath): ActorRef = {
     if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
     else {
-      log.debug("Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
-                path,
-                rootPath)
+      log.debug(
+        "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
+        path,
+        rootPath)
       deadLetters
     }
   }
@@ -736,21 +742,23 @@ private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
       ref.getChild(pathElements.iterator) match {
         case Nobody =>
           if (log.isDebugEnabled)
-            log.debug("Resolve (deserialization) of path [{}] doesn't match an active actor. " +
-                      "It has probably been stopped, using deadLetters.",
-                      pathElements.mkString("/"))
+            log.debug(
+              "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
+              "It has probably been stopped, using deadLetters.",
+              pathElements.mkString("/"))
           new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
         case x => x
       }
 
-  def actorOf(system: ActorSystemImpl,
-              props: Props,
-              supervisor: InternalActorRef,
-              path: ActorPath,
-              systemService: Boolean,
-              deploy: Option[Deploy],
-              lookupDeploy: Boolean,
-              async: Boolean): InternalActorRef = {
+  def actorOf(
+      system: ActorSystemImpl,
+      props: Props,
+      supervisor: InternalActorRef,
+      path: ActorPath,
+      systemService: Boolean,
+      deploy: Option[Deploy],
+      lookupDeploy: Boolean,
+      async: Boolean): InternalActorRef = {
     props.deploy.routerConfig match {
       case NoRouter =>
         if (settings.DebugRouterMisconfiguration) {
@@ -803,9 +811,10 @@ private[akka] class LocalActorRefProvider private[akka] (_systemName: String,
         if (!system.dispatchers.hasDispatcher(r.routerDispatcher))
           throw new ConfigurationException(s"Dispatcher [${p.dispatcher}] not configured for router of $path")
 
-        val routerProps = Props(p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
-                                classOf[RoutedActorCell.RouterActorCreator],
-                                Vector(p.routerConfig))
+        val routerProps = Props(
+          p.deploy.copy(dispatcher = p.routerConfig.routerDispatcher),
+          classOf[RoutedActorCell.RouterActorCreator],
+          Vector(p.routerConfig))
         val routeeProps = p.withRouter(NoRouter)
 
         try {

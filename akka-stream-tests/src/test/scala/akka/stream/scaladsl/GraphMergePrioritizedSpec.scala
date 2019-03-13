@@ -136,11 +136,12 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     }
   }
 
-  private def threeSourceMerge[T](source1: Source[T, NotUsed],
-                                  source2: Source[T, NotUsed],
-                                  source3: Source[T, NotUsed],
-                                  priorities: Seq[Int],
-                                  probe: ManualProbe[T]) = {
+  private def threeSourceMerge[T](
+      source1: Source[T, NotUsed],
+      source2: Source[T, NotUsed],
+      source3: Source[T, NotUsed],
+      priorities: Seq[Int],
+      probe: ManualProbe[T]) = {
     RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b => (s1, s2, s3) =>
       val merge = b.add(MergePrioritized[T](priorities))
       // introduce a delay on the consuming side making it more likely that

@@ -72,8 +72,9 @@ abstract class RestartNodeSpec
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first, secondUniqueAddress.address, third)
 
-  lazy val restartedSecondSystem = ActorSystem(system.name,
-                                               ConfigFactory.parseString(s"""
+  lazy val restartedSecondSystem = ActorSystem(
+    system.name,
+    ConfigFactory.parseString(s"""
       akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
       akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
       """).withFallback(system.settings.config))

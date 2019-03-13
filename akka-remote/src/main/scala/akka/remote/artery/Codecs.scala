@@ -43,15 +43,17 @@ private[remote] object Encoder {
 /**
  * INTERNAL API
  */
-private[remote] class Encoder(uniqueLocalAddress: UniqueAddress,
-                              system: ExtendedActorSystem,
-                              outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-                              bufferPool: EnvelopeBufferPool,
-                              @unused streamId: Int,
-                              debugLogSend: Boolean,
-                              version: Byte)
-    extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer],
-                                            Encoder.OutboundCompressionAccess] {
+private[remote] class Encoder(
+    uniqueLocalAddress: UniqueAddress,
+    system: ExtendedActorSystem,
+    outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
+    bufferPool: EnvelopeBufferPool,
+    @unused streamId: Int,
+    debugLogSend: Boolean,
+    version: Byte)
+    extends GraphStageWithMaterializedValue[
+      FlowShape[OutboundEnvelope, EnvelopeBuffer],
+      Encoder.OutboundCompressionAccess] {
   import Encoder._
 
   val in: Inlet[OutboundEnvelope] = Inlet("Artery.Encoder.in")
@@ -141,10 +143,11 @@ private[remote] class Encoder(uniqueLocalAddress: UniqueAddress,
           envelope.byteBuffer.flip()
 
           if (debugLogSendEnabled)
-            log.debug("sending remote message [{}] to [{}] from [{}]",
-                      outboundEnvelope.message,
-                      outboundEnvelope.recipient.getOrElse(""),
-                      outboundEnvelope.sender.getOrElse(""))
+            log.debug(
+              "sending remote message [{}] to [{}] from [{}]",
+              outboundEnvelope.message,
+              outboundEnvelope.recipient.getOrElse(""),
+              outboundEnvelope.sender.getOrElse(""))
 
           push(out, envelope)
 
@@ -153,18 +156,20 @@ private[remote] class Encoder(uniqueLocalAddress: UniqueAddress,
             bufferPool.release(envelope)
             outboundEnvelope.message match {
               case _: SystemMessageEnvelope =>
-                log.error(e,
-                          "Failed to serialize system message [{}].",
-                          Logging.messageClassName(outboundEnvelope.message))
+                log.error(
+                  e,
+                  "Failed to serialize system message [{}].",
+                  Logging.messageClassName(outboundEnvelope.message))
                 throw e
               case _ if e.isInstanceOf[java.nio.BufferOverflowException] =>
                 val reason = new OversizedPayloadException(
                   "Discarding oversized payload sent to " +
                   s"${outboundEnvelope.recipient}: max allowed size ${envelope.byteBuffer.limit()} " +
                   s"bytes. Message type [${Logging.messageClassName(outboundEnvelope.message)}].")
-                log.error(reason,
-                          "Failed to serialize oversized message [{}].",
-                          Logging.messageClassName(outboundEnvelope.message))
+                log.error(
+                  reason,
+                  "Failed to serialize oversized message [{}].",
+                  Logging.messageClassName(outboundEnvelope.message))
                 pull(in)
               case _ =>
                 log.error(e, "Failed to serialize message [{}].", Logging.messageClassName(outboundEnvelope.message))
@@ -210,9 +215,10 @@ private[remote] class Encoder(uniqueLocalAddress: UniqueAddress,
  * INTERNAL API
  */
 private[remote] object Decoder {
-  private final case class RetryResolveRemoteDeployedRecipient(attemptsLeft: Int,
-                                                               recipientPath: String,
-                                                               inboundEnvelope: InboundEnvelope)
+  private final case class RetryResolveRemoteDeployedRecipient(
+      attemptsLeft: Int,
+      recipientPath: String,
+      inboundEnvelope: InboundEnvelope)
 
   private object Tick
 
@@ -310,8 +316,9 @@ private[remote] object Decoder {
 /**
  * INTERNAL API
  */
-private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActorRefProvider,
-                                                            localAddress: UniqueAddress)
+private[remote] final class ActorRefResolveCacheWithAddress(
+    provider: RemoteActorRefProvider,
+    localAddress: UniqueAddress)
     extends LruBoundedCache[String, InternalActorRef](capacity = 1024, evictAgeThreshold = 600) {
 
   override protected def compute(k: String): InternalActorRef =
@@ -325,12 +332,13 @@ private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActo
 /**
  * INTERNAL API
  */
-private[remote] class Decoder(inboundContext: InboundContext,
-                              system: ExtendedActorSystem,
-                              uniqueLocalAddress: UniqueAddress,
-                              settings: ArterySettings,
-                              inboundCompressions: InboundCompressions,
-                              inEnvelopePool: ObjectPool[ReusableInboundEnvelope])
+private[remote] class Decoder(
+    inboundContext: InboundContext,
+    system: ExtendedActorSystem,
+    uniqueLocalAddress: UniqueAddress,
+    settings: ArterySettings,
+    inboundCompressions: InboundCompressions,
+    inEnvelopePool: ObjectPool[ReusableInboundEnvelope])
     extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
 
   import Decoder.Tick
@@ -472,15 +480,16 @@ private[remote] class Decoder(inboundContext: InboundContext,
 
             val decoded = inEnvelopePool
               .acquire()
-              .init(recipient,
-                    sender,
-                    originUid,
-                    headerBuilder.serializer,
-                    classManifest,
-                    headerBuilder.flags,
-                    envelope,
-                    association,
-                    lane = 0)
+              .init(
+                recipient,
+                sender,
+                originUid,
+                headerBuilder.serializer,
+                classManifest,
+                headerBuilder.flags,
+                envelope,
+                association,
+                lane = 0)
 
             if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
 
@@ -497,20 +506,23 @@ private[remote] class Decoder(inboundContext: InboundContext,
                   case OptionVal.Some(path) =>
                     val ref = actorRefResolver.getOrCompute(path)
                     if (ref.isInstanceOf[EmptyLocalActorRef])
-                      log.warning("Message for banned (terminated, unresolved) remote deployed recipient [{}].",
-                                  recipientActorRefPath)
+                      log.warning(
+                        "Message for banned (terminated, unresolved) remote deployed recipient [{}].",
+                        recipientActorRefPath)
                     push(out, decoded.withRecipient(ref))
                   case OptionVal.None =>
-                    log.warning("Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
-                                recipientActorRefPath)
+                    log.warning(
+                      "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
+                      recipientActorRefPath)
                     pull(in)
                 }
 
               } else
                 scheduleOnce(
-                  RetryResolveRemoteDeployedRecipient(retryResolveRemoteDeployedRecipientAttempts,
-                                                      recipientActorRefPath,
-                                                      decoded),
+                  RetryResolveRemoteDeployedRecipient(
+                    retryResolveRemoteDeployedRecipientAttempts,
+                    recipientActorRefPath,
+                    decoded),
                   retryResolveRemoteDeployedRecipientInterval)
             } else {
               push(out, decoded)
@@ -565,8 +577,9 @@ private[remote] class Decoder(inboundContext: InboundContext,
             resolveRecipient(recipientPath) match {
               case OptionVal.None =>
                 if (attemptsLeft > 0)
-                  scheduleOnce(RetryResolveRemoteDeployedRecipient(attemptsLeft - 1, recipientPath, inboundEnvelope),
-                               retryResolveRemoteDeployedRecipientInterval)
+                  scheduleOnce(
+                    RetryResolveRemoteDeployedRecipient(attemptsLeft - 1, recipientPath, inboundEnvelope),
+                    retryResolveRemoteDeployedRecipientInterval)
                 else {
                   // No more attempts left. If the retried resolve isn't successful the ref is banned and
                   // we will not do the delayed retry resolve again. The reason for that is
@@ -598,9 +611,10 @@ private[remote] class Decoder(inboundContext: InboundContext,
 /**
  * INTERNAL API
  */
-private[remote] class Deserializer(@unused inboundContext: InboundContext,
-                                   system: ExtendedActorSystem,
-                                   bufferPool: EnvelopeBufferPool)
+private[remote] class Deserializer(
+    @unused inboundContext: InboundContext,
+    system: ExtendedActorSystem,
+    bufferPool: EnvelopeBufferPool)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
 
   val in: Inlet[InboundEnvelope] = Inlet("Artery.Deserializer.in")
@@ -629,12 +643,13 @@ private[remote] class Deserializer(@unused inboundContext: InboundContext,
         try {
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
 
-          val deserializedMessage = MessageSerializer.deserializeForArtery(system,
-                                                                           envelope.originUid,
-                                                                           serialization,
-                                                                           envelope.serializer,
-                                                                           envelope.classManifest,
-                                                                           envelope.envelopeBuffer)
+          val deserializedMessage = MessageSerializer.deserializeForArtery(
+            system,
+            envelope.originUid,
+            serialization,
+            envelope.serializer,
+            envelope.classManifest,
+            envelope.envelopeBuffer)
 
           val envelopeWithMessage = envelope.withMessage(deserializedMessage)
 
@@ -650,11 +665,12 @@ private[remote] class Deserializer(@unused inboundContext: InboundContext,
               case OptionVal.Some(a) => a.remoteAddress
               case OptionVal.None    => "unknown"
             }
-            log.warning("Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
-                        from,
-                        envelope.serializer,
-                        envelope.classManifest,
-                        e)
+            log.warning(
+              "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
+              from,
+              envelope.serializer,
+              envelope.classManifest,
+              e)
             pull(in)
         } finally {
           val buf = envelope.envelopeBuffer
@@ -675,10 +691,11 @@ private[remote] class Deserializer(@unused inboundContext: InboundContext,
  * that an application message arrives in the InboundHandshake operator before the
  * handshake is completed and then it would be dropped.
  */
-private[remote] class DuplicateHandshakeReq(numberOfLanes: Int,
-                                            inboundContext: InboundContext,
-                                            system: ExtendedActorSystem,
-                                            bufferPool: EnvelopeBufferPool)
+private[remote] class DuplicateHandshakeReq(
+    numberOfLanes: Int,
+    inboundContext: InboundContext,
+    system: ExtendedActorSystem,
+    bufferPool: EnvelopeBufferPool)
     extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
 
   val in: Inlet[InboundEnvelope] = Inlet("Artery.DuplicateHandshakeReq.in")

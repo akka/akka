@@ -36,9 +36,10 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
 
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     from.actorOf(
-      ClusterSingletonManager.props(singletonProps = TestActors.echoActorProps,
-                                    terminationMessage = PoisonPill,
-                                    settings = ClusterSingletonManagerSettings(from)),
+      ClusterSingletonManager.props(
+        singletonProps = TestActors.echoActorProps,
+        terminationMessage = PoisonPill,
+        settings = ClusterSingletonManagerSettings(from)),
       name = "echo")
 
     within(10.seconds) {

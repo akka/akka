@@ -116,10 +116,10 @@ class RemoteRouterSpec extends AkkaSpec(s"""
 
     "deploy its children on remote host driven by programatic definition" in {
       val probe = TestProbe()(masterSystem)
-      val router = masterSystem.actorOf(new RemoteRouterConfig(
-                                          RoundRobinPool(2),
-                                          Seq(Address(protocol, sysName, "localhost", port))).props(echoActorProps),
-                                        "blub2")
+      val router = masterSystem.actorOf(
+        new RemoteRouterConfig(RoundRobinPool(2), Seq(Address(protocol, sysName, "localhost", port)))
+          .props(echoActorProps),
+        "blub2")
       val replies = collectRouteePaths(probe, router, 5)
       val children = replies.toSet
       children should have size 2
@@ -231,8 +231,9 @@ class RemoteRouterSpec extends AkkaSpec(s"""
         case e => probe.ref ! e; SupervisorStrategy.Escalate
       }
       val router = masterSystem.actorOf(
-        new RemoteRouterConfig(RoundRobinPool(1, supervisorStrategy = escalator),
-                               Seq(Address(protocol, sysName, "localhost", port))).props(Props.empty),
+        new RemoteRouterConfig(
+          RoundRobinPool(1, supervisorStrategy = escalator),
+          Seq(Address(protocol, sysName, "localhost", port))).props(Props.empty),
         "blub3")
 
       router.tell(GetRoutees, probe.ref)

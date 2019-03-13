@@ -209,8 +209,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                               "client1")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[Reply].msg should be("hello-ack")
         system.stop(c)
@@ -225,8 +226,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "work with ask" in within(10 seconds) {
       runOn(client) {
         import akka.pattern.ask
-        val c = system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                               "ask-client")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "ask-client")
         implicit val timeout = Timeout(remaining)
         val reply = c ? ClusterClient.Send("/user/testService", "hello-request", localAffinity = true)
         Await.result(reply.mapTo[Reply], remaining).msg should be("hello-request-ack")
@@ -263,8 +265,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#client
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                               "client")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client")
         c ! ClusterClient.Send("/user/serviceA", "hello", localAffinity = true)
         c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
@@ -277,8 +280,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       lazy val docOnly = { //not used, only demo
         //#initialContacts
-        val initialContacts = Set(ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
-                                  ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
+        val initialContacts = Set(
+          ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
+          ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
         val settings = ClusterClientSettings(system).withInitialContacts(initialContacts)
         //#initialContacts
       }
@@ -370,8 +374,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       runOn(client) {
         val client =
-          system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                         "client2")
+          system.actorOf(
+            ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+            "client2")
 
         client ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
         val reply = expectMsgType[Reply]
@@ -409,8 +414,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "re-establish connection to receptionist after partition" in within(30 seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                               "client3")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client3")
 
         c ! ClusterClient.Send("/user/service2", "bonjour2", localAffinity = true)
         val reply = expectMsgType[Reply]
@@ -455,8 +461,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           node(r) / "system" / "receptionist"
         }
         val c =
-          system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(remainingContacts)),
-                         "client4")
+          system.actorOf(
+            ClusterClient.props(ClusterClientSettings(system).withInitialContacts(remainingContacts)),
+            "client4")
 
         c ! ClusterClient.Send("/user/service2", "bonjour4", localAffinity = true)
         expectMsg(10.seconds, Reply("bonjour4-ack", remainingContacts.head.address))
@@ -481,8 +488,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         Await.ready(system.whenTerminated, 20.seconds)
         // start new system on same port
         val port = Cluster(system).selfAddress.port.get
-        val sys2 = ActorSystem(system.name,
-                               ConfigFactory.parseString(s"""
+        val sys2 = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
               akka.remote.netty.tcp.port=$port
               """).withFallback(system.settings.config))

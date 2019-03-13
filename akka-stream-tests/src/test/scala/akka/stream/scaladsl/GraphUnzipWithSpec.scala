@@ -240,28 +240,29 @@ class GraphUnzipWithSpec extends StreamSpec {
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
           val split22 = (a: (List[Int])) =>
-            (a(0),
-             a(0).toString,
-             a(1),
-             a(1).toString,
-             a(2),
-             a(2).toString,
-             a(3),
-             a(3).toString,
-             a(4),
-             a(4).toString,
-             a(5),
-             a(5).toString,
-             a(6),
-             a(6).toString,
-             a(7),
-             a(7).toString,
-             a(8),
-             a(8).toString,
-             a(9),
-             a(9).toString,
-             a(10),
-             a(10).toString)
+            (
+              a(0),
+              a(0).toString,
+              a(1),
+              a(1).toString,
+              a(2),
+              a(2).toString,
+              a(3),
+              a(3).toString,
+              a(4),
+              a(4).toString,
+              a(5),
+              a(5).toString,
+              a(6),
+              a(6).toString,
+              a(7),
+              a(7).toString,
+              a(8),
+              a(8).toString,
+              a(9),
+              a(9).toString,
+              a(10),
+              a(10).toString)
 
           // odd input ports will be Int, even input ports will be String
           val unzip = b.add(UnzipWith(split22))

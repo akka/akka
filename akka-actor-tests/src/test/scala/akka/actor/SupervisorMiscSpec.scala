@@ -132,9 +132,10 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
     "be able to create a similar kid in the fault handling strategy" in {
       val parent = system.actorOf(Props(new Actor {
         override val supervisorStrategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
-          override def handleChildTerminated(context: ActorContext,
-                                             child: ActorRef,
-                                             children: Iterable[ActorRef]): Unit = {
+          override def handleChildTerminated(
+              context: ActorContext,
+              child: ActorRef,
+              children: Iterable[ActorRef]): Unit = {
             val newKid = context.actorOf(Props.empty, child.path.name)
             testActor ! { if ((newKid ne child) && newKid.path == child.path) "green" else "red" }
           }

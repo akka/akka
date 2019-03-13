@@ -27,8 +27,9 @@ import scala.util.control.{ NoStackTrace, NonFatal }
  *
  * The implementation of a graph with an arbitrary shape.
  */
-private[stream] final class GenericGraph[S <: Shape, Mat](override val shape: S,
-                                                          override val traversalBuilder: TraversalBuilder)
+private[stream] final class GenericGraph[S <: Shape, Mat](
+    override val shape: S,
+    override val traversalBuilder: TraversalBuilder)
     extends Graph[S, Mat] { outer =>
 
   override def toString: String = s"GenericGraph($shape)"
@@ -129,31 +130,32 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
         val i = in(ix)
         ix += 1
 
-        setHandler(i,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       if (isAvailable(out)) {
-                         // isAvailable(out) implies !pending
-                         // -> grab and push immediately
-                         push(out, grab(i))
-                         tryPull(i)
-                       } else pendingQueue.enqueue(i)
-                     }
+        setHandler(
+          i,
+          new InHandler {
+            override def onPush(): Unit = {
+              if (isAvailable(out)) {
+                // isAvailable(out) implies !pending
+                // -> grab and push immediately
+                push(out, grab(i))
+                tryPull(i)
+              } else pendingQueue.enqueue(i)
+            }
 
-                     override def onUpstreamFinish() =
-                       if (eagerComplete) {
-                         var ix2 = 0
-                         while (ix2 < in.size) {
-                           cancel(in(ix2))
-                           ix2 += 1
-                         }
-                         runningUpstreams = 0
-                         if (!pending) completeStage()
-                       } else {
-                         runningUpstreams -= 1
-                         if (upstreamsClosed && !pending) completeStage()
-                       }
-                   })
+            override def onUpstreamFinish() =
+              if (eagerComplete) {
+                var ix2 = 0
+                while (ix2 < in.size) {
+                  cancel(in(ix2))
+                  ix2 += 1
+                }
+                runningUpstreams = 0
+                if (!pending) completeStage()
+              } else {
+                runningUpstreams -= 1
+                if (upstreamsClosed && !pending) completeStage()
+              }
+          })
       }
 
       override def onPull(): Unit = {
@@ -243,49 +245,51 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
     val maxEmitting = 2
     var preferredEmitting = 0
 
-    setHandler(preferred,
-               new InHandler {
-                 override def onUpstreamFinish(): Unit = onComplete()
-                 override def onPush(): Unit =
-                   if (preferredEmitting == maxEmitting) () // blocked
-                   else emitPreferred()
+    setHandler(
+      preferred,
+      new InHandler {
+        override def onUpstreamFinish(): Unit = onComplete()
+        override def onPush(): Unit =
+          if (preferredEmitting == maxEmitting) () // blocked
+          else emitPreferred()
 
-                 def emitPreferred(): Unit = {
-                   preferredEmitting += 1
-                   emit(out, grab(preferred), emitted)
-                   tryPull(preferred)
-                 }
+        def emitPreferred(): Unit = {
+          preferredEmitting += 1
+          emit(out, grab(preferred), emitted)
+          tryPull(preferred)
+        }
 
-                 val emitted = () => {
-                   preferredEmitting -= 1
-                   if (isAvailable(preferred)) emitPreferred()
-                   else if (preferredEmitting == 0) emitSecondary()
-                 }
+        val emitted = () => {
+          preferredEmitting -= 1
+          if (isAvailable(preferred)) emitPreferred()
+          else if (preferredEmitting == 0) emitSecondary()
+        }
 
-                 def emitSecondary(): Unit = {
-                   var i = 0
-                   while (i < secondaryPorts) {
-                     val port = in(i)
-                     if (isAvailable(port)) emit(out, grab(port), pullMe(i))
-                     i += 1
-                   }
-                 }
-               })
+        def emitSecondary(): Unit = {
+          var i = 0
+          while (i < secondaryPorts) {
+            val port = in(i)
+            if (isAvailable(port)) emit(out, grab(port), pullMe(i))
+            i += 1
+          }
+        }
+      })
 
     var i = 0
     while (i < secondaryPorts) {
       val port = in(i)
       val pullPort = pullMe(i)
-      setHandler(port,
-                 new InHandler {
-                   override def onPush(): Unit = {
-                     if (preferredEmitting > 0) () // blocked
-                     else {
-                       emit(out, grab(port), pullPort)
-                     }
-                   }
-                   override def onUpstreamFinish(): Unit = onComplete()
-                 })
+      setHandler(
+        port,
+        new InHandler {
+          override def onPush(): Unit = {
+            if (preferredEmitting > 0) () // blocked
+            else {
+              emit(out, grab(port), pullPort)
+            }
+          }
+          override def onUpstreamFinish(): Unit = onComplete()
+        })
       i += 1
     }
 
@@ -340,28 +344,29 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
 
       in.zip(allBuffers).foreach {
         case (inlet, buffer) =>
-          setHandler(inlet,
-                     new InHandler {
-                       override def onPush(): Unit = {
-                         if (isAvailable(out) && !hasPending) {
-                           push(out, grab(inlet))
-                           tryPull(inlet)
-                         } else {
-                           buffer.enqueue(inlet)
-                         }
-                       }
+          setHandler(
+            inlet,
+            new InHandler {
+              override def onPush(): Unit = {
+                if (isAvailable(out) && !hasPending) {
+                  push(out, grab(inlet))
+                  tryPull(inlet)
+                } else {
+                  buffer.enqueue(inlet)
+                }
+              }
 
-                       override def onUpstreamFinish(): Unit = {
-                         if (eagerComplete) {
-                           in.foreach(cancel)
-                           runningUpstreams = 0
-                           if (!hasPending) completeStage()
-                         } else {
-                           runningUpstreams -= 1
-                           if (upstreamsClosed && !hasPending) completeStage()
-                         }
-                       }
-                     })
+              override def onUpstreamFinish(): Unit = {
+                if (eagerComplete) {
+                  in.foreach(cancel)
+                  runningUpstreams = 0
+                  if (!hasPending) completeStage()
+                } else {
+                  runningUpstreams -= 1
+                  if (upstreamsClosed && !hasPending) completeStage()
+                }
+              }
+            })
       }
 
       override def onPull(): Unit = {
@@ -420,9 +425,10 @@ object Interleave {
    * @param segmentSize number of elements to send downstream before switching to next input port
    * @param eagerClose if true, interleave completes upstream if any of its upstream completes.
    */
-  def apply[T](inputPorts: Int,
-               segmentSize: Int,
-               eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], NotUsed] =
+  def apply[T](
+      inputPorts: Int,
+      segmentSize: Int,
+      eagerClose: Boolean = false): Graph[UniformFanInShape[T, T], NotUsed] =
     GraphStages.withDetachedInputs(new Interleave[T](inputPorts, segmentSize, eagerClose))
 }
 
@@ -477,26 +483,27 @@ final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerCl
       }
 
       in.foreach { i =>
-        setHandler(i,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       push(out, grab(i))
-                       counter += 1
-                       if (counter == segmentSize) switchToNextInput()
-                     }
+        setHandler(
+          i,
+          new InHandler {
+            override def onPush(): Unit = {
+              push(out, grab(i))
+              counter += 1
+              if (counter == segmentSize) switchToNextInput()
+            }
 
-                     override def onUpstreamFinish(): Unit = {
-                       if (!eagerClose) {
-                         runningUpstreams -= 1
-                         if (!upstreamsClosed) {
-                           if (i == currentUpstream) {
-                             switchToNextInput()
-                             if (isAvailable(out)) pull(currentUpstream)
-                           }
-                         } else completeStage()
-                       } else completeStage()
-                     }
-                   })
+            override def onUpstreamFinish(): Unit = {
+              if (!eagerClose) {
+                runningUpstreams -= 1
+                if (!upstreamsClosed) {
+                  if (i == currentUpstream) {
+                    switchToNextInput()
+                    if (isAvailable(out)) pull(currentUpstream)
+                  }
+                } else completeStage()
+              } else completeStage()
+            }
+          })
       }
 
       def onPull(): Unit =
@@ -627,27 +634,28 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
         while (idx < size) {
           val o = out(idx)
           val i = idx // close over val
-          setHandler(o,
-                     new OutHandler {
-                       override def onPull(): Unit = {
-                         pending(i) = false
-                         pendingCount -= 1
-                         tryPull()
-                       }
+          setHandler(
+            o,
+            new OutHandler {
+              override def onPull(): Unit = {
+                pending(i) = false
+                pendingCount -= 1
+                tryPull()
+              }
 
-                       override def onDownstreamFinish() = {
-                         if (eagerCancel) completeStage()
-                         else {
-                           downstreamsRunning -= 1
-                           if (downstreamsRunning == 0) completeStage()
-                           else if (pending(i)) {
-                             pending(i) = false
-                             pendingCount -= 1
-                             tryPull()
-                           }
-                         }
-                       }
-                     })
+              override def onDownstreamFinish() = {
+                if (eagerCancel) completeStage()
+                else {
+                  downstreamsRunning -= 1
+                  if (downstreamsRunning == 0) completeStage()
+                  else if (pending(i)) {
+                    pending(i) = false
+                    pendingCount -= 1
+                    tryPull()
+                  }
+                }
+              }
+            })
           idx += 1
         }
       }
@@ -716,27 +724,28 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
     })
 
     // The 'tap' output can neither backpressure, nor cancel, the stage.
-    setHandler(outTap,
-               new OutHandler {
-                 override def onPull() = {
-                   pendingTap match {
-                     case Some(elem) =>
-                       push(outTap, elem)
-                       pendingTap = None
-                     case None => // no pending element to emit
-                   }
-                 }
+    setHandler(
+      outTap,
+      new OutHandler {
+        override def onPull() = {
+          pendingTap match {
+            case Some(elem) =>
+              push(outTap, elem)
+              pendingTap = None
+            case None => // no pending element to emit
+          }
+        }
 
-                 override def onDownstreamFinish(): Unit = {
-                   setHandler(in, new InHandler {
-                     override def onPush() = {
-                       push(outMain, grab(in))
-                     }
-                   })
-                   // Allow any outstanding element to be garbage-collected
-                   pendingTap = None
-                 }
-               })
+        override def onDownstreamFinish(): Unit = {
+          setHandler(in, new InHandler {
+            override def onPush() = {
+              push(outMain, grab(in))
+            }
+          })
+          // Allow any outstanding element to be garbage-collected
+          pendingTap = None
+        }
+      })
   }
   override def toString = "WireTap"
 }
@@ -816,40 +825,41 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
 
       out.iterator.zipWithIndex.foreach {
         case (o, idx) =>
-          setHandler(o,
-                     new OutHandler {
-                       override def onPull() = {
-                         if (outPendingElem != null) {
-                           val elem = outPendingElem.asInstanceOf[T]
-                           if (idx == outPendingIdx) {
-                             push(o, elem)
-                             outPendingElem = null
-                             if (!isClosed(in)) {
-                               if (!hasBeenPulled(in)) {
-                                 pull(in)
-                               }
-                             } else
-                               completeStage()
-                           }
-                         } else if (!hasBeenPulled(in))
-                           pull(in)
-                       }
+          setHandler(
+            o,
+            new OutHandler {
+              override def onPull() = {
+                if (outPendingElem != null) {
+                  val elem = outPendingElem.asInstanceOf[T]
+                  if (idx == outPendingIdx) {
+                    push(o, elem)
+                    outPendingElem = null
+                    if (!isClosed(in)) {
+                      if (!hasBeenPulled(in)) {
+                        pull(in)
+                      }
+                    } else
+                      completeStage()
+                  }
+                } else if (!hasBeenPulled(in))
+                  pull(in)
+              }
 
-                       override def onDownstreamFinish(): Unit =
-                         if (eagerCancel) completeStage()
-                         else {
-                           downstreamRunning -= 1
-                           if (downstreamRunning == 0)
-                             completeStage()
-                           else if (outPendingElem != null) {
-                             if (idx == outPendingIdx) {
-                               outPendingElem = null
-                               if (!hasBeenPulled(in))
-                                 pull(in)
-                             }
-                           }
-                         }
-                     })
+              override def onDownstreamFinish(): Unit =
+                if (eagerCancel) completeStage()
+                else {
+                  downstreamRunning -= 1
+                  if (downstreamRunning == 0)
+                    completeStage()
+                  else if (outPendingElem != null) {
+                    if (idx == outPendingIdx) {
+                      outPendingElem = null
+                      if (!hasBeenPulled(in))
+                        pull(in)
+                    }
+                  }
+                }
+            })
       }
     }
 
@@ -930,40 +940,41 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
       setHandler(in, this)
 
       out.foreach { o =>
-        setHandler(o,
-                   new OutHandler {
-                     private var hasPulled = false
+        setHandler(
+          o,
+          new OutHandler {
+            private var hasPulled = false
 
-                     override def onPull(): Unit = {
-                       if (!hasPulled) {
-                         hasPulled = true
-                         if (needDownstreamPulls > 0) needDownstreamPulls -= 1
-                       }
+            override def onPull(): Unit = {
+              if (!hasPulled) {
+                hasPulled = true
+                if (needDownstreamPulls > 0) needDownstreamPulls -= 1
+              }
 
-                       if (needDownstreamPulls == 0) {
-                         if (isAvailable(in)) {
-                           if (noPending) {
-                             push(o, grab(in))
-                           }
-                         } else {
-                           if (!hasBeenPulled(in)) pull(in)
-                           pendingQueue.enqueue(o)
-                         }
-                       } else pendingQueue.enqueue(o)
-                     }
+              if (needDownstreamPulls == 0) {
+                if (isAvailable(in)) {
+                  if (noPending) {
+                    push(o, grab(in))
+                  }
+                } else {
+                  if (!hasBeenPulled(in)) pull(in)
+                  pendingQueue.enqueue(o)
+                }
+              } else pendingQueue.enqueue(o)
+            }
 
-                     override def onDownstreamFinish() = {
-                       if (eagerCancel) completeStage()
-                       else {
-                         downstreamsRunning -= 1
-                         if (downstreamsRunning == 0) completeStage()
-                         else if (!hasPulled && needDownstreamPulls > 0) {
-                           needDownstreamPulls -= 1
-                           if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
-                         }
-                       }
-                     }
-                   })
+            override def onDownstreamFinish() = {
+              if (eagerCancel) completeStage()
+              else {
+                downstreamsRunning -= 1
+                if (downstreamsRunning == 0) completeStage()
+                else if (!hasPulled && needDownstreamPulls > 0) {
+                  needDownstreamPulls -= 1
+                  if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+                }
+              }
+            }
+          })
       }
     }
 
@@ -1246,22 +1257,23 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
       while (idxx < size) {
         val i = in(idxx)
         val idx = idxx // close over val
-        setHandler(i,
-                   new InHandler {
-                     override def onPush() = {
-                       push(out, grab(i))
-                     }
+        setHandler(
+          i,
+          new InHandler {
+            override def onPush() = {
+              push(out, grab(i))
+            }
 
-                     override def onUpstreamFinish() = {
-                       if (idx == activeStream) {
-                         activeStream += 1
-                         // Skip closed inputs
-                         while (activeStream < inputPorts && isClosed(in(activeStream))) activeStream += 1
-                         if (activeStream == inputPorts) completeStage()
-                         else if (isAvailable(out)) pull(in(activeStream))
-                       }
-                     }
-                   })
+            override def onUpstreamFinish() = {
+              if (idx == activeStream) {
+                activeStream += 1
+                // Skip closed inputs
+                while (activeStream < inputPorts && isClosed(in(activeStream))) activeStream += 1
+                if (activeStream == inputPorts) completeStage()
+                else if (isAvailable(out)) pull(in(activeStream))
+              }
+            }
+          })
         idxx += 1
       }
     }

@@ -75,9 +75,10 @@ class ClusterSingletonManagerLeaveSpec
 
   def createSingleton(): ActorRef = {
     system.actorOf(
-      ClusterSingletonManager.props(singletonProps = Props(classOf[Echo], testActor),
-                                    terminationMessage = "stop",
-                                    settings = ClusterSingletonManagerSettings(system)),
+      ClusterSingletonManager.props(
+        singletonProps = Props(classOf[Echo], testActor),
+        terminationMessage = "stop",
+        settings = ClusterSingletonManagerSettings(system)),
       name = "echo")
   }
 
@@ -85,9 +86,10 @@ class ClusterSingletonManagerLeaveSpec
 
   lazy val echoProxy: ActorRef = {
     echoProxyTerminatedProbe.watch(
-      system.actorOf(ClusterSingletonProxy.props(singletonManagerPath = "/user/echo",
-                                                 settings = ClusterSingletonProxySettings(system)),
-                     name = "echoProxy"))
+      system.actorOf(
+        ClusterSingletonProxy
+          .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
+        name = "echoProxy"))
   }
 
   "Leaving ClusterSingletonManager" must {

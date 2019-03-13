@@ -110,15 +110,17 @@ private[akka] object Running {
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
-    @tailrec def applyEffects(msg: Any,
-                              state: RunningState[S],
-                              effect: Effect[E, S],
-                              sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
+    @tailrec def applyEffects(
+        msg: Any,
+        state: RunningState[S],
+        effect: Effect[E, S],
+        sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
-        setup.log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
-                        msg.getClass.getName,
-                        effect,
-                        sideEffects.size)
+        setup.log.debug(
+          s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
+          msg.getClass.getName,
+          effect,
+          sideEffects.size)
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) =>
@@ -194,19 +196,21 @@ private[akka] object Running {
 
   // ===============================================
 
-  def persistingEvents(state: RunningState[S],
-                       numberOfEvents: Int,
-                       shouldSnapshotAfterPersist: Boolean,
-                       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
+  def persistingEvents(
+      state: RunningState[S],
+      numberOfEvents: Int,
+      shouldSnapshotAfterPersist: Boolean,
+      sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdc(persistingEventsMdc)
     new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
   /** INTERNAL API */
-  @InternalApi private[akka] class PersistingEvents(var state: RunningState[S],
-                                                    numberOfEvents: Int,
-                                                    shouldSnapshotAfterPersist: Boolean,
-                                                    var sideEffects: immutable.Seq[SideEffect[S]])
+  @InternalApi private[akka] class PersistingEvents(
+      var state: RunningState[S],
+      numberOfEvents: Int,
+      shouldSnapshotAfterPersist: Boolean,
+      var sideEffects: immutable.Seq[SideEffect[S]])
       extends AbstractBehavior[InternalProtocol]
       with WithSeqNrAccessible {
 
@@ -366,9 +370,10 @@ private[akka] object Running {
       behavior
   }
 
-  def applySideEffect(effect: SideEffect[S],
-                      state: RunningState[S],
-                      behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+  def applySideEffect(
+      effect: SideEffect[S],
+      state: RunningState[S],
+      behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     effect match {
       case _: Stop.type @unchecked =>
         Behaviors.stopped

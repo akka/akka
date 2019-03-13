@@ -220,21 +220,23 @@ object Entity {
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
    * @tparam M The type of message the entity accepts
    */
-  def apply[M](typeKey: EntityTypeKey[M],
-               createBehavior: EntityContext => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
+  def apply[M](
+      typeKey: EntityTypeKey[M],
+      createBehavior: EntityContext => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
     new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
 /**
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
-final class Entity[M, E] private[akka] (val createBehavior: EntityContext => Behavior[M],
-                                        val typeKey: EntityTypeKey[M],
-                                        val stopMessage: Option[M],
-                                        val entityProps: Props,
-                                        val settings: Option[ClusterShardingSettings],
-                                        val messageExtractor: Option[ShardingMessageExtractor[E, M]],
-                                        val allocationStrategy: Option[ShardAllocationStrategy]) {
+final class Entity[M, E] private[akka] (
+    val createBehavior: EntityContext => Behavior[M],
+    val typeKey: EntityTypeKey[M],
+    val stopMessage: Option[M],
+    val entityProps: Props,
+    val settings: Option[ClusterShardingSettings],
+    val messageExtractor: Option[ShardingMessageExtractor[E, M]],
+    val allocationStrategy: Option[ShardAllocationStrategy]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -275,12 +277,13 @@ final class Entity[M, E] private[akka] (val createBehavior: EntityContext => Beh
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Option(newAllocationStrategy))
 
-  private def copy(createBehavior: EntityContext => Behavior[M] = createBehavior,
-                   typeKey: EntityTypeKey[M] = typeKey,
-                   stopMessage: Option[M] = stopMessage,
-                   entityProps: Props = entityProps,
-                   settings: Option[ClusterShardingSettings] = settings,
-                   allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
+  private def copy(
+      createBehavior: EntityContext => Behavior[M] = createBehavior,
+      typeKey: EntityTypeKey[M] = typeKey,
+      stopMessage: Option[M] = stopMessage,
+      entityProps: Props = entityProps,
+      settings: Option[ClusterShardingSettings] = settings,
+      allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
     new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
   }
 

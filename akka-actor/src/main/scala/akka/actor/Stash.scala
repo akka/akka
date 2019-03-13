@@ -149,9 +149,10 @@ private[akka] trait StashSupport {
     actorCell.mailbox.messageQueue match {
       case queue: DequeBasedMessageQueueSemantics => queue
       case other =>
-        throw ActorInitializationException(self,
-                                           s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
-                                           """An (unbounded) deque-based mailbox can be configured as follows:
+        throw ActorInitializationException(
+          self,
+          s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
+          """An (unbounded) deque-based mailbox can be configured as follows:
           |  my-custom-mailbox {
           |    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
           |  }

@@ -33,9 +33,10 @@ private[akka] case object ChildNameReserved extends ChildStats
  * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
-final case class ChildRestartStats(child: ActorRef,
-                                   var maxNrOfRetriesCount: Int = 0,
-                                   var restartTimeWindowStartNanos: Long = 0L)
+final case class ChildRestartStats(
+    child: ActorRef,
+    var maxNrOfRetriesCount: Int = 0,
+    var restartTimeWindowStartNanos: Long = 0L)
     extends ChildStats {
 
   def uid: Int = child.path.uid
@@ -282,12 +283,13 @@ abstract class SupervisorStrategy {
   /**
    * This method is called to act on the failure of a child: restart if the flag is true, stop otherwise.
    */
-  def processFailure(context: ActorContext,
-                     restart: Boolean,
-                     child: ActorRef,
-                     cause: Throwable,
-                     stats: ChildRestartStats,
-                     children: Iterable[ChildRestartStats]): Unit
+  def processFailure(
+      context: ActorContext,
+      restart: Boolean,
+      child: ActorRef,
+      cause: Throwable,
+      stats: ChildRestartStats,
+      children: Iterable[ChildRestartStats]): Unit
 
   /**
    * This is the main entry point: in case of a child’s failure, this method
@@ -303,11 +305,12 @@ abstract class SupervisorStrategy {
    *
    * @param children is a lazy collection (a view)
    */
-  def handleFailure(context: ActorContext,
-                    child: ActorRef,
-                    cause: Throwable,
-                    stats: ChildRestartStats,
-                    children: Iterable[ChildRestartStats]): Boolean = {
+  def handleFailure(
+      context: ActorContext,
+      child: ActorRef,
+      cause: Throwable,
+      stats: ChildRestartStats,
+      children: Iterable[ChildRestartStats]): Boolean = {
     val directive = decider.applyOrElse(cause, escalateDefault)
     directive match {
       case Resume =>
@@ -401,9 +404,10 @@ abstract class SupervisorStrategy {
  *   [[scala.collection.immutable.Seq]] of Throwables which maps the given Throwables to restarts, otherwise escalates.
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
-case class AllForOneStrategy(maxNrOfRetries: Int = -1,
-                             withinTimeRange: Duration = Duration.Inf,
-                             override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+case class AllForOneStrategy(
+    maxNrOfRetries: Int = -1,
+    withinTimeRange: Duration = Duration.Inf,
+    override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
     extends SupervisorStrategy {
 
   import SupervisorStrategy._
@@ -411,19 +415,21 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1,
   /**
    * Java API
    */
-  def this(maxNrOfRetries: Int,
-           withinTimeRange: Duration,
-           decider: SupervisorStrategy.JDecider,
-           loggingEnabled: Boolean) =
+  def this(
+      maxNrOfRetries: Int,
+      withinTimeRange: Duration,
+      decider: SupervisorStrategy.JDecider,
+      loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
    * Java API
    */
-  def this(maxNrOfRetries: Int,
-           withinTimeRange: java.time.Duration,
-           decider: SupervisorStrategy.JDecider,
-           loggingEnabled: Boolean) =
+  def this(
+      maxNrOfRetries: Int,
+      withinTimeRange: java.time.Duration,
+      decider: SupervisorStrategy.JDecider,
+      loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange.asScala, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
@@ -484,12 +490,13 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1,
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = ()
 
-  def processFailure(context: ActorContext,
-                     restart: Boolean,
-                     child: ActorRef,
-                     cause: Throwable,
-                     stats: ChildRestartStats,
-                     children: Iterable[ChildRestartStats]): Unit = {
+  def processFailure(
+      context: ActorContext,
+      restart: Boolean,
+      child: ActorRef,
+      cause: Throwable,
+      stats: ChildRestartStats,
+      children: Iterable[ChildRestartStats]): Unit = {
     if (children.nonEmpty) {
       if (restart && children.forall(_.requestRestartPermission(retriesWindow)))
         children.foreach(crs => restartChild(crs.child, cause, suspendFirst = (crs.child != child)))
@@ -511,27 +518,30 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1,
  *   [[scala.collection.immutable.Seq]] of Throwables which maps the given Throwables to restarts, otherwise escalates.
  * @param loggingEnabled the strategy logs the failure if this is enabled (true), by default it is enabled
  */
-case class OneForOneStrategy(maxNrOfRetries: Int = -1,
-                             withinTimeRange: Duration = Duration.Inf,
-                             override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
+case class OneForOneStrategy(
+    maxNrOfRetries: Int = -1,
+    withinTimeRange: Duration = Duration.Inf,
+    override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
     extends SupervisorStrategy {
 
   /**
    * Java API
    */
-  def this(maxNrOfRetries: Int,
-           withinTimeRange: Duration,
-           decider: SupervisorStrategy.JDecider,
-           loggingEnabled: Boolean) =
+  def this(
+      maxNrOfRetries: Int,
+      withinTimeRange: Duration,
+      decider: SupervisorStrategy.JDecider,
+      loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
    *  Java API
    */
-  def this(maxNrOfRetries: Int,
-           withinTimeRange: java.time.Duration,
-           decider: SupervisorStrategy.JDecider,
-           loggingEnabled: Boolean) =
+  def this(
+      maxNrOfRetries: Int,
+      withinTimeRange: java.time.Duration,
+      decider: SupervisorStrategy.JDecider,
+      loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange.asScala, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
   /**
@@ -586,17 +596,19 @@ case class OneForOneStrategy(maxNrOfRetries: Int = -1,
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */
-  private val retriesWindow = (SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
-                               SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
+  private val retriesWindow = (
+    SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
+    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = ()
 
-  def processFailure(context: ActorContext,
-                     restart: Boolean,
-                     child: ActorRef,
-                     cause: Throwable,
-                     stats: ChildRestartStats,
-                     children: Iterable[ChildRestartStats]): Unit = {
+  def processFailure(
+      context: ActorContext,
+      restart: Boolean,
+      child: ActorRef,
+      cause: Throwable,
+      stats: ChildRestartStats,
+      children: Iterable[ChildRestartStats]): Unit = {
     if (restart && stats.requestRestartPermission(retriesWindow))
       restartChild(child, cause, suspendFirst = false)
     else

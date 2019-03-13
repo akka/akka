@@ -51,11 +51,12 @@ case class SimpleSigarProvider(location: String = "native") extends SigarProvide
 /**
  * Provide sigar library as static mock.
  */
-case class MockitoSigarProvider(pid: Long = 123,
-                                loadAverage: Array[Double] = Array(0.7, 0.3, 0.1),
-                                cpuCombined: Double = 0.5,
-                                cpuStolen: Double = 0.2,
-                                steps: Int = 5)
+case class MockitoSigarProvider(
+    pid: Long = 123,
+    loadAverage: Array[Double] = Array(0.7, 0.3, 0.1),
+    cpuCombined: Double = 0.5,
+    cpuStolen: Double = 0.2,
+    steps: Int = 5)
     extends SigarProvider
     with MockitoSugar {
 

@@ -107,9 +107,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "combine to many outputs with simplified API" in {
       val probes = Seq.fill(3)(TestSubscriber.manualProbe[Int]())
-      val sink = Sink.combine(Sink.fromSubscriber(probes(0)),
-                              Sink.fromSubscriber(probes(1)),
-                              Sink.fromSubscriber(probes(2)))(Broadcast[Int](_))
+      val sink =
+        Sink.combine(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(
+          Broadcast[Int](_))
 
       Source(List(0, 1, 2)).runWith(sink)
 
@@ -212,10 +212,11 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   "Java collector Sink" must {
 
-    class TestCollector(_supplier: () => Supplier[Array[Int]],
-                        _accumulator: () => BiConsumer[Array[Int], Int],
-                        _combiner: () => BinaryOperator[Array[Int]],
-                        _finisher: () => function.Function[Array[Int], Int])
+    class TestCollector(
+        _supplier: () => Supplier[Array[Int]],
+        _accumulator: () => BiConsumer[Array[Int], Int],
+        _combiner: () => BinaryOperator[Array[Int]],
+        _finisher: () => function.Function[Array[Int], Int])
         extends Collector[Int, Array[Int], Int] {
       override def supplier(): Supplier[Array[Int]] = _supplier()
       override def combiner(): BinaryOperator[Array[Int]] = _combiner()

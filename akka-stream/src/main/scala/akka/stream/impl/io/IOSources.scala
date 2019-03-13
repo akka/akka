@@ -144,10 +144,11 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
  * INTERNAL API
  * Source backed by the given input stream.
  */
-@InternalApi private[akka] final class InputStreamSource(createInputStream: () => InputStream,
-                                                         chunkSize: Int,
-                                                         val attributes: Attributes,
-                                                         shape: SourceShape[ByteString])
+@InternalApi private[akka] final class InputStreamSource(
+    createInputStream: () => InputStream,
+    chunkSize: Int,
+    val attributes: Attributes,
+    shape: SourceShape[ByteString])
     extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)

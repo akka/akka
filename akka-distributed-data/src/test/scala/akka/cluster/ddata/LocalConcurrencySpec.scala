@@ -47,8 +47,9 @@ class LocalConcurrencySpec(_system: ActorSystem)
 
   def this() {
     this(
-      ActorSystem("LocalConcurrencySpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "LocalConcurrencySpec",
+        ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port=0
       akka.remote.artery.canonical.port = 0

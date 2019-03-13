@@ -50,23 +50,26 @@ import akka.util.Helpers.ConfigOps
  * @param clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  */
-class PhiAccrualFailureDetector(val threshold: Double,
-                                val maxSampleSize: Int,
-                                val minStdDeviation: FiniteDuration,
-                                val acceptableHeartbeatPause: FiniteDuration,
-                                val firstHeartbeatEstimate: FiniteDuration,
-                                eventStream: Option[EventStream])(implicit
-                                                                  clock: Clock)
+class PhiAccrualFailureDetector(
+    val threshold: Double,
+    val maxSampleSize: Int,
+    val minStdDeviation: FiniteDuration,
+    val acceptableHeartbeatPause: FiniteDuration,
+    val firstHeartbeatEstimate: FiniteDuration,
+    eventStream: Option[EventStream])(
+    implicit
+    clock: Clock)
     extends FailureDetector {
 
   /**
    * Constructor without eventStream to support backwards compatibility
    */
-  def this(threshold: Double,
-           maxSampleSize: Int,
-           minStdDeviation: FiniteDuration,
-           acceptableHeartbeatPause: FiniteDuration,
-           firstHeartbeatEstimate: FiniteDuration)(implicit clock: Clock) =
+  def this(
+      threshold: Double,
+      maxSampleSize: Int,
+      minStdDeviation: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration,
+      firstHeartbeatEstimate: FiniteDuration)(implicit clock: Clock) =
     this(threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None)(clock)
 
   /**
@@ -76,12 +79,13 @@ class PhiAccrualFailureDetector(val threshold: Double,
    * `heartbeat-interval`.
    */
   def this(config: Config, ev: EventStream) =
-    this(threshold = config.getDouble("threshold"),
-         maxSampleSize = config.getInt("max-sample-size"),
-         minStdDeviation = config.getMillisDuration("min-std-deviation"),
-         acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
-         firstHeartbeatEstimate = config.getMillisDuration("heartbeat-interval"),
-         Some(ev))
+    this(
+      threshold = config.getDouble("threshold"),
+      maxSampleSize = config.getInt("max-sample-size"),
+      minStdDeviation = config.getMillisDuration("min-std-deviation"),
+      acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
+      firstHeartbeatEstimate = config.getMillisDuration("heartbeat-interval"),
+      Some(ev))
 
   require(threshold > 0.0, "failure-detector.threshold must be > 0")
   require(maxSampleSize > 0, "failure-detector.max-sample-size must be > 0")
@@ -135,9 +139,10 @@ class PhiAccrualFailureDetector(val threshold: Double,
         if (isAvailable(timestamp)) {
           if (interval >= (acceptableHeartbeatPauseMillis / 3 * 2) && eventStream.isDefined)
             eventStream.get.publish(
-              Warning(this.toString,
-                      getClass,
-                      s"heartbeat interval is growing too large for address $address: $interval millis"))
+              Warning(
+                this.toString,
+                getClass,
+                s"heartbeat interval is growing too large for address $address: $interval millis"))
           oldState.history :+ interval
         } else oldState.history
     }
@@ -205,10 +210,11 @@ private[akka] object HeartbeatHistory {
    * for empty HeartbeatHistory, i.e. throws ArithmeticException.
    */
   def apply(maxSampleSize: Int): HeartbeatHistory =
-    HeartbeatHistory(maxSampleSize = maxSampleSize,
-                     intervals = immutable.IndexedSeq.empty,
-                     intervalSum = 0L,
-                     squaredIntervalSum = 0L)
+    HeartbeatHistory(
+      maxSampleSize = maxSampleSize,
+      intervals = immutable.IndexedSeq.empty,
+      intervalSum = 0L,
+      squaredIntervalSum = 0L)
 
 }
 
@@ -219,10 +225,11 @@ private[akka] object HeartbeatHistory {
  * The stats (mean, variance, stdDeviation) are not defined for
  * for empty HeartbeatHistory, i.e. throws ArithmeticException.
  */
-private[akka] final case class HeartbeatHistory private (maxSampleSize: Int,
-                                                         intervals: immutable.IndexedSeq[Long],
-                                                         intervalSum: Long,
-                                                         squaredIntervalSum: Long) {
+private[akka] final case class HeartbeatHistory private (
+    maxSampleSize: Int,
+    intervals: immutable.IndexedSeq[Long],
+    intervalSum: Long,
+    squaredIntervalSum: Long) {
 
   // Heartbeat histories are created trough the firstHeartbeat variable of the PhiAccrualFailureDetector
   // which always have intervals.size > 0.
@@ -242,19 +249,21 @@ private[akka] final case class HeartbeatHistory private (maxSampleSize: Int,
   @tailrec
   final def :+(interval: Long): HeartbeatHistory = {
     if (intervals.size < maxSampleSize)
-      HeartbeatHistory(maxSampleSize,
-                       intervals = intervals :+ interval,
-                       intervalSum = intervalSum + interval,
-                       squaredIntervalSum = squaredIntervalSum + pow2(interval))
+      HeartbeatHistory(
+        maxSampleSize,
+        intervals = intervals :+ interval,
+        intervalSum = intervalSum + interval,
+        squaredIntervalSum = squaredIntervalSum + pow2(interval))
     else
       dropOldest :+ interval // recur
   }
 
   private def dropOldest: HeartbeatHistory =
-    HeartbeatHistory(maxSampleSize,
-                     intervals = intervals.drop(1),
-                     intervalSum = intervalSum - intervals.head,
-                     squaredIntervalSum = squaredIntervalSum - pow2(intervals.head))
+    HeartbeatHistory(
+      maxSampleSize,
+      intervals = intervals.drop(1),
+      intervalSum = intervalSum - intervals.head,
+      squaredIntervalSum = squaredIntervalSum - pow2(intervals.head))
 
   private def pow2(x: Long) = x * x
 }

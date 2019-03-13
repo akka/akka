@@ -126,10 +126,11 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     q.hasMessages should ===(false)
   }
 
-  def testEnqueueDequeue(config: MailboxType,
-                         enqueueN: Int = 10000,
-                         dequeueN: Int = 10000,
-                         parallel: Boolean = true): Unit = within(10 seconds) {
+  def testEnqueueDequeue(
+      config: MailboxType,
+      enqueueN: Int = 10000,
+      dequeueN: Int = 10000,
+      parallel: Boolean = true): Unit = within(10 seconds) {
     val q = factory(config)
     ensureInitialMailboxState(config, q)
 
