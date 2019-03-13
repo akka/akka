@@ -338,10 +338,6 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val p = TestProbe[TheReply]()
 
       spawn(Behaviors.setup[TheReply] { ctx =>
-        // FIXME is the implicit ClassTag difficult to use?
-        // it works fine when there is a single parameter apply,
-        // but trouble when more parameters and this doesn't compile
-        //ctx.ask(aliceRef)(x => WhoAreYou(x)) {
         ctx.ask(aliceRef)(WhoAreYou) {
           case Success(name) => TheReply(name)
           case Failure(ex)   => TheReply(ex.getMessage)
@@ -356,6 +352,16 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       p.receiveMessage().s should startWith("I'm alice")
 
       aliceRef ! StopPlz()
+
+      // make sure request with multiple parameters compile
+      Behaviors.setup[TheReply] { ctx =>
+        ctx.ask(aliceRef)(WhoAreYou2(17, _)) {
+          case Success(name) => TheReply(name)
+          case Failure(ex)   => TheReply(ex.getMessage)
+        }
+
+        Behaviors.empty
+      }
     }
 
     "EntityRef - AskTimeoutException" in {
