@@ -517,3 +517,7 @@ When doing rolling upgrades special care must be taken to not change any of the 
  * the persistence mode
 
  If any one of these needs a change it will require a full cluster restart.
+ 
+ ## Lease
+ 
+ TODO

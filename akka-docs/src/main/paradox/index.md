@@ -13,6 +13,7 @@
 * [stream/index](stream/index.md)
 * [index-network](index-network.md)
 * [discovery](discovery/index.md)
+* [coordination](coordination.md)
 * [index-futures](index-futures.md)
 * [index-utilities](index-utilities.md)
 * [common/other-modules](common/other-modules.md)

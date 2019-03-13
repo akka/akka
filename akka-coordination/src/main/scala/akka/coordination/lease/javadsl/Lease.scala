@@ -31,7 +31,7 @@ abstract class Lease() {
    *
    * [[Lease.checkLease]] can be used to verify that the owner still has the lease.
    */
-  def acquire(): CompletionStage[Boolean]
+  def acquire(): CompletionStage[java.lang.Boolean]
 
   /**
    * Same as acquire with an additional callback
@@ -40,12 +40,12 @@ abstract class Lease() {
    * Implementations should not call leaseLostCallback until after the returned future
    * has been completed
    */
-  def acquire(leaseLostCallback: Optional[Throwable] ⇒ Unit): CompletionStage[Boolean]
+  def acquire(leaseLostCallback: java.util.function.Consumer[Optional[Throwable]]): CompletionStage[java.lang.Boolean]
 
   /**
    * Release the lease so some other owner can acquire it.
    */
-  def release(): CompletionStage[Boolean]
+  def release(): CompletionStage[java.lang.Boolean]
 
   /**
    * Check if the owner still holds the lease.
@@ -53,6 +53,6 @@ abstract class Lease() {
    * `false` means that it might not hold the lease, but it could, and for more certain
    * response you would have to use [[Lease#acquire]] or [[Lease#release]].
    */
-  def checkLease(): Boolean
+  def checkLease(): java.lang.Boolean
 
 }

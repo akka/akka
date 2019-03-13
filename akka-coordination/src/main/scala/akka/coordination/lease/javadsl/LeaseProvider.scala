@@ -36,6 +36,6 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
    */
   def getLease(leaseName: String, configPath: String, ownerName: String): Lease = {
     val scalaLease = delegate.getLease(leaseName, configPath, ownerName)
-    new LeaseAdapter(scalaLease)
+    new LeaseAdapter(scalaLease)(system.dispatcher)
   }
 }

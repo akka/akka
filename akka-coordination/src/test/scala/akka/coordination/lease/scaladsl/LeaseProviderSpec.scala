@@ -19,6 +19,7 @@ object LeaseProviderSpec {
   }
 
   class LeaseB(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
+    system.name // warning
     override def acquire(): Future[Boolean] = Future.successful(false)
     override def release(): Future[Boolean] = Future.successful(false)
     override def checkLease(): Boolean = false
