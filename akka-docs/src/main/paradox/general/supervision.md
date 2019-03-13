@@ -211,11 +211,16 @@ to recover before the persistent actor is started.
 #### Supervision strategies
 
 There are two basic supervision strategies available for backoff:
-* 'On failure': The supervisor will restart the supervised actor once it crashes, but terminate if the actor stops normaly (e.g. through `context.stop`)  
-* 'On stop': The supervisor will restart the supervised actor if it terminates in any way (consider this for `PersistentActor` since they stop on persistence failures instead of crashing)
+* 'On failure': The supervisor will terminate and then start the supervised actor if it crashes. If the supervised actor stops normally (e.g. through `context.stop`), the supervisor will be terminated and no further attempt to start the supervised actor will be done.
+* 'On stop': The supervisor will terminate and then start the supervised actor if it terminates in any way (consider this for `PersistentActor` since they stop on persistence failures instead of crashing)
+
+To note that this supervision strategy does not restart the actor but rather stops and starts it. Be aware of it if you 
+use @scala[`Stash` trait’s] @java[`AbstractActorWithStash`] in combination with the backoff supervision strategy.
+The `preRestart` hook will not be executed if the supervised actor fails or stops and you will miss the opportunity
+to unstash the messages.
 
 #### Sharding
-If the 'on stop' strategy is used for sharded actors a final termination message should be configured and used to terminate the actor on passivation. Otherwise the supervisor will just restart the actor again.
+If the 'on stop' strategy is used for sharded actors a final termination message should be configured and used to terminate the actor on passivation. Otherwise the supervisor will just stop and start the actor again.
 
 The termination message is configured with:
 
@@ -245,7 +250,7 @@ and re-starting after the same configured interval. By adding additional randomn
 re-start intervals the actors will start in slightly different points in time, thus avoiding
 large spikes of traffic hitting the recovering shared database or other resource that they all need to contact.
 
-The `akka.pattern.BackoffSupervisor` actor can also be configured to restart the actor after a delay when the actor 
+The `akka.pattern.BackoffSupervisor` actor can also be configured to stop and start the actor after a delay when the actor 
 crashes and the supervision strategy decides that it should restart.
 
 The following Scala snippet shows how to create a backoff supervisor which will start the given echo actor after it has crashed
@@ -265,7 +270,7 @@ The `akka.pattern.BackoffOnFailureOptions` and `akka.pattern.BackoffOnRestartOpt
 Options are:
 * `withAutoReset`: The backoff is reset if no failure/stop occurs within the duration. This is the default behaviour with `minBackoff` as default value
 * `withManualReset`: The child must send `BackoffSupervisor.Reset` to its backoff supervisor (parent)
-* `withSupervisionStrategy`: Sets a custom `OneForOneStrategy` (as each backoff supervisor only has one child). The default strategy uses the `akka.actor.SupervisorStrategy.defaultDecider` which restarts on exceptions.
+* `withSupervisionStrategy`: Sets a custom `OneForOneStrategy` (as each backoff supervisor only has one child). The default strategy uses the `akka.actor.SupervisorStrategy.defaultDecider` which stops and starts the child on exceptions.
 * `withMaxNrOfRetries`: Sets the maximum number of retries until the supervisor will give up (`-1` is default which means no limit of retries). Note: This is set on the supervision strategy, so setting a different strategy resets the `maxNrOfRetries`.
 * `withReplyWhileStopped`: By default all messages received while the child is stopped are forwarded to dead letters. With this set, the supervisor will reply to the sender instead.
 
@@ -283,7 +288,7 @@ will cause the child to stop.
 
 @@snip [BackoffSupervisorDocSpec.scala](/akka-docs/src/test/scala/docs/pattern/BackoffSupervisorDocSpec.scala) { #backoff-custom-fail }
 
-The above code sets up a back-off supervisor that restarts the child after back-off if MyException is thrown, any other exception will be
+The above code sets up a back-off supervisor that stops and starts the child after back-off if MyException is thrown, any other exception will be
 escalated. The back-off is automatically reset if the child does not throw any errors within 10 seconds.
 
 ## One-For-One Strategy vs. All-For-One Strategy
