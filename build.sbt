@@ -534,9 +534,7 @@ lazy val coordination = akkaModule("akka-coordination")
     actorTests % "test->test",
     cluster % "test->test"
   )
-  .settings(
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings")
-  )
+  .settings(AkkaBuild.strictSettings)
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)

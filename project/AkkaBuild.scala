@@ -30,6 +30,10 @@ object AkkaBuild {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       version in ThisBuild := "2.5-SNAPSHOT"
     )
+  
+  lazy val strictSettings = Seq(
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings")
+  )
 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
