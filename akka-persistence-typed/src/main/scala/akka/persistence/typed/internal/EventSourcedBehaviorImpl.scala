@@ -7,11 +7,8 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 import scala.util.control.NonFatal
-import akka.Done
+
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -67,6 +64,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
+
+  if (persistenceId eq null)
+    throw new IllegalArgumentException("persistenceId must not be null")
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala

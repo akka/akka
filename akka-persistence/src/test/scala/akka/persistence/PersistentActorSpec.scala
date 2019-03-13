@@ -518,16 +518,16 @@ object PersistentActorSpec {
       extends AsyncPersistHandlerCorrelationCheck(name)
       with InmemRuntimePluginConfig
 
-  class AnyValEventPersistentActor(name: String) extends ExamplePersistentActor(name) {
+  class PrimitiveEventPersistentActor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
       case Cmd("a") => persist(5)(evt => sender() ! evt)
     }
   }
-  class AnyValEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
-      extends AnyValEventPersistentActor(name)
+  class PrimitiveEventPersistentActorWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)
+      extends PrimitiveEventPersistentActor(name)
       with LevelDbRuntimePluginConfig
-  class AnyValEventPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
-      extends AnyValEventPersistentActor(name)
+  class PrimitiveEventPersistentActorWithInmemRuntimePluginConfig(name: String, val providedConfig: Config)
+      extends PrimitiveEventPersistentActor(name)
       with InmemRuntimePluginConfig
 
   class HandleRecoveryFinishedEventPersistentActor(name: String, probe: ActorRef)
@@ -1173,7 +1173,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   protected def replyInEventHandlerPersistentActor: ActorRef = namedPersistentActor[ReplyInEventHandlerPersistentActor]
 
-  protected def anyValEventPersistentActor: ActorRef = namedPersistentActor[AnyValEventPersistentActor]
+  protected def primitiveEventPersistentActor: ActorRef = namedPersistentActor[PrimitiveEventPersistentActor]
 
   protected def asyncPersistPersistentActor: ActorRef = namedPersistentActor[AsyncPersistPersistentActor]
 
@@ -1394,8 +1394,8 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor ! Cmd("a")
       expectMsg("a")
     }
-    "be able to persist events that extend AnyVal" in {
-      val persistentActor = anyValEventPersistentActor
+    "be able to persist primitive events" in {
+      val persistentActor = primitiveEventPersistentActor
       persistentActor ! Cmd("a")
       expectMsg(5)
     }
@@ -1896,8 +1896,8 @@ class LeveldbPersistentActorWithRuntimePluginConfigSpec
     namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithLevelDbRuntimePluginConfig](
       providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef =
-    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithLevelDbRuntimePluginConfig](
+  override protected def primitiveEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PrimitiveEventPersistentActorWithLevelDbRuntimePluginConfig](
       providedActorConfig)
 
   override protected def asyncPersistPersistentActor: ActorRef =
@@ -2096,8 +2096,9 @@ class InmemPersistentActorWithRuntimePluginConfigSpec
     namedPersistentActorWithProvidedConfig[ReplyInEventHandlerPersistentActorWithInmemRuntimePluginConfig](
       providedActorConfig)
 
-  override protected def anyValEventPersistentActor: ActorRef =
-    namedPersistentActorWithProvidedConfig[AnyValEventPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
+  override protected def primitiveEventPersistentActor: ActorRef =
+    namedPersistentActorWithProvidedConfig[PrimitiveEventPersistentActorWithInmemRuntimePluginConfig](
+      providedActorConfig)
 
   override protected def asyncPersistPersistentActor: ActorRef =
     namedPersistentActorWithProvidedConfig[AsyncPersistPersistentActorWithInmemRuntimePluginConfig](providedActorConfig)
