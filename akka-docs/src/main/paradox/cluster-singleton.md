@@ -187,4 +187,19 @@ Java
 
 ## Lease
 
-TODO
+A @ref[lease](coordination.md) can be used as an additional safety measure to ensure that two singletons 
+don't run at the same time. Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+
+A lease can be a final backup that means that the singleton actor won't be created unless
+the lease can be acquired. 
+
+To use a lease for singleton set `akka.cluster.singleton.lease-implementation` to the configuration location
+of the lease to use. A lease with with the name `<actor system name>-singleton-<singleton name>` is used and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If the cluster singleton manager can't acquire the lease it will keep retrying while it is the oldest node in the cluster.
+If the lease is lost then the singleton actor will be terminated then the lease will be re-tried.
+

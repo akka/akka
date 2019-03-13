@@ -10,8 +10,8 @@ import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
 import com.typesafe.config.Config
-import akka.cluster.Cluster
-import akka.cluster.singleton.{ ClusterSingletonLeaseSettings, ClusterSingletonManagerSettings }
+import akka.cluster.{ Cluster, ClusterLeaseSettings }
+import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -59,6 +59,11 @@ object ClusterShardingSettings {
       if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
       else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
 
+    val lease = config.getString("lease-implementation") match {
+      case s if s.isEmpty ⇒ None
+      case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
+    }
+
     new ClusterShardingSettings(role = roleOption(config.getString("role")),
                                 rememberEntities = config.getBoolean("remember-entities"),
                                 journalPluginId = config.getString("journal-plugin-id"),
@@ -66,7 +71,8 @@ object ClusterShardingSettings {
                                 stateStoreMode = config.getString("state-store-mode"),
                                 passivateIdleEntityAfter = passivateIdleAfter,
                                 tuningParameters,
-                                coordinatorSingletonSettings)
+                                coordinatorSingletonSettings,
+                                lease)
   }
 
   /**
@@ -207,7 +213,7 @@ final class ClusterShardingSettings(val role: Option[String],
                                     val passivateIdleEntityAfter: FiniteDuration,
                                     val tuningParameters: ClusterShardingSettings.TuningParameters,
                                     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-                                    val leaseSettings: Option[ClusterSingletonLeaseSettings])
+                                    val leaseSettings: Option[ClusterLeaseSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
@@ -284,7 +290,7 @@ final class ClusterShardingSettings(val role: Option[String],
     copy(passivateIdleAfter = duration.asScala)
 
   @ApiMayChange
-  def withLeaseSettings(leaseSettings: ClusterSingletonLeaseSettings): ClusterShardingSettings =
+  def withLeaseSettings(leaseSettings: ClusterLeaseSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 
   /**
@@ -303,7 +309,7 @@ final class ClusterShardingSettings(val role: Option[String],
                    passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
                    tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
                    coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
-                   leaseSettings: Option[ClusterSingletonLeaseSettings] = leaseSettings): ClusterShardingSettings =
+                   leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
     new ClusterShardingSettings(role,
                                 rememberEntities,
                                 journalPluginId,

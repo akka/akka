@@ -11,7 +11,7 @@ import java.util.function.Consumer
 import akka.annotation.InternalApi
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.javadsl.Lease
-import akka.coordination.lease.scaladsl.{Lease => ScalaLease}
+import akka.coordination.lease.scaladsl.{ Lease => ScalaLease }
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._

@@ -6,12 +6,10 @@ package akka.cluster.sharding
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
-import akka.cluster.TestLeaseExt
+import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
+import akka.cluster.{ClusterLeaseSettings, TestLeaseExt}
 import akka.cluster.sharding.ShardRegion.ShardInitialized
-import akka.cluster.sharding.ShardSpec.EntityActor
-import akka.cluster.singleton.ClusterSingletonLeaseSettings
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.testkit.{AkkaSpec, ImplicitSender, TestProbe}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -104,7 +102,7 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
     val parent = TestProbe()
     val settings = ClusterShardingSettings(system)
       .withLeaseSettings(
-        new ClusterSingletonLeaseSettings("test-lease", 2.seconds)
+        new ClusterLeaseSettings("test-lease", 2.seconds)
       )
     def lease = awaitAssert {
       testLeaseExt.getTestLease(leaseNameForShard(typeName, shardId))

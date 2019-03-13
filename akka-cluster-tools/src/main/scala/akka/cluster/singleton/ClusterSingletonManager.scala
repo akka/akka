@@ -19,24 +19,19 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.FSM
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster.Cluster
+import akka.cluster._
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
-import akka.cluster.MemberStatus
 import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
-import akka.cluster.UniqueAddress
-import akka.cluster.ClusterEvent
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.cluster.ClusterSettings
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 
 import scala.util.control.NonFatal
@@ -60,7 +55,7 @@ object ClusterSingletonManagerSettings {
   def apply(config: Config): ClusterSingletonManagerSettings = {
     val lease = config.getString("lease-implementation") match {
       case s if s.isEmpty ⇒ None
-      case other ⇒ Some(new ClusterSingletonLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
+      case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
     new ClusterSingletonManagerSettings(singletonName = config.getString("singleton-name"),
                                         role = roleOption(config.getString("role")),
@@ -116,7 +111,7 @@ final class ClusterSingletonManagerSettings(val singletonName: String,
                                             val role: Option[String],
                                             val removalMargin: FiniteDuration,
                                             val handOverRetryInterval: FiniteDuration,
-                                            val leaseSettings: Option[ClusterSingletonLeaseSettings])
+                                            val leaseSettings: Option[ClusterLeaseSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for akka 2.5.21
@@ -139,19 +134,16 @@ final class ClusterSingletonManagerSettings(val singletonName: String,
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
 
-  def withLeaseSettings(leaseSettings: ClusterSingletonLeaseSettings): ClusterSingletonManagerSettings =
+  def withLeaseSettings(leaseSettings: ClusterLeaseSettings): ClusterSingletonManagerSettings =
     copy(leaseSettings = Some(leaseSettings))
 
-  private def copy(
-      singletonName: String = singletonName,
-      role: Option[String] = role,
-      removalMargin: FiniteDuration = removalMargin,
-      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
-      leaseSettings: Option[ClusterSingletonLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
+  private def copy(singletonName: String = singletonName,
+                   role: Option[String] = role,
+                   removalMargin: FiniteDuration = removalMargin,
+                   handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+                   leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
-
-class ClusterSingletonLeaseSettings(val leaseImplementation: String, val leaseRetryInterval: FiniteDuration)
 
 /**
  * Marker trait for remote messages with special serializer.
@@ -488,12 +480,12 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   require(role.forall(cluster.selfRoles.contains),
           s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
-  private val singletonLeaseName = s"singleton-${context.system.name}-${settings.singletonName}"
+  private val singletonLeaseName = s"${context.system.name}-singleton-${settings.singletonName}"
 
   val lease: Option[Lease] = settings.leaseSettings.map(
     settings ⇒
       LeaseProvider(context.system)
-        .getLease(singletonLeaseName, settings.leaseImplementation, cluster.selfUniqueAddress.address.hostPort))
+        .getLease(singletonLeaseName, settings.leaseImplementation, cluster.selfAddress.hostPort))
   val leaseRetryInterval: FiniteDuration = settings.leaseSettings match {
     case Some(s) ⇒ s.leaseRetryInterval
     case None ⇒ 5.seconds // won't be used
