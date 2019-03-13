@@ -5,12 +5,11 @@
 package akka.persistence.typed.javadsl
 
 import scala.collection.JavaConverters._
-
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
 /**

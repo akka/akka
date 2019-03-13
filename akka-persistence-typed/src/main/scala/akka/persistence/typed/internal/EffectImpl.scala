@@ -5,12 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
-
 import akka.annotation.InternalApi
-import akka.persistence.typed.NoReplyEffectImpl
-import akka.persistence.typed.SideEffect
-import akka.persistence.typed.Stop
-import akka.persistence.typed.UnstashAll
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
 

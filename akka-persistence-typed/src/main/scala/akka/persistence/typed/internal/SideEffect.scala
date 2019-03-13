@@ -2,7 +2,7 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed
+package akka.persistence.typed.internal
 
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
@@ -14,9 +14,10 @@ import akka.japi.function
  * Persist, none and unhandled are main effects. Then any number of
  * call backs can be added to these effects with `andThen`.
  *
- * Not for user extension
+ * INTERNAL API
  */
-sealed abstract class SideEffect[State]
+@InternalApi
+private[akka] sealed abstract class SideEffect[State]
 
 /** INTERNAL API */
 @InternalApi

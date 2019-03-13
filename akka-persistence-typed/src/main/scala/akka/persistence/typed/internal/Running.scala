@@ -27,21 +27,17 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.Callback
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
-import akka.persistence.typed.SideEffect
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
-import akka.persistence.typed.Stop
-import akka.persistence.typed.UnstashAll
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
 /**

@@ -6,12 +6,11 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.persistence.typed.SideEffect
 
 import scala.concurrent.Future
 
@@ -316,12 +315,12 @@ object PersistentActorCompileOnlyTest {
       else Effect.persist(MoodChanged(newMood))
 
     //#commonChainedEffects
-    // Example factoring out a chained effect rather than using `andThen`
-    val commonChainedEffects = SideEffect[Mood](_ => println("Command processed"))
+    // Example factoring out a chained effect to use in several places with `thenRun`
+    val commonChainedEffects: Mood => Unit = _ => println("Command processed")
     // Then in a command handler:
     Effect
       .persist(Remembered("Yep")) // persist event
-      .andThen(commonChainedEffects) // add on common chained effect
+      .thenRun(commonChainedEffects) // add on common chained effect
     //#commonChainedEffects
 
     val commandHandler: CommandHandler[Command, Event, Mood] = { (state, cmd) =>
@@ -334,12 +333,12 @@ object PersistentActorCompileOnlyTest {
             .thenRun { _ =>
               sender ! Ack
             }
-            .andThen(commonChainedEffects)
+            .thenRun(commonChainedEffects)
         case Remember(memory) =>
           // A more elaborate example to show we still have full control over the effects
           // if needed (e.g. when some logic is factored out but you want to add more effects)
           val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
-          Effect.persist(commonEffects.events :+ Remembered(memory)).andThen(commonChainedEffects)
+          Effect.persist(commonEffects.events :+ Remembered(memory)).thenRun(commonChainedEffects)
       }
     }
 
