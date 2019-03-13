@@ -58,7 +58,7 @@ abstract class Behavior[T] { behavior =>
   @InternalApi private[akka] final def unsafeCast[U]: Behavior[U] = this.asInstanceOf[Behavior[U]]
 
   /**
-   * Composes this `Behavior with a fallback `Behavior` which
+   * Composes this `Behavior` with a fallback `Behavior` which
    * is used when this `Behavior` doesn't handle the message or signal, i.e.
    * when `unhandled` is returned.
    *

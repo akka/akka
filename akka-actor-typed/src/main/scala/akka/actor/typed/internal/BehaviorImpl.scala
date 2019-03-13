@@ -76,7 +76,17 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
     }
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
-      Behavior.interpretSignal(first, ctx, msg) match {
+      val result: Behavior[T] = try {
+        Behavior.interpretSignal(first, ctx, msg)
+      } catch {
+        case _: DeathPactException =>
+          // since we don't know what kind of concrete Behavior `first` is, if it is intercepted etc.
+          // the only way we can fallback to second behavior if Terminated wasn't handled is to
+          // catch the DeathPact here and pretend like it was just `unhandled`
+          Behavior.unhandled
+      }
+
+      result match {
         case _: UnhandledBehavior.type => Behavior.interpretSignal(second, ctx, msg)
         case handled                   => handled
       }
