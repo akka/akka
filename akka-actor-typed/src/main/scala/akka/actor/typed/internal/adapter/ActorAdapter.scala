@@ -285,11 +285,13 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
   override def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
     if (msg != PostStop)
       throw new IllegalArgumentException(
-        s"The ComposedStoppingBehavior should never receive any other signal than PostStop but got $msg")
+        s"The ComposedStoppingBehavior should only ever receive a PostStop signal, but received $msg")
     // first pass the signal to the previous behavior, so that it and potential interceptors
     // will get the PostStop signal, unless it is deferred, we don't start a behavior while stopping
-    if (!lastBehavior.isInstanceOf[DeferredBehavior[_]])
-      Behavior.interpretSignal(lastBehavior, ctx, PostStop)
+    lastBehavior match {
+      case _: DeferredBehavior[_] => // no starting of behaviors on actor stop
+      case nonDeferred            => Behavior.interpretSignal(nonDeferred, ctx, PostStop)
+    }
     // and then to the potential stop hook, which can have a call back or not
     stopBehavior.onPostStop(ctx)
     Behavior.empty
