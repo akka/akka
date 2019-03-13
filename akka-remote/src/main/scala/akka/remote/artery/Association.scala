@@ -254,8 +254,7 @@ private[remote] class Association(
   /**
    * @return Reference to current shared state
    */
-  def associationState: AssociationState =
-    Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
+  def associationState: AssociationState = _sharedStateDoNotCallMeDirectly
 
   def setControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): Unit = {
     val current = associationState

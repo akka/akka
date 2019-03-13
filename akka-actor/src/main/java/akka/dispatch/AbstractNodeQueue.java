@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Lock-free MPSC linked queue implementation based on Dmitriy Vyukov's non-intrusive MPSC queue:
  * http://www.1024cores.net/home/lock-free-algorithms/queues/non-intrusive-mpsc-node-based-queue
- * 
+ *
  * This queue could be wait-free (i.e. without the spinning loops in peekNode and pollNode) if
  * it were permitted to return null while the queue is not quite empty anymore but the enqueued
  * element is not yet visible. This would break actor scheduling, though.
@@ -24,7 +24,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
      * there is nothing to be gained by going to all-out Unsafe usage—we’d have to do
      * cache-line padding ourselves.
      */
-  
+
     @SuppressWarnings("unused")
     private volatile Node<T> _tailDoNotCallMeDirectly;
 
@@ -36,16 +36,16 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     /**
      * Query the queue tail for the next element without dequeuing it.
-     * 
+     *
      * Use this method only from the consumer thread!
-     * 
+     *
      * !!! There is a copy of this code in pollNode() !!!
-     * 
+     *
      * @return queue node with element inside if there was one, or null if there was none
      */
     @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
-        final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
+        final Node<T> tail = _tailDoNotCallMeDirectly;
         Node<T> next = tail.next();
         if (next == null && get() != tail) {
             // if tail != head this is not going to change until producer makes progress
@@ -56,12 +56,12 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         }
         return next;
     }
-    
+
     /**
      * Query the queue tail for the next element without dequeuing it.
-     * 
+     *
      * Use this method only from the consumer thread!
-     * 
+     *
      * @return element if there was one, or null if there was none
      */
     public final T peek() {
@@ -71,21 +71,21 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     /**
      * Add an element to the head of the queue.
-     * 
+     *
      * This method can be used from any thread.
-     * 
+     *
      * @param value the element to be added; must not be null
      */
     public final void add(final T value) {
         final Node<T> n = new Node<T>(value);
         getAndSet(n).setNext(n);
     }
-    
+
     /**
      * Add an element to the head of the queue, providing the queue node to be used.
-     * 
+     *
      * This method can be used from any thread.
-     * 
+     *
      * @param n the node containing the element to be added; both must not be null
      */
     public final void addNode(final Node<T> n) {
@@ -95,30 +95,30 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     /**
      * Query the queue whether it is empty right now.
-     * 
+     *
      * This method can be used from any thread.
-     * 
+     *
      * @return true if queue was empty at some point in the past
      */
     public final boolean isEmpty() {
-        return Unsafe.instance.getObjectVolatile(this, tailOffset) == get();
+        return _tailDoNotCallMeDirectly == get();
     }
 
     /**
      * This method returns an upper bound on the queue size at the time it
      * starts executing. It may spuriously return smaller values (including
      * zero) if the consumer pulls items out concurrently.
-     * 
+     *
      * This method can be used from any thread.
-     * 
+     *
      * @return an upper bound on queue length at some time in the past
      */
     @SuppressWarnings("unchecked")
     public final int count() {
         int count = 0;
         final Node<T> head = get();
-        for(Node<T> n = ((Node<T>) Unsafe.instance.getObjectVolatile(this, tailOffset)).next();
-            n != null && count < Integer.MAX_VALUE; 
+        for(Node<T> n = _tailDoNotCallMeDirectly.next();
+            n != null && count < Integer.MAX_VALUE;
             n = n.next()) {
           ++count;
           // only iterate up to the point where head was when starting: this is a moving queue!
@@ -129,9 +129,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
     /**
      * Pull one item from the queue’s tail if there is one.
-     * 
+     *
      * Use this method only from the consumer thread!
-     * 
+     *
      * @return element if there was one, or null if there was none
      */
     public final T poll() {
@@ -143,17 +143,17 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
           return value;
         }
     }
-    
+
     /**
      * Pull one item from the queue, returning it within a queue node.
-     * 
+     *
      * Use this method only from the consumer thread!
-     * 
+     *
      * @return queue node with element inside if there was one, or null if there was none
      */
     @SuppressWarnings("unchecked")
     public final Node<T> pollNode() {
-      final Node<T> tail = (Node<T>) Unsafe.instance.getObjectVolatile(this, tailOffset);
+      final Node<T> tail = _tailDoNotCallMeDirectly;
       Node<T> next = tail.next();
       if (next == null && get() != tail) {
           // if tail != head this is not going to change until producer makes progress
@@ -197,21 +197,21 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
 
         @SuppressWarnings("unchecked")
         public final Node<T> next() {
-            return (Node<T>)Unsafe.instance.getObjectVolatile(this, nextOffset);
+            return _nextDoNotCallMeDirectly;
         }
 
         protected final void setNext(final Node<T> newNext) {
           Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
         }
-        
+
         private final static long nextOffset;
-        
+
         static {
             try {
                 nextOffset = Unsafe.instance.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
-            } 
+            }
         }
-    } 
+    }
 }

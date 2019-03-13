@@ -37,26 +37,22 @@ public abstract class AbstractBoundedNodeQueue<T> {
         setEnq(n);
     }
 
-    private final void setEnq(Node<T> n) {
-        Unsafe.instance.putObjectVolatile(this, enqOffset, n);
-    }
+    private final void setEnq(Node<T> n) { this._enqDoNotCallMeDirectly = n; }
 
     @SuppressWarnings("unchecked")
     private final Node<T> getEnq() {
-        return (Node<T>)Unsafe.instance.getObjectVolatile(this, enqOffset);
+        return _enqDoNotCallMeDirectly;
     }
 
     private final boolean casEnq(Node<T> old, Node<T> nju) {
         return Unsafe.instance.compareAndSwapObject(this, enqOffset, old, nju);
     }
 
-    private final void setDeq(Node<T> n) {
-        Unsafe.instance.putObjectVolatile(this, deqOffset, n);
-    }
+    private final void setDeq(Node<T> n) { this._deqDoNotCallMeDirectly = n; }
 
     @SuppressWarnings("unchecked")
     private final Node<T> getDeq() {
-        return (Node<T>)Unsafe.instance.getObjectVolatile(this, deqOffset);
+        return _deqDoNotCallMeDirectly;
     }
 
     private final boolean casDeq(Node<T> old, Node<T> nju) {
@@ -196,21 +192,21 @@ public abstract class AbstractBoundedNodeQueue<T> {
 
         @SuppressWarnings("unchecked")
         public final Node<T> next() {
-            return (Node<T>)Unsafe.instance.getObjectVolatile(this, nextOffset);
+            return _nextDoNotCallMeDirectly;
         }
 
         protected final void setNext(final Node<T> newNext) {
           Unsafe.instance.putOrderedObject(this, nextOffset, newNext);
         }
-        
+
         private final static long nextOffset;
-        
+
         static {
             try {
                 nextOffset = Unsafe.instance.objectFieldOffset(Node.class.getDeclaredField("_nextDoNotCallMeDirectly"));
             } catch(Throwable t){
                 throw new ExceptionInInitializerError(t);
-            } 
+            }
         }
-    } 
+    }
 }

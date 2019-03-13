@@ -223,8 +223,7 @@ class CircuitBreaker(
    * @return Reference to current state
    */
   @inline
-  private[this] def currentState: State =
-    Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
+  private[this] def currentState: State = _currentStateDoNotCallMeDirectly
 
   /**
    * Helper method for updating the underlying resetTimeout via Unsafe
@@ -241,8 +240,7 @@ class CircuitBreaker(
    * Helper method for accessing to the underlying resetTimeout via Unsafe
    */
   @inline
-  private[this] def currentResetTimeout: FiniteDuration =
-    Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
+  private[this] def currentResetTimeout: FiniteDuration = _currentResetTimeoutDoNotCallMeDirectly
 
   /**
    * Wraps invocations of asynchronous calls that need to be protected

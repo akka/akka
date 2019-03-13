@@ -206,8 +206,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   protected final def systemQueueGet: LatestFirstSystemMessageList =
     // Note: contrary how it looks, there is no allocation here, as SystemMessageList is a value class and as such
     // it just exists as a typed view during compile-time. The actual return type is still SystemMessage.
-    new LatestFirstSystemMessageList(
-      Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage])
+    new LatestFirstSystemMessageList(_systemQueueDoNotCallMeDirectly)
 
   protected final def systemQueuePut(_old: LatestFirstSystemMessageList, _new: LatestFirstSystemMessageList): Boolean =
     // Note: calling .head is not actually existing on the bytecode level as the parameters _old and _new

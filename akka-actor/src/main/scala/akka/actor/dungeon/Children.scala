@@ -26,8 +26,7 @@ private[akka] trait Children { this: ActorCell =>
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
-  def childrenRefs: ChildrenContainer =
-    Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
+  def childrenRefs: ChildrenContainer = _childrenRefsDoNotCallMeDirectly
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
   final def getChildren(): java.lang.Iterable[ActorRef] =
@@ -50,8 +49,7 @@ private[akka] trait Children { this: ActorCell =>
     makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
   @silent @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
-  private def functionRefs: Map[String, FunctionRef] =
-    Unsafe.instance.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
+  private def functionRefs: Map[String, FunctionRef] = _functionRefsDoNotCallMeDirectly
 
   private[akka] def getFunctionRefOrNobody(name: String, uid: Int = ActorCell.undefinedUid): InternalActorRef =
     functionRefs.getOrElse(name, Children.GetNobody()) match {
@@ -163,8 +161,7 @@ private[akka] trait Children { this: ActorCell =>
     }
   }
 
-  final protected def setTerminated(): Unit =
-    Unsafe.instance.putObjectVolatile(this, AbstractActorCell.childrenOffset, TerminatedChildrenContainer)
+  final protected def setTerminated(): Unit = _childrenRefsDoNotCallMeDirectly = TerminatedChildrenContainer
 
   /*
    * ActorCell-internal API

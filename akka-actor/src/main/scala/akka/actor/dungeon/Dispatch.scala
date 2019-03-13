@@ -38,8 +38,7 @@ private[akka] trait Dispatch { this: ActorCell =>
   @silent @volatile private var _mailboxDoNotCallMeDirectly
       : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
-  @inline final def mailbox: Mailbox =
-    Unsafe.instance.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
+  @inline final def mailbox: Mailbox = _mailboxDoNotCallMeDirectly
 
   @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
     val oldMailbox = mailbox

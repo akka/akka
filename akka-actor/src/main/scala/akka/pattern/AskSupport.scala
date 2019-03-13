@@ -534,8 +534,7 @@ private[akka] final class PromiseActorRef private (
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline
-  private[this] def watchedBy: Set[ActorRef] =
-    Unsafe.instance.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
+  private[this] def watchedBy: Set[ActorRef] = _watchedByDoNotCallMeDirectly
 
   @inline
   private[this] def updateWatchedBy(oldWatchedBy: Set[ActorRef], newWatchedBy: Set[ActorRef]): Boolean =
@@ -560,14 +559,14 @@ private[akka] final class PromiseActorRef private (
   }
 
   @inline
-  private[this] def state: AnyRef = Unsafe.instance.getObjectVolatile(this, stateOffset)
+  private[this] def state: AnyRef = _stateDoNotCallMeDirectly
 
   @inline
   private[this] def updateState(oldState: AnyRef, newState: AnyRef): Boolean =
     Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
 
   @inline
-  private[this] def setState(newState: AnyRef): Unit = Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
+  private[this] def setState(newState: AnyRef): Unit = this._stateDoNotCallMeDirectly = newState
 
   override def getParent: InternalActorRef = provider.tempContainer
 

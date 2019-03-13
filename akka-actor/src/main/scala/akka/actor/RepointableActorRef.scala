@@ -51,8 +51,8 @@ private[akka] class RepointableActorRef(
   @silent @volatile private var _cellDoNotCallMeDirectly: Cell = _
   @silent @volatile private var _lookupDoNotCallMeDirectly: Cell = _
 
-  def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
-  def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
+  def underlying: Cell = _cellDoNotCallMeDirectly
+  def lookup = _lookupDoNotCallMeDirectly
 
   @tailrec final def swapCell(next: Cell): Cell = {
     val old = underlying
