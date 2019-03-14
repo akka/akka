@@ -6,12 +6,6 @@ Akka can be used in different ways:
 be put into `WEB-INF/lib`
  * As an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
  
-## Lightbend Enterprise Suite
-
-Lightbend Enterprise Suite is a solution for managing Lightbend Reactive Platform applications across a cluster of machines.
-It is reactive from the ground up thus enabling operations to provide the resiliency required to unleash the full benefits 
-of the Lightbend Reactive Platform in their organization.
-
 ## Native Packager
 
 [sbt-native-packager](https://github.com/sbt/sbt-native-packager) is a tool for creating
