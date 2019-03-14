@@ -14,8 +14,7 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-// FIXME these tests are awaiting typed Java testkit to be able to await cluster forming like in
-// BasicClusterExampleSpec
+// FIXME use awaitAssert to await cluster forming like in BasicClusterExampleSpec
 public class BasicClusterExampleTest { // extends JUnitSuite {
 
   private Config clusterConfig =

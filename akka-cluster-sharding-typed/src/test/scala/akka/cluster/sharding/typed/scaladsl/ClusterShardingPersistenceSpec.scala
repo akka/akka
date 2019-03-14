@@ -160,7 +160,7 @@ class ClusterShardingPersistenceSpec
     p.expectTerminated(ref, p.remainingOrDefault)
 
     // also make sure that the entity is removed from the Shard before continuing
-    // FIXME rewrite this with Typed API when region queries are supported
+    // FIXME #24466: rewrite this with Typed API when region queries are supported
     import akka.actor.typed.scaladsl.adapter._
     val regionStateProbe = TestProbe[CurrentShardRegionState]()
     val untypedRegion = UntypedClusterSharding(system.toUntyped)

@@ -56,7 +56,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
     /*
      * Hack to allow multiple termination notifications per target
-     * FIXME: replace by simple map in our state
+     * FIXME #26505: replace by simple map in our state
      */
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>

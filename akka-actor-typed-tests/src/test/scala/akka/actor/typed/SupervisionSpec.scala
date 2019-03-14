@@ -254,7 +254,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
   private val nameCounter = Iterator.from(0)
   private def nextName(prefix: String = "a"): String = s"$prefix-${nameCounter.next()}"
 
-  // FIXME eventfilter support in typed testkit
+  // FIXME #24348: eventfilter support in typed testkit
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val untypedSystem = system.toUntyped

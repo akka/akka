@@ -33,7 +33,7 @@ object MessageAdapterSpec {
 
 class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.config) with WordSpecLike {
 
-  implicit val untyped = system.toUntyped // FIXME no typed event filter yet
+  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
 
   "Message adapters" must {
 

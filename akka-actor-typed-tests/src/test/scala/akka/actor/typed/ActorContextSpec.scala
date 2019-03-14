@@ -67,7 +67,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
   """) with WordSpecLike {
 
-  // FIXME eventfilter support in typed testkit
+  // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
   implicit val untypedSystem = system.toUntyped
 
