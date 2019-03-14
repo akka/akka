@@ -6,10 +6,11 @@ package akka.cluster.singleton
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ExtendedActorSystem, PoisonPill, Props }
-import akka.cluster.TestLease.{ AcquireReq, ReleaseReq }
-import akka.cluster.{ Cluster, MemberStatus, TestLeaseExt }
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.actor.{Actor, ActorLogging, ActorRef, ExtendedActorSystem, PoisonPill, Props}
+import akka.cluster.TestLease.{AcquireReq, ReleaseReq}
+import akka.cluster.{Cluster, MemberStatus, TestLease, TestLeaseExt}
+import akka.testkit.{AkkaSpec, TestProbe}
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -33,28 +34,22 @@ class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLoggi
   }
 }
 
-class ClusterSingletonLeaseSpec extends AkkaSpec(
+class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
   """
      akka.loglevel = INFO
      akka.actor.provider = cluster
-     test-lease {
-         lease-class = akka.cluster.TestLease
-         heartbeat-interval = 1s
-         heartbeat-timeout = 120s
-         lease-operation-timeout = 3s
-     }
 
      akka.cluster.singleton {
        lease-implementation = "test-lease"
        lease-retry-interval = 2000ms
      }
-  """.stripMargin) {
+  """).withFallback(TestLease.config)) {
 
   val cluster = Cluster(system)
   val testLeaseExt = TestLeaseExt(system)
 
   override protected def atStartup(): Unit = {
-    cluster.join(cluster.selfUniqueAddress.address)
+    cluster.join(cluster.selfAddress)
     awaitAssert {
       cluster.selfMember.status shouldEqual MemberStatus.Up
     }
