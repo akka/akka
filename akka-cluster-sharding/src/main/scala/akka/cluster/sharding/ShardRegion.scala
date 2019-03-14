@@ -854,6 +854,7 @@ private[akka] class ShardRegion(typeName: String,
 
       case _ =>
         val shardId = extractShardId(msg)
+        log.debug("Delivering {} to {}", msg, shardId)
         regionByShard.get(shardId) match {
           case Some(ref) if ref == self =>
             getShard(shardId) match {

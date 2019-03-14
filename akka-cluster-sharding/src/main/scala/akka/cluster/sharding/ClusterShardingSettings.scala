@@ -204,7 +204,6 @@ object ClusterShardingSettings {
  *   Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
-// TODO rename cluster signleton manager lease settings
 final class ClusterShardingSettings(val role: Option[String],
                                     val rememberEntities: Boolean,
                                     val journalPluginId: String,

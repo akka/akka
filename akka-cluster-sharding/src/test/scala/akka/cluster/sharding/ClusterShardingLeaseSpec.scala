@@ -16,14 +16,14 @@ import scala.util.control.NoStackTrace
 
 object ClusterShardingLeaseSpec {
   val config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     #akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.cluster.sharding {
        lease-implementation = "test-lease"
-       lease-retry-interval = 2000ms
+       lease-retry-interval = 200ms
      }
     """).withFallback(TestLease.config)
 
@@ -71,28 +71,41 @@ class ClusterShardingLeaseSpec extends AkkaSpec(ClusterShardingLeaseSpec.config)
   "Cluster sharding with lease" should {
     "not start until lease is acquired" in {
       region ! 1
-      expectNoMessage()
+      expectNoMessage(shortDuration)
       val testLease = leaseForShard(1)
       testLease.initialPromise.complete(Success(true))
       expectMsg(1)
     }
     "retry if initial acquire is false" in {
       region ! 2
-      expectNoMessage()
+      expectNoMessage(shortDuration)
       val testLease = leaseForShard(2)
       testLease.initialPromise.complete(Success(false))
-      expectNoMessage()
+      expectNoMessage(shortDuration)
       testLease.setNextAcquireResult(Future.successful(true))
       expectMsg(2)
     }
     "retry if initial acquire fails" in {
       region ! 3
-      expectNoMessage()
+      expectNoMessage(shortDuration)
       val testLease = leaseForShard(3)
       testLease.initialPromise.failure(LeaseFailed("oh no"))
-      expectNoMessage()
+      expectNoMessage(shortDuration)
       testLease.setNextAcquireResult(Future.successful(true))
       expectMsg(3)
+    }
+    "recover if lease lost" in {
+      region ! 4
+      expectNoMessage(shortDuration)
+      val testLease = leaseForShard(4)
+      testLease.initialPromise.complete(Success(true))
+      expectMsg(4)
+      testLease.getCurrentCallback()(Option(LeaseFailed("oh dear")))
+      awaitAssert({
+        println("retrying")
+        region ! 4
+        expectMsg(4)
+      }, max = 5.seconds)
     }
   }
 }
