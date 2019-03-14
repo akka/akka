@@ -8,9 +8,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 
 object BasicPersistentBehaviorCompileOnly {
 
@@ -84,10 +85,10 @@ object BasicPersistentBehaviorCompileOnly {
                                                     "TODO: process the command & return an Effect"),
                                                 eventHandler = (state, evt) =>
                                                   throw new RuntimeException(
-                                                    "TODO: process the event return the next state"))
-      .onRecoveryCompleted { state =>
+                                                    "TODO: process the event return the next state")).receiveSignal {
+      case RecoveryCompleted(state) ⇒
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
-      }
+    }
   //#recovery
 
   //#tagging
@@ -112,8 +113,9 @@ object BasicPersistentBehaviorCompileOnly {
                                                                              eventHandler = (state, evt) =>
                                                                                throw new RuntimeException(
                                                                                  "TODO: process the event return the next state"))
-    .onRecoveryCompleted { state =>
-      throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
+    .receiveSignal {
+      case RecoveryCompleted(state) ⇒
+        throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup { context =>

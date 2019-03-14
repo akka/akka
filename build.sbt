@@ -241,8 +241,8 @@ lazy val docs = akkaModule("akka-docs")
   .settings(Dependencies.docs)
   .settings(
     name in(Compile, paradox) := "Akka",
-    paradoxProperties ++= Map(
-      "akka.canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
+    Compile / paradoxProperties ++= Map(
+      "canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
       "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
       "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
@@ -265,7 +265,7 @@ lazy val docs = akkaModule("akka-docs")
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
@@ -556,7 +556,7 @@ def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
   val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
   val optionalExternalTestFormat = externalTest.map(t => s";${t.id}/scalafmtAll").getOrElse("")
-  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox;${test.id}:validateCompile"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))

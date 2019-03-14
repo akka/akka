@@ -9,6 +9,8 @@ package adapter
 import java.lang.reflect.InvocationTargetException
 
 import akka.actor.ActorInitializationException
+import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.Behavior.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import scala.annotation.tailrec
 import scala.util.Failure
@@ -18,7 +20,6 @@ import scala.util.control.Exception.Catcher
 
 import akka.{ actor => untyped }
 import akka.annotation.InternalApi
-import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -110,22 +111,12 @@ import akka.util.OptionVal
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
       b match {
-        case s: StoppedBehavior[T] =>
-          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
-          // until Terminate is received, i.e until postStop is invoked, and there PostStop
-          // will be signaled to the previous/postStop behavior
-          s.postStop match {
-            case OptionVal.None =>
-              // use previous as the postStop behavior
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
-            case OptionVal.Some(postStop) =>
-              // use the given postStop behavior, but canonicalize it
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
-          }
-          context.stop(self)
         case f: FailedBehavior =>
           // For the parent untyped supervisor to pick up the exception
           throw TypedActorFailedException(f.cause)
+        case stopped: StoppedBehavior[T] =>
+          behavior = new ComposedStoppingBehavior[T](behavior, stopped)
+          context.stop(self)
         case _ =>
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }
@@ -225,11 +216,6 @@ import akka.util.OptionVal
       case null                   => // skip PostStop
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case s: StoppedBehavior[_] =>
-        s.postStop match {
-          case OptionVal.Some(postStop) => Behavior.interpretSignal(postStop, ctx, PostStop)
-          case OptionVal.None           => // no postStop behavior defined
-        }
       case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
 
@@ -286,4 +272,28 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
 @InternalApi private[typed] object GuardianActorAdapter {
   case object Start
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[typed] final class ComposedStoppingBehavior[T](lastBehavior: Behavior[T],
+                                                                    stopBehavior: StoppedBehavior[T])
+    extends ExtensibleBehavior[T] {
+  override def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
+    throw new IllegalStateException("Stopping, should never receieve a message")
+  override def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
+    if (msg != PostStop)
+      throw new IllegalArgumentException(
+        s"The ComposedStoppingBehavior should only ever receive a PostStop signal, but received $msg")
+    // first pass the signal to the previous behavior, so that it and potential interceptors
+    // will get the PostStop signal, unless it is deferred, we don't start a behavior while stopping
+    lastBehavior match {
+      case _: DeferredBehavior[_] => // no starting of behaviors on actor stop
+      case nonDeferred            => Behavior.interpretSignal(nonDeferred, ctx, PostStop)
+    }
+    // and then to the potential stop hook, which can have a call back or not
+    stopBehavior.onPostStop(ctx)
+    Behavior.empty
+  }
 }

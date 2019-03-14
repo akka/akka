@@ -119,7 +119,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val ex = new TestException("boom")
       val behavior = Behaviors.setup[Any] { context =>
         val child = context.spawn(Behaviors
-                                    .supervise(Behaviors.receive[Any]((context, message) => {
+                                    .supervise(Behaviors.receive[Any]((_, _) => {
                                       throw ex
                                     }))
                                     .onFailure[Throwable](SupervisorStrategy.stop),
@@ -127,7 +127,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
         context.watch(child)
 
         Behaviors
-          .receive[Any] { (context, message) =>
+          .receive[Any] { (_, message) =>
             child ! message
             Behaviors.same
           }
@@ -153,8 +153,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
       val grossoBosso =
-        spawn(
-          Behaviors.setup[Any] { context =>
+        spawn(Behaviors.setup[Any] {
+          context =>
             val middleManagement = context.spawn(Behaviors.setup[Any] { context =>
               val sixPackJoe = context.spawn(Behaviors.receive[Any]((context, message) => throw ex), "joe")
               context.watch(sixPackJoe)
@@ -178,8 +178,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
                   Behaviors.stopped
               }
 
-          },
-          "grosso-bosso")
+        }, "grosso-bosso")
 
       EventFilter[TestException](occurrences = 1).intercept {
         EventFilter[DeathPactException](occurrences = 1).intercept {

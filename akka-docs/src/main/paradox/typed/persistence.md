@@ -336,7 +336,7 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
+so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -344,8 +344,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
-and doesn't return anything.
+The `RecoveryCompleted` contains the current `State`.
 
 @ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
 
