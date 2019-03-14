@@ -125,18 +125,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
               try {
                 eventSourcedSetup.onSignal(signal)
               } catch {
-                case NonFatal(ex) ⇒
+                case NonFatal(ex) =>
                   ctx.asScala.log.error(ex, s"Error while processing signal [{}]", signal)
               }
               nextBehavior
             }
+            override def toString: String = "onStopInterceptor"
           }
           val widened = RequestingRecoveryPermit(eventSourcedSetup).widen[Any] {
-            case res: JournalProtocol.Response ⇒ InternalProtocol.JournalResponse(res)
-            case res: SnapshotProtocol.Response ⇒ InternalProtocol.SnapshotterResponse(res)
-            case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
-            case internal: InternalProtocol ⇒ internal // such as RecoveryTickEvent
-            case cmd: Command @unchecked ⇒ InternalProtocol.IncomingCommand(cmd)
+            case res: JournalProtocol.Response           => InternalProtocol.JournalResponse(res)
+            case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
+            case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
+            case internal: InternalProtocol              => internal // such as RecoveryTickEvent
+            case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
           }
           Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
         }
