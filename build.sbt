@@ -235,8 +235,8 @@ lazy val docs = akkaModule("akka-docs")
   .settings(Dependencies.docs)
   .settings(
     name in (Compile, paradox) := "Akka",
-    paradoxProperties ++= Map(
-      "akka.canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
+    Compile / paradoxProperties ++= Map(
+      "canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
       "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
       "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
@@ -259,7 +259,7 @@ lazy val docs = akkaModule("akka-docs")
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
