@@ -95,7 +95,7 @@ import scala.concurrent.{ Future, Promise }
                 case Some(_) =>
                   offer.promise.failure(
                     new IllegalStateException(
-                      "You have to wait for previous offer to be resolved to send another request"))
+                      "You have to wait for the previous offer to be resolved to send another request"))
                 case None =>
                   pendingOffer = Some(offer)
               }
