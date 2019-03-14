@@ -33,7 +33,7 @@ object ActorContextAskSpec {
 
 class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.config) with WordSpecLike {
 
-  implicit val untyped = system.toUntyped // FIXME no typed event filter yet
+  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
 
   "The Scala DSL ActorContext" must {
 

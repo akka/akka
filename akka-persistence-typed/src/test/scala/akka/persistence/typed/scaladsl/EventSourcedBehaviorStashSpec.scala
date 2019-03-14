@@ -488,7 +488,7 @@ class EventSourcedBehaviorStashSpec
     "discard when stash has reached limit with default dropped setting" in {
       val probe = TestProbe[AnyRef]()
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
-      val behavior = EventSourcedBehavior[String, String, Boolean](PersistenceId("stash-is-full-drop"),
+      val behavior = EventSourcedBehavior[String, String, Boolean](persistenceId = PersistenceId("stash-is-full-drop"),
                                                                    emptyState = false,
                                                                    commandHandler = { (state, command) =>
                                                                      state match {
@@ -510,8 +510,7 @@ class EventSourcedBehaviorStashSpec
                                                                              Effect
                                                                                .persist("unstash")
                                                                                .thenUnstashAll()
-                                                                               // FIXME this is run before unstash, so not sequentially as the docs say
-                                                                               // https://github.com/akka/akka/issues/26489
+                                                                               // FIXME #26489: this is run before unstash, so not sequentially as the docs say
                                                                                .thenRun(_ =>
                                                                                  probe.ref ! "done-unstashing")
                                                                            case _ =>
@@ -587,6 +586,6 @@ class EventSourcedBehaviorStashSpec
     }
   }
 
-  // FIXME test combination with PoisonPill
+  // FIXME #24687: test combination with PoisonPill
 
 }

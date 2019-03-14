@@ -40,7 +40,7 @@ import akka.actor.typed.Terminated
       val untypedReplicator = underlyingReplicator match {
         case Some(ref) => ref
         case None      =>
-          // FIXME perhaps add supervisor for restarting
+          // FIXME perhaps add supervisor for restarting, see PR https://github.com/akka/akka/pull/25988
           val untypedReplicatorProps = dd.Replicator.props(settings)
           ctx.actorOf(untypedReplicatorProps, name = "underlying")
       }

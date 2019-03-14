@@ -8,7 +8,7 @@ import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 
-// FIXME see if we can completely eliminate this with the help of BehaviorInterceptor instead
+// FIXME #26504: see if we can completely eliminate this with the help of BehaviorInterceptor instead
 
 /**
  * INTERNAL API
