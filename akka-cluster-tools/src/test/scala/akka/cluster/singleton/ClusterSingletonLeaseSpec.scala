@@ -72,7 +72,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(
 
   def nextSettings() = ClusterSingletonManagerSettings(system).withSingletonName(nextName())
 
-  def leaseNameFor(settings: ClusterSingletonManagerSettings): String = s"singleton-ClusterSingletonLeaseSpec-${settings.singletonName}"
+  def leaseNameFor(settings: ClusterSingletonManagerSettings): String = s"ClusterSingletonLeaseSpec-singleton-${settings.singletonName}"
 
   "A singleton with lease" should {
 
