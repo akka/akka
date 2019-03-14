@@ -39,12 +39,8 @@ object GracefulStopDocSpec {
             context.log.info("Initiating graceful shutdown...")
             // perform graceful stop, executing cleanup before final system termination
             // behavior executing cleanup is passed as a parameter to Actor.stopped
-            Behaviors.stopped {
-              Behaviors.receiveSignal {
-                case (context, PostStop) =>
-                  cleanup(context.system.log)
-                  Behaviors.same
-              }
+            Behaviors.stopped { () =>
+              cleanup(context.system.log)
             }
         }
       }

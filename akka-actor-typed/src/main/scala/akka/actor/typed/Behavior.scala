@@ -4,12 +4,13 @@
 
 package akka.actor.typed
 
+import scala.annotation.tailrec
+
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
-
-import scala.annotation.tailrec
-import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.WrappingBehavior
+import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
+
 import akka.util.{ LineNumbers, OptionVal }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext => SAC }
@@ -63,7 +64,7 @@ abstract class Behavior[T] { behavior =>
    * when `unhandled` is returned.
    *
    *  @param that the fallback `Behavior`
-   */
+   **/
   final def orElse(that: Behavior[T]): Behavior[T] = Behavior.DeferredBehavior[T] { ctx =>
     new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
   }
@@ -176,8 +177,8 @@ object Behavior {
    * given `postStop` behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T](postStop: Behavior[T]): Behavior[T] =
-    new StoppedBehavior(OptionVal.Some(postStop))
+  def stopped[T](postStop: () => Unit): Behavior[T] =
+    new StoppedBehavior[T](OptionVal.Some((_: TypedActorContext[T]) => postStop()))
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -266,23 +267,20 @@ object Behavior {
    * INTERNAL API: When the cell is stopping this behavior is used, so
    * that PostStop can be sent to previous behavior from `finishTerminate`.
    */
-  private[akka] class StoppedBehavior[T](val postStop: OptionVal[Behavior[T]]) extends Behavior[T] {
-    validatePostStop(postStop)
+  private[akka] sealed class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] => Unit])
+      extends Behavior[T] {
 
-    @throws[IllegalArgumentException]
-    private final def validatePostStop(postStop: OptionVal[Behavior[T]]): Unit = {
+    def onPostStop(ctx: TypedActorContext[T]): Unit = {
       postStop match {
-        case OptionVal.Some(b: DeferredBehavior[_]) =>
-          throw new IllegalArgumentException(
-            s"Behavior used as `postStop` behavior in Stopped(...) was a deferred one [${b.toString}], which is not supported (it would never be evaluated).")
-        case _ => // all good
+        case OptionVal.Some(callback) => callback(ctx)
+        case OptionVal.None           =>
       }
     }
 
     override def toString = "Stopped" + {
       postStop match {
-        case OptionVal.Some(_) => "(postStop)"
-        case _                 => "()"
+        case OptionVal.Some(callback) => s"(${LineNumbers(callback)})"
+        case _                        => "()"
       }
     }
   }
@@ -419,10 +417,12 @@ object Behavior {
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case d: DeferredBehavior[_] =>
         throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior        => Behavior.same[T]
-      case s: StoppedBehavior[T] => s
-      case f: FailedBehavior     => f
-      case EmptyBehavior         => Behavior.unhandled[T]
+      case IgnoreBehavior => Behavior.same[T]
+      case s: StoppedBehavior[T] =>
+        if (msg == PostStop) s.onPostStop(ctx)
+        s
+      case f: FailedBehavior => f
+      case EmptyBehavior     => Behavior.unhandled[T]
       case ext: ExtensibleBehavior[T] =>
         val possiblyDeferredResult = msg match {
           case signal: Signal => ext.receiveSignal(ctx, signal)

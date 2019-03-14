@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.actor.DeadLetter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
@@ -75,10 +77,10 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         }
       }
       .receiveSignal {
-        case (context, PreRestart) =>
+        case (_, PreRestart) =>
           monitor ! GotPreRestart(timer.isTimerActive("T"))
           Behaviors.same
-        case (context, PostStop) =>
+        case (_, PostStop) =>
           monitor ! GotPostStop(timer.isTimerActive("T"))
           Behaviors.same
       }
@@ -315,6 +317,24 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       val elements = probe.receiveMessage()
       if (elements.count(_.getClassName == "TimerInterceptor") > 1)
         fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
+    }
+
+    "not leak timers when PostStop is used" in {
+      val probe = TestProbe[Any]()
+      val ref = spawn(Behaviors.withTimers[String] { timers =>
+        Behaviors.setup { _ =>
+          timers.startPeriodicTimer("test", "test", 250.millis)
+          Behaviors.receive { (context, message) =>
+            Behaviors.stopped(() => context.log.info(s"stopping"))
+          }
+        }
+      })
+      EventFilter.info("stopping").intercept {
+        ref ! "stop"
+      }
+      probe.expectTerminated(ref)
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      probe.expectNoMessage(1.second)
     }
   }
 }

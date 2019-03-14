@@ -272,7 +272,7 @@ object BehaviorSpec {
       "must stop" in {
         val Setup(testkit, _, aux) = mkCtx()
         testkit.run(Stop)
-        testkit.currentBehavior should be(Behavior.StoppedBehavior)
+        Behavior.isAlive(testkit.currentBehavior) should be(false)
         checkAux(Stop, aux)
       }
     }
@@ -567,7 +567,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
             SBehaviors.same
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
-        }),
+      }),
       fs((_, sig) => {
         monitor ! ReceivedSignal(sig)
         SBehaviors.same
@@ -600,7 +600,7 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
             SBehaviors.same
           case Stop       => SBehaviors.stopped
           case _: AuxPing => SBehaviors.unhandled
-        })
+      })
     }
 }
 
