@@ -22,7 +22,7 @@ object ClusterShardingLeaseSpec {
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.cluster.sharding {
-       lease-implementation = "test-lease"
+       use-lease = "test-lease"
        lease-retry-interval = 200ms
      }
     """).withFallback(TestLease.config)

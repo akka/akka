@@ -40,7 +40,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
      akka.actor.provider = cluster
 
      akka.cluster.singleton {
-       lease-implementation = "test-lease"
+       use-lease = "test-lease"
        lease-retry-interval = 2000ms
      }
   """).withFallback(TestLease.config)) {
