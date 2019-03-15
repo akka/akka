@@ -201,7 +201,7 @@ private[akka] class Shard(
 
   val leaseRetryInterval = settings.leaseSettings match {
     case Some(l) => l.leaseRetryInterval
-    case None => 5.seconds // not used
+    case None    => 5.seconds // not used
   }
 
   initialized(receiveCommand, ConstantFun.unitToUnit)
@@ -256,15 +256,15 @@ private[akka] class Shard(
   }
 
   def receiveCommand: Receive = {
-    case Terminated(ref) => receiveTerminated(ref)
-    case msg: CoordinatorMessage => receiveCoordinatorMessage(msg)
-    case msg: ShardCommand => receiveShardCommand(msg)
-    case msg: ShardRegion.StartEntity => receiveStartEntity(msg)
-    case msg: ShardRegion.StartEntityAck => receiveStartEntityAck(msg)
-    case msg: ShardRegionCommand => receiveShardRegionCommand(msg)
-    case msg: ShardQuery => receiveShardQuery(msg)
-    case PassivateIdleTick => passivateIdleEntities()
-    case msg: LeaseLost => receiveLeaseLost(msg)
+    case Terminated(ref)                         => receiveTerminated(ref)
+    case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
+    case msg: ShardCommand                       => receiveShardCommand(msg)
+    case msg: ShardRegion.StartEntity            => receiveStartEntity(msg)
+    case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
+    case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
+    case msg: ShardQuery                         => receiveShardQuery(msg)
+    case PassivateIdleTick                       => passivateIdleEntities()
+    case msg: LeaseLost                          => receiveLeaseLost(msg)
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
   }
 
@@ -847,7 +847,7 @@ private[akka] class DDataShard(
         evt)
       throw cause
 
-      // TODO what can this actually be? We're unitialized in the ShardRegion
+    // TODO what can this actually be? We're unitialized in the ShardRegion
     case _ => stash()
   }
 
