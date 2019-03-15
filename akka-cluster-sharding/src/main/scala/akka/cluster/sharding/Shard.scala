@@ -159,7 +159,7 @@ private[akka] object Shard {
 private[akka] class Shard(
     typeName: String,
     shardId: ShardRegion.ShardId,
-    entityProps: String ⇒ Props,
+    entityProps: String => Props,
     settings: ClusterShardingSettings,
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId: ShardRegion.ExtractShardId,
@@ -193,33 +193,35 @@ private[akka] class Shard(
   }
 
   val lease = settings.leaseSettings.map(
-    ls ⇒
+    ls =>
       LeaseProvider(context.system).getLease(
         s"${context.system.name}-shard-$typeName-$shardId",
         ls.leaseImplementation,
         Cluster(context.system).selfAddress.hostPort))
 
   val leaseRetryInterval = settings.leaseSettings match {
-    case Some(l) ⇒ l.leaseRetryInterval
-    case None ⇒ 5.seconds // not used
+    case Some(l) => l.leaseRetryInterval
+    case None => 5.seconds // not used
   }
 
-  initialized()
+  initialized(receiveCommand, ConstantFun.unitToUnit)
 
-  def initialized(): Unit = {
+  def initialized(next: Receive, onDone: () => Unit): Unit = {
     lease match {
-      case Some(l) ⇒
+      case Some(l) =>
         tryGetLease(l)
-        context.become(awaitingLease)
-      case None ⇒
+        context.become(awaitingLease(next, onDone))
+      case None =>
+        onDone()
         context.parent ! ShardInitialized(shardId)
+        context.become(next)
     }
   }
 
   def tryGetLease(l: Lease) = {
     log.info("Acquiring lease {}", l.settings)
-    pipe(l.acquire(reason ⇒ self ! LeaseLost(reason)).map(r ⇒ LeaseAcquireResult(r, None)).recover {
-      case t ⇒ LeaseAcquireResult(acquired = false, Some(t))
+    pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover {
+      case t => LeaseAcquireResult(acquired = false, Some(t))
     }).to(self)
   }
 
@@ -230,15 +232,16 @@ private[akka] class Shard(
 
   // Don't send back ShardInitialized so that messages are buffered in the ShardRegion
   // while awaiting the lease
-  def awaitingLease: Receive = {
-    case LeaseAcquireResult(true, _) ⇒
+  def awaitingLease(next: Receive, onDone: () => Unit): Receive = {
+    case LeaseAcquireResult(true, _) =>
       log.info("Acquired lease. Ready to accept commands.")
+      onDone()
       context.parent ! ShardInitialized(shardId)
-      context.become(receiveCommand)
-    case LeaseAcquireResult(false, None) ⇒
+      context.become(next)
+    case LeaseAcquireResult(false, None) =>
       log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
-    case LeaseAcquireResult(false, Some(t)) ⇒
+    case LeaseAcquireResult(false, Some(t)) =>
       log.error(
         t,
         "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
@@ -246,23 +249,23 @@ private[akka] class Shard(
         shardId,
         leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
-    case LeaseRetry ⇒
+    case LeaseRetry =>
       tryGetLease(lease.get)
-    case ll: LeaseLost ⇒
+    case ll: LeaseLost =>
       receiveLeaseLost(ll)
   }
 
   def receiveCommand: Receive = {
-    case Terminated(ref) ⇒ receiveTerminated(ref)
-    case msg: CoordinatorMessage ⇒ receiveCoordinatorMessage(msg)
-    case msg: ShardCommand ⇒ receiveShardCommand(msg)
-    case msg: ShardRegion.StartEntity ⇒ receiveStartEntity(msg)
-    case msg: ShardRegion.StartEntityAck ⇒ receiveStartEntityAck(msg)
-    case msg: ShardRegionCommand ⇒ receiveShardRegionCommand(msg)
-    case msg: ShardQuery ⇒ receiveShardQuery(msg)
-    case PassivateIdleTick ⇒ passivateIdleEntities()
-    case msg: LeaseLost ⇒ receiveLeaseLost(msg)
-    case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case Terminated(ref) => receiveTerminated(ref)
+    case msg: CoordinatorMessage => receiveCoordinatorMessage(msg)
+    case msg: ShardCommand => receiveShardCommand(msg)
+    case msg: ShardRegion.StartEntity => receiveStartEntity(msg)
+    case msg: ShardRegion.StartEntityAck => receiveStartEntityAck(msg)
+    case msg: ShardRegionCommand => receiveShardRegionCommand(msg)
+    case msg: ShardQuery => receiveShardQuery(msg)
+    case PassivateIdleTick => passivateIdleEntities()
+    case msg: LeaseLost => receiveLeaseLost(msg)
+    case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
   }
 
   def receiveLeaseLost(msg: LeaseLost): Unit = {
@@ -636,7 +639,7 @@ private[akka] class PersistentShard(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   // would be initialized after recovery completed
-  override def initialized(): Unit = {}
+  override def initialized(next: Receive, onDone: () => Unit): Unit = {}
 
   override def receive = receiveCommand
 
@@ -658,7 +661,7 @@ private[akka] class PersistentShard(
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
       restartRememberedEntities()
-      super.initialized()
+      super.initialized(receiveCommand, ConstantFun.unitToUnit)
       log.debug("PersistentShard recovery completed shard [{}] with [{}] entities", shardId, state.entities.size)
   }
 
@@ -753,7 +756,7 @@ private[akka] class DDataShard(
   }
 
   // would be initialized after recovery completed
-  override def initialized(): Unit = {}
+  override def initialized(next: Receive, onDone: () => Unit): Unit = {}
 
   override def receive = waitingForState(Set.empty)
 
@@ -790,10 +793,8 @@ private[akka] class DDataShard(
 
   private def recoveryCompleted(): Unit = {
     restartRememberedEntities()
-    super.initialized()
+    super.initialized(receiveCommand, () => unstashAll())
     log.debug("DDataShard recovery completed shard [{}] with [{}] entities", shardId, state.entities.size)
-    unstashAll()
-    context.become(receiveCommand)
   }
 
   override def processChange[E <: StateChange](event: E)(handler: E => Unit): Unit = {
@@ -846,6 +847,7 @@ private[akka] class DDataShard(
         evt)
       throw cause
 
+      // TODO what can this actually be? We're unitialized in the ShardRegion
     case _ => stash()
   }
 
