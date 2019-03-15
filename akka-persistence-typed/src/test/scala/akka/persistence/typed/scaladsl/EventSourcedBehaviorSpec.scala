@@ -75,12 +75,13 @@ object EventSourcedBehaviorSpec {
     }
 
     override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
-      state = state.filterKeys(_ != metadata.persistenceId)
+      state = state.filterNot { case (k, (_, b)) => k == metadata.persistenceId && b.sequenceNr == metadata.sequenceNr }
       Future.successful(())
     }
 
     override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
-      state = state.filterKeys(_ != persistenceId)
+      val range = criteria.minSequenceNr to criteria.maxSequenceNr
+      state = state.filterNot { case (k, (_, b)) => k == persistenceId && range.contains(b.sequenceNr) }
       Future.successful(())
     }
   }

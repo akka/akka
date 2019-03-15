@@ -107,9 +107,9 @@ private[akka] trait JournalInteractions[C, E, S] {
   }
 
   /**
-   * On [[akka.persistence.SaveSnapshotSuccess]], if [[RetentionCriteria.deleteEventsOnSnapshot]]
-   * is enabled, old messages are deleted based on [[RetentionCriteria.snapshotEveryNEvents]] before
-   * old snapshots are deleted.
+   * On [[akka.persistence.SaveSnapshotSuccess]], if [[akka.persistence.typed.RetentionCriteria.deleteEventsOnSnapshot]]
+   * is enabled, old messages are deleted based on [[akka.persistence.typed.RetentionCriteria.snapshotEveryNEvents]]
+   * before old snapshots are deleted.
    */
   protected def internalDeleteEvents(e: SaveSnapshotSuccess, state: Running.RunningState[S]): Unit =
     if (setup.retention.deleteEventsOnSnapshot) {
