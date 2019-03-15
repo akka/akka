@@ -485,7 +485,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     role.forall(cluster.selfRoles.contains),
     s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
-  private val singletonLeaseName = s"${context.system.name}-singleton-${settings.singletonName}"
+  private val singletonLeaseName = s"${context.system.name}-singleton-${self.path}"
 
   val lease: Option[Lease] = settings.leaseSettings.map(
     settings =>

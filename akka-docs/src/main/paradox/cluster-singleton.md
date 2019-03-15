@@ -198,7 +198,7 @@ A lease can be a final backup that means that the singleton actor won't be creat
 the lease can be acquired. 
 
 To use a lease for singleton set `akka.cluster.singleton.use-lease` to the configuration location
-of the lease to use. A lease with with the name `<actor system name>-singleton-<singleton name>` is used and
+of the lease to use. A lease with with the name `<actor system name>-singleton-<singleton actor path>` is used and
 the owner is set to the @scala[`Cluster(system).selfAddress.hostPort`]@java[`Cluster.get(system).selfAddress().hostPort()`].
 
 If the cluster singleton manager can't acquire the lease it will keep retrying while it is the oldest node in the cluster.
