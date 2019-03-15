@@ -624,9 +624,8 @@ private[akka] class BarrierCoordinator
   }
 
   onTransition {
-    case Idle → Waiting ⇒
-      setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
-    case Waiting → Idle ⇒ cancelTimer("Timeout")
+    case Idle -> Waiting => setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
+    case Waiting -> Idle => cancelTimer("Timeout")
   }
 
   when(Waiting) {

@@ -89,7 +89,7 @@ The methods should provide the following guarantees:
 * `checkLease` should return false until an `acquire` Future has completed and should return `false` if the lease is lost due to an error communicating with the third party. Check lease should also not block.
 * The `acquire` lease lost callback should only be called after an `aquire` future has completed and should be called if the lease is lose e.g. due to losing communication with the third party system.
 
-In addition it is expected that if a node that holds a lease that a lease implementation will include a time to live mechanism meaning that it won't be held for ever.
+In addition it is expected that a lease implementation will include a time to live mechanism meaning that a lease won't be held for ever in case the node crashes.
 If a user prefers to have outside intervention in this case for maximum safety then the time to live can be set to infinite.
 
 Create a configuration location with the following configuration:

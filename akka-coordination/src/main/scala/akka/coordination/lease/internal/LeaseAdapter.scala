@@ -30,6 +30,6 @@ final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: Ex
   }
 
   override def release(): CompletionStage[java.lang.Boolean] = delegate.release().map(Boolean.box).toJava
-  override def checkLease(): java.lang.Boolean = delegate.checkLease()
+  override def checkLease(): Boolean = delegate.checkLease()
   override def getSettings(): LeaseSettings = delegate.settings
 }

@@ -51,7 +51,7 @@ public class LeaseDocTest {
     }
 
     @Override
-    public Boolean checkLease() {
+    public boolean checkLease() {
       return false;
     }
   }
