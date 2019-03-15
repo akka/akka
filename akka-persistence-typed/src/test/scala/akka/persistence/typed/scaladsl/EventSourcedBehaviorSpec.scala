@@ -16,7 +16,7 @@ import scala.util.Try
 
 import akka.Done
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.{TestException, TestKitSettings}
+import akka.actor.testkit.typed.{ TestException, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -151,7 +151,13 @@ object EventSourcedBehaviorSpec {
 
   def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref, TestProbe[Try[EventSourcedSignal]].ref)
+    counter(
+      ctx,
+      persistenceId,
+      loggingActor = logging,
+      probe = TestProbe[(State, Event)].ref,
+      TestProbe[Try[Done]].ref,
+      TestProbe[Try[EventSourcedSignal]].ref)
 
   def counterWithProbe(
       ctx: ActorContext[Command],
@@ -163,15 +169,37 @@ object EventSourcedBehaviorSpec {
 
   def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref, TestProbe[Try[EventSourcedSignal]].ref)
+    counter(
+      ctx,
+      persistenceId,
+      TestProbe[String].ref,
+      probe,
+      TestProbe[Try[Done]].ref,
+      TestProbe[Try[EventSourcedSignal]].ref)
 
   def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[Try[Done]])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe, TestProbe[Try[EventSourcedSignal]].ref)
+    counter(
+      ctx,
+      persistenceId,
+      TestProbe[String].ref,
+      TestProbe[(State, Event)].ref,
+      snapshotProbe = probe,
+      TestProbe[Try[EventSourcedSignal]].ref)
 
-  def counterWithSnapshotAndRetentionProbe(ctx: ActorContext[Command], persistenceId: PersistenceId,
-                                           probeS: ActorRef[Try[Done]], probeR: ActorRef[Try[EventSourcedSignal]])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probeS, retentionProbe = probeR)
+  def counterWithSnapshotAndRetentionProbe(
+      ctx: ActorContext[Command],
+      persistenceId: PersistenceId,
+      probeS: ActorRef[Try[Done]],
+      probeR: ActorRef[Try[EventSourcedSignal]])(
+      implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+    counter(
+      ctx,
+      persistenceId,
+      TestProbe[String].ref,
+      TestProbe[(State, Event)].ref,
+      snapshotProbe = probeS,
+      retentionProbe = probeR)
 
   def counter(
       ctx: ActorContext[Command],
@@ -730,13 +758,13 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
-      val persistentActor = spawn(Behaviors.setup[Command](ctx ⇒
-        counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-          .snapshotEvery(2)
-          .withRetention(RetentionCriteria(
-            snapshotEveryNEvents = 2,
-            keepNSnapshots = 2,
-            deleteEventsOnSnapshot = false))))
+      val persistentActor = spawn(
+        Behaviors.setup[Command](
+          ctx ⇒
+            counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
+              .snapshotEvery(2)
+              .withRetention(
+                RetentionCriteria(snapshotEveryNEvents = 2, keepNSnapshots = 2, deleteEventsOnSnapshot = false))))
 
       persistentActor ! IncrementWithPersistAll(3)
       persistentActor ! GetValue(replyProbe.ref)
@@ -759,7 +787,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       }
 
       persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(6,Vector(0, 1, 2, 3, 4, 5)))
+      replyProbe.expectMessage(State(6, Vector(0, 1, 2, 3, 4, 5)))
     }
 
     "optionally delete both old messages and snapshots" in {
@@ -768,13 +796,13 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
-      val persistentActor = spawn(Behaviors.setup[Command](ctx ⇒
-        counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-          .snapshotEvery(2)
-          .withRetention(RetentionCriteria(
-            snapshotEveryNEvents = 2,
-            keepNSnapshots = 2,
-            deleteEventsOnSnapshot = true))))
+      val persistentActor = spawn(
+        Behaviors.setup[Command](
+          ctx ⇒
+            counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
+              .snapshotEvery(2)
+              .withRetention(
+                RetentionCriteria(snapshotEveryNEvents = 2, keepNSnapshots = 2, deleteEventsOnSnapshot = true))))
 
       persistentActor ! IncrementWithPersistAll(10)
       persistentActor ! GetValue(replyProbe.ref)

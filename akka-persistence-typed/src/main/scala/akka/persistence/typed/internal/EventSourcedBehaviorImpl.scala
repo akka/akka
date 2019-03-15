@@ -92,11 +92,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure) =>
         ctx.log.warning(failure, "Failed to delete snapshot with meta [{}].", meta)
       case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
-        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].",
-          criteria, failure.getMessage)
+        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure.getMessage)
       case DeleteMessagesFailed(toSequenceNr, failure) =>
-        ctx.log.warning("Failed to delete messages toSequenceNr [{}] for persistenceId [{}] due to [{}].",
-          toSequenceNr, persistenceId.id, failure.getMessage)
+        ctx.log.warning(
+          "Failed to delete messages toSequenceNr [{}] for persistenceId [{}] due to [{}].",
+          toSequenceNr,
+          persistenceId.id,
+          failure.getMessage)
     }
 
     Behaviors

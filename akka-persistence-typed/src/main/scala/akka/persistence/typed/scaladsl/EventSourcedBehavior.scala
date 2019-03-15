@@ -177,8 +177,8 @@ object EventSourcedBehavior {
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
-    * Criteria for internal retention/deletion of snapshots and events.
-    */
+   * Criteria for internal retention/deletion of snapshots and events.
+   */
   def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**

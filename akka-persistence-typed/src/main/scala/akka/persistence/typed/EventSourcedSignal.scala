@@ -75,20 +75,20 @@ final case class DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwabl
 final case class DeleteMessagesCompleted(toSequenceNr: Long) extends EventSourcedSignal {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def getToSequenceNr(): Long = toSequenceNr
 }
 final case class DeleteMessagesFailed(toSequenceNr: Long, failure: Throwable) extends EventSourcedSignal {
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def getFailure(): Throwable = failure
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def getToSequenceNr(): Long = toSequenceNr
 }
 

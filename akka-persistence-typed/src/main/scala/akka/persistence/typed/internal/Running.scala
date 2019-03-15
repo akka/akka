@@ -375,8 +375,7 @@ private[akka] object Running {
           Some(SnapshotCompleted(meta))
 
         case SaveSnapshotFailure(meta, error) =>
-          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]",
-            meta, error.getMessage)
+          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
           Some(SnapshotFailed(meta, error))
 
         case _ =>

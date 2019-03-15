@@ -107,10 +107,10 @@ private[akka] trait JournalInteractions[C, E, S] {
   }
 
   /**
-    * On [[akka.persistence.SaveSnapshotSuccess]], if [[RetentionCriteria.deleteEventsOnSnapshot]]
-    * is enabled, old messages are deleted based on [[RetentionCriteria.snapshotEveryNEvents]] before
-    * old snapshots are deleted.
-    */
+   * On [[akka.persistence.SaveSnapshotSuccess]], if [[RetentionCriteria.deleteEventsOnSnapshot]]
+   * is enabled, old messages are deleted based on [[RetentionCriteria.snapshotEveryNEvents]] before
+   * old snapshots are deleted.
+   */
   protected def internalDeleteEvents(e: SaveSnapshotSuccess, state: Running.RunningState[S]): Unit =
     if (setup.retention.deleteEventsOnSnapshot) {
       val toSequenceNr = setup.retention.toSequenceNumber(e.metadata.sequenceNr)
@@ -122,8 +122,10 @@ private[akka] trait JournalInteractions[C, E, S] {
         if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
           setup.journal ! JournalProtocol.DeleteMessagesTo(e.metadata.persistenceId, toSequenceNr, self)
         else
-          self ! DeleteMessagesFailure(new RuntimeException(
-            s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"), toSequenceNr)
+          self ! DeleteMessagesFailure(
+            new RuntimeException(
+              s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
+            toSequenceNr)
       }
     }
 
@@ -152,11 +154,10 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     val deleteTo = toSequenceNr - 1
     val deleteFrom = math.max(0, setup.retention.toSequenceNumber(deleteTo))
-    val snapshotCriteria = SnapshotSelectionCriteria(
-      minSequenceNr = deleteFrom,
-      maxSequenceNr = deleteTo)
+    val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = deleteFrom, maxSequenceNr = deleteTo)
 
     setup.log.debug("Deleting snapshots from [{}] to [{}]", deleteFrom, deleteTo)
-    setup.snapshotStore.tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+    setup.snapshotStore
+      .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
   }
 }
