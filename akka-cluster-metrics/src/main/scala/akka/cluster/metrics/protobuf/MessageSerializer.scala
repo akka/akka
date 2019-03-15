@@ -249,8 +249,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         case NumberType.Float_VALUE   => jl.Float.intBitsToFloat(number.getValue32)
         case NumberType.Integer_VALUE => number.getValue32
         case NumberType.Serialized_VALUE =>
-          val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader,
-                                                    new ByteArrayInputStream(number.getSerialized.toByteArray))
+          val in = new ClassLoaderObjectInputStream(
+            system.dynamicAccess.classLoader,
+            new ByteArrayInputStream(number.getSerialized.toByteArray))
           val obj = in.readObject
           in.close()
           obj.asInstanceOf[jl.Number]
@@ -258,14 +259,16 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     }
 
     def metricFromProto(metric: cm.NodeMetrics.Metric): Metric =
-      Metric(metricNameMapping(metric.getNameIndex),
-             numberFromProto(metric.getNumber),
-             if (metric.hasEwma) ewmaFromProto(metric.getEwma) else None)
+      Metric(
+        metricNameMapping(metric.getNameIndex),
+        numberFromProto(metric.getNumber),
+        if (metric.hasEwma) ewmaFromProto(metric.getEwma) else None)
 
     def nodeMetricsFromProto(nodeMetrics: cm.NodeMetrics): NodeMetrics =
-      NodeMetrics(addressMapping(nodeMetrics.getAddressIndex),
-                  nodeMetrics.getTimestamp,
-                  nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
+      NodeMetrics(
+        addressMapping(nodeMetrics.getAddressIndex),
+        nodeMetrics.getTimestamp,
+        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
 
     val nodeMetrics: Set[NodeMetrics] =
       mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(immutable.Set)
@@ -285,12 +288,13 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
           .asInstanceOf[MetricsSelector]
       } else MixMetricsSelector
 
-    AdaptiveLoadBalancingPool(metricsSelector = selector,
-                              nrOfInstances = alb.getNrOfInstances,
-                              routerDispatcher =
-                                if (alb.hasRouterDispatcher) alb.getRouterDispatcher
-                                else Dispatchers.DefaultDispatcherId,
-                              usePoolDispatcher = alb.getUsePoolDispatcher)
+    AdaptiveLoadBalancingPool(
+      metricsSelector = selector,
+      nrOfInstances = alb.getNrOfInstances,
+      routerDispatcher =
+        if (alb.hasRouterDispatcher) alb.getRouterDispatcher
+        else Dispatchers.DefaultDispatcherId,
+      usePoolDispatcher = alb.getUsePoolDispatcher)
   }
 
   def mixMetricSelectorFromBinary(bytes: Array[Byte]): MixMetricsSelector = {

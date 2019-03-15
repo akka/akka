@@ -21,11 +21,12 @@ import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 
 object UnfoldResourceAsyncSourceSpec {
 
-  class ResourceDummy[T](values: Seq[T],
-                         // these can be used to control when the resource creates, reads first element and completes closing
-                         createFuture: Future[Done] = Future.successful(Done),
-                         firstReadFuture: Future[Done] = Future.successful(Done),
-                         closeFuture: Future[Done] = Future.successful(Done))(implicit ec: ExecutionContext) {
+  class ResourceDummy[T](
+      values: Seq[T],
+      // these can be used to control when the resource creates, reads first element and completes closing
+      createFuture: Future[Done] = Future.successful(Done),
+      firstReadFuture: Future[Done] = Future.successful(Done),
+      closeFuture: Future[Done] = Future.successful(Done))(implicit ec: ExecutionContext) {
     private val iterator = values.iterator
     private val createdP = Promise[Done]()
     private val closedP = Promise[Done]()
@@ -137,9 +138,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when close throws exception" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Unit]()
       Source
-        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()),
-                                         _ => Future.successful[Option[Unit]](None),
-                                         _ => throw TE(""))
+        .unfoldResourceAsync[Unit, Unit](
+          () => Future.successful(()),
+          _ => Future.successful[Option[Unit]](None),
+          _ => throw TE(""))
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)
@@ -149,9 +151,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when close returns failed future" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Unit]()
       Source
-        .unfoldResourceAsync[Unit, Unit](() => Future.successful(()),
-                                         _ => Future.successful[Option[Unit]](None),
-                                         _ => Future.failed(throw TE("")))
+        .unfoldResourceAsync[Unit, Unit](
+          () => Future.successful(()),
+          _ => Future.successful[Option[Unit]](None),
+          _ => Future.failed(throw TE("")))
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)
@@ -160,15 +163,16 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "continue when Strategy is Resume and read throws" in assertAllStagesStopped {
       val result = Source
-        .unfoldResourceAsync[Int, Iterator[Any]](() => Future.successful(List(1, 2, TE("read-error"), 3).iterator),
-                                                 iterator =>
-                                                   if (iterator.hasNext) {
-                                                     iterator.next() match {
-                                                       case n: Int => Future.successful(Some(n))
-                                                       case e: TE  => throw e
-                                                     }
-                                                   } else Future.successful(None),
-                                                 _ => Future.successful(Done))
+        .unfoldResourceAsync[Int, Iterator[Any]](
+          () => Future.successful(List(1, 2, TE("read-error"), 3).iterator),
+          iterator =>
+            if (iterator.hasNext) {
+              iterator.next() match {
+                case n: Int => Future.successful(Some(n))
+                case e: TE  => throw e
+              }
+            } else Future.successful(None),
+          _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
 
@@ -177,15 +181,16 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "continue when Strategy is Resume and read returns failed future" in assertAllStagesStopped {
       val result = Source
-        .unfoldResourceAsync[Int, Iterator[Any]](() => Future.successful(List(1, 2, TE("read-error"), 3).iterator),
-                                                 iterator =>
-                                                   if (iterator.hasNext) {
-                                                     iterator.next() match {
-                                                       case n: Int => Future.successful(Some(n))
-                                                       case e: TE  => Future.failed(e)
-                                                     }
-                                                   } else Future.successful(None),
-                                                 _ => Future.successful(Done))
+        .unfoldResourceAsync[Int, Iterator[Any]](
+          () => Future.successful(List(1, 2, TE("read-error"), 3).iterator),
+          iterator =>
+            if (iterator.hasNext) {
+              iterator.next() match {
+                case n: Int => Future.successful(Some(n))
+                case e: TE  => Future.failed(e)
+              }
+            } else Future.successful(None),
+          _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
 
@@ -245,9 +250,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail stream when restarting and close throws" in assertAllStagesStopped {
       val out = TestSubscriber.probe[Int]()
       Source
-        .unfoldResourceAsync[Int, Iterator[Int]](() => Future.successful(List(1, 2, 3).iterator),
-                                                 reader => throw TE("read-error"),
-                                                 _ => throw new TE("close-error"))
+        .unfoldResourceAsync[Int, Iterator[Int]](
+          () => Future.successful(List(1, 2, 3).iterator),
+          reader => throw TE("read-error"),
+          _ => throw new TE("close-error"))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
 
@@ -258,9 +264,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail stream when restarting and close returns failed future" in assertAllStagesStopped {
       val out = TestSubscriber.probe[Int]()
       Source
-        .unfoldResourceAsync[Int, Iterator[Int]](() => Future.successful(List(1, 2, 3).iterator),
-                                                 reader => throw TE("read-error"),
-                                                 _ => Future.failed(new TE("close-error")))
+        .unfoldResourceAsync[Int, Iterator[Int]](
+          () => Future.successful(List(1, 2, 3).iterator),
+          reader => throw TE("read-error"),
+          _ => Future.failed(new TE("close-error")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
 
@@ -307,9 +314,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
       try {
         val p = Source
-          .unfoldResourceAsync[String, Unit](() => Promise[Unit].future, // never complete
-                                             _ => ???,
-                                             _ => ???)
+          .unfoldResourceAsync[String, Unit](
+            () => Promise[Unit].future, // never complete
+            _ => ???,
+            _ => ???)
           .runWith(Sink.ignore)(materializer)
 
         materializer
@@ -326,16 +334,15 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val closeLatch = TestLatch(1)
       val mat = ActorMaterializer()
       val p = Source
-        .unfoldResourceAsync[String, Unit](() => Future.successful(()),
-                                           // a slow trickle of elements that never ends
-                                           _ =>
-                                             akka.pattern.after(100.millis, system.scheduler)(
-                                               Future.successful(Some("element"))),
-                                           _ =>
-                                             Future.successful {
-                                               closeLatch.countDown()
-                                               Done
-                                             })
+        .unfoldResourceAsync[String, Unit](
+          () => Future.successful(()),
+          // a slow trickle of elements that never ends
+          _ => akka.pattern.after(100.millis, system.scheduler)(Future.successful(Some("element"))),
+          _ =>
+            Future.successful {
+              closeLatch.countDown()
+              Done
+            })
         .runWith(Sink.asPublisher(false))(mat)
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
@@ -350,11 +357,10 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val closePromise = Promise[Done]()
       Source
         .unfoldResourceAsync[String, Unit](
-                                           // delay it a bit to give cancellation time to come upstream
-                                           () =>
-                                             akka.pattern.after(100.millis, system.scheduler)(Future.successful(())),
-                                           _ => Future.successful(Some("whatever")),
-                                           _ => closePromise.success(Done).future)
+          // delay it a bit to give cancellation time to come upstream
+          () => akka.pattern.after(100.millis, system.scheduler)(Future.successful(())),
+          _ => Future.successful(Some("whatever")),
+          _ => closePromise.success(Done).future)
         .runWith(Sink.cancelled)
 
       closePromise.future.futureValue should ===(Done)

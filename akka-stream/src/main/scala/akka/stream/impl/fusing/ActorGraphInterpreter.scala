@@ -55,10 +55,11 @@ import scala.util.control.NonFatal
   def props(shell: GraphInterpreterShell): Props =
     Props(new ActorGraphInterpreter(shell)).withDeploy(Deploy.local)
 
-  class BatchingActorInputBoundary(size: Int,
-                                   shell: GraphInterpreterShell,
-                                   publisher: Publisher[Any],
-                                   internalPortName: String)
+  class BatchingActorInputBoundary(
+      size: Int,
+      shell: GraphInterpreterShell,
+      publisher: Publisher[Any],
+      internalPortName: String)
       extends UpstreamBoundaryStageLogic[Any]
       with OutHandler {
 
@@ -447,11 +448,12 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GraphInterpreterShell(var connections: Array[Connection],
-                                                             var logics: Array[GraphStageLogic],
-                                                             settings: ActorMaterializerSettings,
-                                                             attributes: Attributes,
-                                                             val mat: ExtendedActorMaterializer) {
+@InternalApi private[akka] final class GraphInterpreterShell(
+    var connections: Array[Connection],
+    var logics: Array[GraphStageLogic],
+    settings: ActorMaterializerSettings,
+    attributes: Attributes,
+    val mat: ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
 
@@ -462,11 +464,12 @@ import scala.util.control.NonFatal
    * @param promise Will be completed upon processing the event, or failed if processing the event throws
    *                if the event isn't ever processed the promise (the operator stops) is failed elsewhere
    */
-  final case class AsyncInput(shell: GraphInterpreterShell,
-                              logic: GraphStageLogic,
-                              evt: Any,
-                              promise: Promise[Done],
-                              handler: (Any) => Unit)
+  final case class AsyncInput(
+      shell: GraphInterpreterShell,
+      logic: GraphStageLogic,
+      evt: Any,
+      promise: Promise[Done],
+      handler: (Any) => Unit)
       extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
@@ -539,10 +542,11 @@ import scala.util.control.NonFatal
   private var resumeScheduled = false
 
   def isInitialized: Boolean = self != null
-  def init(self: ActorRef,
-           subMat: SubFusingActorMaterializerImpl,
-           enqueueToShortCircuit: (Any) => Unit,
-           eventLimit: Int): Int = {
+  def init(
+      self: ActorRef,
+      subMat: SubFusingActorMaterializerImpl,
+      enqueueToShortCircuit: (Any) => Unit,
+      eventLimit: Int): Int = {
     this.self = self
     this.enqueueToShortCircuit = enqueueToShortCircuit
     var i = 0
@@ -758,11 +762,10 @@ import scala.util.control.NonFatal
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
     case Snapshot =>
-      sender() ! StreamSnapshotImpl(self.path,
-                                    activeInterpreters
-                                      .map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter])
-                                      .toSeq,
-                                    newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
+      sender() ! StreamSnapshotImpl(
+        self.path,
+        activeInterpreters.map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
+        newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
   }
 
   override def postStop(): Unit = {

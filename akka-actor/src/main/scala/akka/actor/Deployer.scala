@@ -34,12 +34,13 @@ object Deploy {
  * }}}
  */
 @SerialVersionUID(2L)
-final case class Deploy(path: String = "",
-                        config: Config = ConfigFactory.empty,
-                        routerConfig: RouterConfig = NoRouter,
-                        scope: Scope = NoScopeGiven,
-                        dispatcher: String = Deploy.NoDispatcherGiven,
-                        mailbox: String = Deploy.NoMailboxGiven) {
+final case class Deploy(
+    path: String = "",
+    config: Config = ConfigFactory.empty,
+    routerConfig: RouterConfig = NoRouter,
+    scope: Scope = NoScopeGiven,
+    dispatcher: String = Deploy.NoDispatcherGiven,
+    mailbox: String = Deploy.NoMailboxGiven) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
@@ -62,12 +63,13 @@ final case class Deploy(path: String = "",
    * other members are merged using `X.withFallback(other.X)`.
    */
   def withFallback(other: Deploy): Deploy = {
-    Deploy(path,
-           config.withFallback(other.config),
-           routerConfig.withFallback(other.routerConfig),
-           scope.withFallback(other.scope),
-           if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
-           if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
+    Deploy(
+      path,
+      config.withFallback(other.config),
+      routerConfig.withFallback(other.routerConfig),
+      scope.withFallback(other.scope),
+      if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
+      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
   }
 }
 

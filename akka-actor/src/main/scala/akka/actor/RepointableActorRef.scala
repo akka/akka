@@ -25,12 +25,13 @@ import scala.util.control.NonFatal
  * with a fully functional one, transfer all messages from dummy to real queue
  * and swap out the cell ref.
  */
-private[akka] class RepointableActorRef(val system: ActorSystemImpl,
-                                        val props: Props,
-                                        val dispatcher: MessageDispatcher,
-                                        val mailboxType: MailboxType,
-                                        val supervisor: InternalActorRef,
-                                        val path: ActorPath)
+private[akka] class RepointableActorRef(
+    val system: ActorSystemImpl,
+    val props: Props,
+    val dispatcher: MessageDispatcher,
+    val mailboxType: MailboxType,
+    val supervisor: InternalActorRef,
+    val path: ActorPath)
     extends ActorRefWithCell
     with RepointableRef {
 
@@ -180,10 +181,11 @@ private[akka] class RepointableActorRef(val system: ActorSystemImpl,
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
-                                  val self: RepointableActorRef,
-                                  val props: Props,
-                                  val supervisor: InternalActorRef)
+private[akka] class UnstartedCell(
+    val systemImpl: ActorSystemImpl,
+    val self: RepointableActorRef,
+    val props: Props,
+    val supervisor: InternalActorRef)
     extends Cell {
 
   /*
@@ -251,17 +253,19 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
           cell.sendMessage(msg)
         } else if (!queue.offer(msg)) {
           system.eventStream.publish(
-            Warning(self.path.toString,
-                    getClass,
-                    "dropping message of type " + msg.message.getClass + " due to enqueue failure"))
+            Warning(
+              self.path.toString,
+              getClass,
+              "dropping message of type " + msg.message.getClass + " due to enqueue failure"))
           system.deadLetters.tell(DeadLetter(msg.message, msg.sender, self), msg.sender)
         } else if (Mailbox.debug) println(s"$self temp queueing ${msg.message} from ${msg.sender}")
       } finally lock.unlock()
     } else {
       system.eventStream.publish(
-        Warning(self.path.toString,
-                getClass,
-                "dropping message of type" + msg.message.getClass + " due to lock timeout"))
+        Warning(
+          self.path.toString,
+          getClass,
+          "dropping message of type" + msg.message.getClass + " due to lock timeout"))
       system.deadLetters.tell(DeadLetter(msg.message, msg.sender, self), msg.sender)
     }
   }

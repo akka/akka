@@ -63,8 +63,9 @@ class ConfigServiceDiscoverySpec
     "load from config" in {
       val result = discovery.lookup("service1", 100.millis).futureValue
       result.serviceName shouldEqual "service1"
-      result.addresses shouldEqual immutable.Seq(ResolvedTarget(host = "cat", port = Some(1233), address = None),
-                                                 ResolvedTarget(host = "dog", port = None, address = None))
+      result.addresses shouldEqual immutable.Seq(
+        ResolvedTarget(host = "cat", port = Some(1233), address = None),
+        ResolvedTarget(host = "dog", port = None, address = None))
     }
 
     "return no resolved targets if not in config" in {

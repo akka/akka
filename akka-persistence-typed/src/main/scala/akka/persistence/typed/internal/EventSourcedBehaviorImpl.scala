@@ -87,35 +87,34 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     Behaviors
       .supervise {
         Behaviors.setup[Command] { _ ⇒
-          val eventSourcedSetup = new BehaviorSetup(ctx.asInstanceOf[ActorContext[InternalProtocol]],
-                                                    persistenceId,
-                                                    emptyState,
-                                                    commandHandler,
-                                                    eventHandler,
-                                                    WriterIdentity.newIdentity(),
-                                                    actualSignalHandler,
-                                                    tagger,
-                                                    eventAdapter,
-                                                    snapshotWhen,
-                                                    recovery,
-                                                    holdingRecoveryPermit = false,
-                                                    settings = settings,
-                                                    stashState = stashState)
+          val eventSourcedSetup = new BehaviorSetup(
+            ctx.asInstanceOf[ActorContext[InternalProtocol]],
+            persistenceId,
+            emptyState,
+            commandHandler,
+            eventHandler,
+            WriterIdentity.newIdentity(),
+            actualSignalHandler,
+            tagger,
+            eventAdapter,
+            snapshotWhen,
+            recovery,
+            holdingRecoveryPermit = false,
+            settings = settings,
+            stashState = stashState)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the protocol
           val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
 
             import BehaviorInterceptor._
-            def aroundReceive(ctx: typed.TypedActorContext[Any],
-                              msg: Any,
-                              target: ReceiveTarget[Any]): Behavior[Any] = {
+            def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
+                : Behavior[Any] = {
               target(ctx, msg)
             }
 
-            def aroundSignal(ctx: typed.TypedActorContext[Any],
-                             signal: Signal,
-                             target: SignalTarget[Any]): Behavior[Any] = {
+            def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
+                : Behavior[Any] = {
               if (signal == PostStop) {
                 eventSourcedSetup.cancelRecoveryTimer()
                 // clear stash to be GC friendly

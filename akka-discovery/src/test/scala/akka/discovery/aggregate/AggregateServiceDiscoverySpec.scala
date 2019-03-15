@@ -21,8 +21,9 @@ class StubbedServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscov
   override def lookup(query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     if (query.serviceName == "stubbed") {
       Future.successful(
-        Resolved(query.serviceName,
-                 immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None))))
+        Resolved(
+          query.serviceName,
+          immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None))))
     } else if (query.serviceName == "fail") {
       Future.failed(new RuntimeException("No resolving for you!"))
     } else {
@@ -89,22 +90,26 @@ class AggregateServiceDiscoverySpec
 
     "only call first one if returns results" in {
       val results = discovery.lookup("stubbed", 100.millis).futureValue
-      results shouldEqual Resolved("stubbed",
-                                   immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None)))
+      results shouldEqual Resolved(
+        "stubbed",
+        immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None)))
     }
 
     "move onto the next if no resolved targets" in {
       val results = discovery.lookup("config1", 100.millis).futureValue
-      results shouldEqual Resolved("config1",
-                                   immutable.Seq(ResolvedTarget(host = "cat", port = Some(1233), address = None),
-                                                 ResolvedTarget(host = "dog", port = Some(1234), address = None)))
+      results shouldEqual Resolved(
+        "config1",
+        immutable.Seq(
+          ResolvedTarget(host = "cat", port = Some(1233), address = None),
+          ResolvedTarget(host = "dog", port = Some(1234), address = None)))
     }
 
     "move onto next if fails" in {
       val results = discovery.lookup("fail", 100.millis).futureValue
       // Stub fails then result comes from config
-      results shouldEqual Resolved("fail",
-                                   immutable.Seq(ResolvedTarget(host = "from-config", port = None, address = None)))
+      results shouldEqual Resolved(
+        "fail",
+        immutable.Seq(ResolvedTarget(host = "from-config", port = None, address = None)))
     }
   }
 

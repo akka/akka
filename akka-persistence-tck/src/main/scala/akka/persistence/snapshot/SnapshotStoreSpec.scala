@@ -81,8 +81,9 @@ abstract class SnapshotStoreSpec(config: Config)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }
     "not load a snapshot given non-matching timestamp criteria" in {
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = 100), Long.MaxValue),
-                         senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = 100), Long.MaxValue),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }
     "not load a snapshot given non-matching sequence number criteria" in {
@@ -102,8 +103,9 @@ abstract class SnapshotStoreSpec(config: Config)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), 13))
     }
     "load the most recent snapshot matching upper sequence number and timestamp bounds" in {
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(13, metadata(2).timestamp), Long.MaxValue),
-                         senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria(13, metadata(2).timestamp), Long.MaxValue),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(Some(SelectedSnapshot(metadata(2), s"s-3")), Long.MaxValue))
       snapshotStore.tell(
         LoadSnapshot(pid, SnapshotSelectionCriteria.Latest.copy(maxTimestamp = metadata(2).timestamp), 13),
@@ -134,8 +136,9 @@ abstract class SnapshotStoreSpec(config: Config)
       sub.expectMsg(cmd)
       senderProbe.expectMsg(DeleteSnapshotsSuccess(criteria))
 
-      snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue),
-                         senderProbe.ref)
+      snapshotStore.tell(
+        LoadSnapshot(pid, SnapshotSelectionCriteria(md.sequenceNr, md.timestamp), Long.MaxValue),
+        senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
       snapshotStore.tell(
         LoadSnapshot(pid, SnapshotSelectionCriteria(metadata(3).sequenceNr, metadata(3).timestamp), Long.MaxValue),

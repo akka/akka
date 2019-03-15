@@ -195,13 +195,13 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val msg = expectMsgType[Failed]
       msg match {
         case Failed(barrier, thr: BarrierEmpty)
-            if (thr == BarrierEmpty(Data(Set(), "", Nil, thr.data.deadline),
-                                    "cannot remove RoleName(a): no client to remove")) =>
+            if (thr == BarrierEmpty(
+                Data(Set(), "", Nil, thr.data.deadline),
+                "cannot remove RoleName(a): no client to remove")) =>
         case x =>
-          fail(
-            "Expected " + Failed(barrier,
-                                 BarrierEmpty(Data(Set(), "", Nil, null),
-                                              "cannot remove RoleName(a): no client to remove")) + " but got " + x)
+          fail("Expected " + Failed(
+            barrier,
+            BarrierEmpty(Data(Set(), "", Nil, null), "cannot remove RoleName(a): no client to remove")) + " but got " + x)
       }
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       a.send(barrier, EnterBarrier("bar9", None))
@@ -580,10 +580,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
     probes.foreach(_.msgAvailable should ===(false))
   }
 
-  private def data(clients: Set[Controller.NodeInfo],
-                   barrier: String,
-                   arrived: List[ActorRef],
-                   previous: Data): Data = {
+  private def data(
+      clients: Set[Controller.NodeInfo],
+      barrier: String,
+      arrived: List[ActorRef],
+      previous: Data): Data = {
     Data(clients, barrier, arrived, previous.deadline)
   }
 }

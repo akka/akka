@@ -194,10 +194,11 @@ private[akka] trait FaultHandling { this: ActorCell =>
       }
     } catch handleNonFatalOrInterruptedException { e =>
       publish(
-        Error(e,
-              self.path.toString,
-              clazz(actor),
-              "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
+        Error(
+          e,
+          self.path.toString,
+          clazz(actor),
+          "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
       try children.foreach(stop)
       finally finishTerminate()
     }

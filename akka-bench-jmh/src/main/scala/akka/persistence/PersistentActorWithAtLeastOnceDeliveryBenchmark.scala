@@ -21,9 +21,10 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   val config = PersistenceSpec.config("leveldb", "benchmark")
 
   lazy val storageLocations =
-    List("akka.persistence.journal.leveldb.dir",
-         "akka.persistence.journal.leveldb-shared.store.dir",
-         "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
+    List(
+      "akka.persistence.journal.leveldb.dir",
+      "akka.persistence.journal.leveldb-shared.store.dir",
+      "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   var system: ActorSystem = _
 
@@ -90,9 +91,10 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
   }
 }
 
-class NoPersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int,
-                                                      val upStream: ActorRef,
-                                                      val downStream: ActorPath)
+class NoPersistPersistentActorWithAtLeastOnceDelivery(
+    respondAfter: Int,
+    val upStream: ActorRef,
+    val downStream: ActorPath)
     extends PersistentActor
     with AtLeastOnceDelivery {
 
@@ -126,9 +128,10 @@ class NoPersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int,
   }
 }
 
-class PersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int,
-                                                    val upStream: ActorRef,
-                                                    val downStream: ActorPath)
+class PersistPersistentActorWithAtLeastOnceDelivery(
+    respondAfter: Int,
+    val upStream: ActorRef,
+    val downStream: ActorPath)
     extends PersistentActor
     with AtLeastOnceDelivery {
 
@@ -164,9 +167,10 @@ class PersistPersistentActorWithAtLeastOnceDelivery(respondAfter: Int,
   }
 }
 
-class PersistAsyncPersistentActorWithAtLeastOnceDelivery(respondAfter: Int,
-                                                         val upStream: ActorRef,
-                                                         val downStream: ActorPath)
+class PersistAsyncPersistentActorWithAtLeastOnceDelivery(
+    respondAfter: Int,
+    val upStream: ActorRef,
+    val downStream: ActorPath)
     extends PersistentActor
     with AtLeastOnceDelivery {
 

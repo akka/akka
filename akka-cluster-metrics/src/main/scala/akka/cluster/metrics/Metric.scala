@@ -130,11 +130,12 @@ object StandardMetrics {
         used <- nodeMetrics.metric(HeapMemoryUsed)
         committed <- nodeMetrics.metric(HeapMemoryCommitted)
       } yield
-        (nodeMetrics.address,
-         nodeMetrics.timestamp,
-         used.smoothValue.longValue,
-         committed.smoothValue.longValue,
-         nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
+        (
+          nodeMetrics.address,
+          nodeMetrics.timestamp,
+          used.smoothValue.longValue,
+          committed.smoothValue.longValue,
+          nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
     }
 
   }
@@ -181,12 +182,13 @@ object StandardMetrics {
       for {
         processors <- nodeMetrics.metric(Processors)
       } yield
-        (nodeMetrics.address,
-         nodeMetrics.timestamp,
-         nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
-         nodeMetrics.metric(CpuCombined).map(_.smoothValue),
-         nodeMetrics.metric(CpuStolen).map(_.smoothValue),
-         processors.value.intValue)
+        (
+          nodeMetrics.address,
+          nodeMetrics.timestamp,
+          nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
+          nodeMetrics.metric(CpuCombined).map(_.smoothValue),
+          nodeMetrics.metric(CpuStolen).map(_.smoothValue),
+          processors.value.intValue)
     }
 
   }
@@ -214,12 +216,13 @@ object StandardMetrics {
    * @param processors the number of available processors
    */
   @SerialVersionUID(1L)
-  final case class Cpu(address: Address,
-                       timestamp: Long,
-                       systemLoadAverage: Option[Double],
-                       cpuCombined: Option[Double],
-                       cpuStolen: Option[Double],
-                       processors: Int) {
+  final case class Cpu(
+      address: Address,
+      timestamp: Long,
+      systemLoadAverage: Option[Double],
+      cpuCombined: Option[Double],
+      cpuStolen: Option[Double],
+      processors: Int) {
 
     cpuCombined match {
       case Some(x) => require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")

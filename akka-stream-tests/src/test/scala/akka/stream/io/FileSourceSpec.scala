@@ -223,10 +223,11 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       r.futureValue.status.isFailure shouldBe true
     }
 
-    List(Settings(chunkSize = 512, readAhead = 2),
-         Settings(chunkSize = 512, readAhead = 4),
-         Settings(chunkSize = 2048, readAhead = 2),
-         Settings(chunkSize = 2048, readAhead = 4)).foreach { settings =>
+    List(
+      Settings(chunkSize = 512, readAhead = 2),
+      Settings(chunkSize = 512, readAhead = 4),
+      Settings(chunkSize = 2048, readAhead = 2),
+      Settings(chunkSize = 2048, readAhead = 4)).foreach { settings =>
       import settings._
 
       s"count lines in real file (chunkSize = $chunkSize, readAhead = $readAhead)" in {

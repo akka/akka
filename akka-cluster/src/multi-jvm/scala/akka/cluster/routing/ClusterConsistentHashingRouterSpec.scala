@@ -122,10 +122,10 @@ abstract class ClusterConsistentHashingRouterSpec
     "deploy programatically defined routees to the member nodes in the cluster" in {
       runOn(first) {
         val router2 = system.actorOf(
-          ClusterRouterPool(local = ConsistentHashingPool(nrOfInstances = 0),
-                            settings = ClusterRouterPoolSettings(totalInstances = 10,
-                                                                 maxInstancesPerNode = 2,
-                                                                 allowLocalRoutees = true)).props(Props[Echo]),
+          ClusterRouterPool(
+            local = ConsistentHashingPool(nrOfInstances = 0),
+            settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true))
+            .props(Props[Echo]),
           "router2")
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router2).size should ===(6) }
@@ -143,8 +143,9 @@ abstract class ClusterConsistentHashingRouterSpec
         }
 
         val router3 =
-          system.actorOf(ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping).props(Props[Echo]),
-                         "router3")
+          system.actorOf(
+            ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping).props(Props[Echo]),
+            "router3")
 
         assertHashMapping(router3)
       }
@@ -159,12 +160,13 @@ abstract class ClusterConsistentHashingRouterSpec
         }
 
         val router4 =
-          system.actorOf(ClusterRouterPool(local = ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping),
-                                           settings =
-                                             ClusterRouterPoolSettings(totalInstances = 10,
-                                                                       maxInstancesPerNode = 1,
-                                                                       allowLocalRoutees = true)).props(Props[Echo]),
-                         "router4")
+          system.actorOf(
+            ClusterRouterPool(
+              local = ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping),
+              settings =
+                ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true))
+              .props(Props[Echo]),
+            "router4")
 
         assertHashMapping(router4)
       }

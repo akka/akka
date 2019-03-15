@@ -94,9 +94,10 @@ abstract class RemoteInstrument {
  * }}}
  *
  */
-private[remote] final class RemoteInstruments(private val system: ExtendedActorSystem,
-                                              private val log: LoggingAdapter,
-                                              _instruments: Vector[RemoteInstrument]) {
+private[remote] final class RemoteInstruments(
+    private val system: ExtendedActorSystem,
+    private val log: LoggingAdapter,
+    _instruments: Vector[RemoteInstrument]) {
   import RemoteInstruments._
 
   def this(system: ExtendedActorSystem, log: LoggingAdapter) = this(system, log, RemoteInstruments.create(system, log))
@@ -122,9 +123,10 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
             serializeInstrument(instrument, oe, buffer)
           } catch {
             case NonFatal(t) =>
-              log.debug("Skipping serialization of RemoteInstrument {} since it failed with {}",
-                        instrument.identifier,
-                        t.getMessage)
+              log.debug(
+                "Skipping serialization of RemoteInstrument {} since it failed with {}",
+                instrument.identifier,
+                t.getMessage)
               buffer.position(rewindPos)
           }
           i += 1
@@ -145,16 +147,18 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
     }
   }
 
-  private def serializeInstrument(instrument: RemoteInstrument,
-                                  outboundEnvelope: OutboundEnvelope,
-                                  buffer: ByteBuffer): Unit = {
+  private def serializeInstrument(
+      instrument: RemoteInstrument,
+      outboundEnvelope: OutboundEnvelope,
+      buffer: ByteBuffer): Unit = {
     val startPos = buffer.position()
     buffer.putInt(0)
     val dataPos = buffer.position()
-    instrument.remoteWriteMetadata(outboundEnvelope.recipient.orNull,
-                                   outboundEnvelope.message,
-                                   outboundEnvelope.sender.orNull,
-                                   buffer)
+    instrument.remoteWriteMetadata(
+      outboundEnvelope.recipient.orNull,
+      outboundEnvelope.message,
+      outboundEnvelope.sender.orNull,
+      buffer)
     val endPos = buffer.position()
     if (endPos == dataPos) {
       // if the instrument didn't write anything, then rewind to the start
@@ -193,9 +197,10 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
               deserializeInstrument(instrument, inboundEnvelope, buffer)
             } catch {
               case NonFatal(t) =>
-                log.debug("Skipping deserialization of RemoteInstrument {} since it failed with {}",
-                          instrument.identifier,
-                          t.getMessage)
+                log.debug(
+                  "Skipping deserialization of RemoteInstrument {} since it failed with {}",
+                  instrument.identifier,
+                  t.getMessage)
             }
             i += 1
           } else if (key > identifier) {
@@ -211,8 +216,9 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
         }
       } else {
         if (log.isDebugEnabled)
-          log.debug("Skipping serialized data in message for RemoteInstrument(s) {} that has no local match",
-                    remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
+          log.debug(
+            "Skipping serialized data in message for RemoteInstrument(s) {} that has no local match",
+            remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
       }
     } catch {
       case NonFatal(t) =>
@@ -222,13 +228,15 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
     }
   }
 
-  private def deserializeInstrument(instrument: RemoteInstrument,
-                                    inboundEnvelope: InboundEnvelope,
-                                    buffer: ByteBuffer): Unit = {
-    instrument.remoteReadMetadata(inboundEnvelope.recipient.orNull,
-                                  inboundEnvelope.message,
-                                  inboundEnvelope.sender.orNull,
-                                  buffer)
+  private def deserializeInstrument(
+      instrument: RemoteInstrument,
+      inboundEnvelope: InboundEnvelope,
+      buffer: ByteBuffer): Unit = {
+    instrument.remoteReadMetadata(
+      inboundEnvelope.recipient.orNull,
+      inboundEnvelope.message,
+      inboundEnvelope.sender.orNull,
+      buffer)
   }
 
   def messageSent(outboundEnvelope: OutboundEnvelope, size: Int, time: Long): Unit = {
@@ -247,15 +255,17 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
     messageSent(0)
   }
 
-  private def messageSentInstrument(instrument: RemoteInstrument,
-                                    outboundEnvelope: OutboundEnvelope,
-                                    size: Int,
-                                    time: Long): Unit = {
-    instrument.remoteMessageSent(outboundEnvelope.recipient.orNull,
-                                 outboundEnvelope.message,
-                                 outboundEnvelope.sender.orNull,
-                                 size,
-                                 time)
+  private def messageSentInstrument(
+      instrument: RemoteInstrument,
+      outboundEnvelope: OutboundEnvelope,
+      size: Int,
+      time: Long): Unit = {
+    instrument.remoteMessageSent(
+      outboundEnvelope.recipient.orNull,
+      outboundEnvelope.message,
+      outboundEnvelope.sender.orNull,
+      size,
+      time)
   }
 
   def messageReceived(inboundEnvelope: InboundEnvelope, size: Int, time: Long): Unit = {
@@ -274,15 +284,17 @@ private[remote] final class RemoteInstruments(private val system: ExtendedActorS
     messageRecieved(0)
   }
 
-  private def messageReceivedInstrument(instrument: RemoteInstrument,
-                                        inboundEnvelope: InboundEnvelope,
-                                        size: Int,
-                                        time: Long): Unit = {
-    instrument.remoteMessageReceived(inboundEnvelope.recipient.orNull,
-                                     inboundEnvelope.message,
-                                     inboundEnvelope.sender.orNull,
-                                     size,
-                                     time)
+  private def messageReceivedInstrument(
+      instrument: RemoteInstrument,
+      inboundEnvelope: InboundEnvelope,
+      size: Int,
+      time: Long): Unit = {
+    instrument.remoteMessageReceived(
+      inboundEnvelope.recipient.orNull,
+      inboundEnvelope.message,
+      inboundEnvelope.sender.orNull,
+      size,
+      time)
   }
 
   private def remoteInstrumentIdIteratorRaw(buffer: ByteBuffer, endPos: Int): Iterator[Int] = {

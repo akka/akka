@@ -134,8 +134,9 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
       runOn(fourth) {
         enterBarrier("start")
         val actor =
-          system.actorOf(RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]),
-                         "service-hello2")
+          system.actorOf(
+            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]),
+            "service-hello2")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         actor ! GetRoutees

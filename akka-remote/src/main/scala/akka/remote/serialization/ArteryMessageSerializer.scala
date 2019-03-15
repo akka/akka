@@ -151,9 +151,10 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     builder.build
   }
 
-  def deserializeCompressionAdvertisement[T, U](bytes: Array[Byte],
-                                                keyDeserializer: String => T,
-                                                create: (UniqueAddress, CompressionTable[T]) => U): U = {
+  def deserializeCompressionAdvertisement[T, U](
+      bytes: Array[Byte],
+      keyDeserializer: String => T,
+      create: (UniqueAddress, CompressionTable[T]) => U): U = {
     val protoAdv = ArteryControlFormats.CompressionTableAdvertisement.parseFrom(bytes)
 
     val kvs =
@@ -171,8 +172,9 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       .setVersion(version)
       .build()
 
-  def deserializeCompressionTableAdvertisementAck(bytes: Array[Byte],
-                                                  create: (UniqueAddress, Byte) => AnyRef): AnyRef = {
+  def deserializeCompressionTableAdvertisementAck(
+      bytes: Array[Byte],
+      create: (UniqueAddress, Byte) => AnyRef): AnyRef = {
     val msg = ArteryControlFormats.CompressionTableAdvertisementAck.parseFrom(bytes)
     create(deserializeUniqueAddress(msg.getFrom), msg.getVersion.toByte)
   }
@@ -197,16 +199,18 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
     SystemMessageDelivery.SystemMessageEnvelope(
       serialization
-        .deserialize(protoEnv.getMessage.toByteArray,
-                     protoEnv.getSerializerId,
-                     if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "")
+        .deserialize(
+          protoEnv.getMessage.toByteArray,
+          protoEnv.getSerializerId,
+          if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "")
         .get,
       protoEnv.getSeqNo,
       deserializeUniqueAddress(protoEnv.getAckReplyTo))
   }
 
-  def serializeSystemMessageDeliveryAck(seqNo: Long,
-                                        from: UniqueAddress): ArteryControlFormats.SystemMessageDeliveryAck =
+  def serializeSystemMessageDeliveryAck(
+      seqNo: Long,
+      from: UniqueAddress): ArteryControlFormats.SystemMessageDeliveryAck =
     ArteryControlFormats.SystemMessageDeliveryAck.newBuilder.setSeqNo(seqNo).setFrom(serializeUniqueAddress(from)).build
 
   def deserializeSystemMessageDeliveryAck(bytes: Array[Byte], create: (Long, UniqueAddress) => AnyRef): AnyRef = {

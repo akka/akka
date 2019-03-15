@@ -113,9 +113,10 @@ object FileIO {
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    * @param startPosition startPosition the start position to read from, defaults to 0
    */
-  def toPath[Opt <: OpenOption](f: Path,
-                                options: util.Set[Opt],
-                                startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toPath[Opt <: OpenOption](
+      f: Path,
+      options: util.Set[Opt],
+      startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet, startPosition).toCompletionStage())
 
   /**

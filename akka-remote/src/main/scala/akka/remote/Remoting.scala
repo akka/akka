@@ -76,8 +76,9 @@ private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
 
-  def localAddressForRemote(transportMapping: Map[String, Set[(AkkaProtocolTransport, Address)]],
-                            remote: Address): Address = {
+  def localAddressForRemote(
+      transportMapping: Map[String, Set[(AkkaProtocolTransport, Address)]],
+      remote: Address): Address = {
 
     transportMapping.get(remote.protocol) match {
       case Some(transports) =>
@@ -239,8 +240,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
       case Some(manager) =>
         manager.tell(Send(message, senderOption, recipient), sender = senderOption.getOrElse(Actor.noSender))
       case None =>
-        throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.",
-                                                       null)
+        throw new RemoteTransportExceptionNoStackTrace(
+          "Attempted to send remote message but Remoting is not running.",
+          null)
     }
 
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
@@ -284,10 +286,11 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  final case class Send(message: Any,
-                        senderOption: OptionVal[ActorRef],
-                        recipient: RemoteActorRef,
-                        seqOpt: Option[SeqNo] = None)
+  final case class Send(
+      message: Any,
+      senderOption: OptionVal[ActorRef],
+      recipient: RemoteActorRef,
+      seqOpt: Option[SeqNo] = None)
       extends RemotingCommand
       with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
@@ -302,8 +305,9 @@ private[remote] object EndpointManager {
 
   // Messages internal to EndpointManager
   case object Prune extends NoSerializationVerificationNeeded
-  final case class ListensResult(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]],
-                                 results: Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
+  final case class ListensResult(
+      addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]],
+      results: Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
       extends NoSerializationVerificationNeeded
   final case class ListensFailure(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]], cause: Throwable)
       extends NoSerializationVerificationNeeded
@@ -501,8 +505,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
 
   def keepQuarantinedOr(remoteAddress: Address)(body: => Unit): Unit = endpoints.refuseUid(remoteAddress) match {
     case Some(uid) =>
-      log.info("Quarantined address [{}] is still unreachable or has not been restarted. Keeping it quarantined.",
-               remoteAddress)
+      log.info(
+        "Quarantined address [{}] is still unreachable or has not been restarted. Keeping it quarantined.",
+        remoteAddress)
       // Restoring Quarantine marker overwritten by a Pass(endpoint, refuseUid) pair while probing remote system.
       endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
     case None => body
@@ -511,10 +516,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
   override val supervisorStrategy = {
     def hopeless(e: HopelessAssociation): SupervisorStrategy.Directive = e match {
       case HopelessAssociation(_, remoteAddress, Some(uid), reason) =>
-        log.error(reason,
-                  "Association to [{}] with UID [{}] irrecoverably failed. Quarantining address.",
-                  remoteAddress,
-                  uid)
+        log.error(
+          reason,
+          "Association to [{}] with UID [{}] irrecoverably failed. Quarantining address.",
+          remoteAddress,
+          uid)
         settings.QuarantineDuration match {
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
@@ -525,10 +531,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
 
       case HopelessAssociation(_, remoteAddress, None, _) =>
         keepQuarantinedOr(remoteAddress) {
-          log.warning("Association to [{}] with unknown UID is irrecoverably failed. " +
-                      "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
-                      remoteAddress,
-                      settings.RetryGateClosedFor.toMillis)
+          log.warning(
+            "Association to [{}] with unknown UID is irrecoverably failed. " +
+            "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
+            remoteAddress,
+            settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         Stop
@@ -557,10 +564,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
 
       case ShutDownAssociation(_, remoteAddress, _) =>
         keepQuarantinedOr(remoteAddress) {
-          log.debug("Remote system with address [{}] has shut down. " +
-                    "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
-                    remoteAddress,
-                    settings.RetryGateClosedFor.toMillis)
+          log.debug(
+            "Remote system with address [{}] has shut down. " +
+            "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
+            remoteAddress,
+            settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         Stop
@@ -599,8 +607,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         }
         .map {
           case (a, t) if t.size > 1 =>
-            throw new RemoteTransportException(s"There are more than one transports listening on local address [$a]",
-                                               null)
+            throw new RemoteTransportException(
+              s"There are more than one transports listening on local address [$a]",
+              null)
           case (a, t) => a -> t.head._1
         }
       // Register to each transport as listener and collect mapping to addresses
@@ -634,10 +643,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
       (endpoints.writableEndpointWithPolicyFor(address), uidToQuarantineOption) match {
         case (Some(Pass(endpoint, _)), None) =>
           context.stop(endpoint)
-          log.warning("Association to [{}] with unknown UID is reported as quarantined, but " +
-                      "address cannot be quarantined without knowing the UID, gating instead for {} ms.",
-                      address,
-                      settings.RetryGateClosedFor.toMillis)
+          log.warning(
+            "Association to [{}] with unknown UID is reported as quarantined, but " +
+            "address cannot be quarantined without knowing the UID, gating instead for {} ms.",
+            address,
+            settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(endpoint, Deadline.now + settings.RetryGateClosedFor)
         case (Some(Pass(endpoint, uidOption)), Some(quarantineUid)) =>
           uidOption match {
@@ -648,9 +658,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             // or it does not match with the UID to be quarantined
             case None if !endpoints.refuseUid(address).contains(quarantineUid) =>
               // the quarantine uid may be got fresh by cluster gossip, so update refuseUid for late handle when the writer got uid
-              endpoints.registerWritableEndpointRefuseUid(address,
-                                                          quarantineUid,
-                                                          Deadline.now + settings.QuarantineDuration)
+              endpoints.registerWritableEndpointRefuseUid(
+                address,
+                quarantineUid,
+                Deadline.now + settings.QuarantineDuration)
             case _ => //the quarantine uid has lost the race with some failure, do nothing
           }
         case (Some(Quarantined(uid, _)), Some(quarantineUid)) if uid == quarantineUid => // the UID to be quarantined already exists, do nothing
@@ -701,14 +712,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
       val recipientAddress = recipientRef.path.address
 
       def createAndRegisterWritingEndpoint(): ActorRef = {
-        endpoints.registerWritableEndpoint(recipientAddress,
-                                           uid = None,
-                                           createEndpoint(recipientAddress,
-                                                          recipientRef.localAddressToUse,
-                                                          transportMapping(recipientRef.localAddressToUse),
-                                                          settings,
-                                                          handleOption = None,
-                                                          writing = true))
+        endpoints.registerWritableEndpoint(
+          recipientAddress,
+          uid = None,
+          createEndpoint(
+            recipientAddress,
+            recipientRef.localAddressToUse,
+            transportMapping(recipientRef.localAddressToUse),
+            settings,
+            handleOption = None,
+            writing = true))
       }
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
@@ -835,12 +848,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
     eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, inbound = true))
 
-    val endpoint = createEndpoint(handle.remoteAddress,
-                                  handle.localAddress,
-                                  transportMapping(handle.localAddress),
-                                  settings,
-                                  Some(handle),
-                                  writing)
+    val endpoint = createEndpoint(
+      handle.remoteAddress,
+      handle.localAddress,
+      transportMapping(handle.localAddress),
+      settings,
+      Some(handle),
+      writing)
 
     if (writing)
       endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), endpoint)
@@ -908,12 +922,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
       pendingReadHandoffs -= takingOverFrom
       eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, inbound = true))
 
-      val endpoint = createEndpoint(handle.remoteAddress,
-                                    handle.localAddress,
-                                    transportMapping(handle.localAddress),
-                                    settings,
-                                    Some(handle),
-                                    writing = false)
+      val endpoint = createEndpoint(
+        handle.remoteAddress,
+        handle.localAddress,
+        transportMapping(handle.localAddress),
+        settings,
+        Some(handle),
+        writing = false)
       endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint, handle.handshakeInfo.uid)
     }
   }
@@ -923,12 +938,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
       pendingReadHandoffs -= takingOverFrom
   }
 
-  private def createEndpoint(remoteAddress: Address,
-                             localAddress: Address,
-                             transport: AkkaProtocolTransport,
-                             endpointSettings: RemoteSettings,
-                             handleOption: Option[AkkaProtocolHandle],
-                             writing: Boolean): ActorRef = {
+  private def createEndpoint(
+      remoteAddress: Address,
+      localAddress: Address,
+      transport: AkkaProtocolTransport,
+      endpointSettings: RemoteSettings,
+      handleOption: Option[AkkaProtocolHandle],
+      writing: Boolean): ActorRef = {
     require(transportMapping contains localAddress, "Transport mapping is not defined for the address")
     // refuseUid is ignored for read-only endpoints since the UID of the remote system is already known and has passed
     // quarantine checks
@@ -939,14 +955,15 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         context.actorOf(
           RARP(extendedSystem)
             .configureDispatcher(
-              ReliableDeliverySupervisor.props(handleOption,
-                                               localAddress,
-                                               remoteAddress,
-                                               refuseUid,
-                                               transport,
-                                               endpointSettings,
-                                               AkkaPduProtobufCodec,
-                                               receiveBuffers))
+              ReliableDeliverySupervisor.props(
+                handleOption,
+                localAddress,
+                remoteAddress,
+                refuseUid,
+                transport,
+                endpointSettings,
+                AkkaPduProtobufCodec,
+                receiveBuffers))
             .withDeploy(Deploy.local),
           "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
     else
@@ -954,15 +971,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
         context.actorOf(
           RARP(extendedSystem)
             .configureDispatcher(
-              EndpointWriter.props(handleOption,
-                                   localAddress,
-                                   remoteAddress,
-                                   refuseUid,
-                                   transport,
-                                   endpointSettings,
-                                   AkkaPduProtobufCodec,
-                                   receiveBuffers,
-                                   reliableDeliverySupervisor = None))
+              EndpointWriter.props(
+                handleOption,
+                localAddress,
+                remoteAddress,
+                refuseUid,
+                transport,
+                endpointSettings,
+                AkkaPduProtobufCodec,
+                receiveBuffers,
+                reliableDeliverySupervisor = None))
             .withDeploy(Deploy.local),
           "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }

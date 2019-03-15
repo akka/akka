@@ -83,9 +83,10 @@ object RemoteDeploymentWhitelistSpec {
 
   def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(
-      TestEvent.Mute(EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead letter.*")))
+      TestEvent.Mute(
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*")))
   }
 }
 
@@ -119,10 +120,10 @@ class RemoteDeploymentWhitelistSpec
   override def atStartup() = {
     muteSystem(system)
     remoteSystem.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(
-                       pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
 
   override def afterTermination(): Unit = {

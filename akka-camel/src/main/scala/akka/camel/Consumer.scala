@@ -38,9 +38,10 @@ trait Consumer extends Actor with CamelSupport {
   }
 
   private[this] def register(): Unit = {
-    camel.supervisor ! Register(self,
-                                endpointUri,
-                                Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
+    camel.supervisor ! Register(
+      self,
+      endpointUri,
+      Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
   }
 
   /**
@@ -98,17 +99,19 @@ private[camel] object Consumer {
  *
  * Was a case class but has been split up as a workaround for SI-8283
  */
-private[camel] class ConsumerConfig(val activationTimeout: FiniteDuration,
-                                    val replyTimeout: FiniteDuration,
-                                    val autoAck: Boolean,
-                                    val onRouteDefinition: RouteDefinition => ProcessorDefinition[_])
+private[camel] class ConsumerConfig(
+    val activationTimeout: FiniteDuration,
+    val replyTimeout: FiniteDuration,
+    val autoAck: Boolean,
+    val onRouteDefinition: RouteDefinition => ProcessorDefinition[_])
     extends NoSerializationVerificationNeeded
     with scala.Serializable
 
 private[camel] object ConsumerConfig {
-  def apply(activationTimeout: FiniteDuration,
-            replyTimeout: FiniteDuration,
-            autoAck: Boolean,
-            onRouteDefinition: RouteDefinition => ProcessorDefinition[_]): ConsumerConfig =
+  def apply(
+      activationTimeout: FiniteDuration,
+      replyTimeout: FiniteDuration,
+      autoAck: Boolean,
+      onRouteDefinition: RouteDefinition => ProcessorDefinition[_]): ConsumerConfig =
     new ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)
 }

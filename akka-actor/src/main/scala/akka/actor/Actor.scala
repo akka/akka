@@ -116,8 +116,9 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
  *   that the remote node hosting the watched actor was detected as unreachable
  */
 @SerialVersionUID(1L)
-final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean,
-                                                                          @BeanProperty val addressTerminated: Boolean)
+final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
+    @BeanProperty val existenceConfirmed: Boolean,
+    @BeanProperty val addressTerminated: Boolean)
     extends AutoReceivedMessage
     with PossiblyHarmful
     with DeadLetterSuppression
@@ -217,10 +218,11 @@ object ActorInitializationException {
  * @param messageOption is the message which was optionally passed into preRestart()
  */
 @SerialVersionUID(1L)
-final case class PreRestartException private[akka] (actor: ActorRef,
-                                                    cause: Throwable,
-                                                    originalCause: Throwable,
-                                                    messageOption: Option[Any])
+final case class PreRestartException private[akka] (
+    actor: ActorRef,
+    cause: Throwable,
+    originalCause: Throwable,
+    messageOption: Option[Any])
     extends ActorInitializationException(
       actor,
       "exception in preRestart(" +
@@ -288,9 +290,10 @@ class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaExc
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
  */
 @SerialVersionUID(1L)
-final case class UnhandledMessage(@BeanProperty message: Any,
-                                  @BeanProperty sender: ActorRef,
-                                  @BeanProperty recipient: ActorRef)
+final case class UnhandledMessage(
+    @BeanProperty message: Any,
+    @BeanProperty sender: ActorRef,
+    @BeanProperty recipient: ActorRef)
     extends NoSerializationVerificationNeeded
 
 /**

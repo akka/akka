@@ -670,9 +670,10 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
         val breaker: CircuitBreakerSpec.Breaker = CircuitBreakerSpec.multiFailureCb()
 
         for (_ <- 1 to 4) breaker().withCircuitBreaker(Future(throwException))
-        awaitCond(breaker().currentFailureCount == 4,
-                  awaitTimeout,
-                  message = s"Current failure count: ${breaker().currentFailureCount}")
+        awaitCond(
+          breaker().currentFailureCount == 4,
+          awaitTimeout,
+          message = s"Current failure count: ${breaker().currentFailureCount}")
 
         val harmlessException = new TestException
         val harmlessExceptionAsSuccess: Try[String] => Boolean = {

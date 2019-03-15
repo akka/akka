@@ -74,9 +74,10 @@ class ClusterSingletonLeavingSpeedSpec
   def join(from: ActorSystem, to: ActorSystem, probe: ActorRef): Unit = {
 
     from.actorOf(
-      ClusterSingletonManager.props(singletonProps = TheSingleton.props(probe),
-                                    terminationMessage = PoisonPill,
-                                    settings = ClusterSingletonManagerSettings(from)),
+      ClusterSingletonManager.props(
+        singletonProps = TheSingleton.props(probe),
+        terminationMessage = PoisonPill,
+        settings = ClusterSingletonManagerSettings(from)),
       name = "echo")
 
     Cluster(from).join(Cluster(to).selfAddress)

@@ -26,10 +26,11 @@ import scala.util.{ Failure, Success }
 }
 
 /** INTERNAL API */
-@InternalApi private[akka] class OutputStreamSubscriber(os: OutputStream,
-                                                        completionPromise: Promise[IOResult],
-                                                        bufSize: Int,
-                                                        autoFlush: Boolean)
+@InternalApi private[akka] class OutputStreamSubscriber(
+    os: OutputStream,
+    completionPromise: Promise[IOResult],
+    bufSize: Int,
+    autoFlush: Boolean)
     extends akka.stream.actor.ActorSubscriber
     with ActorLogging {
 

@@ -78,11 +78,12 @@ import akka.stream.snapshot._
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
    */
-  final class Connection(var id: Int,
-                         var inOwner: GraphStageLogic,
-                         var outOwner: GraphStageLogic,
-                         var inHandler: InHandler,
-                         var outHandler: OutHandler) {
+  final class Connection(
+      var id: Int,
+      var inOwner: GraphStageLogic,
+      var outOwner: GraphStageLogic,
+      var inHandler: InHandler,
+      var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
   }
@@ -662,22 +663,24 @@ import akka.stream.snapshot._
     }
     val logicIndexes = logics.zipWithIndex.map { case (stage, idx) => stage -> idx }.toMap
     val connectionSnapshots = connections.filter(_ != null).map { connection =>
-      ConnectionSnapshotImpl(connection.id,
-                             logicSnapshots(logicIndexes(connection.inOwner)),
-                             logicSnapshots(logicIndexes(connection.outOwner)),
-                             connection.portState match {
-                               case InReady  => ConnectionSnapshot.ShouldPull
-                               case OutReady => ConnectionSnapshot.ShouldPush
-                               case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) =>
-                                 ConnectionSnapshot.Closed
-                             })
+      ConnectionSnapshotImpl(
+        connection.id,
+        logicSnapshots(logicIndexes(connection.inOwner)),
+        logicSnapshots(logicIndexes(connection.outOwner)),
+        connection.portState match {
+          case InReady  => ConnectionSnapshot.ShouldPull
+          case OutReady => ConnectionSnapshot.ShouldPush
+          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) =>
+            ConnectionSnapshot.Closed
+        })
     }
 
-    RunningInterpreterImpl(logicSnapshots.toVector,
-                           connectionSnapshots.toVector,
-                           queueStatus,
-                           runningStages,
-                           shutdownCounter.toList.map(n => logicSnapshots(n)))
+    RunningInterpreterImpl(
+      logicSnapshots.toVector,
+      connectionSnapshots.toVector,
+      queueStatus,
+      runningStages,
+      shutdownCounter.toList.map(n => logicSnapshots(n)))
   }
 
 }

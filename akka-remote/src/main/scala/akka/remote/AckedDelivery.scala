@@ -89,10 +89,11 @@ class ResendUnfulfillableException
  * @param maxSeq The maximum sequence number that has been stored in this buffer. Messages having lower sequence number
  *               will be not stored but rejected with [[java.lang.IllegalArgumentException]]
  */
-final case class AckedSendBuffer[T <: HasSequenceNumber](capacity: Int,
-                                                         nonAcked: IndexedSeq[T] = Vector.empty[T],
-                                                         nacked: IndexedSeq[T] = Vector.empty[T],
-                                                         maxSeq: SeqNo = SeqNo(-1)) {
+final case class AckedSendBuffer[T <: HasSequenceNumber](
+    capacity: Int,
+    nonAcked: IndexedSeq[T] = Vector.empty[T],
+    nacked: IndexedSeq[T] = Vector.empty[T],
+    maxSeq: SeqNo = SeqNo(-1)) {
 
   /**
    * Processes an incoming acknowledgement and returns a new buffer with only unacknowledged elements remaining.
@@ -156,8 +157,9 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
    * @return The updated buffer containing the message.
    */
   def receive(arrivedMsg: T): AckedReceiveBuffer[T] = {
-    this.copy(cumulativeAck = max(arrivedMsg.seq, cumulativeAck),
-              buf = if (arrivedMsg.seq > lastDelivered && !buf.contains(arrivedMsg)) buf + arrivedMsg else buf)
+    this.copy(
+      cumulativeAck = max(arrivedMsg.seq, cumulativeAck),
+      buf = if (arrivedMsg.seq > lastDelivered && !buf.contains(arrivedMsg)) buf + arrivedMsg else buf)
   }
 
   /**
@@ -201,9 +203,10 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
    */
   def mergeFrom(that: AckedReceiveBuffer[T]): AckedReceiveBuffer[T] = {
     val mergedLastDelivered = max(this.lastDelivered, that.lastDelivered)
-    this.copy(lastDelivered = mergedLastDelivered,
-              cumulativeAck = max(this.cumulativeAck, that.cumulativeAck),
-              buf = this.buf.union(that.buf).filter { _.seq > mergedLastDelivered })
+    this.copy(
+      lastDelivered = mergedLastDelivered,
+      cumulativeAck = max(this.cumulativeAck, that.cumulativeAck),
+      buf = this.buf.union(that.buf).filter { _.seq > mergedLastDelivered })
   }
 
   override def toString = buf.map { _.seq }.mkString("[", ", ", "]")

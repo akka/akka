@@ -78,9 +78,10 @@ object PersistenceSpec {
 
 trait Cleanup { this: AkkaSpec =>
   val storageLocations =
-    List("akka.persistence.journal.leveldb.dir",
-         "akka.persistence.journal.leveldb-shared.store.dir",
-         "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
+    List(
+      "akka.persistence.journal.leveldb.dir",
+      "akka.persistence.journal.leveldb-shared.store.dir",
+      "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   override protected def atStartup(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
@@ -117,9 +118,10 @@ trait PersistenceMatchers {
         sortedNrs = nrs.sorted
         if nrs != sortedNrs
       } yield
-        MatchResult(false,
-                    s"""Messages sequence with prefix ${prefixes(pos)} was not sorted! Was: $seq"""",
-                    s"""Messages sequence with prefix ${prefixes(pos)} was sorted! Was: $seq"""")
+        MatchResult(
+          false,
+          s"""Messages sequence with prefix ${prefixes(pos)} was not sorted! Was: $seq"""",
+          s"""Messages sequence with prefix ${prefixes(pos)} was sorted! Was: $seq"""")
 
       if (results.forall(_.matches)) MatchResult(true, "", "")
       else results.find(r => !r.matches).get

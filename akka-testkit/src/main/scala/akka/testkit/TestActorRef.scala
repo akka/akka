@@ -39,27 +39,30 @@ class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor:
             o.getClass)
       }
     case s =>
-      _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
-                        name,
-                        s.getClass)
+      _system.log.error(
+        "trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
+        name,
+        s.getClass)
   }
-} with LocalActorRef(_system.asInstanceOf[ActorSystemImpl],
-                     props,
-                     dispatcher,
-                     _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
-                     _supervisor.asInstanceOf[InternalActorRef],
-                     _supervisor.path / name) {
+} with LocalActorRef(
+  _system.asInstanceOf[ActorSystemImpl],
+  props,
+  dispatcher,
+  _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
+  _supervisor.asInstanceOf[InternalActorRef],
+  _supervisor.path / name) {
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
   underlying.start()
 
   import TestActorRef.InternalGetActor
 
-  protected override def newActorCell(system: ActorSystemImpl,
-                                      ref: InternalActorRef,
-                                      props: Props,
-                                      dispatcher: MessageDispatcher,
-                                      supervisor: InternalActorRef): ActorCell =
+  protected override def newActorCell(
+      system: ActorSystemImpl,
+      ref: InternalActorRef,
+      props: Props,
+      dispatcher: MessageDispatcher,
+      supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, dispatcher, supervisor) {
       override def autoReceiveMessage(msg: Envelope): Unit = {
         msg.message match {
@@ -162,12 +165,13 @@ object TestActorRef {
 
   private def dynamicCreateRecover[U]: PartialFunction[Throwable, U] = {
     case exception =>
-      throw ActorInitializationException(null,
-                                         "Could not instantiate Actor" +
-                                         "\nMake sure Actor is NOT defined inside a class/trait," +
-                                         "\nif so put it outside the class/trait, f.e. in a companion object," +
-                                         "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.",
-                                         exception)
+      throw ActorInitializationException(
+        null,
+        "Could not instantiate Actor" +
+        "\nMake sure Actor is NOT defined inside a class/trait," +
+        "\nif so put it outside the class/trait, f.e. in a companion object," +
+        "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.",
+        exception)
   }
 
   def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] =
@@ -190,8 +194,9 @@ object TestActorRef {
         .get
     }), supervisor)
 
-  def apply[T <: Actor](supervisor: ActorRef, name: String)(implicit t: ClassTag[T],
-                                                            system: ActorSystem): TestActorRef[T] =
+  def apply[T <: Actor](supervisor: ActorRef, name: String)(
+      implicit t: ClassTag[T],
+      system: ActorSystem): TestActorRef[T] =
     apply[T](
       Props({
         system

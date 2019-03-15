@@ -71,13 +71,14 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
       } match {
       case Success(value) ⇒ value
       case Failure(e) ⇒
-        log.error(e,
-                  "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
-                  "The class must implement Lease and have constructor with LeaseSettings parameter and " +
-                  "optionally ActorSystem parameter.",
-                  leaseSettings.leaseName,
-                  configPath,
-                  fqcn)
+        log.error(
+          e,
+          "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
+          "The class must implement Lease and have constructor with LeaseSettings parameter and " +
+          "optionally ActorSystem parameter.",
+          leaseSettings.leaseName,
+          configPath,
+          fqcn)
         throw e
     }
   }

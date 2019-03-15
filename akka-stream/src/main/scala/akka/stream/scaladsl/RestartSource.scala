@@ -42,12 +42,13 @@ object RestartSource {
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
       sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
-      new RestartWithBackoffSource(sourceFactory,
-                                   minBackoff,
-                                   maxBackoff,
-                                   randomFactor,
-                                   onlyOnFailures = false,
-                                   Int.MaxValue))
+      new RestartWithBackoffSource(
+        sourceFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        Int.MaxValue))
   }
 
   /**
@@ -76,12 +77,13 @@ object RestartSource {
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(
       sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
-      new RestartWithBackoffSource(sourceFactory,
-                                   minBackoff,
-                                   maxBackoff,
-                                   randomFactor,
-                                   onlyOnFailures = false,
-                                   maxRestarts))
+      new RestartWithBackoffSource(
+        sourceFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        maxRestarts))
   }
 
   /**
@@ -107,12 +109,13 @@ object RestartSource {
   def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
       sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
-      new RestartWithBackoffSource(sourceFactory,
-                                   minBackoff,
-                                   maxBackoff,
-                                   randomFactor,
-                                   onlyOnFailures = true,
-                                   Int.MaxValue))
+      new RestartWithBackoffSource(
+        sourceFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = true,
+        Int.MaxValue))
   }
 
   /**
@@ -138,26 +141,29 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](minBackoff: FiniteDuration,
-                               maxBackoff: FiniteDuration,
-                               randomFactor: Double,
-                               maxRestarts: Int)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
+  def onFailuresWithBackoff[T](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
-      new RestartWithBackoffSource(sourceFactory,
-                                   minBackoff,
-                                   maxBackoff,
-                                   randomFactor,
-                                   onlyOnFailures = true,
-                                   maxRestarts))
+      new RestartWithBackoffSource(
+        sourceFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = true,
+        maxRestarts))
   }
 }
 
-private final class RestartWithBackoffSource[T](sourceFactory: () => Source[T, _],
-                                                minBackoff: FiniteDuration,
-                                                maxBackoff: FiniteDuration,
-                                                randomFactor: Double,
-                                                onlyOnFailures: Boolean,
-                                                maxRestarts: Int)
+private final class RestartWithBackoffSource[T](
+    sourceFactory: () => Source[T, _],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    onlyOnFailures: Boolean,
+    maxRestarts: Int)
     extends GraphStage[SourceShape[T]] { self =>
 
   val out = Outlet[T]("RestartWithBackoffSource.out")

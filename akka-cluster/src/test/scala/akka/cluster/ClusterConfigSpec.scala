@@ -57,7 +57,8 @@ class ClusterConfigSpec extends AkkaSpec {
     }
 
     "be able to parse non-default cluster config elements" in {
-      val settings = new ClusterSettings(ConfigFactory.parseString("""
+      val settings = new ClusterSettings(
+        ConfigFactory.parseString("""
           |akka {
           |  cluster {
           |    roles = [ "hamlet" ]
@@ -65,7 +66,7 @@ class ClusterConfigSpec extends AkkaSpec {
           |  }
           |}
         """.stripMargin).withFallback(ConfigFactory.load()),
-                                         system.name)
+        system.name)
       import settings._
       Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
       SelfDataCenter should ===("blue")

@@ -18,8 +18,9 @@ object SerializationErrorSpec {
 class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SerializationErrorSpec._
 
-  val systemB = newRemoteSystem(name = Some("systemB"),
-                                extraConfig = Some("""
+  val systemB = newRemoteSystem(
+    name = Some("systemB"),
+    extraConfig = Some("""
        akka.actor.serialization-identifiers {
          # this will cause deserialization error
          "akka.serialization.ByteArraySerializer" = -4

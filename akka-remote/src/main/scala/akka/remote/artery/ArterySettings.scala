@@ -155,8 +155,9 @@ private[akka] final class ArterySettings private (config: Config) {
       .requiring(interval => interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
     val QuarantineIdleOutboundAfter: FiniteDuration = config
       .getMillisDuration("quarantine-idle-outbound-after")
-      .requiring(interval => interval > StopIdleOutboundAfter,
-                 "quarantine-idle-outbound-after must be greater than stop-idle-outbound-after")
+      .requiring(
+        interval => interval > StopIdleOutboundAfter,
+        "quarantine-idle-outbound-after must be greater than stop-idle-outbound-after")
     val StopQuarantinedAfterIdle: FiniteDuration =
       config
         .getMillisDuration("stop-quarantined-after-idle")

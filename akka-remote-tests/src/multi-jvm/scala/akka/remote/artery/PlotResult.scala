@@ -21,6 +21,7 @@ final case class PlotResult(values: Vector[(String, Number)] = Vector.empty) {
 
 }
 
-final case class LatencyPlots(plot50: PlotResult = PlotResult(),
-                              plot90: PlotResult = PlotResult(),
-                              plot99: PlotResult = PlotResult())
+final case class LatencyPlots(
+    plot50: PlotResult = PlotResult(),
+    plot90: PlotResult = PlotResult(),
+    plot99: PlotResult = PlotResult())

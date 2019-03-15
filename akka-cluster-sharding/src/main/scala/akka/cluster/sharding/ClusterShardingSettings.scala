@@ -64,15 +64,16 @@ object ClusterShardingSettings {
       case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
 
-    new ClusterShardingSettings(role = roleOption(config.getString("role")),
-                                rememberEntities = config.getBoolean("remember-entities"),
-                                journalPluginId = config.getString("journal-plugin-id"),
-                                snapshotPluginId = config.getString("snapshot-plugin-id"),
-                                stateStoreMode = config.getString("state-store-mode"),
-                                passivateIdleEntityAfter = passivateIdleAfter,
-                                tuningParameters,
-                                coordinatorSingletonSettings,
-                                lease)
+    new ClusterShardingSettings(
+      role = roleOption(config.getString("role")),
+      rememberEntities = config.getBoolean("remember-entities"),
+      journalPluginId = config.getString("journal-plugin-id"),
+      snapshotPluginId = config.getString("snapshot-plugin-id"),
+      stateStoreMode = config.getString("state-store-mode"),
+      passivateIdleEntityAfter = passivateIdleAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      lease)
   }
 
   /**
@@ -93,93 +94,99 @@ object ClusterShardingSettings {
   private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
-  class TuningParameters(val coordinatorFailureBackoff: FiniteDuration,
-                         val retryInterval: FiniteDuration,
-                         val bufferSize: Int,
-                         val handOffTimeout: FiniteDuration,
-                         val shardStartTimeout: FiniteDuration,
-                         val shardFailureBackoff: FiniteDuration,
-                         val entityRestartBackoff: FiniteDuration,
-                         val rebalanceInterval: FiniteDuration,
-                         val snapshotAfter: Int,
-                         val keepNrOfBatches: Int,
-                         val leastShardAllocationRebalanceThreshold: Int,
-                         val leastShardAllocationMaxSimultaneousRebalance: Int,
-                         val waitingForStateTimeout: FiniteDuration,
-                         val updatingStateTimeout: FiniteDuration,
-                         val entityRecoveryStrategy: String,
-                         val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
-                         val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
+  class TuningParameters(
+      val coordinatorFailureBackoff: FiniteDuration,
+      val retryInterval: FiniteDuration,
+      val bufferSize: Int,
+      val handOffTimeout: FiniteDuration,
+      val shardStartTimeout: FiniteDuration,
+      val shardFailureBackoff: FiniteDuration,
+      val entityRestartBackoff: FiniteDuration,
+      val rebalanceInterval: FiniteDuration,
+      val snapshotAfter: Int,
+      val keepNrOfBatches: Int,
+      val leastShardAllocationRebalanceThreshold: Int,
+      val leastShardAllocationMaxSimultaneousRebalance: Int,
+      val waitingForStateTimeout: FiniteDuration,
+      val updatingStateTimeout: FiniteDuration,
+      val entityRecoveryStrategy: String,
+      val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+      val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
 
-    require(entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
-            s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+    require(
+      entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
+      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
     // included for binary compatibility
-    def this(coordinatorFailureBackoff: FiniteDuration,
-             retryInterval: FiniteDuration,
-             bufferSize: Int,
-             handOffTimeout: FiniteDuration,
-             shardStartTimeout: FiniteDuration,
-             shardFailureBackoff: FiniteDuration,
-             entityRestartBackoff: FiniteDuration,
-             rebalanceInterval: FiniteDuration,
-             snapshotAfter: Int,
-             leastShardAllocationRebalanceThreshold: Int,
-             leastShardAllocationMaxSimultaneousRebalance: Int,
-             waitingForStateTimeout: FiniteDuration,
-             updatingStateTimeout: FiniteDuration,
-             entityRecoveryStrategy: String,
-             entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
-             entityRecoveryConstantRateStrategyNumberOfEntities: Int) = {
-      this(coordinatorFailureBackoff,
-           retryInterval,
-           bufferSize,
-           handOffTimeout,
-           shardStartTimeout,
-           shardFailureBackoff,
-           entityRestartBackoff,
-           rebalanceInterval,
-           snapshotAfter,
-           2,
-           leastShardAllocationRebalanceThreshold,
-           leastShardAllocationMaxSimultaneousRebalance,
-           waitingForStateTimeout,
-           updatingStateTimeout,
-           entityRecoveryStrategy,
-           entityRecoveryConstantRateStrategyFrequency,
-           entityRecoveryConstantRateStrategyNumberOfEntities)
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int) = {
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        2,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities)
     }
 
     // included for binary compatibility
-    def this(coordinatorFailureBackoff: FiniteDuration,
-             retryInterval: FiniteDuration,
-             bufferSize: Int,
-             handOffTimeout: FiniteDuration,
-             shardStartTimeout: FiniteDuration,
-             shardFailureBackoff: FiniteDuration,
-             entityRestartBackoff: FiniteDuration,
-             rebalanceInterval: FiniteDuration,
-             snapshotAfter: Int,
-             leastShardAllocationRebalanceThreshold: Int,
-             leastShardAllocationMaxSimultaneousRebalance: Int,
-             waitingForStateTimeout: FiniteDuration,
-             updatingStateTimeout: FiniteDuration) = {
-      this(coordinatorFailureBackoff,
-           retryInterval,
-           bufferSize,
-           handOffTimeout,
-           shardStartTimeout,
-           shardFailureBackoff,
-           entityRestartBackoff,
-           rebalanceInterval,
-           snapshotAfter,
-           leastShardAllocationRebalanceThreshold,
-           leastShardAllocationMaxSimultaneousRebalance,
-           waitingForStateTimeout,
-           updatingStateTimeout,
-           "all",
-           100.milliseconds,
-           5)
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration) = {
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        "all",
+        100.milliseconds,
+        5)
     }
 
   }
@@ -204,59 +211,65 @@ object ClusterShardingSettings {
  *   Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
-final class ClusterShardingSettings(val role: Option[String],
-                                    val rememberEntities: Boolean,
-                                    val journalPluginId: String,
-                                    val snapshotPluginId: String,
-                                    val stateStoreMode: String,
-                                    val passivateIdleEntityAfter: FiniteDuration,
-                                    val tuningParameters: ClusterShardingSettings.TuningParameters,
-                                    val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-                                    val leaseSettings: Option[ClusterLeaseSettings])
+final class ClusterShardingSettings(
+    val role: Option[String],
+    val rememberEntities: Boolean,
+    val journalPluginId: String,
+    val snapshotPluginId: String,
+    val stateStoreMode: String,
+    val passivateIdleEntityAfter: FiniteDuration,
+    val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+    val leaseSettings: Option[ClusterLeaseSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
-  def this(role: Option[String],
-           rememberEntities: Boolean,
-           journalPluginId: String,
-           snapshotPluginId: String,
-           stateStoreMode: String,
-           passivateIdleEntityAfter: FiniteDuration,
-           tuningParameters: ClusterShardingSettings.TuningParameters,
-           coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
-    this(role,
-         rememberEntities,
-         journalPluginId,
-         snapshotPluginId,
-         stateStoreMode,
-         passivateIdleEntityAfter,
-         tuningParameters,
-         coordinatorSingletonSettings,
-         None)
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleEntityAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
 
   // included for binary compatibility reasons
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead",
     "2.5.18")
-  def this(role: Option[String],
-           rememberEntities: Boolean,
-           journalPluginId: String,
-           snapshotPluginId: String,
-           stateStoreMode: String,
-           tuningParameters: ClusterShardingSettings.TuningParameters,
-           coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
-    this(role,
-         rememberEntities,
-         journalPluginId,
-         snapshotPluginId,
-         stateStoreMode,
-         Duration.Zero,
-         tuningParameters,
-         coordinatorSingletonSettings)
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      Duration.Zero,
+      tuningParameters,
+      coordinatorSingletonSettings)
 
   import ClusterShardingSettings.{ StateStoreModeDData, StateStoreModePersistence }
-  require(stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
-          s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
+  require(
+    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
+    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
 
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
   @InternalApi
@@ -300,22 +313,24 @@ final class ClusterShardingSettings(val role: Option[String],
       coordinatorSingletonSettings: ClusterSingletonManagerSettings): ClusterShardingSettings =
     copy(coordinatorSingletonSettings = coordinatorSingletonSettings)
 
-  private def copy(role: Option[String] = role,
-                   rememberEntities: Boolean = rememberEntities,
-                   journalPluginId: String = journalPluginId,
-                   snapshotPluginId: String = snapshotPluginId,
-                   stateStoreMode: String = stateStoreMode,
-                   passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
-                   tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
-                   coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
-                   leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
-    new ClusterShardingSettings(role,
-                                rememberEntities,
-                                journalPluginId,
-                                snapshotPluginId,
-                                stateStoreMode,
-                                passivateIdleAfter,
-                                tuningParameters,
-                                coordinatorSingletonSettings,
-                                leaseSettings)
+  private def copy(
+      role: Option[String] = role,
+      rememberEntities: Boolean = rememberEntities,
+      journalPluginId: String = journalPluginId,
+      snapshotPluginId: String = snapshotPluginId,
+      stateStoreMode: String = stateStoreMode,
+      passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
+      tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
+      leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
+    new ClusterShardingSettings(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      leaseSettings)
 }

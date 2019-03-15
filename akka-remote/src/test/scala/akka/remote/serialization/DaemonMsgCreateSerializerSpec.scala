@@ -84,10 +84,11 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
       verifySerialization {
-        DaemonMsgCreate(props = Props(classOf[MyActorWithParam], null),
-                        deploy = Deploy(),
-                        path = "foo",
-                        supervisor = supervisor)
+        DaemonMsgCreate(
+          props = Props(classOf[MyActorWithParam], null),
+          deploy = Deploy(),
+          path = "foo",
+          supervisor = supervisor)
       }
     }
 
@@ -99,17 +100,18 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with function parameters for Props" in {
       verifySerialization {
-        DaemonMsgCreate(props = Props(classOf[MyActorWithFunParam], (i: Int) => i + 1),
-                        deploy = Deploy(),
-                        path = "foo",
-                        supervisor = supervisor)
+        DaemonMsgCreate(
+          props = Props(classOf[MyActorWithFunParam], (i: Int) => i + 1),
+          deploy = Deploy(),
+          path = "foo",
+          supervisor = supervisor)
       }
     }
 
     "deserialize the old wire format with just class and field for props parameters (if possible)" in {
-      val system = ActorSystem("DaemonMsgCreateSerializer-old-wire-format",
-                               ConfigFactory.parseString(
-                                 """
+      val system = ActorSystem(
+        "DaemonMsgCreateSerializer-old-wire-format",
+        ConfigFactory.parseString("""
           # in 2.4 this is off by default, but in 2.5+ its on so we wouldn't
           # get the right set of serializers (and since the old wire protocol doesn't
           # contain serializer ids that will go unnoticed with unpleasant consequences)
@@ -156,31 +158,34 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
         // Duration.Inf doesn't equal Duration.Inf, so we use another for test
         // we don't serialize the supervisor strategy, but always fallback to default
         val supervisorStrategy = SupervisorStrategy.defaultStrategy
-        val deploy1 = Deploy(path = "path1",
-                             config = ConfigFactory.parseString("a=1"),
-                             routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
-                             scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
-                             dispatcher = "mydispatcher")
-        val deploy2 = Deploy(path = "path2",
-                             config = ConfigFactory.parseString("a=2"),
-                             routerConfig = FromConfig,
-                             scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
-                             dispatcher = Deploy.NoDispatcherGiven)
-        DaemonMsgCreate(props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
-                        deploy = deploy2,
-                        path = "foo",
-                        supervisor = supervisor)
+        val deploy1 = Deploy(
+          path = "path1",
+          config = ConfigFactory.parseString("a=1"),
+          routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
+          scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
+          dispatcher = "mydispatcher")
+        val deploy2 = Deploy(
+          path = "path2",
+          config = ConfigFactory.parseString("a=2"),
+          routerConfig = FromConfig,
+          scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
+          dispatcher = Deploy.NoDispatcherGiven)
+        DaemonMsgCreate(
+          props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
+          deploy = deploy2,
+          path = "foo",
+          supervisor = supervisor)
       }
     }
 
     "allows for mixing serializers with and without manifests for props parameters" in {
       verifySerialization {
         DaemonMsgCreate(
-                        // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
-                        props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
-                        deploy = Deploy(),
-                        path = "foo",
-                        supervisor = supervisor)
+          // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
+          props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
+          deploy = Deploy(),
+          path = "foo",
+          supervisor = supervisor)
       }
     }
 
@@ -205,20 +210,23 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
         case _ => SupervisorStrategy.Escalate
       }
 
-      val deploy1 = Deploy(path = "path1",
-                           config = ConfigFactory.parseString("a=1"),
-                           // a whole can of worms: routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
-                           scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
-                           dispatcher = "mydispatcher")
-      val deploy2 = Deploy(path = "path2",
-                           config = ConfigFactory.parseString("a=2"),
-                           routerConfig = FromConfig,
-                           scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
-                           dispatcher = Deploy.NoDispatcherGiven)
-      DaemonMsgCreate(props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
-                      deploy = deploy2,
-                      path = "foo",
-                      supervisor = supervisor)
+      val deploy1 = Deploy(
+        path = "path1",
+        config = ConfigFactory.parseString("a=1"),
+        // a whole can of worms: routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
+        scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
+        dispatcher = "mydispatcher")
+      val deploy2 = Deploy(
+        path = "path2",
+        config = ConfigFactory.parseString("a=2"),
+        routerConfig = FromConfig,
+        scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
+        dispatcher = Deploy.NoDispatcherGiven)
+      DaemonMsgCreate(
+        props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
+        deploy = deploy2,
+        path = "foo",
+        supervisor = supervisor)
     }
   }
 

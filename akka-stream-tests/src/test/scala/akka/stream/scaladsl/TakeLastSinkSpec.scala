@@ -29,12 +29,13 @@ class TakeLastSinkSpec extends StreamSpec {
       //#takeLast-operator-example
       case class Student(name: String, gpa: Double)
 
-      val students = List(Student("Alison", 4.7),
-                          Student("Adrian", 3.1),
-                          Student("Alexis", 4),
-                          Student("Benita", 2.1),
-                          Student("Kendra", 4.2),
-                          Student("Jerrie", 4.3)).sortBy(_.gpa)
+      val students = List(
+        Student("Alison", 4.7),
+        Student("Adrian", 3.1),
+        Student("Alexis", 4),
+        Student("Benita", 2.1),
+        Student("Kendra", 4.2),
+        Student("Jerrie", 4.3)).sortBy(_.gpa)
 
       val sourceOfStudents = Source(students)
 

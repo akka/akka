@@ -13,9 +13,10 @@ class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-c
 
   def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(
-      TestEvent.Mute(EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead letter.*")))
+      TestEvent.Mute(
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*")))
   }
 
   "Remoting between systems" should {

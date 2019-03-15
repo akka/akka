@@ -115,30 +115,33 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     import scala.collection.JavaConverters._
     val unconfirmedDeliveries = new VectorBuilder[UnconfirmedDelivery]()
     atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala.foreach { next =>
-      unconfirmedDeliveries += UnconfirmedDelivery(next.getDeliveryId,
-                                                   ActorPath.fromString(next.getDestination),
-                                                   payload(next.getPayload))
+      unconfirmedDeliveries += UnconfirmedDelivery(
+        next.getDeliveryId,
+        ActorPath.fromString(next.getDestination),
+        payload(next.getPayload))
     }
 
     AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
   }
 
   def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
-    StateChangeEvent(persistentStateChange.getStateIdentifier,
-                     // timeout field is deprecated, left for backward compatibility. timeoutNanos is used instead.
-                     if (persistentStateChange.hasTimeoutNanos)
-                       Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
-                     else if (persistentStateChange.hasTimeout)
-                       Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
-                     else None)
+    StateChangeEvent(
+      persistentStateChange.getStateIdentifier,
+      // timeout field is deprecated, left for backward compatibility. timeoutNanos is used instead.
+      if (persistentStateChange.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
+      else if (persistentStateChange.hasTimeout)
+        Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
+      else None)
   }
 
   def persistentFSMSnapshot(persistentFSMSnapshot: mf.PersistentFSMSnapshot): PersistentFSMSnapshot[Any] = {
-    PersistentFSMSnapshot(persistentFSMSnapshot.getStateIdentifier,
-                          payload(persistentFSMSnapshot.getData),
-                          if (persistentFSMSnapshot.hasTimeoutNanos)
-                            Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
-                          else None)
+    PersistentFSMSnapshot(
+      persistentFSMSnapshot.getStateIdentifier,
+      payload(persistentFSMSnapshot.getData),
+      if (persistentFSMSnapshot.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
+      else None)
   }
 
   private def atomicWriteBuilder(a: AtomicWrite) = {
@@ -189,14 +192,15 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   //
 
   private def persistent(persistentMessage: mf.PersistentMessage): PersistentRepr = {
-    PersistentRepr(payload(persistentMessage.getPayload),
-                   persistentMessage.getSequenceNr,
-                   if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
-                   if (persistentMessage.hasManifest) persistentMessage.getManifest else Undefined,
-                   if (persistentMessage.hasDeleted) persistentMessage.getDeleted else false,
-                   if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender)
-                   else Actor.noSender,
-                   if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
+    PersistentRepr(
+      payload(persistentMessage.getPayload),
+      persistentMessage.getSequenceNr,
+      if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
+      if (persistentMessage.hasManifest) persistentMessage.getManifest else Undefined,
+      if (persistentMessage.hasDeleted) persistentMessage.getDeleted else false,
+      if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender)
+      else Actor.noSender,
+      if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {

@@ -706,9 +706,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param stateTimeout default state timeout for this state
    * @param stateFunctionBuilder partial function builder describing response to input
    */
-  final def when(stateName: S,
-                 stateTimeout: FiniteDuration,
-                 stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
+  final def when(
+      stateName: S,
+      stateTimeout: FiniteDuration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
@@ -781,10 +782,11 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET],
-                                    dataType: Class[DT],
-                                    predicate: TypedPredicate2[ET, DT],
-                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      predicate: TypedPredicate2[ET, DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, predicate, apply)
 
   /**
@@ -797,9 +799,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET],
-                                    dataType: Class[DT],
-                                    apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, apply)
 
   /**
@@ -812,9 +815,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET](eventType: Class[ET],
-                           predicate: TypedPredicate2[ET, D],
-                           apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET](
+      eventType: Class[ET],
+      predicate: TypedPredicate2[ET, D],
+      apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, predicate, apply)
 
   /**
@@ -838,8 +842,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(predicate: TypedPredicate2[AnyRef, D],
-                       apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent(
+      predicate: TypedPredicate2[AnyRef, D],
+      apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(predicate, apply)
 
   /**
@@ -853,9 +858,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef],
-                                dataType: Class[DT],
-                                apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[DT <: D](
+      eventMatches: JList[AnyRef],
+      dataType: Class[DT],
+      apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, dataType, apply)
 
   /**
@@ -881,9 +887,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals[Ev, DT <: D](event: Ev,
-                                          dataType: Class[DT],
-                                          apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEventEquals[Ev, DT <: D](
+      event: Ev,
+      dataType: Class[DT],
+      apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, dataType, apply)
 
   /**
@@ -969,9 +976,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param predicate  a predicate that will be evaluated on the reason if the type matches
    * @return the builder with the case statement added
    */
-  final def matchStop[RT <: Reason](reasonType: Class[RT],
-                                    predicate: TypedPredicate[RT],
-                                    apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+  final def matchStop[RT <: Reason](
+      reasonType: Class[RT],
+      predicate: TypedPredicate[RT],
+      apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
     new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
 
   /**
@@ -992,9 +1000,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    */
-  final def matchData[DT <: D](dataType: Class[DT],
-                               predicate: TypedPredicate[DT],
-                               apply: UnitApply[DT]): UnitPFBuilder[D] =
+  final def matchData[DT <: D](
+      dataType: Class[DT],
+      predicate: TypedPredicate[DT],
+      apply: UnitApply[DT]): UnitPFBuilder[D] =
     UnitMatch.`match`(dataType, predicate, apply)
 
   /**

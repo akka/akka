@@ -252,8 +252,9 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes,
-                                                             val settings: ActorMaterializerSettings)
+@InternalApi private[akka] abstract class ActorProcessorImpl(
+    attributes: Attributes,
+    val settings: ActorMaterializerSettings)
     extends Actor
     with ActorLogging
     with Pump {

@@ -91,11 +91,12 @@ import akka.util.JavaDurationConverters._
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res],
-                    target: RecipientRef[Req],
-                    responseTimeout: Duration,
-                    createRequest: JFunction[ActorRef[Res], Req],
-                    applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+  def ask[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: JFunction[ActorRef[Res], Req],
+      applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
     import akka.actor.typed.javadsl.AskPattern
     val message = new akka.japi.function.Function[ActorRef[Res], Req] {
       def apply(ref: ActorRef[Res]): Req = createRequest(ref)

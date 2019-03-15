@@ -32,11 +32,12 @@ private[io] object TcpListener {
 /**
  * INTERNAL API
  */
-private[io] class TcpListener(selectorRouter: ActorRef,
-                              tcp: TcpExt,
-                              channelRegistry: ChannelRegistry,
-                              bindCommander: ActorRef,
-                              bind: Bind)
+private[io] class TcpListener(
+    selectorRouter: ActorRef,
+    tcp: TcpExt,
+    channelRegistry: ChannelRegistry,
+    bindCommander: ActorRef,
+    bind: Bind)
     extends Actor
     with ActorLogging
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

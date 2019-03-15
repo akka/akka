@@ -61,8 +61,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
       val name = "a-double.foo.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.records.map(_.asInstanceOf[ARecord].ip).toSet shouldEqual Set(InetAddress.getByName("192.168.1.21"),
-                                                                           InetAddress.getByName("192.168.1.22"))
+      answer.records.map(_.asInstanceOf[ARecord].ip).toSet shouldEqual Set(
+        InetAddress.getByName("192.168.1.21"),
+        InetAddress.getByName("192.168.1.22"))
     }
 
     "resolve single AAAA record" in {
@@ -87,8 +88,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
       val answer = resolve(name)
       answer.name shouldEqual name
 
-      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(InetAddress.getByName("192.168.1.23"),
-                                                                               InetAddress.getByName("192.168.1.24"))
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
+        InetAddress.getByName("192.168.1.23"),
+        InetAddress.getByName("192.168.1.24"))
 
       answer.records.collect { case r: AAAARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:4"),
@@ -108,8 +110,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
       val answer = resolve(name)
       answer.name shouldEqual name
       answer.records.collect { case r: CNameRecord => r.canonicalName }.toSet shouldEqual Set("a-double.foo.test")
-      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(InetAddress.getByName("192.168.1.21"),
-                                                                               InetAddress.getByName("192.168.1.22"))
+      answer.records.collect { case r: ARecord     => r.ip }.toSet shouldEqual Set(
+        InetAddress.getByName("192.168.1.21"),
+        InetAddress.getByName("192.168.1.22"))
     }
 
     "resolve SRV record" in {

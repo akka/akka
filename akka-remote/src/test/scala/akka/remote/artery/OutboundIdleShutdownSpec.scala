@@ -136,11 +136,12 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
         shutdown(remoteSystem, verifySystemShutdown = true)
 
-        val remoteSystem2 = newRemoteSystem(Some(s"""
+        val remoteSystem2 = newRemoteSystem(
+          Some(s"""
           akka.remote.artery.canonical.hostname = ${remoteAddress.host.get}
           akka.remote.artery.canonical.port = ${remoteAddress.port.get}
           """),
-                                            name = Some(remoteAddress.system))
+          name = Some(remoteAddress.system))
         try {
 
           remoteSystem2.actorOf(TestActors.echoActorProps, "echo2")

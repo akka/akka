@@ -160,9 +160,9 @@ class AsyncCallbackSpec extends AkkaSpec {
       val callback = Source
         .fromPublisher(in)
         .viaMat(
-          new AsyncCallbackGraphStage(probe.ref,
-                                      Some(asyncCb =>
-                                        earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))))(Keep.right)
+          new AsyncCallbackGraphStage(
+            probe.ref,
+            Some(asyncCb => earlyFeedback.completeWith(asyncCb.invokeWithFeedback("early")))))(Keep.right)
         .to(Sink.ignore)
         .run()
 

@@ -162,8 +162,9 @@ trait Extensions {
  * implementation of the extension. Intended for tests that need to replace
  * extension with stub/mock implementations.
  */
-abstract class ExtensionSetup[T <: Extension](val extId: ExtensionId[T],
-                                              val createExtension: java.util.function.Function[ActorSystem[_], T])
+abstract class ExtensionSetup[T <: Extension](
+    val extId: ExtensionId[T],
+    val createExtension: java.util.function.Function[ActorSystem[_], T])
     extends Setup
 
 /**

@@ -416,21 +416,20 @@ class GraphStageDocSpec extends AkkaSpec {
         val promise = Promise[A]()
         val logic = new GraphStageLogic(shape) {
 
-          setHandler(in,
-                     new InHandler {
-                       override def onPush(): Unit = {
-                         val elem = grab(in)
-                         promise.success(elem)
-                         push(out, elem)
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = {
+              val elem = grab(in)
+              promise.success(elem)
+              push(out, elem)
 
-                         // replace handler with one that only forwards elements
-                         setHandler(in, new InHandler {
-                           override def onPush(): Unit = {
-                             push(out, grab(in))
-                           }
-                         })
-                       }
-                     })
+              // replace handler with one that only forwards elements
+              setHandler(in, new InHandler {
+                override def onPush(): Unit = {
+                  push(out, grab(in))
+                }
+              })
+            }
+          })
 
           setHandler(out, new OutHandler {
             override def onPull(): Unit = {
@@ -477,44 +476,46 @@ class GraphStageDocSpec extends AkkaSpec {
             pull(in)
           }
 
-          setHandler(in,
-                     new InHandler {
-                       override def onPush(): Unit = {
-                         val elem = grab(in)
-                         buffer.enqueue(elem)
-                         if (downstreamWaiting) {
-                           downstreamWaiting = false
-                           val bufferedElem = buffer.dequeue()
-                           push(out, bufferedElem)
-                         }
-                         if (!bufferFull) {
-                           pull(in)
-                         }
-                       }
+          setHandler(
+            in,
+            new InHandler {
+              override def onPush(): Unit = {
+                val elem = grab(in)
+                buffer.enqueue(elem)
+                if (downstreamWaiting) {
+                  downstreamWaiting = false
+                  val bufferedElem = buffer.dequeue()
+                  push(out, bufferedElem)
+                }
+                if (!bufferFull) {
+                  pull(in)
+                }
+              }
 
-                       override def onUpstreamFinish(): Unit = {
-                         if (buffer.nonEmpty) {
-                           // emit the rest if possible
-                           emitMultiple(out, buffer.toIterator)
-                         }
-                         completeStage()
-                       }
-                     })
+              override def onUpstreamFinish(): Unit = {
+                if (buffer.nonEmpty) {
+                  // emit the rest if possible
+                  emitMultiple(out, buffer.toIterator)
+                }
+                completeStage()
+              }
+            })
 
-          setHandler(out,
-                     new OutHandler {
-                       override def onPull(): Unit = {
-                         if (buffer.isEmpty) {
-                           downstreamWaiting = true
-                         } else {
-                           val elem = buffer.dequeue
-                           push(out, elem)
-                         }
-                         if (!bufferFull && !hasBeenPulled(in)) {
-                           pull(in)
-                         }
-                       }
-                     })
+          setHandler(
+            out,
+            new OutHandler {
+              override def onPull(): Unit = {
+                if (buffer.isEmpty) {
+                  downstreamWaiting = true
+                } else {
+                  val elem = buffer.dequeue
+                  push(out, elem)
+                }
+                if (!bufferFull && !hasBeenPulled(in)) {
+                  pull(in)
+                }
+              }
+            })
         }
 
     }

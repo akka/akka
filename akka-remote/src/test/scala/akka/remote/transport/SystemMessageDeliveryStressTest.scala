@@ -132,13 +132,15 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
 
   override def atStartup() = {
     systemA.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead .*")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead .*")))
     systemB.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead .*")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead .*")))
 
     systemA.eventStream.subscribe(probeA.ref, classOf[QuarantinedEvent])
     systemB.eventStream.subscribe(probeB.ref, classOf[QuarantinedEvent])
@@ -184,9 +186,10 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
         EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
         EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     systemB.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def afterTermination(): Unit = shutdown(systemB)

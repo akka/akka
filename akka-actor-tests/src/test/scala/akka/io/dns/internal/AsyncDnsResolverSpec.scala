@@ -134,8 +134,9 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
   }
 
   def resolver(clients: List[ActorRef]): ActorRef = {
-    val settings = new DnsSettings(system.asInstanceOf[ExtendedActorSystem],
-                                   ConfigFactory.parseString("""
+    val settings = new DnsSettings(
+      system.asInstanceOf[ExtendedActorSystem],
+      ConfigFactory.parseString("""
           nameservers = ["one","two"]
           resolve-timeout = 300ms
           search-domains = []

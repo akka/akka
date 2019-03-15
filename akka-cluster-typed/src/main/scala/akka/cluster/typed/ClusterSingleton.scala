@@ -34,21 +34,23 @@ object ClusterSingletonSettings {
     // currently singleton name is required and then discarded, for example
     val mgrSettings = ClusterSingletonManagerSettings(config.getConfig("singleton"))
     val proxySettings = ClusterSingletonProxySettings(config.getConfig("singleton-proxy"))
-    new ClusterSingletonSettings(mgrSettings.role,
-                                 proxySettings.dataCenter,
-                                 proxySettings.singletonIdentificationInterval,
-                                 mgrSettings.removalMargin,
-                                 mgrSettings.handOverRetryInterval,
-                                 proxySettings.bufferSize)
+    new ClusterSingletonSettings(
+      mgrSettings.role,
+      proxySettings.dataCenter,
+      proxySettings.singletonIdentificationInterval,
+      mgrSettings.removalMargin,
+      mgrSettings.handOverRetryInterval,
+      proxySettings.bufferSize)
   }
 }
 
-final class ClusterSingletonSettings(val role: Option[String],
-                                     val dataCenter: Option[DataCenter],
-                                     val singletonIdentificationInterval: FiniteDuration,
-                                     val removalMargin: FiniteDuration,
-                                     val handOverRetryInterval: FiniteDuration,
-                                     val bufferSize: Int)
+final class ClusterSingletonSettings(
+    val role: Option[String],
+    val dataCenter: Option[DataCenter],
+    val singletonIdentificationInterval: FiniteDuration,
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration,
+    val bufferSize: Int)
     extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
@@ -70,18 +72,20 @@ final class ClusterSingletonSettings(val role: Option[String],
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
-  private def copy(role: Option[String] = role,
-                   dataCenter: Option[DataCenter] = dataCenter,
-                   singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
-                   removalMargin: FiniteDuration = removalMargin,
-                   handOverRetryInterval: FiniteDuration = handOverRetryInterval,
-                   bufferSize: Int = bufferSize) =
-    new ClusterSingletonSettings(role,
-                                 dataCenter,
-                                 singletonIdentificationInterval,
-                                 removalMargin,
-                                 handOverRetryInterval,
-                                 bufferSize)
+  private def copy(
+      role: Option[String] = role,
+      dataCenter: Option[DataCenter] = dataCenter,
+      singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+      bufferSize: Int = bufferSize) =
+    new ClusterSingletonSettings(
+      role,
+      dataCenter,
+      singletonIdentificationInterval,
+      removalMargin,
+      handOverRetryInterval,
+      bufferSize)
 
   /**
    * INTERNAL API:
@@ -148,11 +152,12 @@ object SingletonActor {
   def of[M](behavior: Behavior[M], name: String): SingletonActor[M] = apply(behavior, name)
 }
 
-final class SingletonActor[M] private (val behavior: Behavior[M],
-                                       val name: String,
-                                       val props: Props,
-                                       val stopMessage: Option[M],
-                                       val settings: Option[ClusterSingletonSettings]) {
+final class SingletonActor[M] private (
+    val behavior: Behavior[M],
+    val name: String,
+    val props: Props,
+    val stopMessage: Option[M],
+    val settings: Option[ClusterSingletonSettings]) {
 
   /**
    * [[akka.actor.typed.Props]] of the singleton actor, such as dispatcher settings.
@@ -172,10 +177,11 @@ final class SingletonActor[M] private (val behavior: Behavior[M],
    */
   def withSettings(settings: ClusterSingletonSettings): SingletonActor[M] = copy(settings = Option(settings))
 
-  private def copy(behavior: Behavior[M] = behavior,
-                   props: Props = props,
-                   stopMessage: Option[M] = stopMessage,
-                   settings: Option[ClusterSingletonSettings] = settings): SingletonActor[M] =
+  private def copy(
+      behavior: Behavior[M] = behavior,
+      props: Props = props,
+      stopMessage: Option[M] = stopMessage,
+      settings: Option[ClusterSingletonSettings] = settings): SingletonActor[M] =
     new SingletonActor[M](behavior, name, props, stopMessage, settings)
 }
 
@@ -214,11 +220,11 @@ object ClusterSingletonManagerSettings {
    * the default configuration `akka.cluster.singleton`.
    */
   def apply(config: Config): ClusterSingletonManagerSettings =
-    new ClusterSingletonManagerSettings(singletonName = config.getString("singleton-name"),
-                                        role = roleOption(config.getString("role")),
-                                        removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
-                                        handOverRetryInterval =
-                                          config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
+    new ClusterSingletonManagerSettings(
+      singletonName = config.getString("singleton-name"),
+      role = roleOption(config.getString("role")),
+      removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
+      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
 
   /**
    * Java API: Create settings from the default configuration
@@ -260,10 +266,11 @@ object ClusterSingletonManagerSettings {
  *   over has started or the previous oldest member is removed from the cluster
  *   (+ `removalMargin`).
  */
-final class ClusterSingletonManagerSettings(val singletonName: String,
-                                            val role: Option[String],
-                                            val removalMargin: FiniteDuration,
-                                            val handOverRetryInterval: FiniteDuration)
+final class ClusterSingletonManagerSettings(
+    val singletonName: String,
+    val role: Option[String],
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration)
     extends NoSerializationVerificationNeeded {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
@@ -283,10 +290,11 @@ final class ClusterSingletonManagerSettings(val singletonName: String,
   def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
     withHandOverRetryInterval(retryInterval.asScala)
 
-  private def copy(singletonName: String = singletonName,
-                   role: Option[String] = role,
-                   removalMargin: FiniteDuration = removalMargin,
-                   handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
+  private def copy(
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
 

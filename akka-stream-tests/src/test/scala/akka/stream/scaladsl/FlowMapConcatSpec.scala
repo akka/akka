@@ -18,12 +18,13 @@ class FlowMapConcatSpec extends StreamSpec with ScriptedTest {
   "A MapConcat" must {
 
     "map and concat" in {
-      val script = Script(Seq(0) -> Seq(),
-                          Seq(1) -> Seq(1),
-                          Seq(2) -> Seq(2, 2),
-                          Seq(3) -> Seq(3, 3, 3),
-                          Seq(2) -> Seq(2, 2),
-                          Seq(1) -> Seq(1))
+      val script = Script(
+        Seq(0) -> Seq(),
+        Seq(1) -> Seq(1),
+        Seq(2) -> Seq(2, 2),
+        Seq(3) -> Seq(3, 3, 3),
+        Seq(2) -> Seq(2, 2),
+        Seq(1) -> Seq(1))
       TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.mapConcat(x => (1 to x).map(_ => x))))
     }
 

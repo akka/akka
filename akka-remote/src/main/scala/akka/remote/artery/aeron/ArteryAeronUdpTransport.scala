@@ -152,9 +152,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         }
       } catch {
         case NonFatal(e) =>
-          log.warning("Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
-                      driver.aeronDirectoryName,
-                      e)
+          log.warning(
+            "Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
+            driver.aeronDirectoryName,
+            e)
       }
     }
   }
@@ -200,13 +201,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       private def handleFatalError(cause: Throwable): Unit = {
         if (fatalErrorOccured.compareAndSet(false, true)) {
           if (!isShutdown) {
-            log.error(cause,
-                      "Fatal Aeron error {}. Have to terminate ActorSystem because it lost contact with the " +
-                      "{} Aeron media driver. Possible configuration properties to mitigate the problem are " +
-                      "'client-liveness-timeout' or 'driver-timeout'. {}",
-                      Logging.simpleName(cause),
-                      if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
-                      cause)
+            log.error(
+              cause,
+              "Fatal Aeron error {}. Have to terminate ActorSystem because it lost contact with the " +
+              "{} Aeron media driver. Possible configuration properties to mitigate the problem are " +
+              "'client-liveness-timeout' or 'driver-timeout'. {}",
+              Logging.simpleName(cause),
+              if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
+              cause)
             taskRunner.stop()
             aeronErrorLogTask.cancel()
             if (settings.LogAeronCounters) aeronCounterTask.cancel()
@@ -275,9 +277,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     }
   }
 
-  override protected def outboundTransportSink(outboundContext: OutboundContext,
-                                               streamId: Int,
-                                               bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
+  override protected def outboundTransportSink(
+      outboundContext: OutboundContext,
+      streamId: Int,
+      bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
     val giveUpAfter =
       if (streamId == ControlStreamId) settings.Advanced.GiveUpSystemMessageAfter
       else settings.Advanced.GiveUpMessageAfter
@@ -286,24 +289,26 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     // If we want to stop for Aeron also it is probably easier to stop the publication inside the
     // AeronSink, i.e. not using a KillSwitch.
     Sink.fromGraph(
-      new AeronSink(outboundChannel(outboundContext.remoteAddress),
-                    streamId,
-                    aeron,
-                    taskRunner,
-                    bufferPool,
-                    giveUpAfter,
-                    createFlightRecorderEventSink()))
+      new AeronSink(
+        outboundChannel(outboundContext.remoteAddress),
+        streamId,
+        aeron,
+        taskRunner,
+        bufferPool,
+        giveUpAfter,
+        createFlightRecorderEventSink()))
   }
 
   private def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, AeronSource.AeronLifecycle] =
     Source.fromGraph(
-      new AeronSource(inboundChannel,
-                      streamId,
-                      aeron,
-                      taskRunner,
-                      pool,
-                      createFlightRecorderEventSink(),
-                      aeronSourceSpinningStrategy))
+      new AeronSource(
+        inboundChannel,
+        streamId,
+        aeron,
+        taskRunner,
+        pool,
+        createFlightRecorderEventSink(),
+        aeronSourceSpinningStrategy))
 
   private def aeronSourceSpinningStrategy: Int =
     if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
@@ -357,9 +362,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
           laneSource
             .toMat(
               Sink.fromGraph(
-                new FixedSizePartitionHub[InboundEnvelope](inboundLanePartitioner,
-                                                           inboundLanes,
-                                                           settings.Advanced.InboundHubBufferSize)))({
+                new FixedSizePartitionHub[InboundEnvelope](
+                  inboundLanePartitioner,
+                  inboundLanes,
+                  settings.Advanced.InboundHubBufferSize)))({
               case ((a, b), c) => (a, b, c)
             })
             .run()(materializer)
@@ -402,9 +408,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     attachInboundStreamRestart("Inbound large message stream", completed, () => runInboundLargeMessagesStream())
   }
 
-  private def updateStreamMatValues(streamId: Int,
-                                    aeronSourceLifecycle: AeronSource.AeronLifecycle,
-                                    completed: Future[Done]): Unit = {
+  private def updateStreamMatValues(
+      streamId: Int,
+      aeronSourceLifecycle: AeronSource.AeronLifecycle,
+      completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
     updateStreamMatValues(streamId, InboundStreamMatValues[AeronLifecycle](aeronSourceLifecycle, completed.recover {
       case _ => Done

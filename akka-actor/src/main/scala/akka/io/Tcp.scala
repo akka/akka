@@ -116,11 +116,12 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
-  final case class Connect(remoteAddress: InetSocketAddress,
-                           localAddress: Option[InetSocketAddress] = None,
-                           options: immutable.Traversable[SocketOption] = Nil,
-                           timeout: Option[FiniteDuration] = None,
-                           pullMode: Boolean = false)
+  final case class Connect(
+      remoteAddress: InetSocketAddress,
+      localAddress: Option[InetSocketAddress] = None,
+      options: immutable.Traversable[SocketOption] = Nil,
+      timeout: Option[FiniteDuration] = None,
+      pullMode: Boolean = false)
       extends Command
 
   /**
@@ -142,11 +143,12 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *
    * @param options Please refer to the `Tcp.SO` object for a list of all supported options.
    */
-  final case class Bind(handler: ActorRef,
-                        localAddress: InetSocketAddress,
-                        backlog: Int = 100,
-                        options: immutable.Traversable[SocketOption] = Nil,
-                        pullMode: Boolean = false)
+  final case class Bind(
+      handler: ActorRef,
+      localAddress: InetSocketAddress,
+      backlog: Int = 100,
+      options: immutable.Traversable[SocketOption] = Nil,
+      pullMode: Boolean = false)
       extends Command
 
   /**
@@ -697,11 +699,12 @@ object TcpMessage {
    * @param timeout is the desired connection timeout, `null` means "no timeout"
    * @param pullMode enables pull based reading from the connection
    */
-  def connect(remoteAddress: InetSocketAddress,
-              localAddress: InetSocketAddress,
-              options: JIterable[SocketOption],
-              timeout: FiniteDuration,
-              pullMode: Boolean): Command =
+  def connect(
+      remoteAddress: InetSocketAddress,
+      localAddress: InetSocketAddress,
+      options: JIterable[SocketOption],
+      timeout: FiniteDuration,
+      pullMode: Boolean): Command =
     Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
 
   /**
@@ -716,11 +719,12 @@ object TcpMessage {
    * @param timeout is the desired connection timeout, `null` means "no timeout"
    * @param pullMode enables pull based reading from the connection
    */
-  def connect(remoteAddress: InetSocketAddress,
-              localAddress: InetSocketAddress,
-              options: JIterable[SocketOption],
-              timeout: java.time.Duration,
-              pullMode: Boolean): Command = connect(remoteAddress, localAddress, options, timeout.asScala, pullMode)
+  def connect(
+      remoteAddress: InetSocketAddress,
+      localAddress: InetSocketAddress,
+      options: JIterable[SocketOption],
+      timeout: java.time.Duration,
+      pullMode: Boolean): Command = connect(remoteAddress, localAddress, options, timeout.asScala, pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without
@@ -750,11 +754,12 @@ object TcpMessage {
    * @param pullMode enables pull based accepting and of connections and pull
    *                 based reading from the accepted connections.
    */
-  def bind(handler: ActorRef,
-           endpoint: InetSocketAddress,
-           backlog: Int,
-           options: JIterable[SocketOption],
-           pullMode: Boolean): Command = Bind(handler, endpoint, backlog, options, pullMode)
+  def bind(
+      handler: ActorRef,
+      endpoint: InetSocketAddress,
+      backlog: Int,
+      options: JIterable[SocketOption],
+      pullMode: Boolean): Command = Bind(handler, endpoint, backlog, options, pullMode)
 
   /**
    * Open a listening socket without specifying options.

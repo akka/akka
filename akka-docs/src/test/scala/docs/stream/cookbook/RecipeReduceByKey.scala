@@ -40,9 +40,8 @@ class RecipeReduceByKey extends RecipeSpec {
       def words = Source(List("hello", "world", "and", "hello", "universe", "akka") ++ List.fill(1000)("rocks!"))
 
       //#reduce-by-key-general
-      def reduceByKey[In, K, Out](maximumGroupSize: Int,
-                                  groupKey: (In) => K,
-                                  map: (In) => Out)(reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
+      def reduceByKey[In, K, Out](maximumGroupSize: Int, groupKey: (In) => K, map: (In) => Out)(
+          reduce: (Out, Out) => Out): Flow[In, (K, Out), NotUsed] = {
 
         Flow[In]
           .groupBy[K](maximumGroupSize, groupKey)

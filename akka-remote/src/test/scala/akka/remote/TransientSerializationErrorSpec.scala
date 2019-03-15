@@ -90,12 +90,13 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config)
       expectMsg("ping")
 
       // none of these should tear down the connection
-      List(ManifestIllegal,
-           ManifestNotSerializable,
-           ToBinaryIllegal,
-           ToBinaryNotSerializable,
-           NotDeserializable,
-           IllegalOnDeserialize).foreach(msg => selection.tell(msg, this.testActor))
+      List(
+        ManifestIllegal,
+        ManifestNotSerializable,
+        ToBinaryIllegal,
+        ToBinaryNotSerializable,
+        NotDeserializable,
+        IllegalOnDeserialize).foreach(msg => selection.tell(msg, this.testActor))
 
       // make sure we still have a connection
       selection.tell("ping", this.testActor)

@@ -36,8 +36,9 @@ private[akka] final class SerializedSuspendableExecutionContext(throughput: Int)
     with Runnable
     with ExecutionContext {
   import SerializedSuspendableExecutionContext._
-  require(throughput > 0,
-          s"SerializedSuspendableExecutionContext.throughput must be greater than 0 but was $throughput")
+  require(
+    throughput > 0,
+    s"SerializedSuspendableExecutionContext.throughput must be greater than 0 but was $throughput")
 
   private final val state = new AtomicInteger(Off)
   @tailrec private final def addState(newState: Int): Boolean = {

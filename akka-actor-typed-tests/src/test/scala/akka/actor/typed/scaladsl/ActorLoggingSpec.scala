@@ -302,12 +302,13 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   "Logging with MDC for a typed actor" must {
 
     "provide the MDC values in the log" in {
-      val behaviors = Behaviors.withMdc[Protocol](Map("static" -> 1),
-                                                  // FIXME why u no infer the type here Scala??
-                                                  (message: Protocol) =>
-                                                    if (message.transactionId == 1)
-                                                      Map("txId" -> message.transactionId, "first" -> true)
-                                                    else Map("txId" -> message.transactionId)) {
+      val behaviors = Behaviors.withMdc[Protocol](
+        Map("static" -> 1),
+        // FIXME why u no infer the type here Scala??
+        (message: Protocol) =>
+          if (message.transactionId == 1)
+            Map("txId" -> message.transactionId, "first" -> true)
+          else Map("txId" -> message.transactionId)) {
         Behaviors.setup { context =>
           context.log.info("Starting")
           Behaviors.receiveMessage { _ =>

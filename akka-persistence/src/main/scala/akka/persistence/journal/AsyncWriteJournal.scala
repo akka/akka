@@ -98,10 +98,11 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
                     }
                   case Failure(e) =>
                     a.payload.foreach { p =>
-                      resequencer ! Desequenced(WriteMessageRejected(p, e, actorInstanceId),
-                                                n,
-                                                persistentActor,
-                                                p.sender)
+                      resequencer ! Desequenced(
+                        WriteMessageRejected(p, e, actorInstanceId),
+                        n,
+                        persistentActor,
+                        p.sender)
                       n += 1
                     }
                 }
@@ -130,11 +131,12 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         val replyTo =
           if (isReplayFilterEnabled)
             context.actorOf(
-              ReplayFilter.props(persistentActor,
-                                 replayFilterMode,
-                                 replayFilterWindowSize,
-                                 replayFilterMaxOldWriters,
-                                 replayDebugEnabled))
+              ReplayFilter.props(
+                persistentActor,
+                replayFilterMode,
+                replayFilterWindowSize,
+                replayFilterMaxOldWriters,
+                replayDebugEnabled))
           else persistentActor
 
         val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)

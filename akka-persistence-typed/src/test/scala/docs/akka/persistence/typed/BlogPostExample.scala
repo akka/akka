@@ -52,10 +52,11 @@ object BlogPostExample {
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](persistenceId = PersistenceId(s"Blog-$entityId"),
-                                                            emptyState = BlankState,
-                                                            commandHandler,
-                                                            eventHandler)
+    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
+      persistenceId = PersistenceId(s"Blog-$entityId"),
+      emptyState = BlankState,
+      commandHandler,
+      eventHandler)
   //#behavior
 
   //#command-handler

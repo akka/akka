@@ -95,9 +95,11 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "load extensions from the configuration" in
-    withEmptyActorSystem("ExtensionsSpec03",
-                         Some(ConfigFactory.parseString(
-                           """
+    withEmptyActorSystem(
+      "ExtensionsSpec03",
+      Some(
+        ConfigFactory.parseString(
+          """
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """))) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
@@ -109,10 +111,10 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "handle extensions that fail to initialize" in {
       def create(): Unit = {
-        ActorSystem[Any](Behavior.EmptyBehavior,
-                         "ExtensionsSpec04",
-                         ConfigFactory.parseString(
-                           """
+        ActorSystem[Any](
+          Behavior.EmptyBehavior,
+          "ExtensionsSpec04",
+          ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
         """))
       }
@@ -157,9 +159,10 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "fail the system if a library-extension is missing" in
     intercept[RuntimeException] {
-      withEmptyActorSystem("ExtensionsSpec08",
-                           Some(ConfigFactory.parseString(
-                             """akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))) { _ =>
+      withEmptyActorSystem(
+        "ExtensionsSpec08",
+        Some(ConfigFactory.parseString(
+          """akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))) { _ =>
         ()
       }
     }
@@ -206,12 +209,14 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "override extensions via ActorSystemSetup" in
-    withEmptyActorSystem("ExtensionsSpec10",
-                         Some(ConfigFactory.parseString(
-                           """
+    withEmptyActorSystem(
+      "ExtensionsSpec10",
+      Some(
+        ConfigFactory.parseString(
+          """
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """)),
-                         Some(ActorSystemSetup(new DummyExtension1Setup(sys => new DummyExtension1ViaSetup)))) { sys =>
+      Some(ActorSystemSetup(new DummyExtension1Setup(sys => new DummyExtension1ViaSetup)))) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
       sys.extension(DummyExtension1) shouldBe a[DummyExtension1ViaSetup]
       DummyExtension1(sys) shouldBe a[DummyExtension1ViaSetup]

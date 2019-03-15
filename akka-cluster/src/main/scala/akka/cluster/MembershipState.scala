@@ -30,10 +30,11 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class MembershipState(latestGossip: Gossip,
-                                                            selfUniqueAddress: UniqueAddress,
-                                                            selfDc: DataCenter,
-                                                            crossDcConnections: Int) {
+@InternalApi private[akka] final case class MembershipState(
+    latestGossip: Gossip,
+    selfUniqueAddress: UniqueAddress,
+    selfDc: DataCenter,
+    crossDcConnections: Int) {
 
   import MembershipState._
 
@@ -221,8 +222,9 @@ import scala.util.Random
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class GossipTargetSelector(reduceGossipDifferentViewProbability: Double,
-                                                      crossDcGossipProbability: Double) {
+@InternalApi private[akka] class GossipTargetSelector(
+    reduceGossipDifferentViewProbability: Double,
+    crossDcGossipProbability: Double) {
 
   final def gossipTarget(state: MembershipState): Option[UniqueAddress] = {
     selectRandomNode(gossipTargets(state))

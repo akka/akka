@@ -117,8 +117,9 @@ class GraphDSLDocSpec extends AkkaSpec {
 
     //#graph-dsl-components-create
     object PriorityWorkerPool {
-      def apply[In, Out](worker: Flow[In, Out, Any],
-                         workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
+      def apply[In, Out](
+          worker: Flow[In, Out, Any],
+          workerCount: Int): Graph[PriorityWorkerPoolShape[In, Out], NotUsed] = {
 
         GraphDSL.create() { implicit b =>
           import GraphDSL.Implicits._
@@ -138,9 +139,10 @@ class GraphDSLDocSpec extends AkkaSpec {
           // We now expose the input ports of the priorityMerge and the output
           // of the resultsMerge as our PriorityWorkerPool ports
           // -- all neatly wrapped in our domain specific Shape
-          PriorityWorkerPoolShape(jobsIn = priorityMerge.in(0),
-                                  priorityJobsIn = priorityMerge.preferred,
-                                  resultsOut = resultsMerge.out)
+          PriorityWorkerPoolShape(
+            jobsIn = priorityMerge.in(0),
+            priorityJobsIn = priorityMerge.preferred,
+            resultsOut = resultsMerge.out)
         }
 
       }

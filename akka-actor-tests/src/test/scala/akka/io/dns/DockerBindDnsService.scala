@@ -46,8 +46,9 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
       .hostConfig(
         HostConfig
           .builder()
-          .portBindings(Map("53/tcp" -> List(PortBinding.of("", hostPort)).asJava,
-                            "53/udp" -> List(PortBinding.of("", hostPort)).asJava).asJava)
+          .portBindings(Map(
+            "53/tcp" -> List(PortBinding.of("", hostPort)).asJava,
+            "53/udp" -> List(PortBinding.of("", hostPort)).asJava).asJava)
           .binds(HostConfig.Bind
             .from(new java.io.File("akka-actor-tests/src/test/bind/").getAbsolutePath)
             .to("/data/bind")

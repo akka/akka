@@ -81,20 +81,22 @@ object TestActor {
       delegates -= child
     }
 
-    override def processFailure(context: ActorContext,
-                                restart: Boolean,
-                                child: ActorRef,
-                                cause: Throwable,
-                                stats: ChildRestartStats,
-                                children: Iterable[ChildRestartStats]): Unit = {
+    override def processFailure(
+        context: ActorContext,
+        restart: Boolean,
+        child: ActorRef,
+        cause: Throwable,
+        stats: ChildRestartStats,
+        children: Iterable[ChildRestartStats]): Unit = {
       delegate(child).processFailure(context, restart, child, cause, stats, children)
     }
 
-    override def handleFailure(context: ActorContext,
-                               child: ActorRef,
-                               cause: Throwable,
-                               stats: ChildRestartStats,
-                               children: Iterable[ChildRestartStats]): Boolean = {
+    override def handleFailure(
+        context: ActorContext,
+        child: ActorRef,
+        cause: Throwable,
+        stats: ChildRestartStats,
+        children: Iterable[ChildRestartStats]): Boolean = {
       delegate(child).handleFailure(context, child, cause, stats, children)
     }
   }
@@ -176,8 +178,9 @@ trait TestKitBase {
    */
   val testActor: ActorRef = {
     val impl = system.asInstanceOf[ExtendedActorSystem]
-    val ref = impl.systemActorOf(TestActor.props(queue).withDispatcher(CallingThreadDispatcher.Id),
-                                 "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
+    val ref = impl.systemActorOf(
+      TestActor.props(queue).withDispatcher(CallingThreadDispatcher.Id),
+      "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
     awaitCond(ref match {
       case r: RepointableRef => r.isStarted
       case _                 => true
@@ -280,10 +283,11 @@ trait TestKitBase {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitCond(p: => Boolean,
-                max: Duration = Duration.Undefined,
-                interval: Duration = 100.millis,
-                message: String = ""): Unit = {
+  def awaitCond(
+      p: => Boolean,
+      max: Duration = Duration.Undefined,
+      interval: Duration = 100.millis,
+      message: String = ""): Unit = {
     val _max = remainingOrDilated(max)
     val stop = now + _max
 
@@ -591,13 +595,15 @@ trait TestKitBase {
    */
   def expectMsgAllOf[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
-  private def checkMissingAndUnexpected(missing: Seq[Any],
-                                        unexpected: Seq[Any],
-                                        missingMessage: String,
-                                        unexpectedMessage: String): Unit = {
-    assert(missing.isEmpty && unexpected.isEmpty,
-           (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
-           (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
+  private def checkMissingAndUnexpected(
+      missing: Seq[Any],
+      unexpected: Seq[Any],
+      missingMessage: String,
+      unexpectedMessage: String): Unit = {
+    assert(
+      missing.isEmpty && unexpected.isEmpty,
+      (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
+      (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
   }
 
   private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = {
@@ -822,9 +828,10 @@ trait TestKitBase {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdown(actorSystem: ActorSystem = system,
-               duration: Duration = 10.seconds.dilated.min(10.seconds),
-               verifySystemShutdown: Boolean = false): Unit = {
+  def shutdown(
+      actorSystem: ActorSystem = system,
+      duration: Duration = 10.seconds.dilated.min(10.seconds),
+      verifySystemShutdown: Boolean = false): Unit = {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
@@ -954,16 +961,18 @@ object TestKit {
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
-  def shutdownActorSystem(actorSystem: ActorSystem,
-                          duration: Duration = 10.seconds,
-                          verifySystemShutdown: Boolean = false): Unit = {
+  def shutdownActorSystem(
+      actorSystem: ActorSystem,
+      duration: Duration = 10.seconds,
+      verifySystemShutdown: Boolean = false): Unit = {
     actorSystem.terminate()
     try Await.ready(actorSystem.whenTerminated, duration)
     catch {
       case _: TimeoutException =>
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(actorSystem.name,
-                                                                duration,
-                                                                actorSystem.asInstanceOf[ActorSystemImpl].printTree)
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(
+          actorSystem.name,
+          duration,
+          actorSystem.asInstanceOf[ActorSystemImpl].printTree)
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else println(msg)
     }

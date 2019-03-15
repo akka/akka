@@ -123,26 +123,28 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
-      Seq(".*Cluster Node.* - registered cluster JMX MBean.*",
-          ".*Cluster Node.* - is starting up.*",
-          ".*Shutting down cluster Node.*",
-          ".*Cluster node successfully shut down.*",
-          ".*Using a dedicated scheduler for cluster.*").foreach { s =>
+      Seq(
+        ".*Cluster Node.* - registered cluster JMX MBean.*",
+        ".*Cluster Node.* - is starting up.*",
+        ".*Shutting down cluster Node.*",
+        ".*Cluster node successfully shut down.*",
+        ".*Using a dedicated scheduler for cluster.*").foreach { s =>
         sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
       }
 
-      muteDeadLetters(classOf[ClusterHeartbeatSender.Heartbeat],
-                      classOf[ClusterHeartbeatSender.HeartbeatRsp],
-                      classOf[GossipEnvelope],
-                      classOf[GossipStatus],
-                      classOf[InternalClusterAction.Tick],
-                      classOf[akka.actor.PoisonPill],
-                      classOf[akka.dispatch.sysmsg.DeathWatchNotification],
-                      classOf[akka.remote.transport.AssociationHandle.Disassociated],
-                      //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
-                      classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
-                      //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
-                      classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
+      muteDeadLetters(
+        classOf[ClusterHeartbeatSender.Heartbeat],
+        classOf[ClusterHeartbeatSender.HeartbeatRsp],
+        classOf[GossipEnvelope],
+        classOf[GossipStatus],
+        classOf[InternalClusterAction.Tick],
+        classOf[akka.actor.PoisonPill],
+        classOf[akka.dispatch.sysmsg.DeathWatchNotification],
+        classOf[akka.remote.transport.AssociationHandle.Disassociated],
+        //        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        classOf[akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying],
+        //        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass,
+        classOf[akka.remote.transport.AssociationHandle.InboundPayload])(sys)
 
     }
   }
@@ -296,8 +298,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
       val expectedLeader = roleOfLeader(nodesInCluster)
       val leader = clusterView.leader
       val isLeader = leader == Some(clusterView.selfAddress)
-      assert(isLeader == isNode(expectedLeader),
-             "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
+      assert(
+        isLeader == isNode(expectedLeader),
+        "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
       clusterView.status should (be(MemberStatus.Up).or(be(MemberStatus.Leaving)))
     }
 
@@ -305,9 +308,10 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * Wait until the expected number of members has status Up has been reached.
    * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
-  def awaitMembersUp(numberOfMembers: Int,
-                     canNotBePartOfMemberRing: Set[Address] = Set.empty,
-                     timeout: FiniteDuration = 25.seconds): Unit = {
+  def awaitMembersUp(
+      numberOfMembers: Int,
+      canNotBePartOfMemberRing: Set[Address] = Set.empty,
+      timeout: FiniteDuration = 25.seconds): Unit = {
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing.foreach(a => clusterView.members.map(_.address) should not contain (a)))

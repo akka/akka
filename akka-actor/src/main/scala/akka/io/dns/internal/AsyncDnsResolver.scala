@@ -25,9 +25,10 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[io] final class AsyncDnsResolver(settings: DnsSettings,
-                                         cache: AsyncDnsCache,
-                                         clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef])
+private[io] final class AsyncDnsResolver(
+    settings: DnsSettings,
+    cache: AsyncDnsCache,
+    clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef])
     extends Actor
     with ActorLogging {
 
@@ -40,10 +41,11 @@ private[io] final class AsyncDnsResolver(settings: DnsSettings,
 
   val nameServers = settings.NameServers
 
-  log.debug("Using name servers [{}] and search domains [{}] with ndots={}",
-            nameServers,
-            settings.SearchDomains,
-            settings.NDots)
+  log.debug(
+    "Using name servers [{}] and search domains [{}] with ndots={}",
+    nameServers,
+    settings.SearchDomains,
+    settings.NDots)
 
   private var requestId: Short = 0
   private def nextId(): Short = {
@@ -72,9 +74,10 @@ private[io] final class AsyncDnsResolver(settings: DnsSettings,
       }
   }
 
-  private def resolveWithResolvers(name: String,
-                                   requestType: RequestType,
-                                   resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
+  private def resolveWithResolvers(
+      name: String,
+      requestType: RequestType,
+      resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
     if (isInetAddress(name)) {
       Future.fromTry {
         Try {
@@ -107,9 +110,10 @@ private[io] final class AsyncDnsResolver(settings: DnsSettings,
     result
   }
 
-  private def resolveWithSearch(name: String,
-                                requestType: RequestType,
-                                resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+  private def resolveWithSearch(
+      name: String,
+      requestType: RequestType,
+      resolver: ActorRef): Future[DnsProtocol.Resolved] = {
     if (settings.SearchDomains.nonEmpty) {
       val nameWithSearch = settings.SearchDomains.map(sd => name + "." + sd)
       // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
@@ -131,9 +135,10 @@ private[io] final class AsyncDnsResolver(settings: DnsSettings,
     }
   }
 
-  private def resolveFirst(searchNames: List[String],
-                           requestType: RequestType,
-                           resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+  private def resolveFirst(
+      searchNames: List[String],
+      requestType: RequestType,
+      resolver: ActorRef): Future[DnsProtocol.Resolved] = {
     searchNames match {
       case searchName :: Nil =>
         resolve(searchName, requestType, resolver)

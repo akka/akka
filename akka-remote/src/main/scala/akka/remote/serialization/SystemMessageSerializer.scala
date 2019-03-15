@@ -120,22 +120,26 @@ class SystemMessageSerializer(val system: ExtendedActorSystem) extends BaseSeria
         Supervise(deserializeActorRef(sysmsg.getSuperviseData.getChild), sysmsg.getSuperviseData.getAsync)
 
       case WATCH =>
-        Watch(deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
-              deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
+        Watch(
+          deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
+          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
 
       case UNWATCH =>
-        Unwatch(deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
-                deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
+        Unwatch(
+          deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
+          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
 
       case FAILED =>
-        Failed(deserializeActorRef(sysmsg.getFailedData.getChild),
-               getCauseThrowable(sysmsg),
-               sysmsg.getFailedData.getUid.toInt)
+        Failed(
+          deserializeActorRef(sysmsg.getFailedData.getChild),
+          getCauseThrowable(sysmsg),
+          sysmsg.getFailedData.getUid.toInt)
 
       case DEATHWATCH_NOTIFICATION =>
-        DeathWatchNotification(deserializeActorRef(sysmsg.getDwNotificationData.getActor),
-                               sysmsg.getDwNotificationData.getExistenceConfirmed,
-                               sysmsg.getDwNotificationData.getAddressTerminated)
+        DeathWatchNotification(
+          deserializeActorRef(sysmsg.getDwNotificationData.getActor),
+          sysmsg.getDwNotificationData.getExistenceConfirmed,
+          sysmsg.getDwNotificationData.getAddressTerminated)
     }
 
   private def serializeThrowable(throwable: Throwable): ContainerFormats.Payload.Builder = {

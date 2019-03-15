@@ -40,10 +40,11 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   val reachability3 = addUnreachable(reachability1, nodesSize / 2)
   val allowed = reachability1.versions.keySet
 
-  private def checkThunkFor(r1: Reachability,
-                            r2: Reachability,
-                            thunk: (Reachability, Reachability) => Unit,
-                            times: Int): Unit = {
+  private def checkThunkFor(
+      r1: Reachability,
+      r2: Reachability,
+      thunk: (Reachability, Reachability) => Unit,
+      times: Int): Unit = {
     for (i <- 1 to times) {
       thunk(Reachability(r1.records, r1.versions), Reachability(r2.records, r2.versions))
     }

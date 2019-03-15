@@ -10,19 +10,21 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
 
   // SRV strings with invalid domain names
   // should fail to build lookups
-  val srvWithInvalidDomainNames = List("_portName._protocol.service_name.local",
-                                       "_portName._protocol.servicename,local",
-                                       "_portName._protocol.servicename.local-",
-                                       "_portName._protocol.-servicename.local")
+  val srvWithInvalidDomainNames = List(
+    "_portName._protocol.service_name.local",
+    "_portName._protocol.servicename,local",
+    "_portName._protocol.servicename.local-",
+    "_portName._protocol.-servicename.local")
 
   // No SRV that should result in simple A/AAAA lookups
-  val noSrvLookups = List("portName.protocol.serviceName.local",
-                          "serviceName.local",
-                          "_portName.serviceName",
-                          "_serviceName.local",
-                          "_serviceName,local",
-                          "-serviceName.local",
-                          "serviceName.local-")
+  val noSrvLookups = List(
+    "portName.protocol.serviceName.local",
+    "serviceName.local",
+    "_portName.serviceName",
+    "_serviceName.local",
+    "_serviceName,local",
+    "-serviceName.local",
+    "serviceName.local-")
 
   "Lookup.parseSrv" should {
 

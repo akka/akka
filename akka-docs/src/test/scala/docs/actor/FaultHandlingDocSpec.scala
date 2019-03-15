@@ -110,8 +110,9 @@ class FaultHandlingDocSpec(_system: ActorSystem)
 
   def this() =
     this(
-      ActorSystem("FaultHandlingDocSpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "FaultHandlingDocSpec",
+        ConfigFactory.parseString("""
       akka {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"

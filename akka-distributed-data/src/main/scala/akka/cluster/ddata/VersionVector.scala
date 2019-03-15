@@ -182,9 +182,10 @@ sealed abstract class VersionVector extends ReplicatedData with ReplicatedDataSe
   private final def compareOnlyTo(that: VersionVector, order: Ordering): Ordering = {
     def nextOrElse[A](iter: Iterator[A], default: A): A = if (iter.hasNext) iter.next() else default
 
-    def compare(i1: Iterator[(UniqueAddress, Long)],
-                i2: Iterator[(UniqueAddress, Long)],
-                requestedOrder: Ordering): Ordering = {
+    def compare(
+        i1: Iterator[(UniqueAddress, Long)],
+        i2: Iterator[(UniqueAddress, Long)],
+        requestedOrder: Ordering): Ordering = {
       @tailrec
       def compareNext(nt1: (UniqueAddress, Long), nt2: (UniqueAddress, Long), currentOrder: Ordering): Ordering =
         if ((requestedOrder ne FullOrder) && (currentOrder ne Same) && (currentOrder ne requestedOrder)) currentOrder

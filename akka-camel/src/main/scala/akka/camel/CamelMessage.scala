@@ -271,9 +271,10 @@ object CamelMessage extends ((Any, Map[String, Any]) => CamelMessage) {
    *                in the Camel message.
    */
   private[camel] def from(camelMessage: JCamelMessage, headers: Map[String, Any]): CamelMessage =
-    CamelMessage(camelMessage.getBody,
-                 headers ++ camelMessage.getHeaders.asScala,
-                 camelMessage.getAttachments.asScala.toMap)
+    CamelMessage(
+      camelMessage.getBody,
+      headers ++ camelMessage.getHeaders.asScala,
+      camelMessage.getAttachments.asScala.toMap)
 
   /**
    * Creates a new CamelMessageWithAttachments object from the Camel message.
@@ -283,12 +284,14 @@ object CamelMessage extends ((Any, Map[String, Any]) => CamelMessage) {
    * @param attachments additional attachments to set on the created CamelMessageWithAttachments in addition to those
    *                in the Camel message.
    */
-  private[camel] def from(camelMessage: JCamelMessage,
-                          headers: Map[String, Any],
-                          attachments: Map[String, DataHandler]): CamelMessage =
-    CamelMessage(camelMessage.getBody,
-                 headers ++ camelMessage.getHeaders.asScala,
-                 attachments ++ camelMessage.getAttachments.asScala)
+  private[camel] def from(
+      camelMessage: JCamelMessage,
+      headers: Map[String, Any],
+      attachments: Map[String, DataHandler]): CamelMessage =
+    CamelMessage(
+      camelMessage.getBody,
+      headers ++ camelMessage.getHeaders.asScala,
+      attachments ++ camelMessage.getAttachments.asScala)
 
   /**
    * INTERNAL API

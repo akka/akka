@@ -25,26 +25,28 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
     val actorA = system.actorOf(Props.empty)
     val actorB = system.actorOf(Props.empty)
 
-    Seq("Quarantined" -> Quarantined(uniqueAddress(), uniqueAddress()),
-        "ActorSystemTerminating" -> ActorSystemTerminating(uniqueAddress()),
-        "ActorSystemTerminatingAck" -> ActorSystemTerminatingAck(uniqueAddress()),
-        "HandshakeReq" -> HandshakeReq(uniqueAddress(), uniqueAddress().address),
-        "HandshakeRsp" -> HandshakeRsp(uniqueAddress()),
-        "ActorRefCompressionAdvertisement" -> ActorRefCompressionAdvertisement(
-          uniqueAddress(),
-          CompressionTable(17L, 123, Map(actorA -> 123, actorB -> 456, system.deadLetters -> 0))),
-        "ActorRefCompressionAdvertisementAck" -> ActorRefCompressionAdvertisementAck(uniqueAddress(), 23),
-        "ClassManifestCompressionAdvertisement" -> ClassManifestCompressionAdvertisement(
-          uniqueAddress(),
-          CompressionTable(17L, 42, Map("a" -> 535, "b" -> 23))),
-        "ClassManifestCompressionAdvertisementAck" -> ClassManifestCompressionAdvertisementAck(uniqueAddress(), 23),
-        "SystemMessageDelivery.SystemMessageEnvelop" -> SystemMessageDelivery.SystemMessageEnvelope("test",
-                                                                                                    1234567890123L,
-                                                                                                    uniqueAddress()),
-        "SystemMessageDelivery.Ack" -> SystemMessageDelivery.Ack(98765432109876L, uniqueAddress()),
-        "SystemMessageDelivery.Nack" -> SystemMessageDelivery.Nack(98765432109876L, uniqueAddress()),
-        "RemoteWatcher.ArteryHeartbeat" -> RemoteWatcher.ArteryHeartbeat,
-        "RemoteWatcher.ArteryHeartbeatRsp" -> RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)).foreach {
+    Seq(
+      "Quarantined" -> Quarantined(uniqueAddress(), uniqueAddress()),
+      "ActorSystemTerminating" -> ActorSystemTerminating(uniqueAddress()),
+      "ActorSystemTerminatingAck" -> ActorSystemTerminatingAck(uniqueAddress()),
+      "HandshakeReq" -> HandshakeReq(uniqueAddress(), uniqueAddress().address),
+      "HandshakeRsp" -> HandshakeRsp(uniqueAddress()),
+      "ActorRefCompressionAdvertisement" -> ActorRefCompressionAdvertisement(
+        uniqueAddress(),
+        CompressionTable(17L, 123, Map(actorA -> 123, actorB -> 456, system.deadLetters -> 0))),
+      "ActorRefCompressionAdvertisementAck" -> ActorRefCompressionAdvertisementAck(uniqueAddress(), 23),
+      "ClassManifestCompressionAdvertisement" -> ClassManifestCompressionAdvertisement(
+        uniqueAddress(),
+        CompressionTable(17L, 42, Map("a" -> 535, "b" -> 23))),
+      "ClassManifestCompressionAdvertisementAck" -> ClassManifestCompressionAdvertisementAck(uniqueAddress(), 23),
+      "SystemMessageDelivery.SystemMessageEnvelop" -> SystemMessageDelivery.SystemMessageEnvelope(
+        "test",
+        1234567890123L,
+        uniqueAddress()),
+      "SystemMessageDelivery.Ack" -> SystemMessageDelivery.Ack(98765432109876L, uniqueAddress()),
+      "SystemMessageDelivery.Nack" -> SystemMessageDelivery.Nack(98765432109876L, uniqueAddress()),
+      "RemoteWatcher.ArteryHeartbeat" -> RemoteWatcher.ArteryHeartbeat,
+      "RemoteWatcher.ArteryHeartbeatRsp" -> RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(system)

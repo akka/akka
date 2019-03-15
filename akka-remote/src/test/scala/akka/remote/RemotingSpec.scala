@@ -122,9 +122,10 @@ object RemotingSpec {
 
   def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(
-      TestEvent.Mute(EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead letter.*")))
+      TestEvent.Mute(
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*")))
   }
 }
 
@@ -186,10 +187,10 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   override def atStartup() = {
     muteSystem(system)
     remoteSystem.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(
-                       pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
 
   private def byteStringOfSize(size: Int) = ByteString.fromArray(Array.fill(size)(42: Byte))
@@ -235,9 +236,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         .withFallback(remoteSystem.settings.config)
       val moreSystems = Vector.fill(5)(ActorSystem(remoteSystem.name, tcpOnlyConfig))
       moreSystems.foreach { sys =>
-        sys.eventStream.publish(
-          TestEvent.Mute(EventFilter[EndpointDisassociatedException](),
-                         EventFilter.warning(pattern = "received dead letter.*")))
+        sys.eventStream.publish(TestEvent
+          .Mute(EventFilter[EndpointDisassociatedException](), EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(Props[Echo2], name = "echo")
       }
       val moreRefs =
@@ -671,12 +671,12 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val remoteTransport = new TestTransport(rawRemoteAddress, registry)
         val remoteTransportProbe = TestProbe()
 
-        registry.registerTransport(remoteTransport,
-                                   associationEventListenerFuture =
-                                     Future.successful(new Transport.AssociationEventListener {
-                                       override def notify(ev: Transport.AssociationEvent): Unit =
-                                         remoteTransportProbe.ref ! ev
-                                     }))
+        registry.registerTransport(
+          remoteTransport,
+          associationEventListenerFuture = Future.successful(new Transport.AssociationEventListener {
+            override def notify(ev: Transport.AssociationEvent): Unit =
+              remoteTransportProbe.ref ! ev
+          }))
 
         val outboundHandle =
           new TestAssociationHandle(rawLocalAddress, rawRemoteAddress, remoteTransport, inbound = false)
@@ -756,12 +756,12 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val remoteTransport = new TestTransport(rawRemoteAddress, registry)
         val remoteTransportProbe = TestProbe()
 
-        registry.registerTransport(remoteTransport,
-                                   associationEventListenerFuture =
-                                     Future.successful(new Transport.AssociationEventListener {
-                                       override def notify(ev: Transport.AssociationEvent): Unit =
-                                         remoteTransportProbe.ref ! ev
-                                     }))
+        registry.registerTransport(
+          remoteTransport,
+          associationEventListenerFuture = Future.successful(new Transport.AssociationEventListener {
+            override def notify(ev: Transport.AssociationEvent): Unit =
+              remoteTransportProbe.ref ! ev
+          }))
 
         val outboundHandle =
           new TestAssociationHandle(rawLocalAddress, rawRemoteAddress, remoteTransport, inbound = false)

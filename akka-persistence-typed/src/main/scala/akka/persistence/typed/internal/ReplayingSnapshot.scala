@@ -102,13 +102,15 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
-    setup.log.debug("Unexpected response from journal: [{}], may be due to an actor restart, ignoring...",
-                    response.getClass.getName)
+    setup.log.debug(
+      "Unexpected response from journal: [{}], may be due to an actor restart, ignoring...",
+      response.getClass.getName)
     Behaviors.unhandled
   }
 
-  def onSnapshotterResponse(response: SnapshotProtocol.Response,
-                            receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+  def onSnapshotterResponse(
+      response: SnapshotProtocol.Response,
+      receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     response match {
       case LoadSnapshotResult(sso, toSnr) =>
         var state: S = setup.emptyState
@@ -130,10 +132,11 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     }
   }
 
-  private def becomeReplayingEvents(state: S,
-                                    lastSequenceNr: Long,
-                                    toSnr: Long,
-                                    receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+  private def becomeReplayingEvents(
+      state: S,
+      lastSequenceNr: Long,
+      toSnr: Long,
+      receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
 
     ReplayingEvents[C, E, S](

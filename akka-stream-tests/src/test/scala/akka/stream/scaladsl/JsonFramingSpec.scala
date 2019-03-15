@@ -38,9 +38,10 @@ class JsonFramingSpec extends AkkaSpec {
         }
       // #using-json-framing
 
-      result.futureValue shouldBe Seq("""{ "name" : "john" }""",
-                                      """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
-                                      """{ "name" : "jack" }""")
+      result.futureValue shouldBe Seq(
+        """{ "name" : "john" }""",
+        """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
+        """{ "name" : "jack" }""")
     }
 
     "emit single json element from string" in {
@@ -72,9 +73,10 @@ class JsonFramingSpec extends AkkaSpec {
           case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
-      Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""",
-                                                   """{ "name": "jack" }""",
-                                                   """{ "name": "katie" }""")
+      Await.result(result, 3.seconds) shouldBe Seq(
+        """{ "name": "john" }""",
+        """{ "name": "jack" }""",
+        """{ "name": "katie" }""")
     }
 
     "parse comma delimited" in {
@@ -90,23 +92,25 @@ class JsonFramingSpec extends AkkaSpec {
     }
 
     "parse chunks successfully" in {
-      val input: Seq[ByteString] = Seq("""
+      val input: Seq[ByteString] = Seq(
+        """
           |[
           |  { "name": "john"""".stripMargin,
-                                       """
+        """
           |},
         """.stripMargin,
-                                       """{ "na""",
-                                       """me": "jack""",
-                                       """"}]"""").map(ByteString(_))
+        """{ "na""",
+        """me": "jack""",
+        """"}]"""").map(ByteString(_))
 
       val result = Source.apply(input).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
         case (acc, entry) => acc ++ Seq(entry.utf8String)
       }
 
-      result.futureValue shouldBe Seq("""{ "name": "john"
+      result.futureValue shouldBe Seq(
+        """{ "name": "john"
           |}""".stripMargin,
-                                      """{ "name": "jack"}""")
+        """{ "name": "jack"}""")
     }
 
     "emit all elements after input completes" in {
@@ -480,9 +484,10 @@ class JsonFramingSpec extends AkkaSpec {
     }
 
     "fail when 2nd object is too large" in {
-      val input = List("""{ "name": "john" }""",
-                       """{ "name": "jack" }""",
-                       """{ "name": "very very long name somehow. how did this happen?" }""").map(s => ByteString(s))
+      val input = List(
+        """{ "name": "john" }""",
+        """{ "name": "jack" }""",
+        """{ "name": "very very long name somehow. how did this happen?" }""").map(s => ByteString(s))
 
       val probe = Source(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
 

@@ -791,10 +791,11 @@ class TestKit(system: ActorSystem) {
    * certain characteristics are generated at a certain rate:
    *
    */
-  def receiveWhile[T](max: java.time.Duration,
-                      idle: java.time.Duration,
-                      messages: Int,
-                      f: JFunction[AnyRef, T]): JList[T] = {
+  def receiveWhile[T](
+      max: java.time.Duration,
+      idle: java.time.Duration,
+      messages: Int,
+      f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max.asScala, idle.asScala, messages)(new CachingPartialFunction[AnyRef, T] {
         @throws(classOf[Exception])
         override def `match`(x: AnyRef): T = f.apply(x)

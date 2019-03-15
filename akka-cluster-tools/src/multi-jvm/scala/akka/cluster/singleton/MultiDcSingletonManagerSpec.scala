@@ -82,10 +82,10 @@ abstract class MultiDcSingletonManagerSpec
     "start a singleton instance for each data center" in {
 
       runOn(first, second, third) {
-        system.actorOf(ClusterSingletonManager.props(Props[MultiDcSingleton](),
-                                                     PoisonPill,
-                                                     ClusterSingletonManagerSettings(system).withRole(worker)),
-                       "singletonManager")
+        system.actorOf(
+          ClusterSingletonManager
+            .props(Props[MultiDcSingleton](), PoisonPill, ClusterSingletonManagerSettings(system).withRole(worker)),
+          "singletonManager")
       }
 
       val proxy = system.actorOf(
@@ -113,8 +113,9 @@ abstract class MultiDcSingletonManagerSpec
     "be able to use proxy across different data centers" in {
       runOn(third) {
         val proxy = system.actorOf(
-          ClusterSingletonProxy.props("/user/singletonManager",
-                                      ClusterSingletonProxySettings(system).withRole(worker).withDataCenter("one")))
+          ClusterSingletonProxy.props(
+            "/user/singletonManager",
+            ClusterSingletonProxySettings(system).withRole(worker).withDataCenter("one")))
         proxy ! MultiDcSingleton.Ping
         val pong = expectMsgType[MultiDcSingleton.Pong](10.seconds)
         pong.fromDc should ===("one")

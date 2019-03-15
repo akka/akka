@@ -30,12 +30,13 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
   private val BundleVersion = "Bundle-Version"
   private val BundleVendor = "Bundle-Vendor"
 
-  private val knownVendors = Set("com.typesafe.akka",
-                                 "com.lightbend.akka",
-                                 "Lightbend Inc.",
-                                 "Lightbend",
-                                 "com.lightbend.lagom",
-                                 "com.typesafe.play")
+  private val knownVendors = Set(
+    "com.typesafe.akka",
+    "com.lightbend.akka",
+    "Lightbend Inc.",
+    "Lightbend",
+    "com.lightbend.lagom",
+    "com.typesafe.play")
 
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
 
