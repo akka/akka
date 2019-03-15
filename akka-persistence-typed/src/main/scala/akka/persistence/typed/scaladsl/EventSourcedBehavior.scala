@@ -19,6 +19,7 @@ import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {

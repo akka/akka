@@ -44,7 +44,7 @@ import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.DeletionTarget.Criteria
 import akka.persistence.typed.EventSourcedSignal
-import akka.persistence.typed.internal.RetentionCriteria
+import akka.persistence.typed.RetentionCriteria
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config

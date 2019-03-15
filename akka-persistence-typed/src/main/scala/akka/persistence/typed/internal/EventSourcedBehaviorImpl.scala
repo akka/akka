@@ -20,15 +20,16 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.NoOpEventAdapter
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.SnapshotCompleted
-import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.DeleteMessagesFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.NoOpEventAdapter
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
+import akka.persistence.typed.SnapshotCompleted
+import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
@@ -81,21 +82,21 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     val actualSignalHandler: PartialFunction[Signal, Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
       case SnapshotCompleted(meta: SnapshotMetadata) ⇒
-        ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+        ctx.log.debug("Save snapshot successful, snapshot metadata [{}]", meta)
       case SnapshotFailed(meta, failure) ⇒
-        ctx.log.error(failure, "Save snapshot failed, snapshot metadata: [{}]", meta)
+        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}]", meta)
       case DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)) =>
-        ctx.log.debug(s"Persistent snapshot [{}] deleted successfully", meta)
+        ctx.log.debug(s"Persistent snapshot [{}] deleted successfully.", meta)
       case DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)) =>
-        ctx.log.debug(s"Persistent snapshots given criteria [{}] deleted successfully", criteria)
+        ctx.log.debug(s"Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure) =>
-        ctx.log.debug("Failed to delete snapshot with meta [{}] due to: [{}]", meta, failure)
+        ctx.log.warning(failure, "Failed to delete snapshot with meta [{}].", meta)
       case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
-        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to: [{}]: [{}]",
-          criteria, failure.getClass.getCanonicalName, failure.getMessage)
+        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].",
+          criteria, failure.getMessage)
       case DeleteMessagesFailed(toSequenceNr, failure) =>
-        ctx.log.warning("Failed to delete messages toSequenceNr [{}] for persistenceId [{}] due to [{}]: [{}].",
-          toSequenceNr, persistenceId.id, failure.getClass.getCanonicalName, failure.getMessage)
+        ctx.log.warning("Failed to delete messages toSequenceNr [{}] for persistenceId [{}] due to [{}].",
+          toSequenceNr, persistenceId.id, failure.getMessage)
     }
 
     Behaviors

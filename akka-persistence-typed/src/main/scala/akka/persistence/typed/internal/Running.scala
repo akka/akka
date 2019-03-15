@@ -116,7 +116,7 @@ private[akka] object Running {
     def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
       val signal = response match {
         case DeleteMessagesSuccess(toSequenceNr) =>
-          setup.log.debug("PersistentShard messages to [{}] deleted successfully.", toSequenceNr)
+          setup.log.debug("Persistent messages to [{}] deleted successfully.", toSequenceNr)
           internalDeleteSnapshots(toSequenceNr)
           Some(DeleteMessagesCompleted(toSequenceNr))
 
@@ -375,8 +375,8 @@ private[akka] object Running {
           Some(SnapshotCompleted(meta))
 
         case SaveSnapshotFailure(meta, error) =>
-          setup.log.warning("Failed to saveSnapshot given metadata [{}] due to: [{}: {}]",
-            meta, error.getClass.getCanonicalName, error.getMessage)
+          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]",
+            meta, error.getMessage)
           Some(SnapshotFailed(meta, error))
 
         case _ =>
