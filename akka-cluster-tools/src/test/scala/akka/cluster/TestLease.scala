@@ -46,9 +46,6 @@ object TestLease {
     """
     test-lease {
       lease-class = akka.cluster.TestLease
-      heartbeat-interval = 1s
-      heartbeat-timeout = 120s
-      lease-operation-timeout = 3s
     }
     """.stripMargin)
 }

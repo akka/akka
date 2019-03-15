@@ -9,6 +9,7 @@ import akka.actor.ExtendedActorSystem
 import akka.coordination.lease.LeaseSettings
 import akka.testkit.{ AkkaSpec, EventFilter }
 import com.typesafe.config.{ ConfigException, ConfigFactory }
+import scala.concurrent.duration._
 
 object LeaseProviderSpec {
   class LeaseA(settings: LeaseSettings) extends Lease(settings) {
@@ -31,7 +32,7 @@ object LeaseProviderSpec {
   lease-a {
     lease-class = "${classOf[LeaseProviderSpec.LeaseA].getName}"
     key1 = value1
-    heartbeat-timeout = 120s
+    heartbeat-timeout = 100s
     heartbeat-interval = 1s
     lease-operation-timeout = 2s
   }
@@ -53,9 +54,12 @@ object LeaseProviderSpec {
     lease-operation-timeout = 2s
   }
 
+  lease-fallback-to-defaults {
+    lease-class = "${classOf[LeaseProviderSpec.LeaseA].getName}"
+  }
+
   """
   )
-
 }
 
 class LeaseProviderSpec extends AkkaSpec(LeaseProviderSpec.config) {
@@ -69,12 +73,22 @@ class LeaseProviderSpec extends AkkaSpec(LeaseProviderSpec.config) {
       leaseA.settings.leaseName should ===("a")
       leaseA.settings.ownerName should ===("owner1")
       leaseA.settings.leaseConfig.getString("key1") should ===("value1")
+      leaseA.settings.timeoutSettings.heartbeatTimeout should ===(100.seconds)
+      leaseA.settings.timeoutSettings.heartbeatInterval should ===(1.seconds)
+      leaseA.settings.timeoutSettings.operationTimeout should ===(2.seconds)
 
       val leaseB = LeaseProvider(system).getLease("b", "lease-b", "owner2")
       leaseB.getClass should ===(classOf[LeaseB])
       leaseB.settings.leaseName should ===("b")
       leaseB.settings.ownerName should ===("owner2")
       leaseB.settings.leaseConfig.getString("key2") should ===("value2")
+    }
+
+    "load defaults for timeouts if not specified" in {
+      val defaults = LeaseProvider(system).getLease("a", "lease-fallback-to-defaults", "owner1")
+      defaults.settings.timeoutSettings.operationTimeout should ===(5.seconds)
+      defaults.settings.timeoutSettings.heartbeatTimeout should ===(120.seconds)
+      defaults.settings.timeoutSettings.heartbeatInterval should ===(12.seconds)
     }
 
     "return same instance for same leaseName, configPath and owner" in {
@@ -108,6 +122,7 @@ class LeaseProviderSpec extends AkkaSpec(LeaseProviderSpec.config) {
         }
       }
     }
+
   }
 
 }
