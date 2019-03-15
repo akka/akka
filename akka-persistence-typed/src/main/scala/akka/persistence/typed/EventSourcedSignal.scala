@@ -52,14 +52,14 @@ final case class SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable) 
   def getSnapshotMetadata(): SnapshotMetadata = metadata
 }
 
-final case class DeleteSnapshotCompleted(target: DeletionTarget) extends EventSourcedSignal {
+final case class DeleteSnapshotsCompleted(target: DeletionTarget) extends EventSourcedSignal {
 
   /**
    * Java API
    */
   def getTarget(): DeletionTarget = target
 }
-final case class DeleteSnapshotFailed(target: DeletionTarget, failure: Throwable) extends EventSourcedSignal {
+final case class DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable) extends EventSourcedSignal {
 
   /**
    * Java API
@@ -70,6 +70,26 @@ final case class DeleteSnapshotFailed(target: DeletionTarget, failure: Throwable
    * Java API
    */
   def getTarget(): DeletionTarget = target
+}
+
+final case class DeleteMessagesCompleted(toSequenceNr: Long) extends EventSourcedSignal {
+
+  /**
+    * Java API
+    */
+  def getToSequenceNr(): Long = toSequenceNr
+}
+final case class DeleteMessagesFailed(toSequenceNr: Long, failure: Throwable) extends EventSourcedSignal {
+
+  /**
+    * Java API
+    */
+  def getFailure(): Throwable = failure
+
+  /**
+    * Java API
+    */
+  def getToSequenceNr(): Long = toSequenceNr
 }
 
 /**

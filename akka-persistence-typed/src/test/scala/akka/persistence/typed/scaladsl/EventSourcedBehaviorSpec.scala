@@ -10,11 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
 import akka.Done
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.{ TestException, TestKitSettings }
+import akka.actor.testkit.typed.{TestException, TestKitSettings}
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -23,28 +25,31 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.SelectedSnapshot
 import akka.persistence.SnapshotMetadata
 import akka.persistence.SnapshotSelectionCriteria
+import akka.persistence.SelectedSnapshot
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.DeleteSnapshotsCompleted
+import akka.persistence.typed.DeleteMessagesCompleted
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
+import akka.persistence.typed.DeletionTarget.Criteria
+import akka.persistence.typed.EventSourcedSignal
+import akka.persistence.typed.internal.RetentionCriteria
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-
-import scala.util.Failure
 
 object EventSourcedBehaviorSpec {
 
@@ -69,8 +74,15 @@ object EventSourcedBehaviorSpec {
       Future.successful(())
     }
 
-    def deleteAsync(metadata: SnapshotMetadata) = ???
-    def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) = ???
+    override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
+      state = state.filterKeys(_ != metadata.persistenceId)
+      Future.successful(())
+    }
+
+    override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
+      state = state.filterKeys(_ != persistenceId)
+      Future.successful(())
+    }
   }
 
   // also used from PersistentActorTest
@@ -134,11 +146,12 @@ object EventSourcedBehaviorSpec {
       persistenceId,
       loggingActor = TestProbe[String].ref,
       probe = TestProbe[(State, Event)].ref,
-      TestProbe[Try[Done]].ref)
+      snapshotProbe = TestProbe[Try[Done]].ref,
+      retentionProbe = TestProbe[Try[EventSourcedSignal]].ref)
 
   def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
+    counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref, TestProbe[Try[EventSourcedSignal]].ref)
 
   def counterWithProbe(
       ctx: ActorContext[Command],
@@ -146,22 +159,27 @@ object EventSourcedBehaviorSpec {
       probe: ActorRef[(State, Event)],
       snapshotProbe: ActorRef[Try[Done]])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, probe, snapshotProbe)
+    counter(ctx, persistenceId, TestProbe[String].ref, probe, snapshotProbe, TestProbe[Try[EventSourcedSignal]].ref)
 
   def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref)
+    counter(ctx, persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref, TestProbe[Try[EventSourcedSignal]].ref)
 
   def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[Try[Done]])(
       implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
-    counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
+    counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe, TestProbe[Try[EventSourcedSignal]].ref)
+
+  def counterWithSnapshotAndRetentionProbe(ctx: ActorContext[Command], persistenceId: PersistenceId,
+                                           probeS: ActorRef[Try[Done]], probeR: ActorRef[Try[EventSourcedSignal]])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
+    counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probeS, retentionProbe = probeR)
 
   def counter(
       ctx: ActorContext[Command],
       persistenceId: PersistenceId,
       loggingActor: ActorRef[String],
       probe: ActorRef[(State, Event)],
-      snapshotProbe: ActorRef[Try[Done]]): EventSourcedBehavior[Command, Event, State] = {
+      snapshotProbe: ActorRef[Try[Done]],
+      retentionProbe: ActorRef[Try[EventSourcedSignal]]): EventSourcedBehavior[Command, Event, State] = {
     EventSourcedBehavior[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
@@ -267,9 +285,10 @@ object EventSourcedBehaviorSpec {
         snapshotProbe ! Success(Done)
       case SnapshotFailed(_, failure) ⇒
         snapshotProbe ! Failure(failure)
+      case e: EventSourcedSignal =>
+        retentionProbe ! Success(e)
     }
   }
-
 }
 
 class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
@@ -701,7 +720,88 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         c2 ! Fail
         probe.expectTerminated(c2) // should fail
       }
+    }
 
+    "delete snapshots automatically, based on criteria" in {
+      val unexpected = (signal: EventSourcedSignal) => fail(s"Unexpected signal [$signal].")
+
+      val pid = nextPid
+      val snapshotProbe = TestProbe[Try[Done]]()
+      val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
+      val replyProbe = TestProbe[State]()
+
+      val persistentActor = spawn(Behaviors.setup[Command](ctx ⇒
+        counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
+          .snapshotEvery(2)
+          .withRetention(RetentionCriteria(
+            snapshotEveryNEvents = 2,
+            keepNSnapshots = 2,
+            deleteEventsOnSnapshot = false))))
+
+      persistentActor ! IncrementWithPersistAll(3)
+      persistentActor ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
+      snapshotProbe.expectMessage(Try(Done))
+      retentionProbe.expectMessageType[Success[DeleteSnapshotsCompleted]].value match {
+        case DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(maxSequenceNr, _, minSequenceNr, _))) =>
+          maxSequenceNr shouldEqual 2
+          minSequenceNr shouldEqual 0
+        case signal => unexpected(signal)
+      }
+
+      persistentActor ! IncrementWithPersistAll(3)
+      snapshotProbe.expectMessage(Try(Done))
+      retentionProbe.expectMessageType[Success[DeleteSnapshotsCompleted]].value match {
+        case DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(maxSequenceNr, _, minSequenceNr, _))) =>
+          maxSequenceNr shouldEqual 5
+          minSequenceNr shouldEqual 1
+        case signal => unexpected(signal)
+      }
+
+      persistentActor ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(6,Vector(0, 1, 2, 3, 4, 5)))
+    }
+
+    "optionally delete both old messages and snapshots" in {
+      val pid = nextPid
+      val snapshotProbe = TestProbe[Try[Done]]()
+      val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
+      val replyProbe = TestProbe[State]()
+
+      val persistentActor = spawn(Behaviors.setup[Command](ctx ⇒
+        counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
+          .snapshotEvery(2)
+          .withRetention(RetentionCriteria(
+            snapshotEveryNEvents = 2,
+            keepNSnapshots = 2,
+            deleteEventsOnSnapshot = true))))
+
+      persistentActor ! IncrementWithPersistAll(10)
+      persistentActor ! GetValue(replyProbe.ref)
+      val initialState = replyProbe.expectMessageType[State]
+      initialState.value shouldEqual 10
+      initialState.history shouldEqual (0 until initialState.value).toVector
+      snapshotProbe.expectMessage(Try(Done))
+
+      val firstDeleteMessages = retentionProbe.expectMessageType[Success[DeleteMessagesCompleted]].value
+      firstDeleteMessages.toSequenceNr shouldEqual 6 // 10 - 2 * 2
+
+      retentionProbe.expectMessageType[Success[DeleteSnapshotsCompleted]].value match {
+        case DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(maxSequenceNr, _, minSequenceNr, _))) =>
+          maxSequenceNr shouldEqual 5 // 10 / 2
+          minSequenceNr shouldEqual 1
+        case signal => fail(s"Unexpected signal [$signal].")
+      }
+
+      persistentActor ! IncrementWithPersistAll(10)
+      snapshotProbe.expectMessage(Try(Done))
+      val secondDeleteMessages = retentionProbe.expectMessageType[Success[DeleteMessagesCompleted]].value
+      secondDeleteMessages.toSequenceNr shouldEqual 16 // 20 - 2 * 2
+
+      persistentActor ! GetValue(replyProbe.ref)
+      val state = replyProbe.expectMessageType[State]
+      state.value shouldEqual 20
+      state.history shouldEqual (0 until state.value).toVector
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
