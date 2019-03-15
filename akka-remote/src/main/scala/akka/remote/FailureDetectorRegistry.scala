@@ -68,8 +68,9 @@ private[akka] object FailureDetectorLoader {
     system
       .asInstanceOf[ExtendedActorSystem]
       .dynamicAccess
-      .createInstanceFor[FailureDetector](fqcn,
-                                          List(classOf[Config] -> config, classOf[EventStream] -> system.eventStream))
+      .createInstanceFor[FailureDetector](
+        fqcn,
+        List(classOf[Config] -> config, classOf[EventStream] -> system.eventStream))
       .recover({
         case e =>
           throw new ConfigurationException(s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)

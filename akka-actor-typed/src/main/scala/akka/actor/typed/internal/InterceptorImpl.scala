@@ -33,8 +33,9 @@ private[akka] object InterceptorImpl {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I],
-                                                val nestedBehavior: Behavior[I])
+private[akka] final class InterceptorImpl[O, I](
+    val interceptor: BehaviorInterceptor[O, I],
+    val nestedBehavior: Behavior[I])
     extends ExtensibleBehavior[O]
     with WrappingBehavior[O, I] {
 

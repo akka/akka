@@ -112,13 +112,14 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
   def startSharding(): Unit = {
     val allocationStrategy =
       new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
-    ClusterSharding(system).start(typeName = "Entity",
-                                  entityProps = TestActors.echoActorProps,
-                                  settings = ClusterShardingSettings(system),
-                                  extractEntityId = extractEntityId,
-                                  extractShardId = extractShardId,
-                                  allocationStrategy,
-                                  handOffStopMessage = StopEntity)
+    ClusterSharding(system).start(
+      typeName = "Entity",
+      entityProps = TestActors.echoActorProps,
+      settings = ClusterShardingSettings(system),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId,
+      allocationStrategy,
+      handOffStopMessage = StopEntity)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

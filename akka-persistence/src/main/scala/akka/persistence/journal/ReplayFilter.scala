@@ -19,11 +19,12 @@ import scala.collection.mutable.LinkedHashSet
  * sequenceNr in the replayed events to find events emitted by overlapping writers.
  */
 private[akka] object ReplayFilter {
-  def props(persistentActor: ActorRef,
-            mode: Mode,
-            windowSize: Int,
-            maxOldWriters: Int,
-            debugEnabled: Boolean): Props = {
+  def props(
+      persistentActor: ActorRef,
+      mode: Mode,
+      windowSize: Int,
+      maxOldWriters: Int,
+      debugEnabled: Boolean): Props = {
     require(windowSize > 0, "windowSize must be > 0")
     require(maxOldWriters > 0, "maxOldWriters must be > 0")
     require(mode != Disabled, "mode must not be Disabled")
@@ -44,11 +45,12 @@ private[akka] object ReplayFilter {
 /**
  * INTERNAL API
  */
-private[akka] class ReplayFilter(persistentActor: ActorRef,
-                                 mode: ReplayFilter.Mode,
-                                 windowSize: Int,
-                                 maxOldWriters: Int,
-                                 debugEnabled: Boolean)
+private[akka] class ReplayFilter(
+    persistentActor: ActorRef,
+    mode: ReplayFilter.Mode,
+    windowSize: Int,
+    maxOldWriters: Int,
+    debugEnabled: Boolean)
     extends Actor
     with ActorLogging {
   import JournalProtocol._

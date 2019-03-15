@@ -18,28 +18,31 @@ import akka.persistence.query.{ EventEnvelope, Sequence }
  * INTERNAL API
  */
 private[akka] object EventsByPersistenceIdPublisher {
-  def props(persistenceId: String,
-            fromSequenceNr: Long,
-            toSequenceNr: Long,
-            refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int,
-            writeJournalPluginId: String): Props = {
+  def props(
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long,
+      refreshInterval: Option[FiniteDuration],
+      maxBufSize: Int,
+      writeJournalPluginId: String): Props = {
     refreshInterval match {
       case Some(interval) =>
         Props(
-          new LiveEventsByPersistenceIdPublisher(persistenceId,
-                                                 fromSequenceNr,
-                                                 toSequenceNr,
-                                                 interval,
-                                                 maxBufSize,
-                                                 writeJournalPluginId))
+          new LiveEventsByPersistenceIdPublisher(
+            persistenceId,
+            fromSequenceNr,
+            toSequenceNr,
+            interval,
+            maxBufSize,
+            writeJournalPluginId))
       case None =>
         Props(
-          new CurrentEventsByPersistenceIdPublisher(persistenceId,
-                                                    fromSequenceNr,
-                                                    toSequenceNr,
-                                                    maxBufSize,
-                                                    writeJournalPluginId))
+          new CurrentEventsByPersistenceIdPublisher(
+            persistenceId,
+            fromSequenceNr,
+            toSequenceNr,
+            maxBufSize,
+            writeJournalPluginId))
     }
   }
 
@@ -53,10 +56,11 @@ private[akka] object EventsByPersistenceIdPublisher {
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
-private[akka] abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String,
-                                                                    val fromSequenceNr: Long,
-                                                                    val maxBufSize: Int,
-                                                                    val writeJournalPluginId: String)
+private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
+    val persistenceId: String,
+    val fromSequenceNr: Long,
+    val maxBufSize: Int,
+    val writeJournalPluginId: String)
     extends ActorPublisher[EventEnvelope]
     with DeliveryBuffer[EventEnvelope]
     with ActorLogging {
@@ -97,21 +101,23 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(val persiste
 
   def replay(): Unit = {
     val limit = maxBufSize - buf.size
-    log.debug("request replay for persistenceId [{}] from [{}] to [{}] limit [{}]",
-              persistenceId,
-              currSeqNo,
-              toSequenceNr,
-              limit)
+    log.debug(
+      "request replay for persistenceId [{}] from [{}] to [{}] limit [{}]",
+      persistenceId,
+      currSeqNo,
+      toSequenceNr,
+      limit)
     journal ! ReplayMessages(currSeqNo, toSequenceNr, limit, persistenceId, self)
     context.become(replaying(limit))
   }
 
   def replaying(limit: Int): Receive = {
     case ReplayedMessage(p) =>
-      buf :+= EventEnvelope(offset = Sequence(p.sequenceNr),
-                            persistenceId = persistenceId,
-                            sequenceNr = p.sequenceNr,
-                            event = p.payload)
+      buf :+= EventEnvelope(
+        offset = Sequence(p.sequenceNr),
+        persistenceId = persistenceId,
+        sequenceNr = p.sequenceNr,
+        event = p.payload)
       currSeqNo = p.sequenceNr + 1
       deliverBuf()
 
@@ -140,12 +146,13 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(val persiste
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
-private[akka] class LiveEventsByPersistenceIdPublisher(persistenceId: String,
-                                                       fromSequenceNr: Long,
-                                                       override val toSequenceNr: Long,
-                                                       refreshInterval: FiniteDuration,
-                                                       maxBufSize: Int,
-                                                       writeJournalPluginId: String)
+private[akka] class LiveEventsByPersistenceIdPublisher(
+    persistenceId: String,
+    fromSequenceNr: Long,
+    override val toSequenceNr: Long,
+    refreshInterval: FiniteDuration,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
     extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._
 
@@ -178,11 +185,12 @@ private[akka] class LiveEventsByPersistenceIdPublisher(persistenceId: String,
 /**
  * INTERNAL API
  */
-private[akka] class CurrentEventsByPersistenceIdPublisher(persistenceId: String,
-                                                          fromSequenceNr: Long,
-                                                          var toSeqNr: Long,
-                                                          maxBufSize: Int,
-                                                          writeJournalPluginId: String)
+private[akka] class CurrentEventsByPersistenceIdPublisher(
+    persistenceId: String,
+    fromSequenceNr: Long,
+    var toSeqNr: Long,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
     extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._
 

@@ -92,30 +92,33 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "drop tail for internal buffer if it's full in DropTail mode" in assertAllStagesStopped {
-      Await.result(Source(1 to 20)
-                     .delay(1.seconds, DelayOverflowStrategy.dropTail)
-                     .withAttributes(inputBuffer(16, 16))
-                     .grouped(100)
-                     .runWith(Sink.head),
-                   1200.millis) should ===((1 to 15).toList :+ 20)
+      Await.result(
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropTail)
+          .withAttributes(inputBuffer(16, 16))
+          .grouped(100)
+          .runWith(Sink.head),
+        1200.millis) should ===((1 to 15).toList :+ 20)
     }
 
     "drop head for internal buffer if it's full in DropHead mode" in assertAllStagesStopped {
-      Await.result(Source(1 to 20)
-                     .delay(1.seconds, DelayOverflowStrategy.dropHead)
-                     .withAttributes(inputBuffer(16, 16))
-                     .grouped(100)
-                     .runWith(Sink.head),
-                   1200.millis) should ===(5 to 20)
+      Await.result(
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropHead)
+          .withAttributes(inputBuffer(16, 16))
+          .grouped(100)
+          .runWith(Sink.head),
+        1200.millis) should ===(5 to 20)
     }
 
     "clear all for internal buffer if it's full in DropBuffer mode" in assertAllStagesStopped {
-      Await.result(Source(1 to 20)
-                     .delay(1.seconds, DelayOverflowStrategy.dropBuffer)
-                     .withAttributes(inputBuffer(16, 16))
-                     .grouped(100)
-                     .runWith(Sink.head),
-                   1200.millis) should ===(17 to 20)
+      Await.result(
+        Source(1 to 20)
+          .delay(1.seconds, DelayOverflowStrategy.dropBuffer)
+          .withAttributes(inputBuffer(16, 16))
+          .grouped(100)
+          .runWith(Sink.head),
+        1200.millis) should ===(17 to 20)
     }
 
     "pass elements with delay through normally in backpressured mode" in assertAllStagesStopped {

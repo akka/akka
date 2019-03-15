@@ -160,21 +160,21 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
   val cluster = Cluster(system)
 
   def startShardingWithExtractor1(): Unit = {
-    ClusterSharding(system).start(typeName = typeName,
-                                  entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
-                                  settings =
-                                    ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
-                                  extractEntityId = extractEntityId,
-                                  extractShardId = extractShardId1)
+    ClusterSharding(system).start(
+      typeName = typeName,
+      entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
+      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId1)
   }
 
   def startShardingWithExtractor2(sys: ActorSystem, probe: ActorRef): Unit = {
-    ClusterSharding(sys).start(typeName = typeName,
-                               entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
-                               settings =
-                                 ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
-                               extractEntityId = extractEntityId,
-                               extractShardId = extractShardId2)
+    ClusterSharding(sys).start(
+      typeName = typeName,
+      entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
+      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId2)
   }
 
   def region(sys: ActorSystem = system) = ClusterSharding(sys).shardRegion(typeName)

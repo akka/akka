@@ -139,12 +139,13 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  independently whether the client is still attempting to write. This setting is recommended
    *                  for servers, and therefore it is the default setting.
    */
-  def bind(interface: String,
-           port: Int,
-           backlog: Int,
-           options: JIterable[SocketOption],
-           halfClose: Boolean,
-           idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bind(
+      interface: String,
+      port: Int,
+      backlog: Int,
+      options: JIterable[SocketOption],
+      halfClose: Boolean,
+      idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
         .bind(interface, port, backlog, immutableSeq(options), halfClose, idleTimeout)
@@ -186,20 +187,22 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *                  If set to false, the connection will immediately closed once the client closes its write side,
    *                  independently whether the server is still attempting to write.
    */
-  def outgoingConnection(remoteAddress: InetSocketAddress,
-                         localAddress: Optional[InetSocketAddress],
-                         options: JIterable[SocketOption],
-                         halfClose: Boolean,
-                         connectTimeout: Duration,
-                         idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+  def outgoingConnection(
+      remoteAddress: InetSocketAddress,
+      localAddress: Optional[InetSocketAddress],
+      options: JIterable[SocketOption],
+      halfClose: Boolean,
+      connectTimeout: Duration,
+      idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
-        .outgoingConnection(remoteAddress,
-                            localAddress.asScala,
-                            immutableSeq(options),
-                            halfClose,
-                            connectTimeout,
-                            idleTimeout)
+        .outgoingConnection(
+          remoteAddress,
+          localAddress.asScala,
+          immutableSeq(options),
+          halfClose,
+          connectTimeout,
+          idleTimeout)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
   /**
@@ -243,22 +246,24 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
   @ApiMayChange
-  def outgoingTlsConnection(remoteAddress: InetSocketAddress,
-                            sslContext: SSLContext,
-                            negotiateNewSession: NegotiateNewSession,
-                            localAddress: Optional[InetSocketAddress],
-                            options: JIterable[SocketOption],
-                            connectTimeout: Duration,
-                            idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+  def outgoingTlsConnection(
+      remoteAddress: InetSocketAddress,
+      sslContext: SSLContext,
+      negotiateNewSession: NegotiateNewSession,
+      localAddress: Optional[InetSocketAddress],
+      options: JIterable[SocketOption],
+      connectTimeout: Duration,
+      idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
-        .outgoingTlsConnection(remoteAddress,
-                               sslContext,
-                               negotiateNewSession,
-                               localAddress.asScala,
-                               immutableSeq(options),
-                               connectTimeout,
-                               idleTimeout)
+        .outgoingTlsConnection(
+          remoteAddress,
+          sslContext,
+          negotiateNewSession,
+          localAddress.asScala,
+          immutableSeq(options),
+          connectTimeout,
+          idleTimeout)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
   /**
@@ -269,14 +274,15 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
   @ApiMayChange
-  def bindTls(interface: String,
-              port: Int,
-              sslContext: SSLContext,
-              negotiateNewSession: NegotiateNewSession,
-              backlog: Int,
-              options: JIterable[SocketOption],
-              halfClose: Boolean,
-              idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bindTls(
+      interface: String,
+      port: Int,
+      sslContext: SSLContext,
+      negotiateNewSession: NegotiateNewSession,
+      backlog: Int,
+      options: JIterable[SocketOption],
+      halfClose: Boolean,
+      idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
         .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), idleTimeout)
@@ -289,10 +295,11 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * @see [[Tcp.bind()]]
    */
-  def bindTls(interface: String,
-              port: Int,
-              sslContext: SSLContext,
-              negotiateNewSession: NegotiateNewSession): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+  def bindTls(
+      interface: String,
+      port: Int,
+      sslContext: SSLContext,
+      negotiateNewSession: NegotiateNewSession): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
         .bindTls(interface, port, sslContext, negotiateNewSession)

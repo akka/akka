@@ -36,12 +36,13 @@ private[akka] object RoutedActorCell {
 /**
  * INTERNAL API
  */
-private[akka] class RoutedActorCell(_system: ActorSystemImpl,
-                                    _ref: InternalActorRef,
-                                    _routerProps: Props,
-                                    _routerDispatcher: MessageDispatcher,
-                                    val routeeProps: Props,
-                                    _supervisor: InternalActorRef)
+private[akka] class RoutedActorCell(
+    _system: ActorSystemImpl,
+    _ref: InternalActorRef,
+    _routerProps: Props,
+    _routerDispatcher: MessageDispatcher,
+    val routeeProps: Props,
+    _supervisor: InternalActorRef)
     extends ActorCell(_system, _ref, _routerProps, _routerDispatcher, _supervisor) {
 
   private[akka] val routerConfig = _routerProps.routerConfig

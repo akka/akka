@@ -30,17 +30,18 @@ object PersistentActorCompileOnlyTest {
 
     case class ExampleState(events: List[String] = Nil)
 
-    EventSourcedBehavior[MyCommand, MyEvent, ExampleState](persistenceId = PersistenceId("sample-id-1"),
-                                                           emptyState = ExampleState(Nil),
-                                                           commandHandler = CommandHandler.command {
-                                                             case Cmd(data, sender) =>
-                                                               Effect.persist(Evt(data)).thenRun { _ =>
-                                                                 sender ! Ack
-                                                               }
-                                                           },
-                                                           eventHandler = {
-                                                             case (state, Evt(data)) => state.copy(data :: state.events)
-                                                           })
+    EventSourcedBehavior[MyCommand, MyEvent, ExampleState](
+      persistenceId = PersistenceId("sample-id-1"),
+      emptyState = ExampleState(Nil),
+      commandHandler = CommandHandler.command {
+        case Cmd(data, sender) =>
+          Effect.persist(Evt(data)).thenRun { _ =>
+            sender ! Ack
+          }
+      },
+      eventHandler = {
+        case (state, Evt(data)) => state.copy(data :: state.events)
+      })
   }
 
   object RecoveryComplete {
@@ -73,33 +74,27 @@ object PersistentActorCompileOnlyTest {
     val behavior: Behavior[Command] =
       Behaviors.setup(
         ctx =>
-          EventSourcedBehavior[Command, Event, EventsInFlight](persistenceId = PersistenceId("recovery-complete-id"),
-                                                               emptyState = EventsInFlight(0, Map.empty),
-                                                               commandHandler = (state, cmd) =>
-                                                                 cmd match {
-                                                                   case DoSideEffect(data) =>
-                                                                     Effect
-                                                                       .persist(
-                                                                         IntentRecorded(state.nextCorrelationId, data))
-                                                                       .thenRun { _ =>
-                                                                         performSideEffect(ctx.self,
-                                                                                           state.nextCorrelationId,
-                                                                                           data)
-                                                                       }
-                                                                   case AcknowledgeSideEffect(correlationId) =>
-                                                                     Effect.persist(
-                                                                       SideEffectAcknowledged(correlationId))
-                                                                 },
-                                                               eventHandler = (state, evt) =>
-                                                                 evt match {
-                                                                   case IntentRecorded(correlationId, data) =>
-                                                                     EventsInFlight(
-                                                                       nextCorrelationId = correlationId + 1,
-                                                                       dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
-                                                                   case SideEffectAcknowledged(correlationId) =>
-                                                                     state.copy(
-                                                                       dataByCorrelationId = state.dataByCorrelationId - correlationId)
-                                                                 }).receiveSignal {
+          EventSourcedBehavior[Command, Event, EventsInFlight](
+            persistenceId = PersistenceId("recovery-complete-id"),
+            emptyState = EventsInFlight(0, Map.empty),
+            commandHandler = (state, cmd) =>
+              cmd match {
+                case DoSideEffect(data) =>
+                  Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ =>
+                    performSideEffect(ctx.self, state.nextCorrelationId, data)
+                  }
+                case AcknowledgeSideEffect(correlationId) =>
+                  Effect.persist(SideEffectAcknowledged(correlationId))
+              },
+            eventHandler = (state, evt) =>
+              evt match {
+                case IntentRecorded(correlationId, data) =>
+                  EventsInFlight(
+                    nextCorrelationId = correlationId + 1,
+                    dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
+                case SideEffectAcknowledged(correlationId) =>
+                  state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
+              }).receiveSignal {
             case RecoveryCompleted(state: EventsInFlight) =>
               state.dataByCorrelationId.foreach {
                 case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
@@ -164,18 +159,19 @@ object PersistentActorCompileOnlyTest {
 
     case class State(tasksInFlight: List[Task])
 
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("asdf"),
-                                                emptyState = State(Nil),
-                                                commandHandler = CommandHandler.command {
-                                                  case RegisterTask(task) => Effect.persist(TaskRegistered(task))
-                                                  case TaskDone(task)     => Effect.persist(TaskRemoved(task))
-                                                },
-                                                eventHandler = (state, evt) =>
-                                                  evt match {
-                                                    case TaskRegistered(task) => State(task :: state.tasksInFlight)
-                                                    case TaskRemoved(task) =>
-                                                      State(state.tasksInFlight.filter(_ != task))
-                                                  }).snapshotWhen { (state, e, seqNr) =>
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("asdf"),
+      emptyState = State(Nil),
+      commandHandler = CommandHandler.command {
+        case RegisterTask(task) => Effect.persist(TaskRegistered(task))
+        case TaskDone(task)     => Effect.persist(TaskRemoved(task))
+      },
+      eventHandler = (state, evt) =>
+        evt match {
+          case TaskRegistered(task) => State(task :: state.tasksInFlight)
+          case TaskRemoved(task) =>
+            State(state.tasksInFlight.filter(_ != task))
+        }).snapshotWhen { (state, e, seqNr) =>
       state.tasksInFlight.isEmpty
     }
   }
@@ -196,24 +192,25 @@ object PersistentActorCompileOnlyTest {
 
     val behavior: Behavior[Command] = Behaviors.setup(
       ctx =>
-        EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("asdf"),
-                                                    emptyState = State(Nil),
-                                                    commandHandler = (_, cmd) =>
-                                                      cmd match {
-                                                        case RegisterTask(task) =>
-                                                          Effect.persist(TaskRegistered(task)).thenRun { _ =>
-                                                            val child = ctx.spawn[Nothing](worker(task), task)
-                                                            // This assumes *any* termination of the child may trigger a `TaskDone`:
-                                                            ctx.watchWith(child, TaskDone(task))
-                                                          }
-                                                        case TaskDone(task) => Effect.persist(TaskRemoved(task))
-                                                      },
-                                                    eventHandler = (state, evt) =>
-                                                      evt match {
-                                                        case TaskRegistered(task) => State(task :: state.tasksInFlight)
-                                                        case TaskRemoved(task) =>
-                                                          State(state.tasksInFlight.filter(_ != task))
-                                                      }))
+        EventSourcedBehavior[Command, Event, State](
+          persistenceId = PersistenceId("asdf"),
+          emptyState = State(Nil),
+          commandHandler = (_, cmd) =>
+            cmd match {
+              case RegisterTask(task) =>
+                Effect.persist(TaskRegistered(task)).thenRun { _ =>
+                  val child = ctx.spawn[Nothing](worker(task), task)
+                  // This assumes *any* termination of the child may trigger a `TaskDone`:
+                  ctx.watchWith(child, TaskDone(task))
+                }
+              case TaskDone(task) => Effect.persist(TaskRemoved(task))
+            },
+          eventHandler = (state, evt) =>
+            evt match {
+              case TaskRegistered(task) => State(task :: state.tasksInFlight)
+              case TaskRemoved(task) =>
+                State(state.tasksInFlight.filter(_ != task))
+            }))
 
   }
 
@@ -257,40 +254,41 @@ object PersistentActorCompileOnlyTest {
       def addItem(id: Id, self: ActorRef[Command]) =
         Effect.persist[Event, List[Id]](ItemAdded(id)).thenRun(_ => metadataRegistry ! GetMetaData(id, adapt))
 
-      EventSourcedBehavior[Command, Event, List[Id]](persistenceId = PersistenceId("basket-1"),
-                                                     emptyState = Nil,
-                                                     commandHandler = { (state, cmd) =>
-                                                       if (isFullyHydrated(basket, state))
-                                                         cmd match {
-                                                           case AddItem(id)    => addItem(id, ctx.self)
-                                                           case RemoveItem(id) => Effect.persist(ItemRemoved(id))
-                                                           case GotMetaData(data) =>
-                                                             basket = basket.updatedWith(data)
-                                                             Effect.none
-                                                           case GetTotalPrice(sender) =>
-                                                             sender ! basket.items.map(_.price).sum
-                                                             Effect.none
-                                                         } else
-                                                         cmd match {
-                                                           case AddItem(id)    => addItem(id, ctx.self)
-                                                           case RemoveItem(id) => Effect.persist(ItemRemoved(id))
-                                                           case GotMetaData(data) =>
-                                                             basket = basket.updatedWith(data)
-                                                             if (isFullyHydrated(basket, state)) {
-                                                               stash.foreach(ctx.self ! _)
-                                                               stash = Nil
-                                                             }
-                                                             Effect.none
-                                                           case cmd: GetTotalPrice =>
-                                                             stash :+= cmd
-                                                             Effect.none
-                                                         }
-                                                     },
-                                                     eventHandler = (state, evt) =>
-                                                       evt match {
-                                                         case ItemAdded(id)   => id +: state
-                                                         case ItemRemoved(id) => state.filter(_ != id)
-                                                       }).receiveSignal {
+      EventSourcedBehavior[Command, Event, List[Id]](
+        persistenceId = PersistenceId("basket-1"),
+        emptyState = Nil,
+        commandHandler = { (state, cmd) =>
+          if (isFullyHydrated(basket, state))
+            cmd match {
+              case AddItem(id)    => addItem(id, ctx.self)
+              case RemoveItem(id) => Effect.persist(ItemRemoved(id))
+              case GotMetaData(data) =>
+                basket = basket.updatedWith(data)
+                Effect.none
+              case GetTotalPrice(sender) =>
+                sender ! basket.items.map(_.price).sum
+                Effect.none
+            } else
+            cmd match {
+              case AddItem(id)    => addItem(id, ctx.self)
+              case RemoveItem(id) => Effect.persist(ItemRemoved(id))
+              case GotMetaData(data) =>
+                basket = basket.updatedWith(data)
+                if (isFullyHydrated(basket, state)) {
+                  stash.foreach(ctx.self ! _)
+                  stash = Nil
+                }
+                Effect.none
+              case cmd: GetTotalPrice =>
+                stash :+= cmd
+                Effect.none
+            }
+        },
+        eventHandler = (state, evt) =>
+          evt match {
+            case ItemAdded(id)   => id +: state
+            case ItemRemoved(id) => state.filter(_ != id)
+          }).receiveSignal {
         case RecoveryCompleted(state: List[Id]) =>
           state.foreach(id => metadataRegistry ! GetMetaData(id, adapt))
       }
@@ -350,10 +348,11 @@ object PersistentActorCompileOnlyTest {
       case (state, Remembered(_)) => state
     }
 
-    EventSourcedBehavior[Command, Event, Mood](persistenceId = PersistenceId("myPersistenceId"),
-                                               emptyState = Sad,
-                                               commandHandler,
-                                               eventHandler)
+    EventSourcedBehavior[Command, Event, Mood](
+      persistenceId = PersistenceId("myPersistenceId"),
+      emptyState = Sad,
+      commandHandler,
+      eventHandler)
 
   }
 
@@ -375,10 +374,11 @@ object PersistentActorCompileOnlyTest {
       case (state, Done) => state
     }
 
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("myPersistenceId"),
-                                                emptyState = new State,
-                                                commandHandler,
-                                                eventHandler)
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("myPersistenceId"),
+      emptyState = new State,
+      commandHandler,
+      eventHandler)
   }
 
   object AndThenPatternMatch {
@@ -386,18 +386,19 @@ object PersistentActorCompileOnlyTest {
     class First extends State
     class Second extends State
 
-    EventSourcedBehavior[String, String, State](persistenceId = PersistenceId("myPersistenceId"),
-                                                emptyState = new First,
-                                                commandHandler = CommandHandler.command { cmd =>
-                                                  Effect.persist(cmd).thenRun {
-                                                    case _: First  => println("first")
-                                                    case _: Second => println("second")
-                                                  }
-                                                },
-                                                eventHandler = {
-                                                  case (_: First, _) => new Second
-                                                  case (state, _)    => state
-                                                })
+    EventSourcedBehavior[String, String, State](
+      persistenceId = PersistenceId("myPersistenceId"),
+      emptyState = new First,
+      commandHandler = CommandHandler.command { cmd =>
+        Effect.persist(cmd).thenRun {
+          case _: First  => println("first")
+          case _: Second => println("second")
+        }
+      },
+      eventHandler = {
+        case (_: First, _) => new Second
+        case (state, _)    => state
+      })
 
   }
 

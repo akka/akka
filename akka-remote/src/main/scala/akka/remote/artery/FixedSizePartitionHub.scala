@@ -13,12 +13,11 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue
  */
 @InternalApi private[akka] class FixedSizePartitionHub[T](partitioner: T => Int, lanes: Int, bufferSize: Int)
     extends PartitionHub[T](
-                            // during tear down or restart it's possible that some streams have been removed
-                            // and then we must drop elements (return -1)
-                            () =>
-                              (info, elem) => if (info.size < lanes) -1 else info.consumerIdByIdx(partitioner(elem)),
-                            lanes,
-                            bufferSize - 1) {
+      // during tear down or restart it's possible that some streams have been removed
+      // and then we must drop elements (return -1)
+      () => (info, elem) => if (info.size < lanes) -1 else info.consumerIdByIdx(partitioner(elem)),
+      lanes,
+      bufferSize - 1) {
   // -1 because of the Completed token
 
   override def createQueue(): PartitionHub.Internal.PartitionQueue =

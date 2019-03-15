@@ -180,15 +180,17 @@ object GraphStageLogic {
    *
    * @param name leave empty to use plain auto generated names
    */
-  final class StageActor(materializer: ActorMaterializer,
-                         getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-                         initialReceive: StageActorRef.Receive,
-                         name: String) {
+  final class StageActor(
+      materializer: ActorMaterializer,
+      getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
+      initialReceive: StageActorRef.Receive,
+      name: String) {
 
     // not really needed, but let's keep MiMa happy
-    def this(materializer: akka.stream.ActorMaterializer,
-             getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
-             initialReceive: StageActorRef.Receive) {
+    def this(
+        materializer: akka.stream.ActorMaterializer,
+        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
+        initialReceive: StageActorRef.Receive) {
       this(materializer, getAsyncCallback, initialReceive, "")
     }
 
@@ -693,10 +695,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * for the given inlet if suspension is needed and reinstalls the current
    * handler upon receiving the last `onPush()` signal (before invoking the `andThen` function).
    */
-  final protected def readN[T](in: Inlet[T],
-                               n: Int,
-                               andThen: Procedure[java.util.List[T]],
-                               onClose: Procedure[java.util.List[T]]): Unit = {
+  final protected def readN[T](
+      in: Inlet[T],
+      n: Int,
+      andThen: Procedure[java.util.List[T]],
+      onClose: Procedure[java.util.List[T]]): Unit = {
     //FIXME `onClose` is a poor name for `onComplete` rename this at the earliest possible opportunity
     import collection.JavaConverters._
     readN(in, n)(seq => andThen(seq.asJava), seq => onClose(seq.asJava))
@@ -751,8 +754,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Caution: for n == 1 andThen is called after resetting the handler, for
    * other values it is called without resetting the handler. n MUST be positive.
    */
-  private final class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(andThen: T => Unit,
-                                                                                            onComplete: () => Unit)
+  private final class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(
+      andThen: T => Unit,
+      onComplete: () => Unit)
       extends InHandler {
     require(n > 0, "number of elements to read must be positive!")
 
@@ -1002,11 +1006,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * completion or failure of the given inlet shall lead to operator termination or not.
    * `doPull` instructs to perform one initial pull on the `from` port.
    */
-  final protected def passAlong[Out, In <: Out](from: Inlet[In],
-                                                to: Outlet[Out],
-                                                doFinish: Boolean = true,
-                                                doFail: Boolean = true,
-                                                doPull: Boolean = false): Unit = {
+  final protected def passAlong[Out, In <: Out](
+      from: Inlet[In],
+      to: Outlet[Out],
+      doFinish: Boolean = true,
+      doFail: Boolean = true,
+      doPull: Boolean = false): Unit = {
     class PassAlongHandler extends InHandler with (() => Unit) {
       override def apply(): Unit = tryPull(from)
 
@@ -1521,9 +1526,10 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    * Any existing timer with the same key will automatically be canceled before
    * adding the new timer.
    */
-  final protected def schedulePeriodicallyWithInitialDelay(timerKey: Any,
-                                                           initialDelay: FiniteDuration,
-                                                           interval: FiniteDuration): Unit = {
+  final protected def schedulePeriodicallyWithInitialDelay(
+      timerKey: Any,
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
     val task = interpreter.materializer.schedulePeriodically(initialDelay, interval, new Runnable {
@@ -1538,9 +1544,10 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    * Any existing timer with the same key will automatically be canceled before
    * adding the new timer.
    */
-  final protected def schedulePeriodicallyWithInitialDelay(timerKey: Any,
-                                                           initialDelay: java.time.Duration,
-                                                           interval: java.time.Duration): Unit = {
+  final protected def schedulePeriodicallyWithInitialDelay(
+      timerKey: Any,
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration): Unit = {
     import akka.util.JavaDurationConverters._
     schedulePeriodicallyWithInitialDelay(timerKey, initialDelay.asScala, interval.asScala)
   }

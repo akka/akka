@@ -86,8 +86,9 @@ class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with ST
 
     "stop if re-establish fails for too long time" in within(20.seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
-                               "client1")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
         enterBarrier("was-in-contact")

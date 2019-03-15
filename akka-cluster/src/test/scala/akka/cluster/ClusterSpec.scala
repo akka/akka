@@ -114,8 +114,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "allow join and leave with local address" in {
-      val sys2 = ActorSystem("ClusterSpec2",
-                             ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -149,8 +150,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "leave via CoordinatedShutdown.run" in {
-      val sys2 = ActorSystem("ClusterSpec2",
-                             ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -178,8 +180,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via CoordinatedShutdown.run when a stream involving StreamRefs is running" in {
-      val sys2 = ActorSystem("ClusterSpec2",
-                             ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -215,8 +218,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "leave via CoordinatedShutdown.run when member status is Joining" in {
-      val sys2 = ActorSystem("ClusterSpec2",
-                             ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -245,8 +249,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via leave (CoordinatedShutdown)" in {
-      val sys2 = ActorSystem("ClusterSpec2",
-                             ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -278,8 +283,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via down (CoordinatedShutdown)" in {
-      val sys3 = ActorSystem("ClusterSpec3",
-                             ConfigFactory.parseString("""
+      val sys3 = ActorSystem(
+        "ClusterSpec3",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0

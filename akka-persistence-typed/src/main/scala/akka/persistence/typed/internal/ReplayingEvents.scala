@@ -39,11 +39,12 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 private[akka] object ReplayingEvents {
 
   @InternalApi
-  private[akka] final case class ReplayingState[State](seqNr: Long,
-                                                       state: State,
-                                                       eventSeenInInterval: Boolean,
-                                                       toSeqNr: Long,
-                                                       receivedPoisonPill: Boolean)
+  private[akka] final case class ReplayingState[State](
+      seqNr: Long,
+      state: State,
+      eventSeenInInterval: Boolean,
+      toSeqNr: Long,
+      receivedPoisonPill: Boolean)
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { ctx =>
@@ -55,8 +56,9 @@ private[akka] object ReplayingEvents {
 }
 
 @InternalApi
-private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S],
-                                                   var state: ReplayingState[S])
+private[akka] final class ReplayingEvents[C, E, S](
+    override val setup: BehaviorSetup[C, E, S],
+    var state: ReplayingState[S])
     extends AbstractBehavior[InternalProtocol]
     with JournalInteractions[C, E, S]
     with StashManagement[C, E, S]
@@ -90,9 +92,10 @@ private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorS
           val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
 
           try {
-            state = state.copy(seqNr = repr.sequenceNr,
-                               state = setup.eventHandler(state.state, event),
-                               eventSeenInInterval = true)
+            state = state.copy(
+              seqNr = repr.sequenceNr,
+              state = setup.eventHandler(state.state, event),
+              eventSeenInInterval = true)
             this
           } catch {
             case NonFatal(ex) => onRecoveryFailure(ex, repr.sequenceNr, Some(event))
@@ -156,9 +159,10 @@ private[akka] final class ReplayingEvents[C, E, S](override val setup: BehaviorS
    * @param cause failure cause.
    * @param message the message that was being processed when the exception was thrown
    */
-  protected def onRecoveryFailure(cause: Throwable,
-                                  sequenceNr: Long,
-                                  message: Option[Any]): Behavior[InternalProtocol] = {
+  protected def onRecoveryFailure(
+      cause: Throwable,
+      sequenceNr: Long,
+      message: Option[Any]): Behavior[InternalProtocol] = {
     try {
       setup.onSignal(RecoveryFailed(cause))
     } catch {

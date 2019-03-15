@@ -124,8 +124,9 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   def map[Out2](f: function.Function[Out, Out2]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.map(f.apply))
 
-  def mapAsync[Out2](parallelism: Int,
-                     f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
+  def mapAsync[Out2](
+      parallelism: Int,
+      f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
 
   /**
@@ -220,16 +221,18 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],
    * concatenating the processing steps of both.
    */
-  def toMat[Mat2, Mat3](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2],
-                        combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
+  def toMat[Mat2, Mat3](
+      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2],
+      combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
     RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) => Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]] and run it.
    * The returned value is the materialized value of the `Sink`.
    */
-  def runWith[M](sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],
-                 materializer: Materializer): M =
+  def runWith[M](
+      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],
+      materializer: Materializer): M =
     toMat(sink, Keep.right[Mat, M]).run(materializer)
 
   def asScala: scaladsl.SourceWithContext[Out, Ctx, Mat] = delegate

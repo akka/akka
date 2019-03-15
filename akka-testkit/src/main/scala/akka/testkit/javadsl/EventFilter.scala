@@ -12,8 +12,9 @@ import akka.testkit.{ DebugFilter, ErrorFilter, InfoFilter, WarningFilter }
 
 class EventFilter(clazz: Class[_], system: ActorSystem) {
 
-  require(classOf[Throwable].isAssignableFrom(clazz) || classOf[Logging.LogEvent].isAssignableFrom(clazz),
-          "supplied class must either be LogEvent or Throwable")
+  require(
+    classOf[Throwable].isAssignableFrom(clazz) || classOf[Logging.LogEvent].isAssignableFrom(clazz),
+    "supplied class must either be LogEvent or Throwable")
 
   private val _clazz: Class[_ <: Logging.LogEvent] =
     if (classOf[Throwable].isAssignableFrom(clazz))

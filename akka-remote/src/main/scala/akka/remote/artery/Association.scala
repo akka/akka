@@ -107,9 +107,10 @@ private[remote] object Association {
   case object OutboundStreamStopIdleSignal extends RuntimeException("") with StopSignal with NoStackTrace
   case object OutboundStreamStopQuarantinedSignal extends RuntimeException("") with StopSignal with NoStackTrace
 
-  final case class OutboundStreamMatValues(streamKillSwitch: OptionVal[SharedKillSwitch],
-                                           completed: Future[Done],
-                                           stopping: OptionVal[StopSignal])
+  final case class OutboundStreamMatValues(
+      streamKillSwitch: OptionVal[SharedKillSwitch],
+      completed: Future[Done],
+      stopping: OptionVal[StopSignal])
 }
 
 /**
@@ -118,14 +119,15 @@ private[remote] object Association {
  * Thread-safe, mutable holder for association state. Main entry point for remote destined message to a specific
  * remote address.
  */
-private[remote] class Association(val transport: ArteryTransport,
-                                  val materializer: Materializer,
-                                  val controlMaterializer: Materializer,
-                                  override val remoteAddress: Address,
-                                  override val controlSubject: ControlMessageSubject,
-                                  largeMessageDestinations: WildcardIndex[NotUsed],
-                                  priorityMessageDestinations: WildcardIndex[NotUsed],
-                                  outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
+private[remote] class Association(
+    val transport: ArteryTransport,
+    val materializer: Materializer,
+    val controlMaterializer: Materializer,
+    override val remoteAddress: Address,
+    override val controlSubject: ControlMessageSubject,
+    largeMessageDestinations: WildcardIndex[NotUsed],
+    priorityMessageDestinations: WildcardIndex[NotUsed],
+    outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
     extends AbstractAssociation
     with OutboundContext {
   import Association._
@@ -260,8 +262,9 @@ private[remote] class Association(val transport: ArteryTransport,
   }
 
   def completeHandshake(peer: UniqueAddress): Future[Done] = {
-    require(remoteAddress == peer.address,
-            s"wrong remote address in completeHandshake, got ${peer.address}, expected $remoteAddress")
+    require(
+      remoteAddress == peer.address,
+      s"wrong remote address in completeHandshake, got ${peer.address}, expected $remoteAddress")
     val current = associationState
 
     current.uniqueRemoteAddressValue() match {
@@ -284,11 +287,12 @@ private[remote] class Association(val transport: ArteryTransport,
                 current.uniqueRemoteAddressValue() match {
                   case Some(old) =>
                     cancelStopQuarantinedTimer()
-                    log.debug("Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
-                              newState.incarnation,
-                              peer.address,
-                              peer.uid,
-                              old.uid)
+                    log.debug(
+                      "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
+                      newState.incarnation,
+                      peer.address,
+                      peer.uid,
+                      old.uid)
                     clearInboundCompression(old.uid)
                   case None =>
                   // Failed, nothing to do
@@ -334,11 +338,12 @@ private[remote] class Association(val transport: ArteryTransport,
         val reason =
           if (removed) "removed unused quarantined association"
           else s"overflow of send queue, size [$qSize]"
-        log.debug("Dropping message [{}] from [{}] to [{}] due to {}",
-                  Logging.messageClassName(message),
-                  sender.getOrElse(deadletters),
-                  recipient.getOrElse(recipient),
-                  reason)
+        log.debug(
+          "Dropping message [{}] from [{}] to [{}] due to {}",
+          Logging.messageClassName(message),
+          sender.getOrElse(deadletters),
+          recipient.getOrElse(recipient),
+          reason)
       }
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
@@ -351,9 +356,10 @@ private[remote] class Association(val transport: ArteryTransport,
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || messageIsClearSystemMessageDelivery) {
       if (quarantined && !messageIsClearSystemMessageDelivery) {
-        log.debug("Quarantine piercing attempt with message [{}] to [{}]",
-                  Logging.messageClassName(message),
-                  recipient.getOrElse(""))
+        log.debug(
+          "Quarantine piercing attempt with message [{}] to [{}]",
+          Logging.messageClassName(message),
+          recipient.getOrElse(""))
         setupStopQuarantinedTimer()
       }
       try {
@@ -387,11 +393,12 @@ private[remote] class Association(val transport: ArteryTransport,
         case ShuttingDown => // silence it
       }
     } else if (log.isDebugEnabled)
-      log.debug("Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]",
-                Logging.messageClassName(message),
-                sender.getOrElse(deadletters),
-                recipient.getOrElse(recipient),
-                remoteAddress)
+      log.debug(
+        "Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]",
+        Logging.messageClassName(message),
+        sender.getOrElse(deadletters),
+        recipient.getOrElse(recipient),
+        remoteAddress)
   }
 
   private def selectQueue(recipient: OptionVal[RemoteActorRef]): Int = {
@@ -472,11 +479,12 @@ private[remote] class Association(val transport: ArteryTransport,
               if (swapState(current, newState)) {
                 // quarantine state change was performed
                 if (harmless) {
-                  log.info("Association to [{}] having UID [{}] has been stopped. All " +
-                           "messages to this UID will be delivered to dead letters. Reason: {}",
-                           remoteAddress,
-                           u,
-                           reason)
+                  log.info(
+                    "Association to [{}] having UID [{}] has been stopped. All " +
+                    "messages to this UID will be delivered to dead letters. Reason: {}",
+                    remoteAddress,
+                    u,
+                    reason)
                   transport.system.eventStream
                     .publish(GracefulShutdownQuarantinedEvent(UniqueAddress(remoteAddress, u), reason))
                 } else {
@@ -704,11 +712,12 @@ private[remote] class Association(val transport: ArteryTransport,
 
     updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
     setupIdleTimer()
-    attachOutboundStreamRestart("Outbound control stream",
-                                ControlQueueIndex,
-                                controlQueueSize,
-                                completed,
-                                () => runOutboundControlStream())
+    attachOutboundStreamRestart(
+      "Outbound control stream",
+      ControlQueueIndex,
+      controlQueueSize,
+      completed,
+      () => runOutboundControlStream())
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
@@ -748,11 +757,12 @@ private[remote] class Association(val transport: ArteryTransport,
       outboundCompressionAccess = Vector(changeCompression)
 
       updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
-      attachOutboundStreamRestart("Outbound message stream",
-                                  OrdinaryQueueIndex,
-                                  queueSize,
-                                  completed,
-                                  () => runOutboundOrdinaryMessagesStream())
+      attachOutboundStreamRestart(
+        "Outbound message stream",
+        OrdinaryQueueIndex,
+        queueSize,
+        completed,
+        () => runOutboundOrdinaryMessagesStream())
 
     } else {
       log.debug("Starting outbound message stream to [{}] with [{}] lanes", remoteAddress, outboundLanes)
@@ -811,11 +821,12 @@ private[remote] class Association(val transport: ArteryTransport,
 
       outboundCompressionAccess = compressionAccessValues
 
-      attachOutboundStreamRestart("Outbound message stream",
-                                  OrdinaryQueueIndex,
-                                  queueSize,
-                                  allCompleted,
-                                  () => runOutboundOrdinaryMessagesStream())
+      attachOutboundStreamRestart(
+        "Outbound message stream",
+        OrdinaryQueueIndex,
+        queueSize,
+        allCompleted,
+        () => runOutboundOrdinaryMessagesStream())
     }
   }
 
@@ -841,18 +852,20 @@ private[remote] class Association(val transport: ArteryTransport,
     queuesVisibility = true // volatile write for visibility of the queues array
 
     updateStreamMatValues(LargeQueueIndex, streamKillSwitch, completed)
-    attachOutboundStreamRestart("Outbound large message stream",
-                                LargeQueueIndex,
-                                largeQueueSize,
-                                completed,
-                                () => runOutboundLargeMessagesStream())
+    attachOutboundStreamRestart(
+      "Outbound large message stream",
+      LargeQueueIndex,
+      largeQueueSize,
+      completed,
+      () => runOutboundLargeMessagesStream())
   }
 
-  private def attachOutboundStreamRestart(streamName: String,
-                                          queueIndex: Int,
-                                          queueCapacity: Int,
-                                          streamCompleted: Future[Done],
-                                          restart: () => Unit): Unit = {
+  private def attachOutboundStreamRestart(
+      streamName: String,
+      queueIndex: Int,
+      queueCapacity: Int,
+      streamCompleted: Future[Done],
+      restart: () => Unit): Unit = {
 
     def lazyRestart(): Unit = {
       flightRecorder.loFreq(Transport_RestartOutbound, s"$remoteAddress - $streamName")
@@ -926,29 +939,32 @@ private[remote] class Association(val transport: ArteryTransport,
           log.debug("{} to [{}] was idle and stopped. It will be restarted if used again.", streamName, remoteAddress)
           lazyRestart()
         } else if (stoppedQuarantined) {
-          log.debug("{} to [{}] was quarantined and stopped. It will be restarted if used again.",
-                    streamName,
-                    remoteAddress)
+          log.debug(
+            "{} to [{}] was quarantined and stopped. It will be restarted if used again.",
+            streamName,
+            remoteAddress)
           lazyRestart()
         } else if (bypassRestartCounter || restartCounter.restart()) {
           log.error(cause, "{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
-          log.error(cause,
-                    s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
-                    streamName,
-                    remoteAddress,
-                    advancedSettings.OutboundMaxRestarts,
-                    advancedSettings.OutboundRestartTimeout.toSeconds)
+          log.error(
+            cause,
+            s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
+            streamName,
+            remoteAddress,
+            advancedSettings.OutboundMaxRestarts,
+            advancedSettings.OutboundRestartTimeout.toSeconds)
           cancelAllTimers()
           transport.system.terminate()
         }
     }
   }
 
-  private def updateStreamMatValues(streamId: Int,
-                                    streamKillSwitch: SharedKillSwitch,
-                                    completed: Future[Done]): Unit = {
+  private def updateStreamMatValues(
+      streamId: Int,
+      streamKillSwitch: SharedKillSwitch,
+      completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
     updateStreamMatValues(streamId, OutboundStreamMatValues(OptionVal.Some(streamKillSwitch), completed.recover {
       case _ => Done

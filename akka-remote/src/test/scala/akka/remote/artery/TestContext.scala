@@ -20,10 +20,11 @@ import akka.util.OptionVal
 import akka.dispatch.ExecutionContexts
 import com.typesafe.config.ConfigFactory
 
-private[remote] class TestInboundContext(override val localAddress: UniqueAddress,
-                                         val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
-                                         val controlProbe: Option[ActorRef] = None,
-                                         val replyDropRate: Double = 0.0)
+private[remote] class TestInboundContext(
+    override val localAddress: UniqueAddress,
+    val controlSubject: TestControlMessageSubject = new TestControlMessageSubject,
+    val controlProbe: Option[ActorRef] = None,
+    val replyDropRate: Double = 0.0)
     extends InboundContext {
 
   private val associationsByAddress = new ConcurrentHashMap[Address, OutboundContext]()
@@ -64,10 +65,11 @@ private[remote] class TestInboundContext(override val localAddress: UniqueAddres
     ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
 }
 
-private[remote] class TestOutboundContext(override val localAddress: UniqueAddress,
-                                          override val remoteAddress: Address,
-                                          override val controlSubject: TestControlMessageSubject,
-                                          val controlProbe: Option[ActorRef] = None)
+private[remote] class TestOutboundContext(
+    override val localAddress: UniqueAddress,
+    override val remoteAddress: Address,
+    override val controlSubject: TestControlMessageSubject,
+    val controlProbe: Option[ActorRef] = None)
     extends OutboundContext {
 
   // access to this is synchronized (it's a test utility)
@@ -124,9 +126,10 @@ private[remote] class TestControlMessageSubject extends ControlMessageSubject {
 
 }
 
-private[remote] class ManualReplyInboundContext(replyProbe: ActorRef,
-                                                localAddress: UniqueAddress,
-                                                controlSubject: TestControlMessageSubject)
+private[remote] class ManualReplyInboundContext(
+    replyProbe: ActorRef,
+    localAddress: UniqueAddress,
+    controlSubject: TestControlMessageSubject)
     extends TestInboundContext(localAddress, controlSubject) {
 
   private var lastReply: Option[(Address, ControlMessage)] = None

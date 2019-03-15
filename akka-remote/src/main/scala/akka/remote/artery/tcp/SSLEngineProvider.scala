@@ -68,8 +68,9 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
-    this(system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
-         Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
+    this(
+      system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
+      Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
   val SSLKeyStore: String = config.getString("key-store")
   val SSLTrustStore: String = config.getString("trust-store")
@@ -87,11 +88,12 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     if (HostnameVerification)
       log.debug("TLS/SSL hostname verification is enabled.")
     else
-      log.warning(LogMarker.Security,
-                  "TLS/SSL hostname verification is disabled. " +
-                  "Please configure akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on " +
-                  "and ensure the X.509 certificate on the host is correct to remove this warning. " +
-                  "See Akka reference documentation for more information.")
+      log.warning(
+        LogMarker.Security,
+        "TLS/SSL hostname verification is disabled. " +
+        "Please configure akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on " +
+        "and ensure the X.509 certificate on the host is correct to remove this warning. " +
+        "See Akka reference documentation for more information.")
 
     constructContext()
   }
@@ -233,9 +235,10 @@ object SSLEngineProviderSetup {
         new SecureRandom
 
       case unknown =>
-        log.warning(LogMarker.Security,
-                    "Unknown SSL random number generator [{}] falling back to SecureRandom",
-                    unknown)
+        log.warning(
+          LogMarker.Security,
+          "Unknown SSL random number generator [{}] falling back to SecureRandom",
+          unknown)
         new SecureRandom
     }
     rng.nextInt() // prevent stall on first access

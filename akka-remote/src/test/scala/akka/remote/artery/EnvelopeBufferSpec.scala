@@ -16,9 +16,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
   import CompressionTestUtils._
 
   object TestCompressor extends InboundCompressions {
-    val refToIdx: Map[ActorRef, Int] = Map(minimalRef("compressable0") -> 0,
-                                           minimalRef("compressable1") -> 1,
-                                           minimalRef("reallylongcompressablestring") -> 2)
+    val refToIdx: Map[ActorRef, Int] = Map(
+      minimalRef("compressable0") -> 0,
+      minimalRef("compressable1") -> 1,
+      minimalRef("reallylongcompressablestring") -> 2)
     val idxToRef: Map[Int, ActorRef] = refToIdx.map(_.swap)
 
     val serializerToIdx = Map("serializer0" -> 0, "serializer1" -> 1)

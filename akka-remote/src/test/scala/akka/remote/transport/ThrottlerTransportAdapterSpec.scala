@@ -145,9 +145,10 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
         EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
         EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     systemB.eventStream.publish(
-      TestEvent.Mute(EventFilter[EndpointException](),
-                     EventFilter.error(start = "AssociationError"),
-                     EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def afterTermination(): Unit = shutdown(systemB)

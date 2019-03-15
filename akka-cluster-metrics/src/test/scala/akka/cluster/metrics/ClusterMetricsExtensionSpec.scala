@@ -56,24 +56,26 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with
 
       val history = metricsView.metricsHistory.reverse.map { _.head }
 
-      val expected = List((0.700, 0.000, 0.000),
-                          (0.700, 0.018, 0.007),
-                          (0.700, 0.051, 0.020),
-                          (0.700, 0.096, 0.038),
-                          (0.700, 0.151, 0.060),
-                          (0.700, 0.214, 0.085),
-                          (0.700, 0.266, 0.106),
-                          (0.700, 0.309, 0.123),
-                          (0.700, 0.343, 0.137),
-                          (0.700, 0.372, 0.148))
+      val expected = List(
+        (0.700, 0.000, 0.000),
+        (0.700, 0.018, 0.007),
+        (0.700, 0.051, 0.020),
+        (0.700, 0.096, 0.038),
+        (0.700, 0.151, 0.060),
+        (0.700, 0.214, 0.085),
+        (0.700, 0.266, 0.106),
+        (0.700, 0.309, 0.123),
+        (0.700, 0.343, 0.137),
+        (0.700, 0.372, 0.148))
 
       expected.size should ===(sampleCount)
 
       history.zip(expected).foreach {
         case (mockMetrics, expectedData) =>
           (mockMetrics, expectedData) match {
-            case (Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
-                  (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) =>
+            case (
+                Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
+                (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) =>
               loadAverageMock.get should ===(loadAverageEwma +- epsilon)
               cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
               cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)

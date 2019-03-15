@@ -89,9 +89,10 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
     }
   }
 
-  private def schedule(initialDelay: FiniteDuration,
-                       interval: Option[FiniteDuration],
-                       runnable: Runnable): Cancellable = {
+  private def schedule(
+      initialDelay: FiniteDuration,
+      interval: Option[FiniteDuration],
+      runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
     val item = Item(firstTime, interval, runnable)
     log.debug("Scheduled item for {}: {}", firstTime, item)

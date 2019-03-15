@@ -28,8 +28,9 @@ import akka.testkit.TestActors
 
 class ReplicatedDataSerializerSpec
     extends TestKit(
-      ActorSystem("ReplicatedDataSerializerSpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "ReplicatedDataSerializerSpec",
+        ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
@@ -202,10 +203,12 @@ class ReplicatedDataSerializerSpec
       checkSerialization(GCounter().increment(address1, 3))
       checkSerialization(GCounter().increment(address1, 2).increment(address2, 5))
 
-      checkSameContent(GCounter().increment(address1, 2).increment(address2, 5),
-                       GCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
-      checkSameContent(GCounter().increment(address1, 2).increment(address3, 5),
-                       GCounter().increment(address3, 5).increment(address1, 2))
+      checkSameContent(
+        GCounter().increment(address1, 2).increment(address2, 5),
+        GCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
+      checkSameContent(
+        GCounter().increment(address1, 2).increment(address3, 5),
+        GCounter().increment(address3, 5).increment(address1, 2))
     }
 
     "serialize PNCounter" in {
@@ -215,12 +218,15 @@ class ReplicatedDataSerializerSpec
       checkSerialization(PNCounter().increment(address1, 2).increment(address2, 5))
       checkSerialization(PNCounter().increment(address1, 2).increment(address2, 5).decrement(address1, 1))
 
-      checkSameContent(PNCounter().increment(address1, 2).increment(address2, 5),
-                       PNCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
-      checkSameContent(PNCounter().increment(address1, 2).increment(address3, 5),
-                       PNCounter().increment(address3, 5).increment(address1, 2))
-      checkSameContent(PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
-                       PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
+      checkSameContent(
+        PNCounter().increment(address1, 2).increment(address2, 5),
+        PNCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
+      checkSameContent(
+        PNCounter().increment(address1, 2).increment(address3, 5),
+        PNCounter().increment(address3, 5).increment(address1, 2))
+      checkSameContent(
+        PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
+        PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
     }
 
     "serialize ORMap" in {

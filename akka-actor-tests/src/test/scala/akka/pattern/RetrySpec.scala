@@ -27,13 +27,14 @@ class RetrySpec extends AkkaSpec with RetrySupport {
 
     "run a successful Future only once" in {
       @volatile var counter = 0
-      val retried = retry(() =>
-                            Future.successful({
-                              counter += 1
-                              counter
-                            }),
-                          5,
-                          1 second)
+      val retried = retry(
+        () =>
+          Future.successful({
+            counter += 1
+            counter
+          }),
+        5,
+        1 second)
 
       within(3 seconds) {
         Await.result(retried, remaining) should ===(1)

@@ -29,14 +29,16 @@ private[akka] final case class StreamTestDefaultMailbox()
     owner match {
       case Some(r: ActorRefWithCell) =>
         val actorClass = r.underlying.props.actorClass
-        assert(actorClass != classOf[Actor],
-               s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")
+        assert(
+          actorClass != classOf[Actor],
+          s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")
         // StreamTcpManager is allowed to use another dispatcher
-        assert(!actorClass.getName.startsWith("akka.stream."),
-               s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
-               "Did you forget to define `props.withDispatcher` when creating the actor? " +
-               "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
-               """dispatcher using `ActorMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
+        assert(
+          !actorClass.getName.startsWith("akka.stream."),
+          s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
+          "Did you forget to define `props.withDispatcher` when creating the actor? " +
+          "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
+          """dispatcher using `ActorMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
       case _ =>
     }
     new UnboundedMailbox.MessageQueue

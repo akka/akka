@@ -130,11 +130,12 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
   val cluster = Cluster(system)
 
   def startSharding(sys: ActorSystem = system, probe: ActorRef = testActor): Unit = {
-    ClusterSharding(sys).start(typeName = "Entity",
-                               entityProps = ClusterShardingRememberEntitiesSpec.props(probe),
-                               settings = ClusterShardingSettings(system).withRememberEntities(true),
-                               extractEntityId = extractEntityId,
-                               extractShardId = extractShardId)
+    ClusterSharding(sys).start(
+      typeName = "Entity",
+      entityProps = ClusterShardingRememberEntitiesSpec.props(probe),
+      settings = ClusterShardingSettings(system).withRememberEntities(true),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

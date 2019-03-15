@@ -29,13 +29,14 @@ trait DispatcherPrerequisites {
 /**
  * INTERNAL API
  */
-private[akka] final case class DefaultDispatcherPrerequisites(val threadFactory: ThreadFactory,
-                                                              val eventStream: EventStream,
-                                                              val scheduler: Scheduler,
-                                                              val dynamicAccess: DynamicAccess,
-                                                              val settings: ActorSystem.Settings,
-                                                              val mailboxes: Mailboxes,
-                                                              val defaultExecutionContext: Option[ExecutionContext])
+private[akka] final case class DefaultDispatcherPrerequisites(
+    val threadFactory: ThreadFactory,
+    val eventStream: EventStream,
+    val scheduler: Scheduler,
+    val dynamicAccess: DynamicAccess,
+    val settings: ActorSystem.Settings,
+    val mailboxes: Mailboxes,
+    val defaultExecutionContext: Option[ExecutionContext])
     extends DispatcherPrerequisites
 
 object Dispatchers {
@@ -207,12 +208,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  private val instance = new Dispatcher(this,
-                                        config.getString("id"),
-                                        config.getInt("throughput"),
-                                        config.getNanosDuration("throughput-deadline-time"),
-                                        configureExecutor(),
-                                        config.getMillisDuration("shutdown-timeout"))
+  private val instance = new Dispatcher(
+    this,
+    config.getString("id"),
+    config.getInt("throughput"),
+    config.getNanosDuration("throughput-deadline-time"),
+    configureExecutor(),
+    config.getMillisDuration("shutdown-timeout"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -265,14 +267,15 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
   }
 
   protected def create(mailboxType: MailboxType): BalancingDispatcher =
-    new BalancingDispatcher(this,
-                            config.getString("id"),
-                            config.getInt("throughput"),
-                            config.getNanosDuration("throughput-deadline-time"),
-                            mailboxType,
-                            configureExecutor(),
-                            config.getMillisDuration("shutdown-timeout"),
-                            config.getBoolean("attempt-teamwork"))
+    new BalancingDispatcher(
+      this,
+      config.getString("id"),
+      config.getInt("throughput"),
+      config.getNanosDuration("throughput-deadline-time"),
+      mailboxType,
+      configureExecutor(),
+      config.getMillisDuration("shutdown-timeout"),
+      config.getBoolean("attempt-teamwork"))
 
   /**
    * Returns the same dispatcher instance for each invocation
@@ -292,10 +295,11 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
     case e: ThreadPoolExecutorConfigurator => e.threadPoolConfig
     case _ =>
       prerequisites.eventStream.publish(
-        Warning("PinnedDispatcherConfigurator",
-                this.getClass,
-                "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config."
-                  .format(config.getString("id"))))
+        Warning(
+          "PinnedDispatcherConfigurator",
+          this.getClass,
+          "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
+            config.getString("id"))))
       ThreadPoolConfig()
   }
 
@@ -303,10 +307,11 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
    * Creates new dispatcher for each invocation.
    */
   override def dispatcher(): MessageDispatcher =
-    new PinnedDispatcher(this,
-                         null,
-                         config.getString("id"),
-                         config.getMillisDuration("shutdown-timeout"),
-                         threadPoolConfig)
+    new PinnedDispatcher(
+      this,
+      null,
+      config.getString("id"),
+      config.getMillisDuration("shutdown-timeout"),
+      threadPoolConfig)
 
 }

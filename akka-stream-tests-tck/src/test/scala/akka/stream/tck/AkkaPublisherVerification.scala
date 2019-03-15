@@ -18,8 +18,9 @@ abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherS
     with ActorSystemLifecycle {
 
   def this(printlnDebug: Boolean) =
-    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug),
-         Timeouts.publisherShutdownTimeoutMillis)
+    this(
+      new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug),
+      Timeouts.publisherShutdownTimeoutMillis)
 
   def this() = this(false)
 

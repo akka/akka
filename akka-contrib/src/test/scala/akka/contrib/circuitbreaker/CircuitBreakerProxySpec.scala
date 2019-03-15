@@ -269,8 +269,9 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       resetTimeoutExpires()
 
       And("Receiving a successful response")
-      receiverRespondsToRequestWith("First message in half-open state, should be forwarded",
-                                    "This should close the circuit")
+      receiverRespondsToRequestWith(
+        "First message in half-open state, should be forwarded",
+        "This should close the circuit")
 
       circuitBreakerReceivesSelfNotificationMessage()
 
@@ -328,8 +329,9 @@ class CircuitBreakerProxySpec extends AkkaSpec() with GivenWhenThen {
       eventListener.expectMsg(CircuitHalfOpen(circuitBreaker))
 
       When("Entering CLOSED state")
-      receiverRespondsToRequestWith("First message in half-open state, should be forwarded",
-                                    "This should close the circuit")
+      receiverRespondsToRequestWith(
+        "First message in half-open state, should be forwarded",
+        "This should close the circuit")
       Then("An event is sent")
       eventListener.expectMsg(CircuitClosed(circuitBreaker))
 

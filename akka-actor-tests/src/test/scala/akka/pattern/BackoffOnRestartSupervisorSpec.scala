@@ -141,12 +141,13 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
     "accept commands while child is terminating" in {
       val postStopLatch = new CountDownLatch(1)
       val options = Backoff
-        .onFailure(Props(new SlowlyFailingActor(postStopLatch)),
-                   "someChildName",
-                   1 nanos,
-                   1 nanos,
-                   0.0,
-                   maxNrOfRetries = -1)
+        .onFailure(
+          Props(new SlowlyFailingActor(postStopLatch)),
+          "someChildName",
+          1 nanos,
+          1 nanos,
+          0.0,
+          maxNrOfRetries = -1)
         .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
           case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })

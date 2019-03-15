@@ -34,8 +34,9 @@ import akka.cluster.routing.ClusterRouterSettingsBase
  * @param metricsSelector decides what probability to use for selecting a routee, based
  *   on remaining capacity as indicated by the node metrics
  */
-final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem,
-                                                   metricsSelector: MetricsSelector = MixMetricsSelector)
+final case class AdaptiveLoadBalancingRoutingLogic(
+    system: ActorSystem,
+    metricsSelector: MetricsSelector = MixMetricsSelector)
     extends RoutingLogic
     with NoSerializationVerificationNeeded {
 
@@ -122,18 +123,19 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem,
  *   supervision, death watch and router management messages
  */
 @SerialVersionUID(1L)
-final case class AdaptiveLoadBalancingPool(metricsSelector: MetricsSelector = MixMetricsSelector,
-                                           val nrOfInstances: Int = 0,
-                                           override val supervisorStrategy: SupervisorStrategy =
-                                             Pool.defaultSupervisorStrategy,
-                                           override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                                           override val usePoolDispatcher: Boolean = false)
+final case class AdaptiveLoadBalancingPool(
+    metricsSelector: MetricsSelector = MixMetricsSelector,
+    val nrOfInstances: Int = 0,
+    override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+    override val usePoolDispatcher: Boolean = false)
     extends Pool {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
-         metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
-         usePoolDispatcher = config.hasPath("pool-dispatcher"))
+    this(
+      nrOfInstances = ClusterRouterSettingsBase.getMaxTotalNrOfInstances(config),
+      metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -152,8 +154,9 @@ final case class AdaptiveLoadBalancingPool(metricsSelector: MetricsSelector = Mi
 
   override def routingLogicController(routingLogic: RoutingLogic): Option[Props] =
     Some(
-      Props(classOf[AdaptiveLoadBalancingMetricsListener],
-            routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
+      Props(
+        classOf[AdaptiveLoadBalancingMetricsListener],
+        routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.
@@ -205,14 +208,16 @@ final case class AdaptiveLoadBalancingPool(metricsSelector: MetricsSelector = Mi
  *   router management messages
  */
 @SerialVersionUID(1L)
-final case class AdaptiveLoadBalancingGroup(metricsSelector: MetricsSelector = MixMetricsSelector,
-                                            val paths: immutable.Iterable[String] = Nil,
-                                            override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+final case class AdaptiveLoadBalancingGroup(
+    metricsSelector: MetricsSelector = MixMetricsSelector,
+    val paths: immutable.Iterable[String] = Nil,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 
   def this(config: Config, dynamicAccess: DynamicAccess) =
-    this(metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
-         paths = immutableSeq(config.getStringList("routees.paths")))
+    this(
+      metricsSelector = MetricsSelector.fromConfig(config, dynamicAccess),
+      paths = immutableSeq(config.getStringList("routees.paths")))
 
   /**
    * Java API
@@ -231,8 +236,9 @@ final case class AdaptiveLoadBalancingGroup(metricsSelector: MetricsSelector = M
 
   override def routingLogicController(routingLogic: RoutingLogic): Option[Props] =
     Some(
-      Props(classOf[AdaptiveLoadBalancingMetricsListener],
-            routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
+      Props(
+        classOf[AdaptiveLoadBalancingMetricsListener],
+        routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
 
   /**
    * Setting the dispatcher to be used for the router head actor, which handles
@@ -397,10 +403,11 @@ object MetricsSelector {
           .createInstanceFor[MetricsSelector](fqn, args)
           .recover({
             case exception =>
-              throw new IllegalArgumentException((s"Cannot instantiate metrics-selector [$fqn], " +
-                                                 "make sure it extends [akka.cluster.routing.MetricsSelector] and " +
-                                                 "has constructor with [com.typesafe.config.Config] parameter"),
-                                                 exception)
+              throw new IllegalArgumentException(
+                (s"Cannot instantiate metrics-selector [$fqn], " +
+                "make sure it extends [akka.cluster.routing.MetricsSelector] and " +
+                "has constructor with [com.typesafe.config.Config] parameter"),
+                exception)
           })
           .get
     }
@@ -463,9 +470,10 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
  *
  * Pick routee based on its weight. Higher weight, higher probability.
  */
-private[metrics] class WeightedRoutees(routees: immutable.IndexedSeq[Routee],
-                                       selfAddress: Address,
-                                       weights: Map[Address, Int]) {
+private[metrics] class WeightedRoutees(
+    routees: immutable.IndexedSeq[Routee],
+    selfAddress: Address,
+    weights: Map[Address, Int]) {
 
   // fill an array of same size as the refs with accumulated weights,
   // binarySearch is used to pick the right bucket from a requested value

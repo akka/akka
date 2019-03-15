@@ -88,8 +88,9 @@ private[remote] object InboundControlJunction {
  * INTERNAL API
  */
 private[remote] class InboundControlJunction
-    extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope],
-                                            InboundControlJunction.ControlMessageSubject] {
+    extends GraphStageWithMaterializedValue[
+      FlowShape[InboundEnvelope, InboundEnvelope],
+      InboundControlJunction.ControlMessageSubject] {
   import InboundControlJunction._
 
   val in: Inlet[InboundEnvelope] = Inlet("InboundControlJunction.in")
@@ -158,10 +159,12 @@ private[remote] object OutboundControlJunction {
 /**
  * INTERNAL API
  */
-private[remote] class OutboundControlJunction(outboundContext: OutboundContext,
-                                              outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
-    extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope],
-                                            OutboundControlJunction.OutboundControlIngress] {
+private[remote] class OutboundControlJunction(
+    outboundContext: OutboundContext,
+    outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
+    extends GraphStageWithMaterializedValue[
+      FlowShape[OutboundEnvelope, OutboundEnvelope],
+      OutboundControlJunction.OutboundControlIngress] {
   import OutboundControlJunction._
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundControlJunction.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundControlJunction.out")

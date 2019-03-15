@@ -71,9 +71,10 @@ import akka.event.Logging
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-@InternalApi private[akka] final class PublisherSource[Out](p: Publisher[Out],
-                                                            val attributes: Attributes,
-                                                            shape: SourceShape[Out])
+@InternalApi private[akka] final class PublisherSource[Out](
+    p: Publisher[Out],
+    val attributes: Attributes,
+    shape: SourceShape[Out])
     extends SourceModule[Out, NotUsed](shape) {
 
   override protected def label: String = s"PublisherSource($p)"
@@ -91,9 +92,10 @@ import akka.event.Logging
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-@InternalApi private[akka] final class ActorPublisherSource[Out](props: Props,
-                                                                 val attributes: Attributes,
-                                                                 shape: SourceShape[Out])
+@InternalApi private[akka] final class ActorPublisherSource[Out](
+    props: Props,
+    val attributes: Attributes,
+    shape: SourceShape[Out])
     extends SourceModule[Out, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
@@ -110,12 +112,13 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSource[Out](completionMatcher: PartialFunction[Any, Unit],
-                                                           failureMatcher: PartialFunction[Any, Throwable],
-                                                           bufferSize: Int,
-                                                           overflowStrategy: OverflowStrategy,
-                                                           val attributes: Attributes,
-                                                           shape: SourceShape[Out])
+@InternalApi private[akka] final class ActorRefSource[Out](
+    completionMatcher: PartialFunction[Any, Unit],
+    failureMatcher: PartialFunction[Any, Throwable],
+    bufferSize: Int,
+    overflowStrategy: OverflowStrategy,
+    val attributes: Attributes,
+    shape: SourceShape[Out])
     extends SourceModule[Out, ActorRef](shape) {
 
   override protected def label: String = s"ActorRefSource($bufferSize, $overflowStrategy)"

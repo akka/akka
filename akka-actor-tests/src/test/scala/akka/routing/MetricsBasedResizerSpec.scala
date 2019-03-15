@@ -45,9 +45,10 @@ object MetricsBasedResizerSpec {
 
     var msgs: Set[TestLatch] = Set()
 
-    def mockSend(await: Boolean,
-                 l: TestLatch = TestLatch(),
-                 routeeIdx: Int = Random.nextInt(routees.length)): Latches = {
+    def mockSend(
+        await: Boolean,
+        l: TestLatch = TestLatch(),
+        routeeIdx: Int = Random.nextInt(routees.length)): Latches = {
       val target = routees(routeeIdx)
       val first = TestLatch()
       val latches = Latches(first, l)
@@ -334,8 +335,9 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     }
 
     "ignore further away sample data when optmizing" in {
-      val resizer = DefaultOptimalSizeExploringResizer(explorationProbability = 0,
-                                                       numOfAdjacentSizesToConsiderDuringOptimization = 4)
+      val resizer = DefaultOptimalSizeExploringResizer(
+        explorationProbability = 0,
+        numOfAdjacentSizesToConsiderDuringOptimization = 4)
       resizer.performanceLog =
         Map(7 -> 5.millis, 8 -> 2.millis, 10 -> 3.millis, 11 -> 4.millis, 12 -> 3.millis, 13 -> 1.millis)
 

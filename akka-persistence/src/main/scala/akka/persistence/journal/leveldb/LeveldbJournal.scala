@@ -108,11 +108,12 @@ private[persistence] object LeveldbJournal {
    * `fromSequenceNr` is exclusive
    * `toSequenceNr` is inclusive
    */
-  final case class ReplayTaggedMessages(fromSequenceNr: Long,
-                                        toSequenceNr: Long,
-                                        max: Long,
-                                        tag: String,
-                                        replyTo: ActorRef)
+  final case class ReplayTaggedMessages(
+      fromSequenceNr: Long,
+      toSequenceNr: Long,
+      max: Long,
+      tag: String,
+      replyTo: ActorRef)
       extends SubscriptionCommand
   final case class ReplayedTaggedMessage(persistent: PersistentRepr, tag: String, offset: Long)
       extends DeadLetterSuppression
@@ -134,9 +135,10 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
       store match {
         case Some(s) => s.forward(cmd)
         case None =>
-          log.error("Failed {} request. " +
-                    "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`",
-                    cmd)
+          log.error(
+            "Failed {} request. " +
+            "Store not initialized. Use `SharedLeveldbJournal.setStore(sharedStore, system)`",
+            cmd)
       }
 
   }

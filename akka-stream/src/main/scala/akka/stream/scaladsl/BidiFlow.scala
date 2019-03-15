@@ -10,8 +10,9 @@ import akka.stream.impl.{ LinearTraversalBuilder, Timers, TraversalBuilder }
 
 import scala.concurrent.duration.FiniteDuration
 
-final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val traversalBuilder: TraversalBuilder,
-                                               override val shape: BidiShape[I1, O1, I2, O2])
+final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
+    override val traversalBuilder: TraversalBuilder,
+    override val shape: BidiShape[I1, O1, I2, O2])
     extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
 
   def asJava[JI1 <: I1, JO1 >: O1, JI2 <: I2, JO2 >: O2, JMat >: Mat]: javadsl.BidiFlow[JI1, JO1, JI2, JO2, JMat] =
@@ -72,8 +73,9 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](override val traversalBuilder: Tr
         .wire(newBidi1Shape.out1, newBidi2Shape.in1)
         .wire(newBidi2Shape.out2, newBidi1Shape.in2)
 
-    new BidiFlow(newTraversalBuilder,
-                 BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
+    new BidiFlow(
+      newTraversalBuilder,
+      BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
   }
 
   /**
@@ -237,11 +239,12 @@ object BidiFlow {
     val newFlow1Shape = flow1.shape.deepCopy()
     val newFlow2Shape = flow2.shape.deepCopy()
 
-    new BidiFlow(TraversalBuilder
-                   .empty()
-                   .add(flow1.traversalBuilder, newFlow1Shape, Keep.right)
-                   .add(flow2.traversalBuilder, newFlow2Shape, combine),
-                 BidiShape(newFlow1Shape.in, newFlow1Shape.out, newFlow2Shape.in, newFlow2Shape.out))
+    new BidiFlow(
+      TraversalBuilder
+        .empty()
+        .add(flow1.traversalBuilder, newFlow1Shape, Keep.right)
+        .add(flow2.traversalBuilder, newFlow2Shape, combine),
+      BidiShape(newFlow1Shape.in, newFlow1Shape.out, newFlow2Shape.in, newFlow2Shape.out))
   }
 
   /**
@@ -262,8 +265,9 @@ object BidiFlow {
    * }}}
    *
    */
-  def fromFlows[I1, O1, I2, O2, M1, M2](flow1: Graph[FlowShape[I1, O1], M1],
-                                        flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
+  def fromFlows[I1, O1, I2, O2, M1, M2](
+      flow1: Graph[FlowShape[I1, O1], M1],
+      flow2: Graph[FlowShape[I2, O2], M2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     fromFlowsMat(flow1, flow2)(Keep.none)
 
   /**

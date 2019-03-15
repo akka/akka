@@ -24,8 +24,9 @@ object HelloWorldPersistentEntityExample {
     private val sharding = ClusterSharding(system)
 
     sharding.init(
-      Entity(typeKey = HelloWorld.entityTypeKey,
-             createBehavior = entityContext => HelloWorld.persistentEntity(entityContext.entityId)))
+      Entity(
+        typeKey = HelloWorld.entityTypeKey,
+        createBehavior = entityContext => HelloWorld.persistentEntity(entityContext.entityId)))
 
     private implicit val askTimeout: Timeout = Timeout(5.seconds)
 
@@ -79,11 +80,12 @@ object HelloWorldPersistentEntityExample {
       EntityTypeKey[Command]("HelloWorld")
 
     def persistentEntity(entityId: String): Behavior[Command] =
-      EventSourcedEntity(entityTypeKey = entityTypeKey,
-                         entityId = entityId,
-                         emptyState = KnownPeople(Set.empty),
-                         commandHandler,
-                         eventHandler)
+      EventSourcedEntity(
+        entityTypeKey = entityTypeKey,
+        entityId = entityId,
+        emptyState = KnownPeople(Set.empty),
+        commandHandler,
+        eventHandler)
 
   }
   //#persistent-entity

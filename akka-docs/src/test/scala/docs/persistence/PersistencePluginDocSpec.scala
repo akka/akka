@@ -93,10 +93,11 @@ class PersistencePluginDocSpec extends WordSpec {
         //#snapshot-store-plugin-config
       """
 
-    val system = ActorSystem("PersistencePluginDocSpec",
-                             ConfigFactory
-                               .parseString(providerConfig)
-                               .withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
+    val system = ActorSystem(
+      "PersistencePluginDocSpec",
+      ConfigFactory
+        .parseString(providerConfig)
+        .withFallback(ConfigFactory.parseString(PersistencePluginDocSpec.config)))
     try {
       Persistence(system)
     } finally {
@@ -227,8 +228,9 @@ object PersistenceTCKDoc {
       override def supportsRejectingNonSerializableObjects: CapabilityFlag =
         true // or CapabilityFlag.on
 
-      val storageLocations = List(new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
-                                  new File(config.getString("akka.persistence.snapshot-store.local.dir")))
+      val storageLocations = List(
+        new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
+        new File(config.getString("akka.persistence.snapshot-store.local.dir")))
 
       override def beforeAll(): Unit = {
         super.beforeAll()

@@ -23,9 +23,10 @@ object FanOutShape {
   }
 }
 
-abstract class FanOutShape[-I] private (_in: Inlet[I @uncheckedVariance],
-                                        _registered: Iterator[Outlet[_]],
-                                        _name: String)
+abstract class FanOutShape[-I] private (
+    _in: Inlet[I @uncheckedVariance],
+    _registered: Iterator[Outlet[_]],
+    _name: String)
     extends Shape {
   import FanOutShape._
 

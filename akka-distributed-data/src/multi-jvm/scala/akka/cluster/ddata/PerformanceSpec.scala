@@ -83,12 +83,14 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
     enterBarrier(from.name + "-joined")
   }
 
-  def repeat(description: String,
-             keys: Iterable[ORSetKey[Int]],
-             n: Int,
-             expectedAfterReplication: Option[Set[Int]] = None,
-             oneByOne: Boolean = false)(block: (ORSetKey[Int], Int, ActorRef) => Unit,
-                                        afterEachKey: ORSetKey[Int] => Unit = _ => ()): Unit = {
+  def repeat(
+      description: String,
+      keys: Iterable[ORSetKey[Int]],
+      n: Int,
+      expectedAfterReplication: Option[Set[Int]] = None,
+      oneByOne: Boolean = false)(
+      block: (ORSetKey[Int], Int, ActorRef) => Unit,
+      afterEachKey: ORSetKey[Int] => Unit = _ => ()): Unit = {
 
     keys.foreach { key =>
       val startTime = System.nanoTime()

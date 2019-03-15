@@ -205,8 +205,9 @@ final class PNCounter private[akka] (private[akka] val increments: GCounter, pri
     increments.needPruningFrom(removedNode) || decrements.needPruningFrom(removedNode)
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): PNCounter =
-    copy(increments = increments.prune(removedNode, collapseInto),
-         decrements = decrements.prune(removedNode, collapseInto))
+    copy(
+      increments = increments.prune(removedNode, collapseInto),
+      decrements = decrements.prune(removedNode, collapseInto))
 
   override def pruningCleanup(removedNode: UniqueAddress): PNCounter =
     copy(increments = increments.pruningCleanup(removedNode), decrements = decrements.pruningCleanup(removedNode))

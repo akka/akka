@@ -144,9 +144,10 @@ object JournalCompactionSpec {
   class SpecComponentBuilder(val specId: String, val compactionInterval: Long) {
 
     def config: Config = {
-      PersistenceSpec.config("leveldb",
-                             specId,
-                             extraConfig = Some(s"""
+      PersistenceSpec.config(
+        "leveldb",
+        specId,
+        extraConfig = Some(s"""
            | akka.persistence.journal.leveldb.compaction-intervals.$specId = $compactionInterval
         """.stripMargin))
     }

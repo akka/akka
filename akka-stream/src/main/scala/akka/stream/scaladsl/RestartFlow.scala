@@ -51,12 +51,13 @@ object RestartFlow {
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
       flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(
-      new RestartWithBackoffFlow(flowFactory,
-                                 minBackoff,
-                                 maxBackoff,
-                                 randomFactor,
-                                 onlyOnFailures = false,
-                                 Int.MaxValue))
+      new RestartWithBackoffFlow(
+        flowFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        Int.MaxValue))
   }
 
   /**
@@ -84,17 +85,19 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration,
-                           maxBackoff: FiniteDuration,
-                           randomFactor: Double,
-                           maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def withBackoff[In, Out](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(
-      new RestartWithBackoffFlow(flowFactory,
-                                 minBackoff,
-                                 maxBackoff,
-                                 randomFactor,
-                                 onlyOnFailures = false,
-                                 maxRestarts))
+      new RestartWithBackoffFlow(
+        flowFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        maxRestarts))
   }
 
   /**
@@ -123,22 +126,24 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration,
-                                     maxBackoff: FiniteDuration,
-                                     randomFactor: Double,
-                                     maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+  def onFailuresWithBackoff[In, Out](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(
       new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
   }
 
 }
 
-private final class RestartWithBackoffFlow[In, Out](flowFactory: () => Flow[In, Out, _],
-                                                    minBackoff: FiniteDuration,
-                                                    maxBackoff: FiniteDuration,
-                                                    randomFactor: Double,
-                                                    onlyOnFailures: Boolean,
-                                                    maxRestarts: Int)
+private final class RestartWithBackoffFlow[In, Out](
+    flowFactory: () => Flow[In, Out, _],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    onlyOnFailures: Boolean,
+    maxRestarts: Int)
     extends GraphStage[FlowShape[In, Out]] { self =>
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
@@ -200,13 +205,14 @@ private final class RestartWithBackoffFlow[In, Out](flowFactory: () => Flow[In, 
 /**
  * Shared logic for all restart with backoff logics.
  */
-private abstract class RestartWithBackoffLogic[S <: Shape](name: String,
-                                                           shape: S,
-                                                           minBackoff: FiniteDuration,
-                                                           maxBackoff: FiniteDuration,
-                                                           randomFactor: Double,
-                                                           onlyOnFailures: Boolean,
-                                                           maxRestarts: Int)
+private abstract class RestartWithBackoffLogic[S <: Shape](
+    name: String,
+    shape: S,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    onlyOnFailures: Boolean,
+    maxRestarts: Int)
     extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
@@ -291,20 +297,21 @@ private abstract class RestartWithBackoffLogic[S <: Shape](name: String,
       }
     })
 
-    setHandler(in,
-               new InHandler {
-                 override def onPush() = if (sourceOut.isAvailable) {
-                   sourceOut.push(grab(in))
-                 }
-                 override def onUpstreamFinish() = {
-                   finishing = true
-                   sourceOut.complete()
-                 }
-                 override def onUpstreamFailure(ex: Throwable) = {
-                   finishing = true
-                   sourceOut.fail(ex)
-                 }
-               })
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush() = if (sourceOut.isAvailable) {
+          sourceOut.push(grab(in))
+        }
+        override def onUpstreamFinish() = {
+          finishing = true
+          sourceOut.complete()
+        }
+        override def onUpstreamFailure(ex: Throwable) = {
+          finishing = true
+          sourceOut.fail(ex)
+        }
+      })
 
     sourceOut
   }

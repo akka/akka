@@ -72,12 +72,14 @@ class DefaultOSGiLogger extends DefaultLogger {
   def logMessage(logService: LogService, event: LogEvent): Unit = {
     event match {
       case error: Logging.Error if error.cause != NoCause =>
-        logService.log(event.level.asInt,
-                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message),
-                       error.cause)
+        logService.log(
+          event.level.asInt,
+          messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message),
+          error.cause)
       case _ =>
-        logService.log(event.level.asInt,
-                       messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
+        logService.log(
+          event.level.asInt,
+          messageFormat.format(timestamp(event), event.thread.getName, event.logSource, event.message))
     }
   }
 

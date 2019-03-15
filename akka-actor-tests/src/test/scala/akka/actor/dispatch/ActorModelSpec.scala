@@ -172,11 +172,12 @@ object ActorModelSpec {
     } catch {
       case e: Throwable =>
         system.eventStream.publish(
-          Error(e,
-                dispatcher.toString,
-                dispatcher.getClass,
-                "actual: stops=" + dispatcher.stops.get +
-                " required: stops=" + stops))
+          Error(
+            e,
+            dispatcher.toString,
+            dispatcher.getClass,
+            "actual: stops=" + dispatcher.stops.get +
+            " required: stops=" + stops))
         throw e
     }
   }
@@ -213,9 +214,10 @@ object ActorModelSpec {
       msgsReceived: Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
       msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
       restarts: Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem): Unit = {
-    val stats = statsFor(actorRef,
-                         Option(dispatcher).getOrElse(
-                           actorRef.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].dispatcher))
+    val stats = statsFor(
+      actorRef,
+      Option(dispatcher).getOrElse(
+        actorRef.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
       await(deadline)(stats.suspensions.get() == suspensions)
@@ -228,12 +230,13 @@ object ActorModelSpec {
     } catch {
       case e: Throwable =>
         system.eventStream.publish(
-          Error(e,
-                Option(dispatcher).toString,
-                Option(dispatcher).getOrElse(this).getClass,
-                "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
-                ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
-                ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
+          Error(
+            e,
+            Option(dispatcher).toString,
+            Option(dispatcher).getOrElse(this).getClass,
+            "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
+            ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
+            ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
         throw e
     }
   }
@@ -276,13 +279,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       assertDispatcher(dispatcher)(stops = 0)
       system.stop(a)
       assertDispatcher(dispatcher)(stops = 1)
-      assertRef(a, dispatcher)(suspensions = 0,
-                               resumes = 0,
-                               registers = 1,
-                               unregisters = 1,
-                               msgsReceived = 0,
-                               msgsProcessed = 0,
-                               restarts = 0)
+      assertRef(a, dispatcher)(
+        suspensions = 0,
+        resumes = 0,
+        registers = 1,
+        unregisters = 1,
+        msgsReceived = 0,
+        msgsProcessed = 0,
+        restarts = 0)
 
       for (i <- 1 to 10) yield Future { i }
       assertDispatcher(dispatcher)(stops = 2)
@@ -359,12 +363,13 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1, suspensions = 1, resumes = 1)
 
       system.stop(a)
-      assertRefDefaultZero(a)(registers = 1,
-                              unregisters = 1,
-                              msgsReceived = 1,
-                              msgsProcessed = 1,
-                              suspensions = 1,
-                              resumes = 1)
+      assertRefDefaultZero(a)(
+        registers = 1,
+        unregisters = 1,
+        msgsReceived = 1,
+        msgsProcessed = 1,
+        suspensions = 1,
+        resumes = 1)
     }
 
     "handle waves of actors" in {
@@ -432,9 +437,10 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
     }
 
     "continue to process messages when a thread gets interrupted and throws an exception" in {
-      filterEvents(EventFilter[InterruptedException](),
-                   EventFilter[ActorInterruptedException](),
-                   EventFilter[akka.event.Logging.LoggerException]()) {
+      filterEvents(
+        EventFilter[InterruptedException](),
+        EventFilter[ActorInterruptedException](),
+        EventFilter[akka.event.Logging.LoggerException]()) {
         implicit val dispatcher = interceptedDispatcher()
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
@@ -541,12 +547,13 @@ object DispatcherModelSpec {
     import akka.util.Helpers.ConfigOps
 
     private val instance: MessageDispatcher =
-      new Dispatcher(this,
-                     config.getString("id"),
-                     config.getInt("throughput"),
-                     config.getNanosDuration("throughput-deadline-time"),
-                     configureExecutor(),
-                     config.getMillisDuration("shutdown-timeout")) with MessageDispatcherInterceptor
+      new Dispatcher(
+        this,
+        config.getString("id"),
+        config.getInt("throughput"),
+        config.getNanosDuration("throughput-deadline-time"),
+        configureExecutor(),
+        config.getMillisDuration("shutdown-timeout")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
@@ -617,14 +624,15 @@ object BalancingDispatcherModelSpec {
     import akka.util.Helpers.ConfigOps
 
     override protected def create(mailboxType: MailboxType): BalancingDispatcher =
-      new BalancingDispatcher(this,
-                              config.getString("id"),
-                              config.getInt("throughput"),
-                              config.getNanosDuration("throughput-deadline-time"),
-                              mailboxType,
-                              configureExecutor(),
-                              config.getMillisDuration("shutdown-timeout"),
-                              config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
+      new BalancingDispatcher(
+        this,
+        config.getString("id"),
+        config.getInt("throughput"),
+        config.getNanosDuration("throughput-deadline-time"),
+        mailboxType,
+        configureExecutor(),
+        config.getMillisDuration("shutdown-timeout"),
+        config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
   }
 }
 

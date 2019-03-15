@@ -25,12 +25,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
  *                   always continues until the mailbox is empty.
  *                   Larger values (or zero or negative) increase throughput, smaller values increase fairness
  */
-class Dispatcher(_configurator: MessageDispatcherConfigurator,
-                 val id: String,
-                 val throughput: Int,
-                 val throughputDeadlineTime: Duration,
-                 executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-                 val shutdownTimeout: FiniteDuration)
+class Dispatcher(
+    _configurator: MessageDispatcherConfigurator,
+    val id: String,
+    val throughput: Int,
+    val throughputDeadlineTime: Duration,
+    executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
+    val shutdownTimeout: FiniteDuration)
     extends MessageDispatcher(_configurator) {
 
   import configurator.prerequisites._
@@ -88,9 +89,10 @@ class Dispatcher(_configurator: MessageDispatcherConfigurator,
     new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
   }
 
-  private val esUpdater = AtomicReferenceFieldUpdater.newUpdater(classOf[Dispatcher],
-                                                                 classOf[LazyExecutorServiceDelegate],
-                                                                 "executorServiceDelegate")
+  private val esUpdater = AtomicReferenceFieldUpdater.newUpdater(
+    classOf[Dispatcher],
+    classOf[LazyExecutorServiceDelegate],
+    "executorServiceDelegate")
 
   /**
    * INTERNAL API
@@ -106,9 +108,10 @@ class Dispatcher(_configurator: MessageDispatcherConfigurator,
    *
    * INTERNAL API
    */
-  protected[akka] override def registerForExecution(mbox: Mailbox,
-                                                    hasMessageHint: Boolean,
-                                                    hasSystemMessageHint: Boolean): Boolean = {
+  protected[akka] override def registerForExecution(
+      mbox: Mailbox,
+      hasMessageHint: Boolean,
+      hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
       if (mbox.setAsScheduled()) {
         try {

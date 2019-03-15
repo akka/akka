@@ -49,8 +49,9 @@ object OOIntroSpec {
         message match {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
-            val ses = context.spawn(session(context.self, screenName, client),
-                                    name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            val ses = context.spawn(
+              session(context.self, screenName, client),
+              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             sessions = ses :: sessions
             this
@@ -62,9 +63,10 @@ object OOIntroSpec {
       }
     }
 
-    private def session(room: ActorRef[PublishSessionMessage],
-                        screenName: String,
-                        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
+    private def session(
+        room: ActorRef[PublishSessionMessage],
+        screenName: String,
+        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receiveMessage {
         case PostMessage(message) =>
           // from client, publish to others via the room

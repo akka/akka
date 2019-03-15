@@ -50,11 +50,12 @@ abstract class ClusterShardingIncorrectSetupSpec
       enterBarrier("cluster-up")
       runOn(first) {
         EventFilter.error(pattern = """Has ClusterSharding been started on all nodes?""").intercept {
-          ClusterSharding(system).start(typeName = "Entity",
-                                        entityProps = TestActors.echoActorProps,
-                                        settings = ClusterShardingSettings(system),
-                                        extractEntityId = extractEntityId,
-                                        extractShardId = extractShardId)
+          ClusterSharding(system).start(
+            typeName = "Entity",
+            entityProps = TestActors.echoActorProps,
+            settings = ClusterShardingSettings(system),
+            extractEntityId = extractEntityId,
+            extractShardId = extractShardId)
         }
       }
       enterBarrier("helpful error message logged")

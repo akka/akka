@@ -26,11 +26,12 @@ object RemoteWatcherSpec {
 
   def createFailureDetector(): FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
-      new PhiAccrualFailureDetector(threshold = 8.0,
-                                    maxSampleSize = 200,
-                                    minStdDeviation = 100.millis,
-                                    acceptableHeartbeatPause = 3.seconds,
-                                    firstHeartbeatEstimate = 1.second)
+      new PhiAccrualFailureDetector(
+        threshold = 8.0,
+        maxSampleSize = 200,
+        minStdDeviation = 100.millis,
+        acceptableHeartbeatPause = 3.seconds,
+        firstHeartbeatEstimate = 1.second)
 
     new DefaultFailureDetectorRegistry(() => createFailureDetector())
   }
@@ -41,10 +42,11 @@ object RemoteWatcherSpec {
   }
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration)
-      extends RemoteWatcher(createFailureDetector,
-                            heartbeatInterval = TurnOff,
-                            unreachableReaperInterval = TurnOff,
-                            heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
+      extends RemoteWatcher(
+        createFailureDetector,
+        heartbeatInterval = TurnOff,
+        unreachableReaperInterval = TurnOff,
+        heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
 
     def this() = this(heartbeatExpectedResponseAfter = TurnOff)
 
@@ -82,8 +84,9 @@ class RemoteWatcherSpec extends AkkaSpec("""akka {
   def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
   Seq(system, remoteSystem).foreach(
-    muteDeadLetters(akka.remote.transport.AssociationHandle.Disassociated.getClass,
-                    akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
+    muteDeadLetters(
+      akka.remote.transport.AssociationHandle.Disassociated.getClass,
+      akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
   override def afterTermination(): Unit = {
     shutdown(remoteSystem)

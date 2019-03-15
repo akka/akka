@@ -170,10 +170,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  private[akka] final case class SerializedMethodCall(ownerType: Class[_],
-                                                      methodName: String,
-                                                      parameterTypes: Array[Class[_]],
-                                                      serializedParameters: Array[(Int, String, Array[Byte])]) {
+  private[akka] final case class SerializedMethodCall(
+      ownerType: Class[_],
+      methodName: String,
+      parameterTypes: Array[Class[_]],
+      serializedParameters: Array[(Int, String, Array[Byte])]) {
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
@@ -184,20 +185,20 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.JavaSerializer.currentSystem.withValue(system) { ... }")
       val serialization = SerializationExtension(system)
-      MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*),
-                 serializedParameters match {
-                   case null               => null
-                   case a if a.length == 0 => Array[AnyRef]()
-                   case a =>
-                     val deserializedParameters
-                         : Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
-                     for (i <- 0 until a.length) {
-                       val (sId, manifest, bytes) = a(i)
-                       deserializedParameters(i) = serialization.deserialize(bytes, sId, manifest).get
-                     }
+      MethodCall(
+        ownerType.getDeclaredMethod(methodName, parameterTypes: _*),
+        serializedParameters match {
+          case null               => null
+          case a if a.length == 0 => Array[AnyRef]()
+          case a =>
+            val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
+            for (i <- 0 until a.length) {
+              val (sId, manifest, bytes) = a(i)
+              deserializedParameters(i) = serialization.deserialize(bytes, sId, manifest).get
+            }
 
-                     deserializedParameters
-                 })
+            deserializedParameters
+        })
     }
   }
 
@@ -251,9 +252,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Implementation of TypedActor as an Actor
    */
-  private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R],
-                                                      createInstance: => T,
-                                                      interfaces: immutable.Seq[Class[_]])
+  private[akka] class TypedActor[R <: AnyRef, T <: R](
+      val proxyVar: AtomVar[R],
+      createInstance: => T,
+      interfaces: immutable.Seq[Class[_]])
       extends Actor {
     // if we were remote deployed we need to create a local proxy
     if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
@@ -425,9 +427,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * INTERNAL API
    */
-  private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension,
-                                                  @transient val actorVar: AtomVar[ActorRef],
-                                                  @transient val timeout: Timeout)
+  private[akka] class TypedActorInvocationHandler(
+      @transient val extension: TypedActorExtension,
+      @transient val actorVar: AtomVar[ActorRef],
+      @transient val timeout: Timeout)
       extends InvocationHandler
       with Serializable {
 
@@ -474,8 +477,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * INTERNAL API
    */
-  private[akka] final case class SerializedTypedActorInvocationHandler(val actor: ActorRef,
-                                                                       val timeout: FiniteDuration) {
+  private[akka] final case class SerializedTypedActorInvocationHandler(
+      val actor: ActorRef,
+      val timeout: FiniteDuration) {
     @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef =
       JavaSerializer.currentSystem.value match {
         case null =>
@@ -696,9 +700,10 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   /**
    * INTERNAL API
    */
-  private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T],
-                                                             proxyVar: AtomVar[R],
-                                                             actorRef: => ActorRef): R = {
+  private[akka] def createActorRefProxy[R <: AnyRef, T <: R](
+      props: TypedProps[T],
+      proxyVar: AtomVar[R],
+      actorRef: => ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
     val proxy = Proxy

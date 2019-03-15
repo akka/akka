@@ -85,13 +85,14 @@ private[akka] abstract class AbstractLogger extends Logger {
     if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
-  override def error(marker: LogMarker,
-                     cause: Throwable,
-                     template: String,
-                     arg1: Any,
-                     arg2: Any,
-                     arg3: Any,
-                     arg4: Any): Unit = {
+  override def error(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any,
+      arg4: Any): Unit = {
     if (isErrorEnabled)
       notifyError(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
   }
@@ -169,13 +170,14 @@ private[akka] abstract class AbstractLogger extends Logger {
       notifyWarning(format(template, arg1, arg2, arg3), OptionVal.Some(cause), OptionVal.Some(marker))
   }
 
-  override def warning(marker: LogMarker,
-                       cause: Throwable,
-                       template: String,
-                       arg1: Any,
-                       arg2: Any,
-                       arg3: Any,
-                       arg4: Any): Unit = {
+  override def warning(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any,
+      arg4: Any): Unit = {
     if (isWarningEnabled)
       notifyWarning(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(cause), OptionVal.Some(marker))
   }
@@ -321,13 +323,14 @@ private[akka] abstract class AbstractLogger extends Logger {
     if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3), OptionVal.Some(marker))
   }
 
-  override def log(level: LogLevel,
-                   marker: LogMarker,
-                   template: String,
-                   arg1: Any,
-                   arg2: Any,
-                   arg3: Any,
-                   arg4: Any): Unit = {
+  override def log(
+      level: LogLevel,
+      marker: LogMarker,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any,
+      arg4: Any): Unit = {
     if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker))
   }
 
@@ -378,10 +381,11 @@ private[akka] abstract class AbstractLogger extends Logger {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class LoggerAdapterImpl(bus: LoggingBus,
-                                            logClass: Class[_],
-                                            logSource: String,
-                                            loggingFilter: LoggingFilterWithMarker)
+private[akka] final class LoggerAdapterImpl(
+    bus: LoggingBus,
+    logClass: Class[_],
+    logSource: String,
+    loggingFilter: LoggingFilterWithMarker)
     extends AbstractLogger {
 
   override def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)

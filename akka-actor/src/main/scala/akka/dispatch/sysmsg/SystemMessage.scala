@@ -267,8 +267,9 @@ private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: In
     with StashWhenWaitingForChildren
 
 @SerialVersionUID(1L)
-private[akka] final case class DeathWatchNotification(actor: ActorRef,
-                                                      existenceConfirmed: Boolean,
-                                                      addressTerminated: Boolean)
+private[akka] final case class DeathWatchNotification(
+    actor: ActorRef,
+    existenceConfirmed: Boolean,
+    addressTerminated: Boolean)
     extends SystemMessage
     with DeadLetterSuppression

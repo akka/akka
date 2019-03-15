@@ -23,8 +23,9 @@ import akka.cluster.typed
  */
 @InternalApi
 private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) extends ClusterSingleton {
-  require(system.isInstanceOf[ActorSystemAdapter[_]],
-          "only adapted actor systems can be used for the typed cluster singleton")
+  require(
+    system.isInstanceOf[ActorSystemAdapter[_]],
+    "only adapted actor systems can be used for the typed cluster singleton")
 
   import ClusterSingletonImpl._
   import akka.actor.typed.scaladsl.adapter._
@@ -51,10 +52,12 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
       // start singleton on this node
       val untypedProps = PropsAdapter(poisonPillInterceptor(singleton.behavior), singleton.props)
       try {
-        untypedSystem.systemActorOf(OldSingletonManager.props(untypedProps,
-                                                              singleton.stopMessage.getOrElse(PoisonPill),
-                                                              settings.toManagerSettings(singleton.name)),
-                                    managerName)
+        untypedSystem.systemActorOf(
+          OldSingletonManager.props(
+            untypedProps,
+            singleton.stopMessage.getOrElse(PoisonPill),
+            settings.toManagerSettings(singleton.name)),
+          managerName)
       } catch {
         case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") =>
         // This is fine. We just wanted to make sure it is running and it already is
@@ -70,9 +73,10 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
         println("Creating for " + singletonNameAndDc)
         val (singletonName, _) = singletonNameAndDc
         val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("no-dc")}"
-        untypedSystem.systemActorOf(ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}",
-                                                                settings.toProxySettings(singletonName)),
-                                    proxyName)
+        untypedSystem.systemActorOf(
+          ClusterSingletonProxy
+            .props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
+          proxyName)
       }
     }
     proxies.computeIfAbsent((name, settings.dataCenter), proxyCreator).asInstanceOf[ActorRef[T]]

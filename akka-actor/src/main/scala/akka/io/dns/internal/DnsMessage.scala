@@ -76,13 +76,14 @@ private[internal] case class MessageFlags(flags: Short) extends AnyVal {
  */
 @InternalApi
 private[internal] object MessageFlags {
-  def apply(answer: Boolean = false,
-            opCode: OpCode.Value = OpCode.QUERY,
-            authoritativeAnswer: Boolean = false,
-            truncated: Boolean = false,
-            recursionDesired: Boolean = true,
-            recursionAvailable: Boolean = false,
-            responseCode: ResponseCode.Value = ResponseCode.SUCCESS): MessageFlags = {
+  def apply(
+      answer: Boolean = false,
+      opCode: OpCode.Value = OpCode.QUERY,
+      authoritativeAnswer: Boolean = false,
+      truncated: Boolean = false,
+      recursionDesired: Boolean = true,
+      recursionAvailable: Boolean = false,
+      responseCode: ResponseCode.Value = ResponseCode.SUCCESS): MessageFlags = {
     new MessageFlags(
       ((if (answer) 0x8000 else 0) |
       (opCode.id << 11) |
@@ -98,12 +99,13 @@ private[internal] object MessageFlags {
  * INTERNAL API
  */
 @InternalApi
-private[internal] case class Message(id: Short,
-                                     flags: MessageFlags,
-                                     questions: Seq[Question] = Seq.empty,
-                                     answerRecs: Seq[ResourceRecord] = Seq.empty,
-                                     authorityRecs: Seq[ResourceRecord] = Seq.empty,
-                                     additionalRecs: Seq[ResourceRecord] = Seq.empty) {
+private[internal] case class Message(
+    id: Short,
+    flags: MessageFlags,
+    questions: Seq[Question] = Seq.empty,
+    answerRecs: Seq[ResourceRecord] = Seq.empty,
+    authorityRecs: Seq[ResourceRecord] = Seq.empty,
+    additionalRecs: Seq[ResourceRecord] = Seq.empty) {
   def write(): ByteString = {
     val ret = ByteString.newBuilder
     write(ret)

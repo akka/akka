@@ -13,18 +13,20 @@ import scala.concurrent.duration._
 object DeviceGroupQuery {
   case object CollectionTimeout
 
-  def props(actorToDeviceId: Map[ActorRef, String],
-            requestId: Long,
-            requester: ActorRef,
-            timeout: FiniteDuration): Props = {
+  def props(
+      actorToDeviceId: Map[ActorRef, String],
+      requestId: Long,
+      requester: ActorRef,
+      timeout: FiniteDuration): Props = {
     Props(new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout))
   }
 }
 
-class DeviceGroupQuery(actorToDeviceId: Map[ActorRef, String],
-                       requestId: Long,
-                       requester: ActorRef,
-                       timeout: FiniteDuration)
+class DeviceGroupQuery(
+    actorToDeviceId: Map[ActorRef, String],
+    requestId: Long,
+    requester: ActorRef,
+    timeout: FiniteDuration)
     extends Actor
     with ActorLogging {
   import DeviceGroupQuery._
@@ -47,8 +49,9 @@ class DeviceGroupQuery(actorToDeviceId: Map[ActorRef, String],
   override def receive: Receive =
     waitingForReplies(Map.empty, actorToDeviceId.keySet)
 
-  def waitingForReplies(repliesSoFar: Map[String, DeviceGroup.TemperatureReading],
-                        stillWaiting: Set[ActorRef]): Receive = {
+  def waitingForReplies(
+      repliesSoFar: Map[String, DeviceGroup.TemperatureReading],
+      stillWaiting: Set[ActorRef]): Receive = {
     case Device.RespondTemperature(0, valueOption) =>
       val deviceActor = sender()
       val reading = valueOption match {
@@ -72,10 +75,11 @@ class DeviceGroupQuery(actorToDeviceId: Map[ActorRef, String],
   //#query-state
 
   //#query-collect-reply
-  def receivedResponse(deviceActor: ActorRef,
-                       reading: DeviceGroup.TemperatureReading,
-                       stillWaiting: Set[ActorRef],
-                       repliesSoFar: Map[String, DeviceGroup.TemperatureReading]): Unit = {
+  def receivedResponse(
+      deviceActor: ActorRef,
+      reading: DeviceGroup.TemperatureReading,
+      stillWaiting: Set[ActorRef],
+      repliesSoFar: Map[String, DeviceGroup.TemperatureReading]): Unit = {
     context.unwatch(deviceActor)
     val deviceId = actorToDeviceId(deviceActor)
     val newStillWaiting = stillWaiting - deviceActor

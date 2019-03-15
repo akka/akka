@@ -21,8 +21,9 @@ import scala.util.Failure
  */
 @InternalApi
 private[akka] object PersistencePlugin {
-  final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](scaladslPlugin: ScalaDsl,
-                                                                        javadslPlugin: JavaDsl)
+  final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](
+      scaladslPlugin: ScalaDsl,
+      javadslPlugin: JavaDsl)
       extends Extension
 }
 
@@ -66,8 +67,9 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
 
   private def createPlugin(configPath: String, readJournalPluginConfig: Config): T = {
     val mergedConfig = readJournalPluginConfig.withFallback(system.settings.config)
-    require(!isEmpty(configPath) && mergedConfig.hasPath(configPath),
-            s"'reference.conf' is missing persistence plugin config path: '$configPath'")
+    require(
+      !isEmpty(configPath) && mergedConfig.hasPath(configPath),
+      s"'reference.conf' is missing persistence plugin config path: '$configPath'")
     val pluginConfig = mergedConfig.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")
     log.debug(s"Create plugin: $configPath $pluginClassName")
@@ -88,9 +90,10 @@ private[akka] abstract class PersistencePlugin[ScalaDsl, JavaDsl, T: ClassTag](s
       .recoverWith {
         case ex: Exception =>
           Failure.apply(
-            new IllegalArgumentException("Unable to create read journal plugin instance for path " +
-                                         s"[$configPath], class [$pluginClassName]!",
-                                         ex))
+            new IllegalArgumentException(
+              "Unable to create read journal plugin instance for path " +
+              s"[$configPath], class [$pluginClassName]!",
+              ex))
       }
       .get
   }

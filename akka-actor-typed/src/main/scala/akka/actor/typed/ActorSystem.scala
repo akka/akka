@@ -172,10 +172,11 @@ object ActorSystem {
    * Scala API: Creates a new actor system with the specified name and settings
    * The core actor system settings are defined in [[BootstrapSetup]]
    */
-  def apply[T](guardianBehavior: Behavior[T],
-               name: String,
-               setup: ActorSystemSetup,
-               guardianProps: Props = Props.empty): ActorSystem[T] = {
+  def apply[T](
+      guardianBehavior: Behavior[T],
+      name: String,
+      setup: ActorSystemSetup,
+      guardianProps: Props = Props.empty): ActorSystem[T] = {
     createInternal(name, guardianBehavior, guardianProps, setup)
   }
 
@@ -217,10 +218,11 @@ object ActorSystem {
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
    * system typed and untyped actors can coexist.
    */
-  private def createInternal[T](name: String,
-                                guardianBehavior: Behavior[T],
-                                guardianProps: Props,
-                                setup: ActorSystemSetup): ActorSystem[T] = {
+  private def createInternal[T](
+      name: String,
+      guardianBehavior: Behavior[T],
+      guardianProps: Props,
+      setup: ActorSystemSetup): ActorSystem[T] = {
 
     Behavior.validateAsInitial(guardianBehavior)
     require(Behavior.isAlive(guardianBehavior))
@@ -230,13 +232,13 @@ object ActorSystem {
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
-    val system = new untyped.ActorSystemImpl(name,
-                                             appConfig,
-                                             cl,
-                                             executionContext,
-                                             Some(
-                                               PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)),
-                                             setup)
+    val system = new untyped.ActorSystemImpl(
+      name,
+      appConfig,
+      cl,
+      executionContext,
+      Some(PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)),
+      setup)
     system.start()
 
     system.guardian ! GuardianActorAdapter.Start

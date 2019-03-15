@@ -85,8 +85,9 @@ class FlowAskSpec extends StreamSpec {
     val dontReply = system.actorOf(TestActors.blackholeProps.withDispatcher("akka.test.stream-dispatcher"), "dontReply")
 
     val replyRandomDelays =
-      system.actorOf(Props(classOf[RandomDelaysReplier]).withDispatcher("akka.test.stream-dispatcher"),
-                     "replyRandomDelays")
+      system.actorOf(
+        Props(classOf[RandomDelaysReplier]).withDispatcher("akka.test.stream-dispatcher"),
+        "replyRandomDelays")
 
     val statusReplier =
       system.actorOf(Props(new StatusReplier).withDispatcher("akka.test.stream-dispatcher"), "statusReplier")
@@ -234,11 +235,12 @@ class FlowAskSpec extends StreamSpec {
     }
 
     "resume after multiple failures" in assertAllStagesStopped {
-      Await.result(Source(1 to 6)
-                     .ask[Reply](2)(failAllExcept6)
-                     .withAttributes(supervisionStrategy(resumingDecider))
-                     .runWith(Sink.head),
-                   3.seconds) should ===(Reply(6))
+      Await.result(
+        Source(1 to 6)
+          .ask[Reply](2)(failAllExcept6)
+          .withAttributes(supervisionStrategy(resumingDecider))
+          .runWith(Sink.head),
+        3.seconds) should ===(Reply(6))
     }
 
     "should handle cancel properly" in assertAllStagesStopped {

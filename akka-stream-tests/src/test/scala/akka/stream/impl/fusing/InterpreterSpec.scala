@@ -43,9 +43,10 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "implement chain of maps correctly" in new OneBoundedSetup[Int](Map((x: Int) => x + 1),
-                                                                    Map((x: Int) => x * 2),
-                                                                    Map((x: Int) => x + 1)) {
+    "implement chain of maps correctly" in new OneBoundedSetup[Int](
+      Map((x: Int) => x + 1),
+      Map((x: Int) => x * 2),
+      Map((x: Int) => x + 1)) {
 
       lastEvents() should be(Set.empty)
 
@@ -78,8 +79,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "implement one-to-many many-to-one chain correctly" in new OneBoundedSetup[Int](Doubler(),
-                                                                                    Filter((x: Int) => x != 0)) {
+    "implement one-to-many many-to-one chain correctly" in new OneBoundedSetup[Int](
+      Doubler(),
+      Filter((x: Int) => x != 0)) {
 
       lastEvents() should be(Set.empty)
 
@@ -102,8 +104,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete))
     }
 
-    "implement many-to-one one-to-many chain correctly" in new OneBoundedSetup[Int](Filter((x: Int) => x != 0),
-                                                                                    Doubler()) {
+    "implement many-to-one one-to-many chain correctly" in new OneBoundedSetup[Int](
+      Filter((x: Int) => x != 0),
+      Doubler()) {
 
       lastEvents() should be(Set.empty)
 
@@ -143,9 +146,10 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnNext(1), Cancel, OnComplete))
     }
 
-    "implement take inside a chain" in new OneBoundedSetup[Int](Filter((x: Int) => x != 0),
-                                                                takeTwo,
-                                                                Map((x: Int) => x + 1)) {
+    "implement take inside a chain" in new OneBoundedSetup[Int](
+      Filter((x: Int) => x != 0),
+      takeTwo,
+      Map((x: Int) => x + 1)) {
 
       lastEvents() should be(Set.empty)
 
@@ -329,8 +333,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     }
 
-    "work with expand-expand" in new OneBoundedSetup[Int](new Expand((x: Int) => Iterator.from(x)),
-                                                          new Expand((x: Int) => Iterator.from(x))) {
+    "work with expand-expand" in new OneBoundedSetup[Int](
+      new Expand((x: Int) => Iterator.from(x)),
+      new Expand((x: Int) => Iterator.from(x))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -409,11 +414,12 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     // Note, the new interpreter has no jumpback table, still did not want to remove the test
-    "work with jumpback table and completed elements" in new OneBoundedSetup[Int](Map((x: Int) => x),
-                                                                                  Map((x: Int) => x),
-                                                                                  KeepGoing(),
-                                                                                  Map((x: Int) => x),
-                                                                                  Map((x: Int) => x)) {
+    "work with jumpback table and completed elements" in new OneBoundedSetup[Int](
+      Map((x: Int) => x),
+      Map((x: Int) => x),
+      KeepGoing(),
+      Map((x: Int) => x),
+      Map((x: Int) => x)) {
 
       lastEvents() should be(Set.empty)
 

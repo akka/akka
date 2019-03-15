@@ -23,9 +23,10 @@ abstract class ClusterSingletonSupervision extends Actor {
     import akka.actor.{ PoisonPill, Props }
     import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
     context.system.actorOf(
-      ClusterSingletonManager.props(singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
-                                    terminationMessage = PoisonPill,
-                                    settings = ClusterSingletonManagerSettings(context.system)),
+      ClusterSingletonManager.props(
+        singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
+        terminationMessage = PoisonPill,
+        settings = ClusterSingletonManagerSettings(context.system)),
       name = name)
     //#singleton-supervisor-actor-usage
   }

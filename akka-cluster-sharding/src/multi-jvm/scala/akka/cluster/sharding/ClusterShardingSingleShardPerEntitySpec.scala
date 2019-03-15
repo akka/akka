@@ -78,11 +78,12 @@ abstract class ClusterShardingSingleShardPerEntitySpec
   }
 
   def startSharding(): Unit = {
-    ClusterSharding(system).start(typeName = "Entity",
-                                  entityProps = Props[Entity],
-                                  settings = ClusterShardingSettings(system),
-                                  extractEntityId = extractEntityId,
-                                  extractShardId = extractShardId)
+    ClusterSharding(system).start(
+      typeName = "Entity",
+      entityProps = Props[Entity],
+      settings = ClusterShardingSettings(system),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")

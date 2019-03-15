@@ -98,8 +98,9 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   }
 
   def newReplicator(sys: ActorSystem = system) =
-    sys.actorOf(Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)),
-                "replicator-" + testStepCounter)
+    sys.actorOf(
+      Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)),
+      "replicator-" + testStepCounter)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -275,9 +276,10 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         Await.ready(sys1.terminate(), 10.seconds)
       }
 
-      val sys2 = ActorSystem("AdditionalSys",
-                             // use the same port
-                             ConfigFactory.parseString(s"""
+      val sys2 = ActorSystem(
+        "AdditionalSys",
+        // use the same port
+        ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port = ${address.port.get}
             akka.remote.netty.tcp.port = ${address.port.get}
             """).withFallback(system.settings.config))

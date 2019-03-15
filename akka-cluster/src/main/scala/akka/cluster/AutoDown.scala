@@ -79,10 +79,11 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
 
   override def down(node: Address): Unit = {
     require(leader)
-    logInfo("Leader is auto-downing unreachable node [{}]. " +
-            "Don't use auto-down feature of Akka Cluster in production. " +
-            "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.",
-            node)
+    logInfo(
+      "Leader is auto-downing unreachable node [{}]. " +
+      "Don't use auto-down feature of Akka Cluster in production. " +
+      "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.",
+      node)
     cluster.down(node)
   }
 

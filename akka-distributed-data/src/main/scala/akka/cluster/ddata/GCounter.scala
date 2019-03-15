@@ -41,8 +41,9 @@ object GCounter {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class GCounter private[akka] (private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
-                                    override val delta: Option[GCounter] = None)
+final class GCounter private[akka] (
+    private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty,
+    override val delta: Option[GCounter] = None)
     extends DeltaReplicatedData
     with ReplicatedDelta
     with ReplicatedDataSerialization

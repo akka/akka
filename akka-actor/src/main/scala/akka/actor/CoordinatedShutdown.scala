@@ -252,10 +252,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
    * INTERNAL API
    */
-  private[akka] final case class Phase(dependsOn: Set[String],
-                                       timeout: FiniteDuration,
-                                       recover: Boolean,
-                                       enabled: Boolean)
+  private[akka] final case class Phase(
+      dependsOn: Set[String],
+      timeout: FiniteDuration,
+      recover: Boolean,
+      enabled: Boolean)
 
   /**
    * INTERNAL API
@@ -317,8 +318,9 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
 }
 
-final class CoordinatedShutdown private[akka] (system: ExtendedActorSystem,
-                                               phases: Map[String, CoordinatedShutdown.Phase])
+final class CoordinatedShutdown private[akka] (
+    system: ExtendedActorSystem,
+    phases: Map[String, CoordinatedShutdown.Phase])
     extends Extension {
   import CoordinatedShutdown.Reason
   import CoordinatedShutdown.UnknownReason
@@ -354,12 +356,14 @@ final class CoordinatedShutdown private[akka] (system: ExtendedActorSystem,
    * and it will be performed.
    */
   @tailrec def addTask(phase: String, taskName: String)(task: () => Future[Done]): Unit = {
-    require(knownPhases(phase),
-            s"Unknown phase [$phase], known phases [$knownPhases]. " +
-            "All phases (along with their optional dependencies) must be defined in configuration")
-    require(taskName.nonEmpty,
-            "Set a task name when adding tasks to the Coordinated Shutdown. " +
-            "Try to use unique, self-explanatory names.")
+    require(
+      knownPhases(phase),
+      s"Unknown phase [$phase], known phases [$knownPhases]. " +
+      "All phases (along with their optional dependencies) must be defined in configuration")
+    require(
+      taskName.nonEmpty,
+      "Set a task name when adding tasks to the Coordinated Shutdown. " +
+      "Try to use unique, self-explanatory names.")
     val current = tasks.get(phase)
     if (current == null) {
       if (tasks.putIfAbsent(phase, Vector(taskName -> task)) != null)
@@ -449,10 +453,11 @@ final class CoordinatedShutdown private[akka] (system: ExtendedActorSystem,
                 Future.successful(Done)
               case tasks =>
                 if (debugEnabled)
-                  log.debug("Performing phase [{}] with [{}] tasks: [{}]",
-                            phase,
-                            tasks.size,
-                            tasks.map { case (taskName, _) => taskName }.mkString(", "))
+                  log.debug(
+                    "Performing phase [{}] with [{}] tasks: [{}]",
+                    phase,
+                    tasks.size,
+                    tasks.map { case (taskName, _) => taskName }.mkString(", "))
                 // note that tasks within same phase are performed in parallel
                 val recoverEnabled = phases(phase).recover
                 val result = Future

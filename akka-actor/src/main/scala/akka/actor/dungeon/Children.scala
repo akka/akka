@@ -248,11 +248,12 @@ private[akka] trait Children { this: ActorCell =>
     }
   }
 
-  private def makeChild(cell: ActorCell,
-                        props: Props,
-                        name: String,
-                        async: Boolean,
-                        systemService: Boolean): ActorRef = {
+  private def makeChild(
+      cell: ActorCell,
+      props: Props,
+      name: String,
+      async: Boolean,
+      systemService: Boolean): ActorRef = {
     if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope) {
       val oldInfo = Serialization.currentTransportInformation.value
       try {
@@ -288,14 +289,15 @@ private[akka] trait Children { this: ActorCell =>
       val actor =
         try {
           val childPath = new ChildActorPath(cell.self.path, name, ActorCell.newUid())
-          cell.provider.actorOf(cell.systemImpl,
-                                props,
-                                cell.self,
-                                childPath,
-                                systemService = systemService,
-                                deploy = None,
-                                lookupDeploy = true,
-                                async = async)
+          cell.provider.actorOf(
+            cell.systemImpl,
+            props,
+            cell.self,
+            childPath,
+            systemService = systemService,
+            deploy = None,
+            lookupDeploy = true,
+            async = async)
         } catch {
           case e: InterruptedException =>
             unreserveChild(name)
