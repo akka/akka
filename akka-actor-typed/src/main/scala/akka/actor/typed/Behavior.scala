@@ -418,13 +418,13 @@ object Behavior {
    * Execute the behavior with the given message
    */
   def interpretMessage[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: T): Behavior[T] =
-    interpret(behavior, ctx, msg)
+    interpret(behavior, ctx, msg, isSignal = false)
 
   /**
    * Execute the behavior with the given signal
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
-    val result = interpret(behavior, ctx, signal)
+    val result = interpret(behavior, ctx, signal, isSignal = true)
     // we need to throw here to allow supervision of deathpact exception
     signal match {
       case Terminated(ref) if result == UnhandledBehavior => throw DeathPactException(ref)
@@ -432,7 +432,11 @@ object Behavior {
     }
   }
 
-  private def interpret[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: Any): Behavior[T] = {
+  private def interpret[T](behavior: Behavior[T],
+                           ctx: TypedActorContext[T],
+                           msg: Any,
+                           // optimization to avoid an instanceof on the message
+                           isSignal: Boolean): Behavior[T] = {
     if (behavior eq null)
       throw InvalidMessageException("[null] is not an allowed behavior")
 
@@ -455,10 +459,9 @@ object Behavior {
         Behavior.unhandled[T]
       case BehaviorTags.ExtensibleBehavior =>
         val ext = behavior.asInstanceOf[ExtensibleBehavior[T]]
-        val possiblyDeferredResult = msg match {
-          case signal: Signal => ext.receiveSignal(ctx, signal)
-          case m              => ext.receive(ctx, m.asInstanceOf[T])
-        }
+        val possiblyDeferredResult =
+          if (isSignal) ext.receiveSignal(ctx, msg.asInstanceOf[Signal])
+          else ext.receive(ctx, msg.asInstanceOf[T])
         start(possiblyDeferredResult, ctx)
     }
   }
