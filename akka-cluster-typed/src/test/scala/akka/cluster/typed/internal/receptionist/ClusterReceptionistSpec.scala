@@ -252,17 +252,19 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         try {
           val system3 = testKit3.system
-          system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]",
-                            Cluster(system3).selfMember.uniqueAddress.longUid)
+          system1.log.debug(
+            "Starting system3 at same hostname port as system2, uid: [{}]",
+            Cluster(system3).selfMember.uniqueAddress.longUid)
           val clusterNode3 = Cluster(system3)
           clusterNode3.manager ! Join(clusterNode1.selfMember.address)
           val regProbe3 = TestProbe[Any]()(system3)
 
           // and registers the same service key
           val service3 = testKit3.spawn(pingPongBehavior, "instance")
-          system3.log.debug("Spawning/registering ping service in new incarnation {}#{}",
-                            service3.path,
-                            service3.path.uid)
+          system3.log.debug(
+            "Spawning/registering ping service in new incarnation {}#{}",
+            service3.path,
+            service3.path.uid)
           system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
           regProbe3.expectMessage(Registered(PingKey, service3))
           system3.log.debug("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)

@@ -104,9 +104,10 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         if (protoDeploy.hasConfig) {
           if (protoDeploy.hasConfigSerializerId) {
             serialization
-              .deserialize(protoDeploy.getConfig.toByteArray,
-                           protoDeploy.getConfigSerializerId,
-                           protoDeploy.getConfigManifest)
+              .deserialize(
+                protoDeploy.getConfig.toByteArray,
+                protoDeploy.getConfigSerializerId,
+                protoDeploy.getConfigManifest)
               .get
               .asInstanceOf[Config]
           } else {
@@ -119,9 +120,10 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         if (protoDeploy.hasRouterConfig) {
           if (protoDeploy.hasRouterConfigSerializerId) {
             serialization
-              .deserialize(protoDeploy.getRouterConfig.toByteArray,
-                           protoDeploy.getRouterConfigSerializerId,
-                           protoDeploy.getRouterConfigManifest)
+              .deserialize(
+                protoDeploy.getRouterConfig.toByteArray,
+                protoDeploy.getRouterConfigSerializerId,
+                protoDeploy.getRouterConfigManifest)
               .get
               .asInstanceOf[RouterConfig]
           } else {
@@ -134,9 +136,10 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         if (protoDeploy.hasScope) {
           if (protoDeploy.hasScopeSerializerId) {
             serialization
-              .deserialize(protoDeploy.getScope.toByteArray,
-                           protoDeploy.getScopeSerializerId,
-                           protoDeploy.getScopeManifest)
+              .deserialize(
+                protoDeploy.getScope.toByteArray,
+                protoDeploy.getScopeSerializerId,
+                protoDeploy.getScopeManifest)
               .get
               .asInstanceOf[Scope]
           } else {
@@ -179,10 +182,11 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       Props(deploy(proto.getProps.getDeploy), actorClass, args)
     }
 
-    DaemonMsgCreate(props = props,
-                    deploy = deploy(proto.getDeploy),
-                    path = proto.getPath,
-                    supervisor = deserializeActorRef(system, proto.getSupervisor))
+    DaemonMsgCreate(
+      props = props,
+      deploy = deploy(proto.getDeploy),
+      path = proto.getPath,
+      supervisor = deserializeActorRef(system, proto.getSupervisor))
   }
 
   private def serialize(any: Any): (Int, Boolean, String, Array[Byte]) = {

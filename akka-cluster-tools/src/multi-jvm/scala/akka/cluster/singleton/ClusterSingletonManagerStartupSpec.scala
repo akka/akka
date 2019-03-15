@@ -64,16 +64,18 @@ class ClusterSingletonManagerStartupSpec
 
   def createSingleton(): ActorRef = {
     system.actorOf(
-      ClusterSingletonManager.props(singletonProps = Props(classOf[Echo], testActor),
-                                    terminationMessage = PoisonPill,
-                                    settings = ClusterSingletonManagerSettings(system)),
+      ClusterSingletonManager.props(
+        singletonProps = Props(classOf[Echo], testActor),
+        terminationMessage = PoisonPill,
+        settings = ClusterSingletonManagerSettings(system)),
       name = "echo")
   }
 
   lazy val echoProxy: ActorRef = {
-    system.actorOf(ClusterSingletonProxy.props(singletonManagerPath = "/user/echo",
-                                               settings = ClusterSingletonProxySettings(system)),
-                   name = "echoProxy")
+    system.actorOf(
+      ClusterSingletonProxy
+        .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
+      name = "echoProxy")
   }
 
   "Startup of Cluster Singleton" must {

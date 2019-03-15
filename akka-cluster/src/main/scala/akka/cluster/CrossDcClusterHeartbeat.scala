@@ -57,16 +57,18 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
 
   val selfHeartbeat = ClusterHeartbeatSender.Heartbeat(selfAddress)
 
-  var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(selfDataCenter,
-                                                                                 crossDcFailureDetector,
-                                                                                 crossDcSettings.NrOfMonitoringActors,
-                                                                                 SortedSet.empty)
+  var dataCentersState: CrossDcHeartbeatingState = CrossDcHeartbeatingState.init(
+    selfDataCenter,
+    crossDcFailureDetector,
+    crossDcSettings.NrOfMonitoringActors,
+    SortedSet.empty)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval,
-                                         HeartbeatInterval,
-                                         self,
-                                         ClusterHeartbeatSender.HeartbeatTick)
+  val heartbeatTask = scheduler.schedule(
+    PeriodicTasksInitialDelay max HeartbeatInterval,
+    HeartbeatInterval,
+    self,
+    ClusterHeartbeatSender.HeartbeatTick)
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
@@ -183,8 +185,9 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   /** Idempotent, become active if this node is n-th oldest and should monitor other nodes */
   private def becomeActiveIfResponsibleForHeartbeat(): Unit = {
     if (!activelyMonitoring && selfIsResponsibleForCrossDcHeartbeat()) {
-      log.info("Cross DC heartbeat becoming ACTIVE on this node (for DC: {}), monitoring other DCs oldest nodes",
-               selfDataCenter)
+      log.info(
+        "Cross DC heartbeat becoming ACTIVE on this node (for DC: {}), monitoring other DCs oldest nodes",
+        selfDataCenter)
       activelyMonitoring = true
 
       context.become(active.orElse(introspecting))
@@ -211,10 +214,11 @@ private[akka] object CrossDcHeartbeatSender {
 
 /** INTERNAL API */
 @InternalApi
-private[cluster] final case class CrossDcHeartbeatingState(selfDataCenter: DataCenter,
-                                                           failureDetector: FailureDetectorRegistry[Address],
-                                                           nrOfMonitoredNodesPerDc: Int,
-                                                           state: Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
+private[cluster] final case class CrossDcHeartbeatingState(
+    selfDataCenter: DataCenter,
+    failureDetector: FailureDetectorRegistry[Address],
+    nrOfMonitoredNodesPerDc: Int,
+    state: Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
   import CrossDcHeartbeatingState._
 
   /**
@@ -309,10 +313,11 @@ private[cluster] object CrossDcHeartbeatingState {
   def atLeastInUpState(m: Member): Boolean =
     m.status != MemberStatus.WeaklyUp && m.status != MemberStatus.Joining
 
-  def init(selfDataCenter: DataCenter,
-           crossDcFailureDetector: FailureDetectorRegistry[Address],
-           nrOfMonitoredNodesPerDc: Int,
-           members: SortedSet[Member]): CrossDcHeartbeatingState = {
+  def init(
+      selfDataCenter: DataCenter,
+      crossDcFailureDetector: FailureDetectorRegistry[Address],
+      nrOfMonitoredNodesPerDc: Int,
+      members: SortedSet[Member]): CrossDcHeartbeatingState = {
     new CrossDcHeartbeatingState(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodesPerDc, state = {
       // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
       val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)

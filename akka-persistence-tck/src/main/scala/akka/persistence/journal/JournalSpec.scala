@@ -85,11 +85,12 @@ abstract class JournalSpec(config: Config)
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
 
     def persistentRepr(sequenceNr: Long) =
-      PersistentRepr(payload = s"a-$sequenceNr",
-                     sequenceNr = sequenceNr,
-                     persistenceId = pid,
-                     sender = sender,
-                     writerUuid = writerUuid)
+      PersistentRepr(
+        payload = s"a-$sequenceNr",
+        sequenceNr = sequenceNr,
+        persistenceId = pid,
+        sender = sender,
+        writerUuid = writerUuid)
 
     val msgs =
       if (supportsAtomicPersistAllOfSeveralEvents) {
@@ -248,11 +249,12 @@ abstract class JournalSpec(config: Config)
         val msgs = (6 to 8).map { i =>
           val event = if (i == 7) notSerializableEvent else s"b-$i"
           AtomicWrite(
-            PersistentRepr(payload = event,
-                           sequenceNr = i,
-                           persistenceId = pid,
-                           sender = Actor.noSender,
-                           writerUuid = writerUuid))
+            PersistentRepr(
+              payload = event,
+              sequenceNr = i,
+              persistenceId = pid,
+              sender = Actor.noSender,
+              writerUuid = writerUuid))
         }
 
         val probe = TestProbe()
@@ -282,11 +284,12 @@ abstract class JournalSpec(config: Config)
         val event = TestPayload(probe.ref)
         val aw =
           AtomicWrite(
-            PersistentRepr(payload = event,
-                           sequenceNr = 6L,
-                           persistenceId = pid,
-                           sender = Actor.noSender,
-                           writerUuid = writerUuid))
+            PersistentRepr(
+              payload = event,
+              sequenceNr = 6L,
+              persistenceId = pid,
+              sender = Actor.noSender,
+              writerUuid = writerUuid))
 
         journal ! WriteMessages(List(aw), probe.ref, actorInstanceId)
 

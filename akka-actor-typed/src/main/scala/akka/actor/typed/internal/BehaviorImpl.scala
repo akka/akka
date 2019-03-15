@@ -23,14 +23,16 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
   def widened[O, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
     intercept(WidenedInterceptor(matcher))(behavior)
 
-  class ReceiveBehavior[T](val onMessage: (SAC[T], T) => Behavior[T],
-                           onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] =
-                             Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+  class ReceiveBehavior[T](
+      val onMessage: (SAC[T], T) => Behavior[T],
+      onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] =
+        Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
       extends ExtensibleBehavior[T] {
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse((ctx.asScala, msg),
-                           Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+      onSignal.applyOrElse(
+        (ctx.asScala, msg),
+        Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
 
     override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
 
@@ -42,16 +44,18 @@ import akka.actor.typed.scaladsl.{ ActorContext => SAC }
    * We implement it separately in order to be able to avoid wrapping each function in
    * another function which drops the context parameter.
    */
-  class ReceiveMessageBehavior[T](val onMessage: T => Behavior[T],
-                                  onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal
-                                    .asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+  class ReceiveMessageBehavior[T](
+      val onMessage: T => Behavior[T],
+      onSignal: PartialFunction[(SAC[T], Signal), Behavior[T]] =
+        Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
       extends ExtensibleBehavior[T] {
 
     override def receive(ctx: AC[T], msg: T) = onMessage(msg)
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse((ctx.asScala, msg),
-                           Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+      onSignal.applyOrElse(
+        (ctx.asScala, msg),
+        Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
 
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }

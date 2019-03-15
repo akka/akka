@@ -163,10 +163,11 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   /**
    * Start periodic metrics collection
    */
-  val sampleTask = scheduler.schedule(PeriodicTasksInitialDelay max CollectorSampleInterval,
-                                      CollectorSampleInterval,
-                                      self,
-                                      MetricsTick)
+  val sampleTask = scheduler.schedule(
+    PeriodicTasksInitialDelay max CollectorSampleInterval,
+    CollectorSampleInterval,
+    self,
+    MetricsTick)
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])

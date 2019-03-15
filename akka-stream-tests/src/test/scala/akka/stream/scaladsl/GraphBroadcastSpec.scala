@@ -102,28 +102,29 @@ class GraphBroadcastSpec extends StreamSpec {
             List(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22))
 
       val result = RunnableGraph
-        .fromGraph(GraphDSL.create(headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink,
-                                   headSink)(combine) {
+        .fromGraph(GraphDSL.create(
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink,
+          headSink)(combine) {
           implicit b =>
             (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22) =>
               val bcast = b.add(Broadcast[Int](22))

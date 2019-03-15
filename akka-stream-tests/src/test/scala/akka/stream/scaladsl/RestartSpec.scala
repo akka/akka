@@ -501,10 +501,11 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
           RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
       }
 
-    def setupFlow(minBackoff: FiniteDuration,
-                  maxBackoff: FiniteDuration,
-                  maxRestarts: Int = -1,
-                  onlyOnFailures: Boolean = false) = {
+    def setupFlow(
+        minBackoff: FiniteDuration,
+        maxBackoff: FiniteDuration,
+        maxRestarts: Int = -1,
+        onlyOnFailures: Boolean = false) = {
       val created = new AtomicInteger()
 
       val (flowInSource: TestPublisher.Probe[String], flowInProbe: TestSubscriber.Probe[String]) =

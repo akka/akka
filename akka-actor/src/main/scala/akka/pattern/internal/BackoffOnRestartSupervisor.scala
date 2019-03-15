@@ -18,14 +18,15 @@ import scala.concurrent.duration._
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
  * with ``akka.pattern.BackoffOpts.onFailure``.
  */
-@InternalApi private[pattern] class BackoffOnRestartSupervisor(val childProps: Props,
-                                                               val childName: String,
-                                                               minBackoff: FiniteDuration,
-                                                               maxBackoff: FiniteDuration,
-                                                               val reset: BackoffReset,
-                                                               randomFactor: Double,
-                                                               strategy: OneForOneStrategy,
-                                                               replyWhileStopped: Option[Any])
+@InternalApi private[pattern] class BackoffOnRestartSupervisor(
+    val childProps: Props,
+    val childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    val reset: BackoffReset,
+    randomFactor: Double,
+    strategy: OneForOneStrategy,
+    replyWhileStopped: Option[Any])
     extends Actor
     with HandleBackoff
     with ActorLogging {
@@ -55,9 +56,10 @@ import scala.concurrent.duration._
             val nextRestartCount = restartCount + 1
             if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {
               // If we've exceeded the maximum # of retries allowed by the Strategy, die.
-              log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})",
-                        nextRestartCount,
-                        strategy.maxNrOfRetries)
+              log.debug(
+                s"Terminating on restart #{} which exceeds max allowed restarts ({})",
+                nextRestartCount,
+                strategy.maxNrOfRetries)
               become(receive)
               stop(self)
             } else {

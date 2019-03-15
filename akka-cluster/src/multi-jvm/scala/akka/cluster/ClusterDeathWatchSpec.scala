@@ -106,8 +106,9 @@ abstract class ClusterDeathWatchSpec
       }
 
       runOn(second, third, fourth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
-                       name = "subject")
+        system.actorOf(
+          Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
+          name = "subject")
         enterBarrier("subjected-started")
         enterBarrier("watch-established")
         runOn(third) {
@@ -157,8 +158,9 @@ abstract class ClusterDeathWatchSpec
     "be able to watch actor before node joins cluster, ClusterRemoteWatcher takes over from RemoteWatcher" in within(
       20 seconds) {
       runOn(fifth) {
-        system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
-                       name = "subject5")
+        system.actorOf(
+          Props(new Actor { def receive = Actor.emptyBehavior }).withDeploy(Deploy.local),
+          name = "subject5")
       }
       enterBarrier("subjected-started")
 
@@ -242,9 +244,8 @@ abstract class ClusterDeathWatchSpec
         catch {
           case _: TimeoutException =>
             fail(
-              "Failed to stop [%s] within [%s] \n%s".format(system.name,
-                                                            timeout,
-                                                            system.asInstanceOf[ActorSystemImpl].printTree))
+              "Failed to stop [%s] within [%s] \n%s"
+                .format(system.name, timeout, system.asInstanceOf[ActorSystemImpl].printTree))
         }
 
         // signal to the first node that fourth is done

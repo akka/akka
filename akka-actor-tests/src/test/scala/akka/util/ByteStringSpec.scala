@@ -164,8 +164,9 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     (!strict || (bsIterator.toSeq == vecIterator.toSeq))
   }
 
-  def likeVecIts(a: ByteString, b: ByteString)(body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any,
-                                               strict: Boolean = true): Boolean = {
+  def likeVecIts(a: ByteString, b: ByteString)(
+      body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any,
+      strict: Boolean = true): Boolean = {
     val (bsAIt, bsBIt) = (a.iterator, b.iterator)
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
@@ -689,17 +690,19 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         (a ++ b ++ c) should ===(xs)
       }
       "recombining - edge cases" in {
-        excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](1)), ByteString1(Array[Byte](2)))),
-                             -2147483648,
-                             112121212)
+        excerciseRecombining(
+          ByteStrings(Vector(ByteString1(Array[Byte](1)), ByteString1(Array[Byte](2)))),
+          -2147483648,
+          112121212)
         excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](100)))), 0, 2)
         excerciseRecombining(ByteStrings(Vector(ByteString1(Array[Byte](100)))), -2147483648, 2)
         excerciseRecombining(ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))), 0, 1)
         excerciseRecombining(ByteString1.fromString("abc").drop(1).take(1), -324234, 234232)
         excerciseRecombining(ByteString("a"), 0, 2147483647)
-        excerciseRecombining(ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))).drop(2),
-                             2147483647,
-                             1)
+        excerciseRecombining(
+          ByteStrings(Vector(ByteString1.fromString("ab"), ByteString1.fromString("cd"))).drop(2),
+          2147483647,
+          1)
         excerciseRecombining(ByteString1.fromString("ab").drop1(1), Int.MaxValue, Int.MaxValue)
       }
     }

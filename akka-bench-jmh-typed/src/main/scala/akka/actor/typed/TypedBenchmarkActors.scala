@@ -20,10 +20,11 @@ object TypedBenchmarkActors {
       Behaviors.same
   }
 
-  private def echoSender(messagesPerPair: Int,
-                         onDone: ActorRef[Done],
-                         batchSize: Int,
-                         childProps: Props): Behavior[Message.type] =
+  private def echoSender(
+      messagesPerPair: Int,
+      onDone: ActorRef[Done],
+      batchSize: Int,
+      childProps: Props): Behavior[Message.type] =
     Behaviors.setup { ctx =>
       val echo = ctx.spawn(echoBehavior(ctx.self), "echo", childProps)
       var left = messagesPerPair / 2
@@ -57,11 +58,12 @@ object TypedBenchmarkActors {
   case class Start(respondTo: ActorRef[Completed])
   case class Completed(startNanoTime: Long)
 
-  def echoActorsSupervisor(numMessagesPerActorPair: Int,
-                           numActors: Int,
-                           dispatcher: String,
-                           batchSize: Int,
-                           shutdownTimeout: FiniteDuration): Behavior[Start] =
+  def echoActorsSupervisor(
+      numMessagesPerActorPair: Int,
+      numActors: Int,
+      dispatcher: String,
+      batchSize: Int,
+      shutdownTimeout: FiniteDuration): Behavior[Start] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case Start(respondTo) =>
@@ -73,11 +75,12 @@ object TypedBenchmarkActors {
       }
     }
 
-  private def startEchoBenchSession(messagesPerPair: Int,
-                                    numActors: Int,
-                                    dispatcher: String,
-                                    batchSize: Int,
-                                    respondTo: ActorRef[Completed]): Behavior[Unit] = {
+  private def startEchoBenchSession(
+      messagesPerPair: Int,
+      numActors: Int,
+      dispatcher: String,
+      batchSize: Int,
+      respondTo: ActorRef[Completed]): Behavior[Unit] = {
 
     val numPairs = numActors / 2
 

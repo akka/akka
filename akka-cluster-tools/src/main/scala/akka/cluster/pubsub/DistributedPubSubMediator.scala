@@ -90,30 +90,34 @@ object DistributedPubSubSettings {
  *   the registries. Next chunk will be transferred in next round of gossip.
  * @param sendToDeadLettersWhenNoSubscribers When a message is published to a topic with no subscribers send it to the dead letters.
  */
-final class DistributedPubSubSettings(val role: Option[String],
-                                      val routingLogic: RoutingLogic,
-                                      val gossipInterval: FiniteDuration,
-                                      val removedTimeToLive: FiniteDuration,
-                                      val maxDeltaElements: Int,
-                                      val sendToDeadLettersWhenNoSubscribers: Boolean)
+final class DistributedPubSubSettings(
+    val role: Option[String],
+    val routingLogic: RoutingLogic,
+    val gossipInterval: FiniteDuration,
+    val removedTimeToLive: FiniteDuration,
+    val maxDeltaElements: Int,
+    val sendToDeadLettersWhenNoSubscribers: Boolean)
     extends NoSerializationVerificationNeeded {
 
   @deprecated("Use the other constructor instead.", "2.5.5")
-  def this(role: Option[String],
-           routingLogic: RoutingLogic,
-           gossipInterval: FiniteDuration,
-           removedTimeToLive: FiniteDuration,
-           maxDeltaElements: Int) {
-    this(role,
-         routingLogic,
-         gossipInterval,
-         removedTimeToLive,
-         maxDeltaElements,
-         sendToDeadLettersWhenNoSubscribers = true)
+  def this(
+      role: Option[String],
+      routingLogic: RoutingLogic,
+      gossipInterval: FiniteDuration,
+      removedTimeToLive: FiniteDuration,
+      maxDeltaElements: Int) {
+    this(
+      role,
+      routingLogic,
+      gossipInterval,
+      removedTimeToLive,
+      maxDeltaElements,
+      sendToDeadLettersWhenNoSubscribers = true)
   }
 
-  require(!routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
-          "'ConsistentHashingRoutingLogic' can't be used by the pub-sub mediator")
+  require(
+    !routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
+    "'ConsistentHashingRoutingLogic' can't be used by the pub-sub mediator")
 
   def withRole(role: String): DistributedPubSubSettings = copy(role = DistributedPubSubSettings.roleOption(role))
 
@@ -141,12 +145,13 @@ final class DistributedPubSubSettings(val role: Option[String],
       removedTimeToLive: FiniteDuration = removedTimeToLive,
       maxDeltaElements: Int = maxDeltaElements,
       sendToDeadLettersWhenNoSubscribers: Boolean = sendToDeadLettersWhenNoSubscribers): DistributedPubSubSettings =
-    new DistributedPubSubSettings(role,
-                                  routingLogic,
-                                  gossipInterval,
-                                  removedTimeToLive,
-                                  maxDeltaElements,
-                                  sendToDeadLettersWhenNoSubscribers)
+    new DistributedPubSubSettings(
+      role,
+      routingLogic,
+      gossipInterval,
+      removedTimeToLive,
+      maxDeltaElements,
+      sendToDeadLettersWhenNoSubscribers)
 }
 
 object DistributedPubSubMediator {
@@ -531,14 +536,16 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
   import DistributedPubSubMediator.Internal._
   import settings._
 
-  require(!routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
-          "'consistent-hashing' routing logic can't be used by the pub-sub mediator")
+  require(
+    !routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
+    "'consistent-hashing' routing logic can't be used by the pub-sub mediator")
 
   val cluster = Cluster(context.system)
   import cluster.selfAddress
 
-  require(role.forall(cluster.selfRoles.contains),
-          s"This cluster member [${selfAddress}] doesn't have the role [$role]")
+  require(
+    role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${selfAddress}] doesn't have the role [$role]")
 
   val removedTimeToLiveMillis = removedTimeToLive.toMillis
 
@@ -804,8 +811,9 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
   def put(key: String, valueOption: Option[ActorRef]): Unit = {
     val bucket = registry(selfAddress)
     val v = nextVersion()
-    registry += (selfAddress -> bucket.copy(version = v,
-                                            content = bucket.content + (key -> ValueHolder(v, valueOption))))
+    registry += (selfAddress -> bucket.copy(
+      version = v,
+      content = bucket.content + (key -> ValueHolder(v, valueOption))))
   }
 
   def getCurrentTopics(): Set[String] = {

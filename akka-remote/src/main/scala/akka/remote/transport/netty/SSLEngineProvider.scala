@@ -45,8 +45,9 @@ import javax.net.ssl.TrustManagerFactory
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
-    this(Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
-         new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security")))
+    this(
+      Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
+      new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security")))
 
   import settings._
 

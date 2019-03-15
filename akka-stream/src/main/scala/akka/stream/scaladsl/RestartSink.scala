@@ -80,24 +80,26 @@ object RestartSink {
   }
 }
 
-private final class RestartWithBackoffSink[T](sinkFactory: () => Sink[T, _],
-                                              minBackoff: FiniteDuration,
-                                              maxBackoff: FiniteDuration,
-                                              randomFactor: Double,
-                                              maxRestarts: Int)
+private final class RestartWithBackoffSink[T](
+    sinkFactory: () => Sink[T, _],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    maxRestarts: Int)
     extends GraphStage[SinkShape[T]] { self =>
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
   override def createLogic(inheritedAttributes: Attributes) =
-    new RestartWithBackoffLogic("Sink",
-                                shape,
-                                minBackoff,
-                                maxBackoff,
-                                randomFactor,
-                                onlyOnFailures = false,
-                                maxRestarts) {
+    new RestartWithBackoffLogic(
+      "Sink",
+      shape,
+      minBackoff,
+      maxBackoff,
+      randomFactor,
+      onlyOnFailures = false,
+      maxRestarts) {
       override protected def logSource = self.getClass
 
       override protected def startGraph() = {

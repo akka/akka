@@ -16,11 +16,12 @@ import akka.stream.ActorMaterializerSettings
  * INTERNAL API
  */
 @InternalApi private[akka] object ActorRefSourceActor {
-  def props(completionMatcher: PartialFunction[Any, Unit],
-            failureMatcher: PartialFunction[Any, Throwable],
-            bufferSize: Int,
-            overflowStrategy: OverflowStrategy,
-            settings: ActorMaterializerSettings) = {
+  def props(
+      completionMatcher: PartialFunction[Any, Unit],
+      failureMatcher: PartialFunction[Any, Throwable],
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      settings: ActorMaterializerSettings) = {
     require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     val maxFixedBufferSize = settings.maxFixedBufferSize
     Props(new ActorRefSourceActor(completionMatcher, failureMatcher, bufferSize, overflowStrategy, maxFixedBufferSize))
@@ -30,11 +31,12 @@ import akka.stream.ActorMaterializerSettings
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorRefSourceActor(completionMatcher: PartialFunction[Any, Unit],
-                                                     failureMatcher: PartialFunction[Any, Throwable],
-                                                     bufferSize: Int,
-                                                     overflowStrategy: OverflowStrategy,
-                                                     maxFixedBufferSize: Int)
+@InternalApi private[akka] class ActorRefSourceActor(
+    completionMatcher: PartialFunction[Any, Unit],
+    failureMatcher: PartialFunction[Any, Throwable],
+    bufferSize: Int,
+    overflowStrategy: OverflowStrategy,
+    maxFixedBufferSize: Int)
     extends akka.stream.actor.ActorPublisher[Any]
     with ActorLogging {
   import akka.stream.actor.ActorPublisherMessage._
@@ -84,8 +86,9 @@ import akka.stream.ActorMaterializerSettings
             buffer.dropTail()
             buffer.enqueue(elem)
           case s: DropBuffer =>
-            log.log(s.logLevel,
-                    "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+            log.log(
+              s.logLevel,
+              "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
             buffer.clear()
             buffer.enqueue(elem)
           case s: DropNew =>
@@ -116,10 +119,11 @@ import akka.stream.ActorMaterializerSettings
       if (buffer.isEmpty) onCompleteThenStop() // will complete the stream successfully
 
     case elem if isActive =>
-      log.debug("Dropping element because Status.Success received already, " +
-                "only draining already buffered elements: [{}] (pending: [{}])",
-                elem,
-                buffer.used)
+      log.debug(
+        "Dropping element because Status.Success received already, " +
+        "only draining already buffered elements: [{}] (pending: [{}])",
+        elem,
+        buffer.used)
   }
 
 }

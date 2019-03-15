@@ -17,10 +17,11 @@ object ReliableProxy {
    * Scala API Props.  Arguments are detailed in the [[akka.contrib.pattern.ReliableProxy]]
    * constructor.
    */
-  def props(targetPath: ActorPath,
-            retryAfter: FiniteDuration,
-            reconnectAfter: Option[FiniteDuration],
-            maxReconnects: Option[Int]): Props = {
+  def props(
+      targetPath: ActorPath,
+      retryAfter: FiniteDuration,
+      reconnectAfter: Option[FiniteDuration],
+      maxReconnects: Option[Int]): Props = {
     Props(new ReliableProxy(targetPath, retryAfter, reconnectAfter, maxReconnects))
   }
 
@@ -28,10 +29,11 @@ object ReliableProxy {
    * Java API Props.  Arguments are detailed in the [[akka.contrib.pattern.ReliableProxy]]
    * constructor.
    */
-  def props(targetPath: ActorPath,
-            retryAfter: FiniteDuration,
-            reconnectAfter: FiniteDuration,
-            maxReconnects: Int): Props = {
+  def props(
+      targetPath: ActorPath,
+      retryAfter: FiniteDuration,
+      reconnectAfter: FiniteDuration,
+      maxReconnects: Int): Props = {
     props(targetPath, retryAfter, Option(reconnectAfter), if (maxReconnects > 0) Some(maxReconnects) else None)
   }
 
@@ -231,10 +233,11 @@ import ReliableProxy._
  *   target actor. Use `None` for no limit. If `reconnectAfter` is `None` this value is ignored.
  */
 @deprecated("Use AtLeastOnceDelivery instead", "2.5.0")
-class ReliableProxy(targetPath: ActorPath,
-                    retryAfter: FiniteDuration,
-                    reconnectAfter: Option[FiniteDuration],
-                    maxConnectAttempts: Option[Int])
+class ReliableProxy(
+    targetPath: ActorPath,
+    retryAfter: FiniteDuration,
+    reconnectAfter: Option[FiniteDuration],
+    maxConnectAttempts: Option[Int])
     extends Actor
     with LoggingFSM[State, Vector[Message]]
     with ReliableProxyDebugLogging {

@@ -94,8 +94,9 @@ object MergePreferred {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](secondaryPorts: Int,
-                eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
+  def create[T](
+      secondaryPorts: Int,
+      eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
     scaladsl.MergePreferred(secondaryPorts, eagerComplete = eagerComplete)
 
   /**
@@ -104,9 +105,10 @@ object MergePreferred {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T],
-                secondaryPorts: Int,
-                eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      secondaryPorts: Int,
+      eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
     create(secondaryPorts, eagerComplete)
 
 }
@@ -157,9 +159,10 @@ object MergePrioritized {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T],
-                priorities: Array[Int],
-                eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      priorities: Array[Int],
+      eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities, eagerComplete)
 
 }
@@ -224,8 +227,9 @@ object Partition {
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](outputCount: Int,
-                partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply)
 
   /**
@@ -235,9 +239,10 @@ object Partition {
    * @param partitioner function deciding which output each element will be targeted
    * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
    */
-  def create[T](outputCount: Int,
-                partitioner: function.Function[T, Integer],
-                eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      partitioner: function.Function[T, Integer],
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
 
   /**
@@ -247,9 +252,10 @@ object Partition {
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](clazz: Class[T],
-                outputCount: Int,
-                partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply)
 
   /**
@@ -260,10 +266,11 @@ object Partition {
    * @param partitioner function deciding which output each element will be targeted
    * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
    */
-  def create[T](clazz: Class[T],
-                outputCount: Int,
-                partitioner: function.Function[T, Integer],
-                eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      partitioner: function.Function[T, Integer],
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
 
 }
@@ -300,9 +307,10 @@ object Balance {
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
-  def create[T](outputCount: Int,
-                waitForAllDownstreams: Boolean,
-                eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      waitForAllDownstreams: Boolean,
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
 
   /**
@@ -329,9 +337,10 @@ object Balance {
    * @param outputCount number of output ports
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    */
-  def create[T](clazz: Class[T],
-                outputCount: Int,
-                waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount, waitForAllDownstreams)
 
   /**
@@ -342,10 +351,11 @@ object Balance {
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
-  def create[T](clazz: Class[T],
-                outputCount: Int,
-                waitForAllDownstreams: Boolean,
-                eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      waitForAllDownstreams: Boolean,
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
 }
 

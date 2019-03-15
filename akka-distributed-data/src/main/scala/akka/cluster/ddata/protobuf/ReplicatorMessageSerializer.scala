@@ -184,27 +184,25 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val DeltaPropagationManifest = "Q"
   val DeltaNackManifest = "R"
 
-  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](GetManifest -> getFromBinary,
-                                                                                          GetSuccessManifest -> getSuccessFromBinary,
-                                                                                          NotFoundManifest -> notFoundFromBinary,
-                                                                                          GetFailureManifest -> getFailureFromBinary,
-                                                                                          SubscribeManifest -> subscribeFromBinary,
-                                                                                          UnsubscribeManifest -> unsubscribeFromBinary,
-                                                                                          ChangedManifest -> changedFromBinary,
-                                                                                          DataEnvelopeManifest -> dataEnvelopeFromBinary,
-                                                                                          WriteManifest -> writeFromBinary,
-                                                                                          WriteAckManifest -> (_ =>
-                                                                                            WriteAck),
-                                                                                          ReadManifest -> readFromBinary,
-                                                                                          ReadResultManifest -> readResultFromBinary,
-                                                                                          StatusManifest -> statusFromBinary,
-                                                                                          GossipManifest -> gossipFromBinary,
-                                                                                          DeltaPropagationManifest -> deltaPropagationFromBinary,
-                                                                                          WriteNackManifest -> (_ =>
-                                                                                            WriteNack),
-                                                                                          DeltaNackManifest -> (_ =>
-                                                                                            DeltaNack),
-                                                                                          DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
+    GetManifest -> getFromBinary,
+    GetSuccessManifest -> getSuccessFromBinary,
+    NotFoundManifest -> notFoundFromBinary,
+    GetFailureManifest -> getFailureFromBinary,
+    SubscribeManifest -> subscribeFromBinary,
+    UnsubscribeManifest -> unsubscribeFromBinary,
+    ChangedManifest -> changedFromBinary,
+    DataEnvelopeManifest -> dataEnvelopeFromBinary,
+    WriteManifest -> writeFromBinary,
+    WriteAckManifest -> (_ => WriteAck),
+    ReadManifest -> readFromBinary,
+    ReadResultManifest -> readResultFromBinary,
+    StatusManifest -> statusFromBinary,
+    GossipManifest -> gossipFromBinary,
+    DeltaPropagationManifest -> deltaPropagationFromBinary,
+    WriteNackManifest -> (_ => WriteNack),
+    DeltaNackManifest -> (_ => DeltaNack),
+    DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: DataEnvelope        => DataEnvelopeManifest
@@ -272,9 +270,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
-    Status(status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
-           status.getChunk,
-           status.getTotChunks)
+    Status(
+      status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
+      status.getChunk,
+      status.getTotChunks)
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
@@ -288,8 +287,9 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
-    Gossip(gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
-           sendBack = gossip.getSendBack)
+    Gossip(
+      gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
+      sendBack = gossip.getSendBack)
   }
 
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
@@ -313,13 +313,14 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def deltaPropagationFromBinary(bytes: Array[Byte]): DeltaPropagation = {
     val deltaPropagation = dm.DeltaPropagation.parseFrom(bytes)
     val reply = deltaPropagation.hasReply && deltaPropagation.getReply
-    DeltaPropagation(uniqueAddressFromProto(deltaPropagation.getFromNode),
-                     reply,
-                     deltaPropagation.getEntriesList.asScala.iterator.map { e =>
-                       val fromSeqNr = e.getFromSeqNr
-                       val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
-                       e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
-                     }.toMap)
+    DeltaPropagation(
+      uniqueAddressFromProto(deltaPropagation.getFromNode),
+      reply,
+      deltaPropagation.getEntriesList.asScala.iterator.map { e =>
+        val fromSeqNr = e.getFromSeqNr
+        val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
+        e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
+      }.toMap)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {

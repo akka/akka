@@ -61,9 +61,10 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
   system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
   systemB.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
 
-  private def send(sendCount: Int,
-                   resendInterval: FiniteDuration,
-                   outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
+  private def send(
+      sendCount: Int,
+      resendInterval: FiniteDuration,
+      outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
     Source(1 to sendCount)
       .map(n => outboundEnvelopePool.acquire().init(OptionVal.None, TestSysMsg("msg-" + n), OptionVal.None))

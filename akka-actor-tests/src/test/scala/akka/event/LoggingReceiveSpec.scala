@@ -73,10 +73,12 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             })
         }))
         a ! "hallo"
-        expectMsg(1 second,
-                  Logging.Debug("funky",
-                                classOf[DummyClassForStringSources],
-                                "received unhandled message hallo from " + system.deadLetters))
+        expectMsg(
+          1 second,
+          Logging.Debug(
+            "funky",
+            classOf[DummyClassForStringSources],
+            "received unhandled message hallo from " + system.deadLetters))
         expectMsgType[UnhandledMessage](1 second)
       }
     }
@@ -272,9 +274,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           }
 
           system.stop(supervisor)
-          expectMsgAllOf(Logging.Debug(aname, aclass, "stopped"),
-                         Logging.Debug(sname, sclass, "stopping"),
-                         Logging.Debug(sname, sclass, "stopped"))
+          expectMsgAllOf(
+            Logging.Debug(aname, aclass, "stopped"),
+            Logging.Debug(sname, sclass, "stopping"),
+            Logging.Debug(sname, sclass, "stopped"))
         }
 
         def expectMsgAllPF(messages: Int)(matchers: PartialFunction[AnyRef, Int]): Set[Int] = {
@@ -285,9 +288,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
             else if (gotMatching.size == messages) gotMatching
             else {
               val msg = receiveOne(remainingOrDefault)
-              assert(msg ne null,
-                     s"timeout ($max) during expectMsgAllPF, got matching " +
-                     s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
+              assert(
+                msg ne null,
+                s"timeout ($max) during expectMsgAllPF, got matching " +
+                s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
               if (matchers.isDefinedAt(msg)) receiveNMatching(gotMatching + matchers(msg), Vector.empty)
               else receiveNMatching(gotMatching, unknown :+ msg) // unknown message, just ignore
             }

@@ -24,34 +24,37 @@ object WriteAggregatorSpec {
   val KeyA = GSetKey[String]("A")
   val KeyB = ORSetKey[String]("B")
 
-  def writeAggregatorProps(data: GSet[String],
-                           consistency: Replicator.WriteConsistency,
-                           probes: Map[Address, ActorRef],
-                           nodes: Set[Address],
-                           unreachable: Set[Address],
-                           replyTo: ActorRef,
-                           durable: Boolean): Props =
+  def writeAggregatorProps(
+      data: GSet[String],
+      consistency: Replicator.WriteConsistency,
+      probes: Map[Address, ActorRef],
+      nodes: Set[Address],
+      unreachable: Set[Address],
+      replyTo: ActorRef,
+      durable: Boolean): Props =
     Props(new TestWriteAggregator(KeyA, data, None, consistency, probes, nodes, unreachable, replyTo, durable))
 
-  def writeAggregatorPropsWithDelta(data: ORSet[String],
-                                    delta: Delta,
-                                    consistency: Replicator.WriteConsistency,
-                                    probes: Map[Address, ActorRef],
-                                    nodes: Set[Address],
-                                    unreachable: Set[Address],
-                                    replyTo: ActorRef,
-                                    durable: Boolean): Props =
+  def writeAggregatorPropsWithDelta(
+      data: ORSet[String],
+      delta: Delta,
+      consistency: Replicator.WriteConsistency,
+      probes: Map[Address, ActorRef],
+      nodes: Set[Address],
+      unreachable: Set[Address],
+      replyTo: ActorRef,
+      durable: Boolean): Props =
     Props(new TestWriteAggregator(KeyB, data, Some(delta), consistency, probes, nodes, unreachable, replyTo, durable))
 
-  class TestWriteAggregator(key: Key.KeyR,
-                            data: ReplicatedData,
-                            delta: Option[Delta],
-                            consistency: Replicator.WriteConsistency,
-                            probes: Map[Address, ActorRef],
-                            nodes: Set[Address],
-                            unreachable: Set[Address],
-                            replyTo: ActorRef,
-                            durable: Boolean)
+  class TestWriteAggregator(
+      key: Key.KeyR,
+      data: ReplicatedData,
+      delta: Option[Delta],
+      consistency: Replicator.WriteConsistency,
+      probes: Map[Address, ActorRef],
+      nodes: Set[Address],
+      unreachable: Set[Address],
+      replyTo: ActorRef,
+      durable: Boolean)
       extends WriteAggregator(key, DataEnvelope(data), delta, consistency, None, nodes, unreachable, replyTo, durable) {
 
     override def replica(address: Address): ActorSelection =
@@ -215,14 +218,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "send deltas first" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec.writeAggregatorPropsWithDelta(fullState2,
-                                                          delta,
-                                                          writeMajority,
-                                                          probes(probe.ref),
-                                                          nodes,
-                                                          Set.empty,
-                                                          testActor,
-                                                          durable = false))
+        WriteAggregatorSpec.writeAggregatorPropsWithDelta(
+          fullState2,
+          delta,
+          writeMajority,
+          probes(probe.ref),
+          nodes,
+          Set.empty,
+          testActor,
+          durable = false))
 
       probe.expectMsgType[DeltaPropagation]
       probe.lastSender ! WriteAck
@@ -237,14 +241,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
       val testProbes = probes()
       val testProbeRefs = testProbes.map { case (a, tm) => a -> tm.writeAckAdapter }
       val aggr = system.actorOf(
-        WriteAggregatorSpec.writeAggregatorPropsWithDelta(fullState2,
-                                                          delta,
-                                                          writeAll,
-                                                          testProbeRefs,
-                                                          nodes,
-                                                          Set.empty,
-                                                          testActor,
-                                                          durable = false))
+        WriteAggregatorSpec.writeAggregatorPropsWithDelta(
+          fullState2,
+          delta,
+          writeAll,
+          testProbeRefs,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = false))
 
       testProbes(nodeA).expectMsgType[DeltaPropagation]
       // no reply
@@ -271,14 +276,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "timeout when less than required acks" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec.writeAggregatorPropsWithDelta(fullState2,
-                                                          delta,
-                                                          writeAll,
-                                                          probes(probe.ref),
-                                                          nodes,
-                                                          Set.empty,
-                                                          testActor,
-                                                          durable = false))
+        WriteAggregatorSpec.writeAggregatorPropsWithDelta(
+          fullState2,
+          delta,
+          writeAll,
+          probes(probe.ref),
+          nodes,
+          Set.empty,
+          testActor,
+          durable = false))
 
       probe.expectMsgType[DeltaPropagation]
       // no reply

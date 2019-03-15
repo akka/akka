@@ -360,9 +360,10 @@ object Attributes {
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
-  def createLogLevels(onElement: Logging.LogLevel,
-                      onFinish: Logging.LogLevel,
-                      onFailure: Logging.LogLevel): Attributes =
+  def createLogLevels(
+      onElement: Logging.LogLevel,
+      onFinish: Logging.LogLevel,
+      onFailure: Logging.LogLevel): Attributes =
     logLevels(onElement, onFinish, onFailure)
 
   /**
@@ -381,9 +382,10 @@ object Attributes {
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
-  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel,
-                onFinish: Logging.LogLevel = Logging.DebugLevel,
-                onFailure: Logging.LogLevel = Logging.ErrorLevel) =
+  def logLevels(
+      onElement: Logging.LogLevel = Logging.DebugLevel,
+      onFinish: Logging.LogLevel = Logging.DebugLevel,
+      onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
   /**
@@ -462,9 +464,10 @@ object ActorAttributes {
    * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
-  def createLogLevels(onElement: Logging.LogLevel,
-                      onFinish: Logging.LogLevel,
-                      onFailure: Logging.LogLevel): Attributes =
+  def createLogLevels(
+      onElement: Logging.LogLevel,
+      onFinish: Logging.LogLevel,
+      onFailure: Logging.LogLevel): Attributes =
     logLevels(onElement, onFinish, onFailure)
 
   /**
@@ -483,9 +486,10 @@ object ActorAttributes {
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
-  def logLevels(onElement: Logging.LogLevel = Logging.DebugLevel,
-                onFinish: Logging.LogLevel = Logging.DebugLevel,
-                onFailure: Logging.LogLevel = Logging.ErrorLevel) =
+  def logLevels(
+      onElement: Logging.LogLevel = Logging.DebugLevel,
+      onFinish: Logging.LogLevel = Logging.DebugLevel,
+      onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
 }

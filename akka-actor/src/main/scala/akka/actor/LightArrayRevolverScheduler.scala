@@ -48,8 +48,9 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   val TickDuration =
     config
       .getMillisDuration("akka.scheduler.tick-duration")
-      .requiring(_ >= 10.millis || !Helpers.isWindows,
-                 "minimum supported akka.scheduler.tick-duration on Windows is 10ms")
+      .requiring(
+        _ >= 10.millis || !Helpers.isWindows,
+        "minimum supported akka.scheduler.tick-duration on Windows is 10ms")
       .requiring(_ >= 1.millis, "minimum supported akka.scheduler.tick-duration is 1ms")
   val ShutdownTimeout = config.getMillisDuration("akka.scheduler.shutdown-timeout")
 
@@ -93,24 +94,23 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self =>
-      compareAndSet(InitialRepeatMarker,
-                    schedule(executor,
-                             new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
-                               override def run(): Unit = {
-                                 try {
-                                   runnable.run()
-                                   val driftNanos = clock() - getAndAdd(delay.toNanos)
-                                   if (self.get != null)
-                                     swap(
-                                       schedule(executor,
-                                                this,
-                                                Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
-                                 } catch {
-                                   case _: SchedulerException => // ignore failure to enqueue or terminated target actor
-                                 }
-                               }
-                             },
-                             roundUp(initialDelay)))
+      compareAndSet(
+        InitialRepeatMarker,
+        schedule(
+          executor,
+          new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
+            override def run(): Unit = {
+              try {
+                runnable.run()
+                val driftNanos = clock() - getAndAdd(delay.toNanos)
+                if (self.get != null)
+                  swap(schedule(executor, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
+              } catch {
+                case _: SchedulerException => // ignore failure to enqueue or terminated target actor
+              }
+            }
+          },
+          roundUp(initialDelay)))
 
       @tailrec private def swap(c: Cancellable): Unit = {
         get match {

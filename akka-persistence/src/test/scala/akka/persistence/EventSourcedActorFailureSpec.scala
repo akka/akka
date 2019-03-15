@@ -142,10 +142,11 @@ object EventSourcedActorFailureSpec {
 
 class EventSourcedActorFailureSpec
     extends PersistenceSpec(
-      PersistenceSpec.config("inmem",
-                             "SnapshotFailureRobustnessSpec",
-                             extraConfig = Some(
-                               """
+      PersistenceSpec.config(
+        "inmem",
+        "SnapshotFailureRobustnessSpec",
+        extraConfig = Some(
+          """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorFailureSpec$FailingInmemJournal"
   """)))
     with ImplicitSender {

@@ -74,18 +74,20 @@ object PersistenceMultiDocSpec {
     override def journalPluginConfig =
       ConfigFactory
         .empty()
-        .withValue(s"journal-plugin-$runtimeDistinction",
-                   context.system.settings.config
-                     .getValue("journal-plugin") // or a very different configuration coming from an external service.
+        .withValue(
+          s"journal-plugin-$runtimeDistinction",
+          context.system.settings.config
+            .getValue("journal-plugin") // or a very different configuration coming from an external service.
         )
 
     // Configuration which contains the snapshot store plugin id defined above
     override def snapshotPluginConfig =
       ConfigFactory
         .empty()
-        .withValue(s"snapshot-plugin-$runtimeDistinction",
-                   context.system.settings.config
-                     .getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
+        .withValue(
+          s"snapshot-plugin-$runtimeDistinction",
+          context.system.settings.config
+            .getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
         )
 
   }

@@ -47,9 +47,10 @@ import scala.util.control.NonFatal
   }
   final case class Both(subscriber: Subscriber[Any]) extends HasActualSubscriber
 
-  final case class Establishing(subscriber: Subscriber[Any],
-                                onCompleteBuffered: Boolean = false,
-                                onErrorBuffered: OptionVal[Throwable] = OptionVal.None)
+  final case class Establishing(
+      subscriber: Subscriber[Any],
+      onCompleteBuffered: Boolean = false,
+      onErrorBuffered: OptionVal[Throwable] = OptionVal.None)
       extends HasActualSubscriber
   object Establishing {
     def create(s: Subscriber[_]) = Establishing(s.asInstanceOf[Subscriber[Any]])

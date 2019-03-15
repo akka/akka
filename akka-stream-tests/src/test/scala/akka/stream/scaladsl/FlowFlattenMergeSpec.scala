@@ -222,14 +222,15 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
     "work with mix of Source.single and other sources when slow demand" in assertAllStagesStopped {
       val sources: Source[Source[Int, NotUsed], NotUsed] = Source(
-        List(Source.single(0),
-             Source.single(1),
-             Source(2 to 4),
-             Source.single(5),
-             Source(6 to 6),
-             Source.single(7),
-             Source(8 to 10),
-             Source.single(11)))
+        List(
+          Source.single(0),
+          Source.single(1),
+          Source(2 to 4),
+          Source.single(5),
+          Source(6 to 6),
+          Source.single(7),
+          Source(8 to 10),
+          Source.single(11)))
 
       val probe =
         sources.flatMapConcat(identity).runWith(TestSink.probe)

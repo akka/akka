@@ -28,12 +28,15 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "call postStop in order on stages - when upstream completes" in new OneBoundedSetup[String](
-      PreStartAndPostStopIdentity(onUpstreamCompleted = () => testActor ! "complete-a",
-                                  onStop = () => testActor ! "stop-a"),
-      PreStartAndPostStopIdentity(onUpstreamCompleted = () => testActor ! "complete-b",
-                                  onStop = () => testActor ! "stop-b"),
-      PreStartAndPostStopIdentity(onUpstreamCompleted = () => testActor ! "complete-c",
-                                  onStop = () => testActor ! "stop-c")) {
+      PreStartAndPostStopIdentity(
+        onUpstreamCompleted = () => testActor ! "complete-a",
+        onStop = () => testActor ! "stop-a"),
+      PreStartAndPostStopIdentity(
+        onUpstreamCompleted = () => testActor ! "complete-b",
+        onStop = () => testActor ! "stop-b"),
+      PreStartAndPostStopIdentity(
+        onUpstreamCompleted = () => testActor ! "complete-c",
+        onStop = () => testActor ! "stop-c")) {
       upstream.onComplete()
       expectMsg("complete-a")
       expectMsg("stop-a")
@@ -45,8 +48,9 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     }
 
     "call postStop in order on stages - when upstream onErrors" in new OneBoundedSetup[String](
-      PreStartAndPostStopIdentity(onUpstreamFailed = ex => testActor ! ex.getMessage,
-                                  onStop = () => testActor ! "stop-c")) {
+      PreStartAndPostStopIdentity(
+        onUpstreamFailed = ex => testActor ! ex.getMessage,
+        onStop = () => testActor ! "stop-c")) {
       val msg = "Boom! Boom! Boom!"
       upstream.onError(TE(msg))
       expectMsg(msg)
@@ -83,10 +87,10 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set(OnComplete))
     }
 
-    "onError when preStart fails with stages after" in new OneBoundedSetup[String](Map((x: Int) => x),
-                                                                                   PreStartFailer(
-                                                                                     () => throw TE("Boom!")),
-                                                                                   Map((x: Int) => x)) {
+    "onError when preStart fails with stages after" in new OneBoundedSetup[String](
+      Map((x: Int) => x),
+      PreStartFailer(() => throw TE("Boom!")),
+      Map((x: Int) => x)) {
       lastEvents() should ===(Set(Cancel, OnError(TE("Boom!"))))
     }
 
@@ -139,10 +143,11 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  private[akka] case class PreStartAndPostStopIdentity[T](onStart: () => Unit = () => (),
-                                                          onStop: () => Unit = () => (),
-                                                          onUpstreamCompleted: () => Unit = () => (),
-                                                          onUpstreamFailed: Throwable => Unit = ex => ())
+  private[akka] case class PreStartAndPostStopIdentity[T](
+      onStart: () => Unit = () => (),
+      onStop: () => Unit = () => (),
+      onUpstreamCompleted: () => Unit = () => (),
+      onUpstreamFailed: Throwable => Unit = ex => ())
       extends SimpleLinearGraphStage[T] {
 
     override def createLogic(attributes: Attributes): GraphStageLogic =

@@ -27,11 +27,13 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
       // TODO: these are some expensive sanity checks, about the numbers being consecutive, without gaps
       // TODO: we can remove them, make them re-map (not needed I believe though)
       val expectedGaplessSum = Integer.valueOf((dictionary.size * (dictionary.size + 1)) / 2) /* Dirichlet */
-      require(dictionary.values.min == 0,
-              "Compression table should start allocating from 0, yet lowest allocated id was " + dictionary.values.min)
-      require(dictionary.values.sum + dictionary.size == expectedGaplessSum,
-              "Given compression map does not seem to be gap-less and starting from zero, " +
-              "which makes compressing it into an Array difficult, bailing out! Map was: " + dictionary)
+      require(
+        dictionary.values.min == 0,
+        "Compression table should start allocating from 0, yet lowest allocated id was " + dictionary.values.min)
+      require(
+        dictionary.values.sum + dictionary.size == expectedGaplessSum,
+        "Given compression map does not seem to be gap-less and starting from zero, " +
+        "which makes compressing it into an Array difficult, bailing out! Map was: " + dictionary)
 
       val tups = new Array[(Object, Int)](dictionary.size).asInstanceOf[Array[(T, Int)]]
       val ts = new Array[Object](dictionary.size).asInstanceOf[Array[T]]

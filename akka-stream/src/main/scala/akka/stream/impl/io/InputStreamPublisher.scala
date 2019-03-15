@@ -29,9 +29,10 @@ import scala.util.{ Failure, Success }
 }
 
 /** INTERNAL API */
-@InternalApi private[akka] class InputStreamPublisher(is: InputStream,
-                                                      completionPromise: Promise[IOResult],
-                                                      chunkSize: Int)
+@InternalApi private[akka] class InputStreamPublisher(
+    is: InputStream,
+    completionPromise: Promise[IOResult],
+    chunkSize: Int)
     extends akka.stream.actor.ActorPublisher[ByteString]
     with ActorLogging {
 

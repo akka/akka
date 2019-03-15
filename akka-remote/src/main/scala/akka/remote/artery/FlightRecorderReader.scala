@@ -35,12 +35,13 @@ private[akka] object FlightRecorderReader {
   case object Live extends LogState
   case object Snapshot extends LogState
 
-  case class SectionParameters(offset: Long,
-                               sectionSize: Long,
-                               logSize: Long,
-                               window: Long,
-                               recordSize: Long,
-                               entriesPerRecord: Long) {
+  case class SectionParameters(
+      offset: Long,
+      sectionSize: Long,
+      logSize: Long,
+      window: Long,
+      recordSize: Long,
+      entriesPerRecord: Long) {
     override def toString: String =
       s"""
          |  offset             = $offset
@@ -53,26 +54,29 @@ private[akka] object FlightRecorderReader {
        """.stripMargin
   }
 
-  val AlertSectionParameters = SectionParameters(offset = AlertSectionOffset,
-                                                 sectionSize = AlertSectionSize,
-                                                 logSize = AlertLogSize,
-                                                 window = AlertWindow,
-                                                 recordSize = AlertRecordSize,
-                                                 entriesPerRecord = 1)
+  val AlertSectionParameters = SectionParameters(
+    offset = AlertSectionOffset,
+    sectionSize = AlertSectionSize,
+    logSize = AlertLogSize,
+    window = AlertWindow,
+    recordSize = AlertRecordSize,
+    entriesPerRecord = 1)
 
-  val LoFreqSectionParameters = SectionParameters(offset = LoFreqSectionOffset,
-                                                  sectionSize = LoFreqSectionSize,
-                                                  logSize = LoFreqLogSize,
-                                                  window = LoFreqWindow,
-                                                  recordSize = LoFreqRecordSize,
-                                                  entriesPerRecord = 1)
+  val LoFreqSectionParameters = SectionParameters(
+    offset = LoFreqSectionOffset,
+    sectionSize = LoFreqSectionSize,
+    logSize = LoFreqLogSize,
+    window = LoFreqWindow,
+    recordSize = LoFreqRecordSize,
+    entriesPerRecord = 1)
 
-  val HiFreqSectionParameters = SectionParameters(offset = HiFreqSectionOffset,
-                                                  sectionSize = HiFreqSectionSize,
-                                                  logSize = HiFreqLogSize,
-                                                  window = HiFreqWindow,
-                                                  recordSize = HiFreqRecordSize,
-                                                  entriesPerRecord = HiFreqBatchSize)
+  val HiFreqSectionParameters = SectionParameters(
+    offset = HiFreqSectionOffset,
+    sectionSize = HiFreqSectionSize,
+    logSize = HiFreqLogSize,
+    window = HiFreqWindow,
+    recordSize = HiFreqRecordSize,
+    entriesPerRecord = HiFreqBatchSize)
 
   def dumpToStdout(flightRecorderFile: Path): Unit = {
     var raFile: RandomAccessFile = null
@@ -189,10 +193,11 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
         override def next(): CompactEntry = {
           if (entriesLeft == -1L) readHeader()
 
-          val entry = CompactEntry(timeStamp,
-                                   dirty,
-                                   code = fileBuffer.getLong(entryOffset),
-                                   param = fileBuffer.getLong(entryOffset + 8))
+          val entry = CompactEntry(
+            timeStamp,
+            dirty,
+            code = fileBuffer.getLong(entryOffset),
+            param = fileBuffer.getLong(entryOffset + 8))
 
           entriesLeft -= 1
           if (entriesLeft == 0) {

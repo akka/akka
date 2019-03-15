@@ -300,27 +300,28 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
         ShardCoordinator.props(typeName, settings, allocationStrategy, replicator, majorityMinCap)
     }
 
-    List("counter",
-         "rebalancingCounter",
-         "RememberCounterEntities",
-         "AnotherRememberCounter",
-         "RememberCounter",
-         "RebalancingRememberCounter",
-         "AutoMigrateRememberRegionTest").foreach { typeName =>
+    List(
+      "counter",
+      "rebalancingCounter",
+      "RememberCounterEntities",
+      "AnotherRememberCounter",
+      "RememberCounter",
+      "RebalancingRememberCounter",
+      "AutoMigrateRememberRegionTest").foreach { typeName =>
       val rebalanceEnabled = typeName.toLowerCase.startsWith("rebalancing")
       val rememberEnabled = typeName.toLowerCase.contains("remember")
       val singletonProps = BackoffSupervisor
-        .props(childProps = coordinatorProps(typeName, rebalanceEnabled, rememberEnabled),
-               childName = "coordinator",
-               minBackoff = 5.seconds,
-               maxBackoff = 5.seconds,
-               randomFactor = 0.1,
-               maxNrOfRetries = -1)
+        .props(
+          childProps = coordinatorProps(typeName, rebalanceEnabled, rememberEnabled),
+          childName = "coordinator",
+          minBackoff = 5.seconds,
+          maxBackoff = 5.seconds,
+          randomFactor = 0.1,
+          maxNrOfRetries = -1)
         .withDeploy(Deploy.local)
       system.actorOf(
-        ClusterSingletonManager.props(singletonProps,
-                                      terminationMessage = PoisonPill,
-                                      settings = ClusterSingletonManagerSettings(system)),
+        ClusterSingletonManager
+          .props(singletonProps, terminationMessage = PoisonPill, settings = ClusterSingletonManagerSettings(system)),
         name = typeName + "Coordinator")
     }
   }
@@ -334,15 +335,16 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
     val settings = ClusterShardingSettings(cfg).withRememberEntities(rememberEntities)
     system.actorOf(
-      ShardRegion.props(typeName = typeName,
-                        entityProps = _ => qualifiedCounterProps(typeName),
-                        settings = settings,
-                        coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
-                        extractEntityId = extractEntityId,
-                        extractShardId = extractShardId,
-                        handOffStopMessage = PoisonPill,
-                        replicator,
-                        majorityMinCap = 3),
+      ShardRegion.props(
+        typeName = typeName,
+        entityProps = _ => qualifiedCounterProps(typeName),
+        settings = settings,
+        coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId,
+        handOffStopMessage = PoisonPill,
+        replicator,
+        majorityMinCap = 3),
       name = typeName + "Region")
   }
 
@@ -463,16 +465,17 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
           buffer-size = 1000
         """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
         val settings = ClusterShardingSettings(cfg)
-        val proxy = system.actorOf(ShardRegion.proxyProps(typeName = "counter",
-                                                          dataCenter = None,
-                                                          settings,
-                                                          coordinatorPath =
-                                                            "/user/counterCoordinator/singleton/coordinator",
-                                                          extractEntityId = extractEntityId,
-                                                          extractShardId = extractShardId,
-                                                          system.deadLetters,
-                                                          majorityMinCap = 0),
-                                   name = "regionProxy")
+        val proxy = system.actorOf(
+          ShardRegion.proxyProps(
+            typeName = "counter",
+            dataCenter = None,
+            settings,
+            coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
+            extractEntityId = extractEntityId,
+            extractShardId = extractShardId,
+            system.deadLetters,
+            majorityMinCap = 0),
+          name = "regionProxy")
 
         proxy ! Get(1)
         expectMsg(2)
@@ -632,24 +635,27 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
   "easy to use with extensions" in within(50.seconds) {
     runOn(third, fourth, fifth, sixth) {
       //#counter-start
-      val counterRegion: ActorRef = ClusterSharding(system).start(typeName = "Counter",
-                                                                  entityProps = Props[Counter],
-                                                                  settings = ClusterShardingSettings(system),
-                                                                  extractEntityId = extractEntityId,
-                                                                  extractShardId = extractShardId)
+      val counterRegion: ActorRef = ClusterSharding(system).start(
+        typeName = "Counter",
+        entityProps = Props[Counter],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
       //#counter-start
-      ClusterSharding(system).start(typeName = "AnotherCounter",
-                                    entityProps = Props[AnotherCounter],
-                                    settings = ClusterShardingSettings(system),
-                                    extractEntityId = extractEntityId,
-                                    extractShardId = extractShardId)
+      ClusterSharding(system).start(
+        typeName = "AnotherCounter",
+        entityProps = Props[AnotherCounter],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
 
       //#counter-supervisor-start
-      ClusterSharding(system).start(typeName = "SupervisedCounter",
-                                    entityProps = Props[CounterSupervisor],
-                                    settings = ClusterShardingSettings(system),
-                                    extractEntityId = extractEntityId,
-                                    extractShardId = extractShardId)
+      ClusterSharding(system).start(
+        typeName = "SupervisedCounter",
+        entityProps = Props[CounterSupervisor],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
       //#counter-supervisor-start
     }
     enterBarrier("extension-started")
@@ -686,11 +692,12 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
   }
   "easy API for starting" in within(50.seconds) {
     runOn(first) {
-      val counterRegionViaStart: ActorRef = ClusterSharding(system).start(typeName = "ApiTest",
-                                                                          entityProps = Props[Counter],
-                                                                          settings = ClusterShardingSettings(system),
-                                                                          extractEntityId = extractEntityId,
-                                                                          extractShardId = extractShardId)
+      val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
+        typeName = "ApiTest",
+        entityProps = Props[Counter],
+        settings = ClusterShardingSettings(system),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
 
       val counterRegionViaGet: ActorRef = ClusterSharding(system).shardRegion("ApiTest")
 
@@ -703,11 +710,12 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
   "demonstrate API for DC proxy" in within(50.seconds) {
     runOn(sixth) {
       // #proxy-dc
-      val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(typeName = "Counter",
-                                                                         role = None,
-                                                                         dataCenter = Some("B"),
-                                                                         extractEntityId = extractEntityId,
-                                                                         extractShardId = extractShardId)
+      val counterProxyDcB: ActorRef = ClusterSharding(system).startProxy(
+        typeName = "Counter",
+        role = None,
+        dataCenter = Some("B"),
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId)
       // #proxy-dc
     }
     enterBarrier("after-dc-proxy")

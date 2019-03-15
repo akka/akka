@@ -86,9 +86,10 @@ class RemoteDeployNotAllowedSpec
       }
 
       val system2 =
-        ActorSystem(guardianBehavior,
-                    system.name,
-                    RemoteDeployNotAllowedSpec.configWithRemoteDeployment(node1.selfMember.address.port.get))
+        ActorSystem(
+          guardianBehavior,
+          system.name,
+          RemoteDeployNotAllowedSpec.configWithRemoteDeployment(node1.selfMember.address.port.get))
       try {
         val node2 = Cluster(system2)
         node2.manager ! Join(node1.selfMember.address)

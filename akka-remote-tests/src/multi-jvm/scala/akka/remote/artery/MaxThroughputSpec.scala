@@ -150,20 +150,22 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  def senderProps(mainTarget: Target,
-                  targets: Array[Target],
-                  testSettings: TestSettings,
-                  plotRef: ActorRef,
-                  printTaskRunnerMetrics: Boolean,
-                  reporter: BenchmarkFileReporter): Props =
+  def senderProps(
+      mainTarget: Target,
+      targets: Array[Target],
+      testSettings: TestSettings,
+      plotRef: ActorRef,
+      printTaskRunnerMetrics: Boolean,
+      reporter: BenchmarkFileReporter): Props =
     Props(new Sender(mainTarget, targets, testSettings, plotRef, printTaskRunnerMetrics, reporter))
 
-  class Sender(target: Target,
-               targets: Array[Target],
-               testSettings: TestSettings,
-               plotRef: ActorRef,
-               printTaskRunnerMetrics: Boolean,
-               reporter: BenchmarkFileReporter)
+  class Sender(
+      target: Target,
+      targets: Array[Target],
+      testSettings: TestSettings,
+      plotRef: ActorRef,
+      printTaskRunnerMetrics: Boolean,
+      reporter: BenchmarkFileReporter)
       extends Actor {
     val numTargets = targets.size
 
@@ -283,12 +285,13 @@ object MaxThroughputSpec extends MultiNodeConfig {
       while (i < batchSize) {
         val msg0 =
           if (realMessage)
-            TestMessage(id = totalMessages - remaining + i,
-                        name = "abc",
-                        status = i % 2 == 0,
-                        description = "ABC",
-                        payload = payload,
-                        items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
+            TestMessage(
+              id = totalMessages - remaining + i,
+              name = "abc",
+              status = i % 2 == 0,
+              description = "ABC",
+              payload = payload,
+              items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
           else payload
 
         val msg1 = if (warmup) Warmup(msg0) else msg0
@@ -313,12 +316,13 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
   }
 
-  final case class TestSettings(testName: String,
-                                totalMessages: Long,
-                                burstSize: Int,
-                                payloadSize: Int,
-                                senderReceiverPairs: Int,
-                                realMessage: Boolean) {
+  final case class TestSettings(
+      testName: String,
+      totalMessages: Long,
+      burstSize: Int,
+      payloadSize: Int,
+      senderReceiverPairs: Int,
+      realMessage: Boolean) {
     // data based on measurement
     def totalSize(system: ActorSystem) =
       payloadSize + (if (RARP(system).provider.remoteSettings.Artery.Advanced.Compression.Enabled) 38 else 110)
@@ -407,36 +411,41 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
   }
 
   val scenarios = List(
-    TestSettings(testName = "warmup",
-                 totalMessages = adjustedTotalMessages(20000),
-                 burstSize = 1000,
-                 payloadSize = 100,
-                 senderReceiverPairs = 1,
-                 realMessage),
-    TestSettings(testName = "1-to-1",
-                 totalMessages = adjustedTotalMessages(50000),
-                 burstSize = 1000,
-                 payloadSize = 100,
-                 senderReceiverPairs = 1,
-                 realMessage),
-    TestSettings(testName = "1-to-1-size-1k",
-                 totalMessages = adjustedTotalMessages(20000),
-                 burstSize = 1000,
-                 payloadSize = 1000,
-                 senderReceiverPairs = 1,
-                 realMessage),
-    TestSettings(testName = "1-to-1-size-10k",
-                 totalMessages = adjustedTotalMessages(5000),
-                 burstSize = 1000,
-                 payloadSize = 10000,
-                 senderReceiverPairs = 1,
-                 realMessage),
-    TestSettings(testName = "5-to-5",
-                 totalMessages = adjustedTotalMessages(20000),
-                 burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
-                 payloadSize = 100,
-                 senderReceiverPairs = 5,
-                 realMessage))
+    TestSettings(
+      testName = "warmup",
+      totalMessages = adjustedTotalMessages(20000),
+      burstSize = 1000,
+      payloadSize = 100,
+      senderReceiverPairs = 1,
+      realMessage),
+    TestSettings(
+      testName = "1-to-1",
+      totalMessages = adjustedTotalMessages(50000),
+      burstSize = 1000,
+      payloadSize = 100,
+      senderReceiverPairs = 1,
+      realMessage),
+    TestSettings(
+      testName = "1-to-1-size-1k",
+      totalMessages = adjustedTotalMessages(20000),
+      burstSize = 1000,
+      payloadSize = 1000,
+      senderReceiverPairs = 1,
+      realMessage),
+    TestSettings(
+      testName = "1-to-1-size-10k",
+      totalMessages = adjustedTotalMessages(5000),
+      burstSize = 1000,
+      payloadSize = 10000,
+      senderReceiverPairs = 1,
+      realMessage),
+    TestSettings(
+      testName = "5-to-5",
+      totalMessages = adjustedTotalMessages(20000),
+      burstSize = 200, // don't exceed the send queue capacity 200*5*3=3000
+      payloadSize = 100,
+      senderReceiverPairs = 5,
+      realMessage))
 
   def test(testSettings: TestSettings, resultReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
@@ -447,8 +456,9 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
     runOn(second) {
       val rep = reporter(testName)
       val receivers = (1 to senderReceiverPairs).map { n =>
-        system.actorOf(receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
-                       receiverName + n)
+        system.actorOf(
+          receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
+          receiverName + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
@@ -463,13 +473,15 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       val senders = for (n <- 1 to senderReceiverPairs) yield {
         val receiver = receivers(n - 1)
         val plotProbe = TestProbe()
-        val snd = system.actorOf(senderProps(receiver,
-                                             receivers,
-                                             testSettings,
-                                             plotProbe.ref,
-                                             printTaskRunnerMetrics = n == 1,
-                                             resultReporter),
-                                 testName + "-snd" + n)
+        val snd = system.actorOf(
+          senderProps(
+            receiver,
+            receivers,
+            testSettings,
+            plotProbe.ref,
+            printTaskRunnerMetrics = n == 1,
+            resultReporter),
+          testName + "-snd" + n)
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)
         snd ! Run

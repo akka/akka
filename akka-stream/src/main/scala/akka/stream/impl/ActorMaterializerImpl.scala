@@ -32,10 +32,11 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
   @InternalApi def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat
 
   /** INTERNAL API */
-  @InternalApi private[akka] def materialize[Mat](graph: Graph[ClosedShape, Mat],
-                                                  defaultAttributes: Attributes,
-                                                  defaultPhase: Phase[Any],
-                                                  phases: Map[IslandTag, Phase[Any]]): Mat
+  @InternalApi private[akka] def materialize[Mat](
+      graph: Graph[ClosedShape, Mat],
+      defaultAttributes: Attributes,
+      defaultPhase: Phase[Any],
+      phases: Map[IslandTag, Phase[Any]]): Mat
 
   /**
    * INTERNAL API
@@ -91,14 +92,16 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
  *
  * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.
  */
-private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer,
-                                                   registerShell: GraphInterpreterShell => ActorRef)
+private[akka] class SubFusingActorMaterializerImpl(
+    val delegate: ExtendedActorMaterializer,
+    registerShell: GraphInterpreterShell => ActorRef)
     extends Materializer {
   val subFusingPhase = new Phase[Any] {
-    override def apply(settings: ActorMaterializerSettings,
-                       attributes: Attributes,
-                       materializer: PhasedFusingActorMaterializer,
-                       islandName: String): PhaseIsland[Any] = {
+    override def apply(
+        settings: ActorMaterializerSettings,
+        attributes: Attributes,
+        materializer: PhasedFusingActorMaterializer,
+        islandName: String): PhaseIsland[Any] = {
       new GraphStageIsland(settings, attributes, materializer, islandName, OptionVal(registerShell))
         .asInstanceOf[PhaseIsland[Any]]
     }
@@ -126,9 +129,10 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 
-  override def schedulePeriodically(initialDelay: FiniteDuration,
-                                    interval: FiniteDuration,
-                                    task: Runnable): Cancellable =
+  override def schedulePeriodically(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
     delegate.schedulePeriodically(initialDelay, interval, task)
 
   override def withNamePrefix(name: String): SubFusingActorMaterializerImpl =

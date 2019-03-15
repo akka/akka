@@ -80,53 +80,53 @@ object ClusterShardingPersistenceSpec {
       // transient state (testing purpose)
       var stashing = false
 
-      EventSourcedEntity[Command, String, String](entityTypeKey = typeKey,
-                                                  entityId = entityId,
-                                                  emptyState = "",
-                                                  commandHandler = (state, cmd) =>
-                                                    cmd match {
-                                                      case Add(s) =>
-                                                        if (stashing)
-                                                          Effect.stash()
-                                                        else
-                                                          Effect.persist(s)
+      EventSourcedEntity[Command, String, String](
+        entityTypeKey = typeKey,
+        entityId = entityId,
+        emptyState = "",
+        commandHandler = (state, cmd) =>
+          cmd match {
+            case Add(s) =>
+              if (stashing)
+                Effect.stash()
+              else
+                Effect.persist(s)
 
-                                                      case cmd @ AddWithConfirmation(s) =>
-                                                        if (stashing)
-                                                          Effect.stash()
-                                                        else
-                                                          Effect.persist(s).thenReply(cmd)(_ => Done)
+            case cmd @ AddWithConfirmation(s) =>
+              if (stashing)
+                Effect.stash()
+              else
+                Effect.persist(s).thenReply(cmd)(_ => Done)
 
-                                                      case Get(replyTo) =>
-                                                        replyTo ! s"$entityId:$state"
-                                                        Effect.none
+            case Get(replyTo) =>
+              replyTo ! s"$entityId:$state"
+              Effect.none
 
-                                                      case cmd @ PassivateAndPersist(s) =>
-                                                        shard ! Passivate(ctx.self)
-                                                        Effect.persist(s).thenReply(cmd)(_ => Done)
+            case cmd @ PassivateAndPersist(s) =>
+              shard ! Passivate(ctx.self)
+              Effect.persist(s).thenReply(cmd)(_ => Done)
 
-                                                      case Echo(msg, replyTo) =>
-                                                        Effect.none.thenRun(_ => replyTo ! msg)
+            case Echo(msg, replyTo) =>
+              Effect.none.thenRun(_ => replyTo ! msg)
 
-                                                      case Block(latch) =>
-                                                        latch.await(5, TimeUnit.SECONDS)
-                                                        Effect.none
+            case Block(latch) =>
+              latch.await(5, TimeUnit.SECONDS)
+              Effect.none
 
-                                                      case BeginStashingAddCommands =>
-                                                        stashing = true
-                                                        Effect.none
+            case BeginStashingAddCommands =>
+              stashing = true
+              Effect.none
 
-                                                      case UnstashAll =>
-                                                        stashing = false
-                                                        Effect.unstashAll()
+            case UnstashAll =>
+              stashing = false
+              Effect.unstashAll()
 
-                                                      case UnstashAllAndPassivate ⇒
-                                                        stashing = false
-                                                        shard ! Passivate(ctx.self)
-                                                        Effect.unstashAll()
-                                                    },
-                                                  eventHandler = (state, evt) ⇒
-                                                    if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
+            case UnstashAllAndPassivate ⇒
+              stashing = false
+              shard ! Passivate(ctx.self)
+              Effect.unstashAll()
+          },
+        eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
         case RecoveryCompleted(state) ⇒
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {

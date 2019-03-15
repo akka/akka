@@ -160,20 +160,22 @@ class FramingSpec extends StreamSpec {
     val fieldOffsets = List(0, 1, 2, 3, 15, 16, 31, 32, 44, 107)
 
     def encode(payload: ByteString, fieldOffset: Int, fieldLength: Int, byteOrder: ByteOrder): ByteString = {
-      encodeComplexFrame(payload,
-                         fieldOffset,
-                         fieldLength,
-                         byteOrder,
-                         ByteString(new Array[Byte](fieldOffset)),
-                         ByteString.empty)
+      encodeComplexFrame(
+        payload,
+        fieldOffset,
+        fieldLength,
+        byteOrder,
+        ByteString(new Array[Byte](fieldOffset)),
+        ByteString.empty)
     }
 
-    def encodeComplexFrame(payload: ByteString,
-                           fieldOffset: Int,
-                           fieldLength: Int,
-                           byteOrder: ByteOrder,
-                           offset: ByteString,
-                           tail: ByteString): ByteString = {
+    def encodeComplexFrame(
+        payload: ByteString,
+        fieldOffset: Int,
+        fieldLength: Int,
+        byteOrder: ByteOrder,
+        offset: ByteString,
+        tail: ByteString): ByteString = {
       val header = {
         val h = (new ByteStringBuilder).putInt(payload.size)(byteOrder).result()
         byteOrder match {
@@ -228,12 +230,13 @@ class FramingSpec extends StreamSpec {
           val payload = referenceChunk.take(length)
           val offsetBytes = offset()
           val tailBytes = if (offsetBytes.length > 0) new Array[Byte](offsetBytes(0)) else Array.empty[Byte]
-          encodeComplexFrame(payload,
-                             fieldOffset,
-                             fieldLength,
-                             byteOrder,
-                             ByteString(offsetBytes),
-                             ByteString(tailBytes))
+          encodeComplexFrame(
+            payload,
+            fieldOffset,
+            fieldLength,
+            byteOrder,
+            ByteString(offsetBytes),
+            ByteString(tailBytes))
         }
 
         Source(encodedFrames)

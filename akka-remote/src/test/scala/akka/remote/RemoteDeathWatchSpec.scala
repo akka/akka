@@ -98,12 +98,13 @@ akka {
     // This forces ReliableDeliverySupervisor to start with unknown remote system UID.
     val extinctPath = RootActorPath(Address(protocol, "extinct-system", "localhost", SocketUtil.temporaryLocalPort())) / "user" / "noone"
     val transport = RARP(system).provider.transport
-    val extinctRef = new RemoteActorRef(transport,
-                                        transport.localAddressForRemote(extinctPath.address),
-                                        extinctPath,
-                                        Nobody,
-                                        props = None,
-                                        deploy = None)
+    val extinctRef = new RemoteActorRef(
+      transport,
+      transport.localAddressForRemote(extinctPath.address),
+      extinctPath,
+      Nobody,
+      props = None,
+      deploy = None)
 
     val probe = TestProbe()
     probe.watch(extinctRef)

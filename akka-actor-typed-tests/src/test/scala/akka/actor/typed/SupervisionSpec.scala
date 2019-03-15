@@ -42,9 +42,10 @@ object SupervisionSpec {
   class Exc2 extends Exc1("exc-2")
   class Exc3(message: String = "exc-3") extends RuntimeException(message) with NoStackTrace
 
-  def targetBehavior(monitor: ActorRef[Event],
-                     state: State = State(0, Map.empty),
-                     slowStop: Option[CountDownLatch] = None): Behavior[Command] =
+  def targetBehavior(
+      monitor: ActorRef[Event],
+      state: State = State(0, Map.empty),
+      slowStop: Option[CountDownLatch] = None): Behavior[Command] =
     receive[Command] { (context, cmd) =>
       cmd match {
         case Ping(n) =>
@@ -1066,14 +1067,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
-        override def aroundReceive(context: TypedActorContext[String],
-                                   message: String,
-                                   target: ReceiveTarget[String]): Behavior[String] =
+        override def aroundReceive(
+            context: TypedActorContext[String],
+            message: String,
+            target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
 
-        override def aroundSignal(context: TypedActorContext[String],
-                                  signal: Signal,
-                                  target: SignalTarget[String]): Behavior[String] =
+        override def aroundSignal(
+            context: TypedActorContext[String],
+            signal: Signal,
+            target: SignalTarget[String]): Behavior[String] =
           target(context, signal)
       }
 
@@ -1197,11 +1200,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
   }
 
-  val allStrategies = Seq(SupervisorStrategy.stop,
-                          SupervisorStrategy.restart,
-                          SupervisorStrategy.resume,
-                          SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2d),
-                          SupervisorStrategy.restart.withLimit(1, 100.millis))
+  val allStrategies = Seq(
+    SupervisorStrategy.stop,
+    SupervisorStrategy.restart,
+    SupervisorStrategy.resume,
+    SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2d),
+    SupervisorStrategy.restart.withLimit(1, 100.millis))
 
   allStrategies.foreach { strategy =>
     s"Supervision with the strategy $strategy" should {

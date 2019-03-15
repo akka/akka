@@ -123,13 +123,14 @@ private[affinity] object AffinityPool {
  */
 @InternalApi
 @ApiMayChange
-private[akka] class AffinityPool(id: String,
-                                 parallelism: Int,
-                                 affinityGroupSize: Int,
-                                 threadFactory: ThreadFactory,
-                                 idleCpuLevel: Int,
-                                 final val queueSelector: QueueSelector,
-                                 rejectionHandler: RejectionHandler)
+private[akka] class AffinityPool(
+    id: String,
+    parallelism: Int,
+    affinityGroupSize: Int,
+    threadFactory: ThreadFactory,
+    idleCpuLevel: Int,
+    final val queueSelector: QueueSelector,
+    rejectionHandler: RejectionHandler)
     extends AbstractExecutorService {
 
   if (parallelism <= 0)
@@ -247,8 +248,9 @@ private[akka] class AffinityPool(id: String,
   override def toString: String =
     s"${Logging.simpleName(this)}(id = $id, parallelism = $parallelism, affinityGroupSize = $affinityGroupSize, threadFactory = $threadFactory, idleCpuLevel = $idleCpuLevel, queueSelector = $queueSelector, rejectionHandler = $rejectionHandler)"
 
-  private[this] final class AffinityPoolWorker(final val q: BoundedAffinityTaskQueue,
-                                               final val idleStrategy: IdleStrategy)
+  private[this] final class AffinityPoolWorker(
+      final val q: BoundedAffinityTaskQueue,
+      final val idleStrategy: IdleStrategy)
       extends Runnable {
     final val thread: Thread = threadFactory.newThread(this)
 
@@ -313,9 +315,10 @@ private[akka] class AffinityPool(id: String,
 private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
     extends ExecutorServiceConfigurator(config, prerequisites) {
 
-  private val poolSize = ThreadPoolConfig.scaledPoolSize(config.getInt("parallelism-min"),
-                                                         config.getDouble("parallelism-factor"),
-                                                         config.getInt("parallelism-max"))
+  private val poolSize = ThreadPoolConfig.scaledPoolSize(
+    config.getInt("parallelism-min"),
+    config.getDouble("parallelism-factor"),
+    config.getInt("parallelism-max"))
   private val taskQueueSize = config.getInt("task-queue-size")
 
   private val idleCpuLevel = config
@@ -354,13 +357,14 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
 
     new ExecutorServiceFactory {
       override def createExecutorService: ExecutorService =
-        new AffinityPool(id,
-                         poolSize,
-                         taskQueueSize,
-                         tf,
-                         idleCpuLevel,
-                         queueSelectorFactory.create(),
-                         rejectionHandlerFactory.create()).start()
+        new AffinityPool(
+          id,
+          poolSize,
+          taskQueueSize,
+          tf,
+          idleCpuLevel,
+          queueSelectorFactory.create(),
+          rejectionHandlerFactory.create()).start()
     }
   }
 }
@@ -412,8 +416,9 @@ private[akka] final class FairDistributionHashCache(final val config: Config) ex
 
   private[this] final val fairDistributionThreshold = config
     .getInt("fair-work-distribution.threshold")
-    .requiring(thr => 0 <= thr && thr <= MaxFairDistributionThreshold,
-               s"fair-work-distribution.threshold must be between 0 and $MaxFairDistributionThreshold")
+    .requiring(
+      thr => 0 <= thr && thr <= MaxFairDistributionThreshold,
+      s"fair-work-distribution.threshold must be between 0 and $MaxFairDistributionThreshold")
 
   override final def create(): QueueSelector =
     new AtomicReference[ImmutableIntMap](ImmutableIntMap.empty) with QueueSelector {

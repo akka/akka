@@ -95,8 +95,9 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
         allActivationFutures = allActivationFutures :+ activationListFuture
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
         val routee =
-          context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise),
-                          "registrar-" + i)
+          context.actorOf(
+            Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise),
+            "registrar-" + i)
         routee.path.toString
       }
       promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
@@ -113,10 +114,11 @@ final case class DeRegisterConsumersAndProducers()
 final case class Activations()
 final case class DeActivations()
 
-class Registrar(val start: Int,
-                val number: Int,
-                activationsPromise: Promise[List[ActorRef]],
-                deActivationsPromise: Promise[List[ActorRef]])
+class Registrar(
+    val start: Int,
+    val number: Int,
+    activationsPromise: Promise[List[ActorRef]],
+    deActivationsPromise: Promise[List[ActorRef]])
     extends Actor
     with ActorLogging {
   private var actorRefs = Set[ActorRef]()

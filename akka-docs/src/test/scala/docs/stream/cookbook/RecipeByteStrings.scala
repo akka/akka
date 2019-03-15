@@ -35,27 +35,28 @@ class RecipeByteStrings extends RecipeSpec {
               emitChunk()
             }
           })
-          setHandler(in,
-                     new InHandler {
-                       override def onPush(): Unit = {
-                         val elem = grab(in)
-                         buffer ++= elem
-                         emitChunk()
-                       }
+          setHandler(
+            in,
+            new InHandler {
+              override def onPush(): Unit = {
+                val elem = grab(in)
+                buffer ++= elem
+                emitChunk()
+              }
 
-                       override def onUpstreamFinish(): Unit = {
-                         if (buffer.isEmpty) completeStage()
-                         else {
-                           // There are elements left in buffer, so
-                           // we keep accepting downstream pulls and push from buffer until emptied.
-                           //
-                           // It might be though, that the upstream finished while it was pulled, in which
-                           // case we will not get an onPull from the downstream, because we already had one.
-                           // In that case we need to emit from the buffer.
-                           if (isAvailable(out)) emitChunk()
-                         }
-                       }
-                     })
+              override def onUpstreamFinish(): Unit = {
+                if (buffer.isEmpty) completeStage()
+                else {
+                  // There are elements left in buffer, so
+                  // we keep accepting downstream pulls and push from buffer until emptied.
+                  //
+                  // It might be though, that the upstream finished while it was pulled, in which
+                  // case we will not get an onPull from the downstream, because we already had one.
+                  // In that case we need to emit from the buffer.
+                  if (isAvailable(out)) emitChunk()
+                }
+              }
+            })
 
           private def emitChunk(): Unit = {
             if (buffer.isEmpty) {
@@ -93,21 +94,19 @@ class RecipeByteStrings extends RecipeSpec {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private var count = 0
 
-          setHandlers(in,
-                      out,
-                      new InHandler with OutHandler {
+          setHandlers(in, out, new InHandler with OutHandler {
 
-                        override def onPull(): Unit = {
-                          pull(in)
-                        }
+            override def onPull(): Unit = {
+              pull(in)
+            }
 
-                        override def onPush(): Unit = {
-                          val chunk = grab(in)
-                          count += chunk.size
-                          if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
-                          else push(out, chunk)
-                        }
-                      })
+            override def onPush(): Unit = {
+              val chunk = grab(in)
+              count += chunk.size
+              if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
+              else push(out, chunk)
+            }
+          })
         }
       }
 

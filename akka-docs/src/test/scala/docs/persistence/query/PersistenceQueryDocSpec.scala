@@ -73,9 +73,10 @@ object PersistenceQueryDocSpec {
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
 
-    override def eventsByPersistenceId(persistenceId: String,
-                                       fromSequenceNr: Long,
-                                       toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
+    override def eventsByPersistenceId(
+        persistenceId: String,
+        fromSequenceNr: Long,
+        toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -111,9 +112,10 @@ object PersistenceQueryDocSpec {
     override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
-    override def eventsByPersistenceId(persistenceId: String,
-                                       fromSequenceNr: Long = 0L,
-                                       toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, NotUsed] =
+    override def eventsByPersistenceId(
+        persistenceId: String,
+        fromSequenceNr: Long = 0L,
+        toSequenceNr: Long = Long.MaxValue): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
     override def persistenceIds(): javadsl.Source[String, NotUsed] =

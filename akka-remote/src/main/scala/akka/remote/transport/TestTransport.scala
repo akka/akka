@@ -25,17 +25,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * requested to do. This class is not optimized for performance and MUST not be used as an in-memory transport in
  * production systems.
  */
-class TestTransport(val localAddress: Address,
-                    final val registry: AssociationRegistry,
-                    val maximumPayloadBytes: Int = 32000,
-                    val schemeIdentifier: String = "test")
+class TestTransport(
+    val localAddress: Address,
+    final val registry: AssociationRegistry,
+    val maximumPayloadBytes: Int = 32000,
+    val schemeIdentifier: String = "test")
     extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = {
-    this(AddressFromURIString(conf.getString("local-address")),
-         AssociationRegistry.get(conf.getString("registry-key")),
-         conf.getBytes("maximum-payload-bytes").toInt,
-         conf.getString("scheme-identifier"))
+    this(
+      AddressFromURIString(conf.getString("local-address")),
+      AssociationRegistry.get(conf.getString("registry-key")),
+      conf.getBytes("maximum-payload-bytes").toInt,
+      conf.getString("scheme-identifier"))
   }
 
   override def isResponsibleFor(address: Address): Boolean = true
@@ -81,8 +83,9 @@ class TestTransport(val localAddress: Address,
     }
   }
 
-  private def createHandlePair(remoteTransport: TestTransport,
-                               remoteAddress: Address): (TestAssociationHandle, TestAssociationHandle) = {
+  private def createHandlePair(
+      remoteTransport: TestTransport,
+      remoteAddress: Address): (TestAssociationHandle, TestAssociationHandle) = {
     val localHandle = new TestAssociationHandle(localAddress, remoteAddress, this, inbound = false)
     val remoteHandle = new TestAssociationHandle(remoteAddress, localAddress, remoteTransport, inbound = true)
 
@@ -296,8 +299,9 @@ object TestTransport {
      * @param listenerPair pair of listeners in initiator, receiver order.
      * @return
      */
-    def remoteListenerRelativeTo(handle: TestAssociationHandle,
-                                 listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
+    def remoteListenerRelativeTo(
+        handle: TestAssociationHandle,
+        listenerPair: (HandleEventListener, HandleEventListener)): HandleEventListener = {
       listenerPair match {
         case (initiator, receiver) => if (handle.inbound) initiator else receiver
       }
@@ -341,8 +345,9 @@ object TestTransport {
      * @param associationEventListenerFuture
      *   The future that will be completed with the listener that will handle the events for the given transport.
      */
-    def registerTransport(transport: TestTransport,
-                          associationEventListenerFuture: Future[AssociationEventListener]): Unit = {
+    def registerTransport(
+        transport: TestTransport,
+        associationEventListenerFuture: Future[AssociationEventListener]): Unit = {
       transportTable.put(transport.localAddress, (transport, associationEventListenerFuture))
     }
 
@@ -445,10 +450,11 @@ object AssociationRegistry {
   def clear(): Unit = this.synchronized { registries.clear() }
 }
 
-final case class TestAssociationHandle(localAddress: Address,
-                                       remoteAddress: Address,
-                                       transport: TestTransport,
-                                       inbound: Boolean)
+final case class TestAssociationHandle(
+    localAddress: Address,
+    remoteAddress: Address,
+    transport: TestTransport,
+    inbound: Boolean)
     extends AssociationHandle {
 
   @volatile var writable = true

@@ -169,11 +169,12 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
     "fail a monitor which does not handle Terminated()" in {
       filterEvents(EventFilter[ActorKilledException](), EventFilter[DeathPactException]()) {
         val strategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
-          override def handleFailure(context: ActorContext,
-                                     child: ActorRef,
-                                     cause: Throwable,
-                                     stats: ChildRestartStats,
-                                     children: Iterable[ChildRestartStats]) = {
+          override def handleFailure(
+              context: ActorContext,
+              child: ActorRef,
+              cause: Throwable,
+              stats: ChildRestartStats,
+              children: Iterable[ChildRestartStats]) = {
             testActor.tell(FF(Failed(child, cause, 0)), child)
             super.handleFailure(context, child, cause, stats, children)
           }

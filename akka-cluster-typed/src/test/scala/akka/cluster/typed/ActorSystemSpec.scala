@@ -42,9 +42,10 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
 
   "An ActorSystem" must {
     "start the guardian actor and terminate when it terminates" in {
-      val t = withSystem("a",
-                         Behaviors.receive[Probe] { case (_, p) => p.replyTo ! p.msg; Behaviors.stopped },
-                         doTerminate = false) { sys =>
+      val t = withSystem(
+        "a",
+        Behaviors.receive[Probe] { case (_, p) => p.replyTo ! p.msg; Behaviors.stopped },
+        doTerminate = false) { sys =>
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
@@ -67,16 +68,17 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
 
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
-      val sys = system(Behaviors
-                         .receive[Probe] {
-                           case (_, _) => Behaviors.unhandled
-                         }
-                         .receiveSignal {
-                           case (_, PostStop) =>
-                             inbox.ref ! "done"
-                             Behaviors.same
-                         },
-                       "terminate")
+      val sys = system(
+        Behaviors
+          .receive[Probe] {
+            case (_, _) => Behaviors.unhandled
+          }
+          .receiveSignal {
+            case (_, PostStop) =>
+              inbox.ref ! "done"
+              Behaviors.same
+          },
+        "terminate")
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }

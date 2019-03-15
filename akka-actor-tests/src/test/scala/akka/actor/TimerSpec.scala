@@ -149,19 +149,21 @@ object TimerSpec {
 
 class TimerSpec extends AbstractTimerSpec {
   override def testName: String = "Timers"
-  override def target(monitor: ActorRef,
-                      interval: FiniteDuration,
-                      repeat: Boolean,
-                      initial: () => Int = () => 1): Props =
+  override def target(
+      monitor: ActorRef,
+      interval: FiniteDuration,
+      repeat: Boolean,
+      initial: () => Int = () => 1): Props =
     TimerSpec.target(monitor, interval, repeat, initial)
 }
 
 class FsmTimerSpec extends AbstractTimerSpec {
   override def testName: String = "FSM Timers"
-  override def target(monitor: ActorRef,
-                      interval: FiniteDuration,
-                      repeat: Boolean,
-                      initial: () => Int = () => 1): Props =
+  override def target(
+      monitor: ActorRef,
+      interval: FiniteDuration,
+      repeat: Boolean,
+      initial: () => Int = () => 1): Props =
     TimerSpec.fsmTarget(monitor, interval, repeat, initial)
 }
 

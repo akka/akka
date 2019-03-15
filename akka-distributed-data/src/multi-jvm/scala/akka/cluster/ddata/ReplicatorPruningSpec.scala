@@ -41,11 +41,12 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   val cluster = Cluster(system)
   implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
-  val replicator = system.actorOf(Replicator.props(
-                                    ReplicatorSettings(system)
-                                      .withGossipInterval(1.second)
-                                      .withPruning(pruningInterval = 1.second, maxPruningDissemination)),
-                                  "replicator")
+  val replicator = system.actorOf(
+    Replicator.props(
+      ReplicatorSettings(system)
+        .withGossipInterval(1.second)
+        .withPruning(pruningInterval = 1.second, maxPruningDissemination)),
+    "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = GCounterKey("A")

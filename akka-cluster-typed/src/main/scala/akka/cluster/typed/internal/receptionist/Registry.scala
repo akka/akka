@@ -37,8 +37,9 @@ import scala.concurrent.duration.Deadline
  *                   the service key
  * INTERNAL API
  */
-@InternalApi private[akka] final case class ShardedServiceRegistry(serviceRegistries: Map[DDataKey, ServiceRegistry],
-                                                                   tombstones: Map[ActorRef[_], Deadline]) {
+@InternalApi private[akka] final case class ShardedServiceRegistry(
+    serviceRegistries: Map[DDataKey, ServiceRegistry],
+    tombstones: Map[ActorRef[_], Deadline]) {
 
   private val keys = serviceRegistries.keySet.toArray
 

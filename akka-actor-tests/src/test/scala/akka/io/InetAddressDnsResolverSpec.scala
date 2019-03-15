@@ -89,9 +89,10 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
 
   private def dnsResolver = {
     val actorRef = TestActorRef[InetAddressDnsResolver](
-      Props(classOf[InetAddressDnsResolver],
-            new SimpleDnsCache(),
-            system.settings.config.getConfig("akka.io.dns.inet-address")))
+      Props(
+        classOf[InetAddressDnsResolver],
+        new SimpleDnsCache(),
+        system.settings.config.getConfig("akka.io.dns.inet-address")))
     actorRef.underlyingActor
   }
 
@@ -136,9 +137,10 @@ class InetAddressDnsResolverConfigSpec extends AkkaSpec("""
 
   private def dnsResolver = {
     val actorRef = TestActorRef[InetAddressDnsResolver](
-      Props(classOf[InetAddressDnsResolver],
-            new SimpleDnsCache(),
-            system.settings.config.getConfig("akka.io.dns.inet-address")))
+      Props(
+        classOf[InetAddressDnsResolver],
+        new SimpleDnsCache(),
+        system.settings.config.getConfig("akka.io.dns.inet-address")))
     actorRef.underlyingActor
   }
 }

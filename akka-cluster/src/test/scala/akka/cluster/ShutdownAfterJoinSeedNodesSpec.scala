@@ -49,8 +49,9 @@ class ShutdownAfterJoinSeedNodesSpec extends AkkaSpec(ShutdownAfterJoinSeedNodes
       Cluster(oridinary1).joinSeedNodes(seedNodes)
 
       Await.result(seed2.whenTerminated, Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
-      Await.result(oridinary1.whenTerminated,
-                   Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
+      Await.result(
+        oridinary1.whenTerminated,
+        Cluster(seed2).settings.ShutdownAfterUnsuccessfulJoinSeedNodes + 10.second)
     }
 
   }

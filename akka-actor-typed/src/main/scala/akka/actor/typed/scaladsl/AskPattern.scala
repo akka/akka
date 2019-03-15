@@ -111,14 +111,16 @@ object AskPattern {
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
       if (target.isTerminated)
-        (adapt.ActorRefAdapter[U](target.provider.deadLetters),
-         Future.failed[U](new TimeoutException(s"Recipient[$target] had already been terminated.")),
-         null)
+        (
+          adapt.ActorRefAdapter[U](target.provider.deadLetters),
+          Future.failed[U](new TimeoutException(s"Recipient[$target] had already been terminated.")),
+          null)
       else if (timeout.duration.length <= 0)
-        (adapt.ActorRefAdapter[U](target.provider.deadLetters),
-         Future.failed[U](
-           new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")),
-         null)
+        (
+          adapt.ActorRefAdapter[U](target.provider.deadLetters),
+          Future.failed[U](
+            new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")),
+          null)
       else {
         // messageClassName "unknown' is set later, after applying the message factory
         val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)

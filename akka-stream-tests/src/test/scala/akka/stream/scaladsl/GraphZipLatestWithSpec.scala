@@ -171,28 +171,29 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
 
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
-          val sum22 = (v1: Int,
-                       v2: String,
-                       v3: Int,
-                       v4: String,
-                       v5: Int,
-                       v6: String,
-                       v7: Int,
-                       v8: String,
-                       v9: Int,
-                       v10: String,
-                       v11: Int,
-                       v12: String,
-                       v13: Int,
-                       v14: String,
-                       v15: Int,
-                       v16: String,
-                       v17: Int,
-                       v18: String,
-                       v19: Int,
-                       v20: String,
-                       v21: Int,
-                       v22: String) =>
+          val sum22 = (
+              v1: Int,
+              v2: String,
+              v3: Int,
+              v4: String,
+              v5: Int,
+              v6: String,
+              v7: Int,
+              v8: String,
+              v9: Int,
+              v10: String,
+              v11: Int,
+              v12: String,
+              v13: Int,
+              v14: String,
+              v15: Int,
+              v16: String,
+              v17: Int,
+              v18: String,
+              v19: Int,
+              v20: String,
+              v21: Int,
+              v22: String) =>
             v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 +
             v11 + v12 + v13 + v14 + v15 + v16 + v17 + v18 + v19 + v20 + v21 + v22
 

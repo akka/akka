@@ -120,9 +120,10 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
       override def onPush(): Unit = {
         val env = grab(in)
         if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
-          log.debug("dropping outbound message [{}] to [{}] because of blackhole",
-                    Logging.messageClassName(env.message),
-                    outboundContext.remoteAddress)
+          log.debug(
+            "dropping outbound message [{}] to [{}] because of blackhole",
+            Logging.messageClassName(env.message),
+            outboundContext.remoteAddress)
           pull(in) // drop message
         } else
           push(out, env)
@@ -162,10 +163,11 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
                 push(out, env)
               case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
-                  log.debug("dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                            Logging.messageClassName(env.message),
-                            association.remoteAddress,
-                            env.originUid)
+                  log.debug(
+                    "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
+                    Logging.messageClassName(env.message),
+                    association.remoteAddress,
+                    env.originUid)
                   pull(in) // drop message
                 } else
                   push(out, env)

@@ -120,11 +120,12 @@ trait PersistentRepr extends Message {
   /**
    * Creates a new copy of this [[PersistentRepr]].
    */
-  def update(sequenceNr: Long = sequenceNr,
-             persistenceId: String = persistenceId,
-             deleted: Boolean = deleted,
-             sender: ActorRef = sender,
-             writerUuid: String = writerUuid): PersistentRepr
+  def update(
+      sequenceNr: Long = sequenceNr,
+      persistenceId: String = persistenceId,
+      deleted: Boolean = deleted,
+      sender: ActorRef = sender,
+      writerUuid: String = writerUuid): PersistentRepr
 }
 
 object PersistentRepr {
@@ -138,13 +139,14 @@ object PersistentRepr {
   /**
    * Plugin API.
    */
-  def apply(payload: Any,
-            sequenceNr: Long = 0L,
-            persistenceId: String = PersistentRepr.Undefined,
-            manifest: String = PersistentRepr.Undefined,
-            deleted: Boolean = false,
-            sender: ActorRef = null,
-            writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
+  def apply(
+      payload: Any,
+      sequenceNr: Long = 0L,
+      persistenceId: String = PersistentRepr.Undefined,
+      manifest: String = PersistentRepr.Undefined,
+      deleted: Boolean = false,
+      sender: ActorRef = null,
+      writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
     PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid)
 
   /**
@@ -162,13 +164,14 @@ object PersistentRepr {
 /**
  * INTERNAL API.
  */
-private[persistence] final case class PersistentImpl(override val payload: Any,
-                                                     override val sequenceNr: Long,
-                                                     override val persistenceId: String,
-                                                     override val manifest: String,
-                                                     override val deleted: Boolean,
-                                                     override val sender: ActorRef,
-                                                     override val writerUuid: String)
+private[persistence] final case class PersistentImpl(
+    override val payload: Any,
+    override val sequenceNr: Long,
+    override val persistenceId: String,
+    override val manifest: String,
+    override val deleted: Boolean,
+    override val sender: ActorRef,
+    override val writerUuid: String)
     extends PersistentRepr
     with NoSerializationVerificationNeeded {
 
@@ -180,10 +183,11 @@ private[persistence] final case class PersistentImpl(override val payload: Any,
     else copy(manifest = manifest)
 
   def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef, writerUuid: String) =
-    copy(sequenceNr = sequenceNr,
-         persistenceId = persistenceId,
-         deleted = deleted,
-         sender = sender,
-         writerUuid = writerUuid)
+    copy(
+      sequenceNr = sequenceNr,
+      persistenceId = persistenceId,
+      deleted = deleted,
+      sender = sender,
+      writerUuid = writerUuid)
 
 }

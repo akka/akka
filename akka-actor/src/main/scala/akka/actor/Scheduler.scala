@@ -51,15 +51,16 @@ trait Scheduler {
       implicit
       executor: ExecutionContext,
       sender: ActorRef = Actor.noSender): Cancellable =
-    schedule(initialDelay,
-             interval,
-             new Runnable {
-               def run(): Unit = {
-                 receiver ! message
-                 if (receiver.isTerminated)
-                   throw SchedulerException("timer active for terminated actor")
-               }
-             })
+    schedule(
+      initialDelay,
+      interval,
+      new Runnable {
+        def run(): Unit = {
+          receiver ! message
+          if (receiver.isTerminated)
+            throw SchedulerException("timer active for terminated actor")
+        }
+      })
 
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
@@ -69,12 +70,13 @@ trait Scheduler {
    *
    * Java API
    */
-  final def schedule(initialDelay: java.time.Duration,
-                     interval: java.time.Duration,
-                     receiver: ActorRef,
-                     message: Any,
-                     executor: ExecutionContext,
-                     sender: ActorRef): Cancellable = {
+  final def schedule(
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration,
+      receiver: ActorRef,
+      message: Any,
+      executor: ExecutionContext,
+      sender: ActorRef): Cancellable = {
     import JavaDurationConverters._
     schedule(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
   }
@@ -172,11 +174,12 @@ trait Scheduler {
    *
    * Java API
    */
-  final def scheduleOnce(delay: java.time.Duration,
-                         receiver: ActorRef,
-                         message: Any,
-                         executor: ExecutionContext,
-                         sender: ActorRef): Cancellable = {
+  final def scheduleOnce(
+      delay: java.time.Duration,
+      receiver: ActorRef,
+      message: Any,
+      executor: ExecutionContext,
+      sender: ActorRef): Cancellable = {
     import JavaDurationConverters._
     scheduleOnce(delay.asScala, receiver, message)(executor, sender)
   }
@@ -190,8 +193,9 @@ trait Scheduler {
    *
    * Scala API
    */
-  final def scheduleOnce(delay: FiniteDuration)(f: => Unit)(implicit
-                                                            executor: ExecutionContext): Cancellable =
+  final def scheduleOnce(delay: FiniteDuration)(f: => Unit)(
+      implicit
+      executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run(): Unit = f })
 
   /**

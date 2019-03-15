@@ -91,8 +91,9 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
         self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
-          observeAndValidateSender(initialPartnerRef.get,
-                                   "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
+          observeAndValidateSender(
+            initialPartnerRef.get,
+            "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
         promise.success(SinkRefImpl(self.ref))
 

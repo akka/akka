@@ -40,19 +40,21 @@ object RecoveryPermitterSpec {
 
   case object Recovered extends Event
 
-  def persistentBehavior(name: String,
-                         commandProbe: TestProbe[Any],
-                         eventProbe: TestProbe[Any],
-                         throwOnRecovery: Boolean = false): Behavior[Command] =
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId(name),
-                                                emptyState = EmptyState,
-                                                commandHandler = CommandHandler.command {
-                                                  case StopActor => Effect.stop()
-                                                  case command   => commandProbe.ref ! command; Effect.none
-                                                },
-                                                eventHandler = { (state, event) =>
-                                                  eventProbe.ref ! event; state
-                                                }).receiveSignal {
+  def persistentBehavior(
+      name: String,
+      commandProbe: TestProbe[Any],
+      eventProbe: TestProbe[Any],
+      throwOnRecovery: Boolean = false): Behavior[Command] =
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId(name),
+      emptyState = EmptyState,
+      commandHandler = CommandHandler.command {
+        case StopActor => Effect.stop()
+        case command   => commandProbe.ref ! command; Effect.none
+      },
+      eventHandler = { (state, event) =>
+        eventProbe.ref ! event; state
+      }).receiveSignal {
       case RecoveryCompleted(state) =>
         eventProbe.ref ! Recovered
         if (throwOnRecovery) throw new TE

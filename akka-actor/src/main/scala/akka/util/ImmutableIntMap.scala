@@ -20,8 +20,9 @@ import scala.annotation.tailrec
  * Keys and values are encoded consecutively in a single Int array and does copy-on-write with no
  * structural sharing, it's intended for rather small maps (<1000 elements).
  */
-@InternalApi private[akka] final class ImmutableIntMap private (private final val kvs: Array[Int],
-                                                                final val size: Int) {
+@InternalApi private[akka] final class ImmutableIntMap private (
+    private final val kvs: Array[Int],
+    final val size: Int) {
 
   private final def this(key: Int, value: Int) = {
     this(new Array[Int](2), 1)

@@ -64,18 +64,20 @@ object ClusterEvent {
 
   // for binary compatibility (used to be a case class)
   object CurrentClusterState
-      extends AbstractFunction5[immutable.SortedSet[Member],
-                                Set[Member],
-                                Set[Address],
-                                Option[Address],
-                                Map[String, Option[Address]],
-                                CurrentClusterState] {
+      extends AbstractFunction5[
+        immutable.SortedSet[Member],
+        Set[Member],
+        Set[Address],
+        Option[Address],
+        Map[String, Option[Address]],
+        CurrentClusterState] {
 
-    def apply(members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
-              unreachable: Set[Member] = Set.empty,
-              seenBy: Set[Address] = Set.empty,
-              leader: Option[Address] = None,
-              roleLeaderMap: Map[String, Option[Address]] = Map.empty): CurrentClusterState =
+    def apply(
+        members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
+        unreachable: Set[Member] = Set.empty,
+        seenBy: Set[Address] = Set.empty,
+        leader: Option[Address] = None,
+        roleLeaderMap: Map[String, Option[Address]] = Map.empty): CurrentClusterState =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap)
 
     def unapply(cs: CurrentClusterState): Option[
@@ -90,25 +92,28 @@ object ClusterEvent {
    * @param leader leader of the data center of this node
    */
   @SerialVersionUID(2)
-  final class CurrentClusterState(val members: immutable.SortedSet[Member],
-                                  val unreachable: Set[Member],
-                                  val seenBy: Set[Address],
-                                  val leader: Option[Address],
-                                  val roleLeaderMap: Map[String, Option[Address]],
-                                  val unreachableDataCenters: Set[DataCenter])
-      extends Product5[immutable.SortedSet[Member],
-                       Set[Member],
-                       Set[Address],
-                       Option[Address],
-                       Map[String, Option[Address]]]
+  final class CurrentClusterState(
+      val members: immutable.SortedSet[Member],
+      val unreachable: Set[Member],
+      val seenBy: Set[Address],
+      val leader: Option[Address],
+      val roleLeaderMap: Map[String, Option[Address]],
+      val unreachableDataCenters: Set[DataCenter])
+      extends Product5[
+        immutable.SortedSet[Member],
+        Set[Member],
+        Set[Address],
+        Option[Address],
+        Map[String, Option[Address]]]
       with Serializable {
 
     // for binary compatibility
-    def this(members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
-             unreachable: Set[Member] = Set.empty,
-             seenBy: Set[Address] = Set.empty,
-             leader: Option[Address] = None,
-             roleLeaderMap: Map[String, Option[Address]] = Map.empty) =
+    def this(
+        members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
+        unreachable: Set[Member] = Set.empty,
+        seenBy: Set[Address] = Set.empty,
+        leader: Option[Address] = None,
+        roleLeaderMap: Map[String, Option[Address]] = Map.empty) =
       this(members, unreachable, seenBy, leader, roleLeaderMap, Set.empty)
 
     /**
@@ -182,11 +187,12 @@ object ClusterEvent {
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
     // for binary compatibility (used to be a case class)
-    def copy(members: immutable.SortedSet[Member] = this.members,
-             unreachable: Set[Member] = this.unreachable,
-             seenBy: Set[Address] = this.seenBy,
-             leader: Option[Address] = this.leader,
-             roleLeaderMap: Map[String, Option[Address]] = this.roleLeaderMap) =
+    def copy(
+        members: immutable.SortedSet[Member] = this.members,
+        unreachable: Set[Member] = this.unreachable,
+        seenBy: Set[Address] = this.seenBy,
+        leader: Option[Address] = this.leader,
+        roleLeaderMap: Map[String, Option[Address]] = this.roleLeaderMap) =
       new CurrentClusterState(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters)
 
     override def equals(other: Any): Boolean = other match {
@@ -379,8 +385,9 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffUnreachable(oldState: MembershipState,
-                                       newState: MembershipState): immutable.Seq[UnreachableMember] =
+  private[cluster] def diffUnreachable(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[UnreachableMember] =
     if (newState eq oldState) Nil
     else {
       val newGossip = newState.latestGossip
@@ -396,8 +403,9 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffReachable(oldState: MembershipState,
-                                     newState: MembershipState): immutable.Seq[ReachableMember] =
+  private[cluster] def diffReachable(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[ReachableMember] =
     if (newState eq oldState) Nil
     else {
       val newGossip = newState.latestGossip
@@ -426,8 +434,9 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffUnreachableDataCenter(oldState: MembershipState,
-                                                 newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
+  private[cluster] def diffUnreachableDataCenter(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
     if (newState eq oldState) Nil
     else {
       val otherDcs = (oldState.latestGossip.allDataCenters
@@ -443,8 +452,9 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffReachableDataCenter(oldState: MembershipState,
-                                               newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
+  private[cluster] def diffReachableDataCenter(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
     if (newState eq oldState) Nil
     else {
       val otherDcs = (oldState.latestGossip.allDataCenters
@@ -460,8 +470,9 @@ object ClusterEvent {
   /**
    * INTERNAL API.
    */
-  private[cluster] def diffMemberEvents(oldState: MembershipState,
-                                        newState: MembershipState): immutable.Seq[MemberEvent] =
+  private[cluster] def diffMemberEvents(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[MemberEvent] =
     if (newState eq oldState) Nil
     else {
       val oldGossip = oldState.latestGossip
@@ -494,8 +505,9 @@ object ClusterEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[cluster] def diffLeader(oldState: MembershipState,
-                                  newState: MembershipState): immutable.Seq[LeaderChanged] = {
+  private[cluster] def diffLeader(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[LeaderChanged] = {
     val newLeader = newState.leader
     if (newLeader != oldState.leader) List(LeaderChanged(newLeader.map(_.address)))
     else Nil
@@ -531,8 +543,9 @@ object ClusterEvent {
    * INTERNAL API
    */
   @InternalApi
-  private[cluster] def diffReachability(oldState: MembershipState,
-                                        newState: MembershipState): immutable.Seq[ReachabilityChanged] =
+  private[cluster] def diffReachability(
+      oldState: MembershipState,
+      newState: MembershipState): immutable.Seq[ReachabilityChanged] =
     if (newState.overview.reachability eq oldState.overview.reachability) Nil
     else List(ReachabilityChanged(newState.overview.reachability))
 
@@ -551,10 +564,11 @@ private[cluster] final class ClusterDomainEventPublisher
 
   val cluster = Cluster(context.system)
   val selfUniqueAddress = cluster.selfUniqueAddress
-  val emptyMembershipState = MembershipState(Gossip.empty,
-                                             cluster.selfUniqueAddress,
-                                             cluster.settings.SelfDataCenter,
-                                             cluster.settings.MultiDataCenter.CrossDcConnections)
+  val emptyMembershipState = MembershipState(
+    Gossip.empty,
+    cluster.selfUniqueAddress,
+    cluster.settings.SelfDataCenter,
+    cluster.settings.MultiDataCenter.CrossDcConnections)
   var membershipState: MembershipState = emptyMembershipState
   def selfDc = cluster.settings.SelfDataCenter
 
@@ -593,14 +607,15 @@ private[cluster] final class ClusterDomainEventPublisher
       if (!membershipState.latestGossip.isMultiDc) Set.empty
       else membershipState.latestGossip.allDataCenters.filterNot(isReachable(membershipState, Set.empty))
 
-    val state = new CurrentClusterState(members = membershipState.latestGossip.members,
-                                        unreachable = unreachable,
-                                        seenBy = membershipState.latestGossip.seenBy.map(_.address),
-                                        leader = membershipState.leader.map(_.address),
-                                        roleLeaderMap = membershipState.latestGossip.allRoles.iterator
-                                          .map(r => r -> membershipState.roleLeader(r).map(_.address))
-                                          .toMap,
-                                        unreachableDataCenters)
+    val state = new CurrentClusterState(
+      members = membershipState.latestGossip.members,
+      unreachable = unreachable,
+      seenBy = membershipState.latestGossip.seenBy.map(_.address),
+      leader = membershipState.leader.map(_.address),
+      roleLeaderMap = membershipState.latestGossip.allRoles.iterator
+        .map(r => r -> membershipState.roleLeader(r).map(_.address))
+        .toMap,
+      unreachableDataCenters)
     receiver ! state
   }
 

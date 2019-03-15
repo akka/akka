@@ -97,23 +97,26 @@ private[akka] trait StashManagement[C, E, S] {
 
   private def logStashMessage(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug("Stashing message to {} stash: [{}] ",
-                      if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-                      msg)
+      setup.log.debug(
+        "Stashing message to {} stash: [{}] ",
+        if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+        msg)
   }
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug("Unstashing message from {} stash: [{}]",
-                      if (buffer eq stashState.internalStashBuffer) "internal" else "user",
-                      buffer.head)
+      setup.log.debug(
+        "Unstashing message from {} stash: [{}]",
+        if (buffer eq stashState.internalStashBuffer) "internal" else "user",
+        buffer.head)
   }
 
   private def logUnstashAll(): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug("Unstashing all [{}] messages from user stash, first is: [{}]",
-                      stashState.userStashBuffer.size,
-                      stashState.userStashBuffer.head)
+      setup.log.debug(
+        "Unstashing all [{}] messages from user stash, first is: [{}]",
+        stashState.userStashBuffer.size,
+        stashState.userStashBuffer.head)
   }
 
 }

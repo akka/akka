@@ -30,10 +30,11 @@ object StashingExample {
     final case class State(taskIdInProgress: Option[String])
 
     def apply(persistenceId: PersistenceId): Behavior[Command] =
-      EventSourcedBehavior[Command, Event, State](persistenceId = persistenceId,
-                                                  emptyState = State(None),
-                                                  commandHandler = (state, command) => onCommand(state, command),
-                                                  eventHandler = (state, event) => applyEvent(state, event))
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = persistenceId,
+        emptyState = State(None),
+        commandHandler = (state, command) => onCommand(state, command),
+        eventHandler = (state, event) => applyEvent(state, event))
         .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
 
     private def onCommand(state: State, command: Command): Effect[Event, State] = {

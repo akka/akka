@@ -51,9 +51,10 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
   "Unfold Resource Source" must {
     "read contents from a file" in assertAllStagesStopped {
       val p = Source
-        .unfoldResource[String, BufferedReader](() => newBufferedReader(),
-                                                reader => Option(reader.readLine()),
-                                                reader => reader.close())
+        .unfoldResource[String, BufferedReader](
+          () => newBufferedReader(),
+          reader => Option(reader.readLine()),
+          reader => reader.close())
         .runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
@@ -151,9 +152,10 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val materializer = ActorMaterializer()(sys)
       try {
         val p = Source
-          .unfoldResource[String, BufferedReader](() => newBufferedReader(),
-                                                  reader => Option(reader.readLine()),
-                                                  reader => reader.close())
+          .unfoldResource[String, BufferedReader](
+            () => newBufferedReader(),
+            reader => Option(reader.readLine()),
+            reader => reader.close())
           .runWith(TestSink.probe)(materializer)
 
         materializer
@@ -169,9 +171,10 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "fail when create throws exception" in assertAllStagesStopped {
       EventFilter[TE](occurrences = 1).intercept {
         val p = Source
-          .unfoldResource[String, BufferedReader](() => throw TE(""),
-                                                  reader => Option(reader.readLine()),
-                                                  reader => reader.close())
+          .unfoldResource[String, BufferedReader](
+            () => throw TE(""),
+            reader => Option(reader.readLine()),
+            reader => reader.close())
           .runWith(Sink.asPublisher(false))
         val c = TestSubscriber.manualProbe[String]()
         p.subscribe(c)
@@ -186,9 +189,10 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       EventFilter[TE](occurrences = 1).intercept {
         Source
-          .unfoldResource[String, Iterator[String]](() => Iterator("a"),
-                                                    it => if (it.hasNext) Some(it.next()) else None,
-                                                    _ => throw TE(""))
+          .unfoldResource[String, Iterator[String]](
+            () => Iterator("a"),
+            it => if (it.hasNext) Some(it.next()) else None,
+            _ => throw TE(""))
           .runWith(Sink.fromSubscriber(out))
 
         out.request(61)
@@ -201,9 +205,10 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "not close the resource twice when read fails" in {
       val closedCounter = new AtomicInteger(0)
       val probe = Source
-        .unfoldResource[Int, Int](() => 23, // the best resource there is
-                                  _ => throw TE("failing read"),
-                                  _ => closedCounter.incrementAndGet())
+        .unfoldResource[Int, Int](
+          () => 23, // the best resource there is
+          _ => throw TE("failing read"),
+          _ => closedCounter.incrementAndGet())
         .runWith(TestSink.probe[Int])
 
       probe.request(1)
@@ -215,11 +220,12 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     "not close the resource twice when read fails and then close fails" in {
       val closedCounter = new AtomicInteger(0)
       val probe = Source
-        .unfoldResource[Int, Int](() => 23, // the best resource there is
-                                  _ => throw TE("failing read"), { _ =>
-                                    closedCounter.incrementAndGet()
-                                    if (closedCounter.get == 1) throw TE("boom")
-                                  })
+        .unfoldResource[Int, Int](
+          () => 23, // the best resource there is
+          _ => throw TE("failing read"), { _ =>
+            closedCounter.incrementAndGet()
+            if (closedCounter.get == 1) throw TE("boom")
+          })
         .runWith(TestSink.probe[Int])
 
       EventFilter[TE](occurrences = 1).intercept {

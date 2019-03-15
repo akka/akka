@@ -150,9 +150,10 @@ class BundleDescriptorBuilder(name: String) {
    */
   def build: BundleDescriptor = {
     val file: File = tinybundleToJarFile(name)
-    new BundleDescriptor(getClass().getClassLoader(),
-                         new URL("jar:" + file.toURI().toString() + "!/"),
-                         extractHeaders(file))
+    new BundleDescriptor(
+      getClass().getClassLoader(),
+      new URL("jar:" + file.toURI().toString() + "!/"),
+      extractHeaders(file))
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {

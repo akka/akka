@@ -37,8 +37,9 @@ import scala.reflect.ClassTag
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[-In, +Out, +Mat](override val traversalBuilder: LinearTraversalBuilder,
-                                  override val shape: FlowShape[In, Out])
+final class Flow[-In, +Out, +Mat](
+    override val traversalBuilder: LinearTraversalBuilder,
+    override val shape: FlowShape[In, Out])
     extends FlowOpsMat[Out, Mat]
     with Graph[FlowShape[In, Out], Mat] {
 
@@ -76,12 +77,14 @@ final class Flow[-In, +Out, +Mat](override val traversalBuilder: LinearTraversal
         val useCombine =
           if (combine == Keep.right) Keep.none
           else combine
-        new Flow(traversalBuilder.append(LinearTraversalBuilder.empty(), shape, useCombine),
-                 FlowShape[In, T](shape.in, flow.shape.out))
+        new Flow(
+          traversalBuilder.append(LinearTraversalBuilder.empty(), shape, useCombine),
+          FlowShape[In, T](shape.in, flow.shape.out))
       }
     } else {
-      new Flow(traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
-               FlowShape[In, T](shape.in, flow.shape.out))
+      new Flow(
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        FlowShape[In, T](shape.in, flow.shape.out))
     }
   }
 
@@ -380,8 +383,9 @@ object Flow {
         // behave as it is the operator with regards to attributes
         val attrs = g.traversalBuilder.attributes
         val noAttrStage = g.withAttributes(Attributes.none)
-        new Flow(LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
-                 noAttrStage.shape).withAttributes(attrs)
+        new Flow(
+          LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+          noAttrStage.shape).withAttributes(attrs)
 
       case other => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
     }
@@ -504,8 +508,9 @@ object Flow {
    *
    * See also [[fromSinkAndSourceCoupledMat]] when access to materialized values of the parameters is needed.
    */
-  def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _],
-                                     source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
+  def fromSinkAndSourceCoupled[I, O](
+      sink: Graph[SinkShape[I], _],
+      source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceCoupledMat(sink, source)(Keep.none)
 
   /**
@@ -558,8 +563,9 @@ object Flow {
    * '''Cancels when''' downstream cancels
    */
   @Deprecated
-  @deprecated("Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)",
-              "2.5.12")
+  @deprecated(
+    "Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)",
+    "2.5.12")
   def lazyInit[I, O, M](flowFactory: I => Future[Flow[I, O, M]], fallback: () => M): Flow[I, O, M] =
     Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ => fallback())
 
@@ -754,8 +760,9 @@ trait FlowOps[+Out, +Mat] {
    * @param pf Receives the failure cause and returns the new Source to be materialized if any
    *
    */
-  def recoverWithRetries[T >: Out](attempts: Int,
-                                   pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
+  def recoverWithRetries[T >: Out](
+      attempts: Int,
+      pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(attempts, pf))
 
   /**
@@ -1852,9 +1859,10 @@ trait FlowOps[+Out, +Mat] {
    * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
    *        corresponding keys arrive after completion
    */
-  def groupBy[K](maxSubstreams: Int,
-                 f: Out => K,
-                 allowClosedSubstreamRecreation: Boolean): SubFlow[Out, Mat, Repr, Closed] = {
+  def groupBy[K](
+      maxSubstreams: Int,
+      f: Out => K,
+      allowClosedSubstreamRecreation: Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
         via(new GroupBy(maxSubstreams, f, allowClosedSubstreamRecreation))
@@ -2282,11 +2290,12 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def throttle(cost: Int,
-               per: FiniteDuration,
-               maximumBurst: Int,
-               costCalculation: (Out) => Int,
-               mode: ThrottleMode): Repr[Out] =
+  def throttle(
+      cost: Int,
+      per: FiniteDuration,
+      maximumBurst: Int,
+      costCalculation: (Out) => Int,
+      mode: ThrottleMode): Repr[Out] =
     via(new Throttle(cost, per, maximumBurst, costCalculation, mode))
 
   /**
@@ -2564,8 +2573,9 @@ trait FlowOps[+Out, +Mat] {
   def merge[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[U] =
     via(mergeGraph(that, eagerComplete))
 
-  protected def mergeGraph[U >: Out, M](that: Graph[SourceShape[U], M],
-                                        eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+  protected def mergeGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b => r =>
       val merge = b.add(Merge[U](2, eagerComplete))
       r ~> merge.in(1)
@@ -2760,8 +2770,9 @@ trait FlowOps[+Out, +Mat] {
    */
   def divertTo(that: Graph[SinkShape[Out], _], when: Out => Boolean): Repr[Out] = via(divertToGraph(that, when))
 
-  protected def divertToGraph[M](that: Graph[SinkShape[Out], M],
-                                 when: Out => Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+  protected def divertToGraph[M](
+      that: Graph[SinkShape[Out], M],
+      when: Out => Boolean): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b => r =>
       import GraphDSL.Implicits._
       val partition = b.add(new Partition[Out](2, out => if (when(out)) 1 else 0, true))

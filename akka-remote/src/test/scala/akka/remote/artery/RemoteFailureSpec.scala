@@ -26,9 +26,8 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
       val remoteSystems = Vector.fill(5)(newRemoteSystem())
 
       remoteSystems.foreach { sys =>
-        sys.eventStream.publish(
-          TestEvent.Mute(EventFilter[EndpointDisassociatedException](),
-                         EventFilter.warning(pattern = "received dead letter.*")))
+        sys.eventStream.publish(TestEvent
+          .Mute(EventFilter[EndpointDisassociatedException](), EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(TestActors.echoActorProps, name = "echo")
       }
       val remoteSelections = remoteSystems.map { sys =>

@@ -81,11 +81,12 @@ object RemoveInternalClusterShardingData {
    * API corresponding to the [[#main]] method as described in the
    * [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]]
    */
-  def remove(system: ActorSystem,
-             journalPluginId: String,
-             typeNames: Set[String],
-             terminateSystem: Boolean,
-             remove2dot3Data: Boolean): Future[Unit] = {
+  def remove(
+      system: ActorSystem,
+      journalPluginId: String,
+      typeNames: Set[String],
+      terminateSystem: Boolean,
+      remove2dot3Data: Boolean): Future[Unit] = {
 
     val resolvedJournalPluginId =
       if (journalPluginId == "") system.settings.config.getString("akka.persistence.journal.plugin")
@@ -96,18 +97,20 @@ object RemoveInternalClusterShardingData {
     }
 
     val completion = Promise[Unit]()
-    system.actorOf(props(journalPluginId, typeNames, completion, remove2dot3Data),
-                   name = "removeInternalClusterShardingData")
+    system.actorOf(
+      props(journalPluginId, typeNames, completion, remove2dot3Data),
+      name = "removeInternalClusterShardingData")
     completion.future
   }
 
   /**
    * INTERNAL API: `Props` for [[RemoveInternalClusterShardingData]] actor.
    */
-  private[akka] def props(journalPluginId: String,
-                          typeNames: Set[String],
-                          completion: Promise[Unit],
-                          remove2dot3Data: Boolean): Props =
+  private[akka] def props(
+      journalPluginId: String,
+      typeNames: Set[String],
+      completion: Promise[Unit],
+      remove2dot3Data: Boolean): Props =
     Props(new RemoveInternalClusterShardingData(journalPluginId, typeNames, completion, remove2dot3Data))
       .withDeploy(Deploy.local)
 
@@ -127,9 +130,10 @@ object RemoveInternalClusterShardingData {
    * `persistenceId`. It will reply with `RemoveOnePersistenceId.Result`
    * when done.
    */
-  private[akka] class RemoveOnePersistenceId(override val journalPluginId: String,
-                                             override val persistenceId: String,
-                                             replyTo: ActorRef)
+  private[akka] class RemoveOnePersistenceId(
+      override val journalPluginId: String,
+      override val persistenceId: String,
+      replyTo: ActorRef)
       extends PersistentActor {
 
     import RemoveInternalClusterShardingData.RemoveOnePersistenceId._
@@ -189,10 +193,11 @@ object RemoveInternalClusterShardingData {
 /**
  * @see [[RemoveInternalClusterShardingData$ RemoveInternalClusterShardingData companion object]]
  */
-class RemoveInternalClusterShardingData(journalPluginId: String,
-                                        typeNames: Set[String],
-                                        completion: Promise[Unit],
-                                        remove2dot3Data: Boolean)
+class RemoveInternalClusterShardingData(
+    journalPluginId: String,
+    typeNames: Set[String],
+    completion: Promise[Unit],
+    remove2dot3Data: Boolean)
     extends Actor
     with ActorLogging {
   import RemoveInternalClusterShardingData._

@@ -19,11 +19,13 @@ class BidiFlowSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  val bidi = BidiFlow.fromFlows(Flow[Int].map(x => x.toLong + 2).withAttributes(name("top")),
-                                Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
+  val bidi = BidiFlow.fromFlows(
+    Flow[Int].map(x => x.toLong + 2).withAttributes(name("top")),
+    Flow[ByteString].map(_.decodeString("UTF-8")).withAttributes(name("bottom")))
 
-  val inverse = BidiFlow.fromFlows(Flow[Long].map(x => x.toInt + 2).withAttributes(name("top")),
-                                   Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
+  val inverse = BidiFlow.fromFlows(
+    Flow[Long].map(x => x.toInt + 2).withAttributes(name("top")),
+    Flow[String].map(ByteString(_)).withAttributes(name("bottom")))
 
   val bidiMat = BidiFlow.fromGraph(GraphDSL.create(Sink.head[Int]) { implicit b => s =>
     Source.single(42) ~> s
