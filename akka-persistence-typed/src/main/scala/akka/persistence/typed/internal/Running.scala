@@ -382,7 +382,7 @@ private[akka] object Running {
           None
       }
 
-      setup.log.info("Received snapshot event [{}], returning signal [{}].", response, signal)
+      setup.log.debug("Received snapshot event [{}], returning signal [{}].", response, signal)
       signal.foreach(setup.onSignal _)
     }
 
