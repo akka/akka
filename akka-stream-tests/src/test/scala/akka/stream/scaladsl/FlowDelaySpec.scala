@@ -219,5 +219,38 @@ class FlowDelaySpec extends StreamSpec {
 
       probe.request(10).expectNextN(1 to 2).expectComplete()
     }
+
+    "not block overdue elements from being pushed to downstream stages" in {
+      val N = 4000
+      val batchSize = 1000
+      val delayMillis = 50
+
+      val elements = (1 to N).toIterator
+
+      val future = Source
+        .tick(0.millis, 10.millis, 1)
+        .mapConcat(_ ⇒ (1 to batchSize).map(_ ⇒ elements.next()))
+        .take(N)
+        .map { elem ⇒
+          System.nanoTime() -> elem
+        }
+        .delay(delayMillis.millis, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(2000, 2000))
+        .map {
+          case (startTimestamp, elem) ⇒
+            (System.nanoTime() - startTimestamp) / 1e6 -> elem
+        }
+        .runWith(Sink.seq)
+
+      val results = Await.result(future, 60000.millis)
+      results.length shouldBe N
+
+      // check if every elements are delayed by roughly the same amount of time
+      val delayHistogram =
+        results.map(x ⇒ Math.floor(x._1 / delayMillis) * delayMillis).groupBy(identity).mapValues(_.length)
+
+      delayHistogram shouldEqual Map(delayMillis.toDouble -> N)
+    }
+
   }
 }

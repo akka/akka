@@ -1744,7 +1744,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+            pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1764,11 +1764,14 @@ private[stream] object Collect {
       def onPush(): Unit = {
         if (buffer.isFull)
           onPushWhenBufferFull()
-        else {
+        else if (buffer.isEmpty && !isTimerActive(timerName)) {
+          // ONLY schedule the timer if the buffer is empty, as an initial condition for the timing mechanism.
+          // Otherwise, scheduling the timer will starve subsequent `onPull` callbacks,
+          // even though elements are already overdue. The starvation exacerbates when the delay duration increases.
           grabAndPull()
-          if (!isTimerActive(timerName)) {
-            scheduleOnce(timerName, d)
-          }
+          scheduleOnce(timerName, d)
+        } else {
+          grabAndPull()
         }
       }
 
