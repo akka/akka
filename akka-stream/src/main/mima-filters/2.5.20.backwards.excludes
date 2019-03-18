@@ -10,3 +10,6 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSou
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.StreamSupervisor$PrintDebugDump$")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.dumpWaits")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.dumpWaits")
+
+# #26246 Add asJava/asScala to RunnableGraph, not to be extended by users
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.RunnableGraph.asScala")
