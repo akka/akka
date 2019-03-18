@@ -13,8 +13,8 @@ import org.scalatest.WordSpec
 
 class ORMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A ORMap" must {
 
@@ -153,7 +153,7 @@ class ORMapSpec extends WordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
 
       val deltaVersion = m1.delta.get match {
-        case ORMap.PutDeltaOp(delta, v, dt) =>
+        case ORMap.PutDeltaOp(delta, _, _) =>
           delta match {
             case AddDeltaOp(u) =>
               if (u.elementsMap.contains("a"))
@@ -618,7 +618,7 @@ class ORMapSpec extends WordSpec with Matchers {
 
       val merged1: ORMap[String, ORSet[String]] = m1.merge(m2)
 
-      val m3 = merged1.updated(node1, "b", ORSet.empty[String])(_.clear(node1).add(node1, "B2"))
+      val m3 = merged1.updated(node1, "b", ORSet.empty[String])(_.clear().add(node1, "B2"))
 
       val merged2 = merged1.merge(m3)
       merged2.entries("a").elements should be(Set("A"))
@@ -687,14 +687,18 @@ class ORMapSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val m1 = ORMap.empty.put(node1, "a", Flag(true)).put(node2, "b", Flag(false))
-      val m2: ORMap[String, Flag] = m1
+      val _: ORMap[String, Flag] = m1
       val ORMap(entries1) = m1
       val entries2: Map[String, Flag] = entries1
+      entries2 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
+
       Changed(ORMapKey[String, Flag]("key"))(m1) match {
         case c @ Changed(ORMapKey("key")) =>
           val ORMap(entries3) = c.dataValue
           val entries4: Map[String, ReplicatedData] = entries3
           entries4 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
+        case _ =>
+          fail("Failed to match")
       }
     }
 

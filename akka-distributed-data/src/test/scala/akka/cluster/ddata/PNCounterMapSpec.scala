@@ -12,8 +12,8 @@ import org.scalatest.WordSpec
 
 class PNCounterMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A PNCounterMap" must {
 
@@ -74,11 +74,15 @@ class PNCounterMapSpec extends WordSpec with Matchers {
       val m1 = PNCounterMap.empty.increment(node1, "a", 1).increment(node2, "b", 2)
       val PNCounterMap(entries1) = m1
       val entries2: Map[String, BigInt] = entries1
+      entries2 should be(Map("a" -> 1L, "b" -> 2L))
+
       Changed(PNCounterMapKey[String]("key"))(m1) match {
         case c @ Changed(PNCounterMapKey("key")) =>
           val PNCounterMap(entries3) = c.dataValue
           val entries4: Map[String, BigInt] = entries3
           entries4 should be(Map("a" -> 1L, "b" -> 2L))
+        case _ =>
+          fail("Did not match")
       }
     }
 

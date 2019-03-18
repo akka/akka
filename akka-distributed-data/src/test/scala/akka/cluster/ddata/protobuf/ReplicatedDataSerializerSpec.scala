@@ -143,7 +143,10 @@ class ReplicatedDataSerializerSpec
           .tell(Identify("2"), testActor)
         val echo2 = expectMsgType[ActorIdentity].ref.get
 
-        val msg = ORSet.empty[ActorRef].add(Cluster(system), echo1).add(Cluster(system), echo2)
+        val msg = ORSet
+          .empty[ActorRef]
+          .add(Cluster(system).selfUniqueAddress, echo1)
+          .add(Cluster(system).selfUniqueAddress, echo2)
         echo2.tell(msg, testActor)
         val reply = expectMsgType[ORSet[ActorRef]]
         reply.elements should ===(Set(echo1, echo2))
@@ -157,8 +160,8 @@ class ReplicatedDataSerializerSpec
       checkSerialization(ORSet().add(address1, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
-      checkSerialization(ORSet().add(address1, "a").resetDelta.clear(address2).delta.get)
-      checkSerialization(ORSet().add(address1, "a").clear(address2).delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.clear().delta.get)
+      checkSerialization(ORSet().add(address1, "a").clear().delta.get)
     }
 
     "serialize large GSet" in {

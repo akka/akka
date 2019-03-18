@@ -181,7 +181,7 @@ final class ORMultiMap[A, B] private[akka] (
    */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] = {
     val newUnderlying = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas) { existing =>
-      value.foldLeft(existing.clear(node)) { (s, element) =>
+      value.foldLeft(existing.clear()) { (s, element) =>
         s.add(node, element)
       }
     }
@@ -216,7 +216,7 @@ final class ORMultiMap[A, B] private[akka] (
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMultiMap[A, B] = {
     if (withValueDeltas) {
       val u = underlying.updated(node, key, ORSet.empty[B], valueDeltas = true) { existing =>
-        existing.clear(node)
+        existing.clear()
       }
       new ORMultiMap(u.removeKey(node, key), withValueDeltas)
     } else {

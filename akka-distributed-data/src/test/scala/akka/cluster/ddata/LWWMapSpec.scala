@@ -13,8 +13,8 @@ import org.scalatest.WordSpec
 class LWWMapSpec extends WordSpec with Matchers {
   import LWWRegister.defaultClock
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A LWWMap" must {
 
@@ -72,11 +72,15 @@ class LWWMapSpec extends WordSpec with Matchers {
       val m1 = LWWMap.empty[String, Long].put(node1, "a", 1L, defaultClock[Long])
       val LWWMap(entries1) = m1
       val entries2: Map[String, Long] = entries1
+      entries2 should be(Map("a" -> 1L))
+
       Changed(LWWMapKey[String, Long]("key"))(m1) match {
         case c @ Changed(LWWMapKey("key")) =>
           val LWWMap(entries3) = c.dataValue
           val entries4: Map[String, Long] = entries3
           entries4 should be(Map("a" -> 1L))
+        case _ =>
+          fail("Failed to match")
       }
     }
 

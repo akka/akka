@@ -1569,7 +1569,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     getData(key) match {
       case someEnvelope @ Some(envelope) if envelope eq writeEnvelope => someEnvelope
       case Some(DataEnvelope(DeletedData, _, _))                      => Some(DeletedEnvelope) // already deleted
-      case Some(envelope @ DataEnvelope(existing, _, _)) =>
+      case Some(envelope @ DataEnvelope(existingData @ _, _, _)) =>
         try {
           // DataEnvelope will mergeDelta when needed
           val merged = envelope.merge(writeEnvelope).addSeen(selfAddress)
@@ -1918,8 +1918,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def hasSubscriber(subscriber: ActorRef): Boolean =
-    (subscribers.exists { case (k, s)    => s.contains(subscriber) }) ||
-    (newSubscribers.exists { case (k, s) => s.contains(subscriber) })
+    subscribers.exists { case (_, s)    => s.contains(subscriber) } ||
+    newSubscribers.exists { case (_, s) => s.contains(subscriber) }
 
   def receiveTerminated(ref: ActorRef): Unit = {
     if (ref == durableStore) {
@@ -2006,7 +2006,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val knownNodes = nodes.union(weaklyUpNodes).union(removedNodes.keySet.map(_.address))
     val newRemovedNodes =
       dataEntries.foldLeft(Set.empty[UniqueAddress]) {
-        case (acc, (_, (envelope @ DataEnvelope(data: RemovedNodePruning, _, _), _))) =>
+        case (acc, (_, (DataEnvelope(data: RemovedNodePruning, _, _), _))) =>
           acc.union(data.modifiedByNodes.filterNot(n => n == selfUniqueAddress || knownNodes(n.address)))
         case (acc, _) =>
           acc
@@ -2037,7 +2037,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
         if (envelope.needPruningFrom(removed)) {
           envelope.data match {
-            case dataWithRemovedNodePruning: RemovedNodePruning =>
+            case _: RemovedNodePruning =>
               envelope.pruning.get(removed) match {
                 case None                                                             => init()
                 case Some(PruningInitialized(owner, _)) if owner != selfUniqueAddress => init()
@@ -2256,19 +2256,17 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case _: Replicator.UpdateSuccess[_] =>
       gotLocalStoreReply = true
       if (isDone) reply(isTimeout = false)
-    case f: Replicator.StoreFailure[_] =>
+    case _: Replicator.StoreFailure[_] =>
       gotLocalStoreReply = true
       gotWriteNackFrom += selfUniqueAddress.address
       if (isDone) reply(isTimeout = false)
 
     case SendToSecondary =>
-      deltaMsg match {
-        case None    =>
-        case Some(d) =>
-          // Deltas must be applied in order and we can't keep track of ordering of
-          // simultaneous updates so there is a chance that the delta could not be applied.
-          // Try again with the full state to the primary nodes that have not acked.
-          primaryNodes.toSet.intersect(remaining).foreach { replica(_) ! writeMsg }
+      if (deltaMsg.isDefined) {
+        // Deltas must be applied in order and we can't keep track of ordering of
+        // simultaneous updates so there is a chance that the delta could not be applied.
+        // Try again with the full state to the primary nodes that have not acked.
+        primaryNodes.toSet.intersect(remaining).foreach { replica(_) ! writeMsg }
       }
       secondaryNodes.foreach { replica(_) ! writeMsg }
     case ReceiveTimeout =>

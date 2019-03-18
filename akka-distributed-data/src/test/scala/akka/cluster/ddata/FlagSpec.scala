@@ -34,11 +34,15 @@ class FlagSpec extends WordSpec with Matchers {
       val f1 = Flag.Disabled.switchOn
       val Flag(value1) = f1
       val value2: Boolean = value1
+      value2 should be(true)
+
       Changed(FlagKey("key"))(f1) match {
         case c @ Changed(FlagKey("key")) =>
           val Flag(value3) = c.dataValue
           val value4: Boolean = value3
           value4 should be(true)
+        case _ =>
+          fail("Failed to match ")
       }
     }
   }

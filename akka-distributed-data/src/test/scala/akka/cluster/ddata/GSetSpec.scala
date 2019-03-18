@@ -141,14 +141,18 @@ class GSetSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val s1 = GSet.empty + "a" + "b"
-      val s2: GSet[String] = s1
+      val _: GSet[String] = s1
       val GSet(elements1) = s1
       val elements2: Set[String] = elements1
+      elements2 should be(Set("a", "b"))
+
       Changed(GSetKey[String]("key"))(s1) match {
         case c @ Changed(GSetKey("key")) =>
           val GSet(elements3) = c.dataValue
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
+        case _ =>
+          fail("Failed to match")
       }
     }
 
