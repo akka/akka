@@ -29,8 +29,10 @@ object ClusterDomainEventPublisherSpec {
     """
 }
 
-class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
-  with BeforeAndAfterEach with ImplicitSender {
+class ClusterDomainEventPublisherSpec
+    extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
+    with BeforeAndAfterEach
+    with ImplicitSender {
 
   val protocol =
     if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
@@ -68,20 +70,28 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val state3 = state(g3, aUp.uniqueAddress, DefaultDataCenter)
   val g4 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress)
   val state4 = state(g4, aUp.uniqueAddress, DefaultDataCenter)
-  val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp)).seen(aUp.uniqueAddress).seen(bExiting.uniqueAddress).seen(cUp.uniqueAddress).seen(a51Up.uniqueAddress)
+  val g5 = Gossip(members = SortedSet(a51Up, aUp, bExiting, cUp))
+    .seen(aUp.uniqueAddress)
+    .seen(bExiting.uniqueAddress)
+    .seen(cUp.uniqueAddress)
+    .seen(a51Up.uniqueAddress)
   val state5 = state(g5, aUp.uniqueAddress, DefaultDataCenter)
   val g6 = Gossip(members = SortedSet(aLeaving, bExiting, cUp)).seen(aUp.uniqueAddress)
   val state6 = state(g6, aUp.uniqueAddress, DefaultDataCenter)
   val g7 = Gossip(members = SortedSet(aExiting, bExiting, cUp)).seen(aUp.uniqueAddress)
   val state7 = state(g7, aUp.uniqueAddress, DefaultDataCenter)
-  val g8 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp), overview = GossipOverview(reachability =
-    Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress))).seen(aUp.uniqueAddress)
+  val g8 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, dUp.uniqueAddress)))
+    .seen(aUp.uniqueAddress)
   val state8 = state(g8, aUp.uniqueAddress, DefaultDataCenter)
-  val g9 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
-    Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
+  val g9 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty.unreachable(aUp.uniqueAddress, eUp.uniqueAddress)))
   val state9 = state(g9, aUp.uniqueAddress, DefaultDataCenter)
-  val g10 = Gossip(members = SortedSet(aUp, bExiting, cUp, dUp, eUp), overview = GossipOverview(reachability =
-    Reachability.empty))
+  val g10 = Gossip(
+    members = SortedSet(aUp, bExiting, cUp, dUp, eUp),
+    overview = GossipOverview(reachability = Reachability.empty))
   val state10 = state(g10, aUp.uniqueAddress, DefaultDataCenter)
 
   // created in beforeEach
@@ -155,7 +165,8 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       val subscriber = TestProbe()
       publisher ! Subscribe(subscriber.ref, InitialStateAsSnapshot, Set(classOf[RoleLeaderChanged]))
       subscriber.expectMsgType[CurrentClusterState]
-      publisher ! PublishChanges(state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
+      publisher ! PublishChanges(
+        state(Gossip(members = SortedSet(cJoining, dUp)), dUp.uniqueAddress, DefaultDataCenter))
       subscriber.expectMsgAllOf(
         RoleLeaderChanged("GRP", Some(dUp.address)),
         RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(dUp.address)))

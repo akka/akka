@@ -29,7 +29,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
     "select implementation from config by config name (inside akka.discovery namespace)" in {
       val className = classOf[FakeTestDiscovery].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = akka-mock-inside
 
@@ -47,7 +49,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
       val className1 = classOf[FakeTestDiscovery].getCanonicalName
       val className2 = classOf[FakeTestDiscovery2].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -70,7 +74,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
       val className1 = classOf[FakeTestDiscovery].getCanonicalName
       val className2 = classOf[FakeTestDiscovery2].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -84,17 +90,19 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
         """).withFallback(ConfigFactory.load()))
 
       try {
-        Discovery(sys).loadServiceDiscovery("mock2") should be theSameInstanceAs Discovery(sys)
-          .loadServiceDiscovery("mock2")
+        (Discovery(sys).loadServiceDiscovery("mock2") should be)
+          .theSameInstanceAs(Discovery(sys).loadServiceDiscovery("mock2"))
 
-        Discovery(sys).discovery should be theSameInstanceAs Discovery(sys).loadServiceDiscovery("mock1")
+        (Discovery(sys).discovery should be).theSameInstanceAs(Discovery(sys).loadServiceDiscovery("mock1"))
       } finally TestKit.shutdownActorSystem(sys)
     }
 
     "throw a specific discovery method exception" in {
       val className = classOf[ExceptionThrowingDiscovery].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = "mock1"
                mock1 {
@@ -111,7 +119,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
     "throw an illegal argument exception for not existing method" in {
       val className = "className"
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = "$className"
             }

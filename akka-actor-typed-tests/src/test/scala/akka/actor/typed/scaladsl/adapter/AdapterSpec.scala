@@ -17,15 +17,15 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
 
   class Untyped1 extends untyped.Actor {
     def receive = {
-      case "ping"     ⇒ sender() ! "pong"
-      case t: ThrowIt ⇒ throw t
+      case "ping"     => sender() ! "pong"
+      case t: ThrowIt => throw t
     }
   }
 
@@ -33,48 +33,49 @@ object AdapterSpec {
 
   class UntypedForwarder(ref: untyped.ActorRef) extends untyped.Actor {
     def receive = {
-      case a: String ⇒ ref ! a
+      case a: String => ref ! a
     }
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.receive[String] {
-      (context, message) ⇒
+    Behaviors
+      .receive[String] { (context, message) =>
         message match {
-          case "send" ⇒
+          case "send" =>
             val replyTo = context.self.toUntyped
             ref.tell("ping", replyTo)
             Behaviors.same
-          case "pong" ⇒
+          case "pong" =>
             probe ! "ok"
             Behaviors.same
-          case "actorOf" ⇒
+          case "actorOf" =>
             val child = context.actorOf(untyped1)
             child.tell("ping", context.self.toUntyped)
             Behaviors.same
-          case "watch" ⇒
+          case "watch" =>
             context.watch(ref)
             Behaviors.same
-          case "supervise-stop" ⇒
+          case "supervise-stop" =>
             val child = context.actorOf(untyped1)
             context.watch(child)
             child ! ThrowIt3
             child.tell("ping", context.self.toUntyped)
             Behaviors.same
-          case "stop-child" ⇒
+          case "stop-child" =>
             val child = context.actorOf(untyped1)
             context.watch(child)
             context.stop(child)
             Behaviors.same
         }
-    } receiveSignal {
-      case (context, Terminated(ref)) ⇒
-        probe ! "terminated"
-        Behaviors.same
-    }
+      }
+      .receiveSignal {
+        case (context, Terminated(ref)) =>
+          probe ! "terminated"
+          Behaviors.same
+      }
 
-  def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx ⇒
-    val child = ctx.spawnAnonymous(Behaviors.receiveMessage[String] { _ ⇒
+  def unhappyTyped(msg: String): Behavior[String] = Behaviors.setup[String] { ctx =>
+    val child = ctx.spawnAnonymous(Behaviors.receiveMessage[String] { _ =>
       throw TestException(msg)
     })
     child ! "throw please"
@@ -96,13 +97,13 @@ object AdapterSpec {
 
     override val supervisorStrategy = untyped.OneForOneStrategy() {
       ({
-        case ThrowIt1 ⇒
+        case ThrowIt1 =>
           probe ! "thrown-stop"
           untyped.SupervisorStrategy.Stop
-        case ThrowIt2 ⇒
+        case ThrowIt2 =>
           probe ! "thrown-resume"
           untyped.SupervisorStrategy.Resume
-        case ThrowIt3 ⇒
+        case ThrowIt3 =>
           probe ! "thrown-restart"
           // TODO Restart will not really restart the behavior
           untyped.SupervisorStrategy.Restart
@@ -110,26 +111,26 @@ object AdapterSpec {
     }
 
     def receive = {
-      case "send" ⇒ ref ! Ping(self) // implicit conversion
-      case "pong" ⇒ probe ! "ok"
-      case "spawn" ⇒
+      case "send" => ref ! Ping(self) // implicit conversion
+      case "pong" => probe ! "ok"
+      case "spawn" =>
         val child = context.spawnAnonymous(typed2)
         child ! Ping(self)
-      case "actorOf-props" ⇒
+      case "actorOf-props" =>
         // this is how Cluster Sharding can be used
         val child = context.actorOf(typed2Props)
         child ! Ping(self)
-      case "watch" ⇒
+      case "watch" =>
         context.watch(ref)
-      case untyped.Terminated(_) ⇒
+      case untyped.Terminated(_) =>
         probe ! "terminated"
-      case "supervise-stop" ⇒
+      case "supervise-stop" =>
         testSupervice(ThrowIt1)
-      case "supervise-resume" ⇒
+      case "supervise-resume" =>
         testSupervice(ThrowIt2)
-      case "supervise-restart" ⇒
+      case "supervise-restart" =>
         testSupervice(ThrowIt3)
-      case "stop-child" ⇒
+      case "stop-child" =>
         val child = context.spawnAnonymous(typed2)
         context.watch(child)
         context.stop(child)
@@ -144,14 +145,14 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.receive { (context, message) ⇒
+    Behaviors.receive { (context, message) =>
       message match {
-        case Ping(replyTo) ⇒
+        case Ping(replyTo) =>
           replyTo ! "pong"
           Behaviors.same
-        case StopIt ⇒
+        case StopIt =>
           Behaviors.stopped
-        case t: ThrowIt ⇒
+        case t: ThrowIt =>
           throw t
       }
     }
@@ -160,8 +161,7 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends AkkaSpec(
-  """
+class AdapterSpec extends AkkaSpec("""
    akka.loggers = [akka.testkit.TestEventListener]
   """) {
   import AdapterSpec._
@@ -171,26 +171,28 @@ class AdapterSpec extends AkkaSpec(
       val typed1 = system.toTyped
       val typed2 = system.toTyped
 
-      typed1 should be theSameInstanceAs typed2
+      (typed1 should be).theSameInstanceAs(typed2)
     }
 
     "not crash if guardian is stopped" in {
-      for { _ ← 0 to 10 } {
+      for { _ <- 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
-          system = ActorSystem.create(Behaviors.setup[NotUsed](_ ⇒ Behavior.stopped[NotUsed]), "AdapterSpec-stopping-guardian")
+          system = ActorSystem.create(
+            Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]),
+            "AdapterSpec-stopping-guardian")
         } finally if (system != null) shutdown(system.toUntyped)
       }
     }
 
     "not crash if guardian is stopped very quickly" in {
-      for { _ ← 0 to 10 } {
+      for { _ <- 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) ⇒
+          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
             context.self ! Done
             message match {
-              case Done ⇒ Behaviors.stopped
+              case Done => Behaviors.stopped
             }
 
           }, "AdapterSpec-stopping-guardian-2")

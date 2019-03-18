@@ -9,27 +9,32 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.Dropped
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.javadsl.StashOverflowException
+import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.testkit.EventFilter
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedBehaviorStashSpec {
-  def conf: Config = ConfigFactory.parseString(
-    s"""
+  def conf: Config = ConfigFactory.parseString(s"""
     #akka.loglevel = DEBUG
+    akka.loggers = [akka.testkit.TestEventListener]
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.plugin = "failure-journal"
+    # tune it down a bit so we can hit limit
+    akka.persistence.typed.stash-capacity = 500
     failure-journal = $${akka.persistence.journal.inmem}
     failure-journal {
       class = "akka.persistence.typed.scaladsl.ChaosJournal"
@@ -49,7 +54,8 @@ object EventSourcedBehaviorStashSpec {
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
   final case class Unhandled(replyTo: ActorRef[NotUsed]) extends Command[NotUsed]
   final case class Throw(id: String, t: Throwable, override val replyTo: ActorRef[Ack]) extends Command[Ack]
-  final case class IncrementThenThrow(id: String, t: Throwable, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class IncrementThenThrow(id: String, t: Throwable, override val replyTo: ActorRef[Ack])
+      extends Command[Ack]
   final case class Slow(id: String, latch: CountDownLatch, override val replyTo: ActorRef[Ack]) extends Command[Ack]
 
   final case class Ack(id: String)
@@ -63,62 +69,61 @@ object EventSourcedBehaviorStashSpec {
   final case class State(value: Int, active: Boolean)
 
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
-    Behaviors.supervise[Command[_]] {
-      Behaviors.setup(_ ⇒ eventSourcedCounter(persistenceId))
-    }.onFailure(SupervisorStrategy.restart.withLoggingEnabled(enabled = false))
+    Behaviors
+      .supervise[Command[_]] {
+        Behaviors.setup(_ => eventSourcedCounter(persistenceId))
+      }
+      .onFailure(SupervisorStrategy.restart.withLoggingEnabled(enabled = false))
 
-  def eventSourcedCounter(
-    persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
-    EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
-      persistenceId,
-      emptyState = State(0, active = true),
-      commandHandler = (state, command) ⇒ {
-        if (state.active) active(state, command)
-        else inactive(state, command)
-      },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented(delta) ⇒
-          if (!state.active) throw new IllegalStateException
-          State(state.value + delta, active = true)
-        case ValueUpdated(value) ⇒
-          State(value, active = state.active)
-        case Activated ⇒
-          if (state.active) throw new IllegalStateException
-          state.copy(active = true)
-        case Deactivated ⇒
-          if (!state.active) throw new IllegalStateException
-          state.copy(active = false)
-      })
-      .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, maxBackoff = 2.seconds, 0.0)
+  def eventSourcedCounter(persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
+    EventSourcedBehavior
+      .withEnforcedReplies[Command[_], Event, State](
+        persistenceId,
+        emptyState = State(0, active = true),
+        commandHandler = (state, command) => {
+          if (state.active) active(state, command)
+          else inactive(state, command)
+        },
+        eventHandler = (state, evt) =>
+          evt match {
+            case Incremented(delta) =>
+              if (!state.active) throw new IllegalStateException
+              State(state.value + delta, active = true)
+            case ValueUpdated(value) =>
+              State(value, active = state.active)
+            case Activated =>
+              if (state.active) throw new IllegalStateException
+              state.copy(active = true)
+            case Deactivated =>
+              if (!state.active) throw new IllegalStateException
+              state.copy(active = false)
+          })
+      .onPersistFailure(SupervisorStrategy
+        .restartWithBackoff(1.second, maxBackoff = 2.seconds, 0.0)
         .withLoggingEnabled(enabled = false))
   }
 
   private def active(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case cmd: Increment ⇒
-        Effect.persist(Incremented(1))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case cmd @ UpdateValue(_, value, _) ⇒
-        Effect.persist(ValueUpdated(value))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case query: GetValue ⇒
+      case cmd: Increment =>
+        Effect.persist(Incremented(1)).thenReply(cmd)(_ => Ack(cmd.id))
+      case cmd @ UpdateValue(_, value, _) =>
+        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
+      case query: GetValue =>
         Effect.reply(query)(state)
-      case cmd: Deactivate ⇒
-        Effect.persist(Deactivated)
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case cmd: Activate ⇒
+      case cmd: Deactivate =>
+        Effect.persist(Deactivated).thenReply(cmd)(_ => Ack(cmd.id))
+      case cmd: Activate =>
         // already active
         Effect.reply(cmd)(Ack(cmd.id))
-      case _: Unhandled ⇒
+      case _: Unhandled =>
         Effect.unhandled.thenNoReply()
-      case Throw(id, t, replyTo) ⇒
+      case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case cmd: IncrementThenThrow ⇒
-        Effect.persist(Incremented(1))
-          .thenRun((_: State) ⇒ throw cmd.t)
-          .thenNoReply()
-      case cmd: Slow ⇒
+      case cmd: IncrementThenThrow =>
+        Effect.persist(Incremented(1)).thenRun((_: State) => throw cmd.t).thenNoReply()
+      case cmd: Slow =>
         cmd.latch.await(30, TimeUnit.SECONDS)
         Effect.reply(cmd)(Ack(cmd.id))
     }
@@ -126,39 +131,41 @@ object EventSourcedBehaviorStashSpec {
 
   private def inactive(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case _: Increment ⇒
+      case _: Increment =>
         Effect.stash()
-      case cmd @ UpdateValue(_, value, _) ⇒
-        Effect.persist(ValueUpdated(value))
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case query: GetValue ⇒
+      case cmd @ UpdateValue(_, value, _) =>
+        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
+      case query: GetValue =>
         Effect.reply(query)(state)
-      case cmd: Deactivate ⇒
+      case cmd: Deactivate =>
         // already inactive
         Effect.reply(cmd)(Ack(cmd.id))
-      case cmd: Activate ⇒
-        Effect.persist(Activated)
-          .thenUnstashAll()
-          .thenReply(cmd)(_ ⇒ Ack(cmd.id))
-      case _: Unhandled ⇒
+      case cmd: Activate =>
+        Effect.persist(Activated).thenUnstashAll().thenReply(cmd)(_ => Ack(cmd.id))
+      case _: Unhandled =>
         Effect.unhandled.thenNoReply()
-      case Throw(id, t, replyTo) ⇒
+      case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case _: IncrementThenThrow ⇒
+      case _: IncrementThenThrow =>
         Effect.stash()
-      case _: Slow ⇒
+      case _: Slow =>
         Effect.stash()
     }
   }
 }
 
-class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorStashSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorStashSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorStashSpec.conf)
+    with WordSpecLike {
 
   import EventSourcedBehaviorStashSpec._
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+
+  // Needed for the untyped event filter
+  implicit val untyped = system.toUntyped
 
   "A typed persistent actor that is stashing commands" must {
 
@@ -261,15 +268,15 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       val stateProbe = TestProbe[State]
       val notUsedProbe = TestProbe[NotUsed]
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-1-$n", ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Deactivate(s"deact-2-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         if (n % 10 == 0)
           c ! Unhandled(notUsedProbe.ref)
         c ! Increment(s"inc-3-$n", ackProbe.ref)
@@ -277,33 +284,33 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       c ! GetValue(stateProbe.ref)
 
-      (1 to 5).foreach { n ⇒
+      (1 to 5).foreach { n =>
         c ! UpdateValue(s"upd-4-$n", n * 1000, ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Activate(s"act-5-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-6-$n", ackProbe.ref)
       }
 
       c ! GetValue(stateProbe.ref)
 
-      (6 to 8).foreach { n ⇒
+      (6 to 8).foreach { n =>
         c ! UpdateValue(s"upd-7-$n", n * 1000, ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Deactivate(s"deact-8-$n", ackProbe.ref)
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         c ! Increment(s"inc-9-$n", ackProbe.ref)
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         c ! Activate(s"act-10-$n", ackProbe.ref)
       }
 
@@ -314,47 +321,47 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
 
       // verify the order
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-1-$n"))
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"deact-2-$n"))
       }
 
-      (1 to 5).foreach { n ⇒
+      (1 to 5).foreach { n =>
         ackProbe.expectMessage(Ack(s"upd-4-$n"))
       }
 
       ackProbe.expectMessage(Ack("act-5-1"))
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-3-$n"))
       }
 
-      (2 to 3).foreach { n ⇒
+      (2 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"act-5-$n"))
       }
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-6-$n"))
       }
 
-      (6 to 8).foreach { n ⇒
+      (6 to 8).foreach { n =>
         ackProbe.expectMessage(Ack(s"upd-7-$n"))
       }
 
-      (1 to 3).foreach { n ⇒
+      (1 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"deact-8-$n"))
       }
 
       ackProbe.expectMessage(Ack("act-10-1"))
 
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         ackProbe.expectMessage(Ack(s"inc-9-$n"))
       }
 
-      (2 to 3).foreach { n ⇒
+      (2 to 3).foreach { n =>
         ackProbe.expectMessage(Ack(s"act-10-$n"))
       }
 
@@ -407,7 +414,7 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       // make first command slow to ensure that all subsequent commands are enqueued first
       c ! Slow("slow", latch, ackProbe.ref)
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         if (n == 3)
           c ! IncrementThenThrow(s"inc-$n", new TestException("test"), ackProbe.ref)
         else
@@ -433,11 +440,11 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         c ! Increment(s"inc-$n", ackProbe.ref)
       }
 
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         if (n != 5)
           ackProbe.expectMessage(Ack(s"inc-$n"))
       }
@@ -478,8 +485,109 @@ class EventSourcedBehaviorStashSpec extends ScalaTestWithActorTestKit(EventSourc
       c ! GetValue(stateProbe.ref)
       stateProbe.expectMessage(State(5, active = true))
     }
+
+    "discard when stash has reached limit with default dropped setting" in {
+      val probe = TestProbe[AnyRef]()
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
+      val behavior = EventSourcedBehavior[String, String, Boolean](
+        persistenceId = PersistenceId("stash-is-full-drop"),
+        emptyState = false,
+        commandHandler = { (state, command) =>
+          state match {
+            case false =>
+              command match {
+                case "ping" =>
+                  probe.ref ! "pong"
+                  Effect.none
+                case "start-stashing" =>
+                  Effect.persist("start-stashing")
+                case msg =>
+                  probe.ref ! msg
+                  Effect.none
+              }
+
+            case true =>
+              command match {
+                case "unstash" =>
+                  Effect
+                    .persist("unstash")
+                    .thenUnstashAll()
+                    // FIXME #26489: this is run before unstash, so not sequentially as the docs say
+                    .thenRun(_ => probe.ref ! "done-unstashing")
+                case _ =>
+                  Effect.stash()
+              }
+          }
+        }, {
+          case (_, "start-stashing") => true
+          case (_, "unstash")        => false
+          case (_, _)                => throw new IllegalArgumentException()
+        })
+
+      val c = spawn(behavior)
+
+      // make sure it completed recovery, before we try to overfill the stash
+      c ! "ping"
+      probe.expectMessage("pong")
+
+      c ! "start-stashing"
+
+      val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+      EventFilter.warning(start = "Stash buffer is full, dropping message").intercept {
+        (0 to limit).foreach { n =>
+          c ! s"cmd-$n" // limit triggers overflow
+        }
+        probe.expectMessageType[Dropped]
+      }
+
+      // we can still unstash and continue interacting
+      c ! "unstash"
+      probe.expectMessage("done-unstashing") // before actually unstashing, see above
+      (0 to (limit - 1)).foreach { n =>
+        probe.expectMessage(s"cmd-$n")
+      }
+
+      c ! "ping"
+      probe.expectMessage("pong")
+    }
+
+    "fail when stash has reached limit if configured to fail" in {
+      // persistence settings is system wide, so we need to have a custom testkit/actorsystem here
+      val failStashTestKit = ActorTestKit(
+        "EventSourcedBehaviorStashSpec-stash-overflow-fail",
+        ConfigFactory
+          .parseString("akka.persistence.typed.stash-overflow-strategy=fail")
+          .withFallback(EventSourcedBehaviorStashSpec.conf))
+      try {
+        val probe = failStashTestKit.createTestProbe[AnyRef]()
+        val behavior =
+          EventSourcedBehavior[String, String, String](PersistenceId("stash-is-full-fail"), "", commandHandler = {
+            case (_, "ping") =>
+              probe.ref ! "pong"
+              Effect.none
+            case (_, _) =>
+              Effect.stash()
+          }, (state, _) => state)
+
+        val c = failStashTestKit.spawn(behavior)
+
+        // make sure recovery completed
+        c ! "ping"
+        probe.expectMessage("pong")
+
+        EventFilter[StashOverflowException](occurrences = 1).intercept {
+          val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+          (0 to limit).foreach { n =>
+            c ! s"cmd-$n" // limit triggers overflow
+          }
+          probe.expectTerminated(c, 10.seconds)
+        }(failStashTestKit.system.toUntyped)
+      } finally {
+        failStashTestKit.shutdownTestKit()
+      }
+    }
   }
 
-  // FIXME test combination with PoisonPill
+  // FIXME #24687: test combination with PoisonPill
 
 }

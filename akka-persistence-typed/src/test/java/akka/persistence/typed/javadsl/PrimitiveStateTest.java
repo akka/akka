@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.RecoveryCompleted;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -39,8 +40,14 @@ public class PrimitiveStateTest extends JUnitSuite {
     }
 
     @Override
-    public void onRecoveryCompleted(Integer n) {
-      probe.tell("onRecoveryCompleted:" + n);
+    public SignalHandler signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (completed) -> {
+                probe.tell("onRecoveryCompleted:" + completed.getState());
+              })
+          .build();
     }
 
     @Override

@@ -179,7 +179,7 @@ class NewLayoutBenchmark {
 
       while (current ne EmptyTraversal) {
         current match {
-          case MaterializeAtomic(mod, outToSlot) ⇒
+          case MaterializeAtomic(mod, outToSlot) =>
             var i = 0
             val inletsIter = mod.shape.inlets.iterator
             while (inletsIter.hasNext) {
@@ -196,10 +196,10 @@ class NewLayoutBenchmark {
             inOffs += mod.shape.inlets.size
             current = current.next
           // And that's it ;)
-          case Concat(first, next) ⇒
+          case Concat(first, next) =>
             traversalStack.add(next)
             current = first
-          case _ ⇒
+          case _ =>
             current = current.next
         }
       }
@@ -212,7 +212,7 @@ class NewLayoutBenchmark {
     var downstreamPort: InPort = _
 
     override def subscribe(s: Subscriber[_ >: Any]): Unit = s match {
-      case TestSubscriber(o, p) ⇒
+      case TestSubscriber(o, p) =>
         downstreamModule = o
         downstreamPort = p
         s.onSubscribe(this)
@@ -227,7 +227,7 @@ class NewLayoutBenchmark {
     var upstreamPort: OutPort = _
 
     override def onSubscribe(s: Subscription): Unit = s match {
-      case TestPublisher(o, p) ⇒
+      case TestPublisher(o, p) =>
         upstreamModule = o
         upstreamPort = p
     }
@@ -244,13 +244,13 @@ class NewLayoutBenchmark {
 
     override protected def materializeAtomic(atomic: AtomicModule, effectiveAttributes: Attributes,
       matVal: java.util.Map[Module, Any]): Unit = {
-      for (inPort ← atomic.inPorts) {
+      for (inPort <- atomic.inPorts) {
         val subscriber = TestSubscriber(atomic, inPort)
         subscribers(i) = subscriber
         i += 1
         assignPort(inPort, subscriber)
       }
-      for (outPort ← atomic.outPorts) {
+      for (outPort <- atomic.outPorts) {
         val publisher = TestPublisher(atomic, outPort)
         publishers(i) = publisher
         i += 1
@@ -362,4 +362,4 @@ class NewLayoutBenchmark {
   }
 
 }
-*/
+ */

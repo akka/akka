@@ -114,7 +114,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "allow join and leave with local address" in {
-      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -148,7 +150,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "leave via CoordinatedShutdown.run" in {
-      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -163,10 +167,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
-        val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
-        }.asInstanceOf[MemberRemoved]
+        val removed = probe
+          .fishForMessage() {
+            case _: MemberExited  => false
+            case _: MemberRemoved => true
+          }
+          .asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
       } finally {
         shutdown(sys2)
@@ -174,7 +180,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via CoordinatedShutdown.run when a stream involving StreamRefs is running" in {
-      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -193,10 +201,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
-        val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
-        }.asInstanceOf[MemberRemoved]
+        val removed = probe
+          .fishForMessage() {
+            case _: MemberExited  => false
+            case _: MemberRemoved => true
+          }
+          .asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
 
         Await.result(sys2.whenTerminated, 10.seconds)
@@ -208,7 +218,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "leave via CoordinatedShutdown.run when member status is Joining" in {
-      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -224,10 +236,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         CoordinatedShutdown(sys2).run(CoordinatedShutdown.UnknownReason)
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
-        val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
-        }.asInstanceOf[MemberRemoved]
+        val removed = probe
+          .fishForMessage() {
+            case _: MemberExited  => false
+            case _: MemberRemoved => true
+          }
+          .asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
       } finally {
         shutdown(sys2)
@@ -235,7 +249,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via leave (CoordinatedShutdown)" in {
-      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+      val sys2 = ActorSystem(
+        "ClusterSpec2",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -251,10 +267,12 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         Cluster(sys2).leave(Cluster(sys2).selfAddress)
         probe.expectMsgType[MemberLeft]
         // MemberExited might not be published before MemberRemoved
-        val removed = probe.fishForMessage() {
-          case _: MemberExited  ⇒ false
-          case _: MemberRemoved ⇒ true
-        }.asInstanceOf[MemberRemoved]
+        val removed = probe
+          .fishForMessage() {
+            case _: MemberExited  => false
+            case _: MemberRemoved => true
+          }
+          .asInstanceOf[MemberRemoved]
         removed.previousStatus should ===(MemberStatus.Exiting)
         Await.result(sys2.whenTerminated, 10.seconds)
         Cluster(sys2).isTerminated should ===(true)
@@ -265,7 +283,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "terminate ActorSystem via down (CoordinatedShutdown)" in {
-      val sys3 = ActorSystem("ClusterSpec3", ConfigFactory.parseString("""
+      val sys3 = ActorSystem(
+        "ClusterSpec3",
+        ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -291,13 +311,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "register multiple cluster JMX MBeans with akka.cluster.jmx.multi-mbeans-in-same-jvm = on" in {
-      def getConfig = (port: Int) ⇒ ConfigFactory.parseString(
-        s"""
+      def getConfig = (port: Int) => ConfigFactory.parseString(s"""
              akka.cluster.jmx.multi-mbeans-in-same-jvm = on
              akka.remote.netty.tcp.port = ${port}
              akka.remote.artery.canonical.port = ${port}
-          """
-      ).withFallback(ConfigFactory.parseString(ClusterSpec.config))
+          """).withFallback(ConfigFactory.parseString(ClusterSpec.config))
 
       val sys1 = ActorSystem("ClusterSpec4", getConfig(2552))
       val sys2 = ActorSystem("ClusterSpec4", getConfig(2553))

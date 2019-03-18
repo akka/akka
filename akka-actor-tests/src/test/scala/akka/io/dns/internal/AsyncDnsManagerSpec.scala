@@ -15,8 +15,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 import scala.collection.immutable.Seq
 
-class AsyncDnsManagerSpec extends AkkaSpec(
-  """
+class AsyncDnsManagerSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
@@ -46,7 +45,7 @@ class AsyncDnsManagerSpec extends AkkaSpec(
 
     "provide access to cache" in {
       dns ! AsyncDnsManager.GetCache
-      expectMsgType[AsyncDnsCache] should be theSameInstanceAs Dns(system).cache
+      (expectMsgType[AsyncDnsCache] should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

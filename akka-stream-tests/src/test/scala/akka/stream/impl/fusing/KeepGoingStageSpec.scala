@@ -4,15 +4,15 @@
 
 package akka.stream.impl.fusing
 
-import akka.actor.{ NoSerializationVerificationNeeded, ActorRef }
+import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.stream.scaladsl.{ Keep, Source }
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ Attributes, Inlet, SinkShape, ActorMaterializer }
-import akka.stream.stage.{ InHandler, AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue }
+import akka.stream.{ ActorMaterializer, Attributes, Inlet, SinkShape }
+import akka.stream.stage.{ AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
-import scala.concurrent.{ Await, Promise, Future }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 
 class KeepGoingStageSpec extends StreamSpec {
@@ -43,7 +43,8 @@ class KeepGoingStageSpec extends StreamSpec {
   class PingableSink(keepAlive: Boolean) extends GraphStageWithMaterializedValue[SinkShape[Int], Future[PingRef]] {
     val shape = SinkShape[Int](Inlet("ping.in"))
 
-    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[PingRef]) = {
+    override def createLogicAndMaterializedValue(
+        inheritedAttributes: Attributes): (GraphStageLogic, Future[PingRef]) = {
       val promise = Promise[PingRef]()
 
       val logic = new GraphStageLogic(shape) {
@@ -55,15 +56,15 @@ class KeepGoingStageSpec extends StreamSpec {
         }
 
         private def onCommand(cmd: PingCmd): Unit = cmd match {
-          case Register(probe) ⇒ listener = Some(probe)
-          case Ping            ⇒ listener.foreach(_ ! Pong)
-          case CompleteStage ⇒
+          case Register(probe) => listener = Some(probe)
+          case Ping            => listener.foreach(_ ! Pong)
+          case CompleteStage =>
             completeStage()
             listener.foreach(_ ! EndOfEventHandler)
-          case FailStage ⇒
+          case FailStage =>
             failStage(TE("test"))
             listener.foreach(_ ! EndOfEventHandler)
-          case Throw ⇒
+          case Throw =>
             try {
               throw TE("test")
             } finally listener.foreach(_ ! EndOfEventHandler)

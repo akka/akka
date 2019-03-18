@@ -21,7 +21,7 @@ import scala.concurrent.{ Future, Promise }
 @InternalApi
 private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
   def source: Source[T, NotUsed] =
-    Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
+    Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ => NotUsed)
 }
 
 /**
@@ -31,20 +31,20 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
  * If it is none, then we are the side creating the ref.
  */
 @InternalApi
-private[stream] final class SourceRefStageImpl[Out](
-  val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SourceShape[Out], Future[SinkRef[Out]]] { stage ⇒
+private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: OptionVal[ActorRef])
+    extends GraphStageWithMaterializedValue[SourceShape[Out], Future[SinkRef[Out]]] { stage =>
 
   val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
 
   private def initialRefName =
     initialPartnerRef match {
-      case OptionVal.Some(ref) ⇒ ref.toString
-      case _                   ⇒ "<no-initial-ref>"
+      case OptionVal.Some(ref) => ref.toString
+      case _                   => "<no-initial-ref>"
     }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[SinkRef[Out]]) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, Future[SinkRef[Out]]) = {
     val promise = Promise[SinkRefImpl[Out]]()
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with OutHandler {
@@ -54,8 +54,8 @@ private[stream] final class SourceRefStageImpl[Out](
       import StreamRefAttributes._
       private[this] lazy val settings = ActorMaterializerHelper.downcast(materializer).settings.streamRefSettings
 
-      private[this] lazy val subscriptionTimeout = inheritedAttributes
-        .get[StreamRefAttributes.SubscriptionTimeout](SubscriptionTimeout(settings.subscriptionTimeout))
+      private[this] lazy val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
+        SubscriptionTimeout(settings.subscriptionTimeout))
       // end of settings ---
 
       override protected lazy val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
@@ -73,7 +73,8 @@ private[stream] final class SourceRefStageImpl[Out](
       private var localCumulativeDemand: Long = 0L
       private var localRemainingRequested: Int = 0
 
-      private var receiveBuffer: FixedSizeBuffer.FixedSizeBuffer[Out] = _ // initialized in preStart since depends on settings
+      private var receiveBuffer
+          : FixedSizeBuffer.FixedSizeBuffer[Out] = _ // initialized in preStart since depends on settings
 
       private var requestStrategy: RequestStrategy = _ // initialized in preStart since depends on receiveBuffer's size
       // end of demand management ---
@@ -90,7 +91,9 @@ private[stream] final class SourceRefStageImpl[Out](
         self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
-          observeAndValidateSender(initialPartnerRef.get, "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
+          observeAndValidateSender(
+            initialPartnerRef.get,
+            "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
         promise.success(SinkRefImpl(self.ref))
 
@@ -127,33 +130,34 @@ private[stream] final class SourceRefStageImpl[Out](
         scheduleOnce(DemandRedeliveryTimerKey, settings.demandRedeliveryInterval)
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
-        case SubscriptionTimeoutTimerKey ⇒
+        case SubscriptionTimeoutTimerKey =>
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
             s"[$stageActorName] Remote side did not subscribe (materialize) handed out Sink reference [${promise.future.value}]," +
-              s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
+            s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex // this will also log the exception, unlike failStage; this should fail rarely, but would be good to have it "loud"
 
-        case DemandRedeliveryTimerKey ⇒
+        case DemandRedeliveryTimerKey =>
           log.debug("[{}] Scheduled re-delivery of demand until [{}]", stageActorName, localCumulativeDemand)
           getPartnerRef ! StreamRefsProtocol.CumulativeDemand(localCumulativeDemand)
           scheduleDemandRedelivery()
 
-        case TerminationDeadlineTimerKey ⇒
-          failStage(RemoteStreamRefActorTerminatedException(s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
+        case TerminationDeadlineTimerKey =>
+          failStage(RemoteStreamRefActorTerminatedException(
+            s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
             "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
       }
 
-      lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
-        case (sender, msg @ StreamRefsProtocol.OnSubscribeHandshake(remoteRef)) ⇒
+      lazy val initialReceive: ((ActorRef, Any)) => Unit = {
+        case (sender, msg @ StreamRefsProtocol.OnSubscribeHandshake(remoteRef)) =>
           cancelTimer(SubscriptionTimeoutTimerKey)
           observeAndValidateSender(remoteRef, "Illegal sender in SequencedOnNext")
           log.debug("[{}] Received handshake {} from {}", stageActorName, msg, sender)
 
           triggerCumulativeDemand()
 
-        case (sender, msg @ StreamRefsProtocol.SequencedOnNext(seqNr, payload: Out @unchecked)) ⇒
+        case (sender, msg @ StreamRefsProtocol.SequencedOnNext(seqNr, payload: Out @unchecked)) =>
           observeAndValidateSender(sender, "Illegal sender in SequencedOnNext")
           observeAndValidateSequenceNr(seqNr, "Illegal sequence nr in SequencedOnNext")
           log.debug("[{}] Received seq {} from {}", stageActorName, msg, sender)
@@ -161,7 +165,7 @@ private[stream] final class SourceRefStageImpl[Out](
           onReceiveElement(payload)
           triggerCumulativeDemand()
 
-        case (sender, StreamRefsProtocol.RemoteStreamCompleted(seqNr)) ⇒
+        case (sender, StreamRefsProtocol.RemoteStreamCompleted(seqNr)) =>
           observeAndValidateSender(sender, "Illegal sender in RemoteSinkCompleted")
           observeAndValidateSequenceNr(seqNr, "Illegal sequence nr in RemoteSinkCompleted")
           log.debug("[{}] The remote stream has completed, completing as well...", stageActorName)
@@ -170,25 +174,27 @@ private[stream] final class SourceRefStageImpl[Out](
           completed = true
           tryPush()
 
-        case (sender, StreamRefsProtocol.RemoteStreamFailure(reason)) ⇒
+        case (sender, StreamRefsProtocol.RemoteStreamFailure(reason)) =>
           observeAndValidateSender(sender, "Illegal sender in RemoteSinkFailure")
           log.warning("[{}] The remote stream has failed, failing (reason: {})", stageActorName, reason)
 
           self.unwatch(sender)
           failStage(RemoteStreamRefActorTerminatedException(s"Remote stream (${sender.path}) failed, reason: $reason"))
 
-        case (_, Terminated(ref)) ⇒
+        case (_, Terminated(ref)) =>
           partnerRef match {
-            case OptionVal.Some(`ref`) ⇒
+            case OptionVal.Some(`ref`) =>
               // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
               // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
               // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
               scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
 
-            case _ ⇒
+            case _ =>
               // this should not have happened! It should be impossible that we watched some other actor
-              failStage(RemoteStreamRefActorTerminatedException(s"Received UNEXPECTED Terminated($ref) message! " +
-                s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
+              failStage(
+                RemoteStreamRefActorTerminatedException(
+                  s"Received UNEXPECTED Terminated($ref) message! " +
+                  s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
           }
       }
 
@@ -203,7 +209,8 @@ private[stream] final class SourceRefStageImpl[Out](
         if (receiveBuffer.isEmpty && isAvailable(out)) {
           push(out, payload)
         } else if (receiveBuffer.isFull) {
-          throw new IllegalStateException(s"Attempted to overflow buffer! " +
+          throw new IllegalStateException(
+            s"Attempted to overflow buffer! " +
             s"Capacity: ${receiveBuffer.capacity}, incoming element: $payload, " +
             s"localRemainingRequested: $localRemainingRequested, localCumulativeDemand: $localCumulativeDemand")
         } else {
@@ -214,12 +221,12 @@ private[stream] final class SourceRefStageImpl[Out](
       /** @throws InvalidPartnerActorException when partner ref is invalid */
       def observeAndValidateSender(partner: ActorRef, msg: String): Unit =
         partnerRef match {
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             log.debug("Received first message from {}, assuming it to be the remote partner for this stage", partner)
             partnerRef = OptionVal(partner)
             self.watch(partner)
 
-          case OptionVal.Some(ref) ⇒
+          case OptionVal.Some(ref) =>
             if (partner != ref) {
               val ex = InvalidPartnerActorException(partner, getPartnerRef, msg)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
@@ -245,4 +252,3 @@ private[stream] final class SourceRefStageImpl[Out](
   override def toString: String =
     s"${Logging.simpleName(getClass)}($initialRefName)}"
 }
-

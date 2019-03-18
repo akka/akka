@@ -23,22 +23,22 @@ object ManyRecoveriesSpec {
     override def persistenceId = name
 
     override def receiveRecover: Receive = {
-      case Evt(s) ⇒
+      case Evt(s) =>
         latch.foreach(Await.ready(_, 10.seconds))
     }
     override def receiveCommand: Receive = {
-      case Cmd(s) ⇒ persist(Evt(s)) { _ ⇒
-        sender() ! s"$persistenceId-$s-${lastSequenceNr}"
-      }
-      case "stop" ⇒
+      case Cmd(s) =>
+        persist(Evt(s)) { _ =>
+          sender() ! s"$persistenceId-$s-${lastSequenceNr}"
+        }
+      case "stop" =>
         context.stop(self)
     }
   }
 
 }
 
-class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -54,27 +54,26 @@ class ManyRecoveriesSpec extends PersistenceSpec(ConfigFactory.parseString(
 
   "Many persistent actors" must {
     "be able to recovery without overloading" in {
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         system.actorOf(testProps(s"a$n", latch = None)) ! Cmd("A")
         expectMsg(s"a$n-A-1")
       }
 
       // this would starve (block) all threads without max-concurrent-recoveries
       val latch = TestLatch()
-      (1 to 100).foreach { n ⇒
+      (1 to 100).foreach { n =>
         system.actorOf(testProps(s"a$n", Some(latch))) ! Cmd("B")
       }
       // this should be able to progress even though above is blocking,
       // 2 remaining non-blocked threads
-      (1 to 10).foreach { n ⇒
+      (1 to 10).foreach { n =>
         system.actorOf(TestActors.echoActorProps) ! n
         expectMsg(n)
       }
 
       latch.countDown()
-      receiveN(100).toSet should ===((1 to 100).map(n ⇒ s"a$n-B-2").toSet)
+      receiveN(100).toSet should ===((1 to 100).map(n => s"a$n-B-2").toSet)
     }
   }
 
 }
-

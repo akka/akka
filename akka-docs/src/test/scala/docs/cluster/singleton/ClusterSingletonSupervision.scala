@@ -10,7 +10,7 @@ class SupervisorActor(childProps: Props, override val supervisorStrategy: Superv
   val child = context.actorOf(childProps, "supervised-child")
 
   def receive = {
-    case msg ⇒ child forward msg
+    case msg => child.forward(msg)
   }
 }
 //#singleton-supervisor-actor

@@ -43,9 +43,10 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * Use a custom config for the actor system.
    */
   def this(customConfig: String) =
-    this(ActorTestKit.create(
-      TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]),
-      ConfigFactory.parseString(customConfig)))
+    this(
+      ActorTestKit.create(
+        TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]),
+        ConfigFactory.parseString(customConfig)))
 
   /**
    * Use a custom config for the actor system.
@@ -67,14 +68,17 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def system: ActorSystem[Void] = testKit.system
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def testKitSettings: TestKitSettings = testKit.testKitSettings
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def timeout: Timeout = testKit.timeout
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
@@ -84,14 +88,17 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T]): ActorRef[T] = testKit.spawn(behavior)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = testKit.spawn(behavior, name)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] = testKit.spawn(behavior, props)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
@@ -101,14 +108,17 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](): TestProbe[M] = testKit.createTestProbe[M]()
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](clazz: Class[M]): TestProbe[M] = testKit.createTestProbe(clazz)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = testKit.createTestProbe(name, clazz)
+
   /**
    * See corresponding method on [[ActorTestKit]]
    */

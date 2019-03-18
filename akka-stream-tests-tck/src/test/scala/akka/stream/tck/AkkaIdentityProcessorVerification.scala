@@ -8,18 +8,21 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import akka.stream.testkit.TestPublisher
-import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import org.reactivestreams.tck.IdentityProcessorVerification
 import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
 import org.testng.annotations.AfterClass
 
 abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publisherShutdownTimeout: Long)
-  extends IdentityProcessorVerification[T](env, publisherShutdownTimeout)
-  with TestNGSuiteLike with ActorSystemLifecycle {
+    extends IdentityProcessorVerification[T](env, publisherShutdownTimeout)
+    with TestNGSuiteLike
+    with ActorSystemLifecycle {
 
   def this(printlnDebug: Boolean) =
-    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
+    this(
+      new TestEnvironment(Timeouts.defaultTimeoutMillis, Timeouts.defaultNoSignalsTimeoutMillis, printlnDebug),
+      Timeouts.publisherShutdownTimeoutMillis)
 
   def this() = this(false)
 

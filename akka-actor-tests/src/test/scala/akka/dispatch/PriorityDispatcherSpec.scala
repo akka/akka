@@ -8,8 +8,8 @@ import language.postfixOps
 
 import com.typesafe.config.Config
 
-import akka.actor.{ Props, ActorSystem, Actor }
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.actor.{ Actor, ActorSystem, Props }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import scala.concurrent.duration._
 
 object PriorityDispatcherSpec {
@@ -22,15 +22,17 @@ object PriorityDispatcherSpec {
     }
     """
 
-  class Unbounded(settings: ActorSystem.Settings, config: Config) extends UnboundedPriorityMailbox(PriorityGenerator({
-    case i: Int  ⇒ i //Reverse order
-    case 'Result ⇒ Int.MaxValue
-  }: Any ⇒ Int))
+  class Unbounded(settings: ActorSystem.Settings, config: Config)
+      extends UnboundedPriorityMailbox(PriorityGenerator({
+        case i: Int  => i //Reverse order
+        case 'Result => Int.MaxValue
+      }: Any => Int))
 
-  class Bounded(settings: ActorSystem.Settings, config: Config) extends BoundedPriorityMailbox(PriorityGenerator({
-    case i: Int  ⇒ i //Reverse order
-    case 'Result ⇒ Int.MaxValue
-  }: Any ⇒ Int), 1000, 10 seconds)
+  class Bounded(settings: ActorSystem.Settings, config: Config)
+      extends BoundedPriorityMailbox(PriorityGenerator({
+        case i: Int  => i //Reverse order
+        case 'Result => Int.MaxValue
+      }: Any => Int), 1000, 10 seconds)
 
 }
 
@@ -60,13 +62,15 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
         val acc = scala.collection.mutable.ListBuffer[Int]()
 
-        scala.util.Random.shuffle(msgs) foreach { m ⇒ self ! m }
+        scala.util.Random.shuffle(msgs).foreach { m =>
+          self ! m
+        }
 
         self.tell('Result, testActor)
 
         def receive = {
-          case i: Int  ⇒ acc += i
-          case 'Result ⇒ sender() ! acc.toList
+          case i: Int  => acc += i
+          case 'Result => sender() ! acc.toList
         }
       }).withDispatcher(dispatcherKey))
 

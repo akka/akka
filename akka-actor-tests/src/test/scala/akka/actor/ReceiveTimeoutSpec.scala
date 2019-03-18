@@ -28,7 +28,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(500 milliseconds)
 
         def receive = {
-          case ReceiveTimeout ⇒ timeoutLatch.open
+          case ReceiveTimeout => timeoutLatch.open
         }
       }))
 
@@ -43,8 +43,8 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(500 milliseconds)
 
         def receive = {
-          case Tick           ⇒ ()
-          case ReceiveTimeout ⇒ timeoutLatch.open
+          case Tick           => ()
+          case ReceiveTimeout => timeoutLatch.open
         }
       }))
 
@@ -62,8 +62,8 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(500 milliseconds)
 
         def receive = {
-          case Tick ⇒ ()
-          case ReceiveTimeout ⇒
+          case Tick => ()
+          case ReceiveTimeout =>
             count.incrementAndGet
             timeoutLatch.open
             context.setReceiveTimeout(Duration.Undefined)
@@ -82,7 +82,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       val timeoutActor = system.actorOf(Props(new Actor {
         def receive = {
-          case ReceiveTimeout ⇒ timeoutLatch.open
+          case ReceiveTimeout => timeoutLatch.open
         }
       }))
 
@@ -97,8 +97,8 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(1 second)
 
         def receive = {
-          case ReceiveTimeout  ⇒ timeoutLatch.open
-          case TransperentTick ⇒
+          case ReceiveTimeout  => timeoutLatch.open
+          case TransperentTick =>
         }
       }))
 
@@ -121,10 +121,10 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(1 second)
 
         def receive = {
-          case ReceiveTimeout ⇒
+          case ReceiveTimeout =>
             self ! TransperentTick
             timeoutLatch.countDown()
-          case TransperentTick ⇒
+          case TransperentTick =>
         }
       }))
 
@@ -142,9 +142,9 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
         context.setReceiveTimeout(1 second)
         def receive: Receive = {
-          case ReceiveTimeout ⇒
+          case ReceiveTimeout =>
             timeoutLatch.open
-          case TransperentTick ⇒
+          case TransperentTick =>
             count.incrementAndGet()
         }
       }
@@ -161,8 +161,8 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
       val timeoutActor = system.actorOf(Props(new Actor {
         def receive = {
-          case TransperentTick ⇒ context.setReceiveTimeout(500 milliseconds)
-          case ReceiveTimeout  ⇒ timeoutLatch.open
+          case TransperentTick => context.setReceiveTimeout(500 milliseconds)
+          case ReceiveTimeout  => timeoutLatch.open
         }
       }))
 
@@ -179,8 +179,8 @@ class ReceiveTimeoutSpec extends AkkaSpec {
         context.setReceiveTimeout(500 milliseconds)
 
         def receive = {
-          case TransperentTick ⇒ context.setReceiveTimeout(Duration.Inf)
-          case ReceiveTimeout  ⇒ timeoutLatch.open
+          case TransperentTick => context.setReceiveTimeout(Duration.Inf)
+          case ReceiveTimeout  => timeoutLatch.open
         }
       }))
 

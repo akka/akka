@@ -23,13 +23,21 @@ class FlowDropWithinSpec extends StreamSpec {
       val cSub = c.expectSubscription
       cSub.request(100)
       val demand1 = pSub.expectRequest
-      (1 to demand1.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand1.toInt).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
       val demand2 = pSub.expectRequest
-      (1 to demand2.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand2.toInt).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
       val demand3 = pSub.expectRequest
       c.expectNoMsg(1500.millis)
-      (1 to demand3.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      ((demand1 + demand2 + 1).toInt to (demand1 + demand2 + demand3).toInt) foreach { n ⇒ c.expectNext(n) }
+      (1 to demand3.toInt).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
+      ((demand1 + demand2 + 1).toInt to (demand1 + demand2 + demand3).toInt).foreach { n =>
+        c.expectNext(n)
+      }
       pSub.sendComplete()
       c.expectComplete
       c.expectNoMsg(200.millis)

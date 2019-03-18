@@ -47,8 +47,8 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   // For inspecting if in active state; allows avoiding "becoming active" when already active
   var activelyMonitoring = false
 
-  val isExternalClusterMember: Member ⇒ Boolean =
-    member ⇒ member.dataCenter != cluster.selfDataCenter
+  val isExternalClusterMember: Member => Boolean =
+    member => member.dataCenter != cluster.selfDataCenter
 
   val crossDcSettings: cluster.settings.CrossDcFailureDetectorSettings =
     cluster.settings.MultiDataCenter.CrossDcFailureDetectorSettings
@@ -66,7 +66,9 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   // start periodic heartbeat to other nodes in cluster
   val heartbeatTask = scheduler.schedule(
     PeriodicTasksInitialDelay max HeartbeatInterval,
-    HeartbeatInterval, self, ClusterHeartbeatSender.HeartbeatTick)
+    HeartbeatInterval,
+    self,
+    ClusterHeartbeatSender.HeartbeatTick)
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
@@ -74,7 +76,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   }
 
   override def postStop(): Unit = {
-    dataCentersState.activeReceivers.foreach(a ⇒ crossDcFailureDetector.remove(a.address))
+    dataCentersState.activeReceivers.foreach(a => crossDcFailureDetector.remove(a.address))
     heartbeatTask.cancel()
     cluster.unsubscribe(self)
   }
@@ -86,7 +88,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
     context.actorSelection(ClusterHeartbeatReceiver.path(address))
 
   def receive: Actor.Receive =
-    dormant orElse introspecting
+    dormant.orElse(introspecting)
 
   /**
    * In this state no cross-datacenter heartbeats are sent by this actor.
@@ -99,22 +101,22 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
    * in case it becomes "old enough".
    */
   def dormant: Actor.Receive = {
-    case s: CurrentClusterState               ⇒ init(s)
-    case MemberRemoved(m, _)                  ⇒ removeMember(m)
-    case evt: MemberEvent                     ⇒ addMember(evt.member)
-    case ClusterHeartbeatSender.HeartbeatTick ⇒ // ignore...
+    case s: CurrentClusterState               => init(s)
+    case MemberRemoved(m, _)                  => removeMember(m)
+    case evt: MemberEvent                     => addMember(evt.member)
+    case ClusterHeartbeatSender.HeartbeatTick => // ignore...
   }
 
   def active: Actor.Receive = {
-    case ClusterHeartbeatSender.HeartbeatTick                ⇒ heartbeat()
-    case ClusterHeartbeatSender.HeartbeatRsp(from)           ⇒ heartbeatRsp(from)
-    case MemberRemoved(m, _)                                 ⇒ removeMember(m)
-    case evt: MemberEvent                                    ⇒ addMember(evt.member)
-    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) ⇒ triggerFirstHeartbeat(from)
+    case ClusterHeartbeatSender.HeartbeatTick                => heartbeat()
+    case ClusterHeartbeatSender.HeartbeatRsp(from)           => heartbeatRsp(from)
+    case MemberRemoved(m, _)                                 => removeMember(m)
+    case evt: MemberEvent                                    => addMember(evt.member)
+    case ClusterHeartbeatSender.ExpectedFirstHeartbeat(from) => triggerFirstHeartbeat(from)
   }
 
   def introspecting: Actor.Receive = {
-    case ReportStatus() ⇒
+    case ReportStatus() =>
       sender() ! {
         if (activelyMonitoring) CrossDcHeartbeatSender.MonitoringActive(dataCentersState)
         else CrossDcHeartbeatSender.MonitoringDormant()
@@ -143,14 +145,14 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   def removeMember(m: Member): Unit =
     if (m.uniqueAddress == cluster.selfUniqueAddress) {
       // This cluster node will be shutdown, but stop this actor immediately to avoid further updates
-      context stop self
+      context.stop(self)
     } else {
       dataCentersState = dataCentersState.removeMember(m)
       becomeActiveIfResponsibleForHeartbeat()
     }
 
   def heartbeat(): Unit = {
-    dataCentersState.activeReceivers foreach { to ⇒
+    dataCentersState.activeReceivers.foreach { to =>
       if (crossDcFailureDetector.isMonitoring(to.address)) {
         if (verboseHeartbeat) logDebug("(Cross) Heartbeat to [{}]", to.address)
       } else {
@@ -183,10 +185,12 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   /** Idempotent, become active if this node is n-th oldest and should monitor other nodes */
   private def becomeActiveIfResponsibleForHeartbeat(): Unit = {
     if (!activelyMonitoring && selfIsResponsibleForCrossDcHeartbeat()) {
-      log.info("Cross DC heartbeat becoming ACTIVE on this node (for DC: {}), monitoring other DCs oldest nodes", selfDataCenter)
+      log.info(
+        "Cross DC heartbeat becoming ACTIVE on this node (for DC: {}), monitoring other DCs oldest nodes",
+        selfDataCenter)
       activelyMonitoring = true
 
-      context.become(active orElse introspecting)
+      context.become(active.orElse(introspecting))
     } else if (!activelyMonitoring)
       if (verboseHeartbeat) log.info("Remaining DORMANT; others in {} handle heartbeating other DCs", selfDataCenter)
   }
@@ -211,10 +215,10 @@ private[akka] object CrossDcHeartbeatSender {
 /** INTERNAL API */
 @InternalApi
 private[cluster] final case class CrossDcHeartbeatingState(
-  selfDataCenter:          DataCenter,
-  failureDetector:         FailureDetectorRegistry[Address],
-  nrOfMonitoredNodesPerDc: Int,
-  state:                   Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
+    selfDataCenter: DataCenter,
+    failureDetector: FailureDetectorRegistry[Address],
+    nrOfMonitoredNodesPerDc: Int,
+    state: Map[ClusterSettings.DataCenter, SortedSet[Member]]) {
   import CrossDcHeartbeatingState._
 
   /**
@@ -238,8 +242,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
     // we need to remove the member first, to avoid having "duplicates"
     // this is because the removal and uniqueness we need is only by uniqueAddress
     // which is not used by the `ageOrdering`
-    val oldMembersWithoutM = state.getOrElse(dc, emptyMembersSortedSet)
-      .filterNot(_.uniqueAddress == m.uniqueAddress)
+    val oldMembersWithoutM = state.getOrElse(dc, emptyMembersSortedSet).filterNot(_.uniqueAddress == m.uniqueAddress)
 
     val updatedMembers = oldMembersWithoutM + m
     val updatedState = this.copy(state = state.updated(dc, updatedMembers))
@@ -249,8 +252,8 @@ private[cluster] final case class CrossDcHeartbeatingState(
     // should happen rarely, since upNumbers are assigned sequentially, and we only ever compare nodes
     // in the same DC. If it happens though, we need to remove the previously monitored node from the failure
     // detector, to prevent both a resource leak and that node actually appearing as unreachable in the gossip (!)
-    val stoppedMonitoringReceivers = updatedState.activeReceiversIn(dc) diff this.activeReceiversIn(dc)
-    stoppedMonitoringReceivers.foreach(m ⇒ failureDetector.remove(m.address)) // at most one element difference
+    val stoppedMonitoringReceivers = updatedState.activeReceiversIn(dc).diff(this.activeReceiversIn(dc))
+    stoppedMonitoringReceivers.foreach(m => failureDetector.remove(m.address)) // at most one element difference
 
     updatedState
   }
@@ -258,12 +261,12 @@ private[cluster] final case class CrossDcHeartbeatingState(
   def removeMember(m: Member): CrossDcHeartbeatingState = {
     val dc = m.dataCenter
     state.get(dc) match {
-      case Some(dcMembers) ⇒
+      case Some(dcMembers) =>
         val updatedMembers = dcMembers.filterNot(_.uniqueAddress == m.uniqueAddress)
 
         failureDetector.remove(m.address)
         copy(state = state.updated(dc, updatedMembers))
-      case None ⇒
+      case None =>
         this // no change needed, was certainly not present (not even its DC was)
     }
   }
@@ -273,9 +276,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
     val otherDcs = state.filter(_._1 != selfDataCenter)
     val allOtherNodes = otherDcs.values
 
-    allOtherNodes.flatMap(
-      _.take(nrOfMonitoredNodesPerDc).iterator
-        .map(_.uniqueAddress).to(immutable.IndexedSeq)).toSet
+    allOtherNodes.flatMap(_.take(nrOfMonitoredNodesPerDc).iterator.map(_.uniqueAddress).to(immutable.IndexedSeq)).toSet
   }
 
   /** Lists addresses in given DataCenter that this node should send heartbeats to */
@@ -283,9 +284,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
     if (dc == selfDataCenter) Set.empty // CrossDcHeartbeatSender is not supposed to send within its own Dc
     else {
       val otherNodes = state.getOrElse(dc, emptyMembersSortedSet)
-      otherNodes
-        .take(nrOfMonitoredNodesPerDc).iterator
-        .map(_.uniqueAddress).to(immutable.Set)
+      otherNodes.take(nrOfMonitoredNodesPerDc).iterator.map(_.uniqueAddress).to(immutable.Set)
     }
 
   def allMembers: Iterable[Member] =
@@ -293,7 +292,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
 
   def heartbeatRsp(from: UniqueAddress): CrossDcHeartbeatingState = {
     if (activeReceivers.contains(from)) {
-      failureDetector heartbeat from.address
+      failureDetector.heartbeat(from.address)
     }
     this
   }
@@ -315,29 +314,25 @@ private[cluster] object CrossDcHeartbeatingState {
     m.status != MemberStatus.WeaklyUp && m.status != MemberStatus.Joining
 
   def init(
-    selfDataCenter:          DataCenter,
-    crossDcFailureDetector:  FailureDetectorRegistry[Address],
-    nrOfMonitoredNodesPerDc: Int,
-    members:                 SortedSet[Member]): CrossDcHeartbeatingState = {
-    new CrossDcHeartbeatingState(
-      selfDataCenter,
-      crossDcFailureDetector,
-      nrOfMonitoredNodesPerDc,
-      state = {
-        // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
-        val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
+      selfDataCenter: DataCenter,
+      crossDcFailureDetector: FailureDetectorRegistry[Address],
+      nrOfMonitoredNodesPerDc: Int,
+      members: SortedSet[Member]): CrossDcHeartbeatingState = {
+    new CrossDcHeartbeatingState(selfDataCenter, crossDcFailureDetector, nrOfMonitoredNodesPerDc, state = {
+      // TODO unduplicate this with the logic in MembershipState.ageSortedTopOldestMembersPerDc
+      val groupedByDc = members.filter(atLeastInUpState).groupBy(_.dataCenter)
 
-        if (members.ordering == Member.ageOrdering) {
-          // we already have the right ordering
-          groupedByDc
-        } else {
-          // we need to enforce the ageOrdering for the SortedSet in each DC
-          groupedByDc.map {
-            case (dc, ms) ⇒
-              dc → (SortedSet.empty[Member](Member.ageOrdering) union ms)
-          }
+      if (members.ordering == Member.ageOrdering) {
+        // we already have the right ordering
+        groupedByDc
+      } else {
+        // we need to enforce the ageOrdering for the SortedSet in each DC
+        groupedByDc.map {
+          case (dc, ms) =>
+            dc -> (SortedSet.empty[Member](Member.ageOrdering).union(ms))
         }
-      })
+      }
+    })
   }
 
 }

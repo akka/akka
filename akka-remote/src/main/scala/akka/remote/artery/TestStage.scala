@@ -18,6 +18,7 @@ import akka.util.OptionVal
 import akka.event.Logging
 
 object TestManagementCommands {
+
   /** INTERNAL API */
   @SerialVersionUID(1L)
   final case class FailInboundStreamOnce(ex: Throwable)
@@ -33,16 +34,16 @@ private[remote] class SharedTestState {
 
   def isBlackhole(from: Address, to: Address): Boolean =
     state.get.blackholes.get(from) match {
-      case Some(destinations) ⇒ destinations(to)
-      case None               ⇒ false
+      case Some(destinations) => destinations(to)
+      case None               => false
     }
 
   /** Enable blackholing between given address in given direction */
   def blackhole(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ addBlackhole(a, b)
-      case Direction.Receive ⇒ addBlackhole(b, a)
-      case Direction.Both ⇒
+      case Direction.Send    => addBlackhole(a, b)
+      case Direction.Receive => addBlackhole(b, a)
+      case Direction.Both =>
         addBlackhole(a, b)
         addBlackhole(b, a)
     }
@@ -56,6 +57,7 @@ private[remote] class SharedTestState {
     if (state.compareAndSet(current, current.copy(failInboundStream = Some(ex)))) ()
     else failInboundStreamOnce(ex)
   }
+
   /**
    * Get the exception to fail the inbound stream with and immediately reset the state to not-failed.
    * This is used to simulate a single failure on the stream, where a successful restart recovers operations.
@@ -69,8 +71,8 @@ private[remote] class SharedTestState {
   @tailrec private def addBlackhole(from: Address, to: Address): Unit = {
     val current = state.get
     val newState = current.blackholes.get(from) match {
-      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations + to))
-      case None               ⇒ current.copy(blackholes = current.blackholes.updated(from, Set(to)))
+      case Some(destinations) => current.copy(blackholes = current.blackholes.updated(from, destinations + to))
+      case None               => current.copy(blackholes = current.blackholes.updated(from, Set(to)))
     }
     if (!state.compareAndSet(current, newState))
       addBlackhole(from, to)
@@ -78,9 +80,9 @@ private[remote] class SharedTestState {
 
   def passThrough(a: Address, b: Address, direction: Direction): Unit =
     direction match {
-      case Direction.Send    ⇒ removeBlackhole(a, b)
-      case Direction.Receive ⇒ removeBlackhole(b, a)
-      case Direction.Both ⇒
+      case Direction.Send    => removeBlackhole(a, b)
+      case Direction.Receive => removeBlackhole(b, a)
+      case Direction.Both =>
         removeBlackhole(a, b)
         removeBlackhole(b, a)
     }
@@ -88,8 +90,8 @@ private[remote] class SharedTestState {
   @tailrec private def removeBlackhole(from: Address, to: Address): Unit = {
     val current = state.get
     val newState = current.blackholes.get(from) match {
-      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations - to))
-      case None               ⇒ current
+      case Some(destinations) => current.copy(blackholes = current.blackholes.updated(from, destinations - to))
+      case None               => current
     }
     if (!state.compareAndSet(current, newState))
       removeBlackhole(from, to)
@@ -100,15 +102,13 @@ private[remote] class SharedTestState {
 /**
  * INTERNAL API
  */
-private[remote] final case class TestState(
-  blackholes:        Map[Address, Set[Address]],
-  failInboundStream: Option[Throwable])
+private[remote] final case class TestState(blackholes: Map[Address, Set[Address]], failInboundStream: Option[Throwable])
 
 /**
  * INTERNAL API
  */
 private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState)
-  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
+    extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundTestStage.out")
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
@@ -122,7 +122,8 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
         if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
           log.debug(
             "dropping outbound message [{}] to [{}] because of blackhole",
-            Logging.messageClassName(env.message), outboundContext.remoteAddress)
+            Logging.messageClassName(env.message),
+            outboundContext.remoteAddress)
           pull(in) // drop message
         } else
           push(out, env)
@@ -140,7 +141,7 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
  * INTERNAL API
  */
 private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState)
-  extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+    extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundTestStage.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundTestStage.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
@@ -151,20 +152,22 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
       // InHandler
       override def onPush(): Unit = {
         state.getInboundFailureOnce match {
-          case Some(shouldFailEx) ⇒
+          case Some(shouldFailEx) =>
             log.info("Fail inbound stream from [{}]: {}", classOf[InboundTestStage].getName, shouldFailEx.getMessage)
             failStage(shouldFailEx)
-          case _ ⇒
+          case _ =>
             val env = grab(in)
             env.association match {
-              case OptionVal.None ⇒
+              case OptionVal.None =>
                 // unknown, handshake not completed
                 push(out, env)
-              case OptionVal.Some(association) ⇒
+              case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
                   log.debug(
                     "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                    Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
+                    Logging.messageClassName(env.message),
+                    association.remoteAddress,
+                    env.originUid)
                   pull(in) // drop message
                 } else
                   push(out, env)
@@ -179,4 +182,3 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
     }
 
 }
-

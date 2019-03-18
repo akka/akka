@@ -27,8 +27,8 @@ class RemoteConsistentHashingRouterSpec extends AkkaSpec("""
       val consistentHash1 = ConsistentHash(nodes1, 10)
       val consistentHash2 = ConsistentHash(nodes2, 10)
       val keys = List("A", "B", "C", "D", "E", "F", "G")
-      val result1 = keys collect { case k ⇒ consistentHash1.nodeFor(k).routee }
-      val result2 = keys collect { case k ⇒ consistentHash2.nodeFor(k).routee }
+      val result1 = keys.collect { case k => consistentHash1.nodeFor(k).routee }
+      val result2 = keys.collect { case k => consistentHash2.nodeFor(k).routee }
       result1 should ===(result2)
     }
 

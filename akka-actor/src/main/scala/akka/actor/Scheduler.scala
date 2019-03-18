@@ -38,6 +38,7 @@ private final case class SchedulerException(msg: String) extends akka.AkkaExcept
  * into the future (which by default is around 8 months (`Int.MaxValue` seconds).
  */
 trait Scheduler {
+
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
@@ -46,20 +47,20 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  final def schedule(
-    initialDelay: FiniteDuration,
-    interval:     FiniteDuration,
-    receiver:     ActorRef,
-    message:      Any)(implicit
-    executor: ExecutionContext,
-                       sender: ActorRef = Actor.noSender): Cancellable =
-    schedule(initialDelay, interval, new Runnable {
-      def run(): Unit = {
-        receiver ! message
-        if (receiver.isTerminated)
-          throw SchedulerException("timer active for terminated actor")
-      }
-    })
+  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
+      implicit
+      executor: ExecutionContext,
+      sender: ActorRef = Actor.noSender): Cancellable =
+    schedule(
+      initialDelay,
+      interval,
+      new Runnable {
+        def run(): Unit = {
+          receiver ! message
+          if (receiver.isTerminated)
+            throw SchedulerException("timer active for terminated actor")
+        }
+      })
 
   /**
    * Schedules a message to be sent repeatedly with an initial delay and
@@ -70,15 +71,16 @@ trait Scheduler {
    * Java API
    */
   final def schedule(
-    initialDelay: java.time.Duration,
-    interval:     java.time.Duration,
-    receiver:     ActorRef,
-    message:      Any,
-    executor:     ExecutionContext,
-    sender:       ActorRef): Cancellable = {
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration,
+      receiver: ActorRef,
+      message: Any,
+      executor: ExecutionContext,
+      sender: ActorRef): Cancellable = {
     import JavaDurationConverters._
     schedule(initialDelay.asScala, interval.asScala, receiver, message)(executor, sender)
   }
+
   /**
    * Schedules a function to be run repeatedly with an initial delay and a
    * frequency. E.g. if you would like the function to be run after 2 seconds
@@ -94,11 +96,9 @@ trait Scheduler {
    *
    * Scala API
    */
-  final def schedule(
-    initialDelay: FiniteDuration,
-    interval:     FiniteDuration)(f: ⇒ Unit)(
-    implicit
-    executor: ExecutionContext): Cancellable =
+  final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit)(
+      implicit
+      executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, new Runnable { override def run(): Unit = f })
 
   /**
@@ -120,10 +120,8 @@ trait Scheduler {
    *
    * Java API
    */
-  def schedule(
-    initialDelay: FiniteDuration,
-    interval:     FiniteDuration,
-    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a `Runnable` to be run repeatedly with an initial delay and
@@ -144,10 +142,8 @@ trait Scheduler {
    *
    * Java API
    */
-  def schedule(
-    initialDelay: java.time.Duration,
-    interval:     java.time.Duration,
-    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable = {
+  def schedule(initialDelay: java.time.Duration, interval: java.time.Duration, runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable = {
     import JavaDurationConverters._
     schedule(initialDelay.asScala, interval.asScala, runnable)
   }
@@ -161,12 +157,10 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  final def scheduleOnce(
-    delay:    FiniteDuration,
-    receiver: ActorRef,
-    message:  Any)(implicit
-    executor: ExecutionContext,
-                   sender: ActorRef = Actor.noSender): Cancellable =
+  final def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(
+      implicit
+      executor: ExecutionContext,
+      sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
       override def run(): Unit = receiver ! message
     })
@@ -181,11 +175,11 @@ trait Scheduler {
    * Java API
    */
   final def scheduleOnce(
-    delay:    java.time.Duration,
-    receiver: ActorRef,
-    message:  Any,
-    executor: ExecutionContext,
-    sender:   ActorRef): Cancellable = {
+      delay: java.time.Duration,
+      receiver: ActorRef,
+      message: Any,
+      executor: ExecutionContext,
+      sender: ActorRef): Cancellable = {
     import JavaDurationConverters._
     scheduleOnce(delay.asScala, receiver, message)(executor, sender)
   }
@@ -199,9 +193,9 @@ trait Scheduler {
    *
    * Scala API
    */
-  final def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(
-    implicit
-    executor: ExecutionContext): Cancellable =
+  final def scheduleOnce(delay: FiniteDuration)(f: => Unit)(
+      implicit
+      executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run(): Unit = f })
 
   /**
@@ -213,9 +207,7 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(
-    delay:    FiniteDuration,
-    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+  def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that
@@ -226,9 +218,7 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(
-    delay:    java.time.Duration,
-    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
+  def scheduleOnce(delay: java.time.Duration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     import JavaDurationConverters._
     scheduleOnce(delay.asScala, runnable)(executor)
   }
@@ -252,6 +242,7 @@ abstract class AbstractSchedulerBase extends Scheduler
  * but it should be good practice to make it so.
  */
 trait Cancellable {
+
   /**
    * Cancels this Cancellable and returns true if that was successful.
    * If this cancellable was (concurrently) cancelled already, then this method

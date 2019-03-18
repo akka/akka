@@ -17,8 +17,8 @@ object RemoteDeploymentWhitelistSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case ex: Exception ⇒ throw ex
-      case x             ⇒ target = sender(); sender() ! x
+      case ex: Exception => throw ex
+      case x             => target = sender(); sender() ! x
     }
 
     override def preStart(): Unit = {}
@@ -35,8 +35,8 @@ object RemoteDeploymentWhitelistSpec {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
-      case ex: Exception ⇒ throw ex
-      case x             ⇒ target = sender(); sender() ! x
+      case ex: Exception => throw ex
+      case x             => target = sender(); sender() ! x
     }
 
     override def preStart(): Unit = {}
@@ -49,7 +49,7 @@ object RemoteDeploymentWhitelistSpec {
     }
   }
 
-  val cfg: Config = ConfigFactory parseString (s"""
+  val cfg: Config = ConfigFactory.parseString(s"""
     akka {
       actor.provider = remote
 
@@ -82,19 +82,23 @@ object RemoteDeploymentWhitelistSpec {
   """)
 
   def muteSystem(system: ActorSystem): Unit = {
-    system.eventStream.publish(TestEvent.Mute(
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*")))
+    system.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*")))
   }
 }
 
-class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg) with ImplicitSender with DefaultTimeout {
+class RemoteDeploymentWhitelistSpec
+    extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg)
+    with ImplicitSender
+    with DefaultTimeout {
 
   import RemoteDeploymentWhitelistSpec._
 
-  val conf = ConfigFactory.parseString(
-    """
+  val conf =
+    ConfigFactory.parseString("""
       akka.remote.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
@@ -115,10 +119,11 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
 
   override def atStartup() = {
     muteSystem(system)
-    remoteSystem.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
+    remoteSystem.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
 
   override def afterTermination(): Unit = {
@@ -130,7 +135,8 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
 
     "allow deploying Echo actor (included in whitelist)" in {
       val r = system.actorOf(Props[EchoWhitelisted], "blub")
-      r.path.toString should ===(s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
+      r.path.toString should ===(
+        s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -145,7 +151,8 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
 
     "not deploy actor not listed in whitelist" in {
       val r = system.actorOf(Props[EchoNotWhitelisted], "danger-mouse")
-      r.path.toString should ===(s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
+      r.path.toString should ===(
+        s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
       r ! 42
       expectNoMsg(1.second)
       system.stop(r)

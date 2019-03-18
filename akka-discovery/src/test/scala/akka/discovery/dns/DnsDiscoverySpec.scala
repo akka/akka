@@ -18,8 +18,7 @@ import akka.discovery.ServiceDiscovery
 
 object DnsDiscoverySpec {
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
      //#configure-dns
      akka {
        discovery {
@@ -35,15 +34,13 @@ object DnsDiscoverySpec {
 
   lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
 
-  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString(
-    """
+  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString("""
       akka.io.dns.resolver = "async-dns"
     """).withFallback(config)
 
 }
 
-class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
-  with DockerBindDnsService {
+class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBindDnsService {
 
   import DnsDiscoverySpec._
 
@@ -62,8 +59,7 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
     val expected = Set(
       ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
       ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
-      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22")))
-    )
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
 
     val result1 = lookup()
     result1.addresses.toSet shouldEqual expected

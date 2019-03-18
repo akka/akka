@@ -22,11 +22,14 @@ import akka.io.Tcp._
  * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(
-  _tcp:            TcpExt,
-  channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  connect:         Connect)
-  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.pullMode) {
+    _tcp: TcpExt,
+    channelRegistry: ChannelRegistry,
+    commander: ActorRef,
+    connect: Connect)
+    extends TcpConnection(
+      _tcp,
+      SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel],
+      connect.pullMode) {
 
   import TcpOutgoingConnection._
   import context._
@@ -37,47 +40,47 @@ private[io] class TcpOutgoingConnection(
   options.foreach(_.beforeConnect(channel.socket))
   localAddress.foreach(channel.socket.bind)
   channelRegistry.register(channel, 0)
-  timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
+  timeout.foreach(context.setReceiveTimeout) //Initiate connection timeout if supplied
 
   private def stop(cause: Throwable): Unit =
     stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)), shouldAbort = true)
 
-  private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
+  private def reportConnectFailure(thunk: => Unit): Unit = {
     try {
       thunk
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
         stop(e)
     }
   }
 
   def receive: Receive = {
-    case registration: ChannelRegistration ⇒
+    case registration: ChannelRegistration =>
       setRegistration(registration)
       reportConnectFailure {
         if (remoteAddress.isUnresolved) {
           log.debug("Resolving {} before connecting", remoteAddress.getHostName)
           Dns.resolve(remoteAddress.getHostName)(system, self) match {
-            case None ⇒
+            case None =>
               context.become(resolving(registration))
-            case Some(resolved) ⇒
+            case Some(resolved) =>
               register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
           }
         } else {
           register(remoteAddress, registration)
         }
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
   }
 
   def resolving(registration: ChannelRegistration): Receive = {
-    case resolved: Dns.Resolved ⇒
+    case resolved: Dns.Resolved =>
       reportConnectFailure {
         register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
   }
 
@@ -95,7 +98,7 @@ private[io] class TcpOutgoingConnection(
 
   def connecting(registration: ChannelRegistration, remainingFinishConnectRetries: Int): Receive = {
     {
-      case ChannelConnectable ⇒
+      case ChannelConnectable =>
         reportConnectFailure {
           if (channel.finishConnect()) {
             if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
@@ -108,13 +111,14 @@ private[io] class TcpOutgoingConnection(
               }(context.dispatcher)
               context.become(connecting(registration, remainingFinishConnectRetries - 1))
             } else {
-              log.debug("Could not establish connection because finishConnect " +
+              log.debug(
+                "Could not establish connection because finishConnect " +
                 "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
               stop(FinishConnectNeverReturnedTrueException)
             }
           }
         }
-      case ReceiveTimeout ⇒
+      case ReceiveTimeout =>
         connectionTimeout()
     }
   }

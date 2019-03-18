@@ -28,7 +28,7 @@ object EventSourcedActorDeleteFailureSpec {
   class DoesNotHandleDeleteFailureActor(name: String, probe: ActorRef) extends PersistentActor {
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case DeleteTo(n) ⇒ deleteMessages(n)
+      case DeleteTo(n) => deleteMessages(n)
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
@@ -36,18 +36,24 @@ object EventSourcedActorDeleteFailureSpec {
   class HandlesDeleteFailureActor(name: String, probe: ActorRef) extends PersistentActor {
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case DeleteTo(n)              ⇒ deleteMessages(n)
-      case f: DeleteMessagesFailure ⇒ probe ! f
+      case DeleteTo(n)              => deleteMessages(n)
+      case f: DeleteMessagesFailure => probe ! f
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
 
 }
 
-class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
-  """
+class EventSourcedActorDeleteFailureSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config(
+        "inmem",
+        "SnapshotFailureRobustnessSpec",
+        extraConfig = Some(
+          """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
   import EventSourcedActorDeleteFailureSpec._
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
@@ -72,4 +78,3 @@ class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec
 
   }
 }
-

@@ -17,9 +17,7 @@ import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
-import akka.persistence.typed.EventAdapter;
-import akka.persistence.typed.ExpectingReply;
-import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -416,8 +414,19 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public void onSnapshot(SnapshotMetadata meta, Optional<Throwable> result) {
-                    snapshotProbe.ref().tell(result);
+                  public SignalHandler signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            SnapshotCompleted.class,
+                            (completed) -> {
+                              snapshotProbe.ref().tell(Optional.empty());
+                            })
+                        .onSignal(
+                            SnapshotFailed.class,
+                            (signal) -> {
+                              snapshotProbe.ref().tell(Optional.of(signal.getFailure()));
+                            })
+                        .build();
                   }
                 });
     ActorRef<Command> c = testKit.spawn(snapshoter);
@@ -464,9 +473,16 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         Behaviors.setup(
             ctx ->
                 new CounterBehavior(new PersistenceId("c5"), ctx) {
+
                   @Override
-                  public void onPostStop() {
-                    probe.ref().tell("stopped");
+                  public SignalHandler signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            PostStop.instance(),
+                            () -> {
+                              probe.ref().tell("stopped");
+                            })
+                        .build();
                   }
                 });
     ActorRef<Command> c = testKit.spawn(counter);
@@ -620,8 +636,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public void onRecoveryCompleted(Object o) {
-      startedProbe.tell("started!");
+    public SignalHandler signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (completed) -> {
+                startedProbe.tell("started!");
+              })
+          .build();
     }
 
     @Override
@@ -695,8 +717,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public void onRecoveryCompleted(String s) {
-      probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
+    public SignalHandler signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (completed) -> {
+                probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
+              })
+          .build();
     }
   }
 

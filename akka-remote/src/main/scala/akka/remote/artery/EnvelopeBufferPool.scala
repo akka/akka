@@ -49,6 +49,7 @@ private[remote] final class ByteFlag(val mask: Byte) extends AnyVal {
   def isEnabled(byteFlags: Byte): Boolean = (byteFlags.toInt & mask) != 0
   override def toString = s"ByteFlag(${ByteFlag.binaryLeftPad(mask)})"
 }
+
 /**
  * INTERNAL API
  */
@@ -148,11 +149,13 @@ private[remote] sealed trait HeaderBuilder {
   def uid: Long
 
   def setSenderActorRef(ref: ActorRef): Unit
+
   /**
    * Retrive the compressed ActorRef by the compressionId carried by this header.
    * Returns `None` if ActorRef was not compressed, and then the literal [[senderActorRefPath]] should be used.
    */
   def senderActorRef(originUid: Long): OptionVal[ActorRef]
+
   /**
    * Retrive the raw literal actor path, instead of using the compressed value.
    * Returns `None` if ActorRef was compressed (!). To obtain the path in such case call [[senderActorRef]] and extract the path from it directly.
@@ -166,11 +169,13 @@ private[remote] sealed trait HeaderBuilder {
   def isNoRecipient: Boolean
 
   def setRecipientActorRef(ref: ActorRef): Unit
+
   /**
    * Retrive the compressed ActorRef by the compressionId carried by this header.
    * Returns `None` if ActorRef was not compressed, and then the literal [[recipientActorRefPath]] should be used.
    */
   def recipientActorRef(originUid: Long): OptionVal[ActorRef]
+
   /**
    * Retrive the raw literal actor path, instead of using the compressed value.
    * Returns `None` if ActorRef was compressed (!). To obtain the path in such case call [[recipientActorRefPath]] and extract the path from it directly.
@@ -196,7 +201,7 @@ private[remote] sealed trait HeaderBuilder {
  * INTERNAL API
  */
 private[remote] final class SerializationFormatCache
-  extends LruBoundedCache[ActorRef, String](capacity = 1024, evictAgeThreshold = 600) {
+    extends LruBoundedCache[ActorRef, String](capacity = 1024, evictAgeThreshold = 600) {
 
   override protected def compute(ref: ActorRef): String = Serialization.serializedActorPath(ref)
 
@@ -211,9 +216,10 @@ private[remote] final class SerializationFormatCache
  * INTERNAL API
  */
 private[remote] final class HeaderBuilderImpl(
-  inboundCompression:                    InboundCompressions,
-  var _outboundActorRefCompression:      CompressionTable[ActorRef],
-  var _outboundClassManifestCompression: CompressionTable[String]) extends HeaderBuilder {
+    inboundCompression: InboundCompressions,
+    var _outboundActorRefCompression: CompressionTable[ActorRef],
+    var _outboundClassManifestCompression: CompressionTable[String])
+    extends HeaderBuilder {
   import HeaderBuilder.DeadLettersCode
 
   private[this] val toSerializationFormat: SerializationFormatCache = new SerializationFormatCache
@@ -355,9 +361,7 @@ private[remote] final class HeaderBuilderImpl(
   override def manifest(originUid: Long): OptionVal[String] = {
     if (_manifest ne null) OptionVal.Some(_manifest)
     else {
-      inboundCompression.decompressClassManifest(
-        originUid,
-        inboundClassManifestCompressionTableVersion, _manifestIdx)
+      inboundCompression.decompressClassManifest(originUid, inboundClassManifestCompressionTableVersion, _manifestIdx)
     }
   }
 
@@ -367,16 +371,16 @@ private[remote] final class HeaderBuilderImpl(
 
   override def toString =
     "HeaderBuilderImpl(" +
-      "version:" + version + ", " +
-      "flags:" + ByteFlag.binaryLeftPad(flags) + ", " +
-      "UID:" + uid + ", " +
-      "_senderActorRef:" + _senderActorRef + ", " +
-      "_senderActorRefIdx:" + _senderActorRefIdx + ", " +
-      "_recipientActorRef:" + _recipientActorRef + ", " +
-      "_recipientActorRefIdx:" + _recipientActorRefIdx + ", " +
-      "_serializer:" + _serializer + ", " +
-      "_manifest:" + _manifest + ", " +
-      "_manifestIdx:" + _manifestIdx + ")"
+    "version:" + version + ", " +
+    "flags:" + ByteFlag.binaryLeftPad(flags) + ", " +
+    "UID:" + uid + ", " +
+    "_senderActorRef:" + _senderActorRef + ", " +
+    "_senderActorRefIdx:" + _senderActorRefIdx + ", " +
+    "_recipientActorRef:" + _recipientActorRef + ", " +
+    "_recipientActorRefIdx:" + _recipientActorRefIdx + ", " +
+    "_serializer:" + _serializer + ", " +
+    "_manifest:" + _manifest + ", " +
+    "_manifestIdx:" + _manifestIdx + ")"
 
 }
 
@@ -454,7 +458,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     if (header.version > ArteryTransport.HighestVersion)
       throw new IllegalArgumentException(
         s"Incompatible protocol version [${header.version}], " +
-          s"highest known version for this node is [${ArteryTransport.HighestVersion}]")
+        s"highest known version for this node is [${ArteryTransport.HighestVersion}]")
 
     header.setFlags(byteBuffer.get(FlagsOffset))
     // compression table versions (stored in the Tag)

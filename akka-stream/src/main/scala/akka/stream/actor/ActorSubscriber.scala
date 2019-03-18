@@ -21,7 +21,8 @@ object ActorSubscriber {
    * INTERNAL API
    */
   private[akka] final case class OnSubscribe(subscription: Subscription)
-    extends DeadLetterSuppression with NoSerializationVerificationNeeded
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 
 }
 
@@ -42,6 +43,7 @@ object ActorSubscriberMessage {
  * An [[ActorSubscriber]] defines a `RequestStrategy` to control the stream back pressure.
  */
 trait RequestStrategy {
+
   /**
    * Invoked by the [[ActorSubscriber]] after each incoming message to
    * determine how many more elements to request from the stream.
@@ -82,6 +84,7 @@ case object ZeroRequestStrategy extends RequestStrategy {
 }
 
 object WatermarkRequestStrategy {
+
   /**
    * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
    * the specified `highWatermark`.
@@ -162,7 +165,9 @@ abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 trait ActorSubscriber extends Actor {
   import ActorSubscriber._
   import ActorSubscriberMessage._
@@ -180,13 +185,13 @@ trait ActorSubscriber extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
-    case _: OnNext ⇒
+    case _: OnNext =>
       requested -= 1
       if (!_canceled) {
         super.aroundReceive(receive, msg)
         request(requestStrategy.requestDemand(remainingRequested))
       }
-    case OnSubscribe(sub) ⇒
+    case OnSubscribe(sub) =>
       if (subscription.isEmpty) {
         subscription = Some(sub)
         if (_canceled) {
@@ -196,12 +201,12 @@ trait ActorSubscriber extends Actor {
           sub.request(remainingRequested)
       } else
         sub.cancel()
-    case OnComplete | OnError(_) ⇒
+    case OnComplete | OnError(_) =>
       if (!_canceled) {
         _canceled = true
         super.aroundReceive(receive, msg)
       }
-    case _ ⇒
+    case _ =>
       super.aroundReceive(receive, msg)
       request(requestStrategy.requestDemand(remainingRequested))
   }
@@ -218,7 +223,7 @@ trait ActorSubscriber extends Actor {
    * INTERNAL API
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
-    state.get(self) foreach { s ⇒
+    state.get(self).foreach { s =>
       // restore previous state
       subscription = s.subscription
       requested = s.requested
@@ -268,10 +273,10 @@ trait ActorSubscriber extends Actor {
   protected def cancel(): Unit =
     if (!_canceled) {
       subscription match {
-        case Some(s) ⇒
+        case Some(s) =>
           context.stop(self)
           s.cancel()
-        case _ ⇒
+        case _ =>
           _canceled = true // cancel will be signaled once a subscription arrives
       }
     }
@@ -341,6 +346,7 @@ private[akka] class ActorSubscriberState extends Extension {
  * Java API
  */
 object UntypedActorSubscriber {
+
   /**
    * Java API: Attach a [[UntypedActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
    * to a [[org.reactivestreams.Publisher]] or [[akka.stream.javadsl.Flow]].
@@ -354,7 +360,9 @@ object UntypedActorSubscriber {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
 
 /**
@@ -362,8 +370,11 @@ abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 object AbstractActorSubscriber {
+
   /**
    * Java API compatible with lambda expressions: Attach a [[AbstractActorSubscriber]] actor
    * as a [[org.reactivestreams.Subscriber]] o a [[org.reactivestreams.Publisher]] or
@@ -378,5 +389,7 @@ object AbstractActorSubscriber {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+@deprecated(
+  "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+  since = "2.5.0")
 abstract class AbstractActorSubscriber extends AbstractActor with ActorSubscriber

@@ -9,9 +9,13 @@ import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.RetentionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.SignalHandler;
+
 import java.time.Duration;
 
 import java.util.ArrayList;
@@ -194,9 +198,16 @@ public class BasicPersistentBehaviorTest {
       }
 
       // #recovery
+
       @Override
-      public void onRecoveryCompleted(State state) {
-        throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                RecoveryCompleted.class,
+                (completed) -> {
+                  throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+                })
+            .build();
       }
       // #recovery
 
@@ -268,6 +279,12 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
+      // #retentionCriteria
+      @Override // override snapshotEvery in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.create(1000, 2);
+      }
+      // #retentionCriteria
     }
   }
 

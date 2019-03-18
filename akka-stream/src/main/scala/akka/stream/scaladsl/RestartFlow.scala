@@ -48,8 +48,16 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, Int.MaxValue))
+  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
+      flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    Flow.fromGraph(
+      new RestartWithBackoffFlow(
+        flowFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        Int.MaxValue))
   }
 
   /**
@@ -77,8 +85,19 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = false, maxRestarts))
+  def withBackoff[In, Out](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    Flow.fromGraph(
+      new RestartWithBackoffFlow(
+        flowFactory,
+        minBackoff,
+        maxBackoff,
+        randomFactor,
+        onlyOnFailures = false,
+        maxRestarts))
   }
 
   /**
@@ -107,86 +126,94 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(flowFactory: () ⇒ Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
+  def onFailuresWithBackoff[In, Out](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    Flow.fromGraph(
+      new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
   }
 
 }
 
 private final class RestartWithBackoffFlow[In, Out](
-  flowFactory:    () ⇒ Flow[In, Out, _],
-  minBackoff:     FiniteDuration,
-  maxBackoff:     FiniteDuration,
-  randomFactor:   Double,
-  onlyOnFailures: Boolean,
-  maxRestarts:    Int) extends GraphStage[FlowShape[In, Out]] { self ⇒
+    flowFactory: () => Flow[In, Out, _],
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    onlyOnFailures: Boolean,
+    maxRestarts: Int)
+    extends GraphStage[FlowShape[In, Out]] { self =>
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
-    "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
-    val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
+  override def createLogic(inheritedAttributes: Attributes) =
+    new RestartWithBackoffLogic("Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
+      val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
-    var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
+      var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
-    override protected def logSource = self.getClass
+      override protected def logSource = self.getClass
 
-    override protected def startGraph() = {
-      val sourceOut: SubSourceOutlet[In] = createSubOutlet(in)
-      val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
+      override protected def startGraph() = {
+        val sourceOut: SubSourceOutlet[In] = createSubOutlet(in)
+        val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
 
-      Source.fromGraph(sourceOut.source)
-        // Temp fix while waiting cause of cancellation. See #23909
-        .via(RestartWithBackoffFlow.delayCancellation[In](delay))
-        .via(flowFactory())
-        .runWith(sinkIn.sink)(subFusingMaterializer)
+        Source
+          .fromGraph(sourceOut.source)
+          // Temp fix while waiting cause of cancellation. See #23909
+          .via(RestartWithBackoffFlow.delayCancellation[In](delay))
+          .via(flowFactory())
+          .runWith(sinkIn.sink)(subFusingMaterializer)
 
-      if (isAvailable(out)) {
-        sinkIn.pull()
+        if (isAvailable(out)) {
+          sinkIn.pull()
+        }
+        activeOutIn = Some((sourceOut, sinkIn))
       }
-      activeOutIn = Some((sourceOut, sinkIn))
-    }
 
-    override protected def backoff() = {
-      setHandler(in, new InHandler {
-        override def onPush() = ()
-      })
-      setHandler(out, new OutHandler {
-        override def onPull() = ()
-      })
+      override protected def backoff() = {
+        setHandler(in, new InHandler {
+          override def onPush() = ()
+        })
+        setHandler(out, new OutHandler {
+          override def onPull() = ()
+        })
 
-      // We need to ensure that the other end of the sub flow is also completed, so that we don't
-      // receive any callbacks from it.
-      activeOutIn.foreach {
-        case (sourceOut, sinkIn) ⇒
-          if (!sourceOut.isClosed) {
-            sourceOut.complete()
-          }
-          if (!sinkIn.isClosed) {
-            sinkIn.cancel()
-          }
-          activeOutIn = None
+        // We need to ensure that the other end of the sub flow is also completed, so that we don't
+        // receive any callbacks from it.
+        activeOutIn.foreach {
+          case (sourceOut, sinkIn) =>
+            if (!sourceOut.isClosed) {
+              sourceOut.complete()
+            }
+            if (!sinkIn.isClosed) {
+              sinkIn.cancel()
+            }
+            activeOutIn = None
+        }
       }
-    }
 
-    backoff()
-  }
+      backoff()
+    }
 }
 
 /**
  * Shared logic for all restart with backoff logics.
  */
 private abstract class RestartWithBackoffLogic[S <: Shape](
-  name:           String,
-  shape:          S,
-  minBackoff:     FiniteDuration,
-  maxBackoff:     FiniteDuration,
-  randomFactor:   Double,
-  onlyOnFailures: Boolean,
-  maxRestarts:    Int) extends TimerGraphStageLogicWithLogging(shape) {
+    name: String,
+    shape: S,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    onlyOnFailures: Boolean,
+    maxRestarts: Int)
+    extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
 
@@ -246,13 +273,14 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subOut")
 
     sourceOut.setHandler(new OutHandler {
-      override def onPull() = if (isAvailable(in)) {
-        sourceOut.push(grab(in))
-      } else {
-        if (!hasBeenPulled(in)) {
-          pull(in)
+      override def onPull() =
+        if (isAvailable(in)) {
+          sourceOut.push(grab(in))
+        } else {
+          if (!hasBeenPulled(in)) {
+            pull(in)
+          }
         }
-      }
 
       /*
        * Downstream in this context is the wrapped stage.
@@ -269,19 +297,21 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
       }
     })
 
-    setHandler(in, new InHandler {
-      override def onPush() = if (sourceOut.isAvailable) {
-        sourceOut.push(grab(in))
-      }
-      override def onUpstreamFinish() = {
-        finishing = true
-        sourceOut.complete()
-      }
-      override def onUpstreamFailure(ex: Throwable) = {
-        finishing = true
-        sourceOut.fail(ex)
-      }
-    })
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush() = if (sourceOut.isAvailable) {
+          sourceOut.push(grab(in))
+        }
+        override def onUpstreamFinish() = {
+          finishing = true
+          sourceOut.complete()
+        }
+        override def onUpstreamFailure(ex: Throwable) = {
+          finishing = true
+          sourceOut.fail(ex)
+        }
+      })
 
     sourceOut
   }
@@ -338,27 +368,25 @@ object RestartWithBackoffFlow {
 
   private final class DelayCancellationStage[T](delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
-      setHandlers(in, out, this)
+        setHandlers(in, out, this)
 
-      def onPush(): Unit = push(out, grab(in))
-      def onPull(): Unit = pull(in)
+        def onPush(): Unit = push(out, grab(in))
+        def onPull(): Unit = pull(in)
 
-      override def onDownstreamFinish(): Unit = {
-        scheduleOnce("CompleteState", delay)
-        setHandler(
-          in,
-          new InHandler {
+        override def onDownstreamFinish(): Unit = {
+          scheduleOnce("CompleteState", delay)
+          setHandler(in, new InHandler {
             def onPush(): Unit = {}
-          }
-        )
-      }
+          })
+        }
 
-      override protected def onTimer(timerKey: Any): Unit = {
-        log.debug(s"Stage was canceled after delay of $delay")
-        completeStage()
+        override protected def onTimer(timerKey: Any): Unit = {
+          log.debug(s"Stage was canceled after delay of $delay")
+          completeStage()
+        }
       }
-    }
   }
 }

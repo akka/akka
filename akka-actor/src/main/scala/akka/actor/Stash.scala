@@ -7,7 +7,12 @@ package akka.actor
 import scala.collection.immutable
 
 import akka.AkkaException
-import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueueSemantics }
+import akka.dispatch.{
+  DequeBasedMessageQueueSemantics,
+  Envelope,
+  RequiresMessageQueue,
+  UnboundedDequeBasedMessageQueueSemantics
+}
 
 import scala.util.control.NoStackTrace
 
@@ -19,17 +24,17 @@ import scala.util.control.NoStackTrace
  *  <pre>
  *    class ActorWithProtocol extends Actor with Stash {
  *      def receive = {
- *        case "open" ⇒
+ *        case "open" =>
  *          unstashAll()
  *          context.become({
- *            case "write" ⇒ // do writing...
- *            case "close" ⇒
+ *            case "write" => // do writing...
+ *            case "close" =>
  *              unstashAll()
  *              context.unbecome()
- *            case msg ⇒ stash()
+ *            case msg => stash()
  *          }, discardOld = false)
- *        case "done" ⇒ // done
- *        case msg    ⇒ stash()
+ *        case "done" => // done
+ *        case msg    => stash()
  *      }
  *    }
  *  </pre>
@@ -65,12 +70,14 @@ trait UnboundedStash extends UnrestrictedStash with RequiresMessageQueue[Unbound
  * manually, and the mailbox should extend the [[akka.dispatch.DequeBasedMessageQueueSemantics]] marker trait.
  */
 trait UnrestrictedStash extends Actor with StashSupport {
+
   /**
    *  Overridden callback. Prepends all messages in the stash to the mailbox,
    *  clears the stash, stops all children and invokes the postStop() callback.
    */
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    try unstashAll() finally super.preRestart(reason, message)
+    try unstashAll()
+    finally super.preRestart(reason, message)
   }
 
   /**
@@ -78,7 +85,9 @@ trait UnrestrictedStash extends Actor with StashSupport {
    *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
    *  when actor stops.
    */
-  override def postStop(): Unit = try unstashAll() finally super.postStop()
+  override def postStop(): Unit =
+    try unstashAll()
+    finally super.postStop()
 }
 
 /**
@@ -88,7 +97,7 @@ trait UnrestrictedStash extends Actor with StashSupport {
  *
  * @see [[StashSupport]]
  */
-private[akka] trait StashFactory { this: Actor ⇒
+private[akka] trait StashFactory { this: Actor =>
   private[akka] def createStash()(implicit ctx: ActorContext, ref: ActorRef): StashSupport = new StashSupport {
     def context: ActorContext = ctx
     def self: ActorRef = ref
@@ -103,6 +112,7 @@ private[akka] trait StashFactory { this: Actor ⇒
  * (optionally in addition to and isolated from the user stash) can create new stashes via [[StashFactory]].
  */
 private[akka] trait StashSupport {
+
   /**
    * INTERNAL API.
    *
@@ -137,9 +147,12 @@ private[akka] trait StashSupport {
    */
   private[akka] val mailbox: DequeBasedMessageQueueSemantics = {
     actorCell.mailbox.messageQueue match {
-      case queue: DequeBasedMessageQueueSemantics ⇒ queue
-      case other ⇒ throw ActorInitializationException(self, s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
-        """An (unbounded) deque-based mailbox can be configured as follows:
+      case queue: DequeBasedMessageQueueSemantics => queue
+      case other =>
+        throw ActorInitializationException(
+          self,
+          s"DequeBasedMailbox required, got: ${other.getClass.getName}\n" +
+          """An (unbounded) deque-based mailbox can be configured as follows:
           |  my-custom-mailbox {
           |    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
           |  }
@@ -159,8 +172,9 @@ private[akka] trait StashSupport {
     if (theStash.nonEmpty && (currMsg eq theStash.last))
       throw new IllegalStateException(s"Can't stash the same message $currMsg more than once")
     if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
-    else throw new StashOverflowException(
-      s"Couldn't enqueue message ${currMsg.message.getClass.getName} from ${currMsg.sender} to stash of $self")
+    else
+      throw new StashOverflowException(
+        s"Couldn't enqueue message ${currMsg.message.getClass.getName} from ${currMsg.sender} to stash of $self")
   }
 
   /**
@@ -168,7 +182,7 @@ private[akka] trait StashSupport {
    * small `others`.
    */
   private[akka] def prepend(others: immutable.Seq[Envelope]): Unit =
-    theStash = others.foldRight(theStash)((e, s) ⇒ e +: s)
+    theStash = others.foldRight(theStash)((e, s) => e +: s)
 
   /**
    *  Prepends the oldest message in the stash to the mailbox, and then removes that
@@ -181,11 +195,12 @@ private[akka] trait StashSupport {
    *  The unstashed message is guaranteed to be removed from the stash regardless
    *  if the `unstash()` call successfully returns or throws an exception.
    */
-  private[akka] def unstash(): Unit = if (theStash.nonEmpty) try {
-    enqueueFirst(theStash.head)
-  } finally {
-    theStash = theStash.tail
-  }
+  private[akka] def unstash(): Unit =
+    if (theStash.nonEmpty) try {
+      enqueueFirst(theStash.head)
+    } finally {
+      theStash = theStash.tail
+    }
 
   /**
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
@@ -196,7 +211,7 @@ private[akka] trait StashSupport {
    *
    *  The stash is guaranteed to be empty after calling `unstashAll()`.
    */
-  def unstashAll(): Unit = unstashAll(_ ⇒ true)
+  def unstashAll(): Unit = unstashAll(_ => true)
 
   /**
    * INTERNAL API.
@@ -213,9 +228,9 @@ private[akka] trait StashSupport {
    *  @param filterPredicate only stashed messages selected by this predicate are
    *                         prepended to the mailbox.
    */
-  private[akka] def unstashAll(filterPredicate: Any ⇒ Boolean): Unit = {
+  private[akka] def unstashAll(filterPredicate: Any => Boolean): Unit = {
     try {
-      val i = theStash.reverseIterator.filter(envelope ⇒ filterPredicate(envelope.message))
+      val i = theStash.reverseIterator.filter(envelope => filterPredicate(envelope.message))
       while (i.hasNext) enqueueFirst(i.next())
     } finally {
       theStash = Vector.empty[Envelope]
@@ -241,8 +256,8 @@ private[akka] trait StashSupport {
   private def enqueueFirst(envelope: Envelope): Unit = {
     mailbox.enqueueFirst(self, envelope)
     envelope.message match {
-      case Terminated(ref) ⇒ actorCell.terminatedQueuedFor(ref)
-      case _               ⇒
+      case Terminated(ref) => actorCell.terminatedQueuedFor(ref)
+      case _               =>
     }
   }
 }
@@ -250,4 +265,6 @@ private[akka] trait StashSupport {
 /**
  * Is thrown when the size of the Stash exceeds the capacity of the Stash
  */
-class StashOverflowException(message: String, cause: Throwable = null) extends AkkaException(message, cause) with NoStackTrace
+class StashOverflowException(message: String, cause: Throwable = null)
+    extends AkkaException(message, cause)
+    with NoStackTrace

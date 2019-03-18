@@ -30,37 +30,41 @@ import scala.concurrent.{ Future, Promise }
  */
 private[remote] object AeronSource {
 
-  private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[EnvelopeBuffer]): () ⇒ Boolean = {
-    () ⇒
-      {
-        handler.reset
-        sub.poll(handler.fragmentsHandler, 1)
-        val msg = handler.messageReceived
-        handler.reset() // for GC
-        if (msg ne null) {
-          onMessage.invoke(msg)
-          true
-        } else
-          false
-      }
+  private def pollTask(
+      sub: Subscription,
+      handler: MessageHandler,
+      onMessage: AsyncCallback[EnvelopeBuffer]): () => Boolean = { () =>
+    {
+      handler.reset
+      sub.poll(handler.fragmentsHandler, 1)
+      val msg = handler.messageReceived
+      handler.reset() // for GC
+      if (msg ne null) {
+        onMessage.invoke(msg)
+        true
+      } else
+        false
+    }
   }
 
   class MessageHandler(pool: EnvelopeBufferPool) {
     def reset(): Unit = messageReceived = null
 
-    private[remote] var messageReceived: EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
+    private[remote] var messageReceived
+        : EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
 
-    val fragmentsHandler = new Fragments(data ⇒ messageReceived = data, pool)
+    val fragmentsHandler = new Fragments(data => messageReceived = data, pool)
   }
 
-  class Fragments(onMessage: EnvelopeBuffer ⇒ Unit, pool: EnvelopeBufferPool) extends FragmentAssembler(new FragmentHandler {
-    override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
-      val envelope = pool.acquire()
-      aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
-      envelope.byteBuffer.flip()
-      onMessage(envelope)
-    }
-  })
+  class Fragments(onMessage: EnvelopeBuffer => Unit, pool: EnvelopeBufferPool)
+      extends FragmentAssembler(new FragmentHandler {
+        override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
+          val envelope = pool.acquire()
+          aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
+          envelope.byteBuffer.flip()
+          onMessage(envelope)
+        }
+      })
 
   trait AeronLifecycle {
     def onUnavailableImage(sessionId: Int): Unit
@@ -76,14 +80,14 @@ private[remote] object AeronSource {
  *                 when waiting for data
  */
 private[remote] class AeronSource(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
-  flightRecorder: EventSink,
-  spinning:       Int)
-  extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.AeronLifecycle] {
+    channel: String,
+    streamId: Int,
+    aeron: Aeron,
+    taskRunner: TaskRunner,
+    pool: EnvelopeBufferPool,
+    flightRecorder: EventSink,
+    spinning: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.AeronLifecycle] {
 
   import AeronSource._
   import TaskRunner._
@@ -109,11 +113,11 @@ private[remote] class AeronSource(
       private var delegatingToTaskRunner = false
 
       private var pendingUnavailableImages: List[Int] = Nil
-      private val onUnavailableImageCb = getAsyncCallback[Int] { sessionId ⇒
+      private val onUnavailableImageCb = getAsyncCallback[Int] { sessionId =>
         pendingUnavailableImages = sessionId :: pendingUnavailableImages
         freeSessionBuffers()
       }
-      private val getStatusCb = getAsyncCallback[Promise[Long]] { promise ⇒
+      private val getStatusCb = getAsyncCallback[Promise[Long]] { promise =>
         promise.success(subscription.channelStatus())
       }
 
@@ -125,12 +129,12 @@ private[remote] class AeronSource(
 
       override def postStop(): Unit = {
         taskRunner.command(Remove(addPollTask.task))
-        try subscription.close() catch {
-          case e: DriverTimeoutException ⇒
+        try subscription.close()
+        catch {
+          case e: DriverTimeoutException =>
             // media driver was shutdown
             log.debug("DriverTimeout when closing subscription. {}", e)
-        } finally
-          flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
+        } finally flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
       }
 
       // OutHandler
@@ -188,8 +192,8 @@ private[remote] class AeronSource(
         if (!delegatingToTaskRunner) {
           def loop(remaining: List[Int]): Unit = {
             remaining match {
-              case Nil ⇒
-              case sessionId :: tail ⇒
+              case Nil =>
+              case sessionId :: tail =>
                 messageHandler.fragmentsHandler.freeSessionBuffer(sessionId)
                 loop(tail)
             }
@@ -204,7 +208,7 @@ private[remote] class AeronSource(
         try {
           onUnavailableImageCb.invoke(sessionId)
         } catch {
-          case NonFatal(_) ⇒ // just in case it's called before stage is initialized, ignore
+          case NonFatal(_) => // just in case it's called before stage is initialized, ignore
         }
 
       setHandler(out, this)

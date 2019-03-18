@@ -47,8 +47,8 @@ abstract class Materializer {
    * processing networks.
    */
   def materialize[Mat](
-    runnable:                                              Graph[ClosedShape, Mat],
-    @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
+      runnable: Graph[ClosedShape, Mat],
+      @deprecatedName('initialAttributes) defaultAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -109,6 +109,6 @@ private[akka] object NoMaterializer extends Materializer {
  */
 @InternalApi
 private[akka] case class MaterializationContext(
-  materializer:        Materializer,
-  effectiveAttributes: Attributes,
-  islandName:          String)
+    materializer: Materializer,
+    effectiveAttributes: Attributes,
+    islandName: String)

@@ -78,4 +78,3 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     allListener.expectNoMsg(Duration.Zero)
   }
 }
-

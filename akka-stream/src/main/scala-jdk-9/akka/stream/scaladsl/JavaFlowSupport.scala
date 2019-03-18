@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import java.util.{ concurrent ⇒ juc }
+import java.util.{ concurrent => juc }
 
 import akka.NotUsed
 import akka.stream.impl.JavaFlowAndRsConverters
@@ -58,15 +58,15 @@ object JavaFlowSupport {
     /**
      * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
      */
-    def fromProcessor[I, O](processorFactory: () ⇒ juc.Flow.Processor[I, O]): Flow[I, O, NotUsed] = {
-      fromProcessorMat(() ⇒ (processorFactory(), NotUsed))
+    def fromProcessor[I, O](processorFactory: () => juc.Flow.Processor[I, O]): Flow[I, O, NotUsed] = {
+      fromProcessorMat(() => (processorFactory(), NotUsed))
     }
 
     /**
      * Creates a Flow from a Reactive Streams [[java.util.concurrent.Flow.Processor]] and returns a materialized value.
      */
-    def fromProcessorMat[I, O, M](processorFactory: () ⇒ (juc.Flow.Processor[I, O], M)): Flow[I, O, M] =
-      scaladsl.Flow.fromProcessorMat { () ⇒
+    def fromProcessorMat[I, O, M](processorFactory: () => (juc.Flow.Processor[I, O], M)): Flow[I, O, M] =
+      scaladsl.Flow.fromProcessorMat { () =>
         val (processor, mat) = processorFactory()
         (processor.asRs, mat)
       }
@@ -82,7 +82,7 @@ object JavaFlowSupport {
       Source.asSubscriber[In].via(self)
         .toMat(Sink.asPublisher[Out](fanout = false))(Keep.both)
         .mapMaterializedValue {
-          case (sub, pub) ⇒ new juc.Flow.Processor[In, Out] {
+          case (sub, pub) => new juc.Flow.Processor[In, Out] {
             override def onError(t: Throwable): Unit = sub.onError(t)
             override def onSubscribe(s: juc.Flow.Subscription): Unit = sub.onSubscribe(s)
             override def onComplete(): Unit = sub.onComplete()

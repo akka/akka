@@ -20,8 +20,7 @@ class RemoteDeploymentDeathWatchMultiJvmSpec(artery: Boolean) extends MultiNodeC
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
@@ -41,8 +40,8 @@ class ArteryRemoteDeploymentDeathWatchFastMultiJvmNode1 extends RemoteDeployment
 class ArteryRemoteDeploymentDeathWatchFastMultiJvmNode2 extends RemoteDeploymentNodeDeathWatchFastSpec(artery = true)
 class ArteryRemoteDeploymentDeathWatchFastMultiJvmNode3 extends RemoteDeploymentNodeDeathWatchFastSpec(artery = true)
 
-abstract class RemoteDeploymentNodeDeathWatchFastSpec(artery: Boolean) extends RemoteDeploymentDeathWatchSpec(
-  new RemoteDeploymentDeathWatchMultiJvmSpec(artery)) {
+abstract class RemoteDeploymentNodeDeathWatchFastSpec(artery: Boolean)
+    extends RemoteDeploymentDeathWatchSpec(new RemoteDeploymentDeathWatchMultiJvmSpec(artery)) {
   override def scenario = "fast"
 }
 
@@ -54,8 +53,8 @@ class ArteryRemoteDeploymentDeathWatchSlowMultiJvmNode1 extends RemoteDeployment
 class ArteryRemoteDeploymentDeathWatchSlowMultiJvmNode2 extends RemoteDeploymentNodeDeathWatchSlowSpec(artery = true)
 class ArteryRemoteDeploymentDeathWatchSlowMultiJvmNode3 extends RemoteDeploymentNodeDeathWatchSlowSpec(artery = true)
 
-abstract class RemoteDeploymentNodeDeathWatchSlowSpec(artery: Boolean) extends RemoteDeploymentDeathWatchSpec(
-  new RemoteDeploymentDeathWatchMultiJvmSpec(artery)) {
+abstract class RemoteDeploymentNodeDeathWatchSlowSpec(artery: Boolean)
+    extends RemoteDeploymentDeathWatchSpec(new RemoteDeploymentDeathWatchMultiJvmSpec(artery)) {
   override def scenario = "slow"
   override def sleep(): Unit = Thread.sleep(3000)
 }
@@ -67,7 +66,7 @@ object RemoteDeploymentDeathWatchSpec {
 }
 
 abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentDeathWatchMultiJvmSpec)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteDeploymentDeathWatchSpec._
 
@@ -92,10 +91,12 @@ abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentD
         // if the remote deployed actor is not removed the system will not shutdown
 
         val timeout = remainingOrDefault
-        try Await.ready(system.whenTerminated, timeout) catch {
-          case _: TimeoutException ⇒
-            fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
-              system.asInstanceOf[ActorSystemImpl].printTree))
+        try Await.ready(system.whenTerminated, timeout)
+        catch {
+          case _: TimeoutException =>
+            fail(
+              "Failed to stop [%s] within [%s] \n%s"
+                .format(system.name, timeout, system.asInstanceOf[ActorSystemImpl].printTree))
         }
       }
 

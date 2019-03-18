@@ -17,7 +17,8 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends AtomicModule[SourceShape[Out], Mat] {
+@DoNotInherit private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out])
+    extends AtomicModule[SourceShape[Out], Mat] {
 
   protected def label: String = Logging.simpleName(this)
   final override def toString: String = f"$label [${System.identityHashCode(this)}%08x]"
@@ -39,7 +40,8 @@ import akka.event.Logging
     else shape.copy(out = Outlet(thatN + ".out"))
   }
 
-  override private[stream] def traversalBuilder = LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SourceModuleIslandTag)
+  override private[stream] def traversalBuilder =
+    LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SourceModuleIslandTag)
 
 }
 
@@ -48,15 +50,18 @@ import akka.event.Logging
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-@InternalApi private[akka] final class SubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
+@InternalApi private[akka] final class SubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out])
+    extends SourceModule[Out, Subscriber[Out]](shape) {
 
   override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
     val processor = new VirtualProcessor[Out]
     (processor, processor)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] = new SubscriberSource[Out](attributes, shape)
-  override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] = new SubscriberSource[Out](attr, amendShape(attr))
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
+    new SubscriberSource[Out](attributes, shape)
+  override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] =
+    new SubscriberSource[Out](attr, amendShape(attr))
 }
 
 /**
@@ -66,14 +71,20 @@ import akka.event.Logging
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-@InternalApi private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, NotUsed](shape) {
+@InternalApi private[akka] final class PublisherSource[Out](
+    p: Publisher[Out],
+    val attributes: Attributes,
+    shape: SourceShape[Out])
+    extends SourceModule[Out, NotUsed](shape) {
 
   override protected def label: String = s"PublisherSource($p)"
 
   override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attributes, shape)
-  override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] = new PublisherSource[Out](p, attr, amendShape(attr))
+  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] =
+    new PublisherSource[Out](p, attributes, shape)
+  override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] =
+    new PublisherSource[Out](p, attr, amendShape(attr))
 }
 
 /**
@@ -81,7 +92,11 @@ import akka.event.Logging
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-@InternalApi private[akka] final class ActorPublisherSource[Out](props: Props, val attributes: Attributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
+@InternalApi private[akka] final class ActorPublisherSource[Out](
+    props: Props,
+    val attributes: Attributes,
+    shape: SourceShape[Out])
+    extends SourceModule[Out, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
     val publisherRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
@@ -90,26 +105,29 @@ import akka.event.Logging
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
     new ActorPublisherSource[Out](props, attributes, shape)
-  override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] = new ActorPublisherSource(props, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] =
+    new ActorPublisherSource(props, attr, amendShape(attr))
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorRefSource[Out](
-  completionMatcher: PartialFunction[Any, Unit],
-  failureMatcher:    PartialFunction[Any, Throwable],
-  bufferSize:        Int, overflowStrategy: OverflowStrategy, val attributes: Attributes, shape: SourceShape[Out])
-  extends SourceModule[Out, ActorRef](shape) {
+    completionMatcher: PartialFunction[Any, Unit],
+    failureMatcher: PartialFunction[Any, Throwable],
+    bufferSize: Int,
+    overflowStrategy: OverflowStrategy,
+    val attributes: Attributes,
+    shape: SourceShape[Out])
+    extends SourceModule[Out, ActorRef](shape) {
 
   override protected def label: String = s"ActorRefSource($bufferSize, $overflowStrategy)"
 
   override def create(context: MaterializationContext) = {
     val mat = ActorMaterializerHelper.downcast(context.materializer)
-    val ref = mat.actorOf(context, ActorRefSourceActor.props(
-      completionMatcher,
-      failureMatcher,
-      bufferSize, overflowStrategy, mat.settings))
+    val ref = mat.actorOf(
+      context,
+      ActorRefSourceActor.props(completionMatcher, failureMatcher, bufferSize, overflowStrategy, mat.settings))
     (akka.stream.actor.ActorPublisher[Out](ref), ref)
   }
 

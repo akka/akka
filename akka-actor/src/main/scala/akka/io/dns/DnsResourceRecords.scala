@@ -10,18 +10,16 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import CachePolicy._
 import akka.io.dns.internal.{ DomainName, _ }
-import akka.util.{ ByteIterator, ByteString, unused }
+import akka.util.{ unused, ByteIterator, ByteString }
 
 import scala.annotation.switch
 import scala.concurrent.duration._
 
 sealed abstract class ResourceRecord(val name: String, val ttl: Ttl, val recType: Short, val recClass: Short)
-  extends NoSerializationVerificationNeeded {
-}
+    extends NoSerializationVerificationNeeded {}
 
-final case class ARecord(override val name: String, override val ttl: Ttl,
-                         ip: InetAddress) extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {
-}
+final case class ARecord(override val name: String, override val ttl: Ttl, ip: InetAddress)
+    extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {}
 
 /**
  * INTERNAL API
@@ -35,9 +33,8 @@ private[dns] object ARecord {
   }
 }
 
-final case class AAAARecord(override val name: String, override val ttl: Ttl,
-                            ip: Inet6Address) extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {
-}
+final case class AAAARecord(override val name: String, override val ttl: Ttl, ip: Inet6Address)
+    extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {}
 
 /**
  * INTERNAL API
@@ -56,12 +53,12 @@ private[dns] object AAAARecord {
   }
 }
 
-final case class CNameRecord(override val name: String, override val ttl: Ttl,
-                             canonicalName: String) extends ResourceRecord(name, ttl, RecordType.CNAME.code, RecordClass.IN.code) {
-}
+final case class CNameRecord(override val name: String, override val ttl: Ttl, canonicalName: String)
+    extends ResourceRecord(name, ttl, RecordType.CNAME.code, RecordClass.IN.code) {}
 
 @InternalApi
 private[dns] object CNameRecord {
+
   /**
    * INTERNAL API
    */
@@ -71,15 +68,21 @@ private[dns] object CNameRecord {
   }
 }
 
-final case class SRVRecord(override val name: String, override val ttl: Ttl,
-                           priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {
-}
+final case class SRVRecord(
+    override val name: String,
+    override val ttl: Ttl,
+    priority: Int,
+    weight: Int,
+    port: Int,
+    target: String)
+    extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {}
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[dns] object SRVRecord {
+
   /**
    * INTERNAL API
    */
@@ -92,21 +95,31 @@ private[dns] object SRVRecord {
   }
 }
 
-final case class UnknownRecord(override val name: String, override val ttl: Ttl,
-                               override val recType: Short, override val recClass: Short,
-                               data: ByteString) extends ResourceRecord(name, ttl, recType, recClass) {
-}
+final case class UnknownRecord(
+    override val name: String,
+    override val ttl: Ttl,
+    override val recType: Short,
+    override val recClass: Short,
+    data: ByteString)
+    extends ResourceRecord(name, ttl, recType, recClass) {}
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[dns] object UnknownRecord {
+
   /**
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Ttl, recType: Short, recClass: Short, @unused length: Short, it: ByteIterator): UnknownRecord =
+  def parseBody(
+      name: String,
+      ttl: Ttl,
+      recType: Short,
+      recClass: Short,
+      @unused length: Short,
+      it: ByteIterator): UnknownRecord =
     UnknownRecord(name, ttl, recType, recClass, it.toByteString)
 }
 
@@ -115,6 +128,7 @@ private[dns] object UnknownRecord {
  */
 @InternalApi
 private[dns] object ResourceRecord {
+
   /**
    * INTERNAL API
    */
@@ -129,12 +143,11 @@ private[dns] object ResourceRecord {
     val data = it.clone().take(rdLength)
     it.drop(rdLength)
     (recType: @switch) match {
-      case 1  ⇒ ARecord.parseBody(name, ttl, rdLength, data)
-      case 5  ⇒ CNameRecord.parseBody(name, ttl, rdLength, data, msg)
-      case 28 ⇒ AAAARecord.parseBody(name, ttl, rdLength, data)
-      case 33 ⇒ SRVRecord.parseBody(name, ttl, rdLength, data, msg)
-      case _  ⇒ UnknownRecord.parseBody(name, ttl, recType, recClass, rdLength, data)
+      case 1  => ARecord.parseBody(name, ttl, rdLength, data)
+      case 5  => CNameRecord.parseBody(name, ttl, rdLength, data, msg)
+      case 28 => AAAARecord.parseBody(name, ttl, rdLength, data)
+      case 33 => SRVRecord.parseBody(name, ttl, rdLength, data, msg)
+      case _  => UnknownRecord.parseBody(name, ttl, recType, recClass, rdLength, data)
     }
   }
 }
-

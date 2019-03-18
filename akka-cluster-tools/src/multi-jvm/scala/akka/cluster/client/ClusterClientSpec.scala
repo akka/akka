@@ -7,7 +7,16 @@ package akka.cluster.client
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ Actor, ActorPath, ActorRef, ActorSystem, Address, ExtendedActorSystem, NoSerializationVerificationNeeded, Props }
+import akka.actor.{
+  Actor,
+  ActorPath,
+  ActorRef,
+  ActorSystem,
+  Address,
+  ExtendedActorSystem,
+  NoSerializationVerificationNeeded,
+  Props
+}
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientSpec.TestClientListener.LatestContactPoints
 import akka.cluster.client.ClusterClientSpec.TestReceptionistListener.LatestClusterClients
@@ -51,17 +60,17 @@ object ClusterClientSpec extends MultiNodeConfig {
 
   class TestService(testActor: ActorRef) extends Actor {
     def receive = {
-      case "shutdown" ⇒
+      case "shutdown" =>
         context.system.terminate()
-      case msg ⇒
-        testActor forward msg
+      case msg =>
+        testActor.forward(msg)
         sender() ! Reply(msg + "-ack", Cluster(context.system).selfAddress)
     }
   }
 
   class Service extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 
@@ -74,13 +83,13 @@ object ClusterClientSpec extends MultiNodeConfig {
       receiveWithContactPoints(Set.empty)
 
     def receiveWithContactPoints(contactPoints: Set[ActorPath]): Receive = {
-      case ContactPoints(cps) ⇒
+      case ContactPoints(cps) =>
         context.become(receiveWithContactPoints(cps))
       // Now do something with the up-to-date "cps"
-      case ContactPointAdded(cp) ⇒
+      case ContactPointAdded(cp) =>
         context.become(receiveWithContactPoints(contactPoints + cp))
       // Now do something with an up-to-date "contactPoints + cp"
-      case ContactPointRemoved(cp) ⇒
+      case ContactPointRemoved(cp) =>
         context.become(receiveWithContactPoints(contactPoints - cp))
       // Now do something with an up-to-date "contactPoints - cp"
     }
@@ -97,9 +106,9 @@ object ClusterClientSpec extends MultiNodeConfig {
     import TestClientListener._
 
     override def receiveWithContactPoints(contactPoints: Set[ActorPath]): Receive = {
-      case GetLatestContactPoints ⇒
+      case GetLatestContactPoints =>
         sender() ! LatestContactPoints(contactPoints)
-      case msg: Any ⇒
+      case msg: Any =>
         super.receiveWithContactPoints(contactPoints)(msg)
     }
   }
@@ -113,13 +122,13 @@ object ClusterClientSpec extends MultiNodeConfig {
       receiveWithClusterClients(Set.empty)
 
     def receiveWithClusterClients(clusterClients: Set[ActorRef]): Receive = {
-      case ClusterClients(cs) ⇒
+      case ClusterClients(cs) =>
         context.become(receiveWithClusterClients(cs))
       // Now do something with the up-to-date "c"
-      case ClusterClientUp(c) ⇒
+      case ClusterClientUp(c) =>
         context.become(receiveWithClusterClients(clusterClients + c))
       // Now do something with an up-to-date "clusterClients + c"
-      case ClusterClientUnreachable(c) ⇒
+      case ClusterClientUnreachable(c) =>
         context.become(receiveWithClusterClients(clusterClients - c))
       // Now do something with an up-to-date "clusterClients - c"
     }
@@ -136,9 +145,9 @@ object ClusterClientSpec extends MultiNodeConfig {
     import TestReceptionistListener._
 
     override def receiveWithClusterClients(clusterClients: Set[ActorRef]): Receive = {
-      case GetLatestClusterClients ⇒
+      case GetLatestClusterClients =>
         sender() ! LatestClusterClients(clusterClients)
-      case msg: Any ⇒
+      case msg: Any =>
         super.receiveWithClusterClients(clusterClients)(msg)
     }
   }
@@ -157,7 +166,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createReceptionist()
     }
     enterBarrier(from.name + "-joined")
@@ -176,7 +185,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
   def roleName(addr: Address): Option[RoleName] = remainingServerRoleNames.find(node(_).address == addr)
 
-  def initialContacts = (remainingServerRoleNames - first - fourth).map { r ⇒
+  def initialContacts = (remainingServerRoleNames - first - fourth).map { r =>
     node(r) / "system" / "receptionist"
   }
 
@@ -200,8 +209,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "communicate to actor on any node in cluster" in within(10 seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client1")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         c ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[Reply].msg should be("hello-ack")
         system.stop(c)
@@ -216,8 +226,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "work with ask" in within(10 seconds) {
       runOn(client) {
         import akka.pattern.ask
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "ask-client")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "ask-client")
         implicit val timeout = Timeout(remaining)
         val reply = c ? ClusterClient.Send("/user/testService", "hello-request", localAffinity = true)
         Await.result(reply.mapTo[Reply], remaining).msg should be("hello-request-ack")
@@ -254,8 +265,9 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#client
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client")
         c ! ClusterClient.Send("/user/serviceA", "hello", localAffinity = true)
         c ! ClusterClient.SendToAll("/user/serviceB", "hi")
       }
@@ -271,8 +283,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val initialContacts = Set(
           ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
           ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
-        val settings = ClusterClientSettings(system)
-          .withInitialContacts(initialContacts)
+        val settings = ClusterClientSettings(system).withInitialContacts(initialContacts)
         //#initialContacts
       }
 
@@ -307,7 +318,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
           log.info("Testing that the receptionist has just one client")
           val l = system.actorOf(Props(classOf[TestReceptionistListener], r), "reporter-receptionist-listener")
 
-          val expectedClient = Await.result(system.actorSelection(node(client) / "user" / "client").resolveOne(), timeout.duration)
+          val expectedClient =
+            Await.result(system.actorSelection(node(client) / "user" / "client").resolveOne(), timeout.duration)
           awaitAssert({
             val probe = TestProbe()
             l.tell(TestReceptionistListener.GetLatestClusterClients, probe.ref)
@@ -329,23 +341,24 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         // We need to slow down things otherwise our receptionists can sometimes tell us
         // that our unreachableContact is unreachable before we get a chance to
         // subscribe to events.
-        expectedRoles.foreach { role ⇒
+        expectedRoles.foreach { role =>
           testConductor.blackhole(client, role, Direction.Both).await
         }
 
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(expectedContacts + unreachableContact)), "client5")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(expectedContacts + unreachableContact)),
+          "client5")
 
         val probe = TestProbe()
         c.tell(SubscribeContactPoints, probe.ref)
 
-        expectedRoles.foreach { role ⇒
+        expectedRoles.foreach { role =>
           testConductor.passThrough(client, role, Direction.Both).await
         }
 
         probe.fishForMessage(10.seconds, "removal") {
-          case ContactPointRemoved(`unreachableContact`) ⇒ true
-          case _                                         ⇒ false
+          case ContactPointRemoved(`unreachableContact`) => true
+          case _                                         => false
         }
       }
       enterBarrier("after-7")
@@ -360,15 +373,17 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       enterBarrier("service2-replicated")
 
       runOn(client) {
-        val client = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client2")
+        val client =
+          system.actorOf(
+            ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+            "client2")
 
         client ! ClusterClient.Send("/user/service2", "bonjour", localAffinity = true)
         val reply = expectMsgType[Reply]
         reply.msg should be("bonjour-ack")
         val receptionistRoleName = roleName(reply.node) match {
-          case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
+          case Some(r) => r
+          case None    => fail("unexpected missing roleName: " + reply.node)
         }
         testConductor.exit(receptionistRoleName, 0).await
         remainingServerRoleNames -= receptionistRoleName
@@ -380,8 +395,8 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       }
       enterBarrier("verifed-3")
       receiveWhile(2 seconds) {
-        case "hi again" ⇒
-        case other      ⇒ fail("unexpected message: " + other)
+        case "hi again" =>
+        case other      => fail("unexpected message: " + other)
       }
       enterBarrier("verifed-4")
       runOn(client) {
@@ -399,18 +414,19 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
     "re-establish connection to receptionist after partition" in within(30 seconds) {
       runOn(client) {
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client3")
+        val c = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client3")
 
         c ! ClusterClient.Send("/user/service2", "bonjour2", localAffinity = true)
         val reply = expectMsgType[Reply]
         reply.msg should be("bonjour2-ack")
         val receptionistRoleName = roleName(reply.node) match {
-          case Some(r) ⇒ r
-          case None    ⇒ fail("unexpected missing roleName: " + reply.node)
+          case Some(r) => r
+          case None    => fail("unexpected missing roleName: " + reply.node)
         }
         // shutdown all but the one that the client is connected to
-        remainingServerRoleNames.foreach { r ⇒
+        remainingServerRoleNames.foreach { r =>
           if (r != receptionistRoleName)
             testConductor.exit(r, 0).await
         }
@@ -441,19 +457,21 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     "re-establish connection to receptionist after server restart" in within(30 seconds) {
       runOn(client) {
         remainingServerRoleNames.size should ===(1)
-        val remainingContacts = remainingServerRoleNames.map { r ⇒
+        val remainingContacts = remainingServerRoleNames.map { r =>
           node(r) / "system" / "receptionist"
         }
-        val c = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(remainingContacts)), "client4")
+        val c =
+          system.actorOf(
+            ClusterClient.props(ClusterClientSettings(system).withInitialContacts(remainingContacts)),
+            "client4")
 
         c ! ClusterClient.Send("/user/service2", "bonjour4", localAffinity = true)
         expectMsg(10.seconds, Reply("bonjour4-ack", remainingContacts.head.address))
 
         val logSource = s"${system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress}/user/client4"
 
-        EventFilter.info(start = "Connected to", source = logSource, occurrences = 1) intercept {
-          EventFilter.info(start = "Lost contact", source = logSource, occurrences = 1) intercept {
+        EventFilter.info(start = "Connected to", source = logSource, occurrences = 1).intercept {
+          EventFilter.info(start = "Lost contact", source = logSource, occurrences = 1).intercept {
             // shutdown server
             testConductor.shutdown(remainingServerRoleNames.head).await
           }
@@ -472,8 +490,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val port = Cluster(system).selfAddress.port.get
         val sys2 = ActorSystem(
           system.name,
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
               akka.remote.netty.tcp.port=$port
               """).withFallback(system.settings.config))

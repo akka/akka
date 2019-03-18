@@ -5,7 +5,7 @@
 package akka.persistence.fsm
 
 import akka.actor._
-import akka.japi.pf.{ UnitPFBuilder, UnitMatch, FSMTransitionHandlerBuilder }
+import akka.japi.pf.{ FSMTransitionHandlerBuilder, UnitMatch, UnitPFBuilder }
 
 import language.implicitConversions
 import scala.collection.mutable
@@ -126,7 +126,6 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *                 DSL
    * ****************************************
    */
-
   /**
    * Insert a new StateFunction at the end of the processing chain for the
    * given state. If the stateTimeout parameter is set, entering this state
@@ -173,7 +172,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    *
    * @return descriptor for staying in current state
    */
-  final def stay(): State = goto(currentState.stateName).withNotification(false) // cannot directly use currentState because of the timeout field
+  final def stay(): State =
+    goto(currentState.stateName)
+      .withNotification(false) // cannot directly use currentState because of the timeout field
 
   /**
    * Produce change descriptor to stop this FSM actor with reason "Normal".
@@ -192,7 +193,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   final class TransformHelper(func: StateFunction) {
     def using(andThen: PartialFunction[State, State]): StateFunction =
-      func andThen (andThen orElse { case x ⇒ x })
+      func.andThen(andThen.orElse { case x => x })
   }
 
   final def transform(func: StateFunction): TransformHelper = new TransformHelper(func)
@@ -279,7 +280,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * Convenience wrapper for using a total function instead of a partial
    * function literal. To be used with onTransition.
    */
-  implicit final def total2pf(transitionHandler: (S, S) ⇒ Unit): TransitionHandler =
+  implicit final def total2pf(transitionHandler: (S, S) => Unit): TransitionHandler =
     new TransitionHandler {
       def isDefinedAt(in: (S, S)) = true
       def apply(in: (S, S)): Unit = { transitionHandler(in._1, in._2) }
@@ -299,7 +300,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunction: StateFunction): Unit =
-    handleEvent = stateFunction orElse handleEventDefault
+    handleEvent = stateFunction.orElse(handleEventDefault)
 
   /**
    * Verify existence of initial state and setup timers. Used in [[akka.persistence.fsm.PersistentFSM]]
@@ -337,8 +338,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * Return next state data (available in onTransition handlers)
    */
   final def nextStateData = nextState match {
-    case null ⇒ throw new IllegalStateException("nextStateData is only available during onTransition")
-    case x    ⇒ x.stateData
+    case null => throw new IllegalStateException("nextStateData is only available during onTransition")
+    case x    => x.stateData
   }
 
   /*
@@ -361,7 +362,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * Timer handling
    */
   private val timers = mutable.Map[String, Timer]()
-  private val timerGen = Iterator from 0
+  private val timerGen = Iterator.from(0)
 
   /*
    * State definitions
@@ -371,8 +372,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   private def register(name: S, function: StateFunction, timeout: Timeout): Unit = {
     if (stateFunctions contains name) {
-      stateFunctions(name) = stateFunctions(name) orElse function
-      stateTimeouts(name) = timeout orElse stateTimeouts(name)
+      stateFunctions(name) = stateFunctions(name).orElse(function)
+      stateTimeouts(name) = timeout.orElse(stateTimeouts(name))
     } else {
       stateFunctions(name) = function
       stateTimeouts(name) = timeout
@@ -383,7 +384,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * unhandled event handler
    */
   private val handleEventDefault: StateFunction = {
-    case Event(value, stateData) ⇒
+    case Event(value, stateData) =>
       log.warning("unhandled event " + value + " in state " + stateName)
       stay
   }
@@ -400,7 +401,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
   private var transitionEvent: List[TransitionHandler] = Nil
   private def handleTransition(prev: S, next: S): Unit = {
     val tuple = (prev, next)
-    for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
+    for (te <- transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
   /*
@@ -409,11 +410,11 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * *******************************************
    */
   override def receive: Receive = {
-    case TimeoutMarker(gen) ⇒
+    case TimeoutMarker(gen) =>
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
       }
-    case t @ Timer(name, msg, repeat, gen, owner) ⇒
+    case t @ Timer(name, msg, repeat, gen, owner) =>
       if ((owner eq this) && (timers contains name) && (timers(name).generation == gen)) {
         if (timeoutFuture.isDefined) {
           timeoutFuture.get.cancel()
@@ -425,21 +426,21 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
         }
         processMsg(msg, t)
       }
-    case SubscribeTransitionCallBack(actorRef) ⇒
+    case SubscribeTransitionCallBack(actorRef) =>
       // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName, currentState.timeout)
-    case Listen(actorRef) ⇒
+    case Listen(actorRef) =>
       // TODO Use context.watch(actor) and receive Terminated(actor) to clean up list
       listeners.add(actorRef)
       // send current state back as reference point
       actorRef ! CurrentState(self, currentState.stateName, currentState.timeout)
-    case UnsubscribeTransitionCallBack(actorRef) ⇒
+    case UnsubscribeTransitionCallBack(actorRef) =>
       listeners.remove(actorRef)
-    case Deafen(actorRef) ⇒
+    case Deafen(actorRef) =>
       listeners.remove(actorRef)
-    case value ⇒
+    case value =>
       if (timeoutFuture.isDefined) {
         timeoutFuture.get.cancel()
         timeoutFuture = None
@@ -455,7 +456,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   private[akka] def processEvent(event: Event, source: AnyRef): Unit = {
     val stateFunc = stateFunctions(currentState.stateName)
-    val nextState = if (stateFunc isDefinedAt event) {
+    val nextState = if (stateFunc.isDefinedAt(event)) {
       stateFunc(event)
     } else {
       // handleEventDefault ensures that this is always defined
@@ -466,9 +467,11 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   private[akka] def applyState(nextState: State): Unit = {
     nextState.stopReason match {
-      case None ⇒ makeTransition(nextState)
-      case _ ⇒
-        nextState.replies.reverse foreach { r ⇒ sender() ! r }
+      case None => makeTransition(nextState)
+      case _ =>
+        nextState.replies.reverse.foreach { r =>
+          sender() ! r
+        }
         terminate(nextState)
         context.stop(self)
     }
@@ -476,9 +479,11 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
 
   private[akka] def makeTransition(nextState: State): Unit = {
     if (!stateFunctions.contains(nextState.stateName)) {
-      terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
+      terminate(stay.withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
     } else {
-      nextState.replies.reverse foreach { r ⇒ sender() ! r }
+      nextState.replies.reverse.foreach { r =>
+        sender() ! r
+      }
       if (currentState.stateName != nextState.stateName || nextState.notifies) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
@@ -488,9 +493,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       currentState = nextState
       val timeout =
         currentState.timeout match {
-          case PersistentFSM.SomeMaxFiniteDuration ⇒ None
-          case x: Some[FiniteDuration]             ⇒ x
-          case None                                ⇒ stateTimeouts(currentState.stateName)
+          case PersistentFSM.SomeMaxFiniteDuration => None
+          case x: Some[FiniteDuration]             => x
+          case None                                => stateTimeouts(currentState.stateName)
         }
 
       if (timeout.isDefined) {
@@ -516,7 +521,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
      * setting this instance’s state to terminated does no harm during restart
      * since the new instance will initialize fresh using startWith()
      */
-    terminate(stay withStopReason Shutdown)
+    terminate(stay.withStopReason(Shutdown))
     super.postStop()
   }
 
@@ -524,7 +529,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     if (currentState.stopReason.isEmpty) {
       val reason = nextState.stopReason.get
       logTermination(reason)
-      for (timer ← timers.values) timer.cancel()
+      for (timer <- timers.values) timer.cancel()
       timers.clear()
       currentState = nextState
 
@@ -539,9 +544,9 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * types are not logged. It is possible to override this behavior.
    */
   protected def logTermination(reason: Reason): Unit = reason match {
-    case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
-    case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
-    case _                      ⇒
+    case Failure(ex: Throwable) => log.error(ex, "terminating due to Failure")
+    case Failure(msg: AnyRef)   => log.error(msg.toString)
+    case _                      =>
   }
 }
 
@@ -550,7 +555,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
  * debug logging capabilities (analogous to [[akka.event.LoggingReceive]]).
  *
  */
-trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: Actor ⇒
+trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: Actor =>
 
   import akka.persistence.fsm.PersistentFSM._
 
@@ -576,10 +581,10 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
   private[akka] abstract override def processEvent(event: Event, source: AnyRef): Unit = {
     if (debugEvent) {
       val srcstr = source match {
-        case s: String               ⇒ s
-        case Timer(name, _, _, _, _) ⇒ "timer " + name
-        case a: ActorRef             ⇒ a.toString
-        case _                       ⇒ "unknown"
+        case s: String               => s
+        case Timer(name, _, _, _, _) => "timer " + name
+        case a: ActorRef             => a.toString
+        case _                       => "unknown"
       }
       log.debug("processing {} from {} in state {}", event, srcstr, stateName)
     }
@@ -604,7 +609,8 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
    * The log entries are lost when this actor is restarted.
    */
   protected def getLog: IndexedSeq[LogEntry[S, D]] = {
-    val log = events zip states filter (_._1 ne null) map (x ⇒ LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
+    val log =
+      events.zip(states).filter(_._1 ne null).map(x => LogEntry(x._2.asInstanceOf[S], x._1.stateData, x._1.event))
     if (full) {
       IndexedSeq() ++ log.drop(pos) ++ log.take(pos)
     } else {
@@ -619,6 +625,7 @@ trait LoggingPersistentFSM[S, D, E] extends PersistentFSMBase[S, D, E] { this: A
  *
  */
 object AbstractPersistentFSMBase {
+
   /**
    * A partial function value which does not match anything and can be used to
    * “reset” `whenUnhandled` and `onTermination` handlers.
@@ -640,7 +647,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
   import akka.persistence.fsm.japi.pf.FSMStateFunctionBuilder
   import akka.persistence.fsm.japi.pf.FSMStopBuilder
   import akka.japi.pf.FI._
-  import java.util.{ List ⇒ JList }
+  import java.util.{ List => JList }
   import PersistentFSM._
 
   /**
@@ -700,9 +707,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(
-    stateName:            S,
-    stateTimeout:         FiniteDuration,
-    stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
+      stateName: S,
+      stateTimeout: FiniteDuration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D, E]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
@@ -775,7 +782,11 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      predicate: TypedPredicate2[ET, DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, predicate, apply)
 
   /**
@@ -788,7 +799,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, apply)
 
   /**
@@ -801,7 +815,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[ET](
+      eventType: Class[ET],
+      predicate: TypedPredicate2[ET, D],
+      apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventType, predicate, apply)
 
   /**
@@ -825,7 +842,9 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent(
+      predicate: TypedPredicate2[AnyRef, D],
+      apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(predicate, apply)
 
   /**
@@ -839,7 +858,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEvent[DT <: D](
+      eventMatches: JList[AnyRef],
+      dataType: Class[DT],
+      apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, dataType, apply)
 
   /**
@@ -865,7 +887,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals[Ev, DT <: D](event: Ev, dataType: Class[DT], apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
+  final def matchEventEquals[Ev, DT <: D](
+      event: Ev,
+      dataType: Class[DT],
+      apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
     new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, dataType, apply)
 
   /**
@@ -951,7 +976,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param predicate  a predicate that will be evaluated on the reason if the type matches
    * @return the builder with the case statement added
    */
-  final def matchStop[RT <: Reason](reasonType: Class[RT], predicate: TypedPredicate[RT], apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+  final def matchStop[RT <: Reason](
+      reasonType: Class[RT],
+      predicate: TypedPredicate[RT],
+      apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
     new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
 
   /**
@@ -972,7 +1000,10 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @param apply  an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    */
-  final def matchData[DT <: D](dataType: Class[DT], predicate: TypedPredicate[DT], apply: UnitApply[DT]): UnitPFBuilder[D] =
+  final def matchData[DT <: D](
+      dataType: Class[DT],
+      predicate: TypedPredicate[DT],
+      apply: UnitApply[DT]): UnitPFBuilder[D] =
     UnitMatch.`match`(dataType, predicate, apply)
 
   /**

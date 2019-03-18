@@ -6,7 +6,7 @@ package akka.contrib.mailbox
 
 import com.typesafe.config.ConfigFactory
 
-import akka.actor.{ Actor, ActorSystem, DeadLetter, PoisonPill, Props, actorRef2Scala }
+import akka.actor.{ actorRef2Scala, Actor, ActorSystem, DeadLetter, PoisonPill, Props }
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
 
 object PeekMailboxSpec {
@@ -15,20 +15,20 @@ object PeekMailboxSpec {
   class PeekActor(tries: Int) extends Actor {
     var togo = tries
     def receive = {
-      case Check ⇒
+      case Check =>
         sender() ! Check
         PeekMailboxExtension.ack()
-      case DoubleAck ⇒
+      case DoubleAck =>
         PeekMailboxExtension.ack()
         PeekMailboxExtension.ack()
-      case msg ⇒
+      case msg =>
         sender() ! msg
         if (togo == 0) throw new RuntimeException("DONTWANNA")
         togo -= 1
         PeekMailboxExtension.ack()
     }
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
-      for (m ← msg if m == "DIE") context stop self // for testing the case of mailbox.cleanUp
+      for (m <- msg if m == "DIE") context.stop(self) // for testing the case of mailbox.cleanUp
     }
   }
 }
@@ -48,7 +48,7 @@ class PeekMailboxSpec extends AkkaSpec("""
       val a = system.actorOf(Props(classOf[PeekActor], 1).withDispatcher("peek-dispatcher"))
       a ! "hello"
       expectMsg("hello")
-      EventFilter[RuntimeException]("DONTWANNA", occurrences = 1) intercept {
+      EventFilter[RuntimeException]("DONTWANNA", occurrences = 1).intercept {
         a ! "world"
       }
       expectMsg("world")
@@ -59,7 +59,7 @@ class PeekMailboxSpec extends AkkaSpec("""
 
     "put a bound on retries" in {
       val a = system.actorOf(Props(classOf[PeekActor], 0).withDispatcher("peek-dispatcher"))
-      EventFilter[RuntimeException]("DONTWANNA", occurrences = 3) intercept {
+      EventFilter[RuntimeException]("DONTWANNA", occurrences = 3).intercept {
         a ! "hello"
       }
       a ! Check
@@ -80,7 +80,7 @@ class PeekMailboxSpec extends AkkaSpec("""
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
       val a = system.actorOf(Props(classOf[PeekActor], 0).withDispatcher("peek-dispatcher"))
       watch(a)
-      EventFilter[RuntimeException]("DONTWANNA", occurrences = 1) intercept {
+      EventFilter[RuntimeException]("DONTWANNA", occurrences = 1).intercept {
         a ! "DIE" // stays in the mailbox
       }
       expectMsg("DIE")
@@ -95,7 +95,7 @@ class PeekMailboxSpec extends AkkaSpec("""
 //#demo
 class MyActor extends Actor {
   def receive = {
-    case msg ⇒
+    case msg =>
       println(msg)
       doStuff(msg) // may fail
       PeekMailboxExtension.ack()
@@ -115,16 +115,16 @@ class MyActor extends Actor {
 }
 
 object MyApp extends App {
-  val system = ActorSystem("MySystem", ConfigFactory.parseString("""
+  val system = ActorSystem(
+    "MySystem",
+    ConfigFactory.parseString("""
     peek-dispatcher {
       mailbox-type = "akka.contrib.mailbox.PeekMailboxType"
       max-retries = 2
     }
     """))
 
-  val myActor = system.actorOf(
-    Props[MyActor].withDispatcher("peek-dispatcher"),
-    name = "myActor")
+  val myActor = system.actorOf(Props[MyActor].withDispatcher("peek-dispatcher"), name = "myActor")
 
   myActor ! "Hello"
   myActor ! "World"

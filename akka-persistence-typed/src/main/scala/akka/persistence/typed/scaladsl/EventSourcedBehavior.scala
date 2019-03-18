@@ -4,13 +4,12 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.util.Try
 import scala.annotation.tailrec
 
-import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.Signal
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.adapter.ActorContextAdapter
@@ -20,6 +19,7 @@ import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
@@ -31,7 +31,7 @@ object EventSourcedBehavior {
    * when full function type is used. When defining the handler as a separate function value it can
    * be useful to use the alias for shorter type signature.
    */
-  type CommandHandler[Command, Event, State] = (State, Command) ⇒ Effect[Event, State]
+  type CommandHandler[Command, Event, State] = (State, Command) => Effect[Event, State]
 
   /**
    * Type alias for the event handler function for updating the state based on events having been persisted.
@@ -40,16 +40,16 @@ object EventSourcedBehavior {
    * when full function type is used. When defining the handler as a separate function value it can
    * be useful to use the alias for shorter type signature.
    */
-  type EventHandler[State, Event] = (State, Event) ⇒ State
+  type EventHandler[State, Event] = (State, Event) => State
 
   /**
    * Create a `Behavior` for a persistent actor.
    */
   def apply[Command, Event, State](
-    persistenceId:  PersistenceId,
-    emptyState:     State,
-    commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
+      persistenceId: PersistenceId,
+      emptyState: State,
+      commandHandler: (State, Command) => Effect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
     val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
@@ -60,10 +60,10 @@ object EventSourcedBehavior {
    * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
    */
   def withEnforcedReplies[Command <: ExpectingReply[_], Event, State](
-    persistenceId:  PersistenceId,
-    emptyState:     State,
-    commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] = {
+      persistenceId: PersistenceId,
+      emptyState: State,
+      commandHandler: (State, Command) => ReplyEffect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
     val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
@@ -73,7 +73,7 @@ object EventSourcedBehavior {
    * a function:
    *
    * {{{
-   *   (State, Command) ⇒ Effect[Event, State]
+   *   (State, Command) => Effect[Event, State]
    * }}}
    *
    * The [[CommandHandler#command]] is useful for simple commands that don't need the state
@@ -86,8 +86,9 @@ object EventSourcedBehavior {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
-      (_, cmd) ⇒ commandHandler(cmd)
+    def command[Command, Event, State](
+        commandHandler: Command => Effect[Event, State]): (State, Command) => Effect[Event, State] =
+      (_, cmd) => commandHandler(cmd)
 
   }
 
@@ -98,17 +99,19 @@ object EventSourcedBehavior {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
       beh match {
-        case interceptor: InterceptorImpl[_, _] ⇒ extractConcreteBehavior(interceptor.nestedBehavior)
-        case concrete                           ⇒ concrete
+        case interceptor: InterceptorImpl[_, _] => extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           => concrete
       }
 
     context match {
-      case impl: ActorContextAdapter[_] ⇒
+      case impl: ActorContextAdapter[_] =>
         extractConcreteBehavior(impl.currentBehavior) match {
-          case w: Running.WithSeqNrAccessible ⇒ w.currentSequenceNumber
-          case s                              ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
+          case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
+          case s =>
+            throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
         }
-      case c ⇒ throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
+      case c =>
+        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
     }
   }
 
@@ -124,29 +127,18 @@ object EventSourcedBehavior {
   def persistenceId: PersistenceId
 
   /**
-   * The `callback` function is called to notify that the recovery process has finished.
+   * Allows the event sourced behavior to react on signals.
+   *
+   * The regular lifecycle signals can be handled as well as
+   * Akka Persistence specific signals (snapshot and recovery related). Those are all subtypes of
+   * [[akka.persistence.typed.EventSourcedSignal]]
    */
-  def onRecoveryCompleted(callback: State ⇒ Unit): EventSourcedBehavior[Command, Event, State]
-  /**
-   * The `callback` function is called to notify that recovery has failed. For setting a supervision
-   * strategy `onPersistFailure`
-   */
-  def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State]
+  def receiveSignal(signalHandler: PartialFunction[Signal, Unit]): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * The `callback` function is called to notify that the actor has stopped.
+   * @return The currently defined signal handler or an empty handler if no custom handler previously defined
    */
-  def onPostStop(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * The `callback` function is called to notify that the actor is restarted.
-   */
-  def onPreRestart(callback: () ⇒ Unit): EventSourcedBehavior[Command, Event, State]
-
-  /**
-   * The `callback` function is called to notify when a snapshot is complete.
-   */
-  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): EventSourcedBehavior[Command, Event, State]
+  def signalHandler: PartialFunction[Signal, Unit]
 
   /**
    * Initiates a snapshot if the given function returns true.
@@ -155,7 +147,8 @@ object EventSourcedBehavior {
    *
    * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): EventSourcedBehavior[Command, Event, State]
+  def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
+
   /**
    * Snapshot every N events
    *
@@ -184,9 +177,14 @@ object EventSourcedBehavior {
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
+   * Criteria for internal retention/deletion of snapshots and events.
+   */
+  def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
+
+  /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagger(tagger: Event ⇒ Set[String]): EventSourcedBehavior[Command, Event, State]
+  def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Transform the event in another type before giving to the journal. Can be used to wrap events
@@ -204,4 +202,3 @@ object EventSourcedBehavior {
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
 }
-

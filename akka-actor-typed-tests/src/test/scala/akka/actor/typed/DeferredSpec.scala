@@ -22,29 +22,29 @@ object DeferredSpec {
   case object Started extends Event
 
   def target(monitor: ActorRef[Event]): Behavior[Command] =
-    Behaviors.receive((_, cmd) ⇒ cmd match {
-      case Ping ⇒
-        monitor ! Pong
-        Behaviors.same
-    })
+    Behaviors.receive((_, cmd) =>
+      cmd match {
+        case Ping =>
+          monitor ! Pong
+          Behaviors.same
+      })
 }
 
-class DeferredSpec extends ScalaTestWithActorTestKit(
-  """
+class DeferredSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     """) with WordSpecLike {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
 
-  // FIXME eventfilter support in typed testkit
+  // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
   implicit val untypedSystem = system.toUntyped
 
   "Deferred behavior" must {
     "must create underlying" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { _ ⇒
+      val behv = Behaviors.setup[Command] { _ =>
         probe.ref ! Started
         target(probe.ref)
       }
@@ -56,14 +56,14 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must stop when exception from factory" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { context ⇒
-        val child = context.spawnAnonymous(Behaviors.setup[Command] { _ ⇒
+      val behv = Behaviors.setup[Command] { context =>
+        val child = context.spawnAnonymous(Behaviors.setup[Command] { _ =>
           probe.ref ! Started
           throw new RuntimeException("simulated exc from factory") with NoStackTrace
         })
         context.watch(child)
-        Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
-          case (_, Terminated(`child`)) ⇒
+        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal {
+          case (_, Terminated(`child`)) =>
             probe.ref ! Pong
             Behaviors.stopped
         }
@@ -77,11 +77,11 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must stop when deferred result it Stopped" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { context ⇒
-        val child = context.spawnAnonymous(Behaviors.setup[Command](_ ⇒ Behaviors.stopped))
+      val behv = Behaviors.setup[Command] { context =>
+        val child = context.spawnAnonymous(Behaviors.setup[Command](_ => Behaviors.stopped))
         context.watch(child)
-        Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
-          case (_, Terminated(`child`)) ⇒
+        Behaviors.receive[Command]((_, _) => Behaviors.same).receiveSignal {
+          case (_, Terminated(`child`)) =>
             probe.ref ! Pong
             Behaviors.stopped
         }
@@ -92,8 +92,8 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must create underlying when nested" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { _ ⇒
-        Behaviors.setup[Command] { _ ⇒
+      val behv = Behaviors.setup[Command] { _ =>
+        Behaviors.setup[Command] { _ =>
           probe.ref ! Started
           target(probe.ref)
         }
@@ -104,12 +104,14 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must un-defer underlying when wrapped by widen" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { _ ⇒
-        probe.ref ! Started
-        target(probe.ref)
-      }.widen[Command] {
-        case m ⇒ m
-      }
+      val behv = Behaviors
+        .setup[Command] { _ =>
+          probe.ref ! Started
+          target(probe.ref)
+        }
+        .widen[Command] {
+          case m => m
+        }
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)
@@ -122,7 +124,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
       // monitor is implemented with tap, so this is testing both
       val probe = TestProbe[Event]("evt")
       val monitorProbe = TestProbe[Command]("monitor")
-      val behv = Behaviors.monitor(monitorProbe.ref, Behaviors.setup[Command] { _ ⇒
+      val behv = Behaviors.monitor(monitorProbe.ref, Behaviors.setup[Command] { _ =>
         probe.ref ! Started
         target(probe.ref)
       })
@@ -137,8 +139,10 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must not allow setup(same)" in {
       val probe = TestProbe[Any]()
-      val behv = Behaviors.setup[Command] { _ ⇒
-        Behaviors.setup[Command] { _ ⇒ Behaviors.same }
+      val behv = Behaviors.setup[Command] { _ =>
+        Behaviors.setup[Command] { _ =>
+          Behaviors.same
+        }
       }
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         val ref = spawn(behv)
@@ -154,7 +158,7 @@ class DeferredStubbedSpec extends WordSpec with Matchers {
 
   "must create underlying deferred behavior immediately" in {
     val inbox = TestInbox[Event]("evt")
-    val behv = Behaviors.setup[Command] { _ ⇒
+    val behv = Behaviors.setup[Command] { _ =>
       inbox.ref ! Started
       target(inbox.ref)
     }
@@ -166,7 +170,7 @@ class DeferredStubbedSpec extends WordSpec with Matchers {
   "must stop when exception from factory" in {
     val inbox = TestInbox[Event]("evt")
     val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
-    val behv = Behaviors.setup[Command] { _ ⇒
+    val behv = Behaviors.setup[Command] { _ =>
       inbox.ref ! Started
       throw exc
     }
@@ -177,4 +181,3 @@ class DeferredStubbedSpec extends WordSpec with Matchers {
   }
 
 }
-

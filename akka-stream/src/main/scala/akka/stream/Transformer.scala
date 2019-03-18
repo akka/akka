@@ -7,6 +7,7 @@ package akka.stream
 import scala.collection.immutable
 
 private[akka] abstract class TransformerLike[-T, +U] {
+
   /**
    * Invoked for each element to produce a (possibly empty) sequence of
    * output elements.
@@ -46,4 +47,3 @@ private[akka] abstract class TransformerLike[-T, +U] {
   def cleanup(): Unit = ()
 
 }
-

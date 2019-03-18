@@ -13,8 +13,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ClusterSingletonPersistenceSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
       akka.remote.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
@@ -39,18 +38,21 @@ object ClusterSingletonPersistenceSpec {
     EventSourcedBehavior[Command, String, String](
       persistenceId = PersistenceId("TheSingleton"),
       emptyState = "",
-      commandHandler = (state, cmd) ⇒ cmd match {
-        case Add(s) ⇒ Effect.persist(s)
-        case Get(replyTo) ⇒
-          replyTo ! state
-          Effect.none
-        case StopPlz ⇒ Effect.stop()
-      },
-      eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
+      commandHandler = (state, cmd) =>
+        cmd match {
+          case Add(s) => Effect.persist(s)
+          case Get(replyTo) =>
+            replyTo ! state
+            Effect.none
+          case StopPlz => Effect.stop()
+        },
+      eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
 
 }
 
-class ClusterSingletonPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config) with WordSpecLike {
+class ClusterSingletonPersistenceSpec
+    extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config)
+    with WordSpecLike {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
 

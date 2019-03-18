@@ -17,18 +17,24 @@ object FanInShape {
     override def outlet: Outlet[O] = Outlet(s"$name.out")
     override def inlets: immutable.Seq[Inlet[_]] = Nil
   }
-  final case class Ports[O](override val outlet: Outlet[O], override val inlets: immutable.Seq[Inlet[_]]) extends Init[O] {
+  final case class Ports[O](override val outlet: Outlet[O], override val inlets: immutable.Seq[Inlet[_]])
+      extends Init[O] {
     override def name: String = "FanIn"
   }
 }
 
-abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _registered: Iterator[Inlet[_]], _name: String) extends Shape {
+abstract class FanInShape[+O] private (
+    _out: Outlet[O @uncheckedVariance],
+    _registered: Iterator[Inlet[_]],
+    _name: String)
+    extends Shape {
   import FanInShape._
 
   def this(init: FanInShape.Init[O]) = this(init.outlet, init.inlets.iterator, init.name)
 
   final def out: Outlet[O @uncheckedVariance] = _out
   final override def outlets: immutable.Seq[Outlet[O @uncheckedVariance]] = _out :: Nil
+
   /**
    * Not meant for overriding outside of Akka.
    */

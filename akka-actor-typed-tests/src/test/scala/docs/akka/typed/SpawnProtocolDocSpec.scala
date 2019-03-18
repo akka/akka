@@ -33,7 +33,7 @@ object SpawnProtocolDocSpec {
   //#main
   object HelloWorldMain {
     val main: Behavior[SpawnProtocol] =
-      Behaviors.setup { context ⇒
+      Behaviors.setup { context =>
         // Start initial tasks
         // context.spawn(...)
 
@@ -63,7 +63,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
         system.ask(SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty))
 
-      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) ⇒
+      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
         context.log.info("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
@@ -71,7 +71,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
         system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty))
 
-      for (greeterRef ← greeter; replyToRef ← greetedReplyTo) {
+      for (greeterRef <- greeter; replyToRef <- greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)
       }
 

@@ -20,12 +20,11 @@ object QuickRestartMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -34,8 +33,9 @@ class QuickRestartMultiJvmNode2 extends QuickRestartSpec
 class QuickRestartMultiJvmNode3 extends QuickRestartSpec
 
 abstract class QuickRestartSpec
-  extends MultiNodeSpec(QuickRestartMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(QuickRestartMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import QuickRestartMultiJvmSpec._
 
@@ -55,21 +55,19 @@ abstract class QuickRestartSpec
     "join and restart" taggedAs LongRunningTest in {
       val totalNumberOfNodes = roles.size + 1
       var restartingSystem: ActorSystem = null // only used on second
-      for (n ← 1 to rounds) {
+      for (n <- 1 to rounds) {
         log.info("round-" + n)
         runOn(second) {
           restartingSystem =
             if (restartingSystem == null)
               ActorSystem(
                 system.name,
-                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]")
-                  .withFallback(system.settings.config))
+                ConfigFactory.parseString(s"akka.cluster.roles = [round-$n]").withFallback(system.settings.config))
             else
               ActorSystem(
                 system.name,
                 // use the same port
-                ConfigFactory.parseString(
-                  s"""
+                ConfigFactory.parseString(s"""
                        akka.cluster.roles = [round-$n]
                        akka.remote.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}
                        akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
@@ -90,7 +88,8 @@ abstract class QuickRestartSpec
             Cluster(system).state.members.size should ===(totalNumberOfNodes)
             Cluster(system).state.members.map(_.status == MemberStatus.Up)
             // use the role to test that it is the new incarnation that joined, sneaky
-            Cluster(system).state.members.flatMap(_.roles) should ===(Set(s"round-$n", ClusterSettings.DcRolePrefix + "default"))
+            Cluster(system).state.members.flatMap(_.roles) should ===(
+              Set(s"round-$n", ClusterSettings.DcRolePrefix + "default"))
           }
         }
         enterBarrier("members-up-" + n)

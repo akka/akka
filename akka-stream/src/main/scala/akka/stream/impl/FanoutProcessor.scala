@@ -13,12 +13,12 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @DoNotInherit private[akka] abstract class FanoutOutputs(
-  val maxBufferSize:     Int,
-  val initialBufferSize: Int,
-  self:                  ActorRef,
-  val pump:              Pump)
-  extends DefaultOutputTransferStates
-  with SubscriberManagement[Any] {
+    val maxBufferSize: Int,
+    val initialBufferSize: Int,
+    self: ActorRef,
+    val pump: Pump)
+    extends DefaultOutputTransferStates
+    with SubscriberManagement[Any] {
 
   override type S = ActorSubscriptionWithCursor[_ >: Any]
   override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
@@ -62,7 +62,7 @@ import org.reactivestreams.Subscriber
   override protected def requestFromUpstream(elements: Long): Unit = downstreamBufferSpace += elements
 
   private def subscribePending(): Unit =
-    exposedPublisher.takePendingSubscribers() foreach registerSubscriber
+    exposedPublisher.takePendingSubscribers().foreach(registerSubscriber)
 
   override protected def shutdown(completed: Boolean): Unit = {
     if (exposedPublisher ne null) {
@@ -77,20 +77,20 @@ import org.reactivestreams.Subscriber
   }
 
   protected def waitingExposedPublisher: Actor.Receive = {
-    case ExposedPublisher(publisher) ⇒
+    case ExposedPublisher(publisher) =>
       exposedPublisher = publisher
       subreceive.become(downstreamRunning)
-    case other ⇒
+    case other =>
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
 
   protected def downstreamRunning: Actor.Receive = {
-    case SubscribePending ⇒
+    case SubscribePending =>
       subscribePending()
-    case RequestMore(subscription, elements) ⇒
+    case RequestMore(subscription, elements) =>
       moreRequested(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]], elements)
       pump.pump()
-    case Cancel(subscription) ⇒
+    case Cancel(subscription) =>
       unregisterSubscription(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]])
       pump.pump()
   }
@@ -104,11 +104,12 @@ import org.reactivestreams.Subscriber
   def props(attributes: Attributes, actorMaterializerSettings: ActorMaterializerSettings): Props =
     Props(new FanoutProcessorImpl(attributes, actorMaterializerSettings)).withDeploy(Deploy.local)
 }
+
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
-  extends ActorProcessorImpl(attributes, _settings) {
+    extends ActorProcessorImpl(attributes, _settings) {
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
@@ -117,7 +118,7 @@ import org.reactivestreams.Subscriber
     }
   }
 
-  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
+  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () =>
     primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
   }
 

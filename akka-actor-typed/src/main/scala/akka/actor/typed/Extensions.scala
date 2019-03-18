@@ -140,6 +140,7 @@ trait Extensions {
    * of the payload, if is in the process of registration from another Thread of execution
    */
   def registerExtension[T <: Extension](ext: ExtensionId[T]): T
+
   /**
    * Returns the payload that is associated with the provided extension
    * throws an IllegalStateException if it is not registered.
@@ -162,9 +163,9 @@ trait Extensions {
  * extension with stub/mock implementations.
  */
 abstract class ExtensionSetup[T <: Extension](
-  val extId:           ExtensionId[T],
-  val createExtension: java.util.function.Function[ActorSystem[_], T])
-  extends Setup
+    val extId: ExtensionId[T],
+    val createExtension: java.util.function.Function[ActorSystem[_], T])
+    extends Setup
 
 /**
  * Scala 2.11 API: Each extension typically provide a concrete `ExtensionSetup` that can be used in
@@ -172,7 +173,7 @@ abstract class ExtensionSetup[T <: Extension](
  * implementation of the extension. Intended for tests that need to replace
  * extension with stub/mock implementations.
  */
-abstract class AbstractExtensionSetup[T <: Extension](extId: ExtensionId[T], createExtension: ActorSystem[_] ⇒ T)
-  extends ExtensionSetup[T](extId, new java.util.function.Function[ActorSystem[_], T] {
-    override def apply(sys: ActorSystem[_]): T = createExtension.apply(sys)
-  }) // TODO can be simplified when compiled only with Scala >= 2.12
+abstract class AbstractExtensionSetup[T <: Extension](extId: ExtensionId[T], createExtension: ActorSystem[_] => T)
+    extends ExtensionSetup[T](extId, new java.util.function.Function[ActorSystem[_], T] {
+      override def apply(sys: ActorSystem[_]): T = createExtension.apply(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12

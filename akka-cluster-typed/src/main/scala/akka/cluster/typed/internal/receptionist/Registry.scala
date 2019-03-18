@@ -19,7 +19,7 @@ import scala.concurrent.duration.Deadline
  */
 @InternalApi private[akka] object ShardedServiceRegistry {
   def apply(numberOfKeys: Int): ShardedServiceRegistry = {
-    val emptyRegistries = (0 until numberOfKeys).map { n ⇒
+    val emptyRegistries = (0 until numberOfKeys).map { n =>
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
@@ -38,8 +38,8 @@ import scala.concurrent.duration.Deadline
  * INTERNAL API
  */
 @InternalApi private[akka] final case class ShardedServiceRegistry(
-  serviceRegistries: Map[DDataKey, ServiceRegistry],
-  tombstones:        Map[ActorRef[_], Deadline]) {
+    serviceRegistries: Map[DDataKey, ServiceRegistry],
+    tombstones: Map[ActorRef[_], Deadline]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -66,7 +66,7 @@ import scala.concurrent.duration.Deadline
   def allUniqueAddressesInState(selfUniqueAddress: UniqueAddress): Set[UniqueAddress] =
     allEntries.collect {
       // we don't care about local (empty host:port addresses)
-      case entry if entry.ref.path.address.hasGlobalScope ⇒
+      case entry if entry.ref.path.address.hasGlobalScope =>
         entry.uniqueAddress(selfUniqueAddress)
     }.toSet
 
@@ -75,9 +75,10 @@ import scala.concurrent.duration.Deadline
     ServiceRegistry.collectChangedKeys(previousRegistry, newRegistry)
   }
 
-  def entriesPerDdataKey(entries: Map[AbstractServiceKey, Set[Entry]]): Map[DDataKey, Map[AbstractServiceKey, Set[Entry]]] =
+  def entriesPerDdataKey(
+      entries: Map[AbstractServiceKey, Set[Entry]]): Map[DDataKey, Map[AbstractServiceKey, Set[Entry]]] =
     entries.foldLeft(Map.empty[DDataKey, Map[AbstractServiceKey, Set[Entry]]]) {
-      case (acc, (key, entries)) ⇒
+      case (acc, (key, entries)) =>
         val ddataKey = ddataKeyFor(key.asServiceKey)
         val updated = acc.getOrElse(ddataKey, Map.empty) + (key -> entries)
         acc + (ddataKey -> updated)
@@ -91,7 +92,7 @@ import scala.concurrent.duration.Deadline
 
   def pruneTombstones(): ShardedServiceRegistry = {
     copy(tombstones = tombstones.filter {
-      case (_, deadline) ⇒ deadline.hasTimeLeft
+      case (_, deadline) => deadline.hasTimeLeft
     })
   }
 
@@ -117,9 +118,9 @@ import scala.concurrent.duration.Deadline
 
   def removeAll(entries: Map[AbstractServiceKey, Set[Entry]])(implicit node: SelfUniqueAddress): ServiceRegistry = {
     entries.foldLeft(this) {
-      case (acc, (key, entries)) ⇒
+      case (acc, (key, entries)) =>
         entries.foldLeft(acc) {
-          case (innerAcc, entry) ⇒
+          case (innerAcc, entry) =>
             innerAcc.removeBinding[key.Protocol](key.asServiceKey, entry)
         }
     }
@@ -137,7 +138,7 @@ import scala.concurrent.duration.Deadline
 
   def collectChangedKeys(previousRegistry: ServiceRegistry, newRegistry: ServiceRegistry): Set[AbstractServiceKey] = {
     val allKeys = previousRegistry.toORMultiMap.entries.keySet ++ newRegistry.toORMultiMap.entries.keySet
-    allKeys.foldLeft(Set.empty[AbstractServiceKey]) { (acc, key) ⇒
+    allKeys.foldLeft(Set.empty[AbstractServiceKey]) { (acc, key) =>
       val oldValues = previousRegistry.entriesFor(key)
       val newValues = newRegistry.entriesFor(key)
       if (oldValues != newValues) acc + key

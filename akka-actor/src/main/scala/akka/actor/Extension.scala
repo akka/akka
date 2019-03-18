@@ -112,6 +112,7 @@ abstract class AbstractExtensionId[T <: Extension] extends ExtensionId[T]
  * The lookup method should return the canonical reference to the extension.
  */
 trait ExtensionIdProvider {
+
   /**
    * Returns the canonical ExtensionId for this Extension
    */
@@ -152,5 +153,6 @@ abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends Ext
   def this(clazz: Class[T]) = this()(ClassTag(clazz))
 
   override def lookup(): ExtensionId[T] = this
-  def createExtension(system: ExtendedActorSystem): T = system.dynamicAccess.createInstanceFor[T](m.runtimeClass, List(classOf[ExtendedActorSystem] → system)).get
+  def createExtension(system: ExtendedActorSystem): T =
+    system.dynamicAccess.createInstanceFor[T](m.runtimeClass, List(classOf[ExtendedActorSystem] -> system)).get
 }

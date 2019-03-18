@@ -58,8 +58,8 @@ lazy val root = Project(
  .settings(rootSettings: _*)
  .settings(unidocRootIgnoreProjects :=
    (CrossVersion.partialVersion(scalaVersion.value) match {
-     case Some((2, n)) if n == 11 ⇒ aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
-     case _                       ⇒ Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs)
+     case Some((2, n)) if n == 11 => aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
+     case _                       => Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs)
    }),
    crossScalaVersions := Nil, // Allows some modules (typed) to be only for 2.12 sbt/sbt#3465
  )
@@ -235,10 +235,10 @@ lazy val docs = akkaModule("akka-docs")
   .settings(Dependencies.docs)
   .settings(
     name in (Compile, paradox) := "Akka",
-    paradoxProperties ++= Map(
-      "akka.canonical.base_url" -> "http://doc.akka.io/docs/akka/current",
+    Compile / paradoxProperties ++= Map(
+      "canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
       "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
-      "extref.akka.http.base_url" -> "http://doc.akka.io/docs/akka-http/current/%s",
+      "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
       "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
       "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
@@ -246,7 +246,7 @@ lazy val docs = akkaModule("akka-docs")
       "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
       "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
       "javadoc.akka.base_url" -> "https://doc.akka.io/japi/akka/2.5",
-      "javadoc.akka.http.base_url" -> "http://doc.akka.io/japi/akka-http/current",
+      "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
       "scala.version" -> scalaVersion.value,
       "scala.binary_version" -> scalaBinaryVersion.value,
       "akka.version" -> version.value,
@@ -259,7 +259,7 @@ lazy val docs = akkaModule("akka-docs")
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
@@ -522,9 +522,9 @@ lazy val discovery = akkaModule("akka-discovery")
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
+    .enablePlugins(ReproducibleBuildsPlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
-    .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
 
 /* Command aliases one can run locally against a module
@@ -534,7 +534,8 @@ def akkaModule(name: String): Project =
 def commandValue(p: Project, externalTest: Option[Project] = None) = {
   val test = externalTest.getOrElse(p)
   val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
-  s";${test.id}/test:compile$optionalMima;${docs.id}/paradox"
+  val optionalExternalTestFormat = externalTest.map(t => s";${t.id}/scalafmtAll").getOrElse("")
+  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox;${test.id}:validateCompile"
 }
 addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))

@@ -4,10 +4,10 @@
 
 package akka.pattern
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.pattern.TestActor.NormalException
-import akka.testkit.{ ImplicitSender, AkkaSpec, TestProbe, filterException }
+import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
 import scala.concurrent.duration._
 import akka.actor._
 import scala.language.postfixOps
@@ -28,11 +28,11 @@ class TestActor(probe: ActorRef) extends Actor {
   probe ! "STARTED"
 
   def receive = {
-    case "DIE"                      ⇒ context.stop(self)
-    case "THROW"                    ⇒ throw new TestActor.NormalException
-    case "THROW_STOPPING_EXCEPTION" ⇒ throw new TestActor.StoppingException
-    case ("TO_PARENT", msg)         ⇒ context.parent ! msg
-    case other                      ⇒ probe ! other
+    case "DIE"                      => context.stop(self)
+    case "THROW"                    => throw new TestActor.NormalException
+    case "THROW_STOPPING_EXCEPTION" => throw new TestActor.StoppingException
+    case ("TO_PARENT", msg)         => context.parent ! msg
+    case other                      => probe ! other
   }
 }
 
@@ -45,16 +45,17 @@ class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   val supervisor = context.actorOf(supervisorProps)
 
   def receive = {
-    case other ⇒ probe.forward(other)
+    case other => probe.forward(other)
   }
 }
 
 class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
-    val options = Backoff.onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
+    val options = Backoff
+      .onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
       .withSupervisorStrategy(OneForOneStrategy(maxNrOfRetries = 4, withinTimeRange = 30 seconds) {
-        case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+        case _: TestActor.StoppingException => SupervisorStrategy.Stop
       })
     BackoffSupervisor.props(options)
   }
@@ -125,10 +126,10 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     class SlowlyFailingActor(latch: CountDownLatch) extends Actor {
       def receive = {
-        case "THROW" ⇒
+        case "THROW" =>
           sender ! "THROWN"
           throw new NormalException
-        case "PING" ⇒
+        case "PING" =>
           sender ! "PONG"
       }
 
@@ -139,9 +140,16 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "accept commands while child is terminating" in {
       val postStopLatch = new CountDownLatch(1)
-      val options = Backoff.onFailure(Props(new SlowlyFailingActor(postStopLatch)), "someChildName", 1 nanos, 1 nanos, 0.0, maxNrOfRetries = -1)
+      val options = Backoff
+        .onFailure(
+          Props(new SlowlyFailingActor(postStopLatch)),
+          "someChildName",
+          1 nanos,
+          1 nanos,
+          0.0,
+          maxNrOfRetries = -1)
         .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
-          case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+          case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
 
@@ -179,7 +187,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       filterException[TestActor.TestException] {
         probe.watch(supervisor)
         // Have the child throw an exception 5 times, which is more than the max restarts allowed.
-        for (i ← 1 to 5) {
+        for (i <- 1 to 5) {
           supervisor ! "THROW"
           if (i < 5) {
             // Since we should've died on this throw, don't expect to be started.
@@ -197,16 +205,17 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       // withinTimeRange indicates the time range in which maxNrOfRetries will cause the child to
       // stop. IE: If we restart more than maxNrOfRetries in a time range longer than withinTimeRange
       // that is acceptable.
-      val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
+      val options = Backoff
+        .onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
         .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
-          case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+          case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
       probe.expectMsg("STARTED")
       filterException[TestActor.TestException] {
         probe.watch(supervisor)
         // Throw three times rapidly
-        for (_ ← 1 to 3) {
+        for (_ <- 1 to 3) {
           supervisor ! "THROW"
           probe.expectMsg("STARTED")
         }

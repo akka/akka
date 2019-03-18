@@ -5,7 +5,7 @@
 package akka.compat
 
 import akka.annotation.InternalApi
-import scala.concurrent.{ ExecutionContext, Future ⇒ SFuture }
+import scala.concurrent.{ ExecutionContext, Future => SFuture }
 import scala.collection.immutable
 import akka.util.ccompat._
 
@@ -18,22 +18,27 @@ import akka.util.ccompat._
  * Remove these classes as soon as support for Scala 2.11 is dropped!
  */
 @InternalApi private[akka] object Future {
-  def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.fold[T, R](futures)(zero)(op)(executor)
 
-  def fold[T, R](futures: immutable.Iterable[SFuture[T]])(zero: R)(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def fold[T, R](futures: immutable.Iterable[SFuture[T]])(zero: R)(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.foldLeft[T, R](futures)(zero)(op)(executor)
 
-  def reduce[T, R >: T](futures: IterableOnce[SFuture[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def reduce[T, R >: T](futures: IterableOnce[SFuture[T]])(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.reduce[T, R](futures)(op)(executor)
 
-  def reduce[T, R >: T](futures: immutable.Iterable[SFuture[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def reduce[T, R >: T](futures: immutable.Iterable[SFuture[T]])(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.reduceLeft[T, R](futures)(op)(executor)
 
-  def find[T](futures: IterableOnce[SFuture[T]])(p: T ⇒ Boolean)(implicit executor: ExecutionContext): SFuture[Option[T]] =
+  def find[T](futures: IterableOnce[SFuture[T]])(p: T => Boolean)(
+      implicit executor: ExecutionContext): SFuture[Option[T]] =
     SFuture.find[T](futures)(p)(executor)
 
-  def find[T](futures: immutable.Iterable[SFuture[T]])(p: T ⇒ Boolean)(implicit executor: ExecutionContext): SFuture[Option[T]] =
+  def find[T](futures: immutable.Iterable[SFuture[T]])(p: T => Boolean)(
+      implicit executor: ExecutionContext): SFuture[Option[T]] =
     SFuture.find[T](futures)(p)(executor)
 }
-

@@ -17,13 +17,13 @@ import akka.stream.stage._
  * INTERNAL API
  */
 @InternalApi private[akka] class ActorRefBackpressureSinkStage[In](
-  ref:               ActorRef,
-  messageAdapter:    ActorRef ⇒ In ⇒ Any,
-  onInitMessage:     ActorRef ⇒ Any,
-  ackMessage:        Any,
-  onCompleteMessage: Any,
-  onFailureMessage:  (Throwable) ⇒ Any)
-  extends GraphStage[SinkShape[In]] {
+    ref: ActorRef,
+    messageAdapter: ActorRef => In => Any,
+    onInitMessage: ActorRef => Any,
+    ackMessage: Any,
+    onCompleteMessage: Any,
+    onFailureMessage: (Throwable) => Any)
+    extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
   override def initialAttributes = DefaultAttributes.actorRefWithAck
   override val shape: SinkShape[In] = SinkShape(in)
@@ -42,7 +42,7 @@ import akka.stream.stage._
 
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
-          case `ackMessage` ⇒ {
+          case `ackMessage` => {
             if (buffer.isEmpty) acknowledgementReceived = true
             else {
               // onPush might have filled the buffer up and
@@ -51,8 +51,8 @@ import akka.stream.stage._
               dequeueAndSend()
             }
           }
-          case Terminated(`ref`) ⇒ completeStage()
-          case _                 ⇒ //ignore all other messages
+          case Terminated(`ref`) => completeStage()
+          case _                 => //ignore all other messages
         }
       }
 
@@ -75,7 +75,7 @@ import akka.stream.stage._
       }
 
       def onPush(): Unit = {
-        buffer offer grab(in)
+        buffer.offer(grab(in))
         if (acknowledgementReceived) {
           dequeueAndSend()
           acknowledgementReceived = false

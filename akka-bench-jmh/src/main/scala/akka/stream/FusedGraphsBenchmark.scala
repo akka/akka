@@ -29,18 +29,19 @@ class TestSource(elems: Array[MutableElement]) extends GraphStage[SourceShape[Mu
   val out = Outlet[MutableElement]("TestSource.out")
   override val shape = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
-    private[this] var left = FusedGraphsBenchmark.ElementCount - 1
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      private[this] var left = FusedGraphsBenchmark.ElementCount - 1
 
-    override def onPull(): Unit = {
-      if (left >= 0) {
-        push(out, elems(left))
-        left -= 1
-      } else completeStage()
+      override def onPull(): Unit = {
+        if (left >= 0) {
+          push(out, elems(left))
+          left -= 1
+        } else completeStage()
+      }
+
+      setHandler(out, this)
     }
-
-    setHandler(out, this)
-  }
 }
 
 class JitSafeCompletionLatch extends GraphStageWithMaterializedValue[SinkShape[MutableElement], CountDownLatch] {
@@ -77,12 +78,13 @@ class IdentityStage extends GraphStage[FlowShape[MutableElement, MutableElement]
   val out = Outlet[MutableElement]("Identity.out")
   override val shape = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-    override def onPush(): Unit = push(out, grab(in))
-    override def onPull(): Unit = pull(in)
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = push(out, grab(in))
+      override def onPull(): Unit = pull(in)
 
-    setHandlers(in, out, this)
-  }
+      setHandlers(in, out, this)
+    }
 }
 
 @State(Scope.Benchmark)
@@ -115,7 +117,7 @@ class FusedGraphsBenchmark {
 
     materializer = ActorMaterializer(settings)
     testElements = Array.fill(ElementCount)(new MutableElement(0))
-    val addFunc = (x: MutableElement) ⇒ { x.value += 1; x }
+    val addFunc = (x: MutableElement) => { x.value += 1; x }
 
     val testSource = Source.fromGraph(new TestSource(testElements))
     val testSink = Sink.fromGraph(new JitSafeCompletionLatch)
@@ -126,130 +128,94 @@ class FusedGraphsBenchmark {
 
     val identityStage = new IdentityStage
 
-    singleIdentity =
-      fuse(
-        testSource
-          .via(identityStage)
-          .toMat(testSink)(Keep.right)
-      )
+    singleIdentity = fuse(testSource.via(identityStage).toMat(testSink)(Keep.right))
 
-    chainOfIdentities =
-      fuse(
-        testSource
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .via(identityStage)
-          .toMat(testSink)(Keep.right)
-      )
+    chainOfIdentities = fuse(
+      testSource
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .via(identityStage)
+        .toMat(testSink)(Keep.right))
 
-    singleMap =
-      fuse(
-        testSource
-          .map(addFunc)
-          .toMat(testSink)(Keep.right)
-      )
+    singleMap = fuse(testSource.map(addFunc).toMat(testSink)(Keep.right))
 
-    chainOfMaps =
-      fuse(
-        testSource
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .map(addFunc)
-          .toMat(testSink)(Keep.right)
-      )
+    chainOfMaps = fuse(
+      testSource
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .map(addFunc)
+        .toMat(testSink)(Keep.right))
 
-    repeatTakeMapAndFold =
-      fuse(
-        Source.repeat(new MutableElement(0))
-          .take(ElementCount)
-          .map(addFunc)
-          .map(addFunc)
-          .fold(new MutableElement(0))((acc, x) ⇒ { acc.value += x.value; acc })
-          .toMat(testSink)(Keep.right)
-      )
+    repeatTakeMapAndFold = fuse(
+      Source
+        .repeat(new MutableElement(0))
+        .take(ElementCount)
+        .map(addFunc)
+        .map(addFunc)
+        .fold(new MutableElement(0))((acc, x) => { acc.value += x.value; acc })
+        .toMat(testSink)(Keep.right))
 
-    singleBuffer =
-      fuse(
-        testSource
-          .buffer(10, OverflowStrategy.backpressure)
-          .toMat(testSink)(Keep.right)
-      )
+    singleBuffer = fuse(testSource.buffer(10, OverflowStrategy.backpressure).toMat(testSink)(Keep.right))
 
-    chainOfBuffers =
-      fuse(
-        testSource
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .buffer(10, OverflowStrategy.backpressure)
-          .toMat(testSink)(Keep.right)
-      )
+    chainOfBuffers = fuse(
+      testSource
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .buffer(10, OverflowStrategy.backpressure)
+        .toMat(testSink)(Keep.right))
 
-    val broadcastZipFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
+    val broadcastZipFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() {
+      implicit b =>
+        import GraphDSL.Implicits._
 
-      val bcast = b.add(Broadcast[MutableElement](2))
-      val zip = b.add(Zip[MutableElement, MutableElement]())
+        val bcast = b.add(Broadcast[MutableElement](2))
+        val zip = b.add(Zip[MutableElement, MutableElement]())
 
-      bcast ~> zip.in0
-      bcast ~> zip.in1
+        bcast ~> zip.in0
+        bcast ~> zip.in1
 
-      FlowShape(bcast.in, zip.out.map(_._1).outlet)
+        FlowShape(bcast.in, zip.out.map(_._1).outlet)
     })
 
-    val balanceMergeFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
+    val balanceMergeFlow: Flow[MutableElement, MutableElement, NotUsed] = Flow.fromGraph(GraphDSL.create() {
+      implicit b =>
+        import GraphDSL.Implicits._
 
-      val balance = b.add(Balance[MutableElement](2))
-      val merge = b.add(Merge[MutableElement](2))
+        val balance = b.add(Balance[MutableElement](2))
+        val merge = b.add(Merge[MutableElement](2))
 
-      balance ~> merge
-      balance ~> merge
+        balance ~> merge
+        balance ~> merge
 
-      FlowShape(balance.in, merge.out)
+        FlowShape(balance.in, merge.out)
     })
 
-    broadcastZip =
-      fuse(
-        testSource
-          .via(broadcastZipFlow)
-          .toMat(testSink)(Keep.right)
-      )
+    broadcastZip = fuse(testSource.via(broadcastZipFlow).toMat(testSink)(Keep.right))
 
-    balanceMerge =
-      fuse(
-        testSource
-          .via(balanceMergeFlow)
-          .toMat(testSink)(Keep.right)
-      )
+    balanceMerge = fuse(testSource.via(balanceMergeFlow).toMat(testSink)(Keep.right))
 
-    broadcastZipBalanceMerge =
-      fuse(
-        testSource
-          .via(broadcastZipFlow)
-          .via(balanceMergeFlow)
-          .toMat(testSink)(Keep.right)
-      )
+    broadcastZipBalanceMerge = fuse(testSource.via(broadcastZipFlow).via(balanceMergeFlow).toMat(testSink)(Keep.right))
   }
 
   @Benchmark

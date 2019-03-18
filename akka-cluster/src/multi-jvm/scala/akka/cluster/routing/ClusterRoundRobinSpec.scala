@@ -33,7 +33,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
     def this() = this(PoolRoutee)
 
     def receive = {
-      case "hit" ⇒ sender() ! Reply(routeeType, self)
+      case "hit" => sender() ! Reply(routeeType, self)
     }
   }
 
@@ -48,8 +48,10 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(
+        ConfigFactory.parseString("""
       akka.actor {
         allow-java-serialization = off
         serialize-creators = off
@@ -92,8 +94,8 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
           }
         }
       }
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles =["a", "c"]"""))
   nodeConfig(third)(ConfigFactory.parseString("""akka.cluster.roles =["b", "c"]"""))
@@ -107,28 +109,30 @@ class ClusterRoundRobinMultiJvmNode2 extends ClusterRoundRobinSpec
 class ClusterRoundRobinMultiJvmNode3 extends ClusterRoundRobinSpec
 class ClusterRoundRobinMultiJvmNode4 extends ClusterRoundRobinSpec
 
-abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with DefaultTimeout {
+abstract class ClusterRoundRobinSpec
+    extends MultiNodeSpec(ClusterRoundRobinMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with DefaultTimeout {
   import ClusterRoundRobinMultiJvmSpec._
 
   lazy val router1 = system.actorOf(FromConfig.props(Props[SomeActor]), "router1")
   lazy val router2 = system.actorOf(
     ClusterRouterPool(
       RoundRobinPool(nrOfInstances = 0),
-      ClusterRouterPoolSettings(totalInstances = 3, maxInstancesPerNode = 1, allowLocalRoutees = true)).
-      props(Props[SomeActor]),
+      ClusterRouterPoolSettings(totalInstances = 3, maxInstancesPerNode = 1, allowLocalRoutees = true))
+      .props(Props[SomeActor]),
     "router2")
   lazy val router3 = system.actorOf(FromConfig.props(Props[SomeActor]), "router3")
   lazy val router4 = system.actorOf(FromConfig.props(), "router4")
   lazy val router5 = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "router5")
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
-    val zero = Map.empty[Address, Int] ++ roles.map(address(_) → 0)
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
     (receiveWhile(5 seconds, messages = expectedReplies) {
-      case Reply(`routeeType`, ref) ⇒ fullAddress(ref)
+      case Reply(`routeeType`, ref) => fullAddress(ref)
     }).foldLeft(zero) {
-      case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+      case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
     }
   }
 
@@ -136,8 +140,8 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
    * Fills in self address for local ActorRef
    */
   private def fullAddress(actorRef: ActorRef): Address = actorRef.path.address match {
-    case Address(_, _, None, None) ⇒ cluster.selfAddress
-    case a                         ⇒ a
+    case Address(_, _, None, None) => cluster.selfAddress
+    case a                         => a
   }
 
   def currentRoutees(router: ActorRef) =
@@ -158,7 +162,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router1).size should ===(4))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router1 ! "hit"
         }
 
@@ -189,7 +193,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         }
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router4 ! "hit"
         }
 
@@ -215,7 +219,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router1).size should ===(8))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router1 ! "hit"
         }
 
@@ -237,7 +241,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router4).size should ===(8))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router4 ! "hit"
         }
 
@@ -257,7 +261,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router3).size should ===(3))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router3 ! "hit"
         }
 
@@ -279,7 +283,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router5).size should ===(2))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router5 ! "hit"
         }
 
@@ -304,7 +308,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         awaitAssert(currentRoutees(router2).size should ===(3))
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router2 ! "hit"
         }
 
@@ -312,7 +316,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
 
         // note that router2 has totalInstances = 3, maxInstancesPerNode = 1
         val routees = currentRoutees(router2)
-        val routeeAddresses = routees map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }
+        val routeeAddresses = routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }
 
         routeeAddresses.size should ===(3)
         replies.values.sum should ===(iterationCount)
@@ -326,7 +330,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
       // myservice is already running
 
       def routees = currentRoutees(router4)
-      def routeeAddresses = (routees map { case ActorSelectionRoutee(sel) ⇒ fullAddress(sel.anchor) }).toSet
+      def routeeAddresses = routees.map { case ActorSelectionRoutee(sel) => fullAddress(sel.anchor) }.toSet
 
       runOn(first) {
         // 4 nodes, 2 routees on each node
@@ -351,13 +355,13 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
 
       runOn(first) {
         def routees = currentRoutees(router2)
-        def routeeAddresses = (routees map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }).toSet
+        def routeeAddresses = routees.map { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet
 
-        routees foreach { case ActorRefRoutee(ref) ⇒ watch(ref) }
-        val notUsedAddress = ((roles map address).toSet diff routeeAddresses).head
+        routees.foreach { case ActorRefRoutee(ref) => watch(ref) }
+        val notUsedAddress = roles.map(address).toSet.diff(routeeAddresses).head
         val downAddress = routeeAddresses.find(_ != address(first)).get
         val downRouteeRef = routees.collectFirst {
-          case ActorRefRoutee(ref) if ref.path.address == downAddress ⇒ ref
+          case ActorRefRoutee(ref) if ref.path.address == downAddress => ref
         }.get
 
         cluster.down(downAddress)
@@ -368,7 +372,7 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
         }
 
         val iterationCount = 10
-        for (i ← 0 until iterationCount) {
+        for (i <- 0 until iterationCount) {
           router2 ! "hit"
         }
 

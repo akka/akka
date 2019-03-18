@@ -22,8 +22,9 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.retry-gate-closed-for  = 1d # Keep it long
@@ -33,8 +34,8 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case msg        ⇒ sender() ! msg
+      case "shutdown" => context.system.terminate()
+      case msg        => sender() ! msg
     }
   }
 
@@ -43,8 +44,7 @@ object RemoteNodeRestartGateSpec extends MultiNodeConfig {
 class RemoteNodeRestartGateSpecMultiJvmNode1 extends RemoteNodeRestartGateSpec
 class RemoteNodeRestartGateSpecMultiJvmNode2 extends RemoteNodeRestartGateSpec
 
-abstract class RemoteNodeRestartGateSpec
-  extends RemotingMultiNodeSpec(RemoteNodeRestartGateSpec) {
+abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNodeRestartGateSpec) {
 
   import RemoteNodeRestartGateSpec._
 
@@ -68,8 +68,10 @@ abstract class RemoteNodeRestartGateSpec
         identify(second, "subject")
 
         EventFilter.warning(pattern = "address is now gated", occurrences = 1).intercept {
-          Await.result(RARP(system).provider.transport.managementCommand(
-            ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)), 3.seconds)
+          Await.result(
+            RARP(system).provider.transport
+              .managementCommand(ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)),
+            3.seconds)
         }
 
         enterBarrier("gated")
@@ -94,7 +96,9 @@ abstract class RemoteNodeRestartGateSpec
 
         Await.ready(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
                     akka.remote.netty.tcp {
                       hostname = ${address.host.get}
@@ -107,7 +111,9 @@ abstract class RemoteNodeRestartGateSpec
         // Pierce the gate
         within(30.seconds) {
           awaitAssert {
-            freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
+            freshSystem
+              .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
+              .tell(Identify("subject"), probe.ref)
             probe.expectMsgType[ActorIdentity].ref.get
           }
         }
