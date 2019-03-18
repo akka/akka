@@ -18,22 +18,13 @@ import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
 
-/**
- * Actions in this trait support interactions with the event log itself,
- * which supports replay and recovery. We replay events, for example,
- * when algorithms change and data/events need to be re-run against them,
- * or on failure and recovery.
- *
- * INTERNAL API
- */
+/** INTERNAL API */
 @InternalApi
-private[akka] trait EventLog[C, E, S] {
+private[akka] trait JournalInteractions[C, E, S] {
 
   def setup: BehaviorSetup[C, E, S]
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
-
-  // ---------- journal interactions ---------
 
   protected def internalPersist(state: Running.RunningState[S], event: EventOrTagged): Running.RunningState[S] = {
 
@@ -135,8 +126,13 @@ private[akka] trait EventLog[C, E, S] {
             toSequenceNr)
       }
     }
+}
 
-  // ---------- snapshot store interactions ---------
+/** INTERNAL API */
+@InternalApi
+private[akka] trait SnapshotInteractions[C, E, S] {
+
+  def setup: BehaviorSetup[C, E, S]
 
   /**
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
