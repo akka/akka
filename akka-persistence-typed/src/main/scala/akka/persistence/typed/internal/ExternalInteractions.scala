@@ -26,8 +26,6 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
-  // ---------- journal interactions ---------
-
   protected def internalPersist(state: Running.RunningState[S], event: EventOrTagged): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
@@ -128,8 +126,13 @@ private[akka] trait JournalInteractions[C, E, S] {
             toSequenceNr)
       }
     }
+}
 
-  // ---------- snapshot store interactions ---------
+/** INTERNAL API */
+@InternalApi
+private[akka] trait SnapshotInteractions[C, E, S] {
+
+  def setup: BehaviorSetup[C, E, S]
 
   /**
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]

@@ -9,7 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl._
 import akka.testkit.EventFilter
 import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.{Matchers, WordSpec, WordSpecLike}
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object OrElseStubbedSpec {
 
@@ -167,22 +167,22 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
 
     }
 
-
     "pass unhandled Terminated along" in {
       val probe = TestProbe[String]()
       spawn(Behaviors.setup[String] { ctx =>
-
         // arrange with a deathwatch triggering
         ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
 
-        Behaviors.receiveSignal[String] {
-          case (_, PreRestart) =>
-            Behaviors.same
-        }.orElse(Behaviors.receiveSignal {
-          case (_, Terminated(_)) =>
-            probe.ref ! "orElse saw it"
-            Behaviors.same
-        })
+        Behaviors
+          .receiveSignal[String] {
+            case (_, PreRestart) =>
+              Behaviors.same
+          }
+          .orElse(Behaviors.receiveSignal {
+            case (_, Terminated(_)) =>
+              probe.ref ! "orElse saw it"
+              Behaviors.same
+          })
       })
 
       probe.expectMessage("orElse saw it")
@@ -194,15 +194,16 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
       val ref =
         EventFilter[DeathPactException](occurrences = 1).intercept {
           spawn(Behaviors.setup[String] { ctx =>
-
             // arrange with a deathwatch triggering
             ctx.watch(ctx.spawnAnonymous(Behavior.stopped[String]))
 
-              Behaviors.receiveSignal[String] {
+            Behaviors
+              .receiveSignal[String] {
                 case (_, Terminated(_)) =>
                   probe.ref ! "first handler saw it"
                   Behavior.unhandled
-              }.orElse(Behaviors.receiveSignal {
+              }
+              .orElse(Behaviors.receiveSignal {
                 case (_, Terminated(_)) =>
                   probe.ref ! "second handler saw it"
                   Behavior.unhandled
@@ -214,7 +215,6 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("second handler saw it")
       probe.expectTerminated(ref)
     }
-
 
   }
 
