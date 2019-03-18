@@ -69,7 +69,7 @@ object ReplicatorSpec {
             case GetValue(replyTo) =>
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Behaviors.same
-            
+
             case GetCachedValue(replyTo) =>
               replyTo ! cachedValue
               Behaviors.same
