@@ -199,8 +199,8 @@ class PNCounterSpec extends WordSpec with Matchers {
           val PNCounter(value3) = c.dataValue
           val value4: BigInt = value3
           value4 should be(1L)
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

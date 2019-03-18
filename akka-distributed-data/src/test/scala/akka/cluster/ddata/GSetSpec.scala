@@ -151,8 +151,8 @@ class GSetSpec extends WordSpec with Matchers {
           val GSet(elements3) = c.dataValue
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

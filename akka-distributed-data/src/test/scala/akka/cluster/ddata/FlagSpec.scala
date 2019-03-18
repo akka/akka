@@ -41,8 +41,8 @@ class FlagSpec extends WordSpec with Matchers {
           val Flag(value3) = c.dataValue
           val value4: Boolean = value3
           value4 should be(true)
-        case _ =>
-          fail("Failed to match ")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
   }

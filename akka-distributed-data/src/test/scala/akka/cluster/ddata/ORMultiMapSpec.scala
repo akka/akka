@@ -562,8 +562,8 @@ class ORMultiMapSpec extends WordSpec with Matchers {
         val ORMultiMap(entries3) = c.dataValue
         val entries4: Map[String, Set[Long]] = entries3
         entries4 should be(Map("a" -> Set(1L, 2L), "b" -> Set(3L)))
-      case _ =>
-        fail("Failed to match")
+      case changed =>
+        fail(s"Failed to match [$changed]")
     }
   }
 }

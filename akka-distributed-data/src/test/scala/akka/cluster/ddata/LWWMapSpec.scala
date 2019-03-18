@@ -79,8 +79,8 @@ class LWWMapSpec extends WordSpec with Matchers {
           val LWWMap(entries3) = c.dataValue
           val entries4: Map[String, Long] = entries3
           entries4 should be(Map("a" -> 1L))
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

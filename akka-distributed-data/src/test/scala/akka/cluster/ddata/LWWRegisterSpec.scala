@@ -78,8 +78,8 @@ class LWWRegisterSpec extends WordSpec with Matchers {
           val LWWRegister(value3) = c.dataValue
           val value4: String = value3
           value4 should be("a")
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

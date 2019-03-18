@@ -611,8 +611,8 @@ class ORSetSpec extends WordSpec with Matchers {
           val ORSet(elements3) = c.dataValue
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
 
       val msg: Any = Changed(ORSetKey[String]("key"))(s1)
@@ -624,8 +624,8 @@ class ORSetSpec extends WordSpec with Matchers {
           //   but trait Set is invariant in type A. You may wish to investigate a wildcard type such as _ <: Any. (SLS 3.2.10)
           val elements4: Set[Any] = elements3
           elements4 should be(Set("a", "b"))
-        case _ =>
-          fail("Failed to match")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 
