@@ -81,7 +81,7 @@ private[akka] object Running {
 
 /** INTERNAL API */
 @InternalApi private[akka] final class Running[C, E, S](override val setup: BehaviorSetup[C, E, S])
-    extends JournalInteractions[C, E, S]
+    extends EventLog[C, E, S]
     with StashManagement[C, E, S] {
   import InternalProtocol._
   import Running.RunningState

@@ -18,9 +18,16 @@ import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
 
-/** INTERNAL API */
+/**
+ * Actions in this trait support interactions with the event log itself,
+ * which supports replay and recovery. We replay events, for example,
+ * when algorithms change and data/events need to be re-run against them,
+ * or on failure and recovery.
+ *
+ * INTERNAL API
+ */
 @InternalApi
-private[akka] trait JournalInteractions[C, E, S] {
+private[akka] trait EventLog[C, E, S] {
 
   def setup: BehaviorSetup[C, E, S]
 
