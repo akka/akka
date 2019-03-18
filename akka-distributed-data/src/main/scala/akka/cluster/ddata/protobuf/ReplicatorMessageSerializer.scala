@@ -332,7 +332,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     }
 
     val timoutInMillis = get.consistency.timeout.toMillis
-    require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in an 32-bit unsigned int")
+    require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
 
     val b = dm.Get
       .newBuilder()
