@@ -23,8 +23,8 @@ import org.scalatest.time.{ Millis, Span }
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
       akka {
-        loggers = ["akka.testkit.TestEventListener"]
-        loglevel = "WARNING"
+        loggers = ["akka.testkit.SilenceAllTestEventListener"]
+        loglevel = "DEBUG"
         stdout-loglevel = "WARNING"
         actor {
           default-dispatcher {
@@ -65,7 +65,8 @@ abstract class AkkaSpec(_system: ActorSystem)
     with BeforeAndAfterAll
     with WatchedByCoroner
     with TypeCheckedTripleEquals
-    with ScalaFutures {
+    with ScalaFutures
+    with WithLogCapturing {
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 

@@ -17,7 +17,7 @@ import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
   implicit def system: ActorSystem
 
-  abstract override def withFixture(test: NoArgTest): Outcome = {
+  abstract protected override def withFixture(test: NoArgTest): Outcome = {
     // When filtering just collects events into this var (yeah, it's a hack to do that in a filter).
     // We assume that the filter will always ever be used from a single actor, so a regular var should be fine.
     var events: List[LogEvent] = Nil
