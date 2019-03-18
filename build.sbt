@@ -516,6 +516,7 @@ lazy val discovery = akkaModule("akka-discovery")
     testkit % "test->test",
     actorTests % "test->test"
   )
+  .settings(AkkaBuild.strictSettings)
   .settings(Dependencies.discovery)
   .settings(AutomaticModuleName.settings("akka.discovery"))
   .settings(OSGi.discovery)
