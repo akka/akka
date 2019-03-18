@@ -21,8 +21,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   }
 
   def toProtobufThrowable(t: Throwable): ContainerFormats.Throwable.Builder = {
-    val b = ContainerFormats.Throwable.newBuilder()
-      .setClassName(t.getClass.getName)
+    val b = ContainerFormats.Throwable.newBuilder().setClassName(t.getClass.getName)
     if (t.getMessage != null)
       b.setMessage(t.getMessage)
     if (t.getCause != null)
@@ -40,7 +39,8 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   }
 
   def stackTraceElementBuilder(elem: StackTraceElement): ContainerFormats.StackTraceElement.Builder = {
-    val builder = ContainerFormats.StackTraceElement.newBuilder()
+    val builder = ContainerFormats.StackTraceElement
+      .newBuilder()
       .setClassName(elem.getClassName)
       .setMethodName(elem.getMethodName)
       .setLineNumber(elem.getLineNumber)
@@ -56,26 +56,29 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
     val t: Throwable =
       if (protoT.hasCause) {
         val cause = payloadSupport.deserializePayload(protoT.getCause).asInstanceOf[Throwable]
-        system.dynamicAccess.createInstanceFor[Throwable](
-          protoT.getClassName,
-          List(classOf[String] → protoT.getMessage, classOf[Throwable] → cause)).get
+        system.dynamicAccess
+          .createInstanceFor[Throwable](
+            protoT.getClassName,
+            List(classOf[String] -> protoT.getMessage, classOf[Throwable] -> cause))
+          .get
       } else {
         // Important security note: before creating an instance of from the class name we
         // check that the class is a Throwable and that it has a configured serializer.
         val clazz = system.dynamicAccess.getClassFor[Throwable](protoT.getClassName).get
         serialization.serializerFor(clazz) // this will throw NotSerializableException if no serializer configured
 
-        system.dynamicAccess.createInstanceFor[Throwable](
-          clazz,
-          List(classOf[String] → protoT.getMessage)).get
+        system.dynamicAccess.createInstanceFor[Throwable](clazz, List(classOf[String] -> protoT.getMessage)).get
       }
 
     import scala.collection.JavaConverters._
     val stackTrace =
-      protoT.getStackTraceList.asScala.map { elem ⇒
+      protoT.getStackTraceList.asScala.map { elem =>
         val fileName = elem.getFileName
-        new StackTraceElement(elem.getClassName, elem.getMethodName,
-          if (fileName.length > 0) fileName else null, elem.getLineNumber)
+        new StackTraceElement(
+          elem.getClassName,
+          elem.getMethodName,
+          if (fileName.length > 0) fileName else null,
+          elem.getLineNumber)
       }.toArray
     t.setStackTrace(stackTrace)
     t

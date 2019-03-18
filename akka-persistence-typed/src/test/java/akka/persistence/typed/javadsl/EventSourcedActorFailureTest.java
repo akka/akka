@@ -9,8 +9,12 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
+import akka.japi.function.Effect;
 import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.RecoveryFailed;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -39,13 +43,19 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   }
 
   @Override
-  public void onRecoveryCompleted(String s) {
-    probe.tell("starting");
-  }
-
-  @Override
-  public void onRecoveryFailure(Throwable failure) {
-    recoveryFailureProbe.tell(failure);
+  public SignalHandler signalHandler() {
+    return newSignalHandlerBuilder()
+        .onSignal(
+            RecoveryCompleted.class,
+            (recoveryCompleted) -> {
+              probe.tell("starting");
+            })
+        .onSignal(
+            RecoveryFailed.class,
+            (signal) -> {
+              recoveryFailureProbe.tell(signal.getFailure());
+            })
+        .build();
   }
 
   @Override

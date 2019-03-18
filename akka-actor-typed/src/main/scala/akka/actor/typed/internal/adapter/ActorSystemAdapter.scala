@@ -11,16 +11,17 @@ import java.util.concurrent.CompletionStage
 import akka.actor
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
+
 import scala.concurrent.ExecutionContextExecutor
-
 import akka.util.Timeout
+
 import scala.concurrent.Future
-
 import akka.annotation.InternalApi
-import scala.compat.java8.FutureConverters
 
+import scala.compat.java8.FutureConverters
 import akka.actor.ActorRefProvider
+import akka.event.LoggingFilterWithMarker
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -30,7 +31,11 @@ import akka.actor.ActorRefProvider
  * most circumstances.
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untypedSystem: untyped.ActorSystemImpl)
-  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] with ExtensionsImpl {
+    extends ActorSystem[T]
+    with ActorRef[T]
+    with internal.ActorRefImpl[T]
+    with internal.InternalRecipientRef[T]
+    with ExtensionsImpl {
 
   untypedSystem.assertInitialized()
 
@@ -52,7 +57,8 @@ import akka.actor.ActorRefProvider
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 
-  final override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
+  final override val path
+      : untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
 
   override def toString: String = untypedSystem.toString
 
@@ -61,14 +67,18 @@ import akka.actor.ActorRefProvider
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
-        case DispatcherDefault(_)         ⇒ untypedSystem.dispatcher
-        case DispatcherFromConfig(str, _) ⇒ untypedSystem.dispatchers.lookup(str)
+        case DispatcherDefault(_)         => untypedSystem.dispatcher
+        case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(untypedSystem.eventStream, getClass, name, untypedSystem.logFilter)
+  override val log: Logger = new LoggerAdapterImpl(
+    untypedSystem.eventStream,
+    getClass,
+    name,
+    LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
   override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler
@@ -81,14 +91,15 @@ import akka.actor.ActorRefProvider
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
   override def terminate(): scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untypedSystem.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
+    untypedSystem.terminate().map(t => Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
   override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untypedSystem.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
+    untypedSystem.whenTerminated.map(t => Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
   override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
     FutureConverters.toJava(whenTerminated)
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
-    val ref = untypedSystem.systemActorOf(PropsAdapter(() ⇒ behavior, props), name)
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
+      implicit timeout: Timeout): Future[ActorRef[U]] = {
+    val ref = untypedSystem.systemActorOf(PropsAdapter(() => behavior, props), name)
     Future.successful(ActorRefAdapter(ref))
   }
 
@@ -128,8 +139,10 @@ private[akka] object ActorSystemAdapter {
 
   def toUntyped[U](sys: ActorSystem[_]): untyped.ActorSystem =
     sys match {
-      case adapter: ActorSystemAdapter[_] ⇒ adapter.untypedSystem
-      case _ ⇒ throw new UnsupportedOperationException("only adapted untyped ActorSystem permissible " +
-        s"($sys of class ${sys.getClass.getName})")
+      case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
+      case _ =>
+        throw new UnsupportedOperationException(
+          "only adapted untyped ActorSystem permissible " +
+          s"($sys of class ${sys.getClass.getName})")
     }
 }

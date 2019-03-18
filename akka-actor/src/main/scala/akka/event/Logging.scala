@@ -12,7 +12,7 @@ import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
-import akka.util.{ Helpers, ReentrantGuard, unused }
+import akka.util.{ unused, Helpers, ReentrantGuard }
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -58,27 +58,32 @@ trait LoggingBus extends ActorEventBus {
   def setLogLevel(level: LogLevel): Unit = guard.withGuard {
     val logLvl = _logLevel // saves (2 * AllLogLevel.size - 1) volatile reads (because of the loops below)
     for {
-      l ← AllLogLevels
+      l <- AllLogLevels
       // subscribe if previously ignored and now requested
       if l > logLvl && l <= level
-      log ← loggers
+      log <- loggers
     } subscribe(log, classFor(l))
     for {
-      l ← AllLogLevels
+      l <- AllLogLevels
       // unsubscribe if previously registered and now ignored
       if l <= logLvl && l > level
-      log ← loggers
+      log <- loggers
     } unsubscribe(log, classFor(l))
     _logLevel = level
   }
 
   private def setUpStdoutLogger(config: Settings): Unit = {
-    val level = levelFor(config.StdoutLogLevel) getOrElse {
+    val level = levelFor(config.StdoutLogLevel).getOrElse {
       // only log initialization errors directly with StandardOutLogger.print
-      StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
+      StandardOutLogger.print(
+        Error(
+          new LoggerException,
+          simpleName(this),
+          this.getClass,
+          "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
       ErrorLevel
     }
-    AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(StandardOutLogger, classFor(l)))
+    AllLogLevels.filter(level >= _).foreach(l => subscribe(StandardOutLogger, classFor(l)))
     guard.withGuard {
       loggers :+= StandardOutLogger
       _logLevel = level
@@ -98,28 +103,35 @@ trait LoggingBus extends ActorEventBus {
    */
   private[akka] def startDefaultLoggers(system: ActorSystemImpl): Unit = {
     val logName = simpleName(this) + "(" + system + ")"
-    val level = levelFor(system.settings.LogLevel) getOrElse {
+    val level = levelFor(system.settings.LogLevel).getOrElse {
       // only log initialization errors directly with StandardOutLogger.print
-      StandardOutLogger.print(Error(new LoggerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
+      StandardOutLogger.print(
+        Error(new LoggerException, logName, this.getClass, "unknown akka.loglevel " + system.settings.LogLevel))
       ErrorLevel
     }
     try {
       val defaultLoggers = system.settings.Loggers match {
-        case Nil     ⇒ classOf[DefaultLogger].getName :: Nil
-        case loggers ⇒ loggers
+        case Nil     => classOf[DefaultLogger].getName :: Nil
+        case loggers => loggers
       }
       val myloggers =
         for {
-          loggerName ← defaultLoggers
+          loggerName <- defaultLoggers
           if loggerName != StandardOutLogger.getClass.getName
         } yield {
-          system.dynamicAccess.getClassFor[Actor](loggerName).map({
-            case actorClass ⇒ addLogger(system, actorClass, level, logName)
-          }).recover({
-            case e ⇒ throw new ConfigurationException(
-              "Logger specified in config can't be loaded [" + loggerName +
-                "] due to [" + e.toString + "]", e)
-          }).get
+          system.dynamicAccess
+            .getClassFor[Actor](loggerName)
+            .map({
+              case actorClass => addLogger(system, actorClass, level, logName)
+            })
+            .recover({
+              case e =>
+                throw new ConfigurationException(
+                  "Logger specified in config can't be loaded [" + loggerName +
+                  "] due to [" + e.toString + "]",
+                  e)
+            })
+            .get
         }
       guard.withGuard {
         loggers = myloggers
@@ -127,21 +139,23 @@ trait LoggingBus extends ActorEventBus {
       }
       try {
         if (system.settings.DebugUnhandledMessage)
-          subscribe(system.systemActorOf(Props(new Actor {
-            def receive = {
-              case UnhandledMessage(msg, sender, rcp) ⇒
-                publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
-            }
-          }), "UnhandledMessageForwarder"), classOf[UnhandledMessage])
+          subscribe(
+            system.systemActorOf(Props(new Actor {
+              def receive = {
+                case UnhandledMessage(msg, sender, rcp) =>
+                  publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+              }
+            }), "UnhandledMessageForwarder"),
+            classOf[UnhandledMessage])
       } catch {
-        case _: InvalidActorNameException ⇒ // ignore if it is already running
+        case _: InvalidActorNameException => // ignore if it is already running
       }
       publish(Debug(logName, this.getClass, "Default Loggers started"))
       if (!(defaultLoggers contains StandardOutLogger.getClass.getName)) {
         unsubscribe(StandardOutLogger)
       }
     } catch {
-      case e: Exception ⇒
+      case e: Exception =>
         System.err.println("error while starting up loggers")
         e.printStackTrace()
         throw new ConfigurationException("Could not start logger due to [" + e.toString + "]")
@@ -158,14 +172,14 @@ trait LoggingBus extends ActorEventBus {
       publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger"))
     }
     for {
-      logger ← loggers
+      logger <- loggers
       if logger != StandardOutLogger
     } {
       // this is very necessary, else you get infinite loop with DeadLetter
       unsubscribe(logger)
       logger match {
-        case ref: InternalActorRef ⇒ ref.stop()
-        case _                     ⇒
+        case ref: InternalActorRef => ref.stop()
+        case _                     =>
       }
     }
     publish(Debug(simpleName(this), this.getClass, "all default loggers stopped"))
@@ -174,19 +188,29 @@ trait LoggingBus extends ActorEventBus {
   /**
    * INTERNAL API
    */
-  private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
+  private def addLogger(
+      system: ActorSystemImpl,
+      clazz: Class[_ <: Actor],
+      level: LogLevel,
+      logName: String): ActorRef = {
     val name = "log" + LogExt(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
     implicit def timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
-    val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
-      case _: TimeoutException ⇒
-        publish(Warning(logName, this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
+    val response = try Await.result(actor ? InitializeLogger(this), timeout.duration)
+    catch {
+      case _: TimeoutException =>
+        publish(
+          Warning(
+            logName,
+            this.getClass,
+            "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
         "[TIMEOUT]"
     }
     if (response != LoggerInitialized)
-      throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
-    AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
+      throw new LoggerInitializationException(
+        "Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
+    AllLogLevels.filter(level >= _).foreach(l => subscribe(actor, classFor(l)))
     publish(Debug(logName, this.getClass, "logger " + name + " started"))
     actor
   }
@@ -235,7 +259,9 @@ trait LoggingBus extends ActorEventBus {
  *
  * The default implementation of the second variant will just call the first.
  */
-@implicitNotFound("Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[-T] {
+@implicitNotFound(
+  "Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[
+    -T] {
   def genString(t: T): String
   def genString(t: T, @unused system: ActorSystem): String = genString(t)
   def getClazz(t: T): Class[_] = t.getClass
@@ -281,12 +307,13 @@ object LogSource {
 
   implicit val fromActorRef: LogSource[ActorRef] = new LogSource[ActorRef] {
     def genString(a: ActorRef) = a.path.toString
-    override def genString(a: ActorRef, system: ActorSystem) = try {
-      a.path.toStringWithAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
-    } catch {
-      // it can fail if the ActorSystem (remoting) is not completely started yet
-      case NonFatal(_) ⇒ a.path.toString
-    }
+    override def genString(a: ActorRef, system: ActorSystem) =
+      try {
+        a.path.toStringWithAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
+      } catch {
+        // it can fail if the ActorSystem (remoting) is not completely started yet
+        case NonFatal(_) => a.path.toString
+      }
   }
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
@@ -322,11 +349,11 @@ object LogSource {
    */
   def fromAnyRef(o: AnyRef): (String, Class[_]) =
     o match {
-      case c: Class[_] ⇒ apply(c)
-      case a: Actor    ⇒ apply(a)
-      case a: ActorRef ⇒ apply(a)
-      case s: String   ⇒ apply(s)
-      case x           ⇒ (Logging.simpleName(x), x.getClass)
+      case c: Class[_] => apply(c)
+      case a: Actor    => apply(a)
+      case a: ActorRef => apply(a)
+      case s: String   => apply(s)
+      case x           => (Logging.simpleName(x), x.getClass)
     }
 
   /**
@@ -336,11 +363,11 @@ object LogSource {
    */
   def fromAnyRef(o: AnyRef, system: ActorSystem): (String, Class[_]) =
     o match {
-      case c: Class[_] ⇒ apply(c)
-      case a: Actor    ⇒ apply(a)
-      case a: ActorRef ⇒ apply(a)
-      case s: String   ⇒ apply(s)
-      case x           ⇒ (Logging.simpleName(x) + "(" + system + ")", x.getClass)
+      case c: Class[_] => apply(c)
+      case a: Actor    => apply(a)
+      case a: ActorRef => apply(a)
+      case s: String   => apply(s)
+      case x           => (Logging.simpleName(x) + "(" + system + ")", x.getClass)
     }
 }
 
@@ -401,9 +428,9 @@ object Logging {
    * wrapped message.
    */
   def messageClassName(message: Any): String = message match {
-    case null                           ⇒ "null"
-    case ActorSelectionMessage(m, _, _) ⇒ s"ActorSelectionMessage(${m.getClass.getName})"
-    case m                              ⇒ m.getClass.getName
+    case null                           => "null"
+    case ActorSelectionMessage(m, _, _) => s"ActorSelectionMessage(${m.getClass.getName})"
+    case m                              => m.getClass.getName
   }
 
   /**
@@ -458,12 +485,12 @@ object Logging {
    * "error", "warning", "info" and "debug"
    */
   def levelFor(s: String): Option[LogLevel] = Helpers.toRootLowerCase(s) match {
-    case "off"     ⇒ Some(OffLevel)
-    case "error"   ⇒ Some(ErrorLevel)
-    case "warning" ⇒ Some(WarningLevel)
-    case "info"    ⇒ Some(InfoLevel)
-    case "debug"   ⇒ Some(DebugLevel)
-    case _         ⇒ None
+    case "off"     => Some(OffLevel)
+    case "error"   => Some(ErrorLevel)
+    case "warning" => Some(WarningLevel)
+    case "info"    => Some(InfoLevel)
+    case "debug"   => Some(DebugLevel)
+    case _         => None
   }
 
   /**
@@ -482,11 +509,11 @@ object Logging {
    * Returns the event class associated with the given LogLevel
    */
   def classFor(level: LogLevel): Class[_ <: LogEvent] = level match {
-    case ErrorLevel   ⇒ classOf[Error]
-    case WarningLevel ⇒ classOf[Warning]
-    case InfoLevel    ⇒ classOf[Info]
-    case DebugLevel   ⇒ classOf[Debug]
-    case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
+    case ErrorLevel   => classOf[Error]
+    case WarningLevel => classOf[Warning]
+    case InfoLevel    => classOf[Info]
+    case DebugLevel   => classOf[Debug]
+    case level        => throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
@@ -516,6 +543,7 @@ object Logging {
     val (str, clazz) = LogSource(logSource, system)
     new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
+
   /**
    * Obtain LoggingAdapter with additional "marker" support (which some logging frameworks are able to utilise)
    * for the given actor system and source object. This will use the system’s event stream and include the system’s
@@ -559,6 +587,7 @@ object Logging {
     val (str, clazz) = LogSource(logSource)
     new BusLogging(bus, str, clazz)
   }
+
   /**
    * Obtain LoggingAdapter for the given logging bus and source object.
    *
@@ -587,6 +616,7 @@ object Logging {
     val system = logSource.context.system.asInstanceOf[ExtendedActorSystem]
     new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
   }
+
   /**
    * Obtain LoggingAdapter with marker and MDC support for the given actor.
    * Don't use it outside its specific Actor as it isn't thread safe
@@ -672,6 +702,7 @@ object Logging {
    * Base type of LogEvents
    */
   sealed trait LogEvent extends NoSerializationVerificationNeeded {
+
     /**
      * The thread that created this log event
      */
@@ -719,27 +750,33 @@ object Logging {
 
   object LogEvent {
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message)
-      case WarningLevel ⇒ Warning(logSource, logClass, message)
-      case InfoLevel    ⇒ Info(logSource, logClass, message)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message)
-      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
+      case ErrorLevel   => Error(logSource, logClass, message)
+      case WarningLevel => Warning(logSource, logClass, message)
+      case InfoLevel    => Info(logSource, logClass, message)
+      case DebugLevel   => Debug(logSource, logClass, message)
+      case level        => throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc)
-      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
-      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
+      case ErrorLevel   => Error(logSource, logClass, message, mdc)
+      case WarningLevel => Warning(logSource, logClass, message, mdc)
+      case InfoLevel    => Info(logSource, logClass, message, mdc)
+      case DebugLevel   => Debug(logSource, logClass, message, mdc)
+      case level        => throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
-    def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc, marker)
-      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
-      case level        ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
+    def apply(
+        level: LogLevel,
+        logSource: String,
+        logClass: Class[_],
+        message: Any,
+        mdc: MDC,
+        marker: LogMarker): LogEvent = level match {
+      case ErrorLevel   => Error(logSource, logClass, message, mdc, marker)
+      case WarningLevel => Warning(logSource, logClass, message, mdc, marker)
+      case InfoLevel    => Info(logSource, logClass, message, mdc, marker)
+      case DebugLevel   => Debug(logSource, logClass, message, mdc, marker)
+      case level        => throw new IllegalArgumentException(s"Unsupported log level [$level]")
     }
 
   }
@@ -751,16 +788,33 @@ object Logging {
   /**
    * For ERROR Logging
    */
-  case class Error(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent with LogEventWithCause {
+  case class Error(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "")
+      extends LogEvent
+      with LogEventWithCause {
     def this(logSource: String, logClass: Class[_], message: Any) = this(Error.NoCause, logSource, logClass, message)
     override def level = ErrorLevel
   }
-  class Error2(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
-    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
+  class Error2(
+      override val cause: Throwable,
+      logSource: String,
+      logClass: Class[_],
+      message: Any = "",
+      override val mdc: MDC)
+      extends Error(cause, logSource, logClass, message) {
+    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      this(Error.NoCause, logSource, logClass, message, mdc)
   }
-  class Error3(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
-    extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
-    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
+  class Error3(
+      override val cause: Throwable,
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
+      extends Error2(cause, logSource, logClass, message, mdc)
+      with LogEventWithMarker {
+    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      this(Error.NoCause, logSource, logClass, message, mdc, marker)
   }
 
   object Error {
@@ -790,17 +844,36 @@ object Logging {
   case class Warning(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = WarningLevel
   }
-  class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Warning(logSource, logClass, message)
-  class Warning3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
-    extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker
-  class Warning4(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker, override val cause: Throwable)
-    extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker with LogEventWithCause
+  class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
+      extends Warning(logSource, logClass, message)
+  class Warning3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
+      extends Warning2(logSource, logClass, message, mdc)
+      with LogEventWithMarker
+  class Warning4(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker,
+      override val cause: Throwable)
+      extends Warning2(logSource, logClass, message, mdc)
+      with LogEventWithMarker
+      with LogEventWithCause
   object Warning {
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Warning2(logSource, logClass, message, mdc)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      new Warning3(logSource, logClass, message, mdc, marker)
 
-    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning4(logSource, logClass, message, mdc, null, cause)
-    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning4(logSource, logClass, message, mdc, marker, cause)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Warning4(logSource, logClass, message, mdc, null, cause)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      new Warning4(logSource, logClass, message, mdc, marker, cause)
   }
 
   /**
@@ -809,12 +882,21 @@ object Logging {
   case class Info(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = InfoLevel
   }
-  class Info2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Info(logSource, logClass, message)
-  class Info3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
-    extends Info2(logSource, logClass, message, mdc) with LogEventWithMarker
+  class Info2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
+      extends Info(logSource, logClass, message)
+  class Info3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
+      extends Info2(logSource, logClass, message, mdc)
+      with LogEventWithMarker
   object Info {
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Info2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Info3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Info2(logSource, logClass, message, mdc)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      new Info3(logSource, logClass, message, mdc, marker)
   }
 
   /**
@@ -823,18 +905,29 @@ object Logging {
   case class Debug(logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
     override def level = DebugLevel
   }
-  class Debug2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Debug(logSource, logClass, message)
-  class Debug3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
-    extends Debug2(logSource, logClass, message, mdc) with LogEventWithMarker
+  class Debug2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC)
+      extends Debug(logSource, logClass, message)
+  class Debug3(
+      logSource: String,
+      logClass: Class[_],
+      message: Any,
+      override val mdc: MDC,
+      override val marker: LogMarker)
+      extends Debug2(logSource, logClass, message, mdc)
+      with LogEventWithMarker
   object Debug {
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Debug2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Debug3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Debug2(logSource, logClass, message, mdc)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      new Debug3(logSource, logClass, message, mdc, marker)
   }
 
   /** INTERNAL API, Marker interface for LogEvents containing Markers, which can be set for example on an slf4j logger */
   sealed trait LogEventWithMarker extends LogEvent {
+
     /** Marker attribute is nullable due to backward binary compatibility in the class `Warning4` */
     def marker: LogMarker
+
     /** Appends the marker to the Debug/Info/Warning/Error toString representations */
     override def toString = {
       val s = super.toString
@@ -859,6 +952,7 @@ object Logging {
    */
   abstract class LoggerInitialized
   case object LoggerInitialized extends LoggerInitialized {
+
     /**
      * Java API: get the singleton instance
      */
@@ -884,94 +978,91 @@ object Logging {
     def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
     def print(event: Any): Unit = event match {
-      case e: Error   ⇒ error(e)
-      case e: Warning ⇒ warning(e)
-      case e: Info    ⇒ info(e)
-      case e: Debug   ⇒ debug(e)
-      case e          ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
+      case e: Error   => error(e)
+      case e: Warning => warning(e)
+      case e: Info    => info(e)
+      case e: Debug   => debug(e)
+      case e =>
+        warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
     }
 
     def error(event: Error): Unit = event match {
-      case e: Error3 ⇒ // has marker
+      case e: Error3 => // has marker
         val f = if (event.cause == Error.NoCause) ErrorWithoutCauseWithMarkerFormat else ErrorFormatWithMarker
-        println(f.format(
-          e.marker.name,
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message,
-          stackTraceFor(event.cause)))
-      case _ ⇒
+        println(
+          f.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message,
+            stackTraceFor(event.cause)))
+      case _ =>
         val f = if (event.cause == Error.NoCause) ErrorFormatWithoutCause else ErrorFormat
-        println(f.format(
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message,
-          stackTraceFor(event.cause)))
+        println(
+          f.format(
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message,
+            stackTraceFor(event.cause)))
     }
 
     def warning(event: Warning): Unit = event match {
-      case e: Warning3 ⇒ // has marker
-        println(WarningWithMarkerFormat.format(
-          e.marker.name,
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
-      case _ ⇒
-        println(WarningFormat.format(
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
+      case e: Warning3 => // has marker
+        println(
+          WarningWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
+      case _ =>
+        println(
+          WarningFormat
+            .format(timestamp(event), event.thread.getName, event.logSource, formatMDC(event.mdc), event.message))
     }
 
     def info(event: Info): Unit = event match {
-      case e: Info3 ⇒ // has marker
-        println(InfoWithMarkerFormat.format(
-          e.marker.name,
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
-      case _ ⇒
-        println(InfoFormat.format(
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
+      case e: Info3 => // has marker
+        println(
+          InfoWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
+      case _ =>
+        println(
+          InfoFormat
+            .format(timestamp(event), event.thread.getName, event.logSource, formatMDC(event.mdc), event.message))
     }
 
     def debug(event: Debug): Unit = event match {
-      case e: Debug3 ⇒ // has marker
-        println(DebugWithMarkerFormat.format(
-          e.marker.name,
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
-      case _ ⇒
-        println(DebugFormat.format(
-          timestamp(event),
-          event.thread.getName,
-          event.logSource,
-          formatMDC(event.mdc),
-          event.message))
+      case e: Debug3 => // has marker
+        println(
+          DebugWithMarkerFormat.format(
+            e.marker.name,
+            timestamp(event),
+            event.thread.getName,
+            event.logSource,
+            formatMDC(event.mdc),
+            event.message))
+      case _ =>
+        println(
+          DebugFormat
+            .format(timestamp(event), event.thread.getName, event.logSource, formatMDC(event.mdc), event.message))
     }
 
     private def formatMDC(mdc: Map[String, Any]): String = {
       val size = mdc.size
       if (size == 0) ""
       else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
-      else mdc.map({ case (k, v) ⇒ s"$k:$v" }).mkString("[", "][", "]")
+      else mdc.map({ case (k, v) => s"$k:$v" }).mkString("[", "][", "]")
     }
   }
   object StdOutLogger {
@@ -1032,8 +1123,8 @@ object Logging {
    */
   class DefaultLogger extends Actor with StdOutLogger with RequiresMessageQueue[LoggerMessageQueueSemantics] {
     override def receive: Receive = {
-      case InitializeLogger(_) ⇒ sender() ! LoggerInitialized
-      case event: LogEvent     ⇒ print(event)
+      case InitializeLogger(_) => sender() ! LoggerInitialized
+      case event: LogEvent     => print(event)
     }
   }
 
@@ -1041,9 +1132,9 @@ object Logging {
    * Returns the StackTrace for the given Throwable as a String
    */
   def stackTraceFor(e: Throwable): String = e match {
-    case null | Error.NoCause ⇒ ""
-    case _: NoStackTrace      ⇒ s" (${e.getClass.getName}: ${e.getMessage})"
-    case other ⇒
+    case null | Error.NoCause => ""
+    case _: NoStackTrace      => s" (${e.getClass.getName}: ${e.getMessage})"
+    case other =>
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)
       pw.append('\n')
@@ -1112,6 +1203,7 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def error(cause: Throwable, message: String): Unit = { if (isErrorEnabled) notifyError(cause, message) }
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -1119,28 +1211,40 @@ trait LoggingAdapter {
    * there are more than four arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
+  def error(cause: Throwable, template: String, arg1: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format1(template, arg1))
+  }
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at error level, without providing the exception that caused the error.
    * @see [[LoggingAdapter]]
    */
   def error(message: String): Unit = { if (isErrorEnabled) notifyError(message) }
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -1149,27 +1253,37 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def error(template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(format1(template, arg1)) }
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
+  def error(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at warning level.
    * @see [[LoggingAdapter]]
    */
   def warning(message: String): Unit = { if (isWarningEnabled) notifyWarning(message) }
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -1178,27 +1292,37 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def warning(template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
+  def warning(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at info level.
    * @see [[LoggingAdapter]]
    */
   def info(message: String): Unit = { if (isInfoEnabled) notifyInfo(message) }
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -1207,27 +1331,37 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def info(template: String, arg1: Any): Unit = { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
+  def info(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at debug level.
    * @see [[LoggingAdapter]]
    */
   def debug(message: String): Unit = { if (isDebugEnabled) notifyDebug(message) }
+
   /**
    * Message template with 1 replacement argument.
    *
@@ -1236,63 +1370,84 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def debug(template: String, arg1: Any): Unit = { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
+
   /**
    * Message template with 2 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
+  def debug(template: String, arg1: Any, arg2: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    * @see [[LoggingAdapter]]
    */
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * Log message at the specified log level.
    */
   def log(level: Logging.LogLevel, message: String): Unit = { if (isEnabled(level)) notifyLog(level, message) }
+
   /**
    * Message template with 1 replacement argument.
    *
    * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
    * there are more than four arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format1(template, arg1))
+  }
+
   /**
    * Message template with 2 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2))
+  }
+
   /**
    * Message template with 3 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3))
+  }
+
   /**
    * Message template with 4 replacement arguments.
    */
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4))
+  }
 
   /**
    * @return true if the specified log level is enabled
    */
   final def isEnabled(level: Logging.LogLevel): Boolean = level match {
-    case Logging.ErrorLevel   ⇒ isErrorEnabled
-    case Logging.WarningLevel ⇒ isWarningEnabled
-    case Logging.InfoLevel    ⇒ isInfoEnabled
-    case Logging.DebugLevel   ⇒ isDebugEnabled
-    case _                    ⇒ false
+    case Logging.ErrorLevel   => isErrorEnabled
+    case Logging.WarningLevel => isWarningEnabled
+    case Logging.InfoLevel    => isInfoEnabled
+    case Logging.DebugLevel   => isDebugEnabled
+    case _                    => false
   }
 
   final def notifyLog(level: Logging.LogLevel, message: String): Unit = level match {
-    case Logging.ErrorLevel   ⇒ if (isErrorEnabled) notifyError(message)
-    case Logging.WarningLevel ⇒ if (isWarningEnabled) notifyWarning(message)
-    case Logging.InfoLevel    ⇒ if (isInfoEnabled) notifyInfo(message)
-    case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
-    case level                ⇒ throw new IllegalArgumentException(s"Unsupported log level [$level]")
+    case Logging.ErrorLevel   => if (isErrorEnabled) notifyError(message)
+    case Logging.WarningLevel => if (isWarningEnabled) notifyWarning(message)
+    case Logging.InfoLevel    => if (isInfoEnabled) notifyInfo(message)
+    case Logging.DebugLevel   => if (isDebugEnabled) notifyDebug(message)
+    case level                => throw new IllegalArgumentException(s"Unsupported log level [$level]")
   }
 
   /**
@@ -1300,9 +1455,9 @@ trait LoggingAdapter {
    * there are more than four arguments.
    */
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
-    case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
-    case x ⇒ format(t, x)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
+    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case x                                                       => format(t, x)
   }
 
   def format(t: String, arg: Any*): String = {
@@ -1312,14 +1467,11 @@ trait LoggingAdapter {
     while (p < arg.length) {
       val index = t.indexOf("{}", startIndex)
       if (index == -1) {
-        sb.append(t.substring(startIndex, t.length))
-          .append(" WARNING arguments left: ")
-          .append(arg.length - p)
+        sb.append(t.substring(startIndex, t.length)).append(" WARNING arguments left: ").append(arg.length - p)
         p = arg.length
         startIndex = t.length
       } else {
-        sb.append(t.substring(startIndex, index))
-          .append(arg(p))
+        sb.append(t.substring(startIndex, index)).append(arg(p))
         startIndex = index + 2
         p += 1
       }
@@ -1339,10 +1491,41 @@ trait LoggingAdapter {
  * `logLevel` of the `EventStream` before applying more fine grained filters.
  */
 trait LoggingFilter {
+  // for backward-compatibility reason implementation of method without marker only must work
   def isErrorEnabled(logClass: Class[_], logSource: String): Boolean
   def isWarningEnabled(logClass: Class[_], logSource: String): Boolean
   def isInfoEnabled(logClass: Class[_], logSource: String): Boolean
   def isDebugEnabled(logClass: Class[_], logSource: String): Boolean
+}
+
+trait LoggingFilterWithMarker extends LoggingFilter {
+  def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    isErrorEnabled(logClass, logSource)
+  def isWarningEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    isWarningEnabled(logClass, logSource)
+  def isInfoEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    isInfoEnabled(logClass, logSource)
+  def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
+    isDebugEnabled(logClass, logSource)
+}
+
+object LoggingFilterWithMarker {
+  def wrap(loggingFilter: LoggingFilter): LoggingFilterWithMarker =
+    loggingFilter match {
+      case lfwm: LoggingFilterWithMarker => lfwm
+      case _                             => new LoggingFilterWithMarkerWrapper(loggingFilter)
+    }
+}
+
+class LoggingFilterWithMarkerWrapper(loggingFilter: LoggingFilter) extends LoggingFilterWithMarker {
+  override def isErrorEnabled(logClass: Class[_], logSource: String): Boolean =
+    loggingFilter.isErrorEnabled(logClass, logSource)
+  override def isWarningEnabled(logClass: Class[_], logSource: String): Boolean =
+    loggingFilter.isWarningEnabled(logClass, logSource)
+  override def isInfoEnabled(logClass: Class[_], logSource: String): Boolean =
+    loggingFilter.isInfoEnabled(logClass, logSource)
+  override def isDebugEnabled(logClass: Class[_], logSource: String): Boolean =
+    loggingFilter.isDebugEnabled(logClass, logSource)
 }
 
 /**
@@ -1350,9 +1533,9 @@ trait LoggingFilter {
  * initial value is defined in configuration. The logLevel `eventStream` can be
  * changed while the system is running.
  */
-class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFilter {
+class DefaultLoggingFilter(logLevel: () => Logging.LogLevel) extends LoggingFilterWithMarker {
 
-  def this(settings: Settings, eventStream: EventStream) = this(() ⇒ eventStream.logLevel)
+  def this(settings: Settings, eventStream: EventStream) = this(() => eventStream.logLevel)
 
   import Logging._
   def isErrorEnabled(logClass: Class[_], logSource: String) = logLevel() >= ErrorLevel
@@ -1367,7 +1550,7 @@ class DefaultLoggingFilter(logLevel: () ⇒ Logging.LogLevel) extends LoggingFil
  */
 trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
-  import java.{ util ⇒ ju }
+  import java.{ util => ju }
 
   import Logging._
 
@@ -1431,10 +1614,12 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 @DoNotInherit
 class LogMarker(val name: String)
 object LogMarker {
+
   /** The Marker is internally transferred via MDC using using this key */
   private[akka] final val MDCKey = "marker"
 
   def apply(name: String): LogMarker = new LogMarker(name)
+
   /** Java API */
   def create(name: String): LogMarker = apply(name)
 
@@ -1442,8 +1627,8 @@ object LogMarker {
   @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
   def extractFromMDC(mdc: MDC): Option[String] =
     mdc.get(MDCKey) match {
-      case Some(v) ⇒ Some(v.toString)
-      case None    ⇒ None
+      case Some(v) => Some(v.toString)
+      case None    => None
     }
 
   private[akka] final val Security = apply("SECURITY")
@@ -1454,17 +1639,24 @@ object LogMarker {
  * [[LoggingAdapter]] extension which adds Marker support.
  */
 class MarkerLoggingAdapter(
-  override val bus:       LoggingBus,
-  override val logSource: String,
-  override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
-  extends BusLogging(bus, logSource, logClass, loggingFilter) {
+    override val bus: LoggingBus,
+    override val logSource: String,
+    override val logClass: Class[_],
+    loggingFilter: LoggingFilter)
+    extends BusLogging(bus, logSource, logClass, loggingFilter) {
   // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
   // association to an ActorSystem
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
-    this(bus, logSource, logClass, new DefaultLoggingFilter(() ⇒ bus.logLevel))
+    this(bus, logSource, logClass, new DefaultLoggingFilter(() => bus.logLevel))
+
+  val loggingFilterWithMarker: LoggingFilterWithMarker = LoggingFilterWithMarker.wrap(loggingFilter)
+
+  def isErrorEnabled(marker: LogMarker) = loggingFilterWithMarker.isErrorEnabled(logClass, logSource, marker)
+  def isWarningEnabled(marker: LogMarker) = loggingFilterWithMarker.isWarningEnabled(logClass, logSource, marker)
+  def isInfoEnabled(marker: LogMarker) = loggingFilterWithMarker.isInfoEnabled(logClass, logSource, marker)
+  def isDebugEnabled(marker: LogMarker) = loggingFilterWithMarker.isDebugEnabled(logClass, logSource, marker)
 
   /**
    * Log message at error level, including the exception that caused the error.
@@ -1472,7 +1664,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, message, mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1483,7 +1675,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(cause, logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1491,7 +1683,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isErrorEnabled(marker))
+      bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1499,7 +1692,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isErrorEnabled(marker))
+      bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1507,7 +1701,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isErrorEnabled(marker))
+      bus.publish(Error(cause, logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at error level, without providing the exception that caused the error.
@@ -1515,7 +1710,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1526,7 +1721,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1534,7 +1729,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1542,7 +1737,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isErrorEnabled(marker)) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1550,7 +1745,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isErrorEnabled(marker))
+      bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at warning level.
@@ -1558,7 +1754,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, message: String): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, message, mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1569,7 +1765,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1577,7 +1773,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isWarningEnabled(marker)) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1585,7 +1781,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isWarningEnabled(marker))
+      bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1593,7 +1790,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isWarningEnabled(marker))
+      bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at info level.
@@ -1601,7 +1799,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, message: String): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, message, mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1612,7 +1810,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1620,7 +1818,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1628,7 +1826,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isInfoEnabled(marker)) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1636,7 +1834,8 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isInfoEnabled(marker))
+      bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at debug level.
@@ -1644,7 +1843,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, message: String): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, message, mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
@@ -1655,7 +1854,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format1(template, arg1), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format1(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
@@ -1663,7 +1862,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
@@ -1671,7 +1870,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
+    if (isDebugEnabled(marker)) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
@@ -1679,33 +1878,35 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+    if (isDebugEnabled(marker))
+      bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
-    case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
-    case x ⇒ format(t, x)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
+    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case x                                                       => format(t, x)
   }
 }
 
 final class DiagnosticMarkerBusLoggingAdapter(
-  override val bus:       LoggingBus,
-  override val logSource: String,
-  override val logClass:  Class[_],
-  loggingFilter:          LoggingFilter)
-  extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
+    override val bus: LoggingBus,
+    override val logSource: String,
+    override val logClass: Class[_],
+    loggingFilter: LoggingFilter)
+    extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter)
+    with DiagnosticLoggingAdapter
 
 /**
  * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
  */
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_], loggingFilter: LoggingFilter)
-  extends LoggingAdapter {
+    extends LoggingAdapter {
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
   // association to an ActorSystem
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
-    this(bus, logSource, logClass, new DefaultLoggingFilter(() ⇒ bus.logLevel))
+    this(bus, logSource, logClass, new DefaultLoggingFilter(() => bus.logLevel))
 
   import Logging._
 
@@ -1748,6 +1949,7 @@ object NoLogging extends LoggingAdapter {
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
 }
+
 /**
  * NoLogging is a MarkerLoggingAdapter that does absolutely nothing – no logging at all.
  */
@@ -1772,8 +1974,21 @@ object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[Stri
   final override def error(marker: LogMarker, cause: Throwable, message: String): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = ()
-  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
-  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
+  final override def error(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any): Unit = ()
+  final override def error(
+      marker: LogMarker,
+      cause: Throwable,
+      template: String,
+      arg1: Any,
+      arg2: Any,
+      arg3: Any,
+      arg4: Any): Unit = ()
   final override def error(marker: LogMarker, message: String): Unit = ()
   final override def error(marker: LogMarker, template: String, arg1: Any): Unit = ()
   final override def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()

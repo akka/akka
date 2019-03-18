@@ -41,8 +41,8 @@ private[remote] object SendQueue {
 /**
  * INTERNAL API
  */
-private[remote] final class SendQueue[T](postStopAction: Vector[T] ⇒ Unit)
-  extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
+private[remote] final class SendQueue[T](postStopAction: Vector[T] => Unit)
+    extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
   import SendQueue._
 
   val out: Outlet[T] = Outlet("SendQueue.out")
@@ -57,7 +57,7 @@ private[remote] final class SendQueue[T](postStopAction: Vector[T] ⇒ Unit)
       // using a local field for the consumer side of queue to avoid volatile access
       private var consumerQueue: Queue[T] = null
 
-      private val wakeupCallback = getAsyncCallback[Unit] { _ ⇒
+      private val wakeupCallback = getAsyncCallback[Unit] { _ =>
         if (isAvailable(out))
           tryPush()
       }
@@ -65,12 +65,12 @@ private[remote] final class SendQueue[T](postStopAction: Vector[T] ⇒ Unit)
       override def preStart(): Unit = {
         implicit val ec = materializer.executionContext
         queuePromise.future.onComplete(getAsyncCallback[Try[Queue[T]]] {
-          case Success(q) ⇒
+          case Success(q) =>
             consumerQueue = q
             needWakeup = true
             if (isAvailable(out))
               tryPush()
-          case Failure(e) ⇒
+          case Failure(e) =>
             failStage(e)
         }.invoke)
       }
@@ -82,13 +82,13 @@ private[remote] final class SendQueue[T](postStopAction: Vector[T] ⇒ Unit)
 
       @tailrec private def tryPush(firstAttempt: Boolean = true): Unit = {
         consumerQueue.poll() match {
-          case null ⇒
+          case null =>
             needWakeup = true
             // additional poll() to grab any elements that might missed the needWakeup
             // and have been enqueued just after it
             if (firstAttempt)
               tryPush(firstAttempt = false)
-          case elem ⇒
+          case elem =>
             needWakeup = false // there will be another onPull
             push(out, elem)
         }

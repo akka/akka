@@ -25,12 +25,11 @@ object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -40,8 +39,9 @@ class RestartNode3MultiJvmNode2 extends RestartNode3Spec
 class RestartNode3MultiJvmNode3 extends RestartNode3Spec
 
 abstract class RestartNode3Spec
-  extends MultiNodeSpec(RestartNode3MultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(RestartNode3MultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import RestartNode3MultiJvmSpec._
 
@@ -54,8 +54,7 @@ abstract class RestartNode3Spec
 
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
-    ConfigFactory.parseString(
-      s"""
+    ConfigFactory.parseString(s"""
         akka.remote.artery.canonical.port = ${secondUniqueAddress.address.port.get}
         akka.remote.netty.tcp.port = ${secondUniqueAddress.address.port.get}
         """).withFallback(system.settings.config))
@@ -79,7 +78,7 @@ abstract class RestartNode3Spec
       runOn(first, third) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: UniqueAddress ⇒
+            case a: UniqueAddress =>
               secondUniqueAddress = a
               sender() ! "ok"
           }
@@ -90,7 +89,7 @@ abstract class RestartNode3Spec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r ⇒
+        List(first, third).foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }
@@ -116,7 +115,7 @@ abstract class RestartNode3Spec
         Cluster(secondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(secondSystem).readView.members.size should ===(3))
         awaitAssert(Cluster(secondSystem).readView.members.collectFirst {
-          case m if m.address == Cluster(secondSystem).selfAddress ⇒ m.status
+          case m if m.address == Cluster(secondSystem).selfAddress => m.status
         } should ===(Some(Joining)))
       }
       enterBarrier("second-joined")
@@ -139,7 +138,7 @@ abstract class RestartNode3Spec
       runOn(first, third) {
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
-          Cluster(system).readView.members.exists { m ⇒
+          Cluster(system).readView.members.exists { m =>
             m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }

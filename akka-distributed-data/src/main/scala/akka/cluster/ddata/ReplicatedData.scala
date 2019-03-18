@@ -30,6 +30,7 @@ import java.util.Optional
  * it has support for delta-CRDT replication.
  */
 trait ReplicatedData {
+
   /**
    * The type of the concrete implementation, e.g. `GSet[A]`.
    * To be specified by subclass.
@@ -97,6 +98,7 @@ trait DeltaReplicatedData extends ReplicatedData {
  * The delta must implement this type.
  */
 trait ReplicatedDelta extends ReplicatedData {
+
   /**
    * The empty full state. This is used when a delta is received
    * and no existing full state exists on the receiving side. Then
@@ -159,7 +161,8 @@ abstract class AbstractReplicatedData[A <: AbstractReplicatedData[A]] extends Re
  * E.g. `class TwoPhaseSet extends AbstractDeltaReplicatedData&lt;TwoPhaseSet, TwoPhaseSet&gt;`
  */
 abstract class AbstractDeltaReplicatedData[A <: AbstractDeltaReplicatedData[A, B], B <: ReplicatedDelta]
-  extends AbstractReplicatedData[A] with DeltaReplicatedData {
+    extends AbstractReplicatedData[A]
+    with DeltaReplicatedData {
 
   override type D = ReplicatedDelta
 
@@ -239,4 +242,3 @@ trait RemovedNodePruning extends ReplicatedData {
  * [[akka.cluster.ddata.protobuf.ReplicatedDataSerializer]].
  */
 trait ReplicatedDataSerialization extends Serializable
-

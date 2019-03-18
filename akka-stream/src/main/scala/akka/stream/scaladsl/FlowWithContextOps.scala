@@ -51,23 +51,26 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.viaMat]]
    */
-  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): ReprMat[Out2, Ctx2, Mat3]
+  def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2])(
+      combine: (Mat, Mat2) => Mat3): ReprMat[Out2, Ctx2, Mat3]
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.map]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.map]]
    */
-  def map[Out2](f: Out ⇒ Out2): Repr[Out2, Ctx] =
-    via(flow.map { case (e, ctx) ⇒ (f(e), ctx) })
+  def map[Out2](f: Out => Out2): Repr[Out2, Ctx] =
+    via(flow.map { case (e, ctx) => (f(e), ctx) })
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.mapAsync]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapAsync]]
    */
-  def mapAsync[Out2](parallelism: Int)(f: Out ⇒ Future[Out2]): Repr[Out2, Ctx] =
-    via(flow.mapAsync(parallelism) { case (e, ctx) ⇒ f(e).map(o ⇒ (o, ctx))(ExecutionContexts.sameThreadExecutionContext) })
+  def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
+    via(flow.mapAsync(parallelism) {
+      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext)
+    })
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.collect]].
@@ -78,7 +81,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def collect[Out2](f: PartialFunction[Out, Out2]): Repr[Out2, Ctx] =
     via(flow.collect {
-      case (e, ctx) if f.isDefinedAt(e) ⇒ (f(e), ctx)
+      case (e, ctx) if f.isDefinedAt(e) => (f(e), ctx)
     })
 
   /**
@@ -88,8 +91,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.filter]]
    */
-  def filter(pred: Out ⇒ Boolean): Repr[Out, Ctx] =
-    collect { case e if pred(e) ⇒ e }
+  def filter(pred: Out => Boolean): Repr[Out, Ctx] =
+    collect { case e if pred(e) => e }
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.filterNot]].
@@ -98,8 +101,8 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.filterNot]]
    */
-  def filterNot(pred: Out ⇒ Boolean): Repr[Out, Ctx] =
-    collect { case e if !pred(e) ⇒ e }
+  def filterNot(pred: Out => Boolean): Repr[Out, Ctx] =
+    collect { case e if !pred(e) => e }
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.grouped]].
@@ -109,7 +112,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.grouped]]
    */
   def grouped(n: Int): Repr[immutable.Seq[Out], immutable.Seq[Ctx]] =
-    via(flow.grouped(n).map { elsWithContext ⇒
+    via(flow.grouped(n).map { elsWithContext =>
       val (els, ctxs) = elsWithContext.unzip
       (els, ctxs)
     })
@@ -122,7 +125,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.sliding]]
    */
   def sliding(n: Int, step: Int = 1): Repr[immutable.Seq[Out], immutable.Seq[Ctx]] =
-    via(flow.sliding(n, step).map { elsWithContext ⇒
+    via(flow.sliding(n, step).map { elsWithContext =>
       val (els, ctxs) = elsWithContext.unzip
       (els, ctxs)
     })
@@ -155,70 +158,25 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = statefulMapConcat(() ⇒ f)
-
-  /**
-   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.statefulMapConcat]].
-   *
-   * The context of the input element will be associated with each of the output elements calculated from
-   * this input element.
-   *
-   * Example:
-   *
-   * ```
-   * val statefulRepeat: () ⇒ String ⇒ collection.immutable.Iterable[String] = () ⇒ {
-   *   var counter = 0
-   *   str ⇒ {
-   *     counter = counter + 1
-   *     (1 to counter).map(_ ⇒ str)
-   *   }
-   * }
-   * ```
-   *
-   * Input:
-   *
-   * ("a", 4)
-   * ("b", 5)
-   * ("c", 6)
-   *
-   * inputElements.statefulMapConcat(statefulRepeat)
-   *
-   * Output:
-   *
-   * ("a", 4)
-   * ("b", 5)
-   * ("b", 5)
-   * ("c", 6)
-   * ("c", 6)
-   * ("c", 6)
-   * ```
-   *
-   * @see [[akka.stream.scaladsl.FlowOps.statefulMapConcat]]
-   */
-  def statefulMapConcat[Out2](f: () ⇒ Out ⇒ immutable.Iterable[Out2]): Repr[Out2, Ctx] = {
-    val fCtx: () ⇒ ((Out, Ctx)) ⇒ immutable.Iterable[(Out2, Ctx)] = () ⇒ {
-      val plainFun = f()
-      elWithContext ⇒ {
-        val (el, ctx) = elWithContext
-        plainFun(el).map(o ⇒ (o, ctx))
-      }
-    }
-    via(flow.statefulMapConcat(fCtx))
-  }
+  def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] =
+    via(flow.mapConcat {
+      case (e, ctx) => f(e).map(_ -> ctx)
+    })
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).
    */
-  def mapContext[Ctx2](f: Ctx ⇒ Ctx2): Repr[Out, Ctx2] =
-    via(flow.map { case (e, ctx) ⇒ (e, f(ctx)) })
+  def mapContext[Ctx2](f: Ctx => Ctx2): Repr[Out, Ctx2] =
+    via(flow.map { case (e, ctx) => (e, f(ctx)) })
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.log]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out ⇒ Any = ConstantFun.scalaIdentityFunction)(implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
-    val extractWithContext: ((Out, Ctx)) ⇒ Any = { case (e, _) ⇒ extract(e) }
+  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
+    val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
   }
 

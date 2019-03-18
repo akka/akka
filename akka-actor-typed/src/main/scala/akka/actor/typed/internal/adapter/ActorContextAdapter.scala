@@ -8,8 +8,9 @@ package adapter
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.event.LoggingFilterWithMarker
 import akka.util.OptionVal
-import akka.{ ConfigurationException, actor ⇒ untyped }
+import akka.{ ConfigurationException, actor => untyped }
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -17,9 +18,14 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[TypedActorContext]].
  */
-@InternalApi private[akka] final class ActorContextAdapter[T](val untypedContext: untyped.ActorContext) extends ActorContextImpl[T] {
+@InternalApi private[akka] final class ActorContextAdapter[T](
+    val untypedContext: untyped.ActorContext,
+    adapter: ActorAdapter[T])
+    extends ActorContextImpl[T] {
 
   import ActorRefAdapter.toUntyped
+
+  private[akka] def currentBehavior: Behavior[T] = adapter.currentBehavior
 
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
@@ -35,28 +41,28 @@ import scala.concurrent.duration._
   override def stop[U](child: ActorRef[U]): Unit =
     if (child.path.parent == self.path) { // only if a direct child
       toUntyped(child) match {
-        case f: akka.actor.FunctionRef ⇒
+        case f: akka.actor.FunctionRef =>
           val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]
           cell.removeFunctionRef(f)
-        case c ⇒
+        case c =>
           untypedContext.child(child.path.name) match {
-            case Some(`c`) ⇒
+            case Some(`c`) =>
               untypedContext.stop(c)
-            case _ ⇒
+            case _ =>
             // child that was already stopped
           }
       }
     } else if (self == child) {
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
-          s"but you tried to stop [$self] by passing its ActorRef to the `stop` method. " +
-          "Stopping self has to be expressed as explicitly returning a Stop Behavior " +
-          "with `Behaviors.stopped`.")
+        s"but you tried to stop [$self] by passing its ActorRef to the `stop` method. " +
+        "Stopping self has to be expressed as explicitly returning a Stop Behavior " +
+        "with `Behaviors.stopped`.")
     } else {
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
-          s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
-          "an explicit stop message that the actor accepts.")
+        s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
+        "an explicit stop message that the actor accepts.")
     }
 
   override def watch[U](other: ActorRef[U]): Unit = { untypedContext.watch(toUntyped(other)) }
@@ -76,25 +82,26 @@ import scala.concurrent.duration._
     import untypedContext.dispatcher
     untypedContext.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
+  override private[akka] def internalSpawnMessageAdapter[U](f: U => T, _name: String): ActorRef[U] = {
     val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
-    val ref = cell.addFunctionRef((_, msg) ⇒ untypedContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
+    val ref = cell.addFunctionRef((_, msg) => untypedContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
   }
 
   private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
     val logSource = self.path.toString
     val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
-    val logger = new LoggerAdapterImpl(system.eventStream, logClass, logSource, system.logFilter)
+    val logger =
+      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
     actorLogger = OptionVal.Some(logger)
     logger
   }
 
   override def log: Logger = {
     actorLogger match {
-      case OptionVal.Some(logger) ⇒ logger
-      case OptionVal.None ⇒
+      case OptionVal.Some(logger) => logger
+      case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         initLoggerWithClass(logClass)
     }
@@ -112,9 +119,10 @@ import scala.concurrent.duration._
 
   private def toUntypedImp[U](context: TypedActorContext[_]): untyped.ActorContext =
     context match {
-      case adapter: ActorContextAdapter[_] ⇒ adapter.untypedContext
-      case _ ⇒
-        throw new UnsupportedOperationException("only adapted untyped ActorContext permissible " +
+      case adapter: ActorContextAdapter[_] => adapter.untypedContext
+      case _ =>
+        throw new UnsupportedOperationException(
+          "only adapted untyped ActorContext permissible " +
           s"($context of class ${context.getClass.getName})")
     }
 
@@ -122,26 +130,28 @@ import scala.concurrent.duration._
 
   def toUntyped[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
-      case _ ⇒
-        throw new UnsupportedOperationException("unknown ActorContext type " +
+      case c: TypedActorContext[_] => toUntypedImp(c)
+      case _ =>
+        throw new UnsupportedOperationException(
+          "unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 
   def toUntyped[U](context: javadsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] ⇒ toUntypedImp(c)
-      case _ ⇒
-        throw new UnsupportedOperationException("unknown ActorContext type " +
+      case c: TypedActorContext[_] => toUntypedImp(c)
+      case _ =>
+        throw new UnsupportedOperationException(
+          "unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 
   def spawnAnonymous[T](context: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
     try {
       Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() ⇒ behavior, props)))
+      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props)))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }
@@ -149,9 +159,9 @@ import scala.concurrent.duration._
   def spawn[T](context: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
     try {
       Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props), name))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }

@@ -22,17 +22,18 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
     override def out: Outlet[Outputs] = merge.out
   }
 
-  implicit def noShrink[T] = Shrink[T](_ ⇒ Stream.empty) // do not shrink failures, it only destroys evidence
+  implicit def noShrink[T] = Shrink[T](_ => Stream.empty) // do not shrink failures, it only destroys evidence
 
   "MergeSorted" must {
 
     "work in the nominal case" in {
       val gen = Gen.listOf(Gen.oneOf(false, true))
 
-      forAll(gen) { picks ⇒
+      forAll(gen) { picks =>
         val N = picks.size
         val (left, right) = picks.zipWithIndex.partition(_._1)
-        Source(left.map(_._2)).mergeSorted(Source(right.map(_._2)))
+        Source(left.map(_._2))
+          .mergeSorted(Source(right.map(_._2)))
           .grouped(N max 1)
           .concat(Source.single(Nil))
           .runWith(Sink.head)

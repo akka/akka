@@ -17,10 +17,12 @@ import scala.collection.immutable
  * actively initiates the exchange.
  */
 object TLSRole {
+
   /**
    * Java API: obtain the [[Client]] singleton value.
    */
   def client: TLSRole = Client
+
   /**
    * Java API: obtain the [[Server]] singleton value.
    */
@@ -79,18 +81,22 @@ sealed abstract class TLSClosing {
   def ignoreComplete: Boolean
 }
 object TLSClosing {
+
   /**
    * Java API: obtain the [[EagerClose]] singleton value.
    */
   def eagerClose: TLSClosing = EagerClose
+
   /**
    * Java API: obtain the [[IgnoreCancel]] singleton value.
    */
   def ignoreCancel: TLSClosing = IgnoreCancel
+
   /**
    * Java API: obtain the [[IgnoreComplete]] singleton value.
    */
   def ignoreComplete: TLSClosing = IgnoreComplete
+
   /**
    * Java API: obtain the [[IgnoreBoth]] singleton value.
    */
@@ -163,7 +169,9 @@ object TLSProtocol {
    * The Java API for getting session information is given by the SSLSession object,
    * the Scala API adapters are offered below.
    */
-  final case class SessionBytes(session: SSLSession, bytes: ByteString) extends SslTlsInbound with scaladsl.ScalaSessionAPI
+  final case class SessionBytes(session: SSLSession, bytes: ByteString)
+      extends SslTlsInbound
+      with scaladsl.ScalaSessionAPI
 
   /**
    * This is the supertype of all messages that the SslTls operator accepts on its
@@ -190,10 +198,11 @@ object TLSProtocol {
    * switches off client authentication.
    */
   case class NegotiateNewSession(
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters]) extends SslTlsOutbound {
+      enabledCipherSuites: Option[immutable.Seq[String]],
+      enabledProtocols: Option[immutable.Seq[String]],
+      clientAuth: Option[TLSClientAuth],
+      sslParameters: Option[SSLParameters])
+      extends SslTlsOutbound {
 
     /**
      * Java API: Make a copy of this message with the given `enabledCipherSuites`.
@@ -219,6 +228,7 @@ object TLSProtocol {
   }
 
   object NegotiateNewSession extends NegotiateNewSession(None, None, None, None) {
+
     /**
      * Java API: obtain the default value (which will leave the SSLEngine’s
      * settings unchanged).

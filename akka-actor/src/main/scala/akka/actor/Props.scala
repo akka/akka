@@ -23,7 +23,7 @@ object Props extends AbstractProps {
   /**
    * The defaultCreator, simply throws an UnsupportedOperationException when applied, which is used when creating a Props
    */
-  final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
+  final val defaultCreator: () => Actor = () => throw new UnsupportedOperationException("No actor creator specified!")
 
   /**
    * The defaultRoutedProps is NoRouter which is used when creating a Props
@@ -73,10 +73,10 @@ object Props extends AbstractProps {
    * Instead you must create a named class that mixin the trait,
    * e.g. `class MyActor extends Actor with Stash`.
    */
-  def apply[T <: Actor: ClassTag](creator: ⇒ T): Props =
-    mkProps(implicitly[ClassTag[T]].runtimeClass, () ⇒ creator)
+  def apply[T <: Actor: ClassTag](creator: => T): Props =
+    mkProps(implicitly[ClassTag[T]].runtimeClass, () => creator)
 
-  private def mkProps(classOfActor: Class[_], ctor: () ⇒ Actor): Props =
+  private def mkProps(classOfActor: Class[_], ctor: () => Actor): Props =
     Props(classOf[TypedCreatorFunctionConsumer], classOfActor, ctor)
 
   /**
@@ -147,8 +147,8 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * contained [[Deploy]] instance.
    */
   def dispatcher: String = deploy.dispatcher match {
-    case NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
-    case x                 ⇒ x
+    case NoDispatcherGiven => Dispatchers.DefaultDispatcherId
+    case x                 => x
   }
 
   /**
@@ -156,8 +156,8 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * contained [[Deploy]] instance.
    */
   def mailbox: String = deploy.mailbox match {
-    case NoMailboxGiven ⇒ Mailboxes.DefaultMailboxId
-    case x              ⇒ x
+    case NoMailboxGiven => Mailboxes.DefaultMailboxId
+    case x              => x
   }
 
   /**
@@ -170,16 +170,16 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * Returns a new Props with the specified dispatcher set.
    */
   def withDispatcher(d: String): Props = deploy.dispatcher match {
-    case NoDispatcherGiven ⇒ copy(deploy = deploy.copy(dispatcher = d))
-    case x                 ⇒ if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
+    case NoDispatcherGiven => copy(deploy = deploy.copy(dispatcher = d))
+    case x                 => if (x == d) this else copy(deploy = deploy.copy(dispatcher = d))
   }
 
   /**
    * Returns a new Props with the specified mailbox set.
    */
   def withMailbox(m: String): Props = deploy.mailbox match {
-    case NoMailboxGiven ⇒ copy(deploy = deploy.copy(mailbox = m))
-    case x              ⇒ if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
+    case NoMailboxGiven => copy(deploy = deploy.copy(mailbox = m))
+    case x              => if (x == m) this else copy(deploy = deploy.copy(mailbox = m))
   }
 
   /**
@@ -190,7 +190,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
   /**
    * Returns a new Props with the specified deployment configuration.
    */
-  def withDeploy(d: Deploy): Props = copy(deploy = d withFallback deploy)
+  def withDeploy(d: Deploy): Props = copy(deploy = d.withFallback(deploy))
 
   /**
    * Obtain an upper-bound approximation of the actor class which is going to

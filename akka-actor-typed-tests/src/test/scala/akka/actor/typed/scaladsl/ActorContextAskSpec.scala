@@ -18,8 +18,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.loggers = ["akka.testkit.TestEventListener"]
       ping-pong-dispatcher {
         executor = thread-pool-executor
@@ -34,7 +33,7 @@ object ActorContextAskSpec {
 
 class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.config) with WordSpecLike {
 
-  implicit val untyped = system.toUntyped // FIXME no typed event filter yet
+  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
 
   "The Scala DSL ActorContext" must {
 
@@ -42,23 +41,22 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (context, message) =>
         message.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[Pong]()
 
-      val snitch = Behaviors.setup[Pong] { context ⇒
-
+      val snitch = Behaviors.setup[Pong] { context =>
         // Timeout comes from TypedAkkaSpec
 
         context.ask(pingPong)(Ping) {
-          case Success(_)  ⇒ Pong(context.self.path.name + "1", Thread.currentThread().getName)
-          case Failure(ex) ⇒ throw ex
+          case Success(_)  => Pong(context.self.path.name + "1", Thread.currentThread().getName)
+          case Failure(ex) => throw ex
         }
 
-        Behaviors.receiveMessage { pong ⇒
+        Behaviors.receiveMessage { pong =>
           probe.ref ! pong
           Behaviors.same
         }
@@ -79,30 +77,31 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.receive[Protocol]((_, message) ⇒
+      val pingPong = spawn(Behaviors.receive[Protocol]((_, message) =>
         message match {
-          case Ping(respondTo) ⇒
+          case Ping(respondTo) =>
             respondTo ! Pong
             Behaviors.same
-        }
-      ))
+        }))
 
-      val snitch = Behaviors.setup[AnyRef] { context ⇒
+      val snitch = Behaviors.setup[AnyRef] { context =>
         context.ask(pingPong)(Ping) {
-          case Success(message) ⇒ throw new NotImplementedError(message.toString)
-          case Failure(x)       ⇒ x
+          case Success(message) => throw new NotImplementedError(message.toString)
+          case Failure(x)       => x
         }
 
-        Behaviors.receive[AnyRef] {
-          case (_, message) ⇒
-            probe.ref ! message
-            Behaviors.same
-        }.receiveSignal {
+        Behaviors
+          .receive[AnyRef] {
+            case (_, message) =>
+              probe.ref ! message
+              Behaviors.same
+          }
+          .receiveSignal {
 
-          case (_, PostStop) ⇒
-            probe.ref ! "stopped"
-            Behaviors.same
-        }
+            case (_, PostStop) =>
+              probe.ref ! "stopped"
+              Behaviors.same
+          }
       }
 
       EventFilter[NotImplementedError](occurrences = 1, start = "Pong").intercept {
@@ -115,14 +114,13 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { context ⇒
-
-        context.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
-          case Success(m) ⇒ m
-          case Failure(x) ⇒ x
+      val snitch = Behaviors.setup[AnyRef] { context =>
+        context.ask[String, String](system.deadLetters)(ref => "boo") {
+          case Success(m) => m
+          case Failure(x) => x
         }(10.millis, implicitly[ClassTag[String]])
 
-        Behaviors.receiveMessage { message ⇒
+        Behaviors.receiveMessage { message =>
           probe.ref ! message
           Behaviors.same
         }
@@ -141,14 +139,13 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
     "must timeout if recipient doesn't reply in time" in {
       val target = spawn(Behaviors.ignore[String])
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { context ⇒
-
-        context.ask[String, String](target)(_ ⇒ "bar") {
-          case Success(m) ⇒ m
-          case Failure(x) ⇒ x
+      val snitch = Behaviors.setup[AnyRef] { context =>
+        context.ask[String, String](target)(_ => "bar") {
+          case Success(m) => m
+          case Failure(x) => x
         }(10.millis, implicitly[ClassTag[String]])
 
-        Behaviors.receiveMessage { message ⇒
+        Behaviors.receiveMessage { message =>
           probe.ref ! message
           Behaviors.same
         }

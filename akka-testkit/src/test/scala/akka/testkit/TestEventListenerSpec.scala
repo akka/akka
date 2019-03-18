@@ -69,5 +69,6 @@ class TestEventListenerSpec extends AkkaSpec with ImplicitSender {
   private def errorWithCause(cause: Throwable) = Error(cause, self.path.toString, this.getClass, "this is an error")
 
   private def warningNoCause = Warning(self.path.toString, this.getClass, "this is a warning")
-  private def warningWithCause(cause: Throwable) = Warning(cause, self.path.toString, this.getClass, "this is a warning", Logging.emptyMDC)
+  private def warningWithCause(cause: Throwable) =
+    Warning(cause, self.path.toString, this.getClass, "this is a warning", Logging.emptyMDC)
 }

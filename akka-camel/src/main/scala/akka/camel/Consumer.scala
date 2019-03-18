@@ -5,7 +5,7 @@
 package akka.camel
 
 import akka.camel.internal.CamelSupervisor.Register
-import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
+import org.apache.camel.model.{ ProcessorDefinition, RouteDefinition }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.dispatch.Mapper
@@ -13,9 +13,12 @@ import akka.dispatch.Mapper
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  */
-@deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
+@deprecated(
+  "Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).",
+  since = "2.5.0")
 trait Consumer extends Actor with CamelSupport {
   import Consumer._
+
   /**
    * Must return the Camel endpoint URI that the consumer wants to consume messages from.
    */
@@ -35,7 +38,10 @@ trait Consumer extends Actor with CamelSupport {
   }
 
   private[this] def register(): Unit = {
-    camel.supervisor ! Register(self, endpointUri, Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
+    camel.supervisor ! Register(
+      self,
+      endpointUri,
+      Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
   }
 
   /**
@@ -63,7 +69,7 @@ trait Consumer extends Actor with CamelSupport {
    * return a custom route definition handler. The returned function is not allowed to close over 'this', meaning it is
    * not allowed to refer to the actor instance itself, since that can easily cause concurrent shared state issues.
    */
-  def onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_] = {
+  def onRouteDefinition: RouteDefinition => ProcessorDefinition[_] = {
     val mapper = getRouteDefinitionHandler
     if (mapper != identityRouteMapper) mapper.apply _
     else identityRouteMapper
@@ -93,10 +99,19 @@ private[camel] object Consumer {
  *
  * Was a case class but has been split up as a workaround for SI-8283
  */
-private[camel] class ConsumerConfig(val activationTimeout: FiniteDuration, val replyTimeout: FiniteDuration, val autoAck: Boolean, val onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]) extends NoSerializationVerificationNeeded
-  with scala.Serializable
+private[camel] class ConsumerConfig(
+    val activationTimeout: FiniteDuration,
+    val replyTimeout: FiniteDuration,
+    val autoAck: Boolean,
+    val onRouteDefinition: RouteDefinition => ProcessorDefinition[_])
+    extends NoSerializationVerificationNeeded
+    with scala.Serializable
 
 private[camel] object ConsumerConfig {
-  def apply(activationTimeout: FiniteDuration, replyTimeout: FiniteDuration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_]): ConsumerConfig =
+  def apply(
+      activationTimeout: FiniteDuration,
+      replyTimeout: FiniteDuration,
+      autoAck: Boolean,
+      onRouteDefinition: RouteDefinition => ProcessorDefinition[_]): ConsumerConfig =
     new ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)
 }

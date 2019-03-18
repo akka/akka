@@ -22,7 +22,7 @@ import scala.concurrent.{ Future, Promise }
  */
 private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
   override def initialValue(channel: Channel): Option[HandleEventListener] = None
-  def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel) foreach { _ notify msg }
+  def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel).foreach { _.notify(msg) }
 }
 
 /**
@@ -34,10 +34,11 @@ private[remote] trait TcpHandlers extends CommonHandlers {
   import ChannelLocalActor._
 
   override def registerListener(
-    channel:             Channel,
-    listener:            HandleEventListener,
-    msg:                 ChannelBuffer,
-    remoteSocketAddress: InetSocketAddress): Unit = ChannelLocalActor.set(channel, Some(listener))
+      channel: Channel,
+      listener: HandleEventListener,
+      msg: ChannelBuffer,
+      remoteSocketAddress: InetSocketAddress): Unit =
+    ChannelLocalActor.set(channel, Some(listener))
 
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
     new TcpAssociationHandle(localAddress, remoteAddress, transport, channel)
@@ -62,8 +63,12 @@ private[remote] trait TcpHandlers extends CommonHandlers {
 /**
  * INTERNAL API
  */
-private[remote] class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener], val log: LoggingAdapter)
-  extends ServerHandler(_transport, _associationListenerFuture) with TcpHandlers {
+private[remote] class TcpServerHandler(
+    _transport: NettyTransport,
+    _associationListenerFuture: Future[AssociationEventListener],
+    val log: LoggingAdapter)
+    extends ServerHandler(_transport, _associationListenerFuture)
+    with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     initInbound(e.getChannel, e.getChannel.getRemoteAddress, null)
@@ -74,7 +79,8 @@ private[remote] class TcpServerHandler(_transport: NettyTransport, _associationL
  * INTERNAL API
  */
 private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress: Address, val log: LoggingAdapter)
-  extends ClientHandler(_transport, remoteAddress) with TcpHandlers {
+    extends ClientHandler(_transport, remoteAddress)
+    with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit =
     initOutbound(e.getChannel, e.getChannel.getRemoteAddress, null)
@@ -85,11 +91,11 @@ private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress
  * INTERNAL API
  */
 private[remote] class TcpAssociationHandle(
-  val localAddress:    Address,
-  val remoteAddress:   Address,
-  val transport:       NettyTransport,
-  private val channel: Channel)
-  extends AssociationHandle {
+    val localAddress: Address,
+    val remoteAddress: Address,
+    val transport: NettyTransport,
+    private val channel: Channel)
+    extends AssociationHandle {
   import transport.executionContext
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()

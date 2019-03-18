@@ -4,7 +4,7 @@
 
 package akka.osgi
 
-import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, PojoServiceRegistryFactory, ClasspathScanner }
+import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, ClasspathScanner, PojoServiceRegistryFactory }
 
 import scala.collection.JavaConverters._
 import org.apache.commons.io.IOUtils.copy
@@ -14,7 +14,7 @@ import java.net.URL
 import java.util.jar.JarInputStream
 import java.io._
 import org.scalatest.{ BeforeAndAfterAll, Suite }
-import java.util.{ UUID, Date, ServiceLoader, HashMap }
+import java.util.{ Date, HashMap, ServiceLoader, UUID }
 import scala.reflect.ClassTag
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -47,9 +47,14 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     val oldErr = System.err
     System.setErr(new PrintStream(bufferedLoadingErrors))
     try {
-      ServiceLoader.load(classOf[PojoServiceRegistryFactory]).iterator.next.newPojoServiceRegistry(config).getBundleContext
+      ServiceLoader
+        .load(classOf[PojoServiceRegistryFactory])
+        .iterator
+        .next
+        .newPojoServiceRegistry(config)
+        .getBundleContext
     } catch {
-      case e: Throwable ⇒ oldErr.write(bufferedLoadingErrors.toByteArray); throw e
+      case e: Throwable => oldErr.write(bufferedLoadingErrors.toByteArray); throw e
     } finally {
       System.setErr(oldErr)
     }
@@ -62,7 +67,9 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
    * Convenience method to find a bundle by symbolic name
    */
   def bundleForName(name: String) =
-    context.getBundles.find(_.getSymbolicName == name).getOrElse(fail("Unable to find bundle with symbolic name %s".format(name)))
+    context.getBundles
+      .find(_.getSymbolicName == name)
+      .getOrElse(fail("Unable to find bundle with symbolic name %s".format(name)))
 
   /**
    * Convenience method to find a service by interface.  If the service is not already available in the OSGi Service
@@ -75,27 +82,30 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 
   def awaitReference[T](serviceType: Class[T], wait: FiniteDuration): ServiceReference[T] = {
 
-    @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference[T] = context.getServiceReference(serviceType.getName) match {
-      case null ⇒
-        if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
-        else {
-          Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
-          poll(step, deadline)
-        }
-      case some ⇒ some.asInstanceOf[ServiceReference[T]]
-    }
+    @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference[T] =
+      context.getServiceReference(serviceType.getName) match {
+        case null =>
+          if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
+          else {
+            Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
+            poll(step, deadline)
+          }
+        case some => some.asInstanceOf[ServiceReference[T]]
+      }
 
     poll(wait, Deadline.now + MaxWaitDuration)
   }
 
   protected def buildTestBundles(builders: immutable.Seq[BundleDescriptorBuilder]): immutable.Seq[BundleDescriptor] =
-    builders map (_.build)
+    builders.map(_.build)
 
-  def filterErrors()(block: ⇒ Unit): Unit =
-    try block catch { case e: Throwable ⇒ System.err.write(bufferedLoadingErrors.toByteArray); throw e }
+  def filterErrors()(block: => Unit): Unit =
+    try block
+    catch { case e: Throwable => System.err.write(bufferedLoadingErrors.toByteArray); throw e }
 }
 
 object PojoSRTestSupport {
+
   /**
    * Convenience method to define additional test bundles
    */
@@ -140,7 +150,10 @@ class BundleDescriptorBuilder(name: String) {
    */
   def build: BundleDescriptor = {
     val file: File = tinybundleToJarFile(name)
-    new BundleDescriptor(getClass().getClassLoader(), new URL("jar:" + file.toURI().toString() + "!/"), extractHeaders(file))
+    new BundleDescriptor(
+      getClass().getClassLoader(),
+      new URL("jar:" + file.toURI().toString() + "!/"),
+      extractHeaders(file))
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {
@@ -148,7 +161,7 @@ class BundleDescriptorBuilder(name: String) {
     val headers = new HashMap[String, String]()
     val jis = new JarInputStream(new FileInputStream(file))
     try {
-      for (entry ← jis.getManifest.getMainAttributes.entrySet.asScala)
+      for (entry <- jis.getManifest.getMainAttributes.entrySet.asScala)
         headers.put(entry.getKey.toString, entry.getValue.toString)
     } finally jis.close()
 
@@ -158,9 +171,9 @@ class BundleDescriptorBuilder(name: String) {
   def tinybundleToJarFile(name: String): File = {
     val file = new File("target/%s-%tQ.jar".format(name, new Date()))
     val fos = new FileOutputStream(file)
-    try copy(tinybundle.build(), fos) finally fos.close()
+    try copy(tinybundle.build(), fos)
+    finally fos.close()
 
     file
   }
 }
-

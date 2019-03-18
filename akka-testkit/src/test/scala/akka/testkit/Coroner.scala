@@ -7,8 +7,8 @@ package akka.testkit
 import java.io.PrintStream
 import java.lang.management.{ ManagementFactory, ThreadInfo }
 import java.util.Date
-import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import scala.concurrent.{ Promise, Awaitable, CanAwait, Await }
+import java.util.concurrent.{ CountDownLatch, TimeoutException }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
@@ -31,14 +31,14 @@ object Coroner {
    * The result of this Awaitable will be `true` if it has been cancelled.
    */
   trait WatchHandle extends Awaitable[Boolean] {
+
     /**
      * Will try to ensure that the Coroner has finished reporting.
      */
     def cancel(): Unit
   }
 
-  private class WatchHandleImpl(startAndStopDuration: FiniteDuration)
-    extends WatchHandle {
+  private class WatchHandleImpl(startAndStopDuration: FiniteDuration) extends WatchHandle {
     val cancelPromise = Promise[Boolean]
     val startedLatch = new CountDownLatch(1)
     val finishedLatch = new CountDownLatch(1)
@@ -64,7 +64,9 @@ object Coroner {
     }
 
     override def result(atMost: Duration)(implicit permit: CanAwait): Boolean =
-      try { Await.result(cancelPromise.future, atMost) } catch { case _: TimeoutException ⇒ false }
+      try {
+        Await.result(cancelPromise.future, atMost)
+      } catch { case _: TimeoutException => false }
 
   }
 
@@ -77,9 +79,12 @@ object Coroner {
    * If displayThreadCounts is set to true, then the Coroner will print thread counts during start
    * and stop.
    */
-  def watch(duration: FiniteDuration, reportTitle: String, out: PrintStream,
-            startAndStopDuration: FiniteDuration = defaultStartAndStopDuration,
-            displayThreadCounts:  Boolean        = false): WatchHandle = {
+  def watch(
+      duration: FiniteDuration,
+      reportTitle: String,
+      out: PrintStream,
+      startAndStopDuration: FiniteDuration = defaultStartAndStopDuration,
+      displayThreadCounts: Boolean = false): WatchHandle = {
 
     val watchedHandle = new WatchHandleImpl(startAndStopDuration)
 
@@ -95,8 +100,9 @@ object Coroner {
         if (!Await.result(watchedHandle, duration)) {
           watchedHandle.expired()
           out.println(s"Coroner not cancelled after ${duration.toMillis}ms. Looking for signs of foul play...")
-          try printReport(reportTitle, out) catch {
-            case NonFatal(ex) ⇒ {
+          try printReport(reportTitle, out)
+          catch {
+            case NonFatal(ex) => {
               out.println("Error displaying Coroner's Report")
               ex.printStackTrace(out)
             }
@@ -105,7 +111,8 @@ object Coroner {
       } finally {
         if (displayThreadCounts) {
           val endThreads = threadMx.getThreadCount
-          out.println(s"Coroner Thread Count started at $startThreads, ended at $endThreads, peaked at ${threadMx.getPeakThreadCount} in $reportTitle")
+          out.println(
+            s"Coroner Thread Count started at $startThreads, ended at $endThreads, peaked at ${threadMx.getPeakThreadCount} in $reportTitle")
         }
         out.flush()
         watchedHandle.finished()
@@ -137,9 +144,7 @@ object Coroner {
                 #Non-heap usage: ${memMx.getNonHeapMemoryUsage()}""".stripMargin('#'))
 
     def dumpAllThreads: Seq[ThreadInfo] = {
-      threadMx.dumpAllThreads(
-        threadMx.isObjectMonitorUsageSupported,
-        threadMx.isSynchronizerUsageSupported)
+      threadMx.dumpAllThreads(threadMx.isObjectMonitorUsageSupported, threadMx.isSynchronizerUsageSupported)
     }
 
     def findDeadlockedThreads: (Seq[ThreadInfo], String) = {
@@ -160,7 +165,7 @@ object Coroner {
       if (threadInfos.isEmpty) {
         println("None")
       } else {
-        for (ti ← threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
+        for (ti <- threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
       }
     }
 
@@ -201,27 +206,27 @@ object Coroner {
       }
 
       val stackTrace = ti.getStackTrace
-      for (i ← 0 until stackTrace.length) {
+      for (i <- 0 until stackTrace.length) {
         val ste = stackTrace(i)
         appendMsg("\tat ", ste)
         if (i == 0 && ti.getLockInfo != null) {
           import java.lang.Thread.State._
           ti.getThreadState match {
-            case BLOCKED       ⇒ appendMsg("\t-  blocked on ", ti.getLockInfo)
-            case WAITING       ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case TIMED_WAITING ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case _             ⇒
+            case BLOCKED       => appendMsg("\t-  blocked on ", ti.getLockInfo)
+            case WAITING       => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case TIMED_WAITING => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case _             =>
           }
         }
 
-        for (mi ← ti.getLockedMonitors if mi.getLockedStackDepth == i)
+        for (mi <- ti.getLockedMonitors if mi.getLockedStackDepth == i)
           appendMsg("\t-  locked ", mi)
       }
 
       val locks = ti.getLockedSynchronizers
       if (locks.length > 0) {
         appendMsg("\n\tNumber of locked synchronizers = ", locks.length)
-        for (li ← locks) appendMsg("\t- ", li)
+        for (li <- locks) appendMsg("\t- ", li)
       }
       sb.append('\n')
       sb.toString
@@ -247,13 +252,17 @@ object Coroner {
  * counts during start and stop.
  */
 trait WatchedByCoroner {
-  self: TestKit ⇒
+  self: TestKit =>
 
   @volatile private var coronerWatch: Coroner.WatchHandle = _
 
   final def startCoroner(): Unit = {
-    coronerWatch = Coroner.watch(expectedTestDuration.dilated, getClass.getName, System.err,
-      startAndStopDuration.dilated, displayThreadCounts)
+    coronerWatch = Coroner.watch(
+      expectedTestDuration.dilated,
+      getClass.getName,
+      System.err,
+      startAndStopDuration.dilated,
+      displayThreadCounts)
   }
 
   final def stopCoroner(): Unit = {

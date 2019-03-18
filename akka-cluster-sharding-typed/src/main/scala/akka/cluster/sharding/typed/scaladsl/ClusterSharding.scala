@@ -23,7 +23,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity => UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
@@ -164,7 +164,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  * such implementations.
  */
 @DoNotInherit
-trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding ⇒
+trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =>
 
   /**
    * Initialize sharding for the given `entity` factory settings.
@@ -221,8 +221,8 @@ object Entity {
    * @tparam M The type of message the entity accepts
    */
   def apply[M](
-    typeKey:        EntityTypeKey[M],
-    createBehavior: EntityContext ⇒ Behavior[M]): Entity[M, ShardingEnvelope[M]] =
+      typeKey: EntityTypeKey[M],
+      createBehavior: EntityContext => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
     new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
@@ -230,13 +230,13 @@ object Entity {
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
 final class Entity[M, E] private[akka] (
-  val createBehavior:     EntityContext ⇒ Behavior[M],
-  val typeKey:            EntityTypeKey[M],
-  val stopMessage:        Option[M],
-  val entityProps:        Props,
-  val settings:           Option[ClusterShardingSettings],
-  val messageExtractor:   Option[ShardingMessageExtractor[E, M]],
-  val allocationStrategy: Option[ShardAllocationStrategy]) {
+    val createBehavior: EntityContext => Behavior[M],
+    val typeKey: EntityTypeKey[M],
+    val stopMessage: Option[M],
+    val entityProps: Props,
+    val settings: Option[ClusterShardingSettings],
+    val messageExtractor: Option[ShardingMessageExtractor[E, M]],
+    val allocationStrategy: Option[ShardAllocationStrategy]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -278,13 +278,12 @@ final class Entity[M, E] private[akka] (
     copy(allocationStrategy = Option(newAllocationStrategy))
 
   private def copy(
-    createBehavior:     EntityContext ⇒ Behavior[M]     = createBehavior,
-    typeKey:            EntityTypeKey[M]                = typeKey,
-    stopMessage:        Option[M]                       = stopMessage,
-    entityProps:        Props                           = entityProps,
-    settings:           Option[ClusterShardingSettings] = settings,
-    allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy
-  ): Entity[M, E] = {
+      createBehavior: EntityContext => Behavior[M] = createBehavior,
+      typeKey: EntityTypeKey[M] = typeKey,
+      stopMessage: Option[M] = stopMessage,
+      entityProps: Props = entityProps,
+      settings: Option[ClusterShardingSettings] = settings,
+      allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
     new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
   }
 
@@ -293,9 +292,7 @@ final class Entity[M, E] private[akka] (
 /**
  * Parameter to [[Entity.apply]]
  */
-final class EntityContext(
-  val entityId: String,
-  val shard:    ActorRef[ClusterSharding.ShardCommand])
+final class EntityContext(val entityId: String, val shard: ActorRef[ClusterSharding.ShardCommand])
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
@@ -344,6 +341,7 @@ object StartEntity {
 }
 
 object EntityTypeKey {
+
   /**
    * Creates an `EntityTypeKey`. The `name` must be unique.
    */
@@ -364,7 +362,7 @@ object EntityTypeKey {
  * [[ActorRef]] and watch it in case such notification is desired.
  * Not for user extension.
  */
-@DoNotInherit trait EntityRef[M] extends RecipientRef[M] { this: InternalRecipientRef[M] ⇒
+@DoNotInherit trait EntityRef[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
@@ -409,7 +407,7 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ask[U](f: ActorRef[U] ⇒ M)(implicit timeout: Timeout): Future[U]
+  def ask[U](f: ActorRef[U] => M)(implicit timeout: Timeout): Future[U]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -430,13 +428,13 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ?[U](message: ActorRef[U] ⇒ M)(implicit timeout: Timeout): Future[U] =
+  def ?[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] =
     this.ask(message)(timeout)
 
 }
 
 object ClusterShardingSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSharding): ClusterShardingSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSharding): ClusterShardingSetup =
     new ClusterShardingSetup(new java.util.function.Function[ActorSystem[_], ClusterSharding] {
       override def apply(sys: ActorSystem[_]): ClusterSharding = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12
@@ -449,4 +447,4 @@ object ClusterShardingSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ClusterShardingSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSharding])
-  extends ExtensionSetup[ClusterSharding](ClusterSharding, createExtension)
+    extends ExtensionSetup[ClusterSharding](ClusterSharding, createExtension)

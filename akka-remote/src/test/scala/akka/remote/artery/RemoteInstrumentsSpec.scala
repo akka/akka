@@ -18,8 +18,8 @@ class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
 
   implicit val arbitraryKeyLength: Arbitrary[KeyLen] = Arbitrary {
     for {
-      key ← Gen.chooseNum(0.toByte, 31.toByte)
-      len ← Gen.chooseNum(1, 1024)
+      key <- Gen.chooseNum(0.toByte, 31.toByte)
+      len <- Gen.chooseNum(1, 1024)
     } yield KeyLen(key, len)
   }
 
@@ -37,7 +37,7 @@ class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
     }
 
     "combine and decompose key with 0 multiple times" in {
-      check { (kl: KeyLen) ⇒
+      check { (kl: KeyLen) =>
         val k = kl.k
 
         val masked = RemoteInstruments.combineKeyLength(k, 0)
@@ -48,7 +48,7 @@ class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
     }
 
     "combine and decompose length with 0 multiple times" in {
-      check { (kl: KeyLen) ⇒
+      check { (kl: KeyLen) =>
         val l = kl.l
 
         val masked = RemoteInstruments.combineKeyLength(0, l)
@@ -59,7 +59,7 @@ class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
     }
 
     "combine and decompose key and length multiple times" in {
-      check { (kl: KeyLen) ⇒
+      check { (kl: KeyLen) =>
         val k = kl.k
         val l = kl.l
 

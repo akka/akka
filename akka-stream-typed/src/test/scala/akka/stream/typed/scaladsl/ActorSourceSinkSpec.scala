@@ -33,9 +33,10 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val p = TestProbe[String]()
 
       val in =
-        Source.queue[String](10, OverflowStrategy.dropBuffer)
+        Source
+          .queue[String](10, OverflowStrategy.dropBuffer)
           .map(_ + "!")
-          .to(ActorSink.actorRef(p.ref, "DONE", ex ⇒ "FAILED: " + ex.getMessage))
+          .to(ActorSink.actorRef(p.ref, "DONE", ex => "FAILED: " + ex.getMessage))
           .run()
 
       val msg = "Zug zug"
@@ -47,28 +48,28 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.receive[AckProto] {
-        (ctx, msg) ⇒
-          msg match {
-            case m @ Init(sender) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Behaviors.same
-            case m @ Msg(sender, _) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Behaviors.same
-            case m ⇒
-              p.ref ! m
-              Behaviors.same
-          }
+      val autoPilot = Behaviors.receive[AckProto] { (ctx, msg) =>
+        msg match {
+          case m @ Init(sender) =>
+            p.ref ! m
+            sender ! "ACK"
+            Behaviors.same
+          case m @ Msg(sender, _) =>
+            p.ref ! m
+            sender ! "ACK"
+            Behaviors.same
+          case m =>
+            p.ref ! m
+            Behaviors.same
+        }
       }
 
       val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
 
       val in =
-        Source.queue[String](10, OverflowStrategy.dropBuffer)
-          .to(ActorSink.actorRefWithAck(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ ⇒ Failed))
+        Source
+          .queue[String](10, OverflowStrategy.dropBuffer)
+          .to(ActorSink.actorRefWithAck(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
           .run()
 
       p.expectMessageType[Init]
@@ -86,7 +87,8 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "ActorSource" should {
     "send messages and complete" in {
-      val (in, out) = ActorSource.actorRef[String]({ case "complete" ⇒ }, PartialFunction.empty, 10, OverflowStrategy.dropBuffer)
+      val (in, out) = ActorSource
+        .actorRef[String]({ case "complete" => }, PartialFunction.empty, 10, OverflowStrategy.dropBuffer)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
@@ -98,7 +100,8 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "fail the stream" in {
-      val (in, out) = ActorSource.actorRef[String](PartialFunction.empty, { case msg ⇒ new Error(msg) }, 10, OverflowStrategy.dropBuffer)
+      val (in, out) = ActorSource
+        .actorRef[String](PartialFunction.empty, { case msg => new Error(msg) }, 10, OverflowStrategy.dropBuffer)
         .toMat(Sink.seq)(Keep.both)
         .run()
 

@@ -22,9 +22,12 @@ import akka.util.OptionVal
 
   final case class Timer(key: Any, msg: Any, repeat: Boolean, generation: Int, task: Cancellable)
   final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
   final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded with NotInfluenceReceiveTimeout
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
+      with NotInfluenceReceiveTimeout
 }
 
 /**
@@ -49,8 +52,8 @@ import akka.util.OptionVal
 
   private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
-      case Some(t) ⇒ cancelTimer(t)
-      case None    ⇒
+      case Some(t) => cancelTimer(t)
+      case None    =>
     }
     val nextGen = nextTimerGen()
 
@@ -76,8 +79,8 @@ import akka.util.OptionVal
 
   override def cancel(key: Any): Unit = {
     timers.get(key) match {
-      case None    ⇒ // already removed/canceled
-      case Some(t) ⇒ cancelTimer(t)
+      case None    => // already removed/canceled
+      case Some(t) => cancelTimer(t)
     }
   }
 
@@ -89,7 +92,7 @@ import akka.util.OptionVal
 
   override def cancelAll(): Unit = {
     log.debug("Cancel all timers")
-    timers.valuesIterator.foreach { timer ⇒
+    timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }
     timers = Map.empty
@@ -97,11 +100,11 @@ import akka.util.OptionVal
 
   def interceptTimerMsg(timerMsg: TimerMsg): OptionVal[AnyRef] = {
     timers.get(timerMsg.key) match {
-      case None ⇒
+      case None =>
         // it was from canceled timer that was already enqueued in mailbox
         log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
         OptionVal.None // message should be ignored
-      case Some(t) ⇒
+      case Some(t) =>
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
           log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
@@ -115,7 +118,9 @@ import akka.util.OptionVal
           // it was from an old timer that was enqueued in mailbox before canceled
           log.debug(
             "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
-            timerMsg.key, timerMsg.generation, t.generation)
+            timerMsg.key,
+            timerMsg.generation,
+            t.generation)
           OptionVal.None // message should be ignored
         }
     }

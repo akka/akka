@@ -19,7 +19,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.japi.function.{ Function ⇒ JFunction }
+import akka.japi.function.{ Function => JFunction }
 import akka.persistence.typed.PersistenceId
 import akka.util.Timeout
 
@@ -214,9 +214,16 @@ object Entity {
    * @tparam M The type of message the entity accepts
    */
   def of[M](
-    typeKey:        EntityTypeKey[M],
-    createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
-    new Entity(createBehavior, typeKey, Optional.empty(), Props.empty, Optional.empty(), Optional.empty(), Optional.empty())
+      typeKey: EntityTypeKey[M],
+      createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
+    new Entity(
+      createBehavior,
+      typeKey,
+      Optional.empty(),
+      Props.empty,
+      Optional.empty(),
+      Optional.empty(),
+      Optional.empty())
   }
 
   /**
@@ -231,18 +238,22 @@ object Entity {
    * @tparam Command The type of message the entity accepts
    */
   def ofPersistentEntity[Command, Event, State >: Null](
-    typeKey:                EntityTypeKey[Command],
-    createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
+      typeKey: EntityTypeKey[Command],
+      createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
+      : Entity[Command, ShardingEnvelope[Command]] = {
 
-    of(typeKey, new JFunction[EntityContext[Command], Behavior[Command]] {
-      override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
-        val persistentEntity = createPersistentEntity(ctx)
-        if (persistentEntity.entityTypeKey != typeKey)
-          throw new IllegalArgumentException(s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
-            s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
-        persistentEntity
-      }
-    })
+    of(
+      typeKey,
+      new JFunction[EntityContext[Command], Behavior[Command]] {
+        override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
+          val persistentEntity = createPersistentEntity(ctx)
+          if (persistentEntity.entityTypeKey != typeKey)
+            throw new IllegalArgumentException(
+              s"The [${persistentEntity.entityTypeKey}] of the PersistentEntity " +
+              s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
+          persistentEntity
+        }
+      })
   }
 
 }
@@ -251,13 +262,13 @@ object Entity {
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
 final class Entity[M, E] private (
-  val createBehavior:     JFunction[EntityContext[M], Behavior[M]],
-  val typeKey:            EntityTypeKey[M],
-  val stopMessage:        Optional[M],
-  val entityProps:        Props,
-  val settings:           Optional[ClusterShardingSettings],
-  val messageExtractor:   Optional[ShardingMessageExtractor[E, M]],
-  val allocationStrategy: Optional[ShardAllocationStrategy]) {
+    val createBehavior: JFunction[EntityContext[M], Behavior[M]],
+    val typeKey: EntityTypeKey[M],
+    val stopMessage: Optional[M],
+    val entityProps: Props,
+    val settings: Optional[ClusterShardingSettings],
+    val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
+    val allocationStrategy: Optional[ShardAllocationStrategy]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -289,7 +300,14 @@ final class Entity[M, E] private (
    * is configured with `akka.cluster.sharding.number-of-shards`.
    */
   def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): Entity[M, Envelope] =
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, Optional.ofNullable(newExtractor), allocationStrategy)
+    new Entity(
+      createBehavior,
+      typeKey,
+      stopMessage,
+      entityProps,
+      settings,
+      Optional.ofNullable(newExtractor),
+      allocationStrategy)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -299,13 +317,12 @@ final class Entity[M, E] private (
     copy(allocationStrategy = Optional.ofNullable(newAllocationStrategy))
 
   private def copy(
-    createBehavior:     JFunction[EntityContext[M], Behavior[M]] = createBehavior,
-    typeKey:            EntityTypeKey[M]                         = typeKey,
-    stopMessage:        Optional[M]                              = stopMessage,
-    entityProps:        Props                                    = entityProps,
-    settings:           Optional[ClusterShardingSettings]        = settings,
-    allocationStrategy: Optional[ShardAllocationStrategy]        = allocationStrategy
-  ): Entity[M, E] = {
+      createBehavior: JFunction[EntityContext[M], Behavior[M]] = createBehavior,
+      typeKey: EntityTypeKey[M] = typeKey,
+      stopMessage: Optional[M] = stopMessage,
+      entityProps: Props = entityProps,
+      settings: Optional[ClusterShardingSettings] = settings,
+      allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
     new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
   }
 
@@ -315,9 +332,9 @@ final class Entity[M, E] private (
  * Parameter to [[Entity.of]]
  */
 final class EntityContext[M](
-  entityId:     String,
-  shard:        ActorRef[ClusterSharding.ShardCommand],
-  actorContext: ActorContext[M]) {
+    entityId: String,
+    shard: ActorRef[ClusterSharding.ShardCommand],
+    actorContext: ActorContext[M]) {
 
   def getEntityId: String = entityId
 
@@ -342,7 +359,7 @@ object StartEntity {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] ⇒
+@DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] =>
 
   /**
    * Name of the entity type.
@@ -399,7 +416,8 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] { scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] ⇒
+@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] {
+  scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*

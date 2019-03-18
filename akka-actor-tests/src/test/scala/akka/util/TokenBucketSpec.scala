@@ -74,7 +74,7 @@ class TokenBucketSpec extends AkkaSpec {
       val bucket = new TestBucket(1, 10)
       bucket.init()
 
-      for (time ← 0 to 100 by 10) {
+      for (time <- 0 to 100 by 10) {
         bucket.currentTime = time
         bucket.offer(1) should ===(0L)
       }
@@ -195,11 +195,11 @@ class TokenBucketSpec extends AkkaSpec {
       val Debug = false
 
       for {
-        capacity ← List(0, 1, 5, 10)
-        period ← List(1, 3, 5)
-        arrivalPeriod ← List(1, 3, 5)
-        startTime ← List(Long.MinValue, -1L, 0L, Long.MaxValue)
-        maxCost ← List(1, 5, 10)
+        capacity <- List(0, 1, 5, 10)
+        period <- List(1, 3, 5)
+        arrivalPeriod <- List(1, 3, 5)
+        startTime <- List(Long.MinValue, -1L, 0L, Long.MaxValue)
+        maxCost <- List(1, 5, 10)
       } {
 
         val bucket = new TestBucket(capacity, period)
@@ -212,7 +212,7 @@ class TokenBucketSpec extends AkkaSpec {
         var nextEmit = 0L
         var delaying = false
 
-        for (time ← 0 to 1000) {
+        for (time <- 0 to 1000) {
           if (untilNextTick == 0) {
             untilNextTick = period
             idealBucket = math.min(idealBucket + 1, capacity)

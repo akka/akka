@@ -287,14 +287,13 @@ public class PatternsTest extends JUnitSuite {
 
   @Test(expected = IllegalStateException.class)
   public void testAfterFailedFuture() throws Exception {
-    Future<String> failedFuture = Futures.failed(new IllegalStateException("Illegal!"));
 
     Future<String> delayedFuture =
         Patterns.after(
             scala.concurrent.duration.Duration.create(200, "millis"),
             system.scheduler(),
             ec,
-            failedFuture);
+            () -> Futures.failed(new IllegalStateException("Illegal!")));
 
     Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
     Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
@@ -326,7 +325,7 @@ public class PatternsTest extends JUnitSuite {
             scala.concurrent.duration.Duration.create(200, "millis"),
             system.scheduler(),
             ec,
-            Futures.successful(expected));
+            () -> Futures.successful(expected));
 
     Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
 
@@ -343,7 +342,7 @@ public class PatternsTest extends JUnitSuite {
             scala.concurrent.duration.Duration.create(200, "millis"),
             system.scheduler(),
             ec,
-            Futures.successful("world"));
+            () -> Futures.successful("world"));
 
     Future<String> immediateFuture = Futures.future(() -> expected, ec);
 
@@ -408,7 +407,11 @@ public class PatternsTest extends JUnitSuite {
     final CompletionStage<String> f = CompletableFuture.completedFuture(expected);
 
     CompletionStage<String> delayedStage =
-        Patterns.after(Duration.ofMillis(200), system.scheduler(), ec, f);
+        Patterns.after(
+            Duration.ofMillis(200),
+            system.scheduler(),
+            ec,
+            () -> CompletableFuture.completedFuture(expected));
 
     final String actual = delayedStage.toCompletableFuture().get(3, SECONDS);
     assertEquals(expected, actual);
@@ -421,7 +424,11 @@ public class PatternsTest extends JUnitSuite {
     final CompletionStage<String> f = CompletableFuture.completedFuture("world!");
 
     CompletionStage<String> delayedStage =
-        Patterns.after(Duration.ofMillis(200), system.scheduler(), ec, f);
+        Patterns.after(
+            Duration.ofMillis(200),
+            system.scheduler(),
+            ec,
+            () -> CompletableFuture.completedFuture("world!"));
 
     CompletableFuture<String> immediateStage = CompletableFuture.completedFuture(expected);
     CompletableFuture<Object> resultStage =

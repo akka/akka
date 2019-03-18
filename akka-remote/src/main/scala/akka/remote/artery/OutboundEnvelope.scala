@@ -13,10 +13,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 private[remote] object OutboundEnvelope {
-  def apply(
-    recipient: OptionVal[RemoteActorRef],
-    message:   AnyRef,
-    sender:    OptionVal[ActorRef]): OutboundEnvelope = {
+  def apply(recipient: OptionVal[RemoteActorRef], message: AnyRef, sender: OptionVal[ActorRef]): OutboundEnvelope = {
     val env = new ReusableOutboundEnvelope
     env.init(recipient, message, sender)
   }
@@ -40,9 +37,11 @@ private[remote] trait OutboundEnvelope extends NoSerializationVerificationNeeded
  * INTERNAL API
  */
 private[remote] object ReusableOutboundEnvelope {
-  def createObjectPool(capacity: Int) = new ObjectPool[ReusableOutboundEnvelope](
-    capacity,
-    create = () ⇒ new ReusableOutboundEnvelope, clear = outEnvelope ⇒ outEnvelope.clear())
+  def createObjectPool(capacity: Int) =
+    new ObjectPool[ReusableOutboundEnvelope](
+      capacity,
+      create = () => new ReusableOutboundEnvelope,
+      clear = outEnvelope => outEnvelope.clear())
 }
 
 /**
@@ -71,10 +70,7 @@ private[remote] final class ReusableOutboundEnvelope extends OutboundEnvelope {
     _sender = OptionVal.None
   }
 
-  def init(
-    recipient: OptionVal[RemoteActorRef],
-    message:   AnyRef,
-    sender:    OptionVal[ActorRef]): OutboundEnvelope = {
+  def init(recipient: OptionVal[RemoteActorRef], message: AnyRef, sender: OptionVal[ActorRef]): OutboundEnvelope = {
     _recipient = recipient
     _message = message
     _sender = sender

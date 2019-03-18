@@ -16,30 +16,33 @@ object SnapshotRecoveryLocalStoreSpec {
   class SaveSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
     var state = s"State for actor ${name}"
     def receiveCommand = {
-      case TakeSnapshot            ⇒ saveSnapshot(state)
-      case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
-      case GetState                ⇒ probe ! state
+      case TakeSnapshot            => saveSnapshot(state)
+      case SaveSnapshotSuccess(md) => probe ! md.sequenceNr
+      case GetState                => probe ! state
     }
     def receiveRecover = {
-      case _ ⇒
+      case _ =>
     }
   }
 
-  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name)
-    with ActorLogging {
+  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef)
+      extends NamedPersistentActor(name)
+      with ActorLogging {
 
     override def recovery = Recovery(toSequenceNr = 0)
 
     def receiveCommand = {
-      case _ ⇒
+      case _ =>
     }
     def receiveRecover = {
-      case other ⇒ probe ! other
+      case other => probe ! other
     }
   }
 }
 
-class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotRecoveryLocalStoreSpec")) with ImplicitSender {
+class SnapshotRecoveryLocalStoreSpec
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotRecoveryLocalStoreSpec"))
+    with ImplicitSender {
 
   import SnapshotRecoveryLocalStoreSpec._
 
@@ -58,7 +61,7 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
 
       val recoveringActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], persistenceId, testActor))
 
-      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, seqNo, timestamp), state) ⇒ }
+      expectMsgPF() { case SnapshotOffer(SnapshotMetadata(`persistenceId`, seqNo, timestamp), state) => }
       expectMsg(RecoveryCompleted)
     }
 

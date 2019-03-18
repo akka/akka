@@ -10,6 +10,7 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.ORMap.ZeroTag
 
 object LWWMap {
+
   /**
    * INTERNAL API
    */
@@ -21,6 +22,7 @@ object LWWMap {
   private val _empty: LWWMap[Any, Any] = new LWWMap(new ORMap(ORSet.empty, Map.empty, zeroTag = LWWMapTag))
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
+
   /**
    * Java API
    */
@@ -55,10 +57,11 @@ object LWWMap {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final class LWWMap[A, B] private[akka] (
-  private[akka] val underlying: ORMap[A, LWWRegister[B]])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
-  import LWWRegister.{ Clock, defaultClock }
+final class LWWMap[A, B] private[akka] (private[akka] val underlying: ORMap[A, LWWRegister[B]])
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
+  import LWWRegister.{ defaultClock, Clock }
 
   type T = LWWMap[A, B]
   type D = ORMap.DeltaOp
@@ -66,7 +69,7 @@ final class LWWMap[A, B] private[akka] (
   /**
    * Scala API: All entries of the map.
    */
-  def entries: Map[A, B] = underlying.entries.map { case (k, r) ⇒ k → r.value }
+  def entries: Map[A, B] = underlying.entries.map { case (k, r) => k -> r.value }
 
   /**
    * Java API: All entries of the map.
@@ -140,8 +143,8 @@ final class LWWMap[A, B] private[akka] (
    */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
     val newRegister = underlying.get(key) match {
-      case Some(r) ⇒ r.withValue(node, value, clock)
-      case None    ⇒ LWWRegister(node, value, clock)
+      case Some(r) => r.withValue(node, value, clock)
+      case None    => LWWRegister(node, value, clock)
     }
     new LWWMap(underlying.put(node, key, newRegister))
   }
@@ -200,8 +203,8 @@ final class LWWMap[A, B] private[akka] (
   override def toString: String = s"LWW$entries" //e.g. LWWMap(a -> 1, b -> 2)
 
   override def equals(o: Any): Boolean = o match {
-    case other: LWWMap[_, _] ⇒ underlying == other.underlying
-    case _                   ⇒ false
+    case other: LWWMap[_, _] => underlying == other.underlying
+    case _                   => false
   }
 
   override def hashCode: Int = underlying.hashCode

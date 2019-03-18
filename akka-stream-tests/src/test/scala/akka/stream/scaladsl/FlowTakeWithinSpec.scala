@@ -24,16 +24,24 @@ class FlowTakeWithinSpec extends StreamSpec {
       val cSub = c.expectSubscription()
       cSub.request(100)
       val demand1 = pSub.expectRequest().toInt
-      (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand1).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
       val demand2 = pSub.expectRequest().toInt
-      (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand2).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
       val demand3 = pSub.expectRequest().toInt
       val sentN = demand1 + demand2
-      (1 to sentN) foreach { n ⇒ c.expectNext(n) }
+      (1 to sentN).foreach { n =>
+        c.expectNext(n)
+      }
       within(2.seconds) {
         c.expectComplete()
       }
-      (1 to demand3) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand3).foreach { _ =>
+        pSub.sendNext(input.next())
+      }
       c.expectNoMsg(200.millis)
     }
 
@@ -43,7 +51,9 @@ class FlowTakeWithinSpec extends StreamSpec {
       val cSub = c.expectSubscription()
       c.expectNoMsg(200.millis)
       cSub.request(100)
-      (1 to 3) foreach { n ⇒ c.expectNext(n) }
+      (1 to 3).foreach { n =>
+        c.expectNext(n)
+      }
       c.expectComplete()
       c.expectNoMsg(200.millis)
     }

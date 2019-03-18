@@ -24,31 +24,31 @@ class MessageScalaTest extends FunSuite with Matchers with SharedCamelSystem {
   }
 
   test("mustConvertDoubleHeaderToString") {
-    val message = CamelMessage("test", Map("test" → 1.4))
+    val message = CamelMessage("test", Map("test" -> 1.4))
     message.headerAs[String]("test").get should ===("1.4")
   }
 
   test("mustReturnSubsetOfHeaders") {
-    val message = CamelMessage("test", Map("A" → "1", "B" → "2"))
-    message.headers(Set("B")) should ===(Map("B" → "2"))
+    val message = CamelMessage("test", Map("A" -> "1", "B" -> "2"))
+    message.headers(Set("B")) should ===(Map("B" -> "2"))
   }
 
   test("mustTransformBodyAndPreserveHeaders") {
-    CamelMessage("a", Map("A" → "1")).mapBody((body: String) ⇒ body + "b") should ===(CamelMessage("ab", Map("A" → "1")))
+    CamelMessage("a", Map("A" -> "1")).mapBody((body: String) => body + "b") should ===(
+      CamelMessage("ab", Map("A" -> "1")))
   }
 
   test("mustConvertBodyAndPreserveHeaders") {
-    CamelMessage(1.4, Map("A" → "1")).withBodyAs[String] should ===(CamelMessage("1.4", Map("A" → "1")))
+    CamelMessage(1.4, Map("A" -> "1")).withBodyAs[String] should ===(CamelMessage("1.4", Map("A" -> "1")))
   }
 
   test("mustSetBodyAndPreserveHeaders") {
-    CamelMessage("test1", Map("A" → "1")).copy(body = "test2") should ===(
-      CamelMessage("test2", Map("A" → "1")))
+    CamelMessage("test1", Map("A" -> "1")).copy(body = "test2") should ===(CamelMessage("test2", Map("A" -> "1")))
   }
 
   test("mustSetHeadersAndPreserveBody") {
-    CamelMessage("test1", Map("A" → "1")).copy(headers = Map("C" → "3")) should ===(
-      CamelMessage("test1", Map("C" → "3")))
+    CamelMessage("test1", Map("A" -> "1")).copy(headers = Map("C" -> "3")) should ===(
+      CamelMessage("test1", Map("C" -> "3")))
   }
 
   test("mustBeAbleToReReadStreamCacheBody") {

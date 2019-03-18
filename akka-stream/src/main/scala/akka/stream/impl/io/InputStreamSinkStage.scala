@@ -39,7 +39,8 @@ private[stream] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-@InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
+@InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration)
+    extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
   val in = Inlet[ByteString]("InputStreamSink.in")
   override def initialAttributes: Attributes = DefaultAttributes.inputStreamSink
@@ -57,8 +58,8 @@ private[stream] object InputStreamSinkStage {
 
       private val callback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback {
-          case ReadElementAcknowledgement ⇒ sendPullIfAllowed()
-          case Close                      ⇒ completeStage()
+          case ReadElementAcknowledgement => sendPullIfAllowed()
+          case Close                      => completeStage()
         }
 
       override def wakeUp(msg: AdapterToStageMessage): Unit = callback.invoke(msg)
@@ -111,10 +112,10 @@ private[stream] object InputStreamSinkStage {
  * InputStreamAdapter that interacts with InputStreamSinkStage
  */
 @InternalApi private[akka] class InputStreamAdapter(
-  sharedBuffer: BlockingQueue[StreamToAdapterMessage],
-  sendToStage:  (AdapterToStageMessage) ⇒ Unit,
-  readTimeout:  FiniteDuration)
-  extends InputStream {
+    sharedBuffer: BlockingQueue[StreamToAdapterMessage],
+    sendToStage: (AdapterToStageMessage) => Unit,
+    readTimeout: FiniteDuration)
+    extends InputStream {
 
   var isInitialized = false
   var isActive = true
@@ -123,7 +124,7 @@ private[stream] object InputStreamSinkStage {
   var detachedChunk: Option[ByteString] = None
 
   @scala.throws(classOf[IOException])
-  private[this] def executeIfNotClosed[T](f: () ⇒ T): T =
+  private[this] def executeIfNotClosed[T](f: () => T): T =
     if (isActive) {
       waitIfNotInitialized()
       f()
@@ -133,9 +134,9 @@ private[stream] object InputStreamSinkStage {
   override def read(): Int = {
     val a = new Array[Byte](1)
     read(a, 0, 1) match {
-      case 1   ⇒ a(0) & 0xff
-      case -1  ⇒ -1
-      case len ⇒ throw new IllegalStateException(s"Invalid length [$len]")
+      case 1   => a(0) & 0xff
+      case -1  => -1
+      case len => throw new IllegalStateException(s"Invalid length [$len]")
     }
   }
 
@@ -149,28 +150,28 @@ private[stream] object InputStreamSinkStage {
     require(length > 0, "length must be > 0")
     require(begin + length <= a.length, "begin + length must be smaller or equal to the array length")
 
-    executeIfNotClosed(() ⇒
+    executeIfNotClosed(() =>
       if (isStageAlive) {
         detachedChunk match {
-          case None ⇒
+          case None =>
             try {
               sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
-                case Data(data) ⇒
+                case Data(data) =>
                   detachedChunk = Some(data)
                   readBytes(a, begin, length)
-                case Finished ⇒
+                case Finished =>
                   isStageAlive = false
                   -1
-                case Failed(ex) ⇒
+                case Failed(ex) =>
                   isStageAlive = false
                   throw new IOException(ex)
-                case null        ⇒ throw new IOException("Timeout on waiting for new data")
-                case Initialized ⇒ throw new IllegalStateException("message 'Initialized' must come first")
+                case null        => throw new IOException("Timeout on waiting for new data")
+                case Initialized => throw new IllegalStateException("message 'Initialized' must come first")
               }
             } catch {
-              case ex: InterruptedException ⇒ throw new IOException(ex)
+              case ex: InterruptedException => throw new IOException(ex)
             }
-          case Some(data) ⇒
+          case Some(data) =>
             readBytes(a, begin, length)
         }
       } else -1)
@@ -186,7 +187,7 @@ private[stream] object InputStreamSinkStage {
 
   @scala.throws(classOf[IOException])
   override def close(): Unit = {
-    executeIfNotClosed(() ⇒ {
+    executeIfNotClosed(() => {
       // at this point Subscriber may be already terminated
       if (isStageAlive) sendToStage(Close)
       isActive = false
@@ -194,10 +195,9 @@ private[stream] object InputStreamSinkStage {
   }
 
   @tailrec
-  private[this] def getData(arr: Array[Byte], begin: Int, length: Int,
-                            gotBytes: Int): Int = {
+  private[this] def getData(arr: Array[Byte], begin: Int, length: Int, gotBytes: Int): Int = {
     grabDataChunk() match {
-      case Some(data) ⇒
+      case Some(data) =>
         val size = data.size
         if (size <= length) {
           data.copyToArray(arr, begin, size)
@@ -211,34 +211,34 @@ private[stream] object InputStreamSinkStage {
           detachedChunk = Some(data.drop(length))
           gotBytes + length
         }
-      case None ⇒ gotBytes
+      case None => gotBytes
     }
   }
 
   private[this] def waitIfNotInitialized(): Unit = {
     if (!isInitialized) {
       sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
-        case Initialized ⇒ isInitialized = true
-        case null        ⇒ throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
-        case entry       ⇒ require(false, s"First message must be Initialized notification, got $entry")
+        case Initialized => isInitialized = true
+        case null        => throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
+        case entry       => require(false, s"First message must be Initialized notification, got $entry")
       }
     }
   }
 
   private[this] def grabDataChunk(): Option[ByteString] = {
     detachedChunk match {
-      case None ⇒
+      case None =>
         sharedBuffer.poll() match {
-          case Data(data) ⇒
+          case Data(data) =>
             detachedChunk = Some(data)
             detachedChunk
-          case Finished ⇒
+          case Finished =>
             isStageAlive = false
             None
-          case Failed(e) ⇒ throw new IOException(e)
-          case _         ⇒ None
+          case Failed(e) => throw new IOException(e)
+          case _         => None
         }
-      case Some(_) ⇒ detachedChunk
+      case Some(_) => detachedChunk
     }
   }
 }

@@ -18,8 +18,13 @@ import akka.remote.testconductor.RoleName
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport with Matchers {
-  self: MultiNodeSpec ⇒
+trait MultiNodeTypedClusterSpec
+    extends Suite
+    with STMultiNodeSpec
+    with WatchedByCoroner
+    with FlightRecordingSupport
+    with Matchers {
+  self: MultiNodeSpec =>
 
   override def initialParticipants: Int = roles.size
 
@@ -46,27 +51,27 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
    */
   implicit def address(role: RoleName): Address = {
     cachedAddresses.get(role) match {
-      case null ⇒
+      case null =>
         val address = node(role).address
         cachedAddresses.put(role, address)
         address
-      case address ⇒ address
+      case address => address
     }
   }
 
   def formCluster(first: RoleName, rest: RoleName*): Unit = {
     runOn(first) {
       cluster.manager ! Join(cluster.selfMember.address)
-      awaitAssert(cluster.state.members.exists { m ⇒
+      awaitAssert(cluster.state.members.exists { m =>
         m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
       } should be(true))
     }
     enterBarrier(first.name + "-joined")
 
-    rest foreach { node ⇒
+    rest.foreach { node =>
       runOn(node) {
         cluster.manager ! Join(address(first))
-        awaitAssert(cluster.state.members.exists { m ⇒
+        awaitAssert(cluster.state.members.exists { m =>
           m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
         } should be(true))
       }

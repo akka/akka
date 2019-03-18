@@ -1,4 +1,4 @@
-# Source.startContextPropagation
+# Source.asSourceWithContext
 
 Turns a Source into a SourceWithContext which can propagate a context per element along a stream.
 
@@ -8,11 +8,11 @@ Turns a Source into a SourceWithContext which can propagate a context per elemen
 
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #startContextPropagation }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #asSourceWithContext }
 
 @@@
 
 ## Description
 
 Turns a Source into a SourceWithContext which can propagate a context per element along a stream.
-The function passed into startContextPropagation must turn elements into contexts, one context for every element. 
+The function passed into asSourceWithContext must turn elements into contexts, one context for every element. 

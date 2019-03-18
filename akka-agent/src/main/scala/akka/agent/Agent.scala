@@ -8,12 +8,17 @@ import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.util.SerializedSuspendableExecutionContext
 
-@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+@deprecated(
+  "Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+  since = "2.5.0")
 object Agent {
+
   /**
    * Factory method for creating an Agent.
    */
-  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+  @deprecated(
+    "Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+    since = "2.5.0")
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
   /**
@@ -21,7 +26,9 @@ object Agent {
    * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.i
    */
   @Deprecated
-  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+  @deprecated(
+    "Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+    since = "2.5.0")
   def create[T](initialValue: T, context: ExecutionContext): Agent[T] = Agent(initialValue)(context)
 
   /**
@@ -35,24 +42,31 @@ object Agent {
 
     def send(newValue: T): Unit = withinTransaction(new Runnable { def run = ref.single.update(newValue) })
 
-    def send(f: T ⇒ T): Unit = withinTransaction(new Runnable { def run = ref.single.transform(f) })
+    def send(f: T => T): Unit = withinTransaction(new Runnable { def run = ref.single.transform(f) })
 
-    def sendOff(f: T ⇒ T)(implicit ec: ExecutionContext): Unit = withinTransaction(
-      new Runnable {
+    def sendOff(f: T => T)(implicit ec: ExecutionContext): Unit =
+      withinTransaction(new Runnable {
         def run =
-          try updater.suspend() finally ec.execute(new Runnable { def run = try ref.single.transform(f) finally updater.resume() })
+          try updater.suspend()
+          finally ec.execute(new Runnable {
+            def run =
+              try ref.single.transform(f)
+              finally updater.resume()
+          })
       })
 
     def alter(newValue: T): Future[T] = doAlter({ ref.single.update(newValue); newValue })
 
-    def alter(f: T ⇒ T): Future[T] = doAlter(ref.single.transformAndGet(f))
+    def alter(f: T => T): Future[T] = doAlter(ref.single.transformAndGet(f))
 
-    def alterOff(f: T ⇒ T)(implicit ec: ExecutionContext): Future[T] = {
+    def alterOff(f: T => T)(implicit ec: ExecutionContext): Future[T] = {
       val result = Promise[T]()
       withinTransaction(new Runnable {
         def run = {
           updater.suspend()
-          result completeWith Future(try ref.single.transformAndGet(f) finally updater.resume())
+          result.completeWith(
+            Future(try ref.single.transformAndGet(f)
+            finally updater.resume()))
         }
       })
       result.future
@@ -63,31 +77,31 @@ object Agent {
      */
     private final def withinTransaction(run: Runnable): Unit = {
       Txn.findCurrent match {
-        case Some(txn) ⇒ Txn.afterCommit(_ ⇒ updater.execute(run))(txn)
-        case _         ⇒ updater.execute(run)
+        case Some(txn) => Txn.afterCommit(_ => updater.execute(run))(txn)
+        case _         => updater.execute(run)
       }
     }
 
     /**
      * Internal helper method
      */
-    private final def doAlter(f: ⇒ T): Future[T] = {
+    private final def doAlter(f: => T): Future[T] = {
       Txn.findCurrent match {
-        case Some(txn) ⇒
+        case Some(txn) =>
           val result = Promise[T]()
-          Txn.afterCommit(status ⇒ result completeWith Future(f)(updater))(txn)
+          Txn.afterCommit(status => result.completeWith(Future(f)(updater)))(txn)
           result.future
-        case _ ⇒ Future(f)(updater)
+        case _ => Future(f)(updater)
       }
     }
 
     def future(): Future[T] = Future(ref.single.get)(updater)
 
-    def map[B](f: T ⇒ B): Agent[B] = Agent(f(get))(updater)
+    def map[B](f: T => B): Agent[B] = Agent(f(get))(updater)
 
-    def flatMap[B](f: T ⇒ Agent[B]): Agent[B] = f(get)
+    def flatMap[B](f: T => Agent[B]): Agent[B] = f(get)
 
-    def foreach[U](f: T ⇒ U): Unit = f(get)
+    def foreach[U](f: T => U): Unit = f(get)
   }
 }
 
@@ -159,7 +173,9 @@ object Agent {
  *
  * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.
  */
-@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
+@deprecated(
+  "Agents are deprecated and scheduled for removal in the next major version, use Actors instead.",
+  since = "2.5.0")
 abstract class Agent[T] {
 
   /**
@@ -182,7 +198,7 @@ abstract class Agent[T] {
    * Dispatch a function to update the internal state.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def send(f: T ⇒ T): Unit
+  def send(f: T => T): Unit
 
   /**
    * Dispatch a function to update the internal state but on its own thread.
@@ -191,7 +207,7 @@ abstract class Agent[T] {
    * still be executed in order.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def sendOff(f: T ⇒ T)(implicit ec: ExecutionContext): Unit
+  def sendOff(f: T => T)(implicit ec: ExecutionContext): Unit
 
   /**
    * Dispatch an update to the internal state, and return a Future where
@@ -205,7 +221,7 @@ abstract class Agent[T] {
    * that new state can be obtained.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def alter(f: T ⇒ T): Future[T]
+  def alter(f: T => T): Future[T]
 
   /**
    * Dispatch a function to update the internal state but on its own thread,
@@ -215,7 +231,7 @@ abstract class Agent[T] {
    * still be executed in order.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def alterOff(f: T ⇒ T)(implicit ec: ExecutionContext): Future[T]
+  def alterOff(f: T => T)(implicit ec: ExecutionContext): Future[T]
 
   /**
    * A future to the current value that will be completed after any currently
@@ -228,18 +244,18 @@ abstract class Agent[T] {
    * Does not change the value of this agent.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def map[B](f: T ⇒ B): Agent[B]
+  def map[B](f: T => B): Agent[B]
 
   /**
    * Flatmap this agent to a new agent, applying the function to the internal state.
    * Does not change the value of this agent.
    * In Java, pass in an instance of `akka.dispatch.Mapper`.
    */
-  def flatMap[B](f: T ⇒ Agent[B]): Agent[B]
+  def flatMap[B](f: T => Agent[B]): Agent[B]
 
   /**
    * Applies the function to the internal state. Does not change the value of this agent.
    * In Java, pass in an instance of `akka.dispatch.Foreach`.
    */
-  def foreach[U](f: T ⇒ U): Unit
+  def foreach[U](f: T => U): Unit
 }

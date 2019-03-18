@@ -16,15 +16,19 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] object ActorRefSinkActor {
-  def props(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Props =
+  def props(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable => Any): Props =
     Props(new ActorRefSinkActor(ref, highWatermark, onCompleteMessage, onFailureMessage))
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any)
-  extends ActorSubscriber {
+@InternalApi private[akka] class ActorRefSinkActor(
+    ref: ActorRef,
+    highWatermark: Int,
+    onCompleteMessage: Any,
+    onFailureMessage: Throwable => Any)
+    extends ActorSubscriber {
   import ActorSubscriberMessage._
 
   override val requestStrategy = WatermarkRequestStrategy(highWatermark)
@@ -32,15 +36,15 @@ import akka.annotation.InternalApi
   context.watch(ref)
 
   def receive = {
-    case OnNext(elem) ⇒
+    case OnNext(elem) =>
       ref.tell(elem, ActorRef.noSender)
-    case OnError(cause) ⇒
+    case OnError(cause) =>
       ref.tell(onFailureMessage(cause), ActorRef.noSender)
       context.stop(self)
-    case OnComplete ⇒
+    case OnComplete =>
       ref.tell(onCompleteMessage, ActorRef.noSender)
       context.stop(self)
-    case Terminated(`ref`) ⇒
+    case Terminated(`ref`) =>
       context.stop(self) // will cancel upstream
   }
 

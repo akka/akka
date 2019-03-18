@@ -9,7 +9,7 @@ import java.nio.file.{ OpenOption, Path }
 import java.util
 import java.util.concurrent.CompletionStage
 
-import akka.stream.{ IOResult, javadsl, scaladsl }
+import akka.stream.{ javadsl, scaladsl, IOResult }
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._
@@ -113,7 +113,10 @@ object FileIO {
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    * @param startPosition startPosition the start position to read from, defaults to 0
    */
-  def toPath[Opt <: OpenOption](f: Path, options: util.Set[Opt], startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toPath[Opt <: OpenOption](
+      f: Path,
+      options: util.Set[Opt],
+      startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet, startPosition).toCompletionStage())
 
   /**

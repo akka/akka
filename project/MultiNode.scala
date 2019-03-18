@@ -6,14 +6,19 @@ package akka
 
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
-import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
+import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt.{ Def, _ }
 import sbt.Keys._
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings
 
 object MultiNode extends AutoPlugin {
+
+  object autoImport {
+    val validateCompile = taskKey[Unit]("Validates compile for any project it is enabled")
+  }
+  import autoImport._
 
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
@@ -46,21 +51,24 @@ object MultiNode extends AutoPlugin {
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
     val akkaProperties = System.getProperties.stringPropertyNames.asScala.toList.collect {
-      case MultinodeJvmArgs(a, b) ⇒
+      case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
-      case key: String if knownPrefix.exists(pre ⇒ key.startsWith(pre)) ⇒ "-D" + key + "=" + System.getProperty(key)
+      case key: String if knownPrefix.exists(pre => key.startsWith(pre)) => "-D" + key + "=" + System.getProperty(key)
     }
 
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
   }
 
+  private val anyConfigsInThisProject = ScopeFilter(
+    configurations = inAnyConfiguration
+  )
+
   private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
-      inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
+      inConfig(MultiJvm)(scalafmtConfigSettings) ++
       Seq(
         jvmOptions in MultiJvm := defaultMultiJvmOptions,
-        compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
         scalacOptions in MultiJvm := (scalacOptions in Test).value,
         logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
         multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
@@ -100,16 +108,15 @@ object MultiNode extends AutoPlugin {
       (headerCreate in MultiJvm).value
       (compile in MultiJvm).value
     }) ++ headerSettings(MultiJvm) ++ Seq(
-      // only works if I put it here ¯\_(ツ)_/¯
-      compile in MultiJvm := ((compile in MultiJvm).triggeredBy(compile in Test)).value
+      validateCompile := compile.?.all(anyConfigsInThisProject).value
     )
 
 
   implicit class TestResultOps(val self: TestResult) extends AnyVal {
     def id: Int = self match {
-      case TestResult.Passed ⇒ 0
-      case TestResult.Failed ⇒ 1
-      case TestResult.Error  ⇒ 2
+      case TestResult.Passed => 0
+      case TestResult.Failed => 1
+      case TestResult.Error  => 2
     }
   }
 }
@@ -124,7 +131,7 @@ object MultiNodeScalaTest extends AutoPlugin {
   override lazy val projectSettings = Seq(
     extraOptions in MultiJvm := {
       val src = (sourceDirectory in MultiJvm).value
-      (name: String) ⇒ (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
     },
     scalatestOptions in MultiJvm := {
       Seq("-C", "org.scalatest.extra.QuietReporter") ++

@@ -28,16 +28,14 @@ object FlatMapConcatBenchmark {
 class FlatMapConcatBenchmark {
   import FlatMapConcatBenchmark._
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
     akka.actor.default-dispatcher {
       executor = "fork-join-executor"
       fork-join-executor {
         parallelism-factor = 1
       }
     }
-    """
-  )
+    """)
 
   private implicit val system: ActorSystem = ActorSystem("FlatMapConcatBenchmark", config)
 
@@ -63,9 +61,7 @@ class FlatMapConcatBenchmark {
   def sourceDotSingle(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .flatMapConcat(Source.single)
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.flatMapConcat(Source.single).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }
@@ -76,7 +72,7 @@ class FlatMapConcatBenchmark {
     val latch = new CountDownLatch(1)
 
     testSource
-      .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+      .flatMapConcat(elem => new GraphStages.SingleSource(elem))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
@@ -87,9 +83,7 @@ class FlatMapConcatBenchmark {
   def oneElementList(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .flatMapConcat(n ⇒ Source(n :: Nil))
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.flatMapConcat(n => Source(n :: Nil)).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }
@@ -99,9 +93,7 @@ class FlatMapConcatBenchmark {
   def mapBaseline(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource
-      .map(elem ⇒ elem)
-      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.map(elem => elem).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)
   }

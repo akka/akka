@@ -29,9 +29,12 @@ import scala.util.{ Failure, Success }
 }
 
 /** INTERNAL API */
-@InternalApi private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int)
-  extends akka.stream.actor.ActorPublisher[ByteString]
-  with ActorLogging {
+@InternalApi private[akka] class InputStreamPublisher(
+    is: InputStream,
+    completionPromise: Promise[IOResult],
+    chunkSize: Int)
+    extends akka.stream.actor.ActorPublisher[ByteString]
+    with ActorLogging {
 
   // TODO possibly de-duplicate with FilePublisher?
 
@@ -41,9 +44,9 @@ import scala.util.{ Failure, Success }
   var readBytesTotal = 0L
 
   def receive = {
-    case ActorPublisherMessage.Request(elements) ⇒ readAndSignal()
-    case Continue                                ⇒ readAndSignal()
-    case ActorPublisherMessage.Cancel            ⇒ context.stop(self)
+    case ActorPublisherMessage.Request(elements) => readAndSignal()
+    case Continue                                => readAndSignal()
+    case ActorPublisherMessage.Cancel            => context.stop(self)
   }
 
   def readAndSignal(): Unit =
@@ -52,26 +55,27 @@ import scala.util.{ Failure, Success }
       if (totalDemand > 0 && isActive) self ! Continue
     }
 
-  def readAndEmit(): Unit = if (totalDemand > 0) try {
-    // blocking read
-    val readBytes = is.read(arr)
+  def readAndEmit(): Unit =
+    if (totalDemand > 0) try {
+      // blocking read
+      val readBytes = is.read(arr)
 
-    readBytes match {
-      case -1 ⇒
-        // had nothing to read into this chunk
-        log.debug("No more bytes available to read (got `-1` from `read`)")
-        onCompleteThenStop()
+      readBytes match {
+        case -1 =>
+          // had nothing to read into this chunk
+          log.debug("No more bytes available to read (got `-1` from `read`)")
+          onCompleteThenStop()
 
-      case _ ⇒
-        readBytesTotal += readBytes
+        case _ =>
+          readBytesTotal += readBytes
 
-        // emit immediately, as this is the only chance to do it before we might block again
-        onNext(ByteString.fromArray(arr, 0, readBytes))
+          // emit immediately, as this is the only chance to do it before we might block again
+          onNext(ByteString.fromArray(arr, 0, readBytes))
+      }
+    } catch {
+      case ex: Exception =>
+        onErrorThenStop(ex)
     }
-  } catch {
-    case ex: Exception ⇒
-      onErrorThenStop(ex)
-  }
 
   override def postStop(): Unit = {
     super.postStop()
@@ -79,7 +83,7 @@ import scala.util.{ Failure, Success }
     try {
       if (is ne null) is.close()
     } catch {
-      case ex: Exception ⇒
+      case ex: Exception =>
         completionPromise.success(IOResult(readBytesTotal, Failure(ex)))
     }
 

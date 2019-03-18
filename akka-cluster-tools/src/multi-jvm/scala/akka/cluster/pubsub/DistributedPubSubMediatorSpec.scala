@@ -50,14 +50,14 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     import DistributedPubSubMediator._
 
     def receive = {
-      case Whisper(path, msg)        ⇒ mediator ! Send(path, msg, localAffinity = true)
-      case Talk(path, msg)           ⇒ mediator ! SendToAll(path, msg)
-      case TalkToOthers(path, msg)   ⇒ mediator ! SendToAll(path, msg, allButSelf = true)
-      case Shout(topic, msg)         ⇒ mediator ! Publish(topic, msg)
-      case ShoutToGroups(topic, msg) ⇒ mediator ! Publish(topic, msg, true)
-      case JoinGroup(topic, group)   ⇒ mediator ! Subscribe(topic, Some(group), self)
-      case ExitGroup(topic, group)   ⇒ mediator ! Unsubscribe(topic, Some(group), self)
-      case msg                       ⇒ testActor ! msg
+      case Whisper(path, msg)        => mediator ! Send(path, msg, localAffinity = true)
+      case Talk(path, msg)           => mediator ! SendToAll(path, msg)
+      case TalkToOthers(path, msg)   => mediator ! SendToAll(path, msg, allButSelf = true)
+      case Shout(topic, msg)         => mediator ! Publish(topic, msg)
+      case ShoutToGroups(topic, msg) => mediator ! Publish(topic, msg, true)
+      case JoinGroup(topic, group)   => mediator ! Subscribe(topic, Some(group), self)
+      case ExitGroup(topic, group)   => mediator ! Unsubscribe(topic, Some(group), self)
+      case msg                       => testActor ! msg
     }
   }
 
@@ -68,7 +68,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     val mediator = DistributedPubSub(context.system).mediator
 
     def receive = {
-      case in: String ⇒
+      case in: String =>
         val out = in.toUpperCase
         mediator ! Publish("content", out)
     }
@@ -83,9 +83,9 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     mediator ! Subscribe("content", self)
 
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.info("Got {}", s)
-      case SubscribeAck(Subscribe("content", None, `self`)) ⇒
+      case SubscribeAck(Subscribe("content", None, `self`)) =>
         log.info("subscribing")
     }
   }
@@ -98,7 +98,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     val mediator = DistributedPubSub(context.system).mediator
 
     def receive = {
-      case in: String ⇒
+      case in: String =>
         val out = in.toUpperCase
         mediator ! Send(path = "/user/destination", msg = out, localAffinity = true)
     }
@@ -113,7 +113,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     mediator ! Put(self)
 
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.info("Got {}", s)
     }
   }
@@ -125,7 +125,10 @@ class DistributedPubSubMediatorMultiJvmNode1 extends DistributedPubSubMediatorSp
 class DistributedPubSubMediatorMultiJvmNode2 extends DistributedPubSubMediatorSpec
 class DistributedPubSubMediatorMultiJvmNode3 extends DistributedPubSubMediatorSpec
 
-class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMediatorSpec) with STMultiNodeSpec with ImplicitSender {
+class DistributedPubSubMediatorSpec
+    extends MultiNodeSpec(DistributedPubSubMediatorSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DistributedPubSubMediatorSpec._
   import DistributedPubSubMediatorSpec.TestChatUser._
   import DistributedPubSubMediator._
@@ -134,7 +137,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createMediator()
     }
     enterBarrier(from.name + "-joined")
@@ -147,7 +150,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
   def createChatUser(name: String): ActorRef = {
     var a = system.actorOf(Props(classOf[TestChatUser], mediator, testActor), name)
-    chatUsers += (name → a)
+    chatUsers += (name -> a)
     a
   }
 
@@ -319,7 +322,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       runOn(first) {
         val names = receiveWhile(messages = 2) {
-          case "hello all" ⇒ lastSender.path.name
+          case "hello all" => lastSender.path.name
         }
         names.toSet should ===(Set("u8", "u9"))
       }
@@ -474,18 +477,18 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       // this test is configured with max-delta-elements = 500
       val many = 1010
       runOn(first) {
-        for (i ← 0 until many)
+        for (i <- 0 until many)
           mediator ! Put(createChatUser("u" + (1000 + i)))
 
         mediator ! Status(versions = Map.empty, isReplyToStatus = false)
         val deltaBuckets1 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner → b.version).toMap, isReplyToStatus = false)
+        mediator ! Status(versions = deltaBuckets1.map(b => b.owner -> b.version).toMap, isReplyToStatus = false)
         val deltaBuckets2 = expectMsgType[Delta].buckets
         deltaBuckets1.map(_.content.size).sum should ===(500)
 
-        mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner → b.version).toMap, isReplyToStatus = false)
+        mediator ! Status(versions = deltaBuckets2.map(b => b.owner -> b.version).toMap, isReplyToStatus = false)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
         deltaBuckets3.map(_.content.size).sum should ===(10 + 9 + 2 + many - 500 - 500)
@@ -558,8 +561,10 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       runOn(first) {
         mediator ! GetTopics
         expectMsgPF() {
-          case CurrentTopics(topics) if topics.contains("topic_a1")
-            && topics.contains("topic_a2") ⇒ true
+          case CurrentTopics(topics)
+              if topics.contains("topic_a1")
+              && topics.contains("topic_a2") =>
+            true
         }
       }
 

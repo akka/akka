@@ -22,8 +22,7 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.Throughput))
 class FramingBenchmark {
 
-  val config: Config = ConfigFactory.parseString(
-    """
+  val config: Config = ConfigFactory.parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
@@ -45,8 +44,7 @@ class FramingBenchmark {
             type = akka.testkit.CallingThreadDispatcherConfigurator
           }
         }
-      }""".stripMargin
-  ).withFallback(ConfigFactory.load())
+      }""".stripMargin).withFallback(ConfigFactory.load())
 
   implicit val system: ActorSystem = ActorSystem("test", config)
 
@@ -65,8 +63,10 @@ class FramingBenchmark {
   def setup(): Unit = {
     materializer = ActorMaterializer()
 
-    val frame = List.range(0, messageSize, 1).map(_ ⇒ Random.nextPrintableChar()).mkString + "\n"
-    flow = Source.repeat(ByteString(List.range(0, framePerSeq, 1).map(_ ⇒ frame).mkString)).take(100000)
+    val frame = List.range(0, messageSize, 1).map(_ => Random.nextPrintableChar()).mkString + "\n"
+    flow = Source
+      .repeat(ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString))
+      .take(100000)
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
   }
 
@@ -80,7 +80,7 @@ class FramingBenchmark {
   def framing(): Unit = {
     val lock = new Semaphore(1)
     lock.acquire()
-    flow.runWith(Sink.onComplete(_ ⇒ lock.release()))(materializer)
+    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
     lock.acquire()
   }
 

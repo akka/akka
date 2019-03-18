@@ -35,21 +35,21 @@ import akka.util.ccompat._
   def maxDeltaSize: Int
 
   def currentVersion(key: KeyId): Long = deltaCounter.get(key) match {
-    case Some(v) ⇒ v
-    case None    ⇒ 0L
+    case Some(v) => v
+    case None    => 0L
   }
 
   def update(key: KeyId, delta: ReplicatedData): Unit = {
     // bump the counter for each update
     val version = deltaCounter.get(key) match {
-      case Some(c) ⇒ c + 1
-      case None    ⇒ 1L
+      case Some(c) => c + 1
+      case None    => 1L
     }
     deltaCounter = deltaCounter.updated(key, version)
 
     val deltaEntriesForKey = deltaEntries.get(key) match {
-      case Some(m) ⇒ m
-      case None    ⇒ TreeMap.empty[Long, ReplicatedData]
+      case Some(m) => m
+      case None    => TreeMap.empty[Long, ReplicatedData]
     }
 
     deltaEntries = deltaEntries.updated(key, deltaEntriesForKey.updated(version, delta))
@@ -91,12 +91,12 @@ import akka.util.ccompat._
       var result = Map.empty[Address, DeltaPropagation]
 
       var cache = Map.empty[(KeyId, Long, Long), ReplicatedData]
-      slice.foreach { node ⇒
+      slice.foreach { node =>
         // collect the deltas that have not already been sent to the node and merge
         // them into a delta group
         var deltas = Map.empty[KeyId, (ReplicatedData, Long, Long)]
         deltaEntries.foreach {
-          case (key, entries) ⇒
+          case (key, entries) =>
             val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[Address, Long])
             val j = deltaSentToNodeForKey.getOrElse(node, 0L)
             val deltaEntriesAfterJ = deltaEntriesAfter(entries, j)
@@ -107,28 +107,28 @@ import akka.util.ccompat._
               // so we cache the merged results
               val cacheKey = (key, fromSeqNr, toSeqNr)
               val deltaGroup = cache.get(cacheKey) match {
-                case None ⇒
-                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft {
-                    (d1, d2) ⇒
-                      val merged = d2 match {
-                        case NoDeltaPlaceholder ⇒ NoDeltaPlaceholder
-                        case _ ⇒
-                          // this is fine also if d1 is a NoDeltaPlaceholder
-                          d1.merge(d2.asInstanceOf[d1.T])
-                      }
-                      merged match {
-                        case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize ⇒
-                          // discard too large deltas
-                          NoDeltaPlaceholder
-                        case _ ⇒ merged
-                      }
+                case None =>
+                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft { (d1, d2) =>
+                    val merged = d2 match {
+                      case NoDeltaPlaceholder => NoDeltaPlaceholder
+                      case _                  =>
+                        // this is fine also if d1 is a NoDeltaPlaceholder
+                        d1.merge(d2.asInstanceOf[d1.T])
+                    }
+                    merged match {
+                      case s: ReplicatedDeltaSize if s.deltaSize >= maxDeltaSize =>
+                        // discard too large deltas
+                        NoDeltaPlaceholder
+                      case _ => merged
+                    }
                   }
                   cache = cache.updated(cacheKey, group)
                   group
-                case Some(group) ⇒ group
+                case Some(group) => group
               }
               deltas = deltas.updated(key, (deltaGroup, fromSeqNr, toSeqNr))
-              deltaSentToNode = deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
+              deltaSentToNode =
+                deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
             }
         }
 
@@ -146,24 +146,24 @@ import akka.util.ccompat._
 
   private def deltaEntriesAfter(entries: TreeMap[Long, ReplicatedData], version: Long): TreeMap[Long, ReplicatedData] =
     entries.rangeFrom(version) match {
-      case ntrs if ntrs.isEmpty             ⇒ ntrs
-      case ntrs if ntrs.firstKey == version ⇒ ntrs.tail // exclude first, i.e. version j that was already sent
-      case ntrs                             ⇒ ntrs
+      case ntrs if ntrs.isEmpty             => ntrs
+      case ntrs if ntrs.firstKey == version => ntrs.tail // exclude first, i.e. version j that was already sent
+      case ntrs                             => ntrs
     }
 
   def hasDeltaEntries(key: KeyId): Boolean = {
     deltaEntries.get(key) match {
-      case Some(m) ⇒ m.nonEmpty
-      case None    ⇒ false
+      case Some(m) => m.nonEmpty
+      case None    => false
     }
   }
 
   private def findSmallestVersionPropagatedToAllNodes(key: KeyId, all: Vector[Address]): Long = {
     deltaSentToNode.get(key) match {
-      case None ⇒ 0L
-      case Some(deltaSentToNodeForKey) ⇒
+      case None => 0L
+      case Some(deltaSentToNodeForKey) =>
         if (deltaSentToNodeForKey.isEmpty) 0L
-        else if (all.exists(node ⇒ !deltaSentToNodeForKey.contains(node))) 0L
+        else if (all.exists(node => !deltaSentToNodeForKey.contains(node))) 0L
         else deltaSentToNodeForKey.valuesIterator.min
     }
   }
@@ -174,22 +174,22 @@ import akka.util.ccompat._
       deltaEntries = Map.empty
     else {
       deltaEntries = deltaEntries.map {
-        case (key, entries) ⇒
+        case (key, entries) =>
           val minVersion = findSmallestVersionPropagatedToAllNodes(key, all)
 
           val deltaEntriesAfterMin = deltaEntriesAfter(entries, minVersion)
 
           // TODO perhaps also remove oldest when deltaCounter is too far ahead (e.g. 10 cycles)
 
-          key → deltaEntriesAfterMin
+          key -> deltaEntriesAfterMin
       }
     }
   }
 
   def cleanupRemovedNode(address: Address): Unit = {
     deltaSentToNode = deltaSentToNode.map {
-      case (key, deltaSentToNodeForKey) ⇒
-        key → (deltaSentToNodeForKey - address)
+      case (key, deltaSentToNodeForKey) =>
+        key -> (deltaSentToNodeForKey - address)
     }
   }
 }

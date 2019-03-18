@@ -13,18 +13,18 @@ import akka.actor.NoSerializationVerificationNeeded
  * INTERNAL API
  */
 private[remote] object InboundEnvelope {
+
   /**
    * Only used in tests
    */
   def apply(
-    recipient:   OptionVal[InternalActorRef],
-    message:     AnyRef,
-    sender:      OptionVal[ActorRef],
-    originUid:   Long,
-    association: OptionVal[OutboundContext]): InboundEnvelope = {
+      recipient: OptionVal[InternalActorRef],
+      message: AnyRef,
+      sender: OptionVal[ActorRef],
+      originUid: Long,
+      association: OptionVal[OutboundContext]): InboundEnvelope = {
     val env = new ReusableInboundEnvelope
-    env.init(recipient, sender, originUid, -1, "", 0, null, association, lane = 0)
-      .withMessage(message)
+    env.init(recipient, sender, originUid, -1, "", 0, null, association, lane = 0).withMessage(message)
   }
 
 }
@@ -60,9 +60,11 @@ private[remote] trait InboundEnvelope extends NoSerializationVerificationNeeded 
  * INTERNAL API
  */
 private[remote] object ReusableInboundEnvelope {
-  def createObjectPool(capacity: Int) = new ObjectPool[ReusableInboundEnvelope](
-    capacity,
-    create = () ⇒ new ReusableInboundEnvelope, clear = inEnvelope ⇒ inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
+  def createObjectPool(capacity: Int) =
+    new ObjectPool[ReusableInboundEnvelope](
+      capacity,
+      create = () => new ReusableInboundEnvelope,
+      clear = inEnvelope => inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 }
 
 /**
@@ -119,15 +121,15 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
   }
 
   def init(
-    recipient:      OptionVal[InternalActorRef],
-    sender:         OptionVal[ActorRef],
-    originUid:      Long,
-    serializer:     Int,
-    classManifest:  String,
-    flags:          Byte,
-    envelopeBuffer: EnvelopeBuffer,
-    association:    OptionVal[OutboundContext],
-    lane:           Int): InboundEnvelope = {
+      recipient: OptionVal[InternalActorRef],
+      sender: OptionVal[ActorRef],
+      originUid: Long,
+      serializer: Int,
+      classManifest: String,
+      flags: Byte,
+      envelopeBuffer: EnvelopeBuffer,
+      association: OptionVal[OutboundContext],
+      lane: Int): InboundEnvelope = {
     _recipient = recipient
     _sender = sender
     _originUid = originUid
@@ -148,7 +150,8 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
   override def copyForLane(lane: Int): InboundEnvelope = {
     val buf = if (envelopeBuffer eq null) null else envelopeBuffer.copy()
     val env = new ReusableInboundEnvelope
-    env.init(recipient, sender, originUid, serializer, classManifest, flags, buf, association, lane)
+    env
+      .init(recipient, sender, originUid, serializer, classManifest, flags, buf, association, lane)
       .withMessage(message)
 
   }

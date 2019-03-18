@@ -26,13 +26,13 @@ object ActorSubscriberSpec {
     override val requestStrategy = ZeroRequestStrategy
 
     def receive = {
-      case next @ OnNext(elem)  ⇒ probe ! next
-      case OnComplete           ⇒ probe ! OnComplete
-      case err @ OnError(cause) ⇒ probe ! err
-      case "ready"              ⇒ request(elements = 2)
-      case "boom"               ⇒ throw new RuntimeException("boom") with NoStackTrace
-      case "requestAndCancel"   ⇒ { request(1); cancel() }
-      case "cancel"             ⇒ cancel()
+      case next @ OnNext(elem)  => probe ! next
+      case OnComplete           => probe ! OnComplete
+      case err @ OnError(cause) => probe ! err
+      case "ready"              => request(elements = 2)
+      case "boom"               => throw new RuntimeException("boom") with NoStackTrace
+      case "requestAndCancel"   => { request(1); cancel() }
+      case "cancel"             => cancel()
     }
   }
 
@@ -56,8 +56,8 @@ object ActorSubscriberSpec {
     override val requestStrategy = strat
 
     def receive = {
-      case next @ OnNext(elem) ⇒ probe ! next
-      case OnComplete          ⇒ probe ! OnComplete
+      case next @ OnNext(elem) => probe ! next
+      case OnComplete          => probe ! OnComplete
     }
   }
 
@@ -85,11 +85,11 @@ object ActorSubscriberSpec {
     }
 
     def receive = {
-      case OnNext(Msg(id, replyTo)) ⇒
-        queue += (id → replyTo)
+      case OnNext(Msg(id, replyTo)) =>
+        queue += (id -> replyTo)
         assert(queue.size <= 10, s"queued too many: ${queue.size}")
         router.route(Work(id), self)
-      case Reply(id) ⇒
+      case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
     }
@@ -97,7 +97,7 @@ object ActorSubscriberSpec {
 
   class Worker extends Actor {
     def receive = {
-      case Work(id) ⇒
+      case Work(id) =>
         // ...
         sender() ! Reply(id)
     }
@@ -126,7 +126,7 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
 
     "signal error" in {
       val e = new RuntimeException("simulated") with NoStackTrace
-      val ref = Source.fromIterator(() ⇒ throw e).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
+      val ref = Source.fromIterator(() => throw e).runWith(Sink.actorSubscriber(manualSubscriberProps(testActor)))
       ref ! "ready"
       expectMsg(OnError(e))
     }
@@ -143,7 +143,9 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
       ref ! "ready"
       ref ! "ready"
       ref ! "boom"
-      (3 to 6) foreach { n ⇒ expectMsg(OnNext(n)) }
+      (3 to 6).foreach { n =>
+        expectMsg(OnNext(n))
+      }
       expectNoMsg(200.millis)
       ref ! "ready"
       expectMsg(OnNext(7))
@@ -182,13 +184,14 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
 
     "work with OneByOneRequestStrategy" in {
       Source(1 to 17).runWith(Sink.actorSubscriber(requestStrategySubscriberProps(testActor, OneByOneRequestStrategy)))
-      for (n ← 1 to 17) expectMsg(OnNext(n))
+      for (n <- 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
 
     "work with WatermarkRequestStrategy" in {
-      Source(1 to 17).runWith(Sink.actorSubscriber(requestStrategySubscriberProps(testActor, WatermarkRequestStrategy(highWatermark = 10))))
-      for (n ← 1 to 17) expectMsg(OnNext(n))
+      Source(1 to 17).runWith(
+        Sink.actorSubscriber(requestStrategySubscriberProps(testActor, WatermarkRequestStrategy(highWatermark = 10))))
+      for (n <- 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
 
@@ -239,7 +242,7 @@ class ActorSubscriberSpec extends StreamSpec with ImplicitSender {
       queue += "b"
       queue += "c"
       strat.requestDemand(5) should be(2)
-      ('d' to 'j') foreach { queue += _.toString }
+      ('d' to 'j').foreach { queue += _.toString }
       queue.size should be(10)
       strat.requestDemand(0) should be(0)
       strat.requestDemand(1) should be(0)

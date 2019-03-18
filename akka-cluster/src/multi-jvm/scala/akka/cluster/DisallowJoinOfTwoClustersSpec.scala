@@ -25,8 +25,8 @@ class DisallowJoinOfTwoClustersMultiJvmNode4 extends DisallowJoinOfTwoClustersSp
 class DisallowJoinOfTwoClustersMultiJvmNode5 extends DisallowJoinOfTwoClustersSpec
 
 abstract class DisallowJoinOfTwoClustersSpec
-  extends MultiNodeSpec(DisallowJoinOfTwoClustersMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(DisallowJoinOfTwoClustersMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import DisallowJoinOfTwoClustersMultiJvmSpec._
 
@@ -65,7 +65,7 @@ abstract class DisallowJoinOfTwoClustersSpec
       }
 
       // no change expected
-      1 to 5 foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         clusterView.members.size should ===(expectedSize)
         Thread.sleep(1000)
       }

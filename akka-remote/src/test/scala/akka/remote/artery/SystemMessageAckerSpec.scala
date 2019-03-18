@@ -30,16 +30,18 @@ class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
   val addressC = UniqueAddress(Address("akka", "sysC", "hostB", 1003), 3)
 
-  private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+  private def setupStream(
+      inboundContext: InboundContext,
+      timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
-    TestSource.probe[AnyRef]
+    TestSource
+      .probe[AnyRef]
       .map {
-        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) ⇒
-          InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid,
-            inboundContext.association(ackReplyTo.uid))
+        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) =>
+          InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid, inboundContext.association(ackReplyTo.uid))
       }
       .via(new SystemMessageAcker(inboundContext))
-      .map { case env: InboundEnvelope ⇒ env.message }
+      .map { case env: InboundEnvelope => env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

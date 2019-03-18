@@ -26,7 +26,7 @@ class ActorDSLSpec extends AkkaSpec {
 
   val echo = system.actorOf(Props(new Actor {
     def receive = {
-      case x ⇒ sender() ! x
+      case x => sender() ! x
     }
   }))
 
@@ -49,19 +49,21 @@ class ActorDSLSpec extends AkkaSpec {
         actor(new Act {})
       //#watch
       val i = inbox()
-      i watch target
+      i.watch(target)
       //#watch
       target ! PoisonPill
-      i receive 1.second should ===(Terminated(target)(true, false))
+      i.receive(1.second) should ===(Terminated(target)(true, false))
     }
 
     "support queueing multiple queries" in {
       val i = inbox()
       import system.dispatcher
-      val res = Future.sequence(Seq(
-        Future { i.receive() } recover { case x ⇒ x },
-        Future { Thread.sleep(100); i.select() { case "world" ⇒ 1 } } recover { case x ⇒ x },
-        Future { Thread.sleep(200); i.select() { case "hello" ⇒ 2 } } recover { case x ⇒ x }))
+      val res =
+        Future.sequence(Seq(Future { i.receive() }.recover { case x => x }, Future {
+          Thread.sleep(100); i.select() { case "world" => 1 }
+        }.recover { case x => x }, Future { Thread.sleep(200); i.select() { case "hello" => 2 } }.recover {
+          case x           => x
+        }))
       Thread.sleep(1000)
       res.isCompleted should ===(false)
       i.receiver ! 42
@@ -75,7 +77,7 @@ class ActorDSLSpec extends AkkaSpec {
       i.receiver ! "hello"
       i.receiver ! "world"
       val result = i.select() {
-        case "world" ⇒ true
+        case "world" => true
       }
       result should ===(true)
       i.receive() should ===("hello")
@@ -85,16 +87,16 @@ class ActorDSLSpec extends AkkaSpec {
       val i = inbox()
       system.eventStream.subscribe(testActor, classOf[Warning])
       try {
-        for (_ ← 1 to 1000) i.receiver ! 0
+        for (_ <- 1 to 1000) i.receiver ! 0
         expectNoMsg(1 second)
-        EventFilter.warning(start = "dropping message", occurrences = 1) intercept {
+        EventFilter.warning(start = "dropping message", occurrences = 1).intercept {
           i.receiver ! 42
         }
         expectMsgType[Warning]
         i.receiver ! 42
         expectNoMsg(1 second)
-        val gotit = for (_ ← 1 to 1000) yield i.receive()
-        gotit should ===((1 to 1000) map (_ ⇒ 0))
+        val gotit = for (_ <- 1 to 1000) yield i.receive()
+        gotit should ===((1 to 1000).map(_ => 0))
         intercept[TimeoutException] {
           i.receive(1 second)
         }
@@ -121,7 +123,7 @@ class ActorDSLSpec extends AkkaSpec {
       //#simple-actor
       val a = actor(new Act {
         become {
-          case "hello" ⇒ sender() ! "hi"
+          case "hello" => sender() ! "hi"
         }
       })
       //#simple-actor
@@ -135,13 +137,13 @@ class ActorDSLSpec extends AkkaSpec {
       //#becomeStacked
       val a = actor(new Act {
         become { // this will replace the initial (empty) behavior
-          case "info" ⇒ sender() ! "A"
-          case "switch" ⇒
+          case "info" => sender() ! "A"
+          case "switch" =>
             becomeStacked { // this will stack upon the "A" behavior
-              case "info"   ⇒ sender() ! "B"
-              case "switch" ⇒ unbecome() // return to the "A" behavior
+              case "info"   => sender() ! "B"
+              case "switch" => unbecome() // return to the "A" behavior
             }
-          case "lobotomize" ⇒ unbecome() // OH NOES: Actor.emptyBehavior
+          case "lobotomize" => unbecome() // OH NOES: Actor.emptyBehavior
         }
       })
       //#becomeStacked
@@ -165,7 +167,7 @@ class ActorDSLSpec extends AkkaSpec {
       })
       //#simple-start-stop
 
-      system stop a
+      system.stop(a)
       expectMsg("started")
       expectMsg("stopped")
     }
@@ -174,18 +176,20 @@ class ActorDSLSpec extends AkkaSpec {
       //#failing-actor
       val a = actor(new Act {
         become {
-          case "die" ⇒ throw new Exception
+          case "die" => throw new Exception
         }
-        whenFailing { case m @ (cause, msg) ⇒ testActor ! m }
-        whenRestarted { cause ⇒ testActor ! cause }
+        whenFailing { case m @ (cause, msg) => testActor ! m }
+        whenRestarted { cause =>
+          testActor ! cause
+        }
       })
       //#failing-actor
 
-      EventFilter[Exception](occurrences = 1) intercept {
+      EventFilter[Exception](occurrences = 1).intercept {
         a ! "die"
       }
-      expectMsgPF() { case (x: Exception, Some("die")) ⇒ }
-      expectMsgPF() { case _: Exception ⇒ }
+      expectMsgPF() { case (x: Exception, Some("die")) => }
+      expectMsgPF() { case _: Exception                => }
     }
 
     "support superviseWith" in {
@@ -193,27 +197,28 @@ class ActorDSLSpec extends AkkaSpec {
         val system = null // shadow the implicit system
         //#supervise-with
         superviseWith(OneForOneStrategy() {
-          case e: Exception if e.getMessage == "hello" ⇒ Stop
-          case _: Exception                            ⇒ Resume
+          case e: Exception if e.getMessage == "hello" => Stop
+          case _: Exception                            => Resume
         })
         //#supervise-with
         val child = actor("child")(new Act {
-          whenFailing { (_, _) ⇒ }
+          whenFailing { (_, _) =>
+          }
           become {
-            case ref: ActorRef ⇒ whenStopping(ref ! "stopped")
-            case ex: Exception ⇒ throw ex
+            case ref: ActorRef => whenStopping(ref ! "stopped")
+            case ex: Exception => throw ex
           }
         })
         become {
-          case x ⇒ child ! x
+          case x => child ! x
         }
       })
       a ! testActor
-      EventFilter.warning("hi", occurrences = 1) intercept {
+      EventFilter.warning("hi", occurrences = 1).intercept {
         a ! new Exception("hi")
       }
       expectNoMsg(1 second)
-      EventFilter[Exception]("hello", occurrences = 1) intercept {
+      EventFilter[Exception]("hello", occurrences = 1).intercept {
         a ! new Exception("hello")
       }
       expectMsg("stopped")
@@ -228,7 +233,7 @@ class ActorDSLSpec extends AkkaSpec {
           whenStarting { context.parent ! ("hello from " + self.path) }
         })
         become {
-          case x ⇒ testActor ! x
+          case x => testActor ! x
         }
       })
       //#nested-actor
@@ -240,10 +245,11 @@ class ActorDSLSpec extends AkkaSpec {
       //#act-with-stash
       val a = actor(new ActWithStash {
         become {
-          case 1 ⇒ stash()
-          case 2 ⇒
-            testActor ! 2; unstashAll(); becomeStacked {
-              case 1 ⇒ testActor ! 1; unbecome()
+          case 1 => stash()
+          case 2 =>
+            testActor ! 2; unstashAll();
+            becomeStacked {
+              case 1 => testActor ! 1; unbecome()
             }
         }
       })

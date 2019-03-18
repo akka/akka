@@ -18,10 +18,10 @@ object UdpPortActor {
 class UdpPortActor extends Actor {
   import UdpPortActor._
 
-  val port = SocketUtil.temporaryServerAddress(RARP(context.system).provider
-    .getDefaultAddress.host.get, udp = true).getPort
+  val port =
+    SocketUtil.temporaryServerAddress(RARP(context.system).provider.getDefaultAddress.host.get, udp = true).getPort
 
   def receive = {
-    case GetUdpPort ⇒ sender() ! port
+    case GetUdpPort => sender() ! port
   }
 }

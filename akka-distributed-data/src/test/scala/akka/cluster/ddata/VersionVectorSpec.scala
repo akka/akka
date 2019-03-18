@@ -12,8 +12,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
-class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+class VersionVectorSpec
+    extends TestKit(ActorSystem("VersionVectorSpec"))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
@@ -170,13 +173,13 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv2_2 = vv1_2 + node2
       val vv3_2 = vv2_2 + node2
 
-      val merged1 = vv3_2 merge vv5_1
+      val merged1 = vv3_2.merge(vv5_1)
       merged1.size should be(3)
       merged1.contains(node1) should be(true)
       merged1.contains(node2) should be(true)
       merged1.contains(node3) should be(true)
 
-      val merged2 = vv5_1 merge vv3_2
+      val merged2 = vv5_1.merge(vv3_2)
       merged2.size should be(3)
       merged2.contains(node1) should be(true)
       merged2.contains(node2) should be(true)
@@ -203,14 +206,14 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
       val vv2_2 = vv1_2 + node4
       val vv3_2 = vv2_2 + node4
 
-      val merged1 = vv3_2 merge vv5_1
+      val merged1 = vv3_2.merge(vv5_1)
       merged1.size should be(4)
       merged1.contains(node1) should be(true)
       merged1.contains(node2) should be(true)
       merged1.contains(node3) should be(true)
       merged1.contains(node4) should be(true)
 
-      val merged2 = vv5_1 merge vv3_2
+      val merged2 = vv5_1.merge(vv3_2)
       merged2.size should be(4)
       merged2.contains(node1) should be(true)
       merged2.contains(node2) should be(true)

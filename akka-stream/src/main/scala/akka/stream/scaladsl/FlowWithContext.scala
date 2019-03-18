@@ -23,9 +23,10 @@ object FlowWithContext {
   }
 
   /**
-   * Creates a FlowWithContext from a regular flow that operates on a pair of `(data, context)` elements.
+   * Creates a FlowWithContext from a regular flow that operates on a tuple of `(data, context)` elements.
    */
-  def from[In, CtxIn, Out, CtxOut, Mat](flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+  def fromTuples[In, CtxIn, Out, CtxOut, Mat](
+      flow: Flow[(In, CtxIn), (Out, CtxOut), Mat]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     new FlowWithContext(flow)
 }
 
@@ -40,19 +41,30 @@ object FlowWithContext {
  * API MAY CHANGE
  */
 @ApiMayChange
-final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
-  delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat]
-) extends GraphDelegate(delegate) with FlowWithContextOps[Out, CtxOut, Mat] {
-  override type ReprMat[+O, +C, +M] = FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
+final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat])
+    extends GraphDelegate(delegate)
+    with FlowWithContextOps[Out, CtxOut, Mat] {
+  override type ReprMat[+O, +C, +M] =
+    FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
-    FlowWithContext.from(delegate.via(viaFlow))
+    new FlowWithContext(delegate.via(viaFlow))
 
-  override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
-    FlowWithContext.from(delegate.viaMat(flow)(combine))
+  override def viaMat[Out2, Ctx2, Mat2, Mat3](flow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2])(
+      combine: (Mat, Mat2) => Mat3): FlowWithContext[In, CtxIn, Out2, Ctx2, Mat3] =
+    new FlowWithContext(delegate.viaMat(flow)(combine))
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Flow.withAttributes]].
+   *
+   * @see [[akka.stream.scaladsl.Flow.withAttributes]]
+   */
+  override def withAttributes(attr: Attributes): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    new FlowWithContext(delegate.withAttributes(attr))
 
   def asFlow: Flow[(In, CtxIn), (Out, CtxOut), Mat] = delegate
 
-  def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]: javadsl.FlowWithContext[JIn, JCtxIn, JOut, JCtxOut, JMat] =
+  def asJava[JIn <: In, JCtxIn <: CtxIn, JOut >: Out, JCtxOut >: CtxOut, JMat >: Mat]
+      : javadsl.FlowWithContext[JIn, JCtxIn, JOut, JCtxOut, JMat] =
     new javadsl.FlowWithContext(this)
 }

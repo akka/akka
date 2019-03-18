@@ -41,7 +41,10 @@ object ActorMaterializerFactory {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def create[T](settings: ActorMaterializerSettings, namePrefix: String, actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
+  def create[T](
+      settings: ActorMaterializerSettings,
+      namePrefix: String,
+      actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
     akka.stream.ActorMaterializer.create(settings, actorSystem.toUntyped, namePrefix)
 
   /**
@@ -72,6 +75,9 @@ object ActorMaterializerFactory {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def create[T](settings: ActorMaterializerSettings, namePrefix: String, ctx: ActorContext[T]): akka.stream.ActorMaterializer =
+  def create[T](
+      settings: ActorMaterializerSettings,
+      namePrefix: String,
+      ctx: ActorContext[T]): akka.stream.ActorMaterializer =
     akka.stream.ActorMaterializer.create(settings, Adapter.toUntyped(ctx), namePrefix)
 }

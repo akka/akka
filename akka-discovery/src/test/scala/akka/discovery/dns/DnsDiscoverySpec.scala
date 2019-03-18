@@ -12,13 +12,13 @@ import akka.discovery.ServiceDiscovery.ResolvedTarget
 import akka.io.dns.DockerBindDnsService
 import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
+import akka.discovery.ServiceDiscovery
 
 object DnsDiscoverySpec {
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
      //#configure-dns
      akka {
        discovery {
@@ -34,21 +34,59 @@ object DnsDiscoverySpec {
 
   lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
 
-  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString(
-    """
+  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString("""
       akka.io.dns.resolver = "async-dns"
     """).withFallback(config)
 
 }
 
-class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
-  with DockerBindDnsService {
+class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBindDnsService {
 
   import DnsDiscoverySpec._
 
   override val hostPort: Int = DnsDiscoverySpec.dockerDnsServerPort
 
   val systemWithAsyncDnsAsResolver = ActorSystem("AsyncDnsSystem", configWithAsyncDnsResolverAsDefault)
+
+  private def testSrvRecords(discovery: ServiceDiscovery): Unit = {
+    val name = "_service._tcp.foo.test."
+
+    def lookup() =
+      discovery
+        .lookup(Lookup("foo.test.").withPortName("service").withProtocol("tcp"), resolveTimeout = 10.seconds)
+        .futureValue
+
+    val expected = Set(
+      ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
+
+    val result1 = lookup()
+    result1.addresses.toSet shouldEqual expected
+    result1.serviceName shouldEqual name
+
+    // one more time to exercise the cache
+    val result2 = lookup()
+    result2.addresses.toSet shouldEqual expected
+    result2.serviceName shouldEqual name
+  }
+
+  private def testIpRecords(discovery: ServiceDiscovery): Unit = {
+    val name = "a-single.foo.test"
+
+    val expected = Set(ResolvedTarget("192.168.1.20", None, Some(InetAddress.getByName("192.168.1.20"))))
+
+    def lookup() = discovery.lookup(name, resolveTimeout = 500.milliseconds).futureValue
+
+    val result1 = lookup()
+    result1.serviceName shouldEqual name
+    result1.addresses.toSet shouldEqual expected
+
+    // one more time to exercise the cache
+    val result2 = lookup()
+    result2.serviceName shouldEqual name
+    result2.addresses.toSet shouldEqual expected
+  }
 
   "Dns Discovery with isolated resolver" must {
 
@@ -59,27 +97,12 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
 
     "work with SRV records" in {
       val discovery = Discovery(system).discovery
-      val name = "_service._tcp.foo.test."
-      val result =
-        discovery
-          .lookup(Lookup("foo.test.").withPortName("service").withProtocol("tcp"), resolveTimeout = 10.seconds)
-          .futureValue
-      result.addresses.toSet shouldEqual Set(
-        ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
-        ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
-        ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22")))
-      )
-      result.serviceName shouldEqual name
+      testSrvRecords(discovery)
     }
 
     "work with IP records" in {
       val discovery = Discovery(system).discovery
-      val name = "a-single.foo.test"
-      val result = discovery.lookup(name, resolveTimeout = 500.milliseconds).futureValue
-      result.serviceName shouldEqual name
-      result.addresses.toSet shouldEqual Set(
-        ResolvedTarget("192.168.1.20", None, Some(InetAddress.getByName("192.168.1.20")))
-      )
+      testIpRecords(discovery)
     }
 
     "be using its own resolver" in {
@@ -97,17 +120,12 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
 
     "work with SRV records" in {
       val discovery = Discovery(systemWithAsyncDnsAsResolver).discovery
-      val name = "_service._tcp.foo.test."
-      val result =
-        discovery
-          .lookup(Lookup("foo.test.").withPortName("service").withProtocol("tcp"), resolveTimeout = 10.seconds)
-          .futureValue
-      result.addresses.toSet shouldEqual Set(
-        ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
-        ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
-        ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22")))
-      )
-      result.serviceName shouldEqual name
+      testSrvRecords(discovery)
+    }
+
+    "work with IP records" in {
+      val discovery = Discovery(systemWithAsyncDnsAsResolver).discovery
+      testIpRecords(discovery)
     }
 
     "be using the system resolver" in {
@@ -118,7 +136,10 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
   }
 
   override def afterTermination(): Unit = {
-    super.afterTermination()
-    TestKit.shutdownActorSystem(system)
+    try {
+      TestKit.shutdownActorSystem(systemWithAsyncDnsAsResolver)
+    } finally {
+      super.afterTermination()
+    }
   }
 }

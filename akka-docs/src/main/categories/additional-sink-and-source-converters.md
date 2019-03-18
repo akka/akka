@@ -12,7 +12,7 @@ For example, following snippet will fall with timeout exception:
 
 ```scala
 ...
-.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream ⇒
+.toMat(StreamConverters.asInputStream().mapMaterializedValue { inputStream =>
         inputStream.read()  // this could block forever
         ...
 }).run()

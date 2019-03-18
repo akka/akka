@@ -30,21 +30,26 @@ object LocalConcurrencySpec {
     val replicator = DistributedData(context.system).replicator
 
     def receive = {
-      case s: String ⇒
+      case s: String =>
         val update = Replicator.Update(Updater.key, ORSet.empty[String], Replicator.WriteLocal)(_ :+ s)
         replicator ! update
     }
   }
 }
 
-class LocalConcurrencySpec(_system: ActorSystem) extends TestKit(_system)
-  with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
+class LocalConcurrencySpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ImplicitSender {
   import LocalConcurrencySpec._
 
   def this() {
-    this(ActorSystem(
-      "LocalConcurrencySpec",
-      ConfigFactory.parseString("""
+    this(
+      ActorSystem(
+        "LocalConcurrencySpec",
+        ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port=0
       akka.remote.artery.canonical.port = 0
@@ -64,7 +69,7 @@ class LocalConcurrencySpec(_system: ActorSystem) extends TestKit(_system)
       val updater2 = system.actorOf(Props[Updater], "updater2")
 
       val numMessages = 100
-      for (n ← 1 to numMessages) {
+      for (n <- 1 to numMessages) {
         updater1 ! s"a$n"
         updater2 ! s"b$n"
       }

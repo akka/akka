@@ -4,18 +4,19 @@
 
 package akka.remote.transport
 
-import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.remote.{ RARP, EndpointException }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
+import akka.remote.{ EndpointException, RARP }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
 import scala.concurrent.Await
 
 object AkkaProtocolStressTest {
-  val configA: Config = ConfigFactory parseString ("""
+  val configA: Config =
+    ConfigFactory.parseString("""
     akka {
       #loglevel = DEBUG
       actor.serialize-messages = off
@@ -52,14 +53,15 @@ object AkkaProtocolStressTest {
     var losses = 0
 
     def receive = {
-      case "start" ⇒ self ! "sendNext"
-      case "sendNext" ⇒ if (nextSeq < limit) {
-        remote ! nextSeq
-        nextSeq += 1
-        if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
-        else self ! "sendNext"
-      }
-      case seq: Int ⇒
+      case "start" => self ! "sendNext"
+      case "sendNext" =>
+        if (nextSeq < limit) {
+          remote ! nextSeq
+          nextSeq += 1
+          if (nextSeq % 2000 == 0) context.system.scheduler.scheduleOnce(500.milliseconds, self, "sendNext")
+          else self ! "sendNext"
+        }
+      case seq: Int =>
         if (seq > maxSeq) {
           losses += seq - maxSeq - 1
           maxSeq = seq
@@ -79,7 +81,7 @@ object AkkaProtocolStressTest {
 
     // Make sure the other side eventually "gets the message"
     def done: Receive = {
-      case ResendFinal ⇒
+      case ResendFinal =>
         controller ! ((maxSeq, losses))
     }
   }
@@ -91,7 +93,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
   val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
-      case seq: Int ⇒ sender() ! seq
+      case seq: Int => sender() ! seq
     }
   }), "echo")
 
@@ -112,20 +114,22 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
       val tester = system.actorOf(Props(classOf[SequenceVerifier], here, self)) ! "start"
 
       expectMsgPF(60.seconds) {
-        case (received: Int, lost: Int) ⇒
+        case (received: Int, lost: Int) =>
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }
     }
   }
 
   override def beforeTermination(): Unit = {
-    system.eventStream.publish(TestEvent.Mute(
-      EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
-    systemB.eventStream.publish(TestEvent.Mute(
-      EventFilter[EndpointException](),
-      EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    system.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    systemB.eventStream.publish(
+      TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def afterTermination(): Unit = shutdown(systemB)

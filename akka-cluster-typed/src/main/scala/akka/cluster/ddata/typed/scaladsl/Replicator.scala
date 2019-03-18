@@ -6,7 +6,7 @@ package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.NoSerializationVerificationNeeded
 
-import akka.cluster.{ ddata ⇒ dd }
+import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.actor.typed.ActorRef
@@ -46,11 +46,12 @@ object Replicator {
   trait Command
 
   object Get {
+
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] ⇒ Get[A] =
-      replyTo ⇒ Get(key, consistency, replyTo, None)
+    def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] => Get[A] =
+      replyTo => Get(key, consistency, replyTo, None)
   }
 
   /**
@@ -61,8 +62,12 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Get[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency,
-                                            replyTo: ActorRef[GetResponse[A]], request: Option[Any] = None) extends Command
+  final case class Get[A <: ReplicatedData](
+      key: Key[A],
+      consistency: ReadConsistency,
+      replyTo: ActorRef[GetResponse[A]],
+      request: Option[Any] = None)
+      extends Command
 
   /**
    * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
@@ -73,6 +78,7 @@ object Replicator {
   }
   type GetSuccess[A <: ReplicatedData] = dd.Replicator.GetSuccess[A]
   type NotFound[A <: ReplicatedData] = dd.Replicator.NotFound[A]
+
   /**
    * The [[Get]] request could not be fulfill according to the given
    * [[ReadConsistency consistency level]] and [[ReadConsistency#timeout timeout]].
@@ -93,20 +99,23 @@ object Replicator {
      * or local correlation data structures.
      */
     def apply[A <: ReplicatedData](
-      key: Key[A], initial: A, writeConsistency: WriteConsistency, replyTo: ActorRef[UpdateResponse[A]],
-      request: Option[Any] = None)(modify: A ⇒ A): Update[A] =
+        key: Key[A],
+        initial: A,
+        writeConsistency: WriteConsistency,
+        replyTo: ActorRef[UpdateResponse[A]],
+        request: Option[Any] = None)(modify: A => A): Update[A] =
       Update(key, writeConsistency, replyTo, request)(modifyWithInitial(initial, modify))
 
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A], initial: A,
-                                   writeConsistency: WriteConsistency)(modify: A ⇒ A): ActorRef[UpdateResponse[A]] ⇒ Update[A] =
-      (replyTo ⇒ Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
+    def apply[A <: ReplicatedData](key: Key[A], initial: A, writeConsistency: WriteConsistency)(
+        modify: A => A): ActorRef[UpdateResponse[A]] => Update[A] =
+      (replyTo => Update(key, writeConsistency, replyTo, None)(modifyWithInitial(initial, modify)))
 
-    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A ⇒ A): Option[A] ⇒ A = {
-      case Some(data) ⇒ modify(data)
-      case None       ⇒ modify(initial)
+    private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
+      case Some(data) => modify(data)
+      case None       => modify(initial)
     }
   }
 
@@ -126,15 +135,18 @@ object Replicator {
    * function that only uses the data parameter and stable fields from enclosing scope. It must
    * for example not access `sender()` reference of an enclosing actor.
    */
-  final case class Update[A <: ReplicatedData](key: Key[A], writeConsistency: WriteConsistency,
-                                               replyTo: ActorRef[UpdateResponse[A]],
-                                               request: Option[Any])(val modify: Option[A] ⇒ A)
-    extends Command with NoSerializationVerificationNeeded {
-  }
+  final case class Update[A <: ReplicatedData](
+      key: Key[A],
+      writeConsistency: WriteConsistency,
+      replyTo: ActorRef[UpdateResponse[A]],
+      request: Option[Any])(val modify: Option[A] => A)
+      extends Command
+      with NoSerializationVerificationNeeded {}
 
   type UpdateResponse[A <: ReplicatedData] = dd.Replicator.UpdateResponse[A]
   type UpdateSuccess[A <: ReplicatedData] = dd.Replicator.UpdateSuccess[A]
   type UpdateFailure[A <: ReplicatedData] = dd.Replicator.UpdateFailure[A]
+
   /**
    * The direct replication of the [[Update]] could not be fulfill according to
    * the given [[WriteConsistency consistency level]] and
@@ -145,11 +157,13 @@ object Replicator {
    * crashes before it has been able to communicate with other replicas.
    */
   type UpdateTimeout[A <: ReplicatedData] = dd.Replicator.UpdateTimeout[A]
+
   /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
   type ModifyFailure[A <: ReplicatedData] = dd.Replicator.ModifyFailure[A]
+
   /**
    * The local store or direct replication of the [[Update]] could not be fulfill according to
    * the given [[WriteConsistency consistency level]] due to durable store errors. This is
@@ -176,20 +190,19 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
-  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]])
-    extends Command
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
 
   /**
    * Unregister a subscriber.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]])
-    extends Command
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
 
   object Changed {
     def unapply[A <: ReplicatedData](chg: Changed[A]): Option[Key[A]] = Some(chg.key)
   }
+
   /**
    * The data value is retrieved with [[#get]] using the typed key.
    *
@@ -198,12 +211,16 @@ object Replicator {
   type Changed[A <: ReplicatedData] = dd.Replicator.Changed[A]
 
   object Delete {
+
     /**
      * Convenience for `ask`.
      */
-    def apply[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency): ActorRef[DeleteResponse[A]] ⇒ Delete[A] =
-      (replyTo ⇒ Delete(key, consistency, replyTo, None))
+    def apply[A <: ReplicatedData](
+        key: Key[A],
+        consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
+      (replyTo => Delete(key, consistency, replyTo, None))
   }
+
   /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
@@ -212,9 +229,13 @@ object Replicator {
    * way to pass contextual information (e.g. original sender) without having to use `ask`
    * or maintain local correlation data structures.
    */
-  final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency,
-                                               replyTo: ActorRef[DeleteResponse[A]], request: Option[Any])
-    extends Command with NoSerializationVerificationNeeded
+  final case class Delete[A <: ReplicatedData](
+      key: Key[A],
+      consistency: WriteConsistency,
+      replyTo: ActorRef[DeleteResponse[A]],
+      request: Option[Any])
+      extends Command
+      with NoSerializationVerificationNeeded
 
   type DeleteResponse[A <: ReplicatedData] = dd.Replicator.DeleteResponse[A]
   type DeleteSuccess[A <: ReplicatedData] = dd.Replicator.DeleteSuccess[A]
@@ -222,11 +243,12 @@ object Replicator {
   type DataDeleted[A <: ReplicatedData] = dd.Replicator.DataDeleted[A]
 
   object GetReplicaCount {
+
     /**
      * Convenience for `ask`.
      */
-    def apply(): ActorRef[ReplicaCount] ⇒ GetReplicaCount =
-      (replyTo ⇒ GetReplicaCount(replyTo))
+    def apply(): ActorRef[ReplicaCount] => GetReplicaCount =
+      (replyTo => GetReplicaCount(replyTo))
   }
 
   /**

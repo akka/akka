@@ -21,8 +21,7 @@ class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 }
@@ -40,13 +39,13 @@ object RemoteDeliverySpec {
 
   class Postman extends Actor {
     def receive = {
-      case Letter(n, route) ⇒ route.head ! Letter(n, route.tail)
+      case Letter(n, route) => route.head ! Letter(n, route.tail)
     }
   }
 }
 
 abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteDeliverySpec._
 
@@ -69,7 +68,7 @@ abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
         val p3 = identify(third, "postman-third")
         val route = p2 :: p3 :: p2 :: p3 :: testActor :: Nil
 
-        for (n ← 1 to 500) {
+        for (n <- 1 to 500) {
           p1 ! Letter(n, route)
           expectMsg(5.seconds, Letter(n, Nil))
           // in case the loop count is increased it is good with some progress feedback

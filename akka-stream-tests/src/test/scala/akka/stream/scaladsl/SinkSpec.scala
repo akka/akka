@@ -30,82 +30,102 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "A Sink" must {
     "be composable without importing modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create() { implicit b ⇒
+      val sink = Sink.fromGraph(GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[Int](3))
-        for (i ← 0 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
+        for (i <- 0 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
         SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
 
       val subscriptions = probes.map(_.expectSubscription())
-      subscriptions.foreach { s ⇒ s.request(3) }
-      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
-      probes.foreach { case p ⇒ p.expectComplete() }
+      subscriptions.foreach { s =>
+        s.request(3)
+      }
+      probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
+      probes.foreach { case p                   => p.expectComplete() }
     }
 
     "be composable with importing 1 module" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b ⇒ s0 ⇒
+      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b => s0 =>
         val bcast = b.add(Broadcast[Int](3))
         bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.in
-        for (i ← 1 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
+        for (i <- 1 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
         SinkShape(bcast.in)
       })
       Source(List(0, 1, 2)).runWith(sink)
 
       val subscriptions = probes.map(_.expectSubscription())
-      subscriptions.foreach { s ⇒ s.request(3) }
-      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
-      probes.foreach { case p ⇒ p.expectComplete() }
+      subscriptions.foreach { s =>
+        s.request(3)
+      }
+      probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
+      probes.foreach { case p                   => p.expectComplete() }
     }
 
     "be composable with importing 2 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) { implicit b ⇒ (s0, s1) ⇒
-        val bcast = b.add(Broadcast[Int](3))
-        bcast.out(0).filter(_ == 0) ~> s0.in
-        bcast.out(1).filter(_ == 1) ~> s1.in
-        bcast.out(2).filter(_ == 2) ~> Sink.fromSubscriber(probes(2))
-        SinkShape(bcast.in)
-      })
+      val sink =
+        Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) {
+          implicit b => (s0, s1) =>
+            val bcast = b.add(Broadcast[Int](3))
+            bcast.out(0).filter(_ == 0) ~> s0.in
+            bcast.out(1).filter(_ == 1) ~> s1.in
+            bcast.out(2).filter(_ == 2) ~> Sink.fromSubscriber(probes(2))
+            SinkShape(bcast.in)
+        })
       Source(List(0, 1, 2)).runWith(sink)
 
       val subscriptions = probes.map(_.expectSubscription())
-      subscriptions.foreach { s ⇒ s.request(3) }
-      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
-      probes.foreach { case p ⇒ p.expectComplete() }
+      subscriptions.foreach { s =>
+        s.request(3)
+      }
+      probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
+      probes.foreach { case p                   => p.expectComplete() }
     }
 
     "be composable with importing 3 modules" in {
       val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
-      val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(List(_, _, _)) { implicit b ⇒ (s0, s1, s2) ⇒
-        val bcast = b.add(Broadcast[Int](3))
-        bcast.out(0).filter(_ == 0) ~> s0.in
-        bcast.out(1).filter(_ == 1) ~> s1.in
-        bcast.out(2).filter(_ == 2) ~> s2.in
-        SinkShape(bcast.in)
-      })
+      val sink = Sink.fromGraph(
+        GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(
+          List(_, _, _)) { implicit b => (s0, s1, s2) =>
+          val bcast = b.add(Broadcast[Int](3))
+          bcast.out(0).filter(_ == 0) ~> s0.in
+          bcast.out(1).filter(_ == 1) ~> s1.in
+          bcast.out(2).filter(_ == 2) ~> s2.in
+          SinkShape(bcast.in)
+        })
       Source(List(0, 1, 2)).runWith(sink)
 
       val subscriptions = probes.map(_.expectSubscription())
-      subscriptions.foreach { s ⇒ s.request(3) }
-      probes.zipWithIndex.foreach { case (p, i) ⇒ p.expectNext(i) }
-      probes.foreach { case p ⇒ p.expectComplete() }
+      subscriptions.foreach { s =>
+        s.request(3)
+      }
+      probes.zipWithIndex.foreach { case (p, i) => p.expectNext(i) }
+      probes.foreach { case p                   => p.expectComplete() }
     }
 
     "combine to many outputs with simplified API" in {
       val probes = Seq.fill(3)(TestSubscriber.manualProbe[Int]())
-      val sink = Sink.combine(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(Broadcast[Int](_))
+      val sink =
+        Sink.combine(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(
+          Broadcast[Int](_))
 
       Source(List(0, 1, 2)).runWith(sink)
 
       val subscriptions = probes.map(_.expectSubscription())
 
-      subscriptions.foreach { s ⇒ s.request(1) }
-      probes.foreach { p ⇒ p.expectNext(0) }
+      subscriptions.foreach { s =>
+        s.request(1)
+      }
+      probes.foreach { p =>
+        p.expectNext(0)
+      }
 
-      subscriptions.foreach { s ⇒ s.request(2) }
-      probes.foreach { p ⇒
+      subscriptions.foreach { s =>
+        s.request(2)
+      }
+      probes.foreach { p =>
         p.expectNextN(List(1, 2))
         p.expectComplete
       }
@@ -119,11 +139,17 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
       val subscriptions = probes.map(_.expectSubscription())
 
-      subscriptions.foreach { s ⇒ s.request(1) }
-      probes.foreach { p ⇒ p.expectNext(0) }
+      subscriptions.foreach { s =>
+        s.request(1)
+      }
+      probes.foreach { p =>
+        p.expectNext(0)
+      }
 
-      subscriptions.foreach { s ⇒ s.request(2) }
-      probes.foreach { p ⇒
+      subscriptions.foreach { s =>
+        s.request(2)
+      }
+      probes.foreach { p =>
         p.expectNextN(List(1, 2))
         p.expectComplete
       }
@@ -187,10 +213,11 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "Java collector Sink" must {
 
     class TestCollector(
-      _supplier:    () ⇒ Supplier[Array[Int]],
-      _accumulator: () ⇒ BiConsumer[Array[Int], Int],
-      _combiner:    () ⇒ BinaryOperator[Array[Int]],
-      _finisher:    () ⇒ function.Function[Array[Int], Int]) extends Collector[Int, Array[Int], Int] {
+        _supplier: () => Supplier[Array[Int]],
+        _accumulator: () => BiConsumer[Array[Int], Int],
+        _combiner: () => BinaryOperator[Array[Int]],
+        _finisher: () => function.Function[Array[Int], Int])
+        extends Collector[Int, Array[Int], Int] {
       override def supplier(): Supplier[Array[Int]] = _supplier()
       override def combiner(): BinaryOperator[Array[Int]] = _combiner()
       override def finisher(): function.Function[Array[Int], Int] = _finisher()
@@ -219,19 +246,21 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "work in the happy case" in {
-      Source(1 to 100).map(_.toString).runWith(StreamConverters.javaCollector(() ⇒ Collectors.joining(", ")))
+      Source(1 to 100)
+        .map(_.toString)
+        .runWith(StreamConverters.javaCollector(() => Collectors.joining(", ")))
         .futureValue should ===((1 to 100).mkString(", "))
     }
 
     "work parallelly in the happy case" in {
-      Source(1 to 100).runWith(StreamConverters
-        .javaCollectorParallelUnordered(4)(
-          () ⇒ Collectors.summingInt[Int](intIdentity)))
-        .futureValue.toInt should ===(5050)
+      Source(1 to 100)
+        .runWith(StreamConverters.javaCollectorParallelUnordered(4)(() => Collectors.summingInt[Int](intIdentity)))
+        .futureValue
+        .toInt should ===(5050)
     }
 
     "be reusable" in {
-      val sink = StreamConverters.javaCollector[Int, Integer](() ⇒ Collectors.summingInt[Int](intIdentity))
+      val sink = StreamConverters.javaCollector[Int, Integer](() => Collectors.summingInt[Int](intIdentity))
       Source(1 to 4).runWith(sink).futureValue.toInt should ===(10)
 
       // Collector has state so it preserves all previous elements that went though
@@ -239,7 +268,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be reusable with parallel version" in {
-      val sink = StreamConverters.javaCollectorParallelUnordered(4)(() ⇒ Collectors.summingInt[Int](intIdentity))
+      val sink = StreamConverters.javaCollectorParallelUnordered(4)(() => Collectors.summingInt[Int](intIdentity))
 
       Source(1 to 4).runWith(sink).futureValue.toInt should ===(10)
       Source(4 to 6).runWith(sink).futureValue.toInt should ===(15)
@@ -247,8 +276,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "fail if getting the supplier fails" in {
       def failedSupplier(): Supplier[Array[Int]] = throw TE("")
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -258,8 +287,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       def failedSupplier(): Supplier[Array[Int]] = new Supplier[Array[Int]] {
         override def get(): Array[Int] = throw TE("")
       }
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -268,8 +297,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "fail if getting the accumulator fails" in {
       def failedAccumulator(): BiConsumer[Array[Int], Int] = throw TE("")
 
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -280,8 +309,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         override def accept(a: Array[Int], b: Int): Unit = throw TE("")
       }
 
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -290,8 +319,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "fail if getting the finisher fails" in {
       def failedFinisher(): function.Function[Array[Int], Int] = throw TE("")
 
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -301,8 +330,8 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       def failedFinisher(): function.Function[Array[Int], Int] = new function.Function[Array[Int], Int] {
         override def apply(a: Array[Int]): Int = throw TE("")
       }
-      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
+      val future = Source(1 to 100).runWith(StreamConverters.javaCollector(() =>
+        new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -327,7 +356,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "sum up 1 to 10 correctly" in {
       //#reduce-operator-example
       val source = Source(1 to 10)
-      val result = source.runWith(Sink.reduce[Int]((a, b) ⇒ a + b))
+      val result = source.runWith(Sink.reduce[Int]((a, b) => a + b))
       result.map(println)(system.dispatcher)
       // 55
       //#reduce-operator-example

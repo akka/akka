@@ -15,7 +15,7 @@ object Consumers {
       def endpointUri = "file:data/input/actor"
 
       def receive = {
-        case msg: CamelMessage ⇒ println("received %s" format msg.bodyAs[String])
+        case msg: CamelMessage => println("received %s".format(msg.bodyAs[String]))
       }
     }
     //#Consumer1
@@ -28,7 +28,7 @@ object Consumers {
       def endpointUri = "jetty:http://localhost:8877/camel/default"
 
       def receive = {
-        case msg: CamelMessage ⇒ sender() ! ("Hello %s" format msg.bodyAs[String])
+        case msg: CamelMessage => sender() ! ("Hello %s".format(msg.bodyAs[String]))
       }
     }
     //#Consumer2
@@ -45,7 +45,7 @@ object Consumers {
       def endpointUri = "jms:queue:test"
 
       def receive = {
-        case msg: CamelMessage ⇒
+        case msg: CamelMessage =>
           sender() ! Ack
           // on success
           // ..
@@ -65,7 +65,7 @@ object Consumers {
       def endpointUri = "jetty:http://localhost:8877/camel/default"
       override def replyTimeout = 500 millis
       def receive = {
-        case msg: CamelMessage ⇒ sender() ! ("Hello %s" format msg.bodyAs[String])
+        case msg: CamelMessage => sender() ! ("Hello %s".format(msg.bodyAs[String]))
       }
     }
     //#Consumer4

@@ -16,12 +16,10 @@ import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
-  with ScalaFutures with Eventually {
+class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(1.second)
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     """).withFallback(ConfigFactory.load())
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name, config)
@@ -29,13 +27,14 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   case class Probe(msg: String, replyTo: ActorRef[String])
 
-  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Terminated = {
+  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
+      block: ActorSystem[T] => Unit): Terminated = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
       if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
     } catch {
-      case NonFatal(ex) ⇒
+      case NonFatal(ex) =>
         sys.terminate()
         throw ex
     }
@@ -45,14 +44,15 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "start the guardian actor and terminate when it terminates" in {
       val t = withSystem(
         "a",
-        Behaviors.receive[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Behaviors.stopped }, doTerminate = false) { sys ⇒
-          val inbox = TestInbox[String]("a")
-          sys ! Probe("hello", inbox.ref)
-          eventually {
-            inbox.hasMessages should ===(true)
-          }
-          inbox.receiveAll() should ===("hello" :: Nil)
+        Behaviors.receive[Probe] { case (_, p) => p.replyTo ! p.msg; Behaviors.stopped },
+        doTerminate = false) { sys =>
+        val inbox = TestInbox[String]("a")
+        sys ! Probe("hello", inbox.ref)
+        eventually {
+          inbox.hasMessages should ===(true)
         }
+        inbox.receiveAll() should ===("hello" :: Nil)
+      }
       val p = t.ref.path
       p.name should ===("/")
       p.address.system should ===(suite + "-a")
@@ -61,7 +61,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
       pending
-      withSystem("shutdown", Behaviors.stopped[String], doTerminate = false) { sys: ActorSystem[String] ⇒
+      withSystem("shutdown", Behaviors.stopped[String], doTerminate = false) { sys: ActorSystem[String] =>
         sys.whenTerminated.futureValue
       }
     }
@@ -69,13 +69,15 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
       val sys = system(
-        Behaviors.receive[Probe] {
-          case (_, _) ⇒ Behaviors.unhandled
-        } receiveSignal {
-          case (_, PostStop) ⇒
-            inbox.ref ! "done"
-            Behaviors.same
-        },
+        Behaviors
+          .receive[Probe] {
+            case (_, _) => Behaviors.unhandled
+          }
+          .receiveSignal {
+            case (_, PostStop) =>
+              inbox.ref ! "done"
+              Behaviors.same
+          },
         "terminate")
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
@@ -86,13 +88,13 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "have a name" in {
-      withSystem("name", Behaviors.empty[String]) { sys ⇒
+      withSystem("name", Behaviors.empty[String]) { sys =>
         sys.name should ===(suite + "-name")
       }
     }
 
     "report its uptime" in {
-      withSystem("uptime", Behaviors.empty[String]) { sys ⇒
+      withSystem("uptime", Behaviors.empty[String]) { sys =>
         sys.uptime should be < 1L
         Thread.sleep(2000)
         sys.uptime should be >= 1L
@@ -100,24 +102,26 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "have a working thread factory" in {
-      withSystem("thread", Behaviors.empty[String]) { sys ⇒
+      withSystem("thread", Behaviors.empty[String]) { sys =>
         val p = Promise[Int]
-        sys.threadFactory.newThread(new Runnable {
-          def run(): Unit = p.success(42)
-        }).start()
+        sys.threadFactory
+          .newThread(new Runnable {
+            def run(): Unit = p.success(42)
+          })
+          .start()
         p.future.futureValue should ===(42)
       }
     }
 
     "be able to run Futures" in {
-      withSystem("futures", Behaviors.empty[String]) { sys ⇒
+      withSystem("futures", Behaviors.empty[String]) { sys =>
         val f = Future(42)(sys.executionContext)
         f.futureValue should ===(42)
       }
     }
 
     "not allow null messages" in {
-      withSystem("null-messages", Behaviors.empty[String]) { sys ⇒
+      withSystem("null-messages", Behaviors.empty[String]) { sys =>
         intercept[InvalidMessageException] {
           sys ! null
         }

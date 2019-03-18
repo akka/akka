@@ -34,7 +34,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule[SinkShape[In], Mat] {
+@DoNotInherit private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In])
+    extends AtomicModule[SinkShape[In], Mat] {
 
   /**
    * Create the Subscriber or VirtualPublisher that consumes the incoming
@@ -74,7 +75,8 @@ import akka.util.ccompat._
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-@InternalApi private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
+@InternalApi private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkShape[In])
+    extends SinkModule[In, Publisher[In]](shape) {
 
   /*
    * This method is the reason why SinkModule.create may return something that is
@@ -86,17 +88,17 @@ import akka.util.ccompat._
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] = new PublisherSink[In](attr, amendShape(attr))
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
+    new PublisherSink[In](attributes, shape)
+  override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
+    new PublisherSink[In](attr, amendShape(attr))
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class FanoutPublisherSink[In](
-  val attributes: Attributes,
-  shape:          SinkShape[In])
-  extends SinkModule[In, Publisher[In]](shape) {
+@InternalApi private[akka] final class FanoutPublisherSink[In](val attributes: Attributes, shape: SinkShape[In])
+    extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -120,21 +122,30 @@ import akka.util.ccompat._
  * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-@InternalApi private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+@InternalApi private[akka] final class SubscriberSink[In](
+    subscriber: Subscriber[In],
+    val attributes: Attributes,
+    shape: SinkShape[In])
+    extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attr, amendShape(attr))
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
+    new SubscriberSink[In](subscriber, attributes, shape)
+  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
+    new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
 
 /**
  * INTERNAL API
  * A sink that immediately cancels its upstream upon materialization.
  */
-@InternalApi private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
-  override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
+@InternalApi private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any])
+    extends SinkModule[Any, NotUsed](shape) {
+  override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) =
+    (new CancellingSubscriber[Any], NotUsed)
+  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
+    new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
 }
 
@@ -143,23 +154,33 @@ import akka.util.ccompat._
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-@InternalApi private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
+@InternalApi private[akka] final class ActorSubscriberSink[In](
+    props: Props,
+    val attributes: Attributes,
+    shape: SinkShape[In])
+    extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
     val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attr, amendShape(attr))
+  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] =
+    new ActorSubscriberSink[In](props, attributes, shape)
+  override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] =
+    new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any,
-                                                        val attributes: Attributes,
-                                                        shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+@InternalApi private[akka] final class ActorRefSink[In](
+    ref: ActorRef,
+    onCompleteMessage: Any,
+    onFailureMessage: Throwable => Any,
+    val attributes: Attributes,
+    shape: SinkShape[In])
+    extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
@@ -179,7 +200,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class TakeLastStage[T](n: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+@InternalApi private[akka] final class TakeLastStage[T](n: Int)
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
   if (n <= 0)
     throw new IllegalArgumentException("requirement failed: n must be greater than 0")
 
@@ -226,7 +248,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+@InternalApi private[akka] final class HeadOptionStage[T]
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
 
   val in: Inlet[T] = Inlet("headOption.in")
 
@@ -266,7 +289,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SeqStage[T, That](implicit cbf: Factory[T, That with immutable.Iterable[_]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[That]] {
+@InternalApi private[akka] final class SeqStage[T, That](implicit cbf: Factory[T, That with immutable.Iterable[_]])
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[That]] {
   val in = Inlet[T]("seq.in")
 
   override def toString: String = "SeqStage"
@@ -321,7 +345,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSink[T]() extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
+@InternalApi private[akka] final class QueueSink[T]()
+    extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
   type Requested[E] = Promise[Option[E]]
 
   val in = Inlet[T]("queueSink.in")
@@ -349,36 +374,39 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
-          case Some(_) ⇒
-            pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
-          case None ⇒
-            if (buffer.isEmpty) currentRequest = Some(pullPromise)
-            else {
-              if (buffer.used == maxBuffer) tryPull(in)
-              sendDownstream(pullPromise)
-            }
-        }
-        case QueueSink.Cancel ⇒ completeStage()
+        case QueueSink.Pull(pullPromise) =>
+          currentRequest match {
+            case Some(_) =>
+              pullPromise.failure(
+                new IllegalStateException(
+                  "You have to wait for previous future to be resolved to send another request"))
+            case None =>
+              if (buffer.isEmpty) currentRequest = Some(pullPromise)
+              else {
+                if (buffer.used == maxBuffer) tryPull(in)
+                sendDownstream(pullPromise)
+              }
+          }
+        case QueueSink.Cancel => completeStage()
       }
 
       def sendDownstream(promise: Requested[T]): Unit = {
         val e = buffer.dequeue()
         promise.complete(e)
         e match {
-          case Success(_: Some[_]) ⇒ //do nothing
-          case Success(None)       ⇒ completeStage()
-          case Failure(t)          ⇒ failStage(t)
+          case Success(_: Some[_]) => //do nothing
+          case Success(None)       => completeStage()
+          case Failure(t)          => failStage(t)
         }
       }
 
       def enqueueAndNotify(requested: Received[T]): Unit = {
         buffer.enqueue(requested)
         currentRequest match {
-          case Some(p) ⇒
+          case Some(p) =>
             sendDownstream(p)
             currentRequest = None
-          case None ⇒ //do nothing
+          case None => //do nothing
         }
       }
 
@@ -395,10 +423,12 @@ import akka.util.ccompat._
       // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
-        callback.invokeWithFeedback(Pull(p))
-          .failed.foreach {
-            case NonFatal(e) ⇒ p.tryFailure(e)
-            case _           ⇒ ()
+        callback
+          .invokeWithFeedback(Pull(p))
+          .failed
+          .foreach {
+            case NonFatal(e) => p.tryFailure(e)
+            case _           => ()
           }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
@@ -414,8 +444,9 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T]) extends akka.stream.javadsl.SinkQueueWithCancel[T] {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+@InternalApi private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T])
+    extends akka.stream.javadsl.SinkQueueWithCancel[T] {
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
   def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
   def cancel(): Unit = delegate.cancel()
 
@@ -459,7 +490,8 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
+@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]])
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
   val in = Inlet[T]("lazySink.in")
   override def initialAttributes = DefaultAttributes.lazySink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -478,7 +510,7 @@ import akka.util.ccompat._
         switching = true
         val cb: AsyncCallback[Try[Sink[T, M]]] =
           getAsyncCallback {
-            case Success(sink) ⇒
+            case Success(sink) =>
               // check if the stage is still in need for the lazy sink
               // (there could have been an onUpstreamFailure in the meantime that has completed the promise)
               if (!promise.isCompleted) {
@@ -487,19 +519,19 @@ import akka.util.ccompat._
                   promise.success(Some(mat))
                   setKeepGoing(true)
                 } catch {
-                  case NonFatal(e) ⇒
+                  case NonFatal(e) =>
                     promise.failure(e)
                     failStage(e)
                 }
               }
-            case Failure(e) ⇒
+            case Failure(e) =>
               promise.failure(e)
               failStage(e)
           }
         try {
           sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             promise.failure(e)
             failStage(e)
         }
@@ -541,22 +573,28 @@ import akka.util.ccompat._
         // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
         setKeepGoing(true)
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            subOutlet.push(grab(in))
-          }
-          override def onUpstreamFinish(): Unit = {
-            if (firstElementPushed) {
-              subOutlet.complete()
-              maybeCompleteStage()
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              subOutlet.push(grab(in))
             }
-          }
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            // propagate exception irrespective if the cached element has been pushed or not
-            subOutlet.fail(ex)
-            maybeCompleteStage()
-          }
-        })
+            override def onUpstreamFinish(): Unit = {
+              if (firstElementPushed) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              // propagate exception irrespective if the cached element has been pushed or not
+              subOutlet.fail(ex)
+              // #25410 if we fail the stage here directly, the SubSource may not have been started yet,
+              // which can happen if upstream fails immediately after emitting a first value.
+              // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
+              // scheduling it lets the interpreter first start the substream
+              getAsyncCallback[Throwable](failStage).invoke(ex)
+            }
+          })
 
         subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {

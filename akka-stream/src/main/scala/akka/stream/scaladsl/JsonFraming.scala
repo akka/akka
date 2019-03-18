@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.impl.JsonObjectParser
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.stage.{ InHandler, OutHandler, GraphStageLogic }
+import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 
 import scala.util.control.NonFatal
@@ -45,35 +45,36 @@ object JsonFraming {
 
       override protected def initialAttributes: Attributes = Attributes.name("JsonFraming.objectScanner")
 
-      override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-        private val buffer = new JsonObjectParser(maximumObjectLength)
+      override def createLogic(inheritedAttributes: Attributes) =
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+          private val buffer = new JsonObjectParser(maximumObjectLength)
 
-        setHandlers(in, out, this)
+          setHandlers(in, out, this)
 
-        override def onPush(): Unit = {
-          buffer.offer(grab(in))
-          tryPopBuffer()
-        }
+          override def onPush(): Unit = {
+            buffer.offer(grab(in))
+            tryPopBuffer()
+          }
 
-        override def onPull(): Unit =
-          tryPopBuffer()
+          override def onPull(): Unit =
+            tryPopBuffer()
 
-        override def onUpstreamFinish(): Unit = {
-          buffer.poll() match {
-            case Some(json) ⇒ emit(out, json)
-            case _          ⇒ completeStage()
+          override def onUpstreamFinish(): Unit = {
+            buffer.poll() match {
+              case Some(json) => emit(out, json)
+              case _          => completeStage()
+            }
+          }
+
+          def tryPopBuffer() = {
+            try buffer.poll() match {
+              case Some(json) => push(out, json)
+              case _          => if (isClosed(in)) completeStage() else pull(in)
+            } catch {
+              case NonFatal(ex) => failStage(ex)
+            }
           }
         }
-
-        def tryPopBuffer() = {
-          try buffer.poll() match {
-            case Some(json) ⇒ push(out, json)
-            case _          ⇒ if (isClosed(in)) completeStage() else pull(in)
-          } catch {
-            case NonFatal(ex) ⇒ failStage(ex)
-          }
-        }
-      }
     })
 
 }

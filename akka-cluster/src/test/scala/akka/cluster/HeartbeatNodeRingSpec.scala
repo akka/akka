@@ -25,7 +25,7 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
       val ring = HeartbeatNodeRing(cc, nodes, Set.empty, 3)
       ring.myReceivers should ===(ring.receivers(cc))
 
-      nodes foreach { n ⇒
+      nodes.foreach { n =>
         val receivers = ring.receivers(n)
         receivers.size should ===(3)
         receivers should not contain (n)

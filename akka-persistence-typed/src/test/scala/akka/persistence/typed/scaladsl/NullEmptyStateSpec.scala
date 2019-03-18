@@ -9,13 +9,13 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object NullEmptyStateSpec {
 
-  private val conf = ConfigFactory.parseString(
-    s"""
+  private val conf = ConfigFactory.parseString(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 }
@@ -28,19 +28,19 @@ class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.co
     EventSourcedBehavior[String, String, String](
       persistenceId,
       emptyState = null,
-      commandHandler = (_, command) ⇒ {
+      commandHandler = (_, command) => {
         if (command == "stop")
           Effect.stop()
         else
           Effect.persist(command)
       },
-      eventHandler = (state, event) ⇒ {
+      eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         if (state == null) event else state + event
-      }
-    ).onRecoveryCompleted { s ⇒
+      }).receiveSignal {
+      case RecoveryCompleted(s) ⇒
         probe.tell("onRecoveryCompleted:" + s)
-      }
+    }
 
   "A typed persistent actor with primitive state" must {
     "persist events and update state" in {

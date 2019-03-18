@@ -10,21 +10,22 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ExposedPublisherReceive(activeReceive: Actor.Receive, unhandled: Any ⇒ Unit) extends Actor.Receive {
+@InternalApi private[akka] abstract class ExposedPublisherReceive(activeReceive: Actor.Receive, unhandled: Any => Unit)
+    extends Actor.Receive {
   private var stash = List.empty[Any]
 
   def isDefinedAt(o: Any): Boolean = true
 
   def apply(o: Any): Unit = o match {
-    case ep: ExposedPublisher ⇒
+    case ep: ExposedPublisher =>
       receiveExposedPublisher(ep)
       if (stash.nonEmpty) {
         // we don't use sender() so this is alright
-        stash.reverse.foreach { msg ⇒
+        stash.reverse.foreach { msg =>
           activeReceive.applyOrElse(msg, unhandled)
         }
       }
-    case other ⇒
+    case other =>
       stash ::= other
   }
 
