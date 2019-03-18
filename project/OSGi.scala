@@ -17,7 +17,15 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    Compile / packageBin := ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value),
+    Compile / packageBin := {
+      val bundle = OsgiKeys.bundle.value
+      // This normally happens automatically when loading the
+      // sbt-reproducible-builds plugin, but because we replace
+      // `packageBin` wholesale here we need to invoke the post-processing
+      // manually. See also
+      // https://github.com/raboof/sbt-reproducible-builds#sbt-osgi
+      ReproducibleBuildsPlugin.postProcessJar(bundle)
+    },
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
