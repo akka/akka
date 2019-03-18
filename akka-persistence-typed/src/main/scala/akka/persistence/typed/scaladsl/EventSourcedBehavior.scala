@@ -4,9 +4,8 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.util.Try
 import scala.annotation.tailrec
-import akka.Done
+
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
@@ -20,6 +19,7 @@ import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
@@ -175,6 +175,11 @@ object EventSourcedBehavior {
    * performed by replaying all events -- which may take a long time.
    */
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Criteria for internal retention/deletion of snapshots and events.
+   */
+  def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query

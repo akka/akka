@@ -128,6 +128,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
 
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
+  def retentionCriteria: RetentionCriteria = RetentionCriteria()
+
   /**
    * INTERNAL API: DeferredBehavior init
    */

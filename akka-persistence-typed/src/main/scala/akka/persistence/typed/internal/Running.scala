@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -17,8 +18,10 @@ import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.Callback
-import akka.persistence.typed.DeleteSnapshotCompleted
-import akka.persistence.typed.DeleteSnapshotFailed
+import akka.persistence.typed.DeleteSnapshotsCompleted
+import akka.persistence.typed.DeleteSnapshotsFailed
+import akka.persistence.typed.DeleteMessagesCompleted
+import akka.persistence.typed.DeleteMessagesFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
@@ -93,10 +96,9 @@ private[akka] object Running {
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
-      case SnapshotterResponse(r) =>
-        setup.log.warning("Unexpected SnapshotterResponse {}", r)
-        Behaviors.unhandled
-      case _ => Behaviors.unhandled
+      case SnapshotterResponse(r)           => onSnapshotterResponse(r)
+      case JournalResponse(r)               => onJournalResponse(r)
+      case _                                => Behaviors.unhandled
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
@@ -108,6 +110,53 @@ private[akka] object Running {
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+    }
+
+    /** Handle journal responses for non-persist events workloads. */
+    def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
+      val signal = response match {
+        case DeleteMessagesSuccess(toSequenceNr) =>
+          setup.log.debug("Persistent messages to [{}] deleted successfully.", toSequenceNr)
+          internalDeleteSnapshots(toSequenceNr)
+          Some(DeleteMessagesCompleted(toSequenceNr))
+
+        case DeleteMessagesFailure(e, toSequenceNr) =>
+          Some(DeleteMessagesFailed(toSequenceNr, e))
+        case _ =>
+          None
+      }
+
+      signal match {
+        case Some(sig) =>
+          setup.onSignal(sig)
+          this
+        case None =>
+          Behaviors.unhandled // unexpected journal response
+      }
+    }
+
+    /** Handle snapshot responses for non-persist events workloads. */
+    def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+      val signal = response match {
+        case DeleteSnapshotsSuccess(criteria) =>
+          Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)))
+        case DeleteSnapshotsFailure(criteria, error) =>
+          Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), error))
+        case DeleteSnapshotSuccess(meta) =>
+          Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)))
+        case DeleteSnapshotFailure(meta, error) =>
+          Some(DeleteSnapshotsFailed(DeletionTarget.Individual(meta), error))
+        case _ =>
+          None
+      }
+
+      signal match {
+        case Some(sig) =>
+          setup.onSignal(sig)
+          this
+        case None =>
+          Behaviors.unhandled // unexpected snapshot response
+      }
     }
 
     @tailrec def applyEffects(
@@ -315,21 +364,25 @@ private[akka] object Running {
 
     def onSnapshotterResponse(response: SnapshotProtocol.Response): Unit = {
       val signal = response match {
-        case SaveSnapshotSuccess(meta) =>
+        case e @ SaveSnapshotSuccess(meta) =>
+          // # 24698 The deletion of old events are automatic, snapshots are triggered by the SaveSnapshotSuccess.
+          setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
+          if (setup.retention.deleteEventsOnSnapshot)
+            internalDeleteEvents(e, state) // if successful, DeleteMessagesSuccess then internalDeleteSnapshots
+          else
+            internalDeleteSnapshots(meta.sequenceNr)
+
           Some(SnapshotCompleted(meta))
-        case SaveSnapshotFailure(meta, ex) =>
-          Some(SnapshotFailed(meta, ex))
-        case DeleteSnapshotSuccess(meta) =>
-          Some(DeleteSnapshotCompleted(DeletionTarget.Individual(meta)))
-        case DeleteSnapshotFailure(meta, ex) =>
-          Some(DeleteSnapshotFailed(DeletionTarget.Individual(meta), ex))
-        case DeleteSnapshotsSuccess(criteria) =>
-          Some(DeleteSnapshotCompleted(DeletionTarget.Criteria(criteria)))
-        case DeleteSnapshotsFailure(criteria, failure) =>
-          Some(DeleteSnapshotFailed(DeletionTarget.Criteria(criteria), failure))
-        case _ => None
+
+        case SaveSnapshotFailure(meta, error) =>
+          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
+          Some(SnapshotFailed(meta, error))
+
+        case _ =>
+          None
       }
 
+      setup.log.debug("Received snapshot event [{}], returning signal [{}].", response, signal)
       signal.foreach(setup.onSignal _)
     }
 
