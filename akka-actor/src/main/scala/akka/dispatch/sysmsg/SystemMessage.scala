@@ -5,7 +5,7 @@
 package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
-import akka.actor.{ ActorInitializationException, InternalActorRef, ActorRef, PossiblyHarmful }
+import akka.actor.{ ActorInitializationException, ActorRef, InternalActorRef, PossiblyHarmful }
 import akka.actor.DeadLetterSuppression
 
 /**
@@ -19,11 +19,13 @@ private[akka] object SystemMessageList {
   final val ENil: EarliestFirstSystemMessageList = new EarliestFirstSystemMessageList(null)
 
   @tailrec
-  private[sysmsg] def sizeInner(head: SystemMessage, acc: Int): Int = if (head eq null) acc else sizeInner(head.next, acc + 1)
+  private[sysmsg] def sizeInner(head: SystemMessage, acc: Int): Int =
+    if (head eq null) acc else sizeInner(head.next, acc + 1)
 
   @tailrec
   private[sysmsg] def reverseInner(head: SystemMessage, acc: SystemMessage): SystemMessage = {
-    if (head eq null) acc else {
+    if (head eq null) acc
+    else {
       val next = head.next
       head.next = acc
       reverseInner(next, head)
@@ -158,7 +160,7 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
    *
    * The cost of this operation is linear in the size of the list that is to be prepended.
    */
-  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
+  final def reversePrepend(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList = {
     var remaining = other
     var result = this
     while (remaining.nonEmpty) {
@@ -168,6 +170,9 @@ private[akka] class EarliestFirstSystemMessageList(val head: SystemMessage) exte
     }
     result
   }
+
+  final def reverse_:::(other: LatestFirstSystemMessageList): EarliestFirstSystemMessageList =
+    reversePrepend(other)
 
 }
 
@@ -256,12 +261,15 @@ private[akka] case object NoMessage extends SystemMessage // switched into the m
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: Int) extends SystemMessage
-  with StashWhenFailed
-  with StashWhenWaitingForChildren
+private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: Int)
+    extends SystemMessage
+    with StashWhenFailed
+    with StashWhenWaitingForChildren
 
 @SerialVersionUID(1L)
 private[akka] final case class DeathWatchNotification(
-  actor:              ActorRef,
-  existenceConfirmed: Boolean,
-  addressTerminated:  Boolean) extends SystemMessage with DeadLetterSuppression
+    actor: ActorRef,
+    existenceConfirmed: Boolean,
+    addressTerminated: Boolean)
+    extends SystemMessage
+    with DeadLetterSuppression

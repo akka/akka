@@ -6,7 +6,7 @@ package akka.discovery.aggregate
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
-import akka.discovery.{ Lookup, Discovery, ServiceDiscovery }
+import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
 import akka.testkit.TestKit
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
@@ -20,11 +20,10 @@ class StubbedServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscov
 
   override def lookup(query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     if (query.serviceName == "stubbed") {
-      Future.successful(Resolved(
-        query.serviceName,
-        immutable.Seq(
-          ResolvedTarget(host = "stubbed1", port = Some(1234), address = None)
-        )))
+      Future.successful(
+        Resolved(
+          query.serviceName,
+          immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None))))
     } else if (query.serviceName == "fail") {
       Future.failed(new RuntimeException("No resolving for you!"))
     } else {
@@ -75,11 +74,11 @@ object AggregateServiceDiscoverySpec {
 }
 
 class AggregateServiceDiscoverySpec
-  extends TestKit(ActorSystem("AggregateDiscoverySpec", AggregateServiceDiscoverySpec.config))
-  with WordSpecLike
-  with Matchers
-  with BeforeAndAfterAll
-  with ScalaFutures {
+    extends TestKit(ActorSystem("AggregateDiscoverySpec", AggregateServiceDiscoverySpec.config))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures {
 
   override protected def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -93,9 +92,7 @@ class AggregateServiceDiscoverySpec
       val results = discovery.lookup("stubbed", 100.millis).futureValue
       results shouldEqual Resolved(
         "stubbed",
-        immutable.Seq(
-          ResolvedTarget(host = "stubbed1", port = Some(1234), address = None)
-        ))
+        immutable.Seq(ResolvedTarget(host = "stubbed1", port = Some(1234), address = None)))
     }
 
     "move onto the next if no resolved targets" in {
@@ -104,8 +101,7 @@ class AggregateServiceDiscoverySpec
         "config1",
         immutable.Seq(
           ResolvedTarget(host = "cat", port = Some(1233), address = None),
-          ResolvedTarget(host = "dog", port = Some(1234), address = None)
-        ))
+          ResolvedTarget(host = "dog", port = Some(1234), address = None)))
     }
 
     "move onto next if fails" in {
@@ -113,9 +109,7 @@ class AggregateServiceDiscoverySpec
       // Stub fails then result comes from config
       results shouldEqual Resolved(
         "fail",
-        immutable.Seq(
-          ResolvedTarget(host = "from-config", port = None, address = None)
-        ))
+        immutable.Seq(ResolvedTarget(host = "from-config", port = None, address = None)))
     }
   }
 

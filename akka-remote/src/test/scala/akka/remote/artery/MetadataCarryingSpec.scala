@@ -43,19 +43,19 @@ class TestInstrument(system: ExtendedActorSystem) extends RemoteInstrument {
 
   override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
     message match {
-      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) =>
         val metadata = "!!!"
         buffer.putInt(metadata.length)
         encoder.encode(CharBuffer.wrap(metadata), buffer, true)
         encoder.flush(buffer)
         encoder.reset()
         MetadataCarryingSpy(system).ref.foreach(_ ! RemoteWriteMetadata(recipient, message, sender))
-      case _ ⇒
+      case _ =>
     }
 
   override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
     message match {
-      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) =>
         val size = buffer.getInt
         val charBuffer = CharBuffer.allocate(size)
         decoder.decode(buffer, charBuffer, false)
@@ -63,21 +63,26 @@ class TestInstrument(system: ExtendedActorSystem) extends RemoteInstrument {
         charBuffer.flip()
         val metadata = charBuffer.toString
         MetadataCarryingSpy(system).ref.foreach(_ ! RemoteReadMetadata(recipient, message, sender, metadata))
-      case _ ⇒
+      case _ =>
     }
 
   override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit =
     message match {
-      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) =>
         MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageSent(recipient, message, sender, size, time))
-      case _ ⇒
+      case _ =>
     }
 
-  override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit =
+  override def remoteMessageReceived(
+      recipient: ActorRef,
+      message: Object,
+      sender: ActorRef,
+      size: Int,
+      time: Long): Unit =
     message match {
-      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) =>
         MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageReceived(recipient, message, sender, size, time))
-      case _ ⇒
+      case _ =>
     }
 }
 
@@ -87,14 +92,13 @@ object MetadataCarryingSpec {
   class ProxyActor(local: ActorRef, remotePath: ActorPath) extends Actor {
     val remote = context.system.actorSelection(remotePath)
     override def receive = {
-      case message if sender() == local ⇒ remote ! message
-      case message                      ⇒ local ! message
+      case message if sender() == local => remote ! message
+      case message                      => local ! message
     }
   }
 }
 
-class MetadataCarryingSpec extends ArteryMultiNodeSpec(
-  """
+class MetadataCarryingSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.advanced {
         instruments = [ "akka.remote.artery.TestInstrument" ]

@@ -40,7 +40,7 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
       ref1.asInstanceOf[ActorRefScope].isLocal should ===(true)
 
       val ref2 = provider.resolveActorRef(path)
-      ref1 should be theSameInstanceAs (ref2)
+      (ref1 should be).theSameInstanceAs(ref2)
     }
 
     "not cache resolveActorRef for unresolved ref" in {
@@ -60,12 +60,13 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
       ref1.getClass should ===(classOf[RemoteActorRef])
 
       val ref2 = provider.resolveActorRef(path)
-      ref1 should be theSameInstanceAs (ref2)
+      (ref1 should be).theSameInstanceAs(ref2)
     }
 
     "detect wrong protocol" in {
       EventFilter[IllegalArgumentException](start = "No root guardian at", occurrences = 1).intercept {
-        val sel = system.actorSelection(s"akka.tcp://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
+        val sel =
+          system.actorSelection(s"akka.tcp://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
         sel.anchor.getClass should ===(classOf[EmptyLocalActorRef])
       }
     }

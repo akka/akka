@@ -39,7 +39,7 @@ trait SigarProvider {
       SigarProvider.close(sigar)
       true
     } catch {
-      case e: Throwable ⇒ false
+      case e: Throwable => false
     }
 
   /** Create sigar and verify it works. */
@@ -64,17 +64,19 @@ trait SigarProvider {
   def createSigarInstance: SigarProxy = {
     TryNative {
       verifiedSigarInstance
-    } orElse TryNative {
-      provisionSigarLibrary()
-      verifiedSigarInstance
-    } recover {
-      case e: Throwable ⇒ throw new RuntimeException("Failed to load sigar:", e)
-    } get
+    }.orElse(TryNative {
+        provisionSigarLibrary()
+        verifiedSigarInstance
+      })
+      .recover {
+        case e: Throwable => throw new RuntimeException("Failed to load sigar:", e)
+      } get
   }
 
 }
 
 object SigarProvider {
+
   /**
    * Release underlying sigar proxy resources.
    *
@@ -96,9 +98,10 @@ case class DefaultSigarProvider(settings: ClusterMetricsSettings) extends SigarP
  * INTERNAL API
  */
 private[metrics] object TryNative {
-  def apply[T](r: ⇒ T): Try[T] =
-    try Success(r) catch {
+  def apply[T](r: => T): Try[T] =
+    try Success(r)
+    catch {
       // catching all, for example java.lang.LinkageError that are not caught by `NonFatal` in `Try`
-      case e: Throwable ⇒ Failure(e)
+      case e: Throwable => Failure(e)
     }
 }

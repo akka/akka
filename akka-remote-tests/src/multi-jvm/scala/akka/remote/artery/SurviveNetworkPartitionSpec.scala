@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import akka.remote.{ RemotingMultiNodeSpec, QuarantinedEvent, RARP }
+import akka.remote.{ QuarantinedEvent, RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
@@ -18,12 +18,14 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.artery.enabled = on
       akka.remote.artery.advanced.give-up-system-message-after = 4s
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   testTransport(on = true)
 }

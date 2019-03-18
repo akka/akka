@@ -29,7 +29,7 @@ object ClusterShardingLeavingSpec {
 
   class Entity extends Actor {
     def receive = {
-      case Ping(_) ⇒ sender() ! self
+      case Ping(_) => sender() ! self
     }
   }
 
@@ -39,17 +39,17 @@ object ClusterShardingLeavingSpec {
   class ShardLocations extends Actor {
     var locations: Locations = _
     def receive = {
-      case GetLocations ⇒ sender() ! locations
-      case l: Locations ⇒ locations = l
+      case GetLocations => sender() ! locations
+      case l: Locations => locations = l
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m @ Ping(id) ⇒ (id, m)
+    case m @ Ping(id) => (id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Ping(id: String) ⇒ id.charAt(0).toString
+    case Ping(id: String) => id.charAt(0).toString
   }
 }
 
@@ -85,7 +85,8 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
 object PersistentClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("persistence")
 object DDataClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("ddata")
 
-class PersistentClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(PersistentClusterShardingLeavingSpecConfig)
+class PersistentClusterShardingLeavingSpec
+    extends ClusterShardingLeavingSpec(PersistentClusterShardingLeavingSpecConfig)
 class DDataClusterShardingLeavingSpec extends ClusterShardingLeavingSpec(DDataClusterShardingLeavingSpecConfig)
 
 class PersistentClusterShardingLeavingMultiJvmNode1 extends PersistentClusterShardingLeavingSpec
@@ -98,32 +99,35 @@ class DDataClusterShardingLeavingMultiJvmNode2 extends DDataClusterShardingLeavi
 class DDataClusterShardingLeavingMultiJvmNode3 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode4 extends DDataClusterShardingLeavingSpec
 
-abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingLeavingSpec._
   import config._
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  val storageLocations = List(
+    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   val cluster = Cluster(system)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       startSharding()
       within(15.seconds) {
-        awaitAssert(cluster.state.members.exists { m ⇒
+        awaitAssert(cluster.state.members.exists { m =>
           m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
         } should be(true))
       }
@@ -175,10 +179,10 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
     "initialize shards" in {
       runOn(first) {
         val shardLocations = system.actorOf(Props[ShardLocations], "shardLocations")
-        val locations = (for (n ← 1 to 10) yield {
+        val locations = (for (n <- 1 to 10) yield {
           val id = n.toString
           region ! Ping(id)
-          id → expectMsgType[ActorRef]
+          id -> expectMsgType[ActorRef]
         }).toMap
         shardLocations ! Locations(locations)
       }
@@ -205,7 +209,7 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
           awaitAssert {
             val probe = TestProbe()
             originalLocations.foreach {
-              case (id, ref) ⇒
+              case (id, ref) =>
                 region.tell(Ping(id), probe.ref)
                 if (ref.path.address == firstAddress)
                   probe.expectMsgType[ActorRef](1.second) should not be (ref)
@@ -221,4 +225,3 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   }
 }
-

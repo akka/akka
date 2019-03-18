@@ -20,10 +20,10 @@ object EventSourcedEntity {
    * [[EntityTypeKey.persistenceIdFrom]].
    */
   def apply[Command, Event, State](
-    entityTypeKey:  EntityTypeKey[Command],
-    entityId:       String,
-    emptyState:     State,
-    commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+      entityTypeKey: EntityTypeKey[Command],
+      entityId: String,
+      emptyState: State,
+      commandHandler: (State, Command) => Effect[Event, State],
+      eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior(entityTypeKey.persistenceIdFrom(entityId), emptyState, commandHandler, eventHandler)
 }

@@ -14,10 +14,10 @@ import org.scalatest.WordSpecLike
 class TimerBasedThrottleTest extends TestKit(ActorSystem("TimerBasedThrottler")) with WordSpecLike {
   "A throttler" must {
     "normalize all rates to the highest precision (nanoseconds)" in {
-      val throttler = TestActorRef(new TimerBasedThrottler(1 msgsPer (1, SECONDS)))
-      val throttler2 = TestActorRef(new TimerBasedThrottler(5 msgsPer (1, SECONDS)))
-      val throttler3 = TestActorRef(new TimerBasedThrottler(10 msgsPer (10, MILLISECONDS)))
-      val throttler4 = TestActorRef(new TimerBasedThrottler(1 msgsPer (1, MINUTES)))
+      val throttler = TestActorRef(new TimerBasedThrottler(1.msgsPer(1, SECONDS)))
+      val throttler2 = TestActorRef(new TimerBasedThrottler(5.msgsPer(1, SECONDS)))
+      val throttler3 = TestActorRef(new TimerBasedThrottler(10.msgsPer(10, MILLISECONDS)))
+      val throttler4 = TestActorRef(new TimerBasedThrottler(1.msgsPer(1, MINUTES)))
 
       assert(throttler.underlyingActor.rate.duration.toNanos == 1e9)
       assert(throttler.underlyingActor.rate.numberOfCalls == 1)
@@ -33,7 +33,7 @@ class TimerBasedThrottleTest extends TestKit(ActorSystem("TimerBasedThrottler"))
     }
 
     "handle zero number of calls gracefully" in {
-      val throttler = TestActorRef(new TimerBasedThrottler(0 msgsPer (1, SECONDS)))
+      val throttler = TestActorRef(new TimerBasedThrottler(0.msgsPer(1, SECONDS)))
 
       assert(throttler.underlyingActor.rate.duration.toSeconds == 1)
       assert(throttler.underlyingActor.rate.numberOfCalls == 0)

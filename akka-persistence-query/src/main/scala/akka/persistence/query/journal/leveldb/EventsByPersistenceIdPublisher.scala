@@ -18,15 +18,31 @@ import akka.persistence.query.{ EventEnvelope, Sequence }
  * INTERNAL API
  */
 private[akka] object EventsByPersistenceIdPublisher {
-  def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int, writeJournalPluginId: String): Props = {
+  def props(
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long,
+      refreshInterval: Option[FiniteDuration],
+      maxBufSize: Int,
+      writeJournalPluginId: String): Props = {
     refreshInterval match {
-      case Some(interval) ⇒
-        Props(new LiveEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, interval,
-          maxBufSize, writeJournalPluginId))
-      case None ⇒
-        Props(new CurrentEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr,
-          maxBufSize, writeJournalPluginId))
+      case Some(interval) =>
+        Props(
+          new LiveEventsByPersistenceIdPublisher(
+            persistenceId,
+            fromSequenceNr,
+            toSequenceNr,
+            interval,
+            maxBufSize,
+            writeJournalPluginId))
+      case None =>
+        Props(
+          new CurrentEventsByPersistenceIdPublisher(
+            persistenceId,
+            fromSequenceNr,
+            toSequenceNr,
+            maxBufSize,
+            writeJournalPluginId))
     }
   }
 
@@ -41,9 +57,13 @@ private[akka] object EventsByPersistenceIdPublisher {
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
-  val persistenceId: String, val fromSequenceNr: Long,
-  val maxBufSize: Int, val writeJournalPluginId: String)
-  extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+    val persistenceId: String,
+    val fromSequenceNr: Long,
+    val maxBufSize: Int,
+    val writeJournalPluginId: String)
+    extends ActorPublisher[EventEnvelope]
+    with DeliveryBuffer[EventEnvelope]
+    with ActorLogging {
   import EventsByPersistenceIdPublisher._
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
@@ -55,22 +75,22 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
   def receive = init
 
   def init: Receive = {
-    case _: Request ⇒ receiveInitialRequest()
-    case Continue   ⇒ // skip, wait for first Request
-    case Cancel     ⇒ context.stop(self)
+    case _: Request => receiveInitialRequest()
+    case Continue   => // skip, wait for first Request
+    case Cancel     => context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
 
   def idle: Receive = {
-    case Continue | _: LeveldbJournal.EventAppended ⇒
+    case Continue | _: LeveldbJournal.EventAppended =>
       if (timeForReplay)
         replay()
 
-    case _: Request ⇒
+    case _: Request =>
       receiveIdleRequest()
 
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }
 
@@ -81,13 +101,18 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
 
   def replay(): Unit = {
     val limit = maxBufSize - buf.size
-    log.debug("request replay for persistenceId [{}] from [{}] to [{}] limit [{}]", persistenceId, currSeqNo, toSequenceNr, limit)
+    log.debug(
+      "request replay for persistenceId [{}] from [{}] to [{}] limit [{}]",
+      persistenceId,
+      currSeqNo,
+      toSequenceNr,
+      limit)
     journal ! ReplayMessages(currSeqNo, toSequenceNr, limit, persistenceId, self)
     context.become(replaying(limit))
   }
 
   def replaying(limit: Int): Receive = {
-    case ReplayedMessage(p) ⇒
+    case ReplayedMessage(p) =>
       buf :+= EventEnvelope(
         offset = Sequence(p.sequenceNr),
         persistenceId = persistenceId,
@@ -96,21 +121,21 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
       currSeqNo = p.sequenceNr + 1
       deliverBuf()
 
-    case RecoverySuccess(highestSeqNr) ⇒
+    case RecoverySuccess(highestSeqNr) =>
       log.debug("replay completed for persistenceId [{}], currSeqNo [{}]", persistenceId, currSeqNo)
       receiveRecoverySuccess(highestSeqNr)
 
-    case ReplayMessagesFailure(cause) ⇒
+    case ReplayMessagesFailure(cause) =>
       log.debug("replay failed for persistenceId [{}], due to [{}]", persistenceId, cause.getMessage)
       deliverBuf()
       onErrorThenStop(cause)
 
-    case _: Request ⇒
+    case _: Request =>
       deliverBuf()
 
-    case Continue | _: LeveldbJournal.EventAppended ⇒ // skip during replay
+    case Continue | _: LeveldbJournal.EventAppended => // skip during replay
 
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }
 
@@ -122,11 +147,13 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class LiveEventsByPersistenceIdPublisher(
-  persistenceId: String, fromSequenceNr: Long, override val toSequenceNr: Long,
-  refreshInterval: FiniteDuration,
-  maxBufSize:      Int, writeJournalPluginId: String)
-  extends AbstractEventsByPersistenceIdPublisher(
-    persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
+    persistenceId: String,
+    fromSequenceNr: Long,
+    override val toSequenceNr: Long,
+    refreshInterval: FiniteDuration,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._
 
   val tickTask: Cancellable =
@@ -159,10 +186,12 @@ private[akka] class LiveEventsByPersistenceIdPublisher(
  * INTERNAL API
  */
 private[akka] class CurrentEventsByPersistenceIdPublisher(
-  persistenceId: String, fromSequenceNr: Long, var toSeqNr: Long,
-  maxBufSize: Int, writeJournalPluginId: String)
-  extends AbstractEventsByPersistenceIdPublisher(
-    persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
+    persistenceId: String,
+    fromSequenceNr: Long,
+    var toSeqNr: Long,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._
 
   override def toSequenceNr: Long = toSeqNr

@@ -24,8 +24,7 @@ class RemoteNodeRestartDeathWatchConfig(artery: Boolean) extends MultiNodeConfig
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
@@ -37,10 +36,10 @@ class RemoteNodeRestartDeathWatchConfig(artery: Boolean) extends MultiNodeConfig
 
 }
 
-class RemoteNodeRestartDeathWatchMultiJvmNode1 extends RemoteNodeRestartDeathWatchSpec(
-  new RemoteNodeRestartDeathWatchConfig(artery = false))
-class RemoteNodeRestartDeathWatchMultiJvmNode2 extends RemoteNodeRestartDeathWatchSpec(
-  new RemoteNodeRestartDeathWatchConfig(artery = false))
+class RemoteNodeRestartDeathWatchMultiJvmNode1
+    extends RemoteNodeRestartDeathWatchSpec(new RemoteNodeRestartDeathWatchConfig(artery = false))
+class RemoteNodeRestartDeathWatchMultiJvmNode2
+    extends RemoteNodeRestartDeathWatchSpec(new RemoteNodeRestartDeathWatchConfig(artery = false))
 
 // FIXME this is failing with Artery
 //class ArteryRemoteNodeRestartDeathWatchMultiJvmNode1 extends RemoteNodeRestartDeathWatchSpec(
@@ -51,16 +50,16 @@ class RemoteNodeRestartDeathWatchMultiJvmNode2 extends RemoteNodeRestartDeathWat
 object RemoteNodeRestartDeathWatchSpec {
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒
+      case "shutdown" =>
         sender() ! "shutdown-ack"
         context.system.terminate()
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 }
 
 abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestartDeathWatchConfig)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteNodeRestartDeathWatchSpec._
 
@@ -108,7 +107,9 @@ abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestar
 
         Await.ready(system.whenTerminated, 30.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))

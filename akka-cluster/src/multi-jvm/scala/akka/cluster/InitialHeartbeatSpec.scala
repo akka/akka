@@ -18,10 +18,9 @@ object InitialHeartbeatMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-      akka.cluster.failure-detector.threshold = 4""")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+      akka.cluster.failure-detector.threshold = 4""")).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -30,9 +29,7 @@ class InitialHeartbeatMultiJvmNode1 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode2 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode3 extends InitialHeartbeatSpec
 
-abstract class InitialHeartbeatSpec
-  extends MultiNodeSpec(InitialHeartbeatMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class InitialHeartbeatSpec extends MultiNodeSpec(InitialHeartbeatMultiJvmSpec) with MultiNodeClusterSpec {
 
   import InitialHeartbeatMultiJvmSpec._
 

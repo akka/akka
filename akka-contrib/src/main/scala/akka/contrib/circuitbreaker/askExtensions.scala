@@ -4,7 +4,7 @@
 
 package akka.contrib.circuitbreaker
 
-import akka.actor.{ ActorSelection, Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, ActorSelection }
 import akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure
 import akka.util.Timeout
 import scala.language.implicitConversions
@@ -13,7 +13,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 sealed class OpenCircuitException(message: String) extends RuntimeException(message)
-private[circuitbreaker] final object OpenCircuitException extends OpenCircuitException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
+private[circuitbreaker] final object OpenCircuitException
+    extends OpenCircuitException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
 
 /**
  * Convenience implicit conversions to provide circuit-breaker aware management of the ask pattern,
@@ -23,6 +24,7 @@ private[circuitbreaker] final object OpenCircuitException extends OpenCircuitExc
  */
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 object Implicits {
+
   /**
    * Import this implicit to enable the methods `failForOpenCircuit` and `failForOpenCircuitWith`
    * to [[scala.concurrent.Future]] converting
@@ -45,16 +47,22 @@ object Implicits {
    * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] responses into a failure response caused
    * by an [[akka.contrib.circuitbreaker.OpenCircuitException]]
    */
-  @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
-  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
+  @throws[akka.contrib.circuitbreaker.OpenCircuitException](
+    "if the call failed because the circuit breaker proxy state was OPEN")
+  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, ActorRef.noSender)
 
   /**
    * Wraps the `ask` method in [[akka.pattern.AskSupport]] method to convert failures connected to the circuit
    * breaker being in open state
    */
-  @throws[akka.contrib.circuitbreaker.OpenCircuitException]("if the call failed because the circuit breaker proxy state was OPEN")
-  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any, sender: ActorRef)(implicit executionContext: ExecutionContext, timeout: Timeout): Future[Any] =
+  @throws[akka.contrib.circuitbreaker.OpenCircuitException](
+    "if the call failed because the circuit breaker proxy state was OPEN")
+  def askWithCircuitBreaker(circuitBreakerProxy: ActorRef, message: Any, sender: ActorRef)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout): Future[Any] =
     circuitBreakerProxy.internalAskWithCircuitBreaker(message, timeout, sender)
 
 }
@@ -67,13 +75,14 @@ object Implicits {
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   @throws[OpenCircuitException]
-  def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(OpenCircuitException)
+  def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] =
+    failForOpenCircuitWith(OpenCircuitException)
 
-  def failForOpenCircuitWith(throwing: ⇒ Throwable)(implicit executionContext: ExecutionContext): Future[Any] = {
+  def failForOpenCircuitWith(throwing: => Throwable)(implicit executionContext: ExecutionContext): Future[Any] = {
     future.flatMap {
       _ match {
-        case CircuitOpenFailure(_) ⇒ Future.failed(throwing)
-        case result                ⇒ Future.successful(result)
+        case CircuitOpenFailure(_) => Future.failed(throwing)
+        case result                => Future.successful(result)
       }
     }
   }
@@ -81,11 +90,15 @@ final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyVal {
-  def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def askWithCircuitBreaker(message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout,
+      sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)
 
   @throws[OpenCircuitException]
-  private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(implicit executionContext: ExecutionContext) = {
+  private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(
+      implicit executionContext: ExecutionContext) = {
     import akka.pattern.ask
     import Implicits.futureExtensions
 
@@ -95,10 +108,14 @@ final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyV
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActorSelection(val actorSelection: ActorSelection) extends AnyVal {
-  def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+  def askWithCircuitBreaker(message: Any)(
+      implicit executionContext: ExecutionContext,
+      timeout: Timeout,
+      sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)
 
-  private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(implicit executionContext: ExecutionContext) = {
+  private[circuitbreaker] def internalAskWithCircuitBreaker(message: Any, timeout: Timeout, sender: ActorRef)(
+      implicit executionContext: ExecutionContext) = {
     import akka.pattern.ask
     import Implicits.futureExtensions
 

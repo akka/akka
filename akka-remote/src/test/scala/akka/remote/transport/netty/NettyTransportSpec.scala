@@ -17,8 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object NettyTransportSpec {
-  val commonConfig = ConfigFactory.parseString(
-    """
+  val commonConfig = ConfigFactory.parseString("""
     akka.actor.provider = remote
   """)
 
@@ -44,12 +43,11 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
   import akka.remote.transport.netty.NettyTransportSpec._
 
   "NettyTransport" should {
-    behave like theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("tcp")
-    behave like theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("udp")
+    behave.like(theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("tcp"))
+    behave.like(theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress("udp"))
 
     "bind to a random port" in {
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp {
           port = 0
         }
@@ -66,8 +64,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
       val (openSS, address) = randomOpenServerSocket()
 
       try {
-        val bindConfig = ConfigFactory.parseString(
-          s"""
+        val bindConfig = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp {
           port = ${address.getPort}
           bind-port = 0
@@ -94,8 +91,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
     "bind to a specified port and remoting accepts from a bound port" in {
       val address = SocketUtil.temporaryServerAddress(InetAddress.getLocalHost.getHostAddress, udp = false)
 
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp {
           port = 0
           bind-port = ${address.getPort}
@@ -110,8 +106,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
     }
 
     "bind to multiple transports" in {
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
           netty.tcp.port = 0
           netty.udp.port = 0
@@ -127,8 +122,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
     }
 
     "bind to all interfaces" in {
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
           netty.tcp.bind-hostname = "0.0.0.0"
         }
@@ -136,7 +130,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
       getInternal.flatMap(_.port) should contain(getExternal.port.get)
-      getInternal.map(_.host.get should include regex "0.0.0.0".r) // regexp dot is intentional to match IPv4 and 6 addresses
+      getInternal.map(x => (x.host.get should include).regex("0.0.0.0".r)) // regexp dot is intentional to match IPv4 and 6 addresses
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -144,7 +138,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
 }
 
 trait BindBehavior {
-  this: WordSpec with Matchers ⇒
+  this: WordSpec with Matchers =>
 
   import akka.remote.transport.netty.NettyTransportSpec._
 
@@ -152,8 +146,7 @@ trait BindBehavior {
     s"bind to default $proto address" in {
       val address = SocketUtil.temporaryServerAddress(udp = proto == "udp")
 
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
           netty.$proto {
             hostname = ${address.getAddress.getHostAddress}
@@ -175,14 +168,13 @@ trait BindBehavior {
       val bindAddress =
         try SocketUtil.temporaryServerAddress(address = "127.0.1.1", udp = proto == "udp")
         catch {
-          case e: java.net.BindException ⇒
+          case e: java.net.BindException =>
             info(s"skipping test due to [${e.getMessage}], you probably have to use `ifconfig lo0 alias 127.0.1.1`")
             pending
             null
         }
 
-      val bindConfig = ConfigFactory.parseString(
-        s"""
+      val bindConfig = ConfigFactory.parseString(s"""
         akka.remote {
           netty.$proto {
             hostname = ${address.getAddress.getHostAddress}

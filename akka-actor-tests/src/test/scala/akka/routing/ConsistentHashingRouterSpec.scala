@@ -33,8 +33,8 @@ object ConsistentHashingRouterSpec {
 
   class Echo extends Actor {
     def receive = {
-      case x: ConsistentHashableEnvelope ⇒ sender() ! s"Unexpected envelope: $x"
-      case _                             ⇒ sender() ! self
+      case x: ConsistentHashableEnvelope => sender() ! s"Unexpected envelope: $x"
+      case _                             => sender() ! self
     }
   }
 
@@ -47,7 +47,10 @@ object ConsistentHashingRouterSpec {
   final case class Msg2(key: Any, data: String)
 }
 
-class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.config) with DefaultTimeout with ImplicitSender {
+class ConsistentHashingRouterSpec
+    extends AkkaSpec(ConsistentHashingRouterSpec.config)
+    with DefaultTimeout
+    with ImplicitSender {
   import ConsistentHashingRouterSpec._
   implicit val ec = system.dispatcher
 
@@ -78,10 +81,12 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
     "select destination with defined hashMapping" in {
       def hashMapping: ConsistentHashMapping = {
-        case Msg2(key, _) ⇒ key
+        case Msg2(key, _) => key
       }
-      val router2 = system.actorOf(ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).
-        props(Props[Echo]), "router2")
+      val router2 =
+        system.actorOf(
+          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]),
+          "router2")
 
       router2 ! Msg2("a", "A")
       val destinationA = expectMsgType[ActorRef]

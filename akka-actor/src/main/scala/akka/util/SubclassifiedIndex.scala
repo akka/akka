@@ -11,10 +11,12 @@ import akka.util.ccompat._
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!
  */
 trait Subclassification[K] {
+
   /**
    * True if and only if x and y are of the same class.
    */
   def isEqual(x: K, y: K): Boolean
+
   /**
    * True if and only if x is a subclass of y; equal classes must be considered sub-classes!
    */
@@ -23,7 +25,9 @@ trait Subclassification[K] {
 
 private[akka] object SubclassifiedIndex {
 
-  class Nonroot[K, V](override val root: SubclassifiedIndex[K, V], val key: K, _values: Set[V])(implicit sc: Subclassification[K]) extends SubclassifiedIndex[K, V](_values) {
+  class Nonroot[K, V](override val root: SubclassifiedIndex[K, V], val key: K, _values: Set[V])(
+      implicit sc: Subclassification[K])
+      extends SubclassifiedIndex[K, V](_values) {
 
     override def innerAddValue(key: K, value: V): Changes = {
       // break the recursion on super when key is found and transition to recursive add-to-set
@@ -31,7 +35,7 @@ private[akka] object SubclassifiedIndex {
     }
 
     private def addValue(value: V): Changes = {
-      val kids = subkeys flatMap (_ addValue value)
+      val kids = subkeys.flatMap(_.addValue(value))
       if (!(values contains value)) {
         values += value
         kids :+ ((key, Set(value)))
@@ -45,7 +49,7 @@ private[akka] object SubclassifiedIndex {
     }
 
     override def removeValue(value: V): Changes = {
-      val kids = subkeys flatMap (_ removeValue value)
+      val kids = subkeys.flatMap(_.removeValue(value))
       if (values contains value) {
         values -= value
         kids :+ ((key, Set(value)))
@@ -96,7 +100,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
 
   protected def innerAddKey(key: K): Changes = {
     var found = false
-    val ch = subkeys flatMap { n ⇒
+    val ch = subkeys.flatMap { n =>
       if (sc.isEqual(key, n.key)) {
         found = true
         Nil
@@ -120,7 +124,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
 
   protected def innerAddValue(key: K, value: V): Changes = {
     var found = false
-    val ch = subkeys flatMap { n ⇒
+    val ch = subkeys.flatMap { n =>
       if (sc.isSubclass(key, n.key)) {
         found = true
         n.innerAddValue(key, value)
@@ -129,7 +133,7 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
     if (!found) {
       val v = values + value
       val n = new Nonroot(root, key, v)
-      integrate(n) ++ n.innerAddValue(key, value) :+ (key → v)
+      integrate(n) ++ n.innerAddValue(key, value) :+ (key -> v)
     } else ch
   }
 
@@ -142,14 +146,14 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
     // the reason for not using the values in the returned diff is that we need to
     // go through the whole tree to find all values for the "changed" keys in other
     // parts of the tree as well, since new nodes might have been created
-    mergeChangesByKey(innerRemoveValue(key, value)) map {
-      case (k, _) ⇒ (k, findValues(k))
+    mergeChangesByKey(innerRemoveValue(key, value)).map {
+      case (k, _) => (k, findValues(k))
     }
 
   // this will return the keys and values to be removed from the cache
   protected def innerRemoveValue(key: K, value: V): Changes = {
     var found = false
-    val ch = subkeys flatMap { n ⇒
+    val ch = subkeys.flatMap { n =>
       if (sc.isSubclass(key, n.key)) {
         found = true
         n.innerRemoveValue(key, value)
@@ -166,14 +170,14 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
    *
    * @return the diff that should be removed from the cache
    */
-  def removeValue(value: V): Changes = mergeChangesByKey(subkeys flatMap (_ removeValue value))
+  def removeValue(value: V): Changes = mergeChangesByKey(subkeys.flatMap(_.removeValue(value)))
 
   /**
    * Find all values for a given key in the index.
    */
   protected final def findValues(key: K): Set[V] = root.innerFindValues(key)
   protected def innerFindValues(key: K): Set[V] =
-    subkeys.foldLeft(Set.empty[V]) { (s, n) ⇒
+    subkeys.foldLeft(Set.empty[V]) { (s, n) =>
       if (sc.isSubclass(key, n.key))
         s ++ n.innerFindValues(key)
       else
@@ -183,16 +187,18 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
   /**
    * Find all subkeys of a given key in the index excluding some subkeys.
    */
-  protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] = root.innerFindSubKeys(key, except)
+  protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
+    root.innerFindSubKeys(key, except)
   protected def innerFindSubKeys(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
-    subkeys.foldLeft(Set.empty[K]) { (s, n) ⇒
+    subkeys.foldLeft(Set.empty[K]) { (s, n) =>
       if (sc.isEqual(key, n.key)) s
-      else n.innerFindSubKeys(key, except) ++ {
-        if (sc.isSubclass(n.key, key) && !except.exists(e ⇒ sc.isEqual(key, e.key)))
-          s + n.key
-        else
-          s
-      }
+      else
+        n.innerFindSubKeys(key, except) ++ {
+          if (sc.isSubclass(n.key, key) && !except.exists(e => sc.isEqual(key, e.key)))
+            s + n.key
+          else
+            s
+        }
     }
 
   override def toString = subkeys.mkString("SubclassifiedIndex(" + values + ",\n", ",\n", ")")
@@ -202,15 +208,17 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
    * Also needs to find subkeys in other parts of the tree to compensate for multiple inheritance.
    */
   private def integrate(n: Nonroot[K, V]): Changes = {
-    val (subsub, sub) = subkeys partition (k ⇒ sc.isSubclass(k.key, n.key))
+    val (subsub, sub) = subkeys.partition(k => sc.isSubclass(k.key, n.key))
     subkeys = sub :+ n
     n.subkeys = if (subsub.nonEmpty) subsub else n.subkeys
-    n.subkeys ++= findSubKeysExcept(n.key, n.subkeys).map(k ⇒ new Nonroot(root, k, values))
-    n.subkeys.map(n ⇒ (n.key, n.values.toSet))
+    n.subkeys ++= findSubKeysExcept(n.key, n.subkeys).map(k => new Nonroot(root, k, values))
+    n.subkeys.map(n => (n.key, n.values.toSet))
   }
 
   private def mergeChangesByKey(changes: Changes): Changes =
-    changes.foldLeft(emptyMergeMap[K, V]) {
-      case (m, (k, s)) ⇒ m.updated(k, m(k) ++ s)
-    }.to(immutable.Seq)
+    changes
+      .foldLeft(emptyMergeMap[K, V]) {
+        case (m, (k, s)) => m.updated(k, m(k) ++ s)
+      }
+      .to(immutable.Seq)
 }

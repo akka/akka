@@ -5,7 +5,7 @@
 package akka.persistence.typed.javadsl
 
 import java.util.Objects
-import java.util.function.{ BiFunction, Predicate, Supplier, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
 
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -62,7 +62,9 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    *
    * @return A new, mutable, EventHandlerBuilderByState
    */
-  def forState[S <: State](stateClass: Class[S], statePredicate: Predicate[S]): EventHandlerBuilderByState[S, State, Event] = {
+  def forState[S <: State](
+      stateClass: Class[S],
+      statePredicate: Predicate[S]): EventHandlerBuilderByState[S, State, Event] = {
     val builder = new EventHandlerBuilderByState[S, State, Event](stateClass, statePredicate)
     builders = builder.asInstanceOf[EventHandlerBuilderByState[State, State, Event]] :: builders
     builder
@@ -96,7 +98,7 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forNullState(): EventHandlerBuilderByState[State, State, Event] = {
-    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.isNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s => Objects.isNull(s))
     val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
@@ -112,7 +114,7 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forNonNullState(): EventHandlerBuilderByState[State, State, Event] = {
-    val predicate: Predicate[State] = asJavaPredicate(s ⇒ Objects.nonNull(s))
+    val predicate: Predicate[State] = asJavaPredicate(s => Objects.nonNull(s))
     val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
@@ -130,7 +132,7 @@ final class EventHandlerBuilder[State >: Null, Event]() {
    * @return A new, mutable, EventHandlerBuilderByState
    */
   def forAnyState(): EventHandlerBuilderByState[State, State, Event] = {
-    val predicate: Predicate[State] = asJavaPredicate(_ ⇒ true)
+    val predicate: Predicate[State] = asJavaPredicate(_ => true)
     val builder = EventHandlerBuilderByState.builder[State, Event](predicate)
     builders = builder :: builders
     builder
@@ -140,11 +142,12 @@ final class EventHandlerBuilder[State >: Null, Event]() {
 
     val combined =
       builders.reverse match {
-        case head :: Nil ⇒ head
-        case head :: tail ⇒ tail.foldLeft(head) { (acc, builder) ⇒
-          acc.orElse(builder)
-        }
-        case Nil ⇒ throw new IllegalStateException("No matchers defined")
+        case head :: Nil => head
+        case head :: tail =>
+          tail.foldLeft(head) { (acc, builder) =>
+            acc.orElse(builder)
+          }
+        case Nil => throw new IllegalStateException("No matchers defined")
       }
 
     combined.build()
@@ -179,24 +182,26 @@ object EventHandlerBuilderByState {
    * INTERNAL API
    */
   @InternalApi private final case class EventHandlerCase[State, Event](
-    statePredicate: State ⇒ Boolean,
-    eventPredicate: Event ⇒ Boolean,
-    handler:        BiFunction[State, Event, State])
+      statePredicate: State => Boolean,
+      eventPredicate: Event => Boolean,
+      handler: BiFunction[State, Event, State])
 }
 
-final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private val stateClass: Class[S], private val statePredicate: Predicate[S]) {
+final class EventHandlerBuilderByState[S <: State, State >: Null, Event](
+    private val stateClass: Class[S],
+    private val statePredicate: Predicate[S]) {
 
   import EventHandlerBuilderByState.EventHandlerCase
 
   private var cases: List[EventHandlerCase[State, Event]] = Nil
 
-  private def addCase(eventPredicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State]): Unit = {
+  private def addCase(eventPredicate: Event => Boolean, handler: BiFunction[State, Event, State]): Unit = {
     cases = EventHandlerCase[State, Event](
-      statePredicate = state ⇒
-        if (state == null) statePredicate.test(state.asInstanceOf[S])
-        else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-      eventPredicate = eventPredicate,
-      handler) :: cases
+        statePredicate = state =>
+          if (state == null) statePredicate.test(state.asInstanceOf[S])
+          else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
+        eventPredicate = eventPredicate,
+        handler) :: cases
   }
 
   /**
@@ -206,8 +211,10 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your event handlers.
    */
-  def onEvent[E <: Event](eventClass: Class[E], handler: BiFunction[S, E, State]): EventHandlerBuilderByState[S, State, Event] = {
-    addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), handler.asInstanceOf[BiFunction[State, Event, State]])
+  def onEvent[E <: Event](
+      eventClass: Class[E],
+      handler: BiFunction[S, E, State]): EventHandlerBuilderByState[S, State, Event] = {
+    addCase(e => eventClass.isAssignableFrom(e.getClass), handler.asInstanceOf[BiFunction[State, Event, State]])
     this
   }
 
@@ -221,7 +228,9 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your event handlers.
    */
-  def onEvent[E <: Event](eventClass: Class[E], handler: JFunction[E, State]): EventHandlerBuilderByState[S, State, Event] = {
+  def onEvent[E <: Event](
+      eventClass: Class[E],
+      handler: JFunction[E, State]): EventHandlerBuilderByState[S, State, Event] = {
     onEvent[E](eventClass, new BiFunction[S, E, State] {
       override def apply(state: S, event: E): State = handler(event)
     })
@@ -236,7 +245,9 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
    * and no further lookup is done. Therefore you must make sure that their matching conditions don't overlap,
    * otherwise you risk to 'shadow' part of your event handlers.
    */
-  def onEvent[E <: Event](eventClass: Class[E], handler: Supplier[State]): EventHandlerBuilderByState[S, State, Event] = {
+  def onEvent[E <: Event](
+      eventClass: Class[E],
+      handler: Supplier[State]): EventHandlerBuilderByState[S, State, Event] = {
 
     val supplierBiFunction = new BiFunction[S, E, State] {
       def apply(t: S, u: E): State = handler.get()
@@ -258,7 +269,7 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
    * @return An EventHandler from the appended states.
    */
   def onAnyEvent(handler: BiFunction[State, Event, State]): EventHandler[State, Event] = {
-    addCase(_ ⇒ true, handler.asInstanceOf[BiFunction[State, Event, State]])
+    addCase(_ => true, handler.asInstanceOf[BiFunction[State, Event, State]])
     build()
   }
 
@@ -288,7 +299,8 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
    * Compose this builder with another builder. The handlers in this builder will be tried first followed
    * by the handlers in `other`.
    */
-  def orElse[S2 <: State](other: EventHandlerBuilderByState[S2, State, Event]): EventHandlerBuilderByState[S2, State, Event] = {
+  def orElse[S2 <: State](
+      other: EventHandlerBuilderByState[S2, State, Event]): EventHandlerBuilderByState[S2, State, Event] = {
     val newBuilder = new EventHandlerBuilderByState[S2, State, Event](other.stateClass, other.statePredicate)
     // problem with overloaded constructor with `cases` as parameter
     newBuilder.cases = other.cases ::: cases
@@ -315,10 +327,11 @@ final class EventHandlerBuilderByState[S <: State, State >: Null, Event](private
         }
 
         result match {
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             val stateClass = if (state == null) "null" else state.getClass.getName
-            throw new MatchError(s"No match found for event [${event.getClass}] and state [$stateClass]. Has this event been stored using an EventAdapter?")
-          case OptionVal.Some(s) ⇒ s
+            throw new MatchError(
+              s"No match found for event [${event.getClass}] and state [$stateClass]. Has this event been stored using an EventAdapter?")
+          case OptionVal.Some(s) => s
         }
       }
     }

@@ -66,7 +66,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any non-conforming SRV String" in {
-      noSrvLookups.foreach { str ⇒
+      noSrvLookups.foreach { str =>
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -76,7 +76,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "throw an IllegalArgumentException for any SRV with invalid domain names" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str =>
         withClue(s"parsing '$str'") {
           assertThrows[IllegalArgumentException] {
             Lookup.parseSrv(str)
@@ -101,7 +101,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
   "Lookup.isValidSrv" should {
 
     "return false for any non-conforming SRV String" in {
-      noSrvLookups.foreach { str ⇒
+      noSrvLookups.foreach { str =>
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }
@@ -109,7 +109,7 @@ class LookupSpec extends WordSpec with Matchers with OptionValues {
     }
 
     "return false if domain name part in SRV String is an invalid domain name" in {
-      srvWithInvalidDomainNames.foreach { str ⇒
+      srvWithInvalidDomainNames.foreach { str =>
         withClue(s"checking '$str'") {
           Lookup.isValidSrv(str) shouldBe false
         }

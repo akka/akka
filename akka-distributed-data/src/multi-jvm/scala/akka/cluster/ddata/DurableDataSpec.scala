@@ -44,21 +44,21 @@ object DurableDataSpec {
   class TestDurableStore(failLoad: Boolean, failStore: Boolean) extends Actor {
     import DurableStore._
     def receive = {
-      case LoadAll ⇒
+      case LoadAll =>
         if (failLoad)
           throw new LoadFailed("failed to load durable distributed-data") with NoStackTrace
         else
           sender() ! LoadAllCompleted
 
-      case Store(_, _, reply) ⇒
+      case Store(_, _, reply) =>
         if (failStore) reply match {
-          case Some(StoreReply(_, failureMsg, replyTo)) ⇒ replyTo ! failureMsg
-          case None                                     ⇒
-        }
-        else reply match {
-          case Some(StoreReply(successMsg, _, replyTo)) ⇒ replyTo ! successMsg
-          case None                                     ⇒
-        }
+          case Some(StoreReply(_, failureMsg, replyTo)) => replyTo ! failureMsg
+          case None                                     =>
+        } else
+          reply match {
+            case Some(StoreReply(successMsg, _, replyTo)) => replyTo ! successMsg
+            case None                                     =>
+          }
     }
 
   }
@@ -72,7 +72,9 @@ class DurableDataWriteBehindSpecMultiJvmNode1 extends DurableDataSpec(DurableDat
 class DurableDataWriteBehindSpecMultiJvmNode2 extends DurableDataSpec(DurableDataSpecConfig(writeBehind = true))
 
 abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
-  extends MultiNodeSpec(multiNodeConfig) with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(multiNodeConfig)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DurableDataSpec._
   import Replicator._
   import multiNodeConfig._
@@ -95,12 +97,14 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     enterBarrier("after-" + testStepCounter)
   }
 
-  def newReplicator(sys: ActorSystem = system) = sys.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)), "replicator-" + testStepCounter)
+  def newReplicator(sys: ActorSystem = system) =
+    sys.actorOf(
+      Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)),
+      "replicator-" + testStepCounter)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -310,8 +314,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "stop Replicator if Load fails" in {
     runOn(first) {
       val r = system.actorOf(
-        Replicator.props(
-          ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failLoad = true))),
+        Replicator.props(ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failLoad = true))),
         "replicator-" + testStepCounter)
       watch(r)
       expectTerminated(r)
@@ -322,8 +325,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   "reply with StoreFailure if store fails" in {
     runOn(first) {
       val r = system.actorOf(
-        Replicator.props(
-          ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failStore = true))),
+        Replicator.props(ReplicatorSettings(system).withDurableStoreProps(testDurableStoreProps(failStore = true))),
         "replicator-" + testStepCounter)
       r ! Update(KeyA, GCounter(), WriteLocal, request = Some("a"))(_ :+ 1)
       expectMsg(StoreFailure(KeyA, Some("a")))
@@ -332,4 +334,3 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   }
 
 }
-

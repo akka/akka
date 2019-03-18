@@ -30,7 +30,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def disableInterest(op: Int) = ()
         def enableInterest(op: Int) = ()
-        def cancelAndClose(andThen: () ⇒ Unit): Unit = ()
+        def cancelAndClose(andThen: () => Unit): Unit = ()
       }
       bindCommander.expectMsgType[Bound]
     }
@@ -123,7 +123,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! ChannelAcceptable
       val channel = expectWorkerForCommand
 
-      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1) intercept {
+      EventFilter.warning(pattern = "selector capacity limit", occurrences = 1).intercept {
         listener ! FailedRegisterIncoming(channel)
         awaitCond(!channel.isOpen)
       }
@@ -152,7 +152,7 @@ class TcpListenerSpec extends AkkaSpec("""
       listener ! new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
-        def cancelAndClose(andThen: () ⇒ Unit): Unit = {
+        def cancelAndClose(andThen: () => Unit): Unit = {
           register.channel.close()
           require(!register.channel.isRegistered)
           andThen()
@@ -167,7 +167,7 @@ class TcpListenerSpec extends AkkaSpec("""
 
     def expectWorkerForCommand: SocketChannel =
       selectorRouter.expectMsgPF() {
-        case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
+        case WorkerForCommand(RegisterIncoming(chan), commander, _) =>
           chan.isOpen should ===(true)
           commander should ===(listener)
           chan
@@ -175,12 +175,17 @@ class TcpListenerSpec extends AkkaSpec("""
 
     private class ListenerParent(pullMode: Boolean) extends Actor with ChannelRegistry {
       val listener = context.actorOf(
-        props = Props(classOf[TcpListener], selectorRouter.ref, Tcp(system), this, bindCommander.ref,
+        props = Props(
+          classOf[TcpListener],
+          selectorRouter.ref,
+          Tcp(system),
+          this,
+          bindCommander.ref,
           Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
         name = "test-listener-" + counter.next())
       parent.watch(listener)
       def receive: Receive = {
-        case msg ⇒ parent.ref forward msg
+        case msg => parent.ref.forward(msg)
       }
       override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -191,5 +196,6 @@ class TcpListenerSpec extends AkkaSpec("""
 
 }
 object TcpListenerSpec {
-  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
+  final case class RegisterChannel(channel: SelectableChannel, initialOps: Int)
+      extends NoSerializationVerificationNeeded
 }

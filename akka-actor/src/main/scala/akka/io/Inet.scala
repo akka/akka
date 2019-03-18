@@ -48,6 +48,7 @@ object Inet {
   abstract class AbstractSocketOption extends SocketOption
 
   trait SocketOptionV2 extends SocketOption {
+
     /**
      * Action to be taken for this option after connect returned (i.e. on
      * the slave socket for servers).
@@ -145,6 +146,7 @@ object Inet {
   }
 
   trait SoForwarders {
+
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *
@@ -178,6 +180,7 @@ object Inet {
 
   trait SoJavaFactories {
     import SO._
+
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *

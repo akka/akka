@@ -40,19 +40,20 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   // only check that all persistenceIds are equal when there's more than one in the Seq
   if (payload match {
-    case l: List[PersistentRepr]   ⇒ l.tail.nonEmpty // avoids calling .size
-    case v: Vector[PersistentRepr] ⇒ v.size > 1
-    case _                         ⇒ true // some other collection type, let's just check
-  }) payload.foreach { pr ⇒
+        case l: List[PersistentRepr]   => l.tail.nonEmpty // avoids calling .size
+        case v: Vector[PersistentRepr] => v.size > 1
+        case _                         => true // some other collection type, let's just check
+      }) payload.foreach { pr =>
     if (pr.persistenceId != payload.head.persistenceId)
       throw new IllegalArgumentException(
         "AtomicWrite must contain messages for the same persistenceId, " +
-          s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
+        s"yet different persistenceIds found: ${payload.map(_.persistenceId).toSet}")
     _highestSequenceNr = pr.sequenceNr
   }
 
   def persistenceId = payload.head.persistenceId
-  def lowestSequenceNr = payload.head.sequenceNr // this assumes they're gapless; they should be (it is only our code creating AWs)
+  def lowestSequenceNr =
+    payload.head.sequenceNr // this assumes they're gapless; they should be (it is only our code creating AWs)
   def highestSequenceNr = _highestSequenceNr
 
   override def sender: ActorRef = ActorRef.noSender
@@ -120,16 +121,18 @@ trait PersistentRepr extends Message {
    * Creates a new copy of this [[PersistentRepr]].
    */
   def update(
-    sequenceNr:    Long     = sequenceNr,
-    persistenceId: String   = persistenceId,
-    deleted:       Boolean  = deleted,
-    sender:        ActorRef = sender,
-    writerUuid:    String   = writerUuid): PersistentRepr
+      sequenceNr: Long = sequenceNr,
+      persistenceId: String = persistenceId,
+      deleted: Boolean = deleted,
+      sender: ActorRef = sender,
+      writerUuid: String = writerUuid): PersistentRepr
 }
 
 object PersistentRepr {
+
   /** Plugin API: value of an undefined persistenceId or manifest. */
   val Undefined = ""
+
   /** Plugin API: value of an undefined / identity event adapter. */
   val UndefinedId = 0
 
@@ -137,13 +140,13 @@ object PersistentRepr {
    * Plugin API.
    */
   def apply(
-    payload:       Any,
-    sequenceNr:    Long     = 0L,
-    persistenceId: String   = PersistentRepr.Undefined,
-    manifest:      String   = PersistentRepr.Undefined,
-    deleted:       Boolean  = false,
-    sender:        ActorRef = null,
-    writerUuid:    String   = PersistentRepr.Undefined): PersistentRepr =
+      payload: Any,
+      sequenceNr: Long = 0L,
+      persistenceId: String = PersistentRepr.Undefined,
+      manifest: String = PersistentRepr.Undefined,
+      deleted: Boolean = false,
+      sender: ActorRef = null,
+      writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
     PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid)
 
   /**
@@ -162,13 +165,15 @@ object PersistentRepr {
  * INTERNAL API.
  */
 private[persistence] final case class PersistentImpl(
-  override val payload:       Any,
-  override val sequenceNr:    Long,
-  override val persistenceId: String,
-  override val manifest:      String,
-  override val deleted:       Boolean,
-  override val sender:        ActorRef,
-  override val writerUuid:    String) extends PersistentRepr with NoSerializationVerificationNeeded {
+    override val payload: Any,
+    override val sequenceNr: Long,
+    override val persistenceId: String,
+    override val manifest: String,
+    override val deleted: Boolean,
+    override val sender: ActorRef,
+    override val writerUuid: String)
+    extends PersistentRepr
+    with NoSerializationVerificationNeeded {
 
   def withPayload(payload: Any): PersistentRepr =
     copy(payload = payload)
@@ -186,4 +191,3 @@ private[persistence] final case class PersistentImpl(
       writerUuid = writerUuid)
 
 }
-

@@ -40,29 +40,26 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     //#query-added
-    case trackMsg @ RequestTrackDevice(`groupId`, _) ⇒
+    case trackMsg @ RequestTrackDevice(`groupId`, _) =>
       deviceIdToActor.get(trackMsg.deviceId) match {
-        case Some(ref) ⇒
-          ref forward trackMsg
-        case None ⇒
+        case Some(ref) =>
+          ref.forward(trackMsg)
+        case None =>
           log.info("Creating device actor for {}", trackMsg.deviceId)
           val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId)
           context.watch(deviceActor)
-          deviceActor forward trackMsg
+          deviceActor.forward(trackMsg)
           deviceIdToActor += trackMsg.deviceId -> deviceActor
           actorToDeviceId += deviceActor -> trackMsg.deviceId
       }
 
-    case RequestTrackDevice(groupId, deviceId) ⇒
-      log.warning(
-        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-        groupId, this.groupId
-      )
+    case RequestTrackDevice(groupId, deviceId) =>
+      log.warning("Ignoring TrackDevice request for {}. This actor is responsible for {}.", groupId, this.groupId)
 
-    case RequestDeviceList(requestId) ⇒
+    case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
 
-    case Terminated(deviceActor) ⇒
+    case Terminated(deviceActor) =>
       val deviceId = actorToDeviceId(deviceActor)
       log.info("Device actor for {} has been terminated", deviceId)
       actorToDeviceId -= deviceActor
@@ -71,13 +68,10 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
     //#query-added
     // ... other cases omitted
 
-    case RequestAllTemperatures(requestId) ⇒
-      context.actorOf(DeviceGroupQuery.props(
-        actorToDeviceId = actorToDeviceId,
-        requestId = requestId,
-        requester = sender(),
-        3.seconds
-      ))
+    case RequestAllTemperatures(requestId) =>
+      context.actorOf(
+        DeviceGroupQuery
+          .props(actorToDeviceId = actorToDeviceId, requestId = requestId, requester = sender(), 3.seconds))
   }
 
 }

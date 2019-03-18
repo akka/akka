@@ -24,22 +24,19 @@ object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth") // beta
   val fifth = role("fifth") //   beta
 
-  nodeConfig(first, second, third)(ConfigFactory.parseString(
-    """
+  nodeConfig(first, second, third)(ConfigFactory.parseString("""
     akka {
       cluster.multi-data-center.self-data-center = alpha
     }
     """))
 
-  nodeConfig(fourth, fifth)(ConfigFactory.parseString(
-    """
+  nodeConfig(fourth, fifth)(ConfigFactory.parseString("""
     akka {
       cluster.multi-data-center.self-data-center = beta
     }
     """))
 
-  commonConfig(ConfigFactory.parseString(
-    """
+  commonConfig(ConfigFactory.parseString("""
     akka {
       actor.provider = cluster
 
@@ -66,8 +63,9 @@ class MultiDcHeartbeatTakingOverSpecMultiJvmNode3 extends MultiDcHeartbeatTaking
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode4 extends MultiDcHeartbeatTakingOverSpec
 class MultiDcHeartbeatTakingOverSpecMultiJvmNode5 extends MultiDcHeartbeatTakingOverSpec
 
-abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class MultiDcHeartbeatTakingOverSpec
+    extends MultiNodeSpec(MultiDcHeartbeatTakingOverSpecMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   "A 2-dc cluster" must {
 
@@ -93,7 +91,8 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
       expectedBetaHeartbeaterNodes = takeNOldestMembers(dataCenter = "beta", 2)
       expectedBetaHeartbeaterRoles = membersAsRoles(expectedBetaHeartbeaterNodes)
 
-      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles union expectedBetaHeartbeaterRoles)
+      expectedNoActiveHeartbeatSenderRoles = roles.toSet -- (expectedAlphaHeartbeaterRoles.union(
+          expectedBetaHeartbeaterRoles))
     }
 
     "collect information on oldest nodes" taggedAs LongRunningTest in {
@@ -141,7 +140,8 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
       // we leave one of the current oldest nodes of the `alpha` DC,
       // since it has 3 members the "not yet oldest" one becomes oldest and should start monitoring across datacenter
       val preLeaveOldestAlphaRole = expectedAlphaHeartbeaterRoles.head
-      val preLeaveOldestAlphaAddress = expectedAlphaHeartbeaterNodes.find(_.address.port.get == preLeaveOldestAlphaRole.port.get).get.address
+      val preLeaveOldestAlphaAddress =
+        expectedAlphaHeartbeaterNodes.find(_.address.port.get == preLeaveOldestAlphaRole.port.get).get.address
       runOn(preLeaveOldestAlphaRole) {
         info(s"Leaving: ${preLeaveOldestAlphaAddress}")
         cluster.leave(cluster.selfAddress)
@@ -156,20 +156,25 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
       enterBarrier("after-alpha-monitoring-node-left")
 
       implicit val sender = observer.ref
-      val expectedAlphaMonitoringNodesAfterLeaving = (takeNOldestMembers(dataCenter = "alpha", 3).filterNot(_.status == MemberStatus.Exiting))
+      val expectedAlphaMonitoringNodesAfterLeaving =
+        (takeNOldestMembers(dataCenter = "alpha", 3).filterNot(_.status == MemberStatus.Exiting))
       runOn(membersAsRoles(expectedAlphaMonitoringNodesAfterLeaving).toList: _*) {
-        awaitAssert({
+        awaitAssert(
+          {
 
-          selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
+            selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
 
-          try {
-            observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
-            info(s"Got confirmation from ${observer.lastSender} that it is actively monitoring now")
-          } catch {
-            case ex: Throwable ⇒
-              throw new AssertionError(s"Monitoring was Dormant on ${cluster.selfAddress}, where we expected it to be active!", ex)
-          }
-        }, 20.seconds)
+            try {
+              observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
+              info(s"Got confirmation from ${observer.lastSender} that it is actively monitoring now")
+            } catch {
+              case ex: Throwable =>
+                throw new AssertionError(
+                  s"Monitoring was Dormant on ${cluster.selfAddress}, where we expected it to be active!",
+                  ex)
+            }
+          },
+          20.seconds)
       }
       enterBarrier("confirmed-heartbeating-take-over")
     }
@@ -183,9 +188,12 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
    * (since marking that transition is a Leader action).
    */
   private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =
-    SortedSet.empty(Member.ageOrdering)
-      .union(cluster.state.members.filter(m ⇒ m.dataCenter == dataCenter &&
-        m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
+    SortedSet
+      .empty(Member.ageOrdering)
+      .union(
+        cluster.state.members.filter(m =>
+          m.dataCenter == dataCenter &&
+          m.status != MemberStatus.Joining && m.status != MemberStatus.WeaklyUp))
 
   /** INTERNAL API */
   @InternalApi
@@ -193,7 +201,7 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
     membersByAge(dataCenter).take(n)
 
   private def membersAsRoles(ms: SortedSet[Member]): List[RoleName] = {
-    val res = ms.toList.flatMap(m ⇒ roleName(m.address))
+    val res = ms.toList.flatMap(m => roleName(m.address))
     require(res.size == ms.size, s"Not all members were converted to roles! Got: ${ms}, found ${res}")
     res
   }

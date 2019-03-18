@@ -25,7 +25,7 @@ object ScalaUdpDocSpec {
     IO(Udp) ! Udp.SimpleSender
 
     def receive = {
-      case Udp.SimpleSenderReady ⇒
+      case Udp.SimpleSenderReady =>
         context.become(ready(sender()))
         //#sender
         sender() ! Udp.Send(ByteString("hello"), remote)
@@ -33,7 +33,7 @@ object ScalaUdpDocSpec {
     }
 
     def ready(send: ActorRef): Receive = {
-      case msg: String ⇒
+      case msg: String =>
         send ! Udp.Send(ByteString(msg), remote)
         //#sender
         if (msg == "world") send ! PoisonPill
@@ -48,23 +48,23 @@ object ScalaUdpDocSpec {
     IO(Udp) ! Udp.Bind(self, new InetSocketAddress("localhost", 0))
 
     def receive = {
-      case Udp.Bound(local) ⇒
+      case Udp.Bound(local) =>
         //#listener
-        nextActor forward local
+        nextActor.forward(local)
         //#listener
         context.become(ready(sender()))
     }
 
     def ready(socket: ActorRef): Receive = {
-      case Udp.Received(data, remote) ⇒
+      case Udp.Received(data, remote) =>
         val processed = // parse data etc., e.g. using PipelineStage
           //#listener
           data.utf8String
         //#listener
         socket ! Udp.Send(data, remote) // example server echoes back
         nextActor ! processed
-      case Udp.Unbind  ⇒ socket ! Udp.Unbind
-      case Udp.Unbound ⇒ context.stop(self)
+      case Udp.Unbind  => socket ! Udp.Unbind
+      case Udp.Unbound => context.stop(self)
     }
   }
   //#listener
@@ -75,7 +75,7 @@ object ScalaUdpDocSpec {
     IO(UdpConnected) ! UdpConnected.Connect(self, remote)
 
     def receive = {
-      case UdpConnected.Connected ⇒
+      case UdpConnected.Connected =>
         context.become(ready(sender()))
         //#connected
         sender() ! UdpConnected.Send(ByteString("hello"))
@@ -83,17 +83,17 @@ object ScalaUdpDocSpec {
     }
 
     def ready(connection: ActorRef): Receive = {
-      case UdpConnected.Received(data) ⇒
+      case UdpConnected.Received(data) =>
         // process data, send it on, etc.
         //#connected
         if (data.utf8String == "hello")
           connection ! UdpConnected.Send(ByteString("world"))
       //#connected
-      case msg: String ⇒
+      case msg: String =>
         connection ! UdpConnected.Send(ByteString(msg))
-      case UdpConnected.Disconnect ⇒
+      case UdpConnected.Disconnect =>
         connection ! UdpConnected.Disconnect
-      case UdpConnected.Disconnected ⇒ context.stop(self)
+      case UdpConnected.Disconnected => context.stop(self)
     }
   }
   //#connected

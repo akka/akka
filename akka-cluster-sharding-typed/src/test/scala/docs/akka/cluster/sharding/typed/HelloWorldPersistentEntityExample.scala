@@ -23,9 +23,10 @@ object HelloWorldPersistentEntityExample {
     // registration at startup
     private val sharding = ClusterSharding(system)
 
-    sharding.init(Entity(
-      typeKey = HelloWorld.entityTypeKey,
-      createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId)))
+    sharding.init(
+      Entity(
+        typeKey = HelloWorld.entityTypeKey,
+        createBehavior = entityContext => HelloWorld.persistentEntity(entityContext.entityId)))
 
     private implicit val askTimeout: Timeout = Timeout(5.seconds)
 
@@ -62,31 +63,29 @@ object HelloWorldPersistentEntityExample {
       def numberOfPeople: Int = names.size
     }
 
-    private val commandHandler: (KnownPeople, Command) ⇒ Effect[Greeted, KnownPeople] = {
-      (_, cmd) ⇒
-        cmd match {
-          case cmd: Greet ⇒ greet(cmd)
-        }
+    private val commandHandler: (KnownPeople, Command) => Effect[Greeted, KnownPeople] = { (_, cmd) =>
+      cmd match {
+        case cmd: Greet => greet(cmd)
+      }
     }
 
     private def greet(cmd: Greet): Effect[Greeted, KnownPeople] =
-      Effect.persist(Greeted(cmd.whom))
-        .thenRun(state ⇒ cmd.replyTo ! Greeting(cmd.whom, state.numberOfPeople))
+      Effect.persist(Greeted(cmd.whom)).thenRun(state => cmd.replyTo ! Greeting(cmd.whom, state.numberOfPeople))
 
-    private val eventHandler: (KnownPeople, Greeted) ⇒ KnownPeople = {
-      (state, evt) ⇒ state.add(evt.whom)
+    private val eventHandler: (KnownPeople, Greeted) => KnownPeople = { (state, evt) =>
+      state.add(evt.whom)
     }
 
     val entityTypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("HelloWorld")
 
-    def persistentEntity(entityId: String): Behavior[Command] = EventSourcedEntity(
-      entityTypeKey = entityTypeKey,
-      entityId = entityId,
-      emptyState = KnownPeople(Set.empty),
-      commandHandler,
-      eventHandler
-    )
+    def persistentEntity(entityId: String): Behavior[Command] =
+      EventSourcedEntity(
+        entityTypeKey = entityTypeKey,
+        entityId = entityId,
+        emptyState = KnownPeople(Set.empty),
+        commandHandler,
+        eventHandler)
 
   }
   //#persistent-entity

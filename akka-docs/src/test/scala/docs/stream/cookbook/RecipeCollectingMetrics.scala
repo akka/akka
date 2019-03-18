@@ -4,7 +4,7 @@
 
 package docs.stream.cookbook
 
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 import scala.collection.immutable
 import scala.concurrent.Await

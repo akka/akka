@@ -24,7 +24,8 @@ private[stream] object OutputStreamSourceStage {
   case object Close extends AdapterToStageMessage
 }
 
-final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
+final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration)
+    extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
   val out = Outlet[ByteString]("OutputStreamSource.out")
   override def initialAttributes = DefaultAttributes.outputStreamSource
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
@@ -48,16 +49,15 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
       private def onAsyncMessage(event: AdapterToStageMessage): Unit = {
         event match {
-          case Send(data) ⇒
-            emit(out, data, () ⇒ semaphore.release())
-          case Close ⇒
+          case Send(data) =>
+            emit(out, data, () => semaphore.release())
+          case Close =>
             completeStage()
         }
       }
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-        }
+        override def onPull(): Unit = {}
       })
     }
 
@@ -67,10 +67,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 }
 
 private[akka] class OutputStreamAdapter(
-  unfulfilledDemand: Semaphore,
-  sendToStage:       AsyncCallback[AdapterToStageMessage],
-  writeTimeout:      FiniteDuration)
-  extends OutputStream {
+    unfulfilledDemand: Semaphore,
+    sendToStage: AsyncCallback[AdapterToStageMessage],
+    writeTimeout: FiniteDuration)
+    extends OutputStream {
 
   @scala.throws(classOf[IOException])
   private[this] def sendData(data: ByteString): Unit = {
@@ -81,7 +81,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Send(data)), writeTimeout)
     } catch {
-      case NonFatal(e) ⇒ throw new IOException(e)
+      case NonFatal(e) => throw new IOException(e)
     }
   }
 
@@ -107,7 +107,7 @@ private[akka] class OutputStreamAdapter(
     try {
       Await.result(sendToStage.invokeWithFeedback(Close), writeTimeout)
     } catch {
-      case NonFatal(e) ⇒ throw new IOException(e)
+      case NonFatal(e) => throw new IOException(e)
     }
   }
 }

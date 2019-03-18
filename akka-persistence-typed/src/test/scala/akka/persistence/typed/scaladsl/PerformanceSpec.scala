@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -15,6 +14,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -67,38 +67,44 @@ object PerformanceSpec {
     def failureWasDefined: Boolean = failAt != -1L
   }
 
-  def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
-    Behaviors.supervise({
-      val parameters = Parameters()
-      EventSourcedBehavior[Command, String, String](
-        persistenceId = PersistenceId(name),
-        "",
-        commandHandler = CommandHandler.command {
-          case StopMeasure      ⇒ Effect.none.thenRun(_ ⇒ probe.ref ! StopMeasure)
-          case FailAt(sequence) ⇒ Effect.none.thenRun(_ ⇒ parameters.failAt = sequence)
-          case command          ⇒ other(command, parameters)
-        },
-        eventHandler = {
-          case (state, _) ⇒ state
+  def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) => Effect[String, String]) = {
+    Behaviors
+      .supervise({
+        val parameters = Parameters()
+        EventSourcedBehavior[Command, String, String](
+          persistenceId = PersistenceId(name),
+          "",
+          commandHandler = CommandHandler.command {
+            case StopMeasure ⇒
+              Effect.none.thenRun(_ => probe.ref ! StopMeasure)
+            case FailAt(sequence) ⇒
+              Effect.none.thenRun(_ => parameters.failAt = sequence)
+            case command ⇒ other(command, parameters)
+          },
+          eventHandler = {
+            case (state, _) => state
+          }).receiveSignal {
+          case RecoveryCompleted(_) =>
+            if (parameters.every(1000)) print("r")
         }
-      ).onRecoveryCompleted { _ ⇒
-          if (parameters.every(1000)) print("r")
-        }
-    }).onFailure(SupervisorStrategy.restart)
+      })
+      .onFailure(SupervisorStrategy.restart)
   }
 
   def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Reply]) =
     behavior(name, probe) {
-      case (CommandWithEvent(evt), parameters) ⇒
-        Effect.persist(evt).thenRun(_ ⇒ {
-          parameters.persistCalls += 1
-          if (parameters.every(1000)) print(".")
-          if (parameters.shouldFail) {
-            probe.ref ! ExpectedFail
-            throw TestException("boom")
-          }
-        })
-      case _ ⇒ Effect.none
+      case (CommandWithEvent(evt), parameters) =>
+        Effect
+          .persist(evt)
+          .thenRun(_ => {
+            parameters.persistCalls += 1
+            if (parameters.every(1000)) print(".")
+            if (parameters.shouldFail) {
+              probe.ref ! ExpectedFail
+              throw TestException("boom")
+            }
+          })
+      case _ => Effect.none
     }
 }
 
@@ -118,13 +124,16 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
 
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
-  def stressPersistentActor(persistentActor: ActorRef[Command], probe: TestProbe[Reply],
-                            failAt: Option[Long], description: String): Unit = {
-    failAt foreach { persistentActor ! FailAt(_) }
+  def stressPersistentActor(
+      persistentActor: ActorRef[Command],
+      probe: TestProbe[Reply],
+      failAt: Option[Long],
+      description: String): Unit = {
+    failAt.foreach { persistentActor ! FailAt(_) }
     val m = new Measure(loadCycles)
     m.startMeasure()
     val parameters = Parameters(0, failAt = failAt.getOrElse(-1))
-    (1 to loadCycles).foreach { n ⇒
+    (1 to loadCycles).foreach { n =>
       parameters.persistCalls += 1
       persistentActor ! CommandWithEvent(s"msg$n")
       // stash is cleared when exception is thrown so have to wait before sending more commands

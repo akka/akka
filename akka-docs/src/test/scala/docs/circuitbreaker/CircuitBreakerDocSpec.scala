@@ -22,11 +22,8 @@ class DangerousActor extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
-    new CircuitBreaker(
-      context.system.scheduler,
-      maxFailures = 5,
-      callTimeout = 10.seconds,
-      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
+    new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+      .onOpen(notifyMeOnOpen())
 
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -36,9 +33,9 @@ class DangerousActor extends Actor with ActorLogging {
   def dangerousCall: String = "This really isn't that dangerous of a call after all"
 
   def receive = {
-    case "is my middle name" ⇒
-      breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender()
-    case "block for me" ⇒
+    case "is my middle name" =>
+      breaker.withCircuitBreaker(Future(dangerousCall)).pipeTo(sender())
+    case "block for me" =>
       sender() ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
   //#circuit-breaker-usage
@@ -49,11 +46,8 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
   val breaker =
-    new CircuitBreaker(
-      context.system.scheduler,
-      maxFailures = 5,
-      callTimeout = 10.seconds,
-      resetTimeout = 1.minute).onOpen(notifyMeOnOpen())
+    new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
+      .onOpen(notifyMeOnOpen())
 
   def notifyMeOnOpen(): Unit =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -62,16 +56,16 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
   import akka.actor.ReceiveTimeout
 
   def receive = {
-    case "call" if breaker.isClosed ⇒ {
+    case "call" if breaker.isClosed => {
       recipient ! "message"
     }
-    case "response" ⇒ {
+    case "response" => {
       breaker.succeed()
     }
-    case err: Throwable ⇒ {
+    case err: Throwable => {
       breaker.fail()
     }
-    case ReceiveTimeout ⇒ {
+    case ReceiveTimeout => {
       breaker.fail()
     }
   }
@@ -82,17 +76,13 @@ class EvenNoFailureActor extends Actor {
   import context.dispatcher
   //#even-no-as-failure
   def luckyNumber(): Future[Int] = {
-    val evenNumberAsFailure: Try[Int] ⇒ Boolean = {
-      case Success(n) ⇒ n % 2 == 0
-      case Failure(_) ⇒ true
+    val evenNumberAsFailure: Try[Int] => Boolean = {
+      case Success(n) => n % 2 == 0
+      case Failure(_) => true
     }
 
     val breaker =
-      new CircuitBreaker(
-        context.system.scheduler,
-        maxFailures = 5,
-        callTimeout = 10.seconds,
-        resetTimeout = 1.minute)
+      new CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 10.seconds, resetTimeout = 1.minute)
 
     // this call will return 8888 and increase failure count at the same time
     breaker.withCircuitBreaker(Future(8888), evenNumberAsFailure)
@@ -100,6 +90,6 @@ class EvenNoFailureActor extends Actor {
   //#even-no-as-failure
 
   override def receive = {
-    case x: Int ⇒
+    case x: Int =>
   }
 }

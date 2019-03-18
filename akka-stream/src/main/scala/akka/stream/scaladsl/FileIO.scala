@@ -20,7 +20,7 @@ import scala.concurrent.Future
  */
 object FileIO {
 
-  import Sink.{ shape ⇒ sinkShape }
+  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from a files contents.
@@ -89,7 +89,9 @@ object FileIO {
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
   @deprecated("Use `toPath` instead", "2.4.5")
-  def toFile(f: File, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toFile(
+      f: File,
+      options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f.toPath, options)
 
   /**
@@ -111,7 +113,9 @@ object FileIO {
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
-  def toPath(f: Path, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toPath(
+      f: Path,
+      options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f, options, startPosition = 0)
 
   /**

@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 
 import akka.event.Logging
 import akka.stream.Attributes.LogLevels
-import akka.stream.testkit.{ StreamSpec, ScriptedTest }
+import akka.stream.testkit.{ ScriptedTest, StreamSpec }
 import akka.stream._
 import akka.testkit.TestProbe
 
@@ -34,9 +34,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
       "log each element" in {
         val logging = FlowWithContext[Message, Long].log("my-log")
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m => m.offset)
           .via(logging)
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log] Element: Message(a,1)"))
@@ -45,29 +45,22 @@ class FlowWithContextLogSpec extends StreamSpec("""
       }
 
       "allow extracting value to be logged" in {
-        val logging = FlowWithContext[Message, Long].log("my-log2", m ⇒ m.data)
-        Source(List(Message("a", 1L)))
-          .startContextPropagation(m ⇒ m.offset)
-          .via(logging)
-          .endContextPropagation
-          .runWith(Sink.ignore)
+        val logging = FlowWithContext[Message, Long].log("my-log2", m => m.data)
+        Source(List(Message("a", 1L))).asSourceWithContext(m => m.offset).via(logging).asSource.runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log2] Element: a"))
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log2] Upstream finished."))
       }
 
       "allow disabling element logging" in {
-        val disableElementLogging = Attributes.logLevels(
-          onElement = LogLevels.Off,
-          onFinish = Logging.DebugLevel,
-          onFailure = Logging.DebugLevel)
+        val disableElementLogging =
+          Attributes.logLevels(onElement = LogLevels.Off, onFinish = Logging.DebugLevel, onFailure = Logging.DebugLevel)
 
-        val logging = FlowWithContext[Message, Long].log("my-log3")
+        val logging = FlowWithContext[Message, Long].log("my-log3").withAttributes(disableElementLogging)
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m => m.offset)
           .via(logging)
-          .endContextPropagation
-          .withAttributes(disableElementLogging)
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log3] Upstream finished."))
@@ -79,9 +72,9 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
       "log each element" in {
         Source(List(Message("a", 1L), Message("b", 2L)))
-          .startContextPropagation(m ⇒ m.offset)
+          .asSourceWithContext(m => m.offset)
           .log("my-log4")
-          .endContextPropagation
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log4] Element: Message(a,1)"))
@@ -91,13 +84,27 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
       "allow extracting value to be logged" in {
         Source(List(Message("a", 1L)))
-          .startContextPropagation(m ⇒ m.offset)
-          .log("my-log5", m ⇒ m.data)
-          .endContextPropagation
+          .asSourceWithContext(m => m.offset)
+          .log("my-log5", m => m.data)
+          .asSource
           .runWith(Sink.ignore)
 
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log5] Element: a"))
         logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log5] Upstream finished."))
+      }
+
+      "allow disabling element logging" in {
+        val disableElementLogging =
+          Attributes.logLevels(onElement = LogLevels.Off, onFinish = Logging.DebugLevel, onFailure = Logging.DebugLevel)
+
+        Source(List(Message("a", 1L), Message("b", 2L)))
+          .asSourceWithContext(m => m.offset)
+          .log("my-log6")
+          .withAttributes(disableElementLogging)
+          .asSource
+          .runWith(Sink.ignore)
+
+        logProbe.expectMsg(Logging.Debug(LogSrc, LogClazz, "[my-log6] Upstream finished."))
       }
 
     }

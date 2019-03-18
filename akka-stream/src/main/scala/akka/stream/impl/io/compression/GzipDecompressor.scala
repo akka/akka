@@ -14,7 +14,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
-  extends DeflateDecompressorBase(maxBytesPerChunk) {
+    extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
     override val inflater: Inflater = new Inflater(true)
@@ -70,8 +70,7 @@ import akka.util.ByteString
 /** INTERNAL API */
 @InternalApi private[akka] object GzipDecompressor {
   // RFC 1952: http://tools.ietf.org/html/rfc1952 section 2.2
-  private[impl] val Header = ByteString(
-    0x1F, // ID1
+  private[impl] val Header = ByteString(0x1F, // ID1
     0x8B, // ID2
     8, // CM = Deflate
     0, // FLG
@@ -81,5 +80,5 @@ import akka.util.ByteString
     0, // MTIME 4
     0, // XFL
     0 // OS
-  )
+    )
 }

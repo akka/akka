@@ -169,6 +169,13 @@ actor reference.
 The actor will be stopped when the stream is completed, failed or cancelled from downstream,
 i.e. you can watch it to get notified when that happens.
 
+
+Scala
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #source-actorRef }
+
+Java
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #source-actorRef }
+
 ## Integrating with External Services
 
 Stream transformations and side effects involving external non-stream based services can be

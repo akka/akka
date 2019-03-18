@@ -37,7 +37,9 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
   val selfDummyAddress = UniqueAddress(Address("akka.tcp", "sys", "selfDummy", 2552), 17L)
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
-    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
+    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) {
+      case ((gs, as), m) => (gs.seen(m.uniqueAddress), as + m.uniqueAddress)
+    }
 
   private def state(g: Gossip): MembershipState =
     state(g, selfDummyAddress)
@@ -66,26 +68,25 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val (g1, _) = converge(Gossip(members = SortedSet(aJoining, bUp, cUp)))
       val (g2, s2) = converge(Gossip(members = SortedSet(aUp, bUp, cLeaving, eJoining)))
 
-      diffMemberEvents(state(g1), state(g2)) should ===(Seq(MemberUp(aUp), MemberLeft(cLeaving), MemberJoined(eJoining)))
+      diffMemberEvents(state(g1), state(g2)) should ===(
+        Seq(MemberUp(aUp), MemberLeft(cLeaving), MemberJoined(eJoining)))
       diffUnreachable(state(g1), state(g2)) should ===(Seq.empty)
       diffSeen(state(g1), state(g2)) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
     }
 
     "be produced for members in unreachable" in {
-      val reachability1 = Reachability.empty.
-        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).
-        unreachable(aUp.uniqueAddress, eUp.uniqueAddress)
+      val reachability1 = Reachability.empty
+        .unreachable(aUp.uniqueAddress, cUp.uniqueAddress)
+        .unreachable(aUp.uniqueAddress, eUp.uniqueAddress)
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, eUp), overview = GossipOverview(reachability = reachability1))
-      val reachability2 = reachability1.
-        unreachable(aUp.uniqueAddress, bDown.uniqueAddress)
-      val g2 = Gossip(members = SortedSet(aUp, cUp, bDown, eDown), overview = GossipOverview(reachability = reachability2))
+      val reachability2 = reachability1.unreachable(aUp.uniqueAddress, bDown.uniqueAddress)
+      val g2 =
+        Gossip(members = SortedSet(aUp, cUp, bDown, eDown), overview = GossipOverview(reachability = reachability2))
 
       diffUnreachable(state(g1), state(g2)) should ===(Seq(UnreachableMember(bDown)))
       // never include self member in unreachable
 
-      diffUnreachable(
-        state(g1, bDown.uniqueAddress),
-        state(g2, bDown.uniqueAddress)) should ===(Seq())
+      diffUnreachable(state(g1, bDown.uniqueAddress), state(g2, bDown.uniqueAddress)) should ===(Seq())
       diffSeen(state(g1), state(g2)) should ===(Seq.empty)
     }
 
@@ -98,25 +99,31 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val dc3BMemberUp = TestMember(Address("akka.tcp", "sys", "dc3B", 2552), Up, Set.empty[String], "dc3")
 
       val reachability1 = Reachability.empty
-      val g1 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability1))
+      val g1 = Gossip(
+        members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
+        overview = GossipOverview(reachability = reachability1))
 
       val reachability2 = reachability1
         .unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
         .unreachable(dc2BMemberUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
-      val g2 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp), overview = GossipOverview(reachability = reachability2))
+      val g2 = Gossip(
+        members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
+        overview = GossipOverview(reachability = reachability2))
 
-      Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member ⇒
+      Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member =>
         val otherDc =
           if (member.dataCenter == ClusterSettings.DefaultDataCenter) Seq("dc2")
           else Seq()
 
         diffUnreachableDataCenter(
           MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(otherDc.map(UnreachableDataCenter))
+          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
+          otherDc.map(UnreachableDataCenter))
 
         diffReachableDataCenter(
           MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(otherDc.map(ReachableDataCenter))
+          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
+          otherDc.map(ReachableDataCenter))
       }
     }
 
@@ -127,8 +134,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val reachability1 = Reachability.empty
       val g1 = Gossip(members = SortedSet(aUp, dc2AMemberUp), overview = GossipOverview(reachability = reachability1))
 
-      val reachability2 = reachability1
-        .unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
+      val reachability2 = reachability1.unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, dc2AMemberDown), overview = GossipOverview(reachability = reachability2))
 
       diffUnreachableDataCenter(
@@ -149,26 +155,22 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
     }
 
     "be produced for members becoming reachable after unreachable" in {
-      val reachability1 = Reachability.empty.
-        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).reachable(aUp.uniqueAddress, cUp.uniqueAddress).
-        unreachable(aUp.uniqueAddress, eUp.uniqueAddress).
-        unreachable(aUp.uniqueAddress, bUp.uniqueAddress)
+      val reachability1 = Reachability.empty
+        .unreachable(aUp.uniqueAddress, cUp.uniqueAddress)
+        .reachable(aUp.uniqueAddress, cUp.uniqueAddress)
+        .unreachable(aUp.uniqueAddress, eUp.uniqueAddress)
+        .unreachable(aUp.uniqueAddress, bUp.uniqueAddress)
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, eUp), overview = GossipOverview(reachability = reachability1))
-      val reachability2 = reachability1.
-        unreachable(aUp.uniqueAddress, cUp.uniqueAddress).
-        reachable(aUp.uniqueAddress, bUp.uniqueAddress)
+      val reachability2 =
+        reachability1.unreachable(aUp.uniqueAddress, cUp.uniqueAddress).reachable(aUp.uniqueAddress, bUp.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, cUp, bUp, eUp), overview = GossipOverview(reachability = reachability2))
 
       diffUnreachable(state(g1), state(g2)) should ===(Seq(UnreachableMember(cUp)))
       // never include self member in unreachable
-      diffUnreachable(
-        state(g1, cUp.uniqueAddress),
-        state(g2, cUp.uniqueAddress)) should ===(Seq())
+      diffUnreachable(state(g1, cUp.uniqueAddress), state(g2, cUp.uniqueAddress)) should ===(Seq())
       diffReachable(state(g1), state(g2)) should ===(Seq(ReachableMember(bUp)))
       // never include self member in reachable
-      diffReachable(
-        state(g1, bUp.uniqueAddress),
-        state(g2, bUp.uniqueAddress)) should ===(Seq())
+      diffReachable(state(g1, bUp.uniqueAddress), state(g2, bUp.uniqueAddress)) should ===(Seq())
     }
 
     "be produced for downed members" in {
@@ -191,27 +193,33 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
     "be produced for removed and rejoined member in another data center" in {
       val bUpDc2 = TestMember(bUp.address, Up, bRoles, dataCenter = "dc2")
       val bUpDc2Removed = TestMember(bUpDc2.address, Removed, bRoles, dataCenter = "dc2")
-      val bUpDc2Restarted = TestMember.withUniqueAddress(UniqueAddress(bUpDc2.address, 2L), Up, bRoles, dataCenter = "dc2")
+      val bUpDc2Restarted =
+        TestMember.withUniqueAddress(UniqueAddress(bUpDc2.address, 2L), Up, bRoles, dataCenter = "dc2")
       val g1 = Gossip(members = SortedSet(aUp, bUpDc2))
       val g2 = g1
         .remove(bUpDc2.uniqueAddress, System.currentTimeMillis()) // adds tombstone
         .copy(members = SortedSet(aUp, bUpDc2Restarted))
         .merge(g1)
 
-      diffMemberEvents(state(g1), state(g2)) should ===(Seq(
-        MemberRemoved(bUpDc2Removed, Up), MemberUp(bUpDc2Restarted)))
+      diffMemberEvents(state(g1), state(g2)) should ===(
+        Seq(MemberRemoved(bUpDc2Removed, Up), MemberUp(bUpDc2Restarted)))
     }
 
     "be produced for convergence changes" in {
-      val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress).seen(eJoining.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(aUp, bUp, eJoining))
+        .seen(aUp.uniqueAddress)
+        .seen(bUp.uniqueAddress)
+        .seen(eJoining.uniqueAddress)
       val g2 = Gossip(members = SortedSet(aUp, bUp, eJoining)).seen(aUp.uniqueAddress).seen(bUp.uniqueAddress)
 
       diffMemberEvents(state(g1), state(g2)) should ===(Seq.empty)
       diffUnreachable(state(g1), state(g2)) should ===(Seq.empty)
-      diffSeen(state(g1), state(g2)) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
+      diffSeen(state(g1), state(g2)) should ===(
+        Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address))))
       diffMemberEvents(state(g2), state(g1)) should ===(Seq.empty)
       diffUnreachable(state(g2), state(g1)) should ===(Seq.empty)
-      diffSeen(state(g2), state(g1)) should ===(Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
+      diffSeen(state(g2), state(g1)) should ===(
+        Seq(SeenChanged(convergence = true, seenBy = Set(aUp.address, bUp.address, eJoining.address))))
     }
 
     "be produced for leader changes" in {

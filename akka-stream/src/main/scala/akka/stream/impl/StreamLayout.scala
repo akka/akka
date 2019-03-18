@@ -48,9 +48,10 @@ import scala.util.control.NonFatal
   final case class Both(subscriber: Subscriber[Any]) extends HasActualSubscriber
 
   final case class Establishing(
-    subscriber:         Subscriber[Any],
-    onCompleteBuffered: Boolean              = false,
-    onErrorBuffered:    OptionVal[Throwable] = OptionVal.None) extends HasActualSubscriber
+      subscriber: Subscriber[Any],
+      onCompleteBuffered: Boolean = false,
+      onErrorBuffered: OptionVal[Throwable] = OptionVal.None)
+      extends HasActualSubscriber
   object Establishing {
     def create(s: Subscriber[_]) = Establishing(s.asInstanceOf[Subscriber[Any]])
   }
@@ -125,20 +126,22 @@ import scala.util.control.NonFatal
   override def subscribe(s: Subscriber[_ >: T]): Unit = {
     @tailrec def rec(sub: Subscriber[Any]): Unit = {
       get() match {
-        case null ⇒
+        case null =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(null).subscribe.rec($s) -> sub")
           if (!compareAndSet(null, s)) rec(sub)
-        case subscription: Subscription ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($subscription).subscribe.rec($s) -> Establishing(sub)")
+        case subscription: Subscription =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode($subscription).subscribe.rec($s) -> Establishing(sub)")
           val establishing = Establishing(sub, false)
           if (compareAndSet(subscription, establishing)) establishSubscription(establishing, subscription)
           else rec(sub)
-        case pub: Publisher[_] ⇒
+        case pub: Publisher[_] =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($pub).subscribe.rec($s) -> Inert")
           if (compareAndSet(pub, Inert)) pub.subscribe(sub)
           else rec(sub)
-        case other ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).subscribe.rec($s): rejectAdditionalSubscriber")
+        case other =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode($other).subscribe.rec($s): rejectAdditionalSubscriber")
           rejectAdditionalSubscriber(sub, "VirtualProcessor")
       }
     }
@@ -153,24 +156,27 @@ import scala.util.control.NonFatal
   override def onSubscribe(s: Subscription): Unit = {
     @tailrec def rec(obj: AnyRef): Unit = {
       get() match {
-        case null ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(null).onSubscribe.rec($obj) -> ${obj.getClass}")
+        case null =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode(null).onSubscribe.rec($obj) -> ${obj.getClass}")
           if (!compareAndSet(null, obj)) rec(obj)
-        case subscriber: Subscriber[_] ⇒
+        case subscriber: Subscriber[_] =>
           obj match {
-            case subscription: Subscription ⇒
-              if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($subscriber).onSubscribe.rec($obj) -> Establishing")
+            case subscription: Subscription =>
+              if (VirtualProcessor.Debug)
+                println(s"VirtualPublisher#$hashCode($subscriber).onSubscribe.rec($obj) -> Establishing")
               val establishing = Establishing.create(subscriber)
               if (compareAndSet(subscriber, establishing)) establishSubscription(establishing, subscription)
               else rec(obj)
-            case pub: Publisher[_] ⇒
-              if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($subscriber).onSubscribe.rec($obj) -> INert")
+            case pub: Publisher[_] =>
+              if (VirtualProcessor.Debug)
+                println(s"VirtualPublisher#$hashCode($subscriber).onSubscribe.rec($obj) -> INert")
               getAndSet(Inert) match {
-                case Inert ⇒ // nothing to be done
-                case _     ⇒ pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
+                case Inert => // nothing to be done
+                case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ ⇒
+        case _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
           // spec violation
           tryCancel(s)
@@ -192,7 +198,8 @@ import scala.util.control.NonFatal
 
       // while we were establishing some stuff could have happened
       // most likely case, nobody changed it while we where establishing
-      if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec($establishing) -> Both")
+      if (VirtualProcessor.Debug)
+        println(s"VirtualPublisher#$hashCode.establishSubscription.rec($establishing) -> Both")
       if (compareAndSet(establishing, Both(establishing.subscriber))) {
         // cas won - life is good
         // Requests will be only allowed once onSubscribe has returned to avoid reentering on an onNext before
@@ -201,28 +208,31 @@ import scala.util.control.NonFatal
       } else {
         // changed by someone else
         get() match {
-          case Establishing(sub, _, OptionVal.Some(error)) ⇒
+          case Establishing(sub, _, OptionVal.Some(error)) =>
             // there was an onError while establishing
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec(Establishing(buffered-error) -> Inert")
+            if (VirtualProcessor.Debug)
+              println(s"VirtualPublisher#$hashCode.establishSubscription.rec(Establishing(buffered-error) -> Inert")
             tryOnError(sub, error)
             set(Inert)
 
-          case Establishing(sub, true, _) ⇒
+          case Establishing(sub, true, _) =>
             // there was on onComplete while we were establishing
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec(Establishing(buffered-complete) -> Inert")
+            if (VirtualProcessor.Debug)
+              println(s"VirtualPublisher#$hashCode.establishSubscription.rec(Establishing(buffered-complete) -> Inert")
             tryOnComplete(sub)
             set(Inert)
 
-          case Inert ⇒
+          case Inert =>
             tryCancel(subscription)
 
-          case other ⇒
-            throw new IllegalStateException(s"Unexpected state while establishing: [$other], if this ever happens it is a bug.")
+          case other =>
+            throw new IllegalStateException(
+              s"Unexpected state while establishing: [$other], if this ever happens it is a bug.")
         }
       }
 
     } catch {
-      case NonFatal(ex) ⇒
+      case NonFatal(ex) =>
         set(Inert)
         tryCancel(subscription)
         tryOnError(establishing.subscriber, ex)
@@ -237,28 +247,33 @@ import scala.util.control.NonFatal
      */
     @tailrec def rec(ex: Throwable): Unit =
       get() match {
-        case null ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(null).onError(${ex.getMessage}) -> ErrorPublisher")
+        case null =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode(null).onError(${ex.getMessage}) -> ErrorPublisher")
           if (!compareAndSet(null, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
-        case s: Subscription ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onError(${ex.getMessage}) -> ErrorPublisher")
+        case s: Subscription =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode($s).onError(${ex.getMessage}) -> ErrorPublisher")
           if (!compareAndSet(s, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
-        case Both(s) ⇒
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Both($s)).onError(${ex.getMessage}) -> ErrorPublisher")
+        case Both(s) =>
+          if (VirtualProcessor.Debug)
+            println(s"VirtualPublisher#$hashCode(Both($s)).onError(${ex.getMessage}) -> ErrorPublisher")
           set(Inert)
           tryOnError(s, ex)
-        case s: Subscriber[_] ⇒ // spec violation
+        case s: Subscriber[_] => // spec violation
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onError(${ex.getMessage}) -> Inert")
           getAndSet(Inert) match {
-            case Inert ⇒ // nothing to be done
-            case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+            case Inert => // nothing to be done
+            case _     => ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
-        case est @ Establishing(_, false, OptionVal.None) ⇒
+        case est @ Establishing(_, false, OptionVal.None) =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onError(${ex.getMessage}), loop")
           if (!compareAndSet(est, est.copy(onErrorBuffered = OptionVal.Some(ex)))) rec(ex)
-        case other ⇒
+        case other =>
           // spec violation or cancellation race, but nothing we can do
-          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${ex.getMessage}). spec violation or cancellation race")
+          if (VirtualProcessor.Debug)
+            println(
+              s"VirtualPublisher#$hashCode($other).onError(${ex.getMessage}). spec violation or cancellation race")
       }
 
     val ex = if (t == null) exceptionMustNotBeNullException else t
@@ -269,24 +284,25 @@ import scala.util.control.NonFatal
 
   @tailrec override def onComplete(): Unit = {
     get() match {
-      case null ⇒
+      case null =>
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(null).onComplete -> EmptyPublisher")
         if (!compareAndSet(null, EmptyPublisher)) onComplete()
-      case s: Subscription ⇒
+      case s: Subscription =>
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> EmptyPublisher")
         if (!compareAndSet(s, EmptyPublisher)) onComplete()
-      case b @ Both(s) ⇒
+      case _ @Both(s) =>
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> Inert")
         set(Inert)
         tryOnComplete(s)
-      case s: Subscriber[_] ⇒ // spec violation
+      case s: Subscriber[_] => // spec violation
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> Inert")
         set(Inert)
         EmptyPublisher.subscribe(s)
-      case est @ Establishing(_, false, OptionVal.None) ⇒
-        if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onComplete -> Establishing with buffered complete")
+      case est @ Establishing(_, false, OptionVal.None) =>
+        if (VirtualProcessor.Debug)
+          println(s"VirtualPublisher#$hashCode($est).onComplete -> Establishing with buffered complete")
         if (!est.onCompleteBuffered && !compareAndSet(est, est.copy(onCompleteBuffered = true))) onComplete()
-      case other ⇒
+      case other =>
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onComplete spec violation")
       // spec violation or cancellation race, but nothing we can do
     }
@@ -298,41 +314,50 @@ import scala.util.control.NonFatal
       if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.onNext(null)")
       @tailrec def rec(): Unit =
         get() match {
-          case x @ (null | _: Subscription) ⇒ if (!compareAndSet(x, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec()
-          case s: Subscriber[_]             ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
-          case Both(s)                      ⇒ try s.onError(ex) catch { case NonFatal(_) ⇒ } finally set(Inert)
-          case _                            ⇒ // spec violation or cancellation race, but nothing we can do
+          case x @ (null | _: Subscription) =>
+            if (!compareAndSet(x, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec()
+          case s: Subscriber[_] =>
+            try s.onError(ex)
+            catch { case NonFatal(_) => } finally set(Inert)
+          case Both(s) =>
+            try s.onError(ex)
+            catch { case NonFatal(_) => } finally set(Inert)
+          case _ => // spec violation or cancellation race, but nothing we can do
         }
       rec()
       throw ex // must throw NPE, rule 2:13
     } else {
       @tailrec def rec(): Unit = {
         get() match {
-          case h: HasActualSubscriber ⇒
+          case h: HasActualSubscriber =>
             val s = h.subscriber
             try {
-              if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(${h.getClass.getName}($s)).onNext($t).rec()")
+              if (VirtualProcessor.Debug)
+                println(s"VirtualPublisher#$hashCode(${h.getClass.getName}($s)).onNext($t).rec()")
               s.onNext(t)
             } catch {
-              case NonFatal(e) ⇒
-                if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Both($s)).onNext($t) threw, spec violation -> Inert")
+              case NonFatal(e) =>
+                if (VirtualProcessor.Debug)
+                  println(s"VirtualPublisher#$hashCode(Both($s)).onNext($t) threw, spec violation -> Inert")
                 set(Inert)
                 throw new IllegalStateException("Subscriber threw exception, this is in violation of rule 2:13", e)
             }
 
-          case s: Subscriber[_] ⇒ // spec violation
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onNext($t).rec(): spec violation -> Inert")
+          case s: Subscriber[_] => // spec violation
+            if (VirtualProcessor.Debug)
+              println(s"VirtualPublisher#$hashCode($s).onNext($t).rec(): spec violation -> Inert")
             val ex = new IllegalStateException(noDemand)
             getAndSet(Inert) match {
-              case Inert ⇒ // nothing to be done
-              case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
+              case Inert => // nothing to be done
+              case _     => ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
             }
             throw ex
-          case Inert | _: Publisher[_] ⇒
+          case Inert | _: Publisher[_] =>
             if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Inert|Publisher).onNext($t).rec(): nop")
           // nothing to be done
-          case other ⇒
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onNext($t).rec() -> ErrorPublisher")
+          case other =>
+            if (VirtualProcessor.Debug)
+              println(s"VirtualPublisher#$hashCode($other).onNext($t).rec() -> ErrorPublisher")
             val pub = ErrorPublisher(new IllegalStateException(noDemand), "failed-VirtualPublisher")
             if (!compareAndSet(other, pub)) rec()
             else throw pub.t
@@ -353,12 +378,15 @@ import scala.util.control.NonFatal
 
   // Extdending AtomicReference to make the hot memory location share the same cache line with the Subscription
   private class WrappedSubscription(real: Subscription)
-    extends AtomicReference[WrappedSubscription.SubscriptionState](WrappedSubscription.NoBufferedDemand) with Subscription {
+      extends AtomicReference[WrappedSubscription.SubscriptionState](WrappedSubscription.NoBufferedDemand)
+      with Subscription {
     import WrappedSubscription._
 
     // Release
     def ungateDemandAndRequestBuffered(): Unit = {
-      if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).ungateDemandAndRequestBuffered")
+      if (VirtualProcessor.Debug)
+        println(
+          s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).ungateDemandAndRequestBuffered")
       // Ungate demand
       val requests = getAndSet(PassThrough).demand
       // And request buffered demand
@@ -367,13 +395,14 @@ import scala.util.control.NonFatal
 
     override def request(n: Long): Unit = {
       if (n < 1) {
-        if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
+        if (VirtualProcessor.Debug)
+          println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
         tryCancel(real)
         VirtualProcessor.this.getAndSet(Inert) match {
-          case Both(subscriber)  ⇒ rejectDueToNonPositiveDemand(subscriber)
-          case est: Establishing ⇒ rejectDueToNonPositiveDemand(est.subscriber)
-          case Inert             ⇒ // another failure has won the race
-          case _                 ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
+          case Both(subscriber)  => rejectDueToNonPositiveDemand(subscriber)
+          case est: Establishing => rejectDueToNonPositiveDemand(est.subscriber)
+          case Inert             => // another failure has won the race
+          case _                 => // this cannot possibly happen, but signaling errors is impossible at this point
         }
       } else {
         // NOTE: At this point, batched requests might not have been dispatched, i.e. this can reorder requests.
@@ -384,10 +413,14 @@ import scala.util.control.NonFatal
         @tailrec def bufferDemand(n: Long): Unit = {
           val current = get()
           if (current eq PassThrough) {
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription($real).bufferDemand($n) passthrough")
+            if (VirtualProcessor.Debug)
+              println(
+                s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription($real).bufferDemand($n) passthrough")
             real.request(n)
           } else if (!compareAndSet(current, Buffering(current.demand + n))) {
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription($real).bufferDemand($n) buffering")
+            if (VirtualProcessor.Debug)
+              println(
+                s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription($real).bufferDemand($n) buffering")
             bufferDemand(n)
           }
         }
@@ -395,7 +428,8 @@ import scala.util.control.NonFatal
       }
     }
     override def cancel(): Unit = {
-      if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription.cancel() -> Inert")
+      if (VirtualProcessor.Debug)
+        println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}WrappedSubscription.cancel() -> Inert")
       VirtualProcessor.this.set(Inert)
       real.cancel()
     }
@@ -427,15 +461,15 @@ import scala.util.control.NonFatal
     requireNonNullSubscriber(subscriber)
     @tailrec def rec(): Unit = {
       get() match {
-        case null ⇒
+        case null =>
           if (!compareAndSet(null, subscriber)) rec() // retry
 
-        case pub: Publisher[_] ⇒
+        case pub: Publisher[_] =>
           if (compareAndSet(pub, Inert.subscriber)) {
             pub.asInstanceOf[Publisher[T]].subscribe(subscriber)
           } else rec() // retry
 
-        case _: Subscriber[_] ⇒
+        case _: Subscriber[_] =>
           rejectAdditionalSubscriber(subscriber, "Sink.asPublisher(fanout = false)")
       }
     }
@@ -445,17 +479,18 @@ import scala.util.control.NonFatal
   @tailrec final def registerPublisher(pub: Publisher[_]): Unit = {
     if (VirtualProcessor.Debug) println(s"$this.registerPublisher: $pub")
     get() match {
-      case null ⇒
+      case null =>
         if (!compareAndSet(null, pub)) registerPublisher(pub) // retry
 
-      case sub: Subscriber[r] ⇒
+      case sub: Subscriber[r] =>
         set(Inert.subscriber)
         pub.asInstanceOf[Publisher[r]].subscribe(sub)
 
-      case p: Publisher[_] ⇒
-        throw new IllegalStateException(s"internal error, already registered [$p], yet attempted to register 2nd publisher [$pub]!")
+      case p: Publisher[_] =>
+        throw new IllegalStateException(
+          s"internal error, already registered [$p], yet attempted to register 2nd publisher [$pub]!")
 
-      case unexpected ⇒
+      case unexpected =>
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
   }
@@ -467,8 +502,9 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi private[akka] final case class ProcessorModule[In, Out, Mat](
-  val createProcessor: () ⇒ (Processor[In, Out], Mat),
-  attributes:          Attributes                     = DefaultAttributes.processor) extends StreamLayout.AtomicModule[FlowShape[In, Out], Mat] {
+    val createProcessor: () => (Processor[In, Out], Mat),
+    attributes: Attributes = DefaultAttributes.processor)
+    extends StreamLayout.AtomicModule[FlowShape[In, Out], Mat] {
   val inPort = Inlet[In]("ProcessorModule.in")
   val outPort = Outlet[Out]("ProcessorModule.out")
   override val shape = new FlowShape(inPort, outPort)

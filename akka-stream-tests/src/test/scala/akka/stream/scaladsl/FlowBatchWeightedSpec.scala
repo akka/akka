@@ -10,8 +10,7 @@ import scala.concurrent.duration._
 
 class FlowBatchWeightedSpec extends StreamSpec {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -20,7 +19,11 @@ class FlowBatchWeightedSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).batchWeighted(max = 3, _ ⇒ 4, seed = i ⇒ i)(aggregate = _ + _).to(Sink.fromSubscriber(subscriber)).run()
+      Source
+        .fromPublisher(publisher)
+        .batchWeighted(max = 3, _ => 4, seed = i => i)(aggregate = _ + _)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
       val sub = subscriber.expectSubscription()
 
       publisher.sendNext(1)

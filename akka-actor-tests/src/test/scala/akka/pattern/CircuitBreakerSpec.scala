@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import language.postfixOps
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Failure, Success, Try }
 import akka.testkit._
 import org.mockito.ArgumentCaptor
 import org.scalatest.BeforeAndAfter
@@ -28,24 +28,24 @@ object CircuitBreakerSpec {
     val callTimeoutLatch = new TestLatch(1)
     val callBreakerOpenLatch = new TestLatch(1)
 
-    val callSuccessConsumerMock = mock[Long ⇒ Unit]
-    val callFailureConsumerMock = mock[Long ⇒ Unit]
-    val callTimeoutConsumerMock = mock[Long ⇒ Unit]
+    val callSuccessConsumerMock = mock[Long => Unit]
+    val callFailureConsumerMock = mock[Long => Unit]
+    val callTimeoutConsumerMock = mock[Long => Unit]
 
     def apply(): CircuitBreaker = instance
     instance
       .onClose(closedLatch.countDown())
       .onHalfOpen(halfOpenLatch.countDown())
       .onOpen(openLatch.countDown())
-      .onCallSuccess(value ⇒ {
+      .onCallSuccess(value => {
         callSuccessConsumerMock(value)
         callSuccessLatch.countDown()
       })
-      .onCallFailure(value ⇒ {
+      .onCallFailure(value => {
         callFailureConsumerMock(value)
         callFailureLatch.countDown()
       })
-      .onCallTimeout(value ⇒ {
+      .onCallTimeout(value => {
         callTimeoutConsumerMock(value)
         callTimeoutLatch.countDown()
       })
@@ -73,9 +73,9 @@ object CircuitBreakerSpec {
   def nonOneFactorCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
     new Breaker(new CircuitBreaker(system.scheduler, 1, 2000.millis.dilated, 1000.millis.dilated, 1.day.dilated, 5))
 
-  val evenNumberIsFailure: Try[Int] ⇒ Boolean = {
-    case Success(i) ⇒ i % 2 == 0
-    case _          ⇒ true
+  val evenNumberIsFailure: Try[Int] => Boolean = {
+    case Success(i) => i % 2 == 0
+    case _          => true
   }
 }
 
@@ -171,7 +171,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
         intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
         checkLatch(breaker.halfOpenLatch)
 
-        val allReturnIsSuccess: Try[String] ⇒ Boolean = _ ⇒ false
+        val allReturnIsSuccess: Try[String] => Boolean = _ => false
 
         intercept[TestException] { breaker().withSyncCircuitBreaker(throwException, allReturnIsSuccess) }
         checkLatch(breaker.closedLatch)
@@ -343,9 +343,9 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
         breaker().currentFailureCount should ===(1)
 
         val harmlessException = new TestException
-        val harmlessExceptionAsSuccess: Try[String] ⇒ Boolean = {
-          case Success(_)  ⇒ false
-          case Failure(ex) ⇒ ex != harmlessException
+        val harmlessExceptionAsSuccess: Try[String] => Boolean = {
+          case Success(_)  => false
+          case Failure(ex) => ex != harmlessException
         }
 
         intercept[TestException] {
@@ -517,7 +517,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
         val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
         breaker().withCircuitBreaker(Future(throwException))
         checkLatch(breaker.halfOpenLatch)
-        val allReturnIsSuccess: Try[String] ⇒ Boolean = _ ⇒ false
+        val allReturnIsSuccess: Try[String] => Boolean = _ => false
         Await.ready(breaker().withCircuitBreaker(Future(throwException), allReturnIsSuccess), awaitTimeout)
         checkLatch(breaker.closedLatch)
       }
@@ -641,7 +641,8 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
       "even number is considered failure" in {
         val breaker = CircuitBreakerSpec.longCallTimeoutCb()
         breaker().currentFailureCount should ===(0)
-        val result = Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
+        val result =
+          Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
         checkLatch(breaker.openLatch)
         breaker().currentFailureCount should ===(1)
         result should ===(2)
@@ -658,7 +659,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     "reset failure count after success" in {
       val breaker = CircuitBreakerSpec.multiFailureCb()
       breaker().withCircuitBreaker(Future(sayHi))
-      for (_ ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
+      for (_ <- 1 to 4) breaker().withCircuitBreaker(Future(throwException))
       awaitCond(breaker().currentFailureCount == 4, awaitTimeout)
       breaker().withCircuitBreaker(Future(sayHi))
       awaitCond(breaker().currentFailureCount == 0, awaitTimeout)
@@ -668,13 +669,16 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
       "exception is defined as Success" in {
         val breaker: CircuitBreakerSpec.Breaker = CircuitBreakerSpec.multiFailureCb()
 
-        for (_ ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
-        awaitCond(breaker().currentFailureCount == 4, awaitTimeout, message = s"Current failure count: ${breaker().currentFailureCount}")
+        for (_ <- 1 to 4) breaker().withCircuitBreaker(Future(throwException))
+        awaitCond(
+          breaker().currentFailureCount == 4,
+          awaitTimeout,
+          message = s"Current failure count: ${breaker().currentFailureCount}")
 
         val harmlessException = new TestException
-        val harmlessExceptionAsSuccess: Try[String] ⇒ Boolean = {
-          case Success(_)  ⇒ false
-          case Failure(ex) ⇒ ex != harmlessException
+        val harmlessExceptionAsSuccess: Try[String] => Boolean = {
+          case Success(_)  => false
+          case Failure(ex) => ex != harmlessException
         }
 
         breaker().withCircuitBreaker(Future(throw harmlessException), harmlessExceptionAsSuccess)

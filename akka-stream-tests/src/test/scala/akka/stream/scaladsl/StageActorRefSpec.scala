@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRef }
+import akka.actor.{ ActorRef, Kill, NoSerializationVerificationNeeded, PoisonPill }
 import akka.event.Logging
 import akka.stream._
-import akka.stream.stage.{ GraphStageWithMaterializedValue, GraphStageLogic, InHandler }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.stream.testkit.StreamSpec
-import akka.testkit.{ TestProbe, TestEvent, EventFilter, ImplicitSender }
+import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
 
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
@@ -139,8 +139,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       stageRef ! Add(40)
 
       val filter = EventFilter.custom {
-        case e: Logging.Warning ⇒ true
-        case _                  ⇒ false
+        case e: Logging.Warning => true
+        case _                  => false
       }
       system.eventStream.publish(TestEvent.Mute(filter))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
@@ -150,12 +150,12 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val expectedMsg = s"[PoisonPill|Kill] message sent to StageActorRef($actorName) will be ignored,since it is not a real Actor. " +
         "Use a custom message type to communicate with it instead."
       expectMsgPF(1.second, expectedMsg) {
-        case Logging.Warning(_, _, msg) ⇒ expectedMsg.r.pattern.matcher(msg.toString).matches()
+        case Logging.Warning(_, _, msg) => expectedMsg.r.pattern.matcher(msg.toString).matches()
       }
 
       stageRef ! Kill // should log a warning, and NOT stop the stage.
       expectMsgPF(1.second, expectedMsg) {
-        case Logging.Warning(_, _, msg) ⇒ expectedMsg.r.pattern.matcher(msg.toString).matches()
+        case Logging.Warning(_, _, msg) => expectedMsg.r.pattern.matcher(msg.toString).matches()
       }
 
       source.success(Some(2))
@@ -197,42 +197,44 @@ object StageActorRefSpec {
 
         def behavior(m: (ActorRef, Any)): Unit = {
           m match {
-            case (sender, Add(n))                ⇒ sum += n
-            case (sender, PullNow)               ⇒ pull(in)
-            case (sender, CallInitStageActorRef) ⇒ sender ! getStageActor(behavior).ref
-            case (sender, BecomeStringEcho) ⇒
+            case (sender, Add(n))                => sum += n
+            case (sender, PullNow)               => pull(in)
+            case (sender, CallInitStageActorRef) => sender ! getStageActor(behavior).ref
+            case (sender, BecomeStringEcho) =>
               getStageActor {
-                case (theSender, msg) ⇒ theSender ! msg.toString
+                case (theSender, msg) => theSender ! msg.toString
               }
-            case (sender, StopNow) ⇒
+            case (sender, StopNow) =>
               p.trySuccess(sum)
               completeStage()
-            case (sender, AddAndTell(n)) ⇒
+            case (sender, AddAndTell(n)) =>
               sum += n
               sender ! sum
           }
         }
 
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            sum += grab(in)
-            p.trySuccess(sum)
-            completeStage()
-          }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              sum += grab(in)
+              p.trySuccess(sum)
+              completeStage()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            p.trySuccess(sum)
-            completeStage()
-          }
+            override def onUpstreamFinish(): Unit = {
+              p.trySuccess(sum)
+              completeStage()
+            }
 
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            p.tryFailure(ex)
-            failStage(ex)
-          }
-        })
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              p.tryFailure(ex)
+              failStage(ex)
+            }
+          })
       }
 
-      logic → p.future
+      logic -> p.future
     }
   }
 

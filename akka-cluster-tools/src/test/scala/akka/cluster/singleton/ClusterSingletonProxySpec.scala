@@ -5,7 +5,7 @@
 package akka.cluster.singleton
 
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-import akka.testkit.{ TestProbe, TestKit }
+import akka.testkit.{ TestKit, TestProbe }
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
@@ -18,7 +18,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
   val seed = new ActorSys()
 
   val testSystems = {
-    val joiners = (0 until 4).map(n ⇒ new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
+    val joiners = (0 until 4).map(n => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
     joiners :+ seed
   }
 
@@ -29,7 +29,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
     }
   }
 
-  override def afterAll(): Unit = testSystems.foreach { sys ⇒
+  override def afterAll(): Unit = testSystems.foreach { sys =>
     TestKit.shutdownActorSystem(sys.system)
   }
 }
@@ -37,7 +37,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
 object ClusterSingletonProxySpec {
 
   class ActorSys(name: String = "ClusterSingletonProxySystem", joinTo: Option[Address] = None)
-    extends TestKit(ActorSystem(name, ConfigFactory.parseString(cfg))) {
+      extends TestKit(ActorSystem(name, ConfigFactory.parseString(cfg))) {
 
     val cluster = Cluster(system)
     cluster.join(joinTo.getOrElse(cluster.selfAddress))
@@ -51,9 +51,9 @@ object ClusterSingletonProxySpec {
         name = "singletonManager")
     }
 
-    val proxy = system.actorOf(ClusterSingletonProxy.props(
-      "user/singletonManager",
-      settings = ClusterSingletonProxySettings(system)), s"singletonProxy-${cluster.selfAddress.port.getOrElse(0)}")
+    val proxy = system.actorOf(
+      ClusterSingletonProxy.props("user/singletonManager", settings = ClusterSingletonProxySettings(system)),
+      s"singletonProxy-${cluster.selfAddress.port.getOrElse(0)}")
 
     def testProxy(msg: String): Unit = {
       val probe = TestProbe()
@@ -87,7 +87,7 @@ object ClusterSingletonProxySpec {
     log.info("Singleton created on {}", Cluster(context.system).selfAddress)
 
     def receive: Actor.Receive = {
-      case msg ⇒
+      case msg =>
         log.info(s"Got $msg")
         sender() ! "Got " + msg
     }

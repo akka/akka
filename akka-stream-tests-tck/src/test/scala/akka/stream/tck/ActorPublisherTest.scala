@@ -18,21 +18,24 @@ object ActorPublisherTest {
 
   class TestPublisher(allElements: Long) extends ActorPublisher[Int] {
 
-    val source: Iterator[Int] = (if (allElements == Long.MaxValue) 1 to Int.MaxValue else 0 until allElements.toInt).toIterator
+    val source: Iterator[Int] =
+      (if (allElements == Long.MaxValue) 1 to Int.MaxValue else 0 until allElements.toInt).toIterator
 
     override def receive: Receive = {
-      case Request(elements) ⇒
+      case Request(elements) =>
         loopDemand()
 
-      case Produce if totalDemand > 0 && !isCompleted && source.hasNext ⇒ onNext(source.next())
-      case Produce if !isCompleted && !source.hasNext ⇒ onComplete()
-      case Produce if isCompleted ⇒ // no-op
-      case _ ⇒ // no-op
+      case Produce if totalDemand > 0 && !isCompleted && source.hasNext => onNext(source.next())
+      case Produce if !isCompleted && !source.hasNext                   => onComplete()
+      case Produce if isCompleted                                       => // no-op
+      case _                                                            => // no-op
     }
 
     def loopDemand(): Unit = {
       val loopUntil = math.min(100, totalDemand)
-      1 to loopUntil.toInt foreach { _ ⇒ self ! Produce }
+      (1 to loopUntil.toInt).foreach { _ =>
+        self ! Produce
+      }
       if (loopUntil > 100) self ! Loop
     }
   }

@@ -25,8 +25,7 @@ class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -52,13 +51,14 @@ class ArteryRemoteRandomMultiJvmNode4 extends RemoteRandomSpec(new RemoteRandomC
 object RemoteRandomSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender() ! self
+      case "hit" => sender() ! self
     }
   }
 }
 
-class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
-  with DefaultTimeout {
+class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
+    extends RemotingMultiNodeSpec(multiNodeConfig)
+    with DefaultTimeout {
   import multiNodeConfig._
   import RemoteRandomSpec._
 
@@ -79,14 +79,14 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMult
         val connectionCount = 3
         val iterationCount = 100
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i <- 0 until iterationCount; k <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5.seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+          case ref: ActorRef => ref.path.address
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")
@@ -94,7 +94,7 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig) extends RemotingMult
 
         enterBarrier("end")
         // since it's random we can't be too strict in the assert
-        replies.values count (_ > 0) should be > (connectionCount - 2)
+        replies.values.count(_ > 0) should be > (connectionCount - 2)
         replies.get(node(fourth).address) should ===(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send

@@ -35,10 +35,11 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
+      implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
-    val settings = materializerSettings getOrElse ActorMaterializerSettings(system)
+    val settings = materializerSettings.getOrElse(ActorMaterializerSettings(system))
     apply(settings, namePrefix.getOrElse("flow"))(context)
   }
 
@@ -54,7 +55,8 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(implicit context: ActorRefFactory): ActorMaterializer = {
+  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(
+      implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
@@ -67,11 +69,14 @@ object ActorMaterializer {
       FlowNames(system).name.copy(namePrefix))
   }
 
-  private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) = {
+  private def actorOfStreamSupervisor(
+      materializerSettings: ActorMaterializerSettings,
+      context: ActorRefFactory,
+      haveShutDown: AtomicBoolean) = {
     val props = StreamSupervisor.props(materializerSettings, haveShutDown)
     context match {
-      case s: ExtendedActorSystem ⇒ s.systemActorOf(props, StreamSupervisor.nextName())
-      case a: ActorContext        ⇒ a.actorOf(props, StreamSupervisor.nextName())
+      case s: ExtendedActorSystem => s.systemActorOf(props, StreamSupervisor.nextName())
+      case a: ActorContext        => a.actorOf(props, StreamSupervisor.nextName())
     }
   }
 
@@ -93,16 +98,16 @@ object ActorMaterializer {
   /**
    * INTERNAL API: Creates the `StreamSupervisor` as a system actor.
    */
-  private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
-                                       system: ExtendedActorSystem): ActorMaterializer = {
+  private[akka] def systemMaterializer(
+      materializerSettings: ActorMaterializerSettings,
+      namePrefix: String,
+      system: ExtendedActorSystem): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
-      system.systemActorOf(
-        StreamSupervisor.props(materializerSettings, haveShutDown),
-        StreamSupervisor.nextName()),
+      system.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown), StreamSupervisor.nextName()),
       haveShutDown,
       FlowNames(system).name.copy(namePrefix))
   }
@@ -148,11 +153,12 @@ object ActorMaterializer {
 
   private def actorSystemOf(context: ActorRefFactory): ActorSystem = {
     val system = context match {
-      case s: ExtendedActorSystem ⇒ s
-      case c: ActorContext        ⇒ c.system
-      case null                   ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
-      case _ ⇒
-        throw new IllegalArgumentException(s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
+      case s: ExtendedActorSystem => s
+      case c: ActorContext        => c.system
+      case null                   => throw new IllegalArgumentException("ActorRefFactory context must be defined")
+      case _ =>
+        throw new IllegalArgumentException(
+          s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
     }
     system
   }
@@ -163,14 +169,17 @@ object ActorMaterializer {
  * INTERNAL API
  */
 private[akka] object ActorMaterializerHelper {
+
   /**
    * INTERNAL API
    */
   private[akka] def downcast(materializer: Materializer): ActorMaterializer =
     materializer match { //FIXME this method is going to cause trouble for other Materializer implementations
-      case m: ActorMaterializer ⇒ m
-      case _ ⇒ throw new IllegalArgumentException(s"required [${classOf[ActorMaterializer].getName}] " +
-        s"but got [${materializer.getClass.getName}]")
+      case m: ActorMaterializer => m
+      case _ =>
+        throw new IllegalArgumentException(
+          s"required [${classOf[ActorMaterializer].getName}] " +
+          s"but got [${materializer.getClass.getName}]")
     }
 }
 
@@ -227,7 +236,8 @@ class MaterializationException(msg: String, cause: Throwable = null) extends Run
  * when an ActorSystem is shut down while stream processing actors are still running.
  */
 final case class AbruptTerminationException(actor: ActorRef)
-  extends RuntimeException(s"Processor actor [$actor] terminated abruptly") with NoStackTrace
+    extends RuntimeException(s"Processor actor [$actor] terminated abruptly")
+    with NoStackTrace
 
 /**
  * Signal that the operator was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
@@ -235,8 +245,9 @@ final case class AbruptTerminationException(actor: ActorRef)
  * the actor running the graph is killed, which happens when the materializer or actor system is terminated.
  */
 final class AbruptStageTerminationException(logic: GraphStageLogic)
-  extends RuntimeException(s"GraphStage [$logic] terminated abruptly, caused by for example materializer or actor system termination.")
-  with NoStackTrace
+    extends RuntimeException(
+      s"GraphStage [$logic] terminated abruptly, caused by for example materializer or actor system termination.")
+    with NoStackTrace
 
 object ActorMaterializerSettings {
 
@@ -244,26 +255,37 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from individual settings (Scala).
    */
   @Deprecated
-  @deprecated("Create the settings using the apply(system) or apply(config) method, and then modify them using the .with methods.", since = "2.5.10")
+  @deprecated(
+    "Create the settings using the apply(system) or apply(config) method, and then modify them using the .with methods.",
+    since = "2.5.10")
   def apply(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int) = {
+      initialInputBufferSize: Int,
+      maxInputBufferSize: Int,
+      dispatcher: String,
+      supervisionDecider: Supervision.Decider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+      debugLogging: Boolean,
+      outputBurstLimit: Int,
+      fuzzingMode: Boolean,
+      autoFusing: Boolean,
+      maxFixedBufferSize: Int) = {
     // these sins were committed in the name of bin comp:
     val config = ConfigFactory.defaultReference
     new ActorMaterializerSettings(
-      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      1000,
+      IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(config.getConfig("akka.stream.materializer.stream-ref")),
-      config.getString(ActorAttributes.IODispatcher.dispatcher)
-    )
+      config.getString(ActorAttributes.IODispatcher.dispatcher))
   }
 
   /**
@@ -296,23 +318,35 @@ object ActorMaterializerSettings {
    * Create [[ActorMaterializerSettings]] from individual settings (Java).
    */
   @Deprecated
-  @deprecated("Create the settings using the create(system) or create(config) method, and then modify them using the .with methods.", since = "2.5.10")
+  @deprecated(
+    "Create the settings using the create(system) or create(config) method, and then modify them using the .with methods.",
+    since = "2.5.10")
   def create(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int) = {
+      initialInputBufferSize: Int,
+      maxInputBufferSize: Int,
+      dispatcher: String,
+      supervisionDecider: Supervision.Decider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+      debugLogging: Boolean,
+      outputBurstLimit: Int,
+      fuzzingMode: Boolean,
+      autoFusing: Boolean,
+      maxFixedBufferSize: Int) = {
     // these sins were committed in the name of bin comp:
     val config = ConfigFactory.defaultReference
     new ActorMaterializerSettings(
-      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      1000,
+      IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(config.getConfig("akka.stream.materializer.stream-ref")),
       config.getString(ActorAttributes.IODispatcher.dispatcher))
   }
@@ -338,114 +372,158 @@ object ActorMaterializerSettings {
  * The constructor is not public API, use create or apply on the [[ActorMaterializerSettings]] companion instead.
  */
 final class ActorMaterializerSettings @InternalApi private (
-  /*
-   * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
-   * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
-   * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
-   * attributes.
-   */
-  val initialInputBufferSize:      Int,
-  val maxInputBufferSize:          Int,
-  val dispatcher:                  String,
-  val supervisionDecider:          Supervision.Decider,
-  val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  val debugLogging:                Boolean,
-  val outputBurstLimit:            Int,
-  val fuzzingMode:                 Boolean,
-  val autoFusing:                  Boolean,
-  val maxFixedBufferSize:          Int,
-  val syncProcessingLimit:         Int,
-  val ioSettings:                  IOSettings,
-  val streamRefSettings:           StreamRefSettings,
-  val blockingIoDispatcher:        String) {
+    /*
+     * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
+     * `supervisionDecider` must not be used as values in the materializer, or anything the materializer phases use
+     * since these settings allow for overriding using [[Attributes]]. They must always be gotten from the effective
+     * attributes.
+     */
+    val initialInputBufferSize: Int,
+    val maxInputBufferSize: Int,
+    val dispatcher: String,
+    val supervisionDecider: Supervision.Decider,
+    val subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+    val debugLogging: Boolean,
+    val outputBurstLimit: Int,
+    val fuzzingMode: Boolean,
+    val autoFusing: Boolean,
+    val maxFixedBufferSize: Int,
+    val syncProcessingLimit: Int,
+    val ioSettings: IOSettings,
+    val streamRefSettings: StreamRefSettings,
+    val blockingIoDispatcher: String) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
   require(syncProcessingLimit > 0, "syncProcessingLimit must be > 0")
 
   requirePowerOfTwo(maxInputBufferSize, "maxInputBufferSize")
-  require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
+  require(
+    initialInputBufferSize <= maxInputBufferSize,
+    s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
   @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
   def this(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int,
-    syncProcessingLimit:         Int,
-    ioSettings:                  IOSettings) =
+      initialInputBufferSize: Int,
+      maxInputBufferSize: Int,
+      dispatcher: String,
+      supervisionDecider: Supervision.Decider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+      debugLogging: Boolean,
+      outputBurstLimit: Int,
+      fuzzingMode: Boolean,
+      autoFusing: Boolean,
+      maxFixedBufferSize: Int,
+      syncProcessingLimit: Int,
+      ioSettings: IOSettings) =
     // using config like this is not quite right but the only way to solve backwards comp without hard coding settings
-    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings,
+    this(
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      syncProcessingLimit,
+      ioSettings,
       StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
-    )
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher))
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
   @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
   def this(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int,
-    syncProcessingLimit:         Int) =
+      initialInputBufferSize: Int,
+      maxInputBufferSize: Int,
+      dispatcher: String,
+      supervisionDecider: Supervision.Decider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+      debugLogging: Boolean,
+      outputBurstLimit: Int,
+      fuzzingMode: Boolean,
+      autoFusing: Boolean,
+      maxFixedBufferSize: Int,
+      syncProcessingLimit: Int) =
     // using config like this is not quite right but the only way to solve backwards comp without hard coding settings
-    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit,
-      IOSettings(tcpWriteBufferSize = 16 * 1024), StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
-    )
-
-  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
-  @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
-  def this(
-    initialInputBufferSize:      Int,
-    maxInputBufferSize:          Int,
-    dispatcher:                  String,
-    supervisionDecider:          Supervision.Decider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-    debugLogging:                Boolean,
-    outputBurstLimit:            Int,
-    fuzzingMode:                 Boolean,
-    autoFusing:                  Boolean,
-    maxFixedBufferSize:          Int) =
-    // using config like this is not quite right but the only way to solve backwards comp without hard coding settings
-    this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
+    this(
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      syncProcessingLimit,
+      IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
-    )
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher))
+
+  // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
+  def this(
+      initialInputBufferSize: Int,
+      maxInputBufferSize: Int,
+      dispatcher: String,
+      supervisionDecider: Supervision.Decider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+      debugLogging: Boolean,
+      outputBurstLimit: Int,
+      fuzzingMode: Boolean,
+      autoFusing: Boolean,
+      maxFixedBufferSize: Int) =
+    // using config like this is not quite right but the only way to solve backwards comp without hard coding settings
+    this(
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      1000,
+      IOSettings(tcpWriteBufferSize = 16 * 1024),
+      StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher))
 
   private def copy(
-    initialInputBufferSize:      Int                               = this.initialInputBufferSize,
-    maxInputBufferSize:          Int                               = this.maxInputBufferSize,
-    dispatcher:                  String                            = this.dispatcher,
-    supervisionDecider:          Supervision.Decider               = this.supervisionDecider,
-    subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
-    debugLogging:                Boolean                           = this.debugLogging,
-    outputBurstLimit:            Int                               = this.outputBurstLimit,
-    fuzzingMode:                 Boolean                           = this.fuzzingMode,
-    autoFusing:                  Boolean                           = this.autoFusing,
-    maxFixedBufferSize:          Int                               = this.maxFixedBufferSize,
-    syncProcessingLimit:         Int                               = this.syncProcessingLimit,
-    ioSettings:                  IOSettings                        = this.ioSettings,
-    streamRefSettings:           StreamRefSettings                 = this.streamRefSettings,
-    blockingIoDispatcher:        String                            = this.blockingIoDispatcher) = {
+      initialInputBufferSize: Int = this.initialInputBufferSize,
+      maxInputBufferSize: Int = this.maxInputBufferSize,
+      dispatcher: String = this.dispatcher,
+      supervisionDecider: Supervision.Decider = this.supervisionDecider,
+      subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings = this.subscriptionTimeoutSettings,
+      debugLogging: Boolean = this.debugLogging,
+      outputBurstLimit: Int = this.outputBurstLimit,
+      fuzzingMode: Boolean = this.fuzzingMode,
+      autoFusing: Boolean = this.autoFusing,
+      maxFixedBufferSize: Int = this.maxFixedBufferSize,
+      syncProcessingLimit: Int = this.syncProcessingLimit,
+      ioSettings: IOSettings = this.ioSettings,
+      streamRefSettings: StreamRefSettings = this.streamRefSettings,
+      blockingIoDispatcher: String = this.blockingIoDispatcher) = {
     new ActorMaterializerSettings(
-      initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
-      outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings, streamRefSettings, blockingIoDispatcher)
+      initialInputBufferSize,
+      maxInputBufferSize,
+      dispatcher,
+      supervisionDecider,
+      subscriptionTimeoutSettings,
+      debugLogging,
+      outputBurstLimit,
+      fuzzingMode,
+      autoFusing,
+      maxFixedBufferSize,
+      syncProcessingLimit,
+      ioSettings,
+      streamRefSettings,
+      blockingIoDispatcher)
   }
 
   /**
@@ -494,13 +572,14 @@ final class ActorMaterializerSettings @InternalApi private (
    * Note that supervision in streams are implemented on a per operator basis and is not supported
    * by every operator.
    */
-  def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
+  def withSupervisionStrategy(
+      decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._
     copy(supervisionDecider = decider match {
-      case `resumingDecider`   ⇒ resumingDecider
-      case `restartingDecider` ⇒ restartingDecider
-      case `stoppingDecider`   ⇒ stoppingDecider
-      case other               ⇒ other.apply _
+      case `resumingDecider`   => resumingDecider
+      case `restartingDecider` => restartingDecider
+      case `stoppingDecider`   => stoppingDecider
+      case other               => other.apply _
     })
   }
 
@@ -579,23 +658,24 @@ final class ActorMaterializerSettings @InternalApi private (
   }
 
   override def equals(other: Any): Boolean = other match {
-    case s: ActorMaterializerSettings ⇒
+    case s: ActorMaterializerSettings =>
       s.initialInputBufferSize == initialInputBufferSize &&
-        s.maxInputBufferSize == maxInputBufferSize &&
-        s.dispatcher == dispatcher &&
-        s.supervisionDecider == supervisionDecider &&
-        s.subscriptionTimeoutSettings == subscriptionTimeoutSettings &&
-        s.debugLogging == debugLogging &&
-        s.outputBurstLimit == outputBurstLimit &&
-        s.syncProcessingLimit == syncProcessingLimit &&
-        s.fuzzingMode == fuzzingMode &&
-        s.autoFusing == autoFusing &&
-        s.ioSettings == ioSettings &&
-        s.blockingIoDispatcher == blockingIoDispatcher
-    case _ ⇒ false
+      s.maxInputBufferSize == maxInputBufferSize &&
+      s.dispatcher == dispatcher &&
+      s.supervisionDecider == supervisionDecider &&
+      s.subscriptionTimeoutSettings == subscriptionTimeoutSettings &&
+      s.debugLogging == debugLogging &&
+      s.outputBurstLimit == outputBurstLimit &&
+      s.syncProcessingLimit == syncProcessingLimit &&
+      s.fuzzingMode == fuzzingMode &&
+      s.autoFusing == autoFusing &&
+      s.ioSettings == ioSettings &&
+      s.blockingIoDispatcher == blockingIoDispatcher
+    case _ => false
   }
 
-  override def toString: String = s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
+  override def toString: String =
+    s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
     s"$dispatcher,$supervisionDecider,$subscriptionTimeoutSettings,$debugLogging,$outputBurstLimit," +
     s"$syncProcessingLimit,$fuzzingMode,$autoFusing,$ioSettings)"
 }
@@ -605,8 +685,7 @@ object IOSettings {
     apply(system.settings.config.getConfig("akka.stream.materializer.io"))
 
   def apply(config: Config): IOSettings =
-    new IOSettings(
-      tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
+    new IOSettings(tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
 
   def apply(tcpWriteBufferSize: Int): IOSettings =
     new IOSettings(tcpWriteBufferSize)
@@ -626,12 +705,11 @@ final class IOSettings private (val tcpWriteBufferSize: Int) {
 
   def withTcpWriteBufferSize(value: Int): IOSettings = copy(tcpWriteBufferSize = value)
 
-  private def copy(tcpWriteBufferSize: Int = tcpWriteBufferSize): IOSettings = new IOSettings(
-    tcpWriteBufferSize = tcpWriteBufferSize)
+  private def copy(tcpWriteBufferSize: Int): IOSettings = new IOSettings(tcpWriteBufferSize = tcpWriteBufferSize)
 
   override def equals(other: Any): Boolean = other match {
-    case s: IOSettings ⇒ s.tcpWriteBufferSize == tcpWriteBufferSize
-    case _             ⇒ false
+    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize
+    case _             => false
   }
 
   override def toString =
@@ -644,13 +722,17 @@ object StreamSubscriptionTimeoutSettings {
   /**
    * Create settings from individual values (Java).
    */
-  def create(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
+  def create(
+      mode: StreamSubscriptionTimeoutTerminationMode,
+      timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
     new StreamSubscriptionTimeoutSettings(mode, timeout)
 
   /**
    * Create settings from individual values (Scala).
    */
-  def apply(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
+  def apply(
+      mode: StreamSubscriptionTimeoutTerminationMode,
+      timeout: FiniteDuration): StreamSubscriptionTimeoutSettings =
     new StreamSubscriptionTimeoutSettings(mode, timeout)
 
   /**
@@ -664,13 +746,11 @@ object StreamSubscriptionTimeoutSettings {
    */
   def apply(config: Config): StreamSubscriptionTimeoutSettings = {
     val c = config.getConfig("subscription-timeout")
-    StreamSubscriptionTimeoutSettings(
-      mode = toRootLowerCase(c.getString("mode")) match {
-        case "no" | "off" | "false" | "noop" ⇒ NoopTermination
-        case "warn"                          ⇒ WarnTermination
-        case "cancel"                        ⇒ CancelTermination
-      },
-      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
+    StreamSubscriptionTimeoutSettings(mode = toRootLowerCase(c.getString("mode")) match {
+      case "no" | "off" | "false" | "noop" => NoopTermination
+      case "warn"                          => WarnTermination
+      case "cancel"                        => CancelTermination
+    }, timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
   }
 }
 
@@ -678,10 +758,12 @@ object StreamSubscriptionTimeoutSettings {
  * Leaked publishers and subscribers are cleaned up when they are not used within a given
  * deadline, configured by [[StreamSubscriptionTimeoutSettings]].
  */
-final class StreamSubscriptionTimeoutSettings(val mode: StreamSubscriptionTimeoutTerminationMode, val timeout: FiniteDuration) {
+final class StreamSubscriptionTimeoutSettings(
+    val mode: StreamSubscriptionTimeoutTerminationMode,
+    val timeout: FiniteDuration) {
   override def equals(other: Any): Boolean = other match {
-    case s: StreamSubscriptionTimeoutSettings ⇒ s.mode == mode && s.timeout == timeout
-    case _                                    ⇒ false
+    case s: StreamSubscriptionTimeoutSettings => s.mode == mode && s.timeout == timeout
+    case _                                    => false
   }
   override def toString: String = s"StreamSubscriptionTimeoutSettings($mode,$timeout)"
 }

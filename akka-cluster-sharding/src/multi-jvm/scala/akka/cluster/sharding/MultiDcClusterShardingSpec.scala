@@ -30,20 +30,20 @@ object MultiDcClusterShardingSpec {
   class Entity extends Actor {
     var count = 0
     def receive = {
-      case Ping(_) ⇒
+      case Ping(_) =>
         count += 1
         sender() ! self
-      case GetCount(_) ⇒
+      case GetCount(_) =>
         sender() ! count
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m: EntityMsg ⇒ (m.id, m)
+    case m: EntityMsg => (m.id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case m: EntityMsg ⇒ m.id.charAt(0).toString
+    case m: EntityMsg => m.id.charAt(0).toString
   }
 }
 
@@ -80,18 +80,22 @@ class MultiDcClusterShardingSpecMultiJvmNode2 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode3 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode4 extends MultiDcClusterShardingSpec
 
-abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterShardingSpecConfig) with MultiNodeClusterSpec
-  with STMultiNodeSpec with ImplicitSender {
+abstract class MultiDcClusterShardingSpec
+    extends MultiNodeSpec(MultiDcClusterShardingSpecConfig)
+    with MultiNodeClusterSpec
+    with STMultiNodeSpec
+    with ImplicitSender {
   import MultiDcClusterShardingSpec._
   import MultiDcClusterShardingSpecConfig._
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       startSharding()
-      withClue(s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
+      withClue(
+        s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
         within(15.seconds) {
-          awaitAssert(cluster.state.members.exists { m ⇒
+          awaitAssert(cluster.state.members.exists { m =>
             m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
           } should be(true))
         }
@@ -137,10 +141,10 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
       }, 10.seconds)
 
       runOn(first, second) {
-        assertCurrentRegions(Set(first, second).map(r ⇒ node(r).address))
+        assertCurrentRegions(Set(first, second).map(r => node(r).address))
       }
       runOn(third, fourth) {
-        assertCurrentRegions(Set(third, fourth).map(r ⇒ node(r).address))
+        assertCurrentRegions(Set(third, fourth).map(r => node(r).address))
       }
 
       enterBarrier("after-1")
@@ -148,29 +152,29 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
     "initialize shards" in {
       runOn(first) {
-        val locations = (for (n ← 1 to 10) yield {
+        val locations = (for (n <- 1 to 10) yield {
           val id = n.toString
           region ! Ping(id)
-          id → expectMsgType[ActorRef]
+          id -> expectMsgType[ActorRef]
         }).toMap
         val firstAddress = node(first).address
         val secondAddress = node(second).address
-        val hosts = locations.values.map(ref ⇒ fillAddress(ref.path.address)).toSet
+        val hosts = locations.values.map(ref => fillAddress(ref.path.address)).toSet
         hosts should ===(Set(firstAddress, secondAddress))
       }
       runOn(third) {
-        val locations = (for (n ← 1 to 10) yield {
+        val locations = (for (n <- 1 to 10) yield {
           val id = n.toString
           region ! Ping(id)
           val ref1 = expectMsgType[ActorRef]
           region ! Ping(id)
           val ref2 = expectMsgType[ActorRef]
           ref1 should ===(ref2)
-          id → ref1
+          id -> ref1
         }).toMap
         val thirdAddress = node(third).address
         val fourthAddress = node(fourth).address
-        val hosts = locations.values.map(ref ⇒ fillAddress(ref.path.address)).toSet
+        val hosts = locations.values.map(ref => fillAddress(ref.path.address)).toSet
         hosts should ===(Set(thirdAddress, fourthAddress))
       }
       enterBarrier("after-2")
@@ -219,4 +223,3 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
   }
 }
-

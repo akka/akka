@@ -12,7 +12,8 @@ import com.typesafe.sslconfig.util.{ LoggerFactory, NoDepsLogger }
 final class AkkaLoggerFactory(system: ActorSystem) extends LoggerFactory {
   override def apply(clazz: Class[_]): NoDepsLogger = new AkkaLoggerBridge(system.eventStream, clazz)
 
-  override def apply(name: String): NoDepsLogger = new AkkaLoggerBridge(system.eventStream, name, classOf[DummyClassForStringSources])
+  override def apply(name: String): NoDepsLogger =
+    new AkkaLoggerBridge(system.eventStream, name, classOf[DummyClassForStringSources])
 }
 
 class AkkaLoggerBridge(bus: EventStream, logSource: String, logClass: Class[_]) extends NoDepsLogger {

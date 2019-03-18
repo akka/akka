@@ -25,18 +25,21 @@ import scala.concurrent.duration.FiniteDuration
 abstract class Effect private[akka] ()
 
 object Effect {
+
   /**
    * The behavior spawned a named child with the given behavior (and optionally specific props)
    */
   final class Spawned[T](val behavior: Behavior[T], val childName: String, val props: Props, val ref: ActorRef[T])
-    extends Effect with Product3[Behavior[T], String, Props] with Serializable {
+      extends Effect
+      with Product3[Behavior[T], String, Props]
+      with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: Spawned[_] ⇒
+      case o: Spawned[_] =>
         this.behavior == o.behavior &&
-          this.childName == o.childName &&
-          this.props == o.props
-      case _ ⇒ false
+        this.childName == o.childName &&
+        this.props == o.props
+      case _ => false
     }
     override def hashCode: Int = (behavior.## * 31 + childName.##) * 31 + props.##
     override def toString: String = s"Spawned($behavior, $childName, $props)"
@@ -49,7 +52,8 @@ object Effect {
   }
 
   object Spawned {
-    def apply[T](behavior: Behavior[T], childName: String, props: Props = Props.empty): Spawned[T] = new Spawned(behavior, childName, props, null)
+    def apply[T](behavior: Behavior[T], childName: String, props: Props = Props.empty): Spawned[T] =
+      new Spawned(behavior, childName, props, null)
     def unapply[T](s: Spawned[T]): Option[(Behavior[T], String, Props)] = Some((s.behavior, s.childName, s.props))
   }
 
@@ -57,11 +61,13 @@ object Effect {
    * The behavior spawned an anonymous child with the given behavior (and optionally specific props)
    */
   final class SpawnedAnonymous[T](val behavior: Behavior[T], val props: Props, val ref: ActorRef[T])
-    extends Effect with Product2[Behavior[T], Props] with Serializable {
+      extends Effect
+      with Product2[Behavior[T], Props]
+      with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: SpawnedAnonymous[_] ⇒ this.behavior == o.behavior && this.props == o.props
-      case _                      ⇒ false
+      case o: SpawnedAnonymous[_] => this.behavior == o.behavior && this.props == o.props
+      case _                      => false
     }
     override def hashCode: Int = behavior.## * 31 + props.##
     override def toString: String = s"SpawnedAnonymous($behavior, $props)"
@@ -73,7 +79,8 @@ object Effect {
   }
 
   object SpawnedAnonymous {
-    def apply[T](behavior: Behavior[T], props: Props = Props.empty): SpawnedAnonymous[T] = new SpawnedAnonymous(behavior, props, null)
+    def apply[T](behavior: Behavior[T], props: Props = Props.empty): SpawnedAnonymous[T] =
+      new SpawnedAnonymous(behavior, props, null)
     def unapply[T](s: SpawnedAnonymous[T]): Option[(Behavior[T], Props)] = Some((s.behavior, s.props))
   }
 
@@ -83,11 +90,13 @@ object Effect {
    */
   @InternalApi
   private[akka] final class SpawnedAdapter[T](val name: String, val ref: ActorRef[T])
-    extends Effect with Product1[String] with Serializable {
+      extends Effect
+      with Product1[String]
+      with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: SpawnedAdapter[_] ⇒ this.name == o.name
-      case _                    ⇒ false
+      case o: SpawnedAdapter[_] => this.name == o.name
+      case _                    => false
     }
     override def hashCode: Int = name.##
     override def toString: String = s"SpawnedAdapter($name)"
@@ -113,11 +122,13 @@ object Effect {
    */
   @InternalApi
   private[akka] final class SpawnedAnonymousAdapter[T](val ref: ActorRef[T])
-    extends Effect with Product with Serializable {
+      extends Effect
+      with Product
+      with Serializable {
 
     override def equals(other: Any): Boolean = other match {
-      case _: SpawnedAnonymousAdapter[_] ⇒ true
-      case _                             ⇒ false
+      case _: SpawnedAnonymousAdapter[_] => true
+      case _                             => false
     }
     override def hashCode: Int = Nil.##
     override def toString: String = "SpawnedAnonymousAdapter"
@@ -141,7 +152,8 @@ object Effect {
   /**
    * The behavior create a message adapter for the messages of type clazz
    */
-  final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A ⇒ T) extends Effect {
+  final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A => T) extends Effect {
+
     /**
      * JAVA API
      */
@@ -167,6 +179,7 @@ object Effect {
    * The behavior set a new receive timeout, with `message` as timeout notification
    */
   final case class ReceiveTimeoutSet[T](d: FiniteDuration, message: T) extends Effect {
+
     /**
      * Java API
      */
@@ -195,4 +208,3 @@ object Effect {
    */
   sealed abstract class NoEffects extends Effect
 }
-

@@ -16,7 +16,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   override type Outputs = Int
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val mergePrioritized = b add MergePrioritized[Outputs](Seq(2, 8))
+    val mergePrioritized = b.add(MergePrioritized[Outputs](Seq(2, 8)))
 
     override def left: Inlet[Outputs] = mergePrioritized.in(0)
     override def right: Inlet[Outputs] = mergePrioritized.in(1)
@@ -27,9 +27,9 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     commonTests()
 
     "stream data from all sources" in {
-      val source1 = Source.fromIterator(() ⇒ (1 to 3).iterator)
-      val source2 = Source.fromIterator(() ⇒ (4 to 6).iterator)
-      val source3 = Source.fromIterator(() ⇒ (7 to 9).iterator)
+      val source1 = Source.fromIterator(() => (1 to 3).iterator)
+      val source2 = Source.fromIterator(() => (4 to 6).iterator)
+      val source3 = Source.fromIterator(() => (7 to 9).iterator)
 
       val priorities = Seq(6, 3, 1)
 
@@ -40,7 +40,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to 9) {
+      for (_ <- 1 to 9) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -51,9 +51,9 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
     "stream data with priority" in {
       val elementCount = 20000
-      val source1 = Source.fromIterator(() ⇒ Iterator.continually(1).take(elementCount))
-      val source2 = Source.fromIterator(() ⇒ Iterator.continually(2).take(elementCount))
-      val source3 = Source.fromIterator(() ⇒ Iterator.continually(3).take(elementCount))
+      val source1 = Source.fromIterator(() => Iterator.continually(1).take(elementCount))
+      val source2 = Source.fromIterator(() => Iterator.continually(2).take(elementCount))
+      val source3 = Source.fromIterator(() => Iterator.continually(3).take(elementCount))
 
       val priorities = Seq(6, 3, 1)
 
@@ -64,7 +64,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to elementCount) {
+      for (_ <- 1 to elementCount) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -80,9 +80,9 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
     "stream data when only one source produces" in {
       val elementCount = 10
-      val source1 = Source.fromIterator(() ⇒ Iterator.continually(1).take(elementCount))
-      val source2 = Source.fromIterator[Int](() ⇒ Iterator.empty)
-      val source3 = Source.fromIterator[Int](() ⇒ Iterator.empty)
+      val source1 = Source.fromIterator(() => Iterator.continually(1).take(elementCount))
+      val source2 = Source.fromIterator[Int](() => Iterator.empty)
+      val source3 = Source.fromIterator[Int](() => Iterator.empty)
 
       val priorities = Seq(6, 3, 1)
 
@@ -93,7 +93,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to elementCount) {
+      for (_ <- 1 to elementCount) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -109,9 +109,9 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
     "stream data with priority when only two sources produce" in {
       val elementCount = 20000
-      val source1 = Source.fromIterator(() ⇒ Iterator.continually(1).take(elementCount))
-      val source2 = Source.fromIterator(() ⇒ Iterator.continually(2).take(elementCount))
-      val source3 = Source.fromIterator[Int](() ⇒ Iterator.empty)
+      val source1 = Source.fromIterator(() => Iterator.continually(1).take(elementCount))
+      val source2 = Source.fromIterator(() => Iterator.continually(2).take(elementCount))
+      val source3 = Source.fromIterator[Int](() => Iterator.empty)
 
       val priorities = Seq(6, 3, 1)
 
@@ -122,7 +122,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val subscription = probe.expectSubscription()
 
       var collected = Seq.empty[Int]
-      for (_ ← 1 to elementCount) {
+      for (_ <- 1 to elementCount) {
         subscription.request(1)
         collected :+= probe.expectNext()
       }
@@ -136,8 +136,13 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     }
   }
 
-  private def threeSourceMerge[T](source1: Source[T, NotUsed], source2: Source[T, NotUsed], source3: Source[T, NotUsed], priorities: Seq[Int], probe: ManualProbe[T]) = {
-    RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
+  private def threeSourceMerge[T](
+      source1: Source[T, NotUsed],
+      source2: Source[T, NotUsed],
+      source3: Source[T, NotUsed],
+      priorities: Seq[Int],
+      probe: ManualProbe[T]) = {
+    RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b => (s1, s2, s3) =>
       val merge = b.add(MergePrioritized[T](priorities))
       // introduce a delay on the consuming side making it more likely that
       // the actual prioritization happens and elements does not just pass through

@@ -30,11 +30,11 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg @ id ⇒ (id.toString, msg)
+    case msg @ id => (id.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ id.toString
+    case id: Int => id.toString
   }
 
   val shardProxy: ActorRef =
@@ -52,23 +52,20 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
   }
 
   "Shard region should be found" in {
-    val shardRegion: ActorRef = clusterSharding.start(
-      "myType",
-      TestActors.echoActorProps,
-      shardingSettings,
-      messageExtractor)
+    val shardRegion: ActorRef =
+      clusterSharding.start("myType", TestActors.echoActorProps, shardingSettings, messageExtractor)
 
     shardRegion.path should not be null
     shardRegion.path.toString should endWith("myType")
   }
 
   "Shard coordinator should be found" in {
-    val shardCoordinator: ActorRef = Await.result(
-      system
-        .actorSelection(
-          "akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
-        .resolveOne(FiniteDuration(5, SECONDS)),
-      3.seconds)
+    val shardCoordinator: ActorRef =
+      Await.result(
+        system
+          .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
+          .resolveOne(FiniteDuration(5, SECONDS)),
+        3.seconds)
 
     shardCoordinator.path should not be null
     shardCoordinator.path.toString should endWith("Coordinator")
