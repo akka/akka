@@ -522,6 +522,7 @@ lazy val discovery = akkaModule("akka-discovery")
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
+    .enablePlugins(ReproducibleBuildsPlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .enablePlugins(BootstrapGenjavadoc)
