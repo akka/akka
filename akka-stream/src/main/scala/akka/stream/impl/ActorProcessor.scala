@@ -284,7 +284,8 @@ private[akka] object ActorProcessorImpl {
     }
   }
 
-  def activeReceive: Receive = primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive).orElse(subTimeoutHandling)
+  def activeReceive: Receive =
+    primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive).orElse(subTimeoutHandling)
 
   protected def onError(e: Throwable): Unit = fail(e)
 
