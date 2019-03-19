@@ -501,7 +501,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       seedNodes.mkString(", "),
       ShutdownAfterUnsuccessfulJoinSeedNodes)
     joinSeedNodesDeadline = None
-    CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterDowningReason)
+    CoordinatedShutdown(context.system).run(CoordinatedShutdown.JoiningSeedNodesUnsuccessfulReason)
   }
 
   def becomeUninitialized(): Unit = {

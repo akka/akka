@@ -141,6 +141,17 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   def clusterDowningReason: Reason = ClusterDowningReason
 
   /**
+    * Scala API: The shutdown was initiated by a failure to join a seed node.
+    */
+  object JoiningSeedNodesUnsuccessfulReason extends Reason
+
+  /**
+    * Java API: The shutdown was initiated by a failure to join a seed node.
+    */
+  def joiningSeedNodesUnsuccessful: Reason = JoiningSeedNodesUnsuccessfulReason
+
+
+  /**
    * Scala API: The shutdown was initiated by Cluster leaving.
    */
   object ClusterLeavingReason extends Reason
