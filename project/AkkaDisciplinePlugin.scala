@@ -21,7 +21,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
   
-  val strictProjects = Set("akka-discovery")
+  val strictProjects = Set("akka-discovery", "akka-stream-typed")
 
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
@@ -34,7 +34,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
-  
+
   lazy val disciplineSettings =
     scalaFixSettings ++
     scoverageSettings ++ Seq(

@@ -14,7 +14,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 //#imports
-import akka.actor.typed.DispatcherSelector
 import akka.stream.testkit.TestSubscriber
 
 import scala.collection.immutable
@@ -77,7 +76,6 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val dontReply = spawn(Behaviors.ignore[Asking])
 
       val c = TestSubscriber.manualProbe[Reply]()(system.toUntyped)
-      implicit val ec = system.dispatchers.lookup(DispatcherSelector.default())
       implicit val timeout = akka.util.Timeout(10.millis)
 
       Source(1 to 5)
