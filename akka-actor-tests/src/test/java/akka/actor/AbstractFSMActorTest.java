@@ -12,7 +12,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class AbstractFSMActorTest extends JUnitSuite {
 
