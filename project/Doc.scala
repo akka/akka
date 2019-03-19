@@ -140,7 +140,11 @@ object UnidocRoot extends AutoPlugin {
 object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.GenJavadocPlugin)
+  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue {
+    val onJdk8 = System.getProperty("java.version").startsWith("1.")
+    require(!onJdk8, "Javadoc generation requires at least jdk 11")
+    sbtunidoc.GenJavadocPlugin
+  }
     .getOrElse(plugins.JvmPlugin)
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
