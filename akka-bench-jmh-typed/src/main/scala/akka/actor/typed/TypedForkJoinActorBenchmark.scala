@@ -44,10 +44,11 @@ class TypedForkJoinActorBenchmark {
   var threads = ""
 
   @Param(
-    Array("akka.dispatch.UnboundedMailbox",
-          "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
-          "akka.actor.ManyToOneArrayMailbox",
-          "akka.actor.JCToolsMailbox"))
+    Array(
+      "akka.dispatch.UnboundedMailbox",
+      "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
+      "akka.actor.ManyToOneArrayMailbox",
+      "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
   implicit var system: ActorSystem[PingPongCommand] = _
@@ -55,9 +56,10 @@ class TypedForkJoinActorBenchmark {
   @Setup(Level.Trial)
   def setup(): Unit = {
     akka.actor.BenchmarkActors.requireRightNumberOfCores(cores)
-    system = ActorSystem(TypedBenchmarkActors.benchmarkPingPongSupervisor(),
-                         "TypedForkJoinActorBenchmark",
-                         ConfigFactory.parseString(s"""
+    system = ActorSystem(
+      TypedBenchmarkActors.benchmarkPingPongSupervisor(),
+      "TypedForkJoinActorBenchmark",
+      ConfigFactory.parseString(s"""
        akka.actor {
 
          default-mailbox.mailbox-capacity = 512

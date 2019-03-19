@@ -116,12 +116,13 @@ object TypedBenchmarkActors {
   }
 
   sealed trait PingPongCommand
-  case class StartPingPong(messagesPerPair: Int,
-                           numActors: Int,
-                           dispatcher: String,
-                           throughPut: Int,
-                           shutdownTimeout: Duration,
-                           replyTo: ActorRef[PingPongStarted])
+  case class StartPingPong(
+      messagesPerPair: Int,
+      numActors: Int,
+      dispatcher: String,
+      throughPut: Int,
+      shutdownTimeout: Duration,
+      replyTo: ActorRef[PingPongStarted])
       extends PingPongCommand
   case class PingPongStarted(completedLatch: CountDownLatch, startNanoTime: Long, totalNumMessages: Int)
   case object Stop extends PingPongCommand
