@@ -19,8 +19,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   override def trigger: PluginTrigger = allRequirements
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
-
   override lazy val projectSettings = disciplineSettings
+  
+  val strictProjects = Set("akka-discovery")
 
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
@@ -33,18 +34,21 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
-
+  
   lazy val disciplineSettings =
     scalaFixSettings ++
-      scoverageSettings ++ Seq(
-      Compile / scalacOptions ++= disciplineScalacOptions,
-      Compile / scalacOptions --= undisciplineScalacOptions,
+    scoverageSettings ++ Seq(
+      Compile / scalacOptions ++= (if (strictProjects.contains(name.value)) {
+                                 disciplineScalacOptions
+                               } else {
+                                 disciplineScalacOptions -- undisciplineScalacOptions
+                               }).toSeq,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       // Discipline is not needed for the docs compilation run (which uses
       // different compiler phases from the regular run), and in particular
       // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
       // https://github.com/akka/akka/issues/26119
-      Compile / doc / scalacOptions --= disciplineScalacOptions,
+      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq,
       Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
           Seq(
@@ -66,14 +70,14 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   /**
     * Remain visibly filtered for future code quality work and removing.
     */
-  val undisciplineScalacOptions = Seq(
+  val undisciplineScalacOptions = Set(
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
     "-Yno-adapted-args",
     "-Xfatal-warnings")
 
   /** These options are desired, but some are excluded for the time being*/
-  val disciplineScalacOptions = Seq(
+  val disciplineScalacOptions = Set(
     // start: must currently remove, version regardless
     "-Xfatal-warnings",
     "-Ywarn-value-discard",
