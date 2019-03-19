@@ -6,7 +6,7 @@
 package akka.actor.typed;
 
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 

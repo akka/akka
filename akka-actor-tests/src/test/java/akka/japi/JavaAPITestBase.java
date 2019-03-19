@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter;
 import akka.event.NoLogging;
 import akka.serialization.JavaSerializer;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.Callable;
 
