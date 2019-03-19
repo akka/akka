@@ -482,7 +482,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
       case ORMap.DeltaGroup(ops) =>
         ops.foreach {
           processDelta.orElse {
-            case ORMap.DeltaGroup(args) =>
+            case ORMap.DeltaGroup(_) =>
               throw new IllegalStateException("Cannot nest DeltaGroups")
           }
         }

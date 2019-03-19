@@ -4,6 +4,8 @@
 
 package akka.cluster.ddata.protobuf
 
+import java.lang.IllegalArgumentException
+
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -19,7 +21,7 @@ import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.testkit.TestKit
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
 import akka.cluster.UniqueAddress
 import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
@@ -79,6 +81,14 @@ class ReplicatorMessageSerializerSpec
 
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
+      checkSerialization(Get(keyA, ReadMajority((Int.MaxValue.toLong + 50).milliseconds), Some("x")))
+      try {
+        serializer.toBinary(Get(keyA, ReadMajority((Int.MaxValue.toLong * 3).milliseconds), Some("x")))
+        fail("Our protobuf protocol does not support timeouts larger than unsigned ints")
+      } catch {
+        case e: IllegalArgumentException =>
+          e.getMessage should include("unsigned int")
+      }
       checkSerialization(GetSuccess(keyA, None)(data1))
       checkSerialization(GetSuccess(keyA, Some("x"))(data1))
       checkSerialization(NotFound(keyA, Some("x")))
@@ -223,7 +233,7 @@ class ReplicatorMessageSerializerSpec
 
     "suppory getOrAdd" in {
       var n = 0
-      def createValue(a: Read): AnyRef = {
+      def createValue(@unused a: Read): AnyRef = {
         n += 1
         new AnyRef {
           override val toString = "v" + n

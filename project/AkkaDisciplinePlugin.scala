@@ -80,6 +80,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     "-Ywarn-numeric-widen",
     // end
+    "-deprecation",
     "-Xfuture",
     "-Xlint",
     "-Ywarn-dead-code",
@@ -90,6 +91,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit",
-    "-Ywarn-numeric-widen")
+  )
 
 }

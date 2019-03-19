@@ -13,8 +13,8 @@ import org.scalatest.WordSpec
 class LWWRegisterSpec extends WordSpec with Matchers {
   import LWWRegister.defaultClock
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A LWWRegister" must {
     "use latest of successive assignments" in {
@@ -71,11 +71,15 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       val r1 = LWWRegister(node1, "a", defaultClock[String])
       val LWWRegister(value1) = r1
       val value2: String = value1
+      value2 should be("a")
+
       Changed(LWWRegisterKey[String]("key"))(r1) match {
         case c @ Changed(LWWRegisterKey("key")) =>
           val LWWRegister(value3) = c.dataValue
           val value4: String = value3
           value4 should be("a")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

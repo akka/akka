@@ -317,6 +317,6 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
+  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }
