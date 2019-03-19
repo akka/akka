@@ -50,7 +50,7 @@ object IntroSpec {
         context.log.info("Greeting {} for {}", n, message.whom)
   //#fiddle_code
   //#hello-world-bot
-        context.log.info(s"Greeting {} for {}", n, message.whom)
+        context.log.info("Greeting {} for {}", n, message.whom)
   //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
