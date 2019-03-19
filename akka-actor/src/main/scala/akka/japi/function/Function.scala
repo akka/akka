@@ -15,6 +15,18 @@ trait Function[-T, +R] extends java.io.Serializable {
   def apply(param: T): R
 }
 
+object Function extends java.io.Serializable {
+
+  private final val constFunc: Function[Any, Any] = new Function[Any, Any] {
+    override def apply(param: Any): Any = param
+  }
+
+  /**
+   * A method that returns its input value.
+   */
+  def identity[T](): Function[T, T] = constFunc.asInstanceOf[Function[T, T]]
+}
+
 /**
  * A Function interface. Used to create 2-arg first-class-functions is Java.
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
