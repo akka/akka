@@ -244,7 +244,7 @@ object Behavior {
    * INTERNAL API
    */
   @InternalApi private[akka] val unhandledSignal
-    : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
+      : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) => UnhandledBehavior
   }
 
@@ -432,11 +432,12 @@ object Behavior {
     }
   }
 
-  private def interpret[T](behavior: Behavior[T],
-                           ctx: TypedActorContext[T],
-                           msg: Any,
-                           // optimization to avoid an instanceof on the message
-                           isSignal: Boolean): Behavior[T] = {
+  private def interpret[T](
+      behavior: Behavior[T],
+      ctx: TypedActorContext[T],
+      msg: Any,
+      // optimization to avoid an instanceof on the message
+      isSignal: Boolean): Behavior[T] = {
     if (behavior eq null)
       throw InvalidMessageException("[null] is not an allowed behavior")
 
