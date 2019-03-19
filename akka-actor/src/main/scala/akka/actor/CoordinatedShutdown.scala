@@ -148,7 +148,17 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   /**
     * Java API: The shutdown was initiated by a failure to join a seed node.
     */
-  def joiningSeedNodesUnsuccessful: Reason = JoiningSeedNodesUnsuccessfulReason
+  def joiningSeedNodesUnsuccessfulReason: Reason = JoiningSeedNodesUnsuccessfulReason
+
+  /**
+    * Scala API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
+    */
+  case object IncompatibleConfigurationDetectedReason extends Reason
+
+  /**
+    * Java API: The shutdown was initiated by a configuration clash within the existing cluster and the joining node
+    */
+  def incompatibleConfigurationDetectedReason: Reason = IncompatibleConfigurationDetectedReason
 
 
   /**
