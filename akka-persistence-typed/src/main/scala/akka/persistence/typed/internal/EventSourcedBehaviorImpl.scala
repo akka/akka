@@ -123,12 +123,12 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
             import BehaviorInterceptor._
             def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
-                : Behavior[Any] = {
+              : Behavior[Any] = {
               target(ctx, msg)
             }
 
             def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
-                : Behavior[Any] = {
+              : Behavior[Any] = {
               if (signal == PostStop) {
                 eventSourcedSetup.cancelRecoveryTimer()
                 // clear stash to be GC friendly

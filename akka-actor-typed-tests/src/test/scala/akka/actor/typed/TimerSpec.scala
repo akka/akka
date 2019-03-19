@@ -336,5 +336,29 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
       probe.expectNoMessage(1.second)
     }
+
+    def timered: Behavior[String] = Behaviors.withTimers[String] { timers =>
+      timers.startSingleTimer("w", "timeout", 1.second)
+      Behaviors.receiveMessagePartial {
+        case "stop" =>
+          Behaviors.stopped
+        case "timeout" =>
+          throw new RuntimeException("böö")
+        case "switch" =>
+          non
+      }
+    }
+    def non: Behavior[String] = Behaviors.receiveMessagePartial[String] {
+      case "switch" =>
+        timered
+    }
+    "böö bööö böö" in {
+
+      val ref = spawn(non)
+
+      ref ! "switch"
+      ref ! "switch"
+      Thread.sleep(3000)
+    }
   }
 }
