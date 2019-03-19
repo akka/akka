@@ -100,7 +100,7 @@ object ReplicatorSpec {
       val replicator: ActorRef[Replicator.Command] = ???
       implicit val timeout = Timeout(3.seconds)
       implicit val scheduler: Scheduler = ???
-      implicit val cluster: SelfUniqueAddress= ???
+      implicit val cluster: SelfUniqueAddress = ???
 
       val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
 
