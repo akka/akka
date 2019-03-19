@@ -556,5 +556,4 @@ addCommandAlias("allTyped", Seq(
   commandValue(actorTestkitTyped),
   commandValue(clusterTyped),
   commandValue(clusterShardingTyped),
-  commandValue(persistenceTyped),
-  commandValue(streamTyped)).mkString)
+
