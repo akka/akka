@@ -37,7 +37,7 @@ private object ReplicatedDataSerializer {
   abstract class KeyComparator[A <: GeneratedMessage] extends Comparator[A] {
 
     /**
-     * Get the key from the entry. The key may be a String, Integer, Long, or Any
+     * Get the key from the entry. The key may be a String, Int, Long, or OtherMessage
      * @param entry The protobuf entry used with Map types
      * @return The Key
      */
@@ -54,6 +54,9 @@ private object ReplicatedDataSerializer {
       case (k1: Long, k2)                       => -1
       case (k1, k2: Long)                       => 1
       case (k1: OtherMessage, k2: OtherMessage) => OtherMessageComparator.compare(k1, k2)
+      case (k1, k2) =>
+        throw new IllegalStateException(
+          s"Invalid keys (${k1.getClass}, ${k2.getClass}): must be of type String, Int, Long or OtherMessage")
     }
   }
 
@@ -541,7 +544,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
         b.addEntries(createEntry(rd.ORSetDeltaOp.Remove, u))
       case ORSet.FullStateDeltaOp(u) =>
         b.addEntries(createEntry(rd.ORSetDeltaOp.Full, u))
-      case ORSet.DeltaGroup(u) =>
+      case ORSet.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
     }
     b.build()
@@ -899,7 +902,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       case ORMap.UpdateDeltaOp(op, m, zt) =>
         b.addEntries(
           createEntry(rd.ORMapDeltaOp.ORMapUpdate, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, m, zt.value))
-      case ORMap.DeltaGroup(u) =>
+      case ORMap.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORMap.DeltaGroup should not be nested")
     }
     b.build()
