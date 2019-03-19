@@ -13,7 +13,6 @@ import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey }
 import akka.actor.testkit.typed.scaladsl._
