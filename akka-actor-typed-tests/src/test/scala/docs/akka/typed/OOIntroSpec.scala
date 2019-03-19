@@ -9,7 +9,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, AbstractBehavior }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
@@ -21,12 +21,10 @@ object OOIntroSpec {
   object ChatRoom {
     //#chatroom-protocol
     sealed trait RoomCommand
-    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent])
-      extends RoomCommand
+    final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PublishSessionMessage(screenName: String, message: String)
-      extends RoomCommand
+    private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -42,14 +40,14 @@ object OOIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[RoomCommand] =
-      Behaviors.setup[RoomCommand](context ⇒ new ChatRoomBehavior(context))
+      Behaviors.setup[RoomCommand](context => new ChatRoomBehavior(context))
 
     class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
       override def onMessage(message: RoomCommand): Behavior[RoomCommand] = {
         message match {
-          case GetSession(screenName, client) ⇒
+          case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
             val ses = context.spawn(
               session(context.self, screenName, client),
@@ -57,24 +55,24 @@ object OOIntroSpec {
             client ! SessionGranted(ses)
             sessions = ses :: sessions
             this
-          case PublishSessionMessage(screenName, message) ⇒
+          case PublishSessionMessage(screenName, message) =>
             val notification = NotifyClient(MessagePosted(screenName, message))
-            sessions foreach (_ ! notification)
+            sessions.foreach(_ ! notification)
             this
         }
       }
     }
 
     private def session(
-      room:       ActorRef[PublishSessionMessage],
-      screenName: String,
-      client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
+        room: ActorRef[PublishSessionMessage],
+        screenName: String,
+        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receiveMessage {
-        case PostMessage(message) ⇒
+        case PostMessage(message) =>
           // from client, publish to others via the room
           room ! PublishSessionMessage(screenName, message)
           Behaviors.same
-        case NotifyClient(message) ⇒
+        case NotifyClient(message) =>
           // published from the room
           client ! message
           Behaviors.same
@@ -96,13 +94,13 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val gabbler =
         Behaviors.receiveMessage[SessionEvent] {
-          case SessionDenied(reason) ⇒
+          case SessionDenied(reason) =>
             println(s"cannot start chat room session: $reason")
             Behaviors.stopped
-          case SessionGranted(handle) ⇒
+          case SessionGranted(handle) =>
             handle ! PostMessage("Hello World!")
             Behaviors.same
-          case MessagePosted(screenName, message) ⇒
+          case MessagePosted(screenName, message) =>
             println(s"message has been posted by '$screenName': $message")
             Behaviors.stopped
         }
@@ -110,20 +108,22 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       //#chatroom-main
       val main: Behavior[String] =
-        Behaviors.setup { context ⇒
+        Behaviors.setup { context =>
           val chatRoom = context.spawn(ChatRoom.behavior(), "chatroom")
           val gabblerRef = context.spawn(gabbler, "gabbler")
           context.watch(gabblerRef)
 
-          Behaviors.receiveMessagePartial[String] {
-            case "go" ⇒
-              chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-              Behaviors.same
-          } receiveSignal {
-            case (_, Terminated(_)) ⇒
-              println("Stopping guardian")
-              Behaviors.stopped
-          }
+          Behaviors
+            .receiveMessagePartial[String] {
+              case "go" =>
+                chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+                Behaviors.same
+            }
+            .receiveSignal {
+              case (_, Terminated(_)) =>
+                println("Stopping guardian")
+                Behaviors.stopped
+            }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")

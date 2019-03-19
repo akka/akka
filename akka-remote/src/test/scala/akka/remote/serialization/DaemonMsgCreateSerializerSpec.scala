@@ -6,7 +6,16 @@ package akka.remote.serialization
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import akka.actor.{ Actor, ActorRef, Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.actor.{
+  Actor,
+  ActorRef,
+  Address,
+  Deploy,
+  ExtendedActorSystem,
+  OneForOneStrategy,
+  Props,
+  SupervisorStrategy
+}
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ FromConfig, RoundRobinPool }
 import akka.serialization.{ Serialization, SerializationExtension }
@@ -28,20 +37,22 @@ object DaemonMsgCreateSerializerSpec {
 
 case class DummyParameter(val inner: String) extends Serializable
 
-trait SerializationVerification { self: AkkaSpec ⇒
+trait SerializationVerification { self: AkkaSpec =>
 
   def ser: Serialization
 
   def verifySerialization(msg: DaemonMsgCreate): Unit = {
-    assertDaemonMsgCreate(msg, ser.deserialize(ser.serialize(msg).get, classOf[DaemonMsgCreate]).get.asInstanceOf[DaemonMsgCreate])
+    assertDaemonMsgCreate(
+      msg,
+      ser.deserialize(ser.serialize(msg).get, classOf[DaemonMsgCreate]).get.asInstanceOf[DaemonMsgCreate])
   }
 
   def assertDaemonMsgCreate(expected: DaemonMsgCreate, got: DaemonMsgCreate): Unit = {
     // can't compare props.creator when function
     got.props.clazz should ===(expected.props.clazz)
     got.props.args.length should ===(expected.props.args.length)
-    got.props.args zip expected.props.args foreach {
-      case (g, e) ⇒
+    got.props.args.zip(expected.props.args).foreach {
+      case (g, e) =>
         if (e.isInstanceOf[Function0[_]]) ()
         else if (e.isInstanceOf[Function1[_, _]]) ()
         else g should ===(e)
@@ -67,11 +78,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
       verifySerialization {
-        DaemonMsgCreate(
-          props = Props[MyActor],
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
+        DaemonMsgCreate(props = Props[MyActor], deploy = Deploy(), path = "foo", supervisor = supervisor)
       }
     }
 
@@ -87,18 +94,14 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
 
     "serialize and de-serialize DaemonMsgCreate with function creator" in {
       verifySerialization {
-        DaemonMsgCreate(
-          props = Props(new MyActor),
-          deploy = Deploy(),
-          path = "foo",
-          supervisor = supervisor)
+        DaemonMsgCreate(props = Props(new MyActor), deploy = Deploy(), path = "foo", supervisor = supervisor)
       }
     }
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with function parameters for Props" in {
       verifySerialization {
         DaemonMsgCreate(
-          props = Props(classOf[MyActorWithFunParam], (i: Int) ⇒ i + 1),
+          props = Props(classOf[MyActorWithFunParam], (i: Int) => i + 1),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
@@ -106,8 +109,9 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
     }
 
     "deserialize the old wire format with just class and field for props parameters (if possible)" in {
-      val system = ActorSystem("DaemonMsgCreateSerializer-old-wire-format", ConfigFactory.parseString(
-        """
+      val system = ActorSystem(
+        "DaemonMsgCreateSerializer-old-wire-format",
+        ConfigFactory.parseString("""
           # in 2.4 this is off by default, but in 2.5+ its on so we wouldn't
           # get the right set of serializers (and since the old wire protocol doesn't
           # contain serializer ids that will go unnoticed with unpleasant consequences)
@@ -124,24 +128,24 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
       val bytes = serializer.toBinary(
         DaemonMsgCreate(Props(classOf[MyActorWithParam], "a string"), Deploy.local, "/user/test", system.actorFor("/user")))
       println(String.valueOf(encodeHex(bytes)))
-      */
+         */
 
         val oldBytesHex =
           "0a7112020a001a48616b6b612e72656d6f74652e73657269616c697a617" +
-            "4696f6e2e4461656d6f6e4d736743726561746553657269616c697a6572" +
-            "53706563244d794163746f7257697468506172616d220faced000574000" +
-            "86120737472696e672a106a6176612e6c616e672e537472696e67122f0a" +
-            "00222baced000573720016616b6b612e6163746f722e4c6f63616c53636" +
-            "f706524000000000000000102000078701a0a2f757365722f7465737422" +
-            "2b0a29616b6b613a2f2f4461656d6f6e4d7367437265617465536572696" +
-            "16c697a6572537065632f75736572"
+          "4696f6e2e4461656d6f6e4d736743726561746553657269616c697a6572" +
+          "53706563244d794163746f7257697468506172616d220faced000574000" +
+          "86120737472696e672a106a6176612e6c616e672e537472696e67122f0a" +
+          "00222baced000573720016616b6b612e6163746f722e4c6f63616c53636" +
+          "f706524000000000000000102000078701a0a2f757365722f7465737422" +
+          "2b0a29616b6b613a2f2f4461656d6f6e4d7367437265617465536572696" +
+          "16c697a6572537065632f75736572"
 
         import org.apache.commons.codec.binary.Hex.decodeHex
         val oldBytes = decodeHex(oldBytesHex.toCharArray)
         val result = serializer.fromBinary(oldBytes, classOf[DaemonMsgCreate])
 
         result match {
-          case dmc: DaemonMsgCreate ⇒
+          case dmc: DaemonMsgCreate =>
             dmc.props.args should ===(Seq("a string": Any))
         }
       } finally {
@@ -188,8 +192,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec with SerializationVerificat
   }
 }
 
-class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec(
-  """
+class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
    akka.actor.allow-java-serialization=off
    akka.actor.serialize-messages=off
    akka.actor.serialize-creators=off
@@ -204,7 +207,7 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec(
     verifySerialization {
       // Duration.Inf doesn't equal Duration.Inf, so we use another for test
       val supervisorStrategy = OneForOneStrategy(3, 10 seconds) {
-        case _ ⇒ SupervisorStrategy.Escalate
+        case _ => SupervisorStrategy.Escalate
       }
 
       val deploy1 = Deploy(
@@ -228,4 +231,3 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec(
   }
 
 }
-

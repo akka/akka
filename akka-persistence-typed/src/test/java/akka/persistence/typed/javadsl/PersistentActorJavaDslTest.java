@@ -17,14 +17,11 @@ import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
-import akka.persistence.typed.EventAdapter;
-import akka.persistence.typed.ExpectingReply;
-import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.testkit.ErrorFilter;
 import akka.testkit.javadsl.EventFilter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -417,8 +414,19 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
-                  public void onSnapshot(SnapshotMetadata meta, Optional<Throwable> result) {
-                    snapshotProbe.ref().tell(result);
+                  public SignalHandler signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            SnapshotCompleted.class,
+                            (completed) -> {
+                              snapshotProbe.ref().tell(Optional.empty());
+                            })
+                        .onSignal(
+                            SnapshotFailed.class,
+                            (signal) -> {
+                              snapshotProbe.ref().tell(Optional.of(signal.getFailure()));
+                            })
+                        .build();
                   }
                 });
     ActorRef<Command> c = testKit.spawn(snapshoter);
@@ -456,6 +464,30 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
     c.tell(StopThenLog.INSTANCE);
     probe.expectTerminated(c, Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void postStop() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    Behavior<Command> counter =
+        Behaviors.setup(
+            ctx ->
+                new CounterBehavior(new PersistenceId("c5"), ctx) {
+
+                  @Override
+                  public SignalHandler signalHandler() {
+                    return newSignalHandlerBuilder()
+                        .onSignal(
+                            PostStop.instance(),
+                            () -> {
+                              probe.ref().tell("stopped");
+                            })
+                        .build();
+                  }
+                });
+    ActorRef<Command> c = testKit.spawn(counter);
+    c.tell(StopThenLog.INSTANCE);
+    probe.expectMessage("stopped");
   }
 
   @Test
@@ -604,8 +636,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     }
 
     @Override
-    public void onRecoveryCompleted(Object o) {
-      startedProbe.tell("started!");
+    public SignalHandler signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (completed) -> {
+                startedProbe.tell("started!");
+              })
+          .build();
     }
 
     @Override
@@ -636,5 +674,74 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             });
 
     probe.expectTerminated(c);
+  }
+
+  class SequenceNumberBehavior extends EventSourcedBehavior<String, String, String> {
+    private final ActorRef<String> probe;
+    private final ActorContext<String> context;
+
+    public SequenceNumberBehavior(
+        PersistenceId persistenceId, ActorRef<String> probe, ActorContext<String> context) {
+      super(persistenceId);
+      this.probe = probe;
+      this.context = context;
+    }
+
+    @Override
+    public String emptyState() {
+      return "";
+    }
+
+    @Override
+    public CommandHandler<String, String, String> commandHandler() {
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onAnyCommand(
+              (state, cmd) -> {
+                probe.tell(lastSequenceNumber(context) + " onCommand");
+                return Effect()
+                    .persist(cmd)
+                    .thenRun((newState) -> probe.tell(lastSequenceNumber(context) + " thenRun"));
+              });
+    }
+
+    @Override
+    public EventHandler<String, String> eventHandler() {
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .onAnyEvent(
+              (state, event) -> {
+                probe.tell(lastSequenceNumber(context) + " applyEvent");
+                return state + event;
+              });
+    }
+
+    @Override
+    public SignalHandler signalHandler() {
+      return newSignalHandlerBuilder()
+          .onSignal(
+              RecoveryCompleted.class,
+              (completed) -> {
+                probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
+              })
+          .build();
+    }
+  }
+
+  @Test
+  public void accessLastSequenceNumber() {
+    TestProbe<String> probe = testKit.createTestProbe(String.class);
+    ActorRef<String> ref =
+        testKit.spawn(
+            Behaviors.<String>setup(
+                context ->
+                    new SequenceNumberBehavior(
+                        new PersistenceId("seqnr1"), probe.getRef(), context)));
+
+    probe.expectMessage("0 onRecoveryCompleted");
+    ref.tell("cmd");
+    probe.expectMessage("0 onCommand");
+    probe.expectMessage("0 applyEvent");
+    probe.expectMessage("1 thenRun");
   }
 }

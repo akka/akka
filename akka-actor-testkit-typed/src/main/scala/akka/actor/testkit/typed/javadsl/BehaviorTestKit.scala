@@ -19,8 +19,9 @@ object BehaviorTestKit {
    */
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
   }
+
   /**
    * JAVA API
    */
@@ -39,6 +40,7 @@ object BehaviorTestKit {
  */
 @DoNotInherit
 abstract class BehaviorTestKit[T] {
+
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't

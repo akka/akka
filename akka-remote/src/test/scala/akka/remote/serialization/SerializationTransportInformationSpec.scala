@@ -29,10 +29,10 @@ object SerializationTransportInformationSpec {
   class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
-      case _: TestMessage ⇒ "A"
+      case _: TestMessage => "A"
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case TestMessage(from, to) ⇒
+      case TestMessage(from, to) =>
         verifyTransportInfo()
         val fromStr = Serialization.serializedActorPath(from)
         val toStr = Serialization.serializedActorPath(to)
@@ -41,7 +41,7 @@ object SerializationTransportInformationSpec {
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
       verifyTransportInfo()
       manifest match {
-        case "A" ⇒
+        case "A" =>
           val parts = new String(bytes, StandardCharsets.UTF_8).split(',')
           val fromStr = parts(0)
           val toStr = parts(1)
@@ -53,12 +53,11 @@ object SerializationTransportInformationSpec {
 
     private def verifyTransportInfo(): Unit = {
       Serialization.currentTransportInformation.value match {
-        case null ⇒
+        case null =>
           throw new IllegalStateException("currentTransportInformation was not set")
-        case t ⇒
+        case t =>
           if (t.system ne system)
-            throw new IllegalStateException(
-              s"wrong system in currentTransportInformation, ${t.system} != $system")
+            throw new IllegalStateException(s"wrong system in currentTransportInformation, ${t.system} != $system")
           if (t.address != system.provider.getDefaultAddress)
             throw new IllegalStateException(
               s"wrong address in currentTransportInformation, ${t.address} != ${system.provider.getDefaultAddress}")
@@ -67,9 +66,11 @@ object SerializationTransportInformationSpec {
   }
 }
 
-abstract class AbstractSerializationTransportInformationSpec(config: Config) extends AkkaSpec(
-  config.withFallback(ConfigFactory.parseString(
-    """
+abstract class AbstractSerializationTransportInformationSpec(config: Config)
+    extends AkkaSpec(
+      config.withFallback(
+        ConfigFactory.parseString(
+          """
     akka {
       loglevel = info
       actor {
@@ -85,7 +86,8 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config) ext
         }
       }
     }
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import SerializationTransportInformationSpec._
 
@@ -127,7 +129,8 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config) ext
   }
 }
 
-class SerializationTransportInformationSpec extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
+class SerializationTransportInformationSpec
+    extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
   akka.remote.netty.tcp {
     hostname = localhost
     port = 0

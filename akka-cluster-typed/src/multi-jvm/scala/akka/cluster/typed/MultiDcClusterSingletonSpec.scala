@@ -18,20 +18,15 @@ object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(
-    ConfigFactory.parseString(
-      """
+  commonConfig(ConfigFactory.parseString("""
         akka.loglevel = DEBUG
-      """).withFallback(
-        MultiNodeClusterSpec.clusterConfig))
+      """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first)(ConfigFactory.parseString(
-    """
+  nodeConfig(first)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
     """))
 
-  nodeConfig(second, third)(ConfigFactory.parseString(
-    """
+  nodeConfig(second, third)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc2"
     """))
 
@@ -42,8 +37,9 @@ class MultiDcClusterSingletonMultiJvmNode1 extends MultiDcClusterSingletonSpec
 class MultiDcClusterSingletonMultiJvmNode2 extends MultiDcClusterSingletonSpec
 class MultiDcClusterSingletonMultiJvmNode3 extends MultiDcClusterSingletonSpec
 
-abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
-  with MultiNodeTypedClusterSpec {
+abstract class MultiDcClusterSingletonSpec
+    extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
+    with MultiNodeTypedClusterSpec {
 
   import MultiDcClusterActors._
   import MultiDcClusterSingletonSpecConfig._
@@ -68,9 +64,7 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     "be able to create and ping singleton in same DC" in {
       runOn(first) {
         val singleton = ClusterSingleton(typedSystem)
-        val pinger = singleton.init(
-          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore)
-        )
+        val pinger = singleton.init(SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore))
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
@@ -85,10 +79,9 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
       runOn(second) {
         val singleton = ClusterSingleton(system.toTyped)
         val pinger = singleton.init(
-          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore).withSettings(
-            ClusterSingletonSettings(typedSystem).withDataCenter("dc1")
-          )
-        )
+          SingletonActor(multiDcPinger, "ping")
+            .withStopMessage(NoMore)
+            .withSettings(ClusterSingletonSettings(typedSystem).withDataCenter("dc1")))
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
@@ -100,9 +93,7 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     "be able to target singleton with the same name in own dc " in {
       runOn(second, third) {
         val singleton = ClusterSingleton(typedSystem)
-        val pinger = singleton.init(
-          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore)
-        )
+        val pinger = singleton.init(SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore))
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc2"))
@@ -112,4 +103,3 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     }
   }
 }
-

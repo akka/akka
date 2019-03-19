@@ -28,7 +28,7 @@ object DistributedPubSubMediatorRouterSpec {
   """
 }
 
-trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with ImplicitSender ⇒
+trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with ImplicitSender =>
   def nonUnwrappingPubSub(mediator: ActorRef, testActor: ActorRef, msg: Any): Unit = {
 
     val path = testActor.path.toStringWithoutAddress
@@ -90,25 +90,29 @@ trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with
 }
 
 class DistributedPubSubMediatorWithRandomRouterSpec
-  extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("random"))
-  with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
+    extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("random"))
+    with DistributedPubSubMediatorRouterSpec
+    with DefaultTimeout
+    with ImplicitSender {
 
   val mediator = DistributedPubSub(system).mediator
 
   "DistributedPubSubMediator when sending wrapped message" must {
     val msg = WrappedMessage("hello")
-    behave like nonUnwrappingPubSub(mediator, testActor, msg)
+    behave.like(nonUnwrappingPubSub(mediator, testActor, msg))
   }
 
   "DistributedPubSubMediator when sending unwrapped message" must {
     val msg = UnwrappedMessage("hello")
-    behave like nonUnwrappingPubSub(mediator, testActor, msg)
+    behave.like(nonUnwrappingPubSub(mediator, testActor, msg))
   }
 }
 
 class DistributedPubSubMediatorWithHashRouterSpec
-  extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("consistent-hashing"))
-  with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
+    extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("consistent-hashing"))
+    with DistributedPubSubMediatorRouterSpec
+    with DefaultTimeout
+    with ImplicitSender {
 
   "DistributedPubSubMediator with Consistent Hash router" must {
     "not be allowed" when {
@@ -119,8 +123,10 @@ class DistributedPubSubMediatorWithHashRouterSpec
       }
       "constructed by settings" in {
         intercept[IllegalArgumentException] {
-          val config = ConfigFactory.parseString(DistributedPubSubMediatorRouterSpec.config("random"))
-            .withFallback(system.settings.config).getConfig("akka.cluster.pub-sub")
+          val config = ConfigFactory
+            .parseString(DistributedPubSubMediatorRouterSpec.config("random"))
+            .withFallback(system.settings.config)
+            .getConfig("akka.cluster.pub-sub")
           DistributedPubSubSettings(config).withRoutingLogic(ConsistentHashingRoutingLogic(system))
         }
       }

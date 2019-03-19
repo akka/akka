@@ -9,6 +9,7 @@ import com.typesafe.sbt.osgi.SbtOsgi._
 import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
+import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin
 
 object OSGi {
 
@@ -16,7 +17,15 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    Compile / packageBin := OsgiKeys.bundle.value,
+    Compile / packageBin := {
+      val bundle = OsgiKeys.bundle.value
+      // This normally happens automatically when loading the
+      // sbt-reproducible-builds plugin, but because we replace
+      // `packageBin` wholesale here we need to invoke the post-processing
+      // manually. See also
+      // https://github.com/raboof/sbt-reproducible-builds#sbt-osgi
+      ReproducibleBuildsPlugin.postProcessJar(bundle)
+    },
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
@@ -73,7 +82,7 @@ object OSGi {
         "akka.http.$DSL$.coding.*",
         "akka.http.$DSL$.common.*",
         "akka.http.$DSL$.marshalling.*",
-        "akka.http.$DSL$.unmarshalling.*") flatMap { p ⇒
+        "akka.http.$DSL$.unmarshalling.*") flatMap { p =>
           Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
         },
     imports = Seq(

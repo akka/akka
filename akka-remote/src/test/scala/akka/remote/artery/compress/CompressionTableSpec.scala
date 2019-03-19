@@ -10,14 +10,14 @@ class CompressionTableSpec extends AkkaSpec {
 
   "CompressionTable" must {
     "should invert" in {
-      val decomp = CompressionTable(17L, 1, Map("0" → 0, "1" → 1, "2" → 2, "3" → 3)).invert
+      val decomp = CompressionTable(17L, 1, Map("0" -> 0, "1" -> 1, "2" -> 2, "3" -> 3)).invert
       decomp.table should ===(Array("0", "1", "2", "3"))
       decomp.originUid should ===(17L)
       decomp.version should ===(1.toByte)
     }
 
     "enforce to start allocating from 0th index" in {
-      val compressionTable = CompressionTable(17L, 1, Map("1" → 1, "3" → 3)) // missing 0 is a gap too
+      val compressionTable = CompressionTable(17L, 1, Map("1" -> 1, "3" -> 3)) // missing 0 is a gap too
 
       val ex = intercept[IllegalArgumentException] {
         compressionTable.invert
@@ -26,7 +26,7 @@ class CompressionTableSpec extends AkkaSpec {
     }
 
     "should not allow having gaps in compression ids (inversion would fail)" in {
-      val compressionTable = CompressionTable(17L, 1, Map("0" → 0, "1" → 1, "3" → 3)) // missing 0 is a gap too
+      val compressionTable = CompressionTable(17L, 1, Map("0" -> 0, "1" -> 1, "3" -> 3)) // missing 0 is a gap too
 
       val ex = intercept[IllegalArgumentException] {
         compressionTable.invert

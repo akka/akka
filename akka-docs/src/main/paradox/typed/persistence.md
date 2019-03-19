@@ -3,6 +3,7 @@
 @@@ index
 
 * [Persistence - coding style](persistence-style.md)
+* [Persistence - snapshotting](persistence-snapshot.md)
 
 @@@
 
@@ -81,11 +82,14 @@ are executed sequentially after successful execution of the persist statement (o
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
 
-The event handler returns the new state, which must be immutable so you return a new instance of the state.
+The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
+You may choose to use a mutable class for the state, and then the event handler may update the state instance and
+return the same instance. Both immutable and mutable state is supported.
+
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-It is not recommended to perform side effects
-in the event handler, as those are also executed during recovery of an persistent actor
+The event handler should only update the state and never perform side effects, as those would also be
+executed during recovery of the persistent actor.
 
 ### Completing the example
 
@@ -140,7 +144,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
 
-The `EventSourcedBehavior` can then be run as with any plain typed actor as described in [actors documentation](actors-typed.md),
+The `EventSourcedBehavior` can then be run as with any plain typed actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -332,7 +336,7 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
+so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -340,8 +344,9 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
-and doesn't return anything.
+The `RecoveryCompleted` contains the current `State`.
+
+@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
 
 ## Tagging
 

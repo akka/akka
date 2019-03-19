@@ -9,6 +9,7 @@ import akka.cluster.ddata.ORMap._
 import akka.cluster.{ Cluster, UniqueAddress }
 
 object ORMultiMap {
+
   /**
    * INTERNAL API
    */
@@ -26,7 +27,9 @@ object ORMultiMap {
   }
 
   val _empty: ORMultiMap[Any, Any] = new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapTag), false)
-  val _emptyWithValueDeltas: ORMultiMap[Any, Any] = new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapWithValueDeltasTag), true)
+  val _emptyWithValueDeltas: ORMultiMap[Any, Any] =
+    new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapWithValueDeltasTag), true)
+
   /**
    * Provides an empty multimap.
    */
@@ -48,8 +51,8 @@ object ORMultiMap {
    * Extract the [[ORMultiMap#entries]] of an `ORMultiMap`.
    */
   def unapply[A, B <: ReplicatedData](value: Any): Option[Map[A, Set[B]]] = value match {
-    case m: ORMultiMap[A, B] @unchecked ⇒ Some(m.entries)
-    case _                              ⇒ None
+    case m: ORMultiMap[A, B] @unchecked => Some(m.entries)
+    case _                              => None
   }
 }
 
@@ -63,9 +66,11 @@ object ORMultiMap {
  */
 @SerialVersionUID(1L)
 final class ORMultiMap[A, B] private[akka] (
-  private[akka] val underlying:      ORMap[A, ORSet[B]],
-  private[akka] val withValueDeltas: Boolean)
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+    private[akka] val underlying: ORMap[A, ORSet[B]],
+    private[akka] val withValueDeltas: Boolean)
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
 
   override type T = ORMultiMap[A, B]
   override type D = ORMap.DeltaOp
@@ -75,8 +80,12 @@ final class ORMultiMap[A, B] private[akka] (
       if (withValueDeltas) {
         val newUnderlying = underlying.mergeRetainingDeletedValues(that.underlying)
         // Garbage collect the tombstones we no longer need, i.e. those that have Set() as a value.
-        val newValues = newUnderlying.values.filterNot { case (key, value) ⇒ !newUnderlying.keys.contains(key) && value.isEmpty }
-        new ORMultiMap[A, B](new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta), withValueDeltas)
+        val newValues = newUnderlying.values.filterNot {
+          case (key, value) => !newUnderlying.keys.contains(key) && value.isEmpty
+        }
+        new ORMultiMap[A, B](
+          new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta),
+          withValueDeltas)
       } else
         new ORMultiMap(underlying.merge(that.underlying), withValueDeltas)
     } else throw new IllegalArgumentException("Trying to merge two ORMultiMaps of different map sub-type")
@@ -84,10 +93,10 @@ final class ORMultiMap[A, B] private[akka] (
   /**
    * Scala API: All entries of a multimap where keys are strings and values are sets.
    */
-  def entries: Map[A, Set[B]] = if (withValueDeltas)
-    underlying.entries.collect { case (k, v) if underlying.keys.elements.contains(k) ⇒ k → v.elements }
-  else
-    underlying.entries.map { case (k, v) ⇒ k → v.elements }
+  def entries: Map[A, Set[B]] =
+    if (withValueDeltas)
+      underlying.entries.collect { case (k, v) if underlying.keys.elements.contains(k) => k -> v.elements } else
+      underlying.entries.map { case (k, v)                                             => k -> v.elements }
 
   /**
    * Java API: All entries of a multimap where keys are strings and values are sets.
@@ -96,9 +105,10 @@ final class ORMultiMap[A, B] private[akka] (
     import scala.collection.JavaConverters._
     val result = new java.util.HashMap[A, java.util.Set[B]]
     if (withValueDeltas)
-      underlying.entries.foreach { case (k, v) ⇒ if (underlying.keys.elements.contains(k)) result.put(k, v.elements.asJava) }
-    else
-      underlying.entries.foreach { case (k, v) ⇒ result.put(k, v.elements.asJava) }
+      underlying.entries.foreach {
+        case (k, v) => if (underlying.keys.elements.contains(k)) result.put(k, v.elements.asJava)
+      } else
+      underlying.entries.foreach { case (k, v) => result.put(k, v.elements.asJava) }
     result
   }
 
@@ -115,7 +125,7 @@ final class ORMultiMap[A, B] private[akka] (
    * Scala API: Get the set associated with the key if there is one,
    * else return the given default.
    */
-  def getOrElse(key: A, default: ⇒ Set[B]): Set[B] =
+  def getOrElse(key: A, default: => Set[B]): Set[B] =
     get(key).getOrElse(default)
 
   def contains(key: A): Boolean = underlying.keys.elements.contains(key)
@@ -170,8 +180,10 @@ final class ORMultiMap[A, B] private[akka] (
    * INTERNAL API
    */
   @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] = {
-    val newUnderlying = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas) { existing ⇒
-      value.foldLeft(existing.clear(node)) { (s, element) ⇒ s.add(node, element) }
+    val newUnderlying = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas) { existing =>
+      value.foldLeft(existing.clear()) { (s, element) =>
+        s.add(node, element)
+      }
     }
     new ORMultiMap(newUnderlying, withValueDeltas)
   }
@@ -203,7 +215,9 @@ final class ORMultiMap[A, B] private[akka] (
    */
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMultiMap[A, B] = {
     if (withValueDeltas) {
-      val u = underlying.updated(node, key, ORSet.empty[B], valueDeltas = true) { existing ⇒ existing.clear(node) }
+      val u = underlying.updated(node, key, ORSet.empty[B], valueDeltas = true) { existing =>
+        existing.clear()
+      }
       new ORMultiMap(u.removeKey(node, key), withValueDeltas)
     } else {
       new ORMultiMap(underlying.remove(node, key), withValueDeltas)
@@ -232,7 +246,8 @@ final class ORMultiMap[A, B] private[akka] (
    * INTERNAL API
    */
   @InternalApi private[akka] def addBinding(node: UniqueAddress, key: A, element: B): ORMultiMap[A, B] = {
-    val newUnderlying = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas)(_.add(node, element))
+    val newUnderlying =
+      underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas)(_.add(node, element))
     new ORMultiMap(newUnderlying, withValueDeltas)
   }
 
@@ -263,12 +278,12 @@ final class ORMultiMap[A, B] private[akka] (
     val newUnderlying = {
       val u = underlying.updated(node, key, ORSet.empty[B], valueDeltas = withValueDeltas)(_.remove(node, element))
       u.get(key) match {
-        case Some(s) if s.isEmpty ⇒
+        case Some(s) if s.isEmpty =>
           if (withValueDeltas)
             u.removeKey(node, key)
           else
             u.remove(node, key)
-        case _ ⇒ u
+        case _ => u
       }
     }
     new ORMultiMap(newUnderlying, withValueDeltas)
@@ -292,7 +307,11 @@ final class ORMultiMap[A, B] private[akka] (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def replaceBinding(node: UniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
+  @InternalApi private[akka] def replaceBinding(
+      node: UniqueAddress,
+      key: A,
+      oldElement: B,
+      newElement: B): ORMultiMap[A, B] =
     if (newElement != oldElement)
       addBinding(node, key, newElement).removeBinding(node, key, oldElement)
     else
@@ -307,8 +326,12 @@ final class ORMultiMap[A, B] private[akka] (
     if (withValueDeltas) {
       val newUnderlying = underlying.mergeDeltaRetainingDeletedValues(thatDelta)
       // Garbage collect the tombstones we no longer need, i.e. those that have Set() as a value.
-      val newValues = newUnderlying.values.filterNot { case (key, value) ⇒ !newUnderlying.keys.contains(key) && value.isEmpty }
-      new ORMultiMap[A, B](new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta), withValueDeltas)
+      val newValues = newUnderlying.values.filterNot {
+        case (key, value) => !newUnderlying.keys.contains(key) && value.isEmpty
+      }
+      new ORMultiMap[A, B](
+        new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta),
+        withValueDeltas)
     } else
       new ORMultiMap(underlying.mergeDelta(thatDelta), withValueDeltas)
 
@@ -329,8 +352,8 @@ final class ORMultiMap[A, B] private[akka] (
   override def toString: String = s"ORMulti$entries"
 
   override def equals(o: Any): Boolean = o match {
-    case other: ORMultiMap[_, _] ⇒ underlying == other.underlying
-    case _                       ⇒ false
+    case other: ORMultiMap[_, _] => underlying == other.underlying
+    case _                       => false
   }
 
   override def hashCode: Int = underlying.hashCode

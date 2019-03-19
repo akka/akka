@@ -107,10 +107,10 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "foldAsync",
       "newOnCompleteStage"
     ),
-    "ActorSink" → Seq(
+    "ActorSink" -> Seq(
       "actorRefWithAck"
     ),
-    "ActorSource" → Seq(
+    "ActorSource" -> Seq(
       "actorRef"
     )
   )
@@ -125,7 +125,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
   def isPending(element: String, opName: String) =
     pendingTestCases.get(element).exists(_.contains(opName))
 
-  def generateAlphabeticalIndex(dir: SettingKey[File], locate: File ⇒ File) = Def.task[Seq[File]] {
+  def generateAlphabeticalIndex(dir: SettingKey[File], locate: File => File) = Def.task[Seq[File]] {
     val file = locate(dir.value)
 
     val defs =
@@ -160,16 +160,16 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSink.scala",
-      ).flatMap{ f ⇒
+      ).flatMap{ f =>
         val slashesNr = f.count(_ == '/')
         val element = f.split("/")(slashesNr).split("\\.")(0)
         IO.read(new File(f)).split("\n")
           .map(_.trim).filter(_.startsWith("def "))
-          .map(_.drop(4).takeWhile(c ⇒ c != '[' && c != '(' && c != ':'))
+          .map(_.drop(4).takeWhile(c => c != '[' && c != '(' && c != ':'))
           .filter(op => !isPending(element, op))
           .filter(op => !ignore.contains(op))
           .map(_.replaceAll("Mat$", ""))
-          .map(method ⇒ (element, method))
+          .map(method => (element, method))
       }
 
     val sourceAndFlow = defs.collect { case ("Source", method) => method } intersect defs.collect { case ("Flow", method) => method }
@@ -233,7 +233,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     require(categoryLinkId  == categoryId(categoryName), s"category id $categoryLinkId in $file")
     (description, categoryName)
   } catch {
-    case NonFatal(ex) ⇒
+    case NonFatal(ex) =>
       throw new RuntimeException(s"Unable to extract details from $file", ex)
   }
 

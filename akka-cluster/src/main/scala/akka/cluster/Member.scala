@@ -19,12 +19,14 @@ import scala.runtime.AbstractFunction2
  */
 @SerialVersionUID(1L)
 class Member private[cluster] (
-  val uniqueAddress:             UniqueAddress,
-  private[cluster] val upNumber: Int, // INTERNAL API
-  val status:                    MemberStatus,
-  val roles:                     Set[String]) extends Serializable {
+    val uniqueAddress: UniqueAddress,
+    private[cluster] val upNumber: Int, // INTERNAL API
+    val status: MemberStatus,
+    val roles: Set[String])
+    extends Serializable {
 
-  lazy val dataCenter: DataCenter = roles.find(_.startsWith(ClusterSettings.DcRolePrefix))
+  lazy val dataCenter: DataCenter = roles
+    .find(_.startsWith(ClusterSettings.DcRolePrefix))
     .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
     .substring(ClusterSettings.DcRolePrefix.length)
 
@@ -32,8 +34,8 @@ class Member private[cluster] (
 
   override def hashCode = uniqueAddress.##
   override def equals(other: Any) = other match {
-    case m: Member ⇒ uniqueAddress == m.uniqueAddress
-    case _         ⇒ false
+    case m: Member => uniqueAddress == m.uniqueAddress
+    case _         => false
   }
   override def toString =
     if (dataCenter == ClusterSettings.DefaultDataCenter)
@@ -66,7 +68,7 @@ class Member private[cluster] (
     if (dataCenter != other.dataCenter)
       throw new IllegalArgumentException(
         "Comparing members of different data centers with isOlderThan is not allowed. " +
-          s"[$this] vs. [$other]")
+        s"[$this] vs. [$other]")
     if (upNumber == other.upNumber)
       Member.addressOrdering.compare(address, other.address) < 0
     else
@@ -77,9 +79,7 @@ class Member private[cluster] (
     val oldStatus = this.status
     if (status == oldStatus) this
     else {
-      require(
-        allowedTransitions(oldStatus)(status),
-        s"Invalid member status transition [ ${this} -> ${status}]")
+      require(allowedTransitions(oldStatus)(status), s"Invalid member status transition [ ${this} -> ${status}]")
       new Member(uniqueAddress, upNumber, status, roles)
     }
   }
@@ -112,7 +112,7 @@ object Member {
   /**
    * `Address` ordering type class, sorts addresses by host and port.
    */
-  implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
+  implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) =>
     // cluster node identifier is the host and port of the address; protocol and system is assumed to be the same
     if (a eq b) false
     else if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
@@ -125,18 +125,18 @@ object Member {
    * Orders the members by their address except that members with status
    * Joining, Exiting and Down are ordered last (in that order).
    */
-  private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
+  private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) =>
     (a.status, b.status) match {
-      case (as, bs) if as == bs ⇒ ordering.compare(a, b) <= 0
-      case (Down, _)            ⇒ false
-      case (_, Down)            ⇒ true
-      case (Exiting, _)         ⇒ false
-      case (_, Exiting)         ⇒ true
-      case (Joining, _)         ⇒ false
-      case (_, Joining)         ⇒ true
-      case (WeaklyUp, _)        ⇒ false
-      case (_, WeaklyUp)        ⇒ true
-      case _                    ⇒ ordering.compare(a, b) <= 0
+      case (as, bs) if as == bs => ordering.compare(a, b) <= 0
+      case (Down, _)            => false
+      case (_, Down)            => true
+      case (Exiting, _)         => false
+      case (_, Exiting)         => true
+      case (Joining, _)         => false
+      case (_, Joining)         => true
+      case (WeaklyUp, _)        => false
+      case (_, WeaklyUp)        => true
+      case _                    => ordering.compare(a, b) <= 0
     }
   }
 
@@ -145,7 +145,7 @@ object Member {
    */
   implicit val ordering: Ordering[Member] = new Ordering[Member] {
     def compare(a: Member, b: Member): Int = {
-      a.uniqueAddress compare b.uniqueAddress
+      a.uniqueAddress.compare(b.uniqueAddress)
     }
   }
 
@@ -157,8 +157,8 @@ object Member {
    * data centers it will throw `IllegalArgumentException` if the
    * members belong to different data centers.
    */
-  val ageOrdering: Ordering[Member] = Ordering.fromLessThan[Member] {
-    (a, b) ⇒ a.isOlderThan(b)
+  val ageOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) =>
+    a.isOlderThan(b)
   }
 
   @deprecated("Was accidentally made a public API, internal", since = "2.5.4")
@@ -169,16 +169,20 @@ object Member {
    * INTERNAL API.
    */
   @InternalApi
-  private[akka] def pickHighestPriority(a: Set[Member], b: Set[Member], tombstones: Map[UniqueAddress, Long]): Set[Member] = {
+  private[akka] def pickHighestPriority(
+      a: Set[Member],
+      b: Set[Member],
+      tombstones: Map[UniqueAddress, Long]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
     groupedByAddress.foldLeft(Member.none) {
-      case (acc, (_, members)) ⇒
+      case (acc, (_, members)) =>
         if (members.size == 2) acc + members.reduceLeft(highestPriorityOf)
         else {
           val m = members.head
-          if (tombstones.contains(m.uniqueAddress) || MembershipState.removeUnreachableWithMemberStatus(m.status)) acc // removed
+          if (tombstones.contains(m.uniqueAddress) || MembershipState.removeUnreachableWithMemberStatus(m.status))
+            acc // removed
           else acc + m
         }
     }
@@ -191,21 +195,22 @@ object Member {
     if (m1.status == m2.status)
       // preserve the oldest in case of different upNumber
       if (m1.isOlderThan(m2)) m1 else m2
-    else (m1.status, m2.status) match {
-      case (Removed, _)  ⇒ m1
-      case (_, Removed)  ⇒ m2
-      case (Down, _)     ⇒ m1
-      case (_, Down)     ⇒ m2
-      case (Exiting, _)  ⇒ m1
-      case (_, Exiting)  ⇒ m2
-      case (Leaving, _)  ⇒ m1
-      case (_, Leaving)  ⇒ m2
-      case (Joining, _)  ⇒ m2
-      case (_, Joining)  ⇒ m1
-      case (WeaklyUp, _) ⇒ m2
-      case (_, WeaklyUp) ⇒ m1
-      case (Up, Up)      ⇒ m1
-    }
+    else
+      (m1.status, m2.status) match {
+        case (Removed, _)  => m1
+        case (_, Removed)  => m2
+        case (Down, _)     => m1
+        case (_, Down)     => m2
+        case (Exiting, _)  => m1
+        case (_, Exiting)  => m2
+        case (Leaving, _)  => m1
+        case (_, Leaving)  => m2
+        case (Joining, _)  => m2
+        case (_, Joining)  => m1
+        case (WeaklyUp, _) => m2
+        case (_, WeaklyUp) => m1
+        case (Up, Up)      => m1
+      }
   }
 
 }
@@ -266,13 +271,13 @@ object MemberStatus {
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
-      Joining → Set(WeaklyUp, Up, Leaving, Down, Removed),
-      WeaklyUp → Set(Up, Leaving, Down, Removed),
-      Up → Set(Leaving, Down, Removed),
-      Leaving → Set(Exiting, Down, Removed),
-      Down → Set(Removed),
-      Exiting → Set(Removed, Down),
-      Removed → Set.empty[MemberStatus])
+      Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),
+      WeaklyUp -> Set(Up, Leaving, Down, Removed),
+      Up -> Set(Leaving, Down, Removed),
+      Leaving -> Set(Exiting, Down, Removed),
+      Down -> Set(Removed),
+      Exiting -> Set(Removed, Down),
+      Removed -> Set.empty[MemberStatus])
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
@@ -312,6 +317,6 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
+  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

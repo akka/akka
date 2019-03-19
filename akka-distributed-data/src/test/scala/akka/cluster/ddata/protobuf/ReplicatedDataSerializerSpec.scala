@@ -26,9 +26,11 @@ import akka.actor.RootActorPath
 import akka.cluster.Cluster
 import akka.testkit.TestActors
 
-class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
-  "ReplicatedDataSerializerSpec",
-  ConfigFactory.parseString("""
+class ReplicatedDataSerializerSpec
+    extends TestKit(
+      ActorSystem(
+        "ReplicatedDataSerializerSpec",
+        ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
@@ -37,7 +39,10 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       serialize-messages = off
       allow-java-serialization = off
     }
-    """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
+    """)))
+    with WordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
   val serializer = new ReplicatedDataSerializer(system.asInstanceOf[ExtendedActorSystem])
 
@@ -120,7 +125,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       // ORSet with ActorRef
       checkSerialization(ORSet().add(address1, ref1))
       checkSerialization(ORSet().add(address1, ref1).add(address1, ref2))
-      checkSerialization(ORSet().add(address1, ref1).add(address1, "a").add(address2, ref2) add (address2, "b"))
+      checkSerialization(ORSet().add(address1, ref1).add(address1, "a").add(address2, ref2).add(address2, "b"))
 
       val s5 = ORSet().add(address1, "a").add(address2, ref1)
       val s6 = ORSet().add(address2, ref1).add(address1, "a")
@@ -133,11 +138,15 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
         val echo1 = system.actorOf(TestActors.echoActorProps, "echo1")
         system2.actorOf(TestActors.echoActorProps, "echo2")
 
-        system.actorSelection(RootActorPath(Cluster(system2).selfAddress) / "user" / "echo2").tell(
-          Identify("2"), testActor)
+        system
+          .actorSelection(RootActorPath(Cluster(system2).selfAddress) / "user" / "echo2")
+          .tell(Identify("2"), testActor)
         val echo2 = expectMsgType[ActorIdentity].ref.get
 
-        val msg = ORSet.empty[ActorRef].add(Cluster(system), echo1).add(Cluster(system), echo2)
+        val msg = ORSet
+          .empty[ActorRef]
+          .add(Cluster(system).selfUniqueAddress, echo1)
+          .add(Cluster(system).selfUniqueAddress, echo2)
         echo2.tell(msg, testActor)
         val reply = expectMsgType[ORSet[ActorRef]]
         reply.elements should ===(Set(echo1, echo2))
@@ -151,13 +160,13 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORSet().add(address1, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
-      checkSerialization(ORSet().add(address1, "a").resetDelta.clear(address2).delta.get)
-      checkSerialization(ORSet().add(address1, "a").clear(address2).delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.clear().delta.get)
+      checkSerialization(ORSet().add(address1, "a").clear().delta.get)
     }
 
     "serialize large GSet" in {
       val largeSet = (10000 until 20000).foldLeft(GSet.empty[String]) {
-        case (acc, n) ⇒ acc.resetDelta.add(n.toString)
+        case (acc, n) => acc.resetDelta.add(n.toString)
       }
       val numberOfBytes = checkSerialization(largeSet)
       info(s"size of GSet with ${largeSet.size} elements: $numberOfBytes bytes")
@@ -166,11 +175,11 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize large ORSet" in {
       val largeSet = (10000 until 20000).foldLeft(ORSet.empty[String]) {
-        case (acc, n) ⇒
+        case (acc, n) =>
           val address = (n % 3) match {
-            case 0 ⇒ address1
-            case 1 ⇒ address2
-            case 2 ⇒ address3
+            case 0 => address1
+            case 1 => address2
+            case 2 => address3
           }
           acc.resetDelta.add(address, n.toString)
       }
@@ -187,8 +196,9 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize LWWRegister" in {
       checkSerialization(LWWRegister(address1, "value1", LWWRegister.defaultClock[String]))
-      checkSerialization(LWWRegister(address1, "value2", LWWRegister.defaultClock[String])
-        .withValue(address2, "value3", LWWRegister.defaultClock[String]))
+      checkSerialization(
+        LWWRegister(address1, "value2", LWWRegister.defaultClock[String])
+          .withValue(address2, "value3", LWWRegister.defaultClock[String]))
     }
 
     "serialize GCounter" in {
@@ -236,20 +246,29 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMap().put(address1, "a", GSet() + "A").remove(address2, "a").delta.get)
       checkSerialization(ORMap().put(address1, 1, GSet() + "A").delta.get)
       checkSerialization(ORMap().put(address1, 1L, GSet() + "A").delta.get)
-      checkSerialization(ORMap.empty[String, ORSet[String]]
-        .put(address1, "a", ORSet.empty[String].add(address1, "A"))
-        .put(address2, "b", ORSet.empty[String].add(address2, "B"))
-        .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C")).delta.get)
-      checkSerialization(ORMap.empty[String, ORSet[String]]
-        .resetDelta
-        .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C")).delta.get)
+      checkSerialization(
+        ORMap
+          .empty[String, ORSet[String]]
+          .put(address1, "a", ORSet.empty[String].add(address1, "A"))
+          .put(address2, "b", ORSet.empty[String].add(address2, "B"))
+          .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C"))
+          .delta
+          .get)
+      checkSerialization(
+        ORMap
+          .empty[String, ORSet[String]]
+          .resetDelta
+          .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C"))
+          .delta
+          .get)
       // use Flag for this test as object key because it is serializable
       checkSerialization(ORMap().put(address1, Flag(), GSet() + "A").delta.get)
     }
 
     "be compatible with old ORMap serialization" in {
       // Below blob was created with previous version of the serializer
-      val oldBlobAsBase64 = "H4sIAAAAAAAAAOOax8jlyaXMJc8lzMWXX5KRWqSXkV9copdflC7wXEWUiYGBQRaIGQQkuJS45LiEuHiL83NTUdQwwtWIC6kQpUqVKAulGBOlGJOE+LkYE4W4uJi5GB0FuJUYnUACSRABJ7AAAOLO3C3DAAAA"
+      val oldBlobAsBase64 =
+        "H4sIAAAAAAAAAOOax8jlyaXMJc8lzMWXX5KRWqSXkV9copdflC7wXEWUiYGBQRaIGQQkuJS45LiEuHiL83NTUdQwwtWIC6kQpUqVKAulGBOlGJOE+LkYE4W4uJi5GB0FuJUYnUACSRABJ7AAAOLO3C3DAAAA"
       checkCompatibility(oldBlobAsBase64, ORMap())
     }
 
@@ -259,13 +278,16 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(LWWMap().put(address1, 1, "value1", LWWRegister.defaultClock[Any]))
       checkSerialization(LWWMap().put(address1, 1L, "value1", LWWRegister.defaultClock[Any]))
       checkSerialization(LWWMap().put(address1, Flag(), "value1", LWWRegister.defaultClock[Any]))
-      checkSerialization(LWWMap().put(address1, "a", "value1", LWWRegister.defaultClock[Any])
-        .put(address2, "b", 17, LWWRegister.defaultClock[Any]))
+      checkSerialization(
+        LWWMap()
+          .put(address1, "a", "value1", LWWRegister.defaultClock[Any])
+          .put(address2, "b", 17, LWWRegister.defaultClock[Any]))
     }
 
     "be compatible with old LWWMap serialization" in {
       // Below blob was created with previous version of the serializer
-      val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC0kJEqZJiTBSy4AISxhwzrl2fuyRMiIAWKS4utrLEnNJUQwERAD96/peLAAAA"
+      val oldBlobAsBase64 =
+        "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC0kJEqZJiTBSy4AISxhwzrl2fuyRMiIAWKS4utrLEnNJUQwERAD96/peLAAAA"
       checkCompatibility(oldBlobAsBase64, LWWMap())
     }
 
@@ -275,13 +297,14 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(PNCounterMap().increment(address1, 1, 3))
       checkSerialization(PNCounterMap().increment(address1, 1L, 3))
       checkSerialization(PNCounterMap().increment(address1, Flag(), 3))
-      checkSerialization(PNCounterMap().increment(address1, "a", 3).decrement(address2, "a", 2).
-        increment(address2, "b", 5))
+      checkSerialization(
+        PNCounterMap().increment(address1, "a", 3).decrement(address2, "a", 2).increment(address2, "b", 5))
     }
 
     "be compatible with old PNCounterMap serialization" in {
       // Below blob was created with previous version of the serializer
-      val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC8kJEqZJiTBTS4wISmlyqXMqE1AsxMgsxAADYQs/9gQAAAA=="
+      val oldBlobAsBase64 =
+        "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC8kJEqZJiTBTS4wISmlyqXMqE1AsxMgsxAADYQs/9gQAAAA=="
       checkCompatibility(oldBlobAsBase64, PNCounterMap())
     }
 
@@ -291,15 +314,18 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMultiMap().addBinding(address1, 1, "A"))
       checkSerialization(ORMultiMap().addBinding(address1, 1L, "A"))
       checkSerialization(ORMultiMap().addBinding(address1, Flag(), "A"))
-      checkSerialization(ORMultiMap.empty[String, String]
-        .addBinding(address1, "a", "A1")
-        .put(address2, "b", Set("B1", "B2", "B3"))
-        .addBinding(address2, "a", "A2"))
+      checkSerialization(
+        ORMultiMap
+          .empty[String, String]
+          .addBinding(address1, "a", "A1")
+          .put(address2, "b", Set("B1", "B2", "B3"))
+          .addBinding(address2, "a", "A2"))
 
       val m1 = ORMultiMap.empty[String, String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
       val m2 = ORMultiMap.empty[String, String].put(address2, "b", Set("B1", "B2", "B3"))
       checkSameContent(m1.merge(m2), m2.merge(m1))
-      checkSerialization(ORMultiMap.empty[String, String].addBinding(address1, "a", "A1").addBinding(address1, "a", "A2").delta.get)
+      checkSerialization(
+        ORMultiMap.empty[String, String].addBinding(address1, "a", "A1").addBinding(address1, "a", "A2").delta.get)
       val m3 = ORMultiMap.empty[String, String].addBinding(address1, "a", "A1")
       val d3 = m3.resetDelta.addBinding(address1, "a", "A2").addBinding(address1, "a", "A3").delta.get
       checkSerialization(d3)
@@ -307,7 +333,8 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "be compatible with old ORMultiMap serialization" in {
       // Below blob was created with previous version of the serializer
-      val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwCakJEqZJiTBQK4QISxJmqSpSpqlKMjgDlsHjDpwAAAA=="
+      val oldBlobAsBase64 =
+        "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwCakJEqZJiTBQK4QISxJmqSpSpqlKMjgDlsHjDpwAAAA=="
       checkCompatibility(oldBlobAsBase64, ORMultiMap())
     }
 
@@ -317,13 +344,17 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1L, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, Flag(), "A"))
-      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A").remove(address1, "a").delta.get)
-      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String]
-        .addBinding(address1, "a", "A1")
-        .put(address2, "b", Set("B1", "B2", "B3"))
-        .addBinding(address2, "a", "A2"))
+      checkSerialization(
+        ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A").remove(address1, "a").delta.get)
+      checkSerialization(
+        ORMultiMap
+          .emptyWithValueDeltas[String, String]
+          .addBinding(address1, "a", "A1")
+          .put(address2, "b", Set("B1", "B2", "B3"))
+          .addBinding(address2, "a", "A2"))
 
-      val m1 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
+      val m1 =
+        ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
       val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(address2, "b", Set("B1", "B2", "B3"))
       checkSameContent(m1.merge(m2), m2.merge(m1))
     }
@@ -344,4 +375,3 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
   }
 }
-

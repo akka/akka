@@ -34,7 +34,8 @@ private[akka] object Inbox {
   private final case class Get(deadline: Deadline, client: ActorRef = null) extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
-  private final case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
+  private final case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null)
+      extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
   private final case class StartWatch(target: ActorRef)
@@ -42,11 +43,11 @@ private[akka] object Inbox {
 
 }
 
-trait Inbox { this: ActorDSL.type ⇒
+trait Inbox { this: ActorDSL.type =>
 
   import Inbox._
 
-  protected trait InboxExtension { this: Extension ⇒
+  protected trait InboxExtension { this: Extension =>
     val DSLInboxQueueSize = config.getInt("inbox-size")
 
     val inboxNr = new AtomicInteger
@@ -56,7 +57,7 @@ trait Inbox { this: ActorDSL.type ⇒
   }
 
   private implicit val deadlineOrder: Ordering[Query] = new Ordering[Query] {
-    def compare(left: Query, right: Query): Int = left.deadline.time compare right.deadline.time
+    def compare(left: Query, right: Query): Int = left.deadline.time.compare(right.deadline.time)
   }
 
   private class InboxActor(size: Int) extends Actor with ActorLogging {
@@ -66,86 +67,88 @@ trait Inbox { this: ActorDSL.type ⇒
     var printedWarning = false
 
     def enqueueQuery(q: Query): Unit = {
-      val query = q withClient sender()
-      clients enqueue query
+      val query = q.withClient(sender())
+      clients.enqueue(query)
       clientsByTimeout += query
     }
 
     def enqueueMessage(msg: Any): Unit = {
-      if (messages.size < size) messages enqueue msg
+      if (messages.size < size) messages.enqueue(msg)
       else {
         if (!printedWarning) {
-          log.warning("dropping message: either your program is buggy or you might want to increase akka.actor.dsl.inbox-size, current value is " + size)
+          log.warning(
+            "dropping message: either your program is buggy or you might want to increase akka.actor.dsl.inbox-size, current value is " + size)
           printedWarning = true
         }
       }
     }
 
     var currentMsg: Any = _
-    val clientPredicate: (Query) ⇒ Boolean = {
-      case _: Get          ⇒ true
-      case Select(_, p, _) ⇒ p isDefinedAt currentMsg
-      case _               ⇒ false
+    val clientPredicate: (Query) => Boolean = {
+      case _: Get          => true
+      case Select(_, p, _) => p.isDefinedAt(currentMsg)
+      case _               => false
     }
 
     var currentSelect: Select = _
-    val messagePredicate: (Any ⇒ Boolean) = (msg) ⇒ currentSelect.predicate.isDefinedAt(msg)
+    val messagePredicate: (Any => Boolean) = (msg) => currentSelect.predicate.isDefinedAt(msg)
 
     var currentDeadline: Option[(Deadline, Cancellable)] = None
 
-    def receive = ({
-      case g: Get ⇒
-        if (messages.isEmpty) enqueueQuery(g)
-        else sender() ! messages.dequeue()
-      case s: Select ⇒
-        if (messages.isEmpty) enqueueQuery(s)
-        else {
-          currentSelect = s
-          messages.dequeueFirst(messagePredicate) match {
-            case Some(msg) ⇒ sender() ! msg
-            case None      ⇒ enqueueQuery(s)
+    def receive =
+      ({
+        case g: Get =>
+          if (messages.isEmpty) enqueueQuery(g)
+          else sender() ! messages.dequeue()
+        case s: Select =>
+          if (messages.isEmpty) enqueueQuery(s)
+          else {
+            currentSelect = s
+            messages.dequeueFirst(messagePredicate) match {
+              case Some(msg) => sender() ! msg
+              case None      => enqueueQuery(s)
+            }
+            currentSelect = null
           }
-          currentSelect = null
-        }
-      case StartWatch(target) ⇒ context watch target
-      case Kick ⇒
-        val now = Deadline.now
-        val pred = (q: Query) ⇒ q.deadline.time < now.time
-        val overdue = clientsByTimeout.iterator.takeWhile(pred)
-        while (overdue.hasNext) {
-          val toKick = overdue.next()
-          toKick.client ! Status.Failure(new TimeoutException("deadline passed"))
-        }
-        clients = clients.filterNot(pred)
-        clientsByTimeout = clientsByTimeout.from(Get(now))
-      case msg ⇒
-        if (clients.isEmpty) enqueueMessage(msg)
-        else {
-          currentMsg = msg
-          clients.dequeueFirst(clientPredicate) match {
-            case Some(q) ⇒ { clientsByTimeout -= q; q.client ! msg }
-            case None    ⇒ enqueueMessage(msg)
+        case StartWatch(target) => context.watch(target)
+        case Kick =>
+          val now = Deadline.now
+          val pred = (q: Query) => q.deadline.time < now.time
+          val overdue = clientsByTimeout.iterator.takeWhile(pred)
+          while (overdue.hasNext) {
+            val toKick = overdue.next()
+            toKick.client ! Status.Failure(new TimeoutException("deadline passed"))
           }
-          currentMsg = null
-        }
-    }: Receive) andThen { _ ⇒
-      if (clients.isEmpty) {
-        if (currentDeadline.isDefined) {
-          currentDeadline.get._2.cancel()
-          currentDeadline = None
-        }
-      } else {
-        val next = clientsByTimeout.head.deadline
-        import context.dispatcher
-        if (currentDeadline.isEmpty) {
-          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
+          clients = clients.filterNot(pred)
+          clientsByTimeout = clientsByTimeout.from(Get(now))
+        case msg =>
+          if (clients.isEmpty) enqueueMessage(msg)
+          else {
+            currentMsg = msg
+            clients.dequeueFirst(clientPredicate) match {
+              case Some(q) => { clientsByTimeout -= q; q.client ! msg }
+              case None    => enqueueMessage(msg)
+            }
+            currentMsg = null
+          }
+      }: Receive).andThen { _ =>
+        if (clients.isEmpty) {
+          if (currentDeadline.isDefined) {
+            currentDeadline.get._2.cancel()
+            currentDeadline = None
+          }
         } else {
-          // must not rely on the Scheduler to not fire early (for robustness)
-          currentDeadline.get._2.cancel()
-          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
+          val next = clientsByTimeout.head.deadline
+          import context.dispatcher
+          if (currentDeadline.isEmpty) {
+            currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
+          } else {
+            // must not rely on the Scheduler to not fire early (for robustness)
+            currentDeadline.get._2.cancel()
+            currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
+          }
         }
       }
-    }
   }
 
   /*

@@ -9,9 +9,13 @@ import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
+import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.RetentionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.SignalHandler;
+
 import java.time.Duration;
 
 import java.util.ArrayList;
@@ -194,9 +198,16 @@ public class BasicPersistentBehaviorTest {
       }
 
       // #recovery
+
       @Override
-      public void onRecoveryCompleted(State state) {
-        throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                RecoveryCompleted.class,
+                (completed) -> {
+                  throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
+                })
+            .build();
       }
       // #recovery
 
@@ -227,6 +238,54 @@ public class BasicPersistentBehaviorTest {
               };
             });
     // #wrapPersistentBehavior
+
+    public static class BookingCompleted implements Event {}
+
+    public static class Snapshotting extends EventSourcedBehavior<Command, Event, State> {
+      public Snapshotting(PersistenceId persistenceId) {
+        super(persistenceId);
+      }
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      @Override
+      public CommandHandler<Command, Event, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      @Override
+      public EventHandler<State, Event> eventHandler() {
+        return (state, event) -> {
+          throw new RuntimeException("TODO: process the event return the next state");
+        };
+      }
+
+      // #snapshottingEveryN
+      @Override // override snapshotEvery in EventSourcedBehavior
+      public long snapshotEvery() {
+        return 100;
+      }
+      // #snapshottingEveryN
+
+      // #snapshottingPredicate
+      @Override // override shouldSnapshot in EventSourcedBehavior
+      public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+        return event instanceof BookingCompleted;
+      }
+      // #snapshottingPredicate
+
+      // #retentionCriteria
+      @Override // override snapshotEvery in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.create(1000, 2);
+      }
+      // #retentionCriteria
+    }
   }
 
   interface WithActorContext {

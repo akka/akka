@@ -34,17 +34,17 @@ object HandshakeShouldDropCompressionTableSpec {
 
 }
 
-class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(HandshakeShouldDropCompressionTableSpec.commonConfig)
-  with ImplicitSender with BeforeAndAfter {
+class HandshakeShouldDropCompressionTableSpec
+    extends ArteryMultiNodeSpec(HandshakeShouldDropCompressionTableSpec.commonConfig)
+    with ImplicitSender
+    with BeforeAndAfter {
 
   implicit val t = Timeout(3.seconds)
   var systemB: ActorSystem = null
   val portB = freePort()
 
   before {
-    systemB = newRemoteSystem(
-      name = Some("systemB"),
-      extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
+    systemB = newRemoteSystem(name = Some("systemB"), extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
   }
 
   "Outgoing compression table" must {
@@ -64,7 +64,9 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       // cause testActor-1 to become a heavy hitter
-      (1 to messagesToExchange).foreach { i ⇒ echoSel ! s"hello-$i" } // does not reply, but a hot receiver should be advertised
+      (1 to messagesToExchange).foreach { i =>
+        echoSel ! s"hello-$i"
+      } // does not reply, but a hot receiver should be advertised
       waitForEcho(this, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
@@ -73,7 +75,9 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
       a0.table.dictionary.keySet should contain(testActor)
 
       // cause a1Probe to become a heavy hitter (we want to not have it in the 2nd compression table later)
-      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", a1Probe.ref) }
+      (1 to messagesToExchange).foreach { i =>
+        echoSel.tell(s"hello-$i", a1Probe.ref)
+      }
       waitForEcho(a1Probe, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
@@ -83,9 +87,8 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
 
       log.info("SHUTTING DOWN system {}...", systemB)
       shutdown(systemB)
-      systemB = newRemoteSystem(
-        name = Some("systemB"),
-        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
+      systemB =
+        newRemoteSystem(name = Some("systemB"), extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       Thread.sleep(1000)
       log.info("SYSTEM READY {}...", systemB)
 
@@ -93,9 +96,11 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
       system.eventStream.subscribe(aNewProbe.ref, classOf[Event])
 
       systemB.actorOf(TestActors.echoActorProps, "echo") // start it again
-      (1 to 5) foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         // since some messages may end up being lost
-        (1 to messagesToExchange).foreach { i ⇒ echoSel ! s"hello-$i" } // does not reply, but a hot receiver should be advertised
+        (1 to messagesToExchange).foreach { i =>
+          echoSel ! s"hello-$i"
+        } // does not reply, but a hot receiver should be advertised
         Thread.sleep(100)
       }
       waitForEcho(this, s"hello-$messagesToExchange", max = 10.seconds)
@@ -106,7 +111,9 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
       a2.table.dictionary.keySet should contain(testActor)
 
       val aNew2Probe = TestProbe()
-      (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
+      (1 to messagesToExchange).foreach { i =>
+        echoSel.tell(s"hello-$i", aNew2Probe.ref)
+      } // does not reply, but a hot receiver should be advertised
       waitForEcho(aNew2Probe, s"hello-$messagesToExchange")
       systemBTransport.triggerCompressionAdvertisements(actorRef = true, manifest = false)
 
@@ -118,8 +125,8 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
 
   def waitForEcho(probe: TestKit, m: String, max: Duration = 3.seconds): Any =
     probe.fishForMessage(max = max, hint = s"waiting for '$m'") {
-      case `m` ⇒ true
-      case x   ⇒ false
+      case `m` => true
+      case x   => false
     }
 
   def identify(_system: String, port: Int, name: String) = {

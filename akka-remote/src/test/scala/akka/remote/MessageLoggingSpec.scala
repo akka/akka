@@ -10,8 +10,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import MessageLoggingSpec._
 
 object MessageLoggingSpec {
-  def config(artery: Boolean) = ConfigFactory.parseString(
-    s"""
+  def config(artery: Boolean) = ConfigFactory.parseString(s"""
      akka.loglevel = info // debug makes this test fail intentionally
      akka.actor.provider = remote
      akka.remote {
@@ -41,7 +40,7 @@ object MessageLoggingSpec {
 
   class BadActor extends Actor {
     override def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! BadMsg("hah")
     }
   }
@@ -70,4 +69,3 @@ abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with 
     TestKit.shutdownActorSystem(remoteSystem)
   }
 }
-

@@ -44,11 +44,11 @@ object RemoveInternalClusterShardingDataSpec {
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int ⇒ (msg.toString, msg)
+    case msg: Int => (msg.toString, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg: Int ⇒ (msg % 10).toString
+    case msg: Int => (msg % 10).toString
   }
 
   class HasSnapshots(override val persistenceId: String, replyTo: ActorRef) extends PersistentActor {
@@ -56,17 +56,17 @@ object RemoveInternalClusterShardingDataSpec {
     var hasSnapshots = false
 
     override def receiveRecover: Receive = {
-      case SnapshotOffer(_, _) ⇒
+      case SnapshotOffer(_, _) =>
         hasSnapshots = true
-      case RecoveryCompleted ⇒
+      case RecoveryCompleted =>
         replyTo ! hasSnapshots
         context.stop(self)
 
-      case _ ⇒
+      case _ =>
     }
 
     override def receiveCommand: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -77,34 +77,35 @@ object RemoveInternalClusterShardingDataSpec {
     override def recovery: Recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria.None)
 
     override def receiveRecover: Receive = {
-      case event: ShardCoordinator.Internal.DomainEvent ⇒
+      case event: ShardCoordinator.Internal.DomainEvent =>
         hasEvents = true
-      case RecoveryCompleted ⇒
+      case RecoveryCompleted =>
         replyTo ! hasEvents
         context.stop(self)
     }
 
     override def receiveCommand: Receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
 }
 
-class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClusterShardingDataSpec.config)
-  with ImplicitSender {
+class RemoveInternalClusterShardingDataSpec
+    extends AkkaSpec(RemoveInternalClusterShardingDataSpec.config)
+    with ImplicitSender {
   import RemoveInternalClusterShardingDataSpec._
 
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+  val storageLocations =
+    List("akka.persistence.journal.leveldb.dir", "akka.persistence.snapshot-store.local.dir").map(s =>
+      new File(system.settings.config.getString(s)))
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteDirectory(dir))
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteDirectory(dir))
   }
 
   // same persistenceId as is used by ShardCoordinator
@@ -131,8 +132,9 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
     "work when no data" in within(10.seconds) {
       hasSnapshots("type1") should ===(false)
       hasEvents("type1") should ===(false)
-      val rm = system.actorOf(RemoveInternalClusterShardingData.RemoveOnePersistenceId.props(
-        journalPluginId = "", persistenceId("type1"), testActor))
+      val rm = system.actorOf(
+        RemoveInternalClusterShardingData.RemoveOnePersistenceId
+          .props(journalPluginId = "", persistenceId("type1"), testActor))
       watch(rm)
       expectMsg(Result(Success(Removals(events = false, snapshots = false))))
       expectTerminated(rm)
@@ -145,8 +147,9 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
       hasSnapshots("type1") should ===(false)
       hasEvents("type1") should ===(true)
 
-      val rm = system.actorOf(RemoveInternalClusterShardingData.RemoveOnePersistenceId.props(
-        journalPluginId = "", persistenceId("type1"), testActor))
+      val rm = system.actorOf(
+        RemoveInternalClusterShardingData.RemoveOnePersistenceId
+          .props(journalPluginId = "", persistenceId("type1"), testActor))
       watch(rm)
       expectMsg(Result(Success(Removals(events = true, snapshots = false))))
       expectTerminated(rm)
@@ -164,8 +167,9 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
       }
       hasEvents("type2") should ===(true)
 
-      val rm = system.actorOf(RemoveInternalClusterShardingData.RemoveOnePersistenceId.props(
-        journalPluginId = "", persistenceId("type2"), testActor))
+      val rm = system.actorOf(
+        RemoveInternalClusterShardingData.RemoveOnePersistenceId
+          .props(journalPluginId = "", persistenceId("type2"), testActor))
       watch(rm)
       expectMsg(Result(Success(Removals(events = true, snapshots = true))))
       expectTerminated(rm)
@@ -180,13 +184,13 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
     "setup sharding" in {
       Cluster(system).join(Cluster(system).selfAddress)
       val settings = ClusterShardingSettings(system)
-      typeNames.foreach { typeName ⇒
+      typeNames.foreach { typeName =>
         ClusterSharding(system).start(typeName, Props[EchoActor](), settings, extractEntityId, extractShardId)
       }
     }
 
     "remove all events and snapshots" in within(10.seconds) {
-      typeNames.foreach { typeName ⇒
+      typeNames.foreach { typeName =>
         val region = ClusterSharding(system).shardRegion(typeName)
         (1 to 10).foreach(region ! _)
         receiveN(10).toSet should be((1 to 10).toSet)
@@ -198,11 +202,14 @@ class RemoveInternalClusterShardingDataSpec extends AkkaSpec(RemoveInternalClust
       }
 
       val result = RemoveInternalClusterShardingData.remove(
-        system, journalPluginId = "", typeNames.toSet,
-        terminateSystem = false, remove2dot3Data = true)
+        system,
+        journalPluginId = "",
+        typeNames.toSet,
+        terminateSystem = false,
+        remove2dot3Data = true)
       Await.ready(result, remaining)
 
-      typeNames.foreach { typeName ⇒
+      typeNames.foreach { typeName =>
         hasSnapshots(typeName) should ===(false)
         hasEvents(typeName) should ===(false)
       }

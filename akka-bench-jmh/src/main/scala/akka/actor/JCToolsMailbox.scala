@@ -25,14 +25,19 @@ case class JCToolsMailbox(val capacity: Int) extends MailboxType with ProducesMe
     new JCToolsMessageQueue(capacity)
 }
 
-class JCToolsMessageQueue(capacity: Int) extends MpscGrowableArrayQueue[Envelope](capacity) with MessageQueue with BoundedMessageQueueSemantics {
+class JCToolsMessageQueue(capacity: Int)
+    extends MpscGrowableArrayQueue[Envelope](capacity)
+    with MessageQueue
+    with BoundedMessageQueueSemantics {
   final def pushTimeOut: Duration = Duration.Undefined
 
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (!offer(handle))
-      receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
-        DeadLetter(handle.message, handle.sender, receiver), handle.sender
-      )
+      receiver
+        .asInstanceOf[InternalActorRef]
+        .provider
+        .deadLetters
+        .tell(DeadLetter(handle.message, handle.sender, receiver), handle.sender)
 
   final def dequeue(): Envelope = poll()
 

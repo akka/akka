@@ -16,6 +16,7 @@ object ORMap {
   private val _empty: ORMap[Any, ReplicatedData] = new ORMap(ORSet.empty, Map.empty, VanillaORMapTag)
   def empty[A, B <: ReplicatedData]: ORMap[A, B] = _empty.asInstanceOf[ORMap[A, B]]
   def apply(): ORMap[Any, ReplicatedData] = _empty
+
   /**
    * Java API
    */
@@ -52,96 +53,112 @@ object ORMap {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A, B <: ReplicatedData] extends DeltaOp with ReplicatedDeltaSize {
+  @InternalApi private[akka] sealed abstract class AtomicDeltaOp[A, B <: ReplicatedData]
+      extends DeltaOp
+      with ReplicatedDeltaSize {
     def underlying: ORSet.DeltaOp
     def zeroTag: ZeroTag
     override def zero: DeltaReplicatedData = zeroTag.zero
     override def merge(that: DeltaOp): DeltaOp = that match {
-      case other: AtomicDeltaOp[A, B] ⇒ DeltaGroup(Vector(this, other))
-      case DeltaGroup(ops)            ⇒ DeltaGroup(this +: ops)
+      case other: AtomicDeltaOp[A, B] => DeltaGroup(Vector(this, other))
+      case DeltaGroup(ops)            => DeltaGroup(this +: ops)
     }
     override def deltaSize: Int = 1
   }
 
   // PutDeltaOp contains ORSet delta and full value
   /** INTERNAL API */
-  @InternalApi private[akka] final case class PutDeltaOp[A, B <: ReplicatedData](underlying: ORSet.DeltaOp, value: (A, B), zeroTag: ZeroTag) extends AtomicDeltaOp[A, B] {
+  @InternalApi private[akka] final case class PutDeltaOp[A, B <: ReplicatedData](
+      underlying: ORSet.DeltaOp,
+      value: (A, B),
+      zeroTag: ZeroTag)
+      extends AtomicDeltaOp[A, B] {
     override def merge(that: DeltaOp): DeltaOp = that match {
-      case put: PutDeltaOp[A, B] if this.value._1 == put.value._1 ⇒
+      case put: PutDeltaOp[A, B] if this.value._1 == put.value._1 =>
         new PutDeltaOp[A, B](this.underlying.merge(put.underlying), put.value, zeroTag)
-      case update: UpdateDeltaOp[A, B] if update.values.size == 1 && update.values.contains(this.value._1) ⇒
+      case update: UpdateDeltaOp[A, B] if update.values.size == 1 && update.values.contains(this.value._1) =>
         val (key, elem1) = this.value
         val newValue = elem1 match {
-          case e1: DeltaReplicatedData ⇒
+          case e1: DeltaReplicatedData =>
             val e2 = update.values.head._2.asInstanceOf[e1.D]
             (key, e1.mergeDelta(e2).asInstanceOf[B])
-          case _ ⇒
+          case _ =>
             val elem2 = update.values.head._2.asInstanceOf[elem1.T]
             (key, elem1.merge(elem2).asInstanceOf[B])
         }
         new PutDeltaOp[A, B](this.underlying.merge(update.underlying), newValue, zeroTag)
-      case other: AtomicDeltaOp[A, B] ⇒ DeltaGroup(Vector(this, other))
-      case DeltaGroup(ops)            ⇒ DeltaGroup(this +: ops)
+      case other: AtomicDeltaOp[A, B] => DeltaGroup(Vector(this, other))
+      case DeltaGroup(ops)            => DeltaGroup(this +: ops)
     }
   }
 
   // UpdateDeltaOp contains ORSet delta and either delta of value (in case where underlying type supports deltas) or full value
   /** INTERNAL API */
-  @InternalApi private[akka] final case class UpdateDeltaOp[A, B <: ReplicatedData](underlying: ORSet.DeltaOp, values: Map[A, B], zeroTag: ZeroTag) extends AtomicDeltaOp[A, B] {
+  @InternalApi private[akka] final case class UpdateDeltaOp[A, B <: ReplicatedData](
+      underlying: ORSet.DeltaOp,
+      values: Map[A, B],
+      zeroTag: ZeroTag)
+      extends AtomicDeltaOp[A, B] {
     override def merge(that: DeltaOp): DeltaOp = that match {
-      case update: UpdateDeltaOp[A, B] ⇒
-        new UpdateDeltaOp[A, B](
-          this.underlying.merge(update.underlying),
-          update.values.foldLeft(this.values) {
-            (map, pair) ⇒
-              val (key, value) = pair
-              if (this.values.contains(key)) {
-                val elem1 = this.values(key)
-                val elem2 = value.asInstanceOf[elem1.T]
-                map + (key → elem1.merge(elem2).asInstanceOf[B])
-              } else map + pair
-          },
-          zeroTag)
-      case put: PutDeltaOp[A, B] if this.values.size == 1 && this.values.contains(put.value._1) ⇒
+      case update: UpdateDeltaOp[A, B] =>
+        new UpdateDeltaOp[A, B](this.underlying.merge(update.underlying), update.values.foldLeft(this.values) {
+          (map, pair) =>
+            val (key, value) = pair
+            if (this.values.contains(key)) {
+              val elem1 = this.values(key)
+              val elem2 = value.asInstanceOf[elem1.T]
+              map + (key -> elem1.merge(elem2).asInstanceOf[B])
+            } else map + pair
+        }, zeroTag)
+      case put: PutDeltaOp[A, B] if this.values.size == 1 && this.values.contains(put.value._1) =>
         new PutDeltaOp[A, B](this.underlying.merge(put.underlying), put.value, zeroTag)
-      case other: AtomicDeltaOp[A, B] ⇒ DeltaGroup(Vector(this, other))
-      case DeltaGroup(ops)            ⇒ DeltaGroup(this +: ops)
+      case other: AtomicDeltaOp[A, B] => DeltaGroup(Vector(this, other))
+      case DeltaGroup(ops)            => DeltaGroup(this +: ops)
     }
   }
 
   // RemoveDeltaOp does not contain any value at all - the propagated 'value' map would be empty
   /** INTERNAL API */
-  @InternalApi private[akka] final case class RemoveDeltaOp[A, B <: ReplicatedData](underlying: ORSet.DeltaOp, zeroTag: ZeroTag) extends AtomicDeltaOp[A, B]
+  @InternalApi private[akka] final case class RemoveDeltaOp[A, B <: ReplicatedData](
+      underlying: ORSet.DeltaOp,
+      zeroTag: ZeroTag)
+      extends AtomicDeltaOp[A, B]
 
   // RemoveKeyDeltaOp contains a single value - to provide the recipient with the removed key for value map
   /** INTERNAL API */
-  @InternalApi private[akka] final case class RemoveKeyDeltaOp[A, B <: ReplicatedData](underlying: ORSet.DeltaOp, removedKey: A, zeroTag: ZeroTag) extends AtomicDeltaOp[A, B]
+  @InternalApi private[akka] final case class RemoveKeyDeltaOp[A, B <: ReplicatedData](
+      underlying: ORSet.DeltaOp,
+      removedKey: A,
+      zeroTag: ZeroTag)
+      extends AtomicDeltaOp[A, B]
 
   // DeltaGroup is effectively a causally ordered list of individual deltas
   /** INTERNAL API */
   @InternalApi private[akka] final case class DeltaGroup[A, B <: ReplicatedData](ops: immutable.IndexedSeq[DeltaOp])
-    extends DeltaOp with ReplicatedDeltaSize {
+      extends DeltaOp
+      with ReplicatedDeltaSize {
     override def merge(that: DeltaOp): DeltaOp = that match {
-      case that: AtomicDeltaOp[A, B] ⇒
+      case that: AtomicDeltaOp[A, B] =>
         ops.last match {
-          case thisPut: PutDeltaOp[A, B] ⇒
+          case thisPut: PutDeltaOp[A, B] =>
             val merged = thisPut.merge(that)
             merged match {
-              case op: AtomicDeltaOp[A, B] ⇒ DeltaGroup(ops.dropRight(1) :+ op)
-              case DeltaGroup(thatOps)     ⇒ DeltaGroup(ops.dropRight(1) ++ thatOps)
+              case op: AtomicDeltaOp[A, B] => DeltaGroup(ops.dropRight(1) :+ op)
+              case DeltaGroup(thatOps)     => DeltaGroup(ops.dropRight(1) ++ thatOps)
             }
-          case thisUpdate: UpdateDeltaOp[A, B] ⇒
+          case thisUpdate: UpdateDeltaOp[A, B] =>
             val merged = thisUpdate.merge(that)
             merged match {
-              case op: AtomicDeltaOp[A, B] ⇒ DeltaGroup(ops.dropRight(1) :+ op)
-              case DeltaGroup(thatOps)     ⇒ DeltaGroup(ops.dropRight(1) ++ thatOps)
+              case op: AtomicDeltaOp[A, B] => DeltaGroup(ops.dropRight(1) :+ op)
+              case DeltaGroup(thatOps)     => DeltaGroup(ops.dropRight(1) ++ thatOps)
             }
-          case _ ⇒ DeltaGroup(ops :+ that)
+          case _ => DeltaGroup(ops :+ that)
         }
-      case DeltaGroup(thatOps) ⇒ DeltaGroup(ops ++ thatOps)
+      case DeltaGroup(thatOps) => DeltaGroup(ops ++ thatOps)
     }
 
-    override def zero: DeltaReplicatedData = ops.headOption.fold(ORMap.empty[A, B].asInstanceOf[DeltaReplicatedData])(_.zero)
+    override def zero: DeltaReplicatedData =
+      ops.headOption.fold(ORMap.empty[A, B].asInstanceOf[DeltaReplicatedData])(_.zero)
 
     override def deltaSize: Int = ops.size
   }
@@ -157,13 +174,15 @@ object ORMap {
  */
 @SerialVersionUID(1L)
 final class ORMap[A, B <: ReplicatedData] private[akka] (
-  private[akka] val keys:    ORSet[A],
-  private[akka] val values:  Map[A, B],
-  private[akka] val zeroTag: ZeroTag,
-  override val delta:        Option[ORMap.DeltaOp] = None)
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+    private[akka] val keys: ORSet[A],
+    private[akka] val values: Map[A, B],
+    private[akka] val zeroTag: ZeroTag,
+    override val delta: Option[ORMap.DeltaOp] = None)
+    extends DeltaReplicatedData
+    with ReplicatedDataSerialization
+    with RemovedNodePruning {
 
-  import ORMap.{ PutDeltaOp, UpdateDeltaOp, RemoveDeltaOp, RemoveKeyDeltaOp }
+  import ORMap.{ PutDeltaOp, RemoveDeltaOp, RemoveKeyDeltaOp, UpdateDeltaOp }
 
   type T = ORMap[A, B]
   type D = ORMap.DeltaOp
@@ -187,7 +206,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    * Scala API: Get the value associated with the key if there is one,
    * else return the given default.
    */
-  def getOrElse(key: A, default: ⇒ B): B = values.getOrElse(key, default)
+  def getOrElse(key: A, default: => B): B = values.getOrElse(key, default)
 
   def contains(key: A): Boolean = values.contains(key)
 
@@ -235,11 +254,11 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
     if (value.isInstanceOf[ORSet[_]] && values.contains(key))
       throw new IllegalArgumentException(
         "`ORMap.put` must not be used to replace an existing `ORSet` " +
-          "value, because important history can be lost when replacing the `ORSet` and " +
-          "undesired effects of merging will occur. Use `ORMultiMap` or `ORMap.updated` instead.")
+        "value, because important history can be lost when replacing the `ORSet` and " +
+        "undesired effects of merging will occur. Use `ORMultiMap` or `ORMap.updated` instead.")
     else {
       val newKeys = keys.resetDelta.add(node, key)
-      val putDeltaOp = PutDeltaOp(newKeys.delta.get, key → value, zeroTag)
+      val putDeltaOp = PutDeltaOp(newKeys.delta.get, key -> value, zeroTag)
       // put forcibly damages history, so we consciously propagate full value that will overwrite previous value
       new ORMap(newKeys, values.updated(key, value), zeroTag, Some(newDelta(putDeltaOp)))
     }
@@ -250,11 +269,11 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    * If there is no current value for the `key` the `initial` value will be
    * passed to the `modify` function.
    */
-  def updated(node: SelfUniqueAddress, key: A, initial: B)(modify: B ⇒ B): ORMap[A, B] =
+  def updated(node: SelfUniqueAddress, key: A, initial: B)(modify: B => B): ORMap[A, B] =
     updated(node.uniqueAddress, key, initial)(modify)
 
   @deprecated("Use `updated` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
-  def updated(node: Cluster, key: A, initial: B)(modify: B ⇒ B): ORMap[A, B] =
+  def updated(node: Cluster, key: A, initial: B)(modify: B => B): ORMap[A, B] =
     updated(node.selfUniqueAddress, key, initial)(modify)
 
   /**
@@ -266,7 +285,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   @Deprecated
   @deprecated("use update for the Java API as updated is ambiguous with the Scala API", "2.5.20")
   def updated(node: Cluster, key: A, initial: B, modify: java.util.function.Function[B, B]): ORMap[A, B] =
-    updated(node.selfUniqueAddress, key, initial)(value ⇒ modify.apply(value))
+    updated(node.selfUniqueAddress, key, initial)(value => modify.apply(value))
 
   /**
    * Java API: Replace a value by applying the `modify` function on the existing value.
@@ -275,20 +294,21 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    * passed to the `modify` function.
    */
   def update(node: SelfUniqueAddress, key: A, initial: B, modify: java.util.function.Function[B, B]): ORMap[A, B] =
-    updated(node.uniqueAddress, key, initial)(value ⇒ modify.apply(value))
+    updated(node.uniqueAddress, key, initial)(value => modify.apply(value))
 
   @Deprecated
   @deprecated("Use `update` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def update(node: Cluster, key: A, initial: B, modify: java.util.function.Function[B, B]): ORMap[A, B] =
-    updated(node, key, initial)(value ⇒ modify.apply(value))
+    updated(node, key, initial)(value => modify.apply(value))
 
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def updated(node: UniqueAddress, key: A, initial: B, valueDeltas: Boolean = false)(modify: B ⇒ B): ORMap[A, B] = {
+  @InternalApi private[akka] def updated(node: UniqueAddress, key: A, initial: B, valueDeltas: Boolean = false)(
+      modify: B => B): ORMap[A, B] = {
     val (oldValue, hasOldValue) = values.get(key) match {
-      case Some(old) ⇒ (old, true)
-      case _         ⇒ (initial, false)
+      case Some(old) => (old, true)
+      case _         => (initial, false)
     }
     // Optimization: for some types - like GSet, GCounter, PNCounter and ORSet  - that are delta based
     // we can emit (and later merge) their deltas instead of full updates.
@@ -297,17 +317,17 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
     // before removing the key - like e.g. ORMultiMap.emptyWithValueDeltas does
     val newKeys = keys.resetDelta.add(node, key)
     oldValue match {
-      case _: DeltaReplicatedData if valueDeltas ⇒
+      case _: DeltaReplicatedData if valueDeltas =>
         val newValue = modify(oldValue.asInstanceOf[DeltaReplicatedData].resetDelta.asInstanceOf[B])
         val newValueDelta = newValue.asInstanceOf[DeltaReplicatedData].delta
         val deltaOp = newValueDelta match {
-          case Some(d) if hasOldValue ⇒ UpdateDeltaOp(newKeys.delta.get, Map(key → d), zeroTag)
-          case _                      ⇒ PutDeltaOp(newKeys.delta.get, key → newValue, zeroTag)
+          case Some(d) if hasOldValue => UpdateDeltaOp(newKeys.delta.get, Map(key -> d), zeroTag)
+          case _                      => PutDeltaOp(newKeys.delta.get, key -> newValue, zeroTag)
         }
         new ORMap(newKeys, values.updated(key, newValue), zeroTag, Some(newDelta(deltaOp)))
-      case _ ⇒
+      case _ =>
         val newValue = modify(oldValue)
-        val deltaOp = PutDeltaOp(newKeys.delta.get, key → newValue, zeroTag)
+        val deltaOp = PutDeltaOp(newKeys.delta.get, key -> newValue, zeroTag)
         new ORMap(newKeys, values.updated(key, newValue), zeroTag, Some(newDelta(deltaOp)))
     }
   }
@@ -357,9 +377,9 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
 
   private def dryMerge(that: ORMap[A, B], mergedKeys: ORSet[A], valueKeysIterator: Iterator[A]): ORMap[A, B] = {
     var mergedValues = Map.empty[A, B]
-    valueKeysIterator.foreach { key ⇒
+    valueKeysIterator.foreach { key =>
       (this.values.get(key), that.values.get(key)) match {
-        case (Some(thisValue), Some(thatValue)) ⇒
+        case (Some(thisValue), Some(thatValue)) =>
           if (thisValue.getClass != thatValue.getClass) {
             val errMsg = s"Wrong type for merging [$key] in [${getClass.getName}], existing type " +
               s"[${thisValue.getClass.getName}], got [${thatValue.getClass.getName}]"
@@ -368,15 +388,15 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
           // TODO can we get rid of these (safe) casts?
           val mergedValue = thisValue.merge(thatValue.asInstanceOf[thisValue.T]).asInstanceOf[B]
           mergedValues = mergedValues.updated(key, mergedValue)
-        case (Some(thisValue), None) ⇒
+        case (Some(thisValue), None) =>
           if (mergedKeys.contains(key))
             mergedValues = mergedValues.updated(key, thisValue)
         // else thisValue is a tombstone, but we don't want to carry it forward, as the other side does not have the element at all
-        case (None, Some(thatValue)) ⇒
+        case (None, Some(thatValue)) =>
           if (mergedKeys.contains(key))
             mergedValues = mergedValues.updated(key, thatValue)
         // else thatValue is a tombstone, but we don't want to carry it forward, as the other side does not have the element at all
-        case (None, None) ⇒ throw new IllegalStateException(s"missing value for $key")
+        case (None, None) => throw new IllegalStateException(s"missing value for $key")
       }
     }
     new ORMap(mergedKeys, mergedValues, zeroTag = zeroTag)
@@ -404,52 +424,54 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   private def dryMergeDelta(thatDelta: ORMap.DeltaOp, withValueDeltas: Boolean = false): ORMap[A, B] = {
     def mergeValue(lvalue: ReplicatedData, rvalue: ReplicatedData): B =
       (lvalue, rvalue) match {
-        case (v: DeltaReplicatedData, delta: ReplicatedDelta) ⇒
+        case (v: DeltaReplicatedData, delta: ReplicatedDelta) =>
           v.mergeDelta(delta.asInstanceOf[v.D]).asInstanceOf[B]
-        case _ ⇒
+        case _ =>
           lvalue.merge(rvalue.asInstanceOf[lvalue.T]).asInstanceOf[B]
       }
 
     var mergedKeys: ORSet[A] = this.keys
-    var (mergedValues, tombstonedVals): (Map[A, B], Map[A, B]) = this.values.partition { case (k, _) ⇒ this.keys.contains(k) }
+    var (mergedValues, tombstonedVals): (Map[A, B], Map[A, B]) = this.values.partition {
+      case (k, _) => this.keys.contains(k)
+    }
 
     val processDelta: PartialFunction[ORMap.DeltaOp, Unit] = {
-      case putOp: PutDeltaOp[A, B] ⇒
+      case putOp: PutDeltaOp[A, B] =>
         val keyDelta = putOp.underlying
         mergedKeys = mergedKeys.mergeDelta(keyDelta)
         mergedValues = mergedValues + putOp.value // put is destructive and propagates only full values of B!
-      case removeOp: RemoveDeltaOp[A, B] ⇒
+      case removeOp: RemoveDeltaOp[A, B] =>
         val removedKey = removeOp.underlying match {
           // if op is RemoveDeltaOp then it must have exactly one element in the elements
-          case op: ORSet.RemoveDeltaOp[_] ⇒ op.underlying.elements.head.asInstanceOf[A]
-          case _                          ⇒ throw new IllegalArgumentException("ORMap.RemoveDeltaOp must contain ORSet.RemoveDeltaOp inside")
+          case op: ORSet.RemoveDeltaOp[_] => op.underlying.elements.head.asInstanceOf[A]
+          case _                          => throw new IllegalArgumentException("ORMap.RemoveDeltaOp must contain ORSet.RemoveDeltaOp inside")
         }
         mergedValues = mergedValues - removedKey
         mergedKeys = mergedKeys.mergeDelta(removeOp.underlying)
       // please note that if RemoveDeltaOp is not preceded by update clearing the value
       // anomalies may result
-      case removeKeyOp: RemoveKeyDeltaOp[A, B] ⇒
+      case removeKeyOp: RemoveKeyDeltaOp[A, B] =>
         // removeKeyOp tombstones values for later use
         if (mergedValues.contains(removeKeyOp.removedKey)) {
-          tombstonedVals = tombstonedVals + (removeKeyOp.removedKey → mergedValues(removeKeyOp.removedKey))
+          tombstonedVals = tombstonedVals + (removeKeyOp.removedKey -> mergedValues(removeKeyOp.removedKey))
         }
         mergedValues = mergedValues - removeKeyOp.removedKey
         mergedKeys = mergedKeys.mergeDelta(removeKeyOp.underlying)
-      case updateOp: UpdateDeltaOp[A, _] ⇒
+      case updateOp: UpdateDeltaOp[A, _] =>
         mergedKeys = mergedKeys.mergeDelta(updateOp.underlying)
         updateOp.values.foreach {
-          case (key, value) ⇒
+          case (key, value) =>
             if (mergedKeys.contains(key)) {
               if (mergedValues.contains(key)) {
-                mergedValues = mergedValues + (key → mergeValue(mergedValues(key), value))
+                mergedValues = mergedValues + (key -> mergeValue(mergedValues(key), value))
               } else if (tombstonedVals.contains(key)) {
-                mergedValues = mergedValues + (key → mergeValue(tombstonedVals(key), value))
+                mergedValues = mergedValues + (key -> mergeValue(tombstonedVals(key), value))
               } else {
                 value match {
-                  case _: ReplicatedDelta ⇒
-                    mergedValues = mergedValues + (key → mergeValue(value.asInstanceOf[ReplicatedDelta].zero, value))
-                  case _ ⇒
-                    mergedValues = mergedValues + (key → value.asInstanceOf[B])
+                  case _: ReplicatedDelta =>
+                    mergedValues = mergedValues + (key -> mergeValue(value.asInstanceOf[ReplicatedDelta].zero, value))
+                  case _ =>
+                    mergedValues = mergedValues + (key -> value.asInstanceOf[B])
                 }
               }
             }
@@ -457,16 +479,16 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
     }
 
     val processNestedDelta: PartialFunction[ORMap.DeltaOp, Unit] = {
-      case ORMap.DeltaGroup(ops) ⇒
+      case ORMap.DeltaGroup(ops) =>
         ops.foreach {
           processDelta.orElse {
-            case ORMap.DeltaGroup(args) ⇒
+            case ORMap.DeltaGroup(_) =>
               throw new IllegalStateException("Cannot nest DeltaGroups")
           }
         }
     }
 
-    (processDelta orElse processNestedDelta)(thatDelta)
+    processDelta.orElse(processNestedDelta)(thatDelta)
 
     if (withValueDeltas)
       new ORMap[A, B](mergedKeys, tombstonedVals ++ mergedValues, zeroTag = zeroTag)
@@ -490,32 +512,32 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   }
 
   private def newDelta(deltaOp: ORMap.DeltaOp) = delta match {
-    case Some(d) ⇒
+    case Some(d) =>
       d.merge(deltaOp)
-    case None ⇒
+    case None =>
       deltaOp
   }
 
   override def modifiedByNodes: Set[UniqueAddress] = {
-    keys.modifiedByNodes union values.foldLeft(Set.empty[UniqueAddress]) {
-      case (acc, (_, data: RemovedNodePruning)) ⇒ acc union data.modifiedByNodes
-      case (acc, _)                             ⇒ acc
-    }
+    keys.modifiedByNodes.union(values.foldLeft(Set.empty[UniqueAddress]) {
+      case (acc, (_, data: RemovedNodePruning)) => acc.union(data.modifiedByNodes)
+      case (acc, _)                             => acc
+    })
   }
 
   override def needPruningFrom(removedNode: UniqueAddress): Boolean = {
     keys.needPruningFrom(removedNode) || values.exists {
-      case (_, data: RemovedNodePruning) ⇒ data.needPruningFrom(removedNode)
-      case _                             ⇒ false
+      case (_, data: RemovedNodePruning) => data.needPruningFrom(removedNode)
+      case _                             => false
     }
   }
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): ORMap[A, B] = {
     val prunedKeys = keys.prune(removedNode, collapseInto)
     val prunedValues = values.foldLeft(values) {
-      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) ⇒
+      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) =>
         acc.updated(key, data.prune(removedNode, collapseInto).asInstanceOf[B])
-      case (acc, _) ⇒ acc
+      case (acc, _) => acc
     }
     new ORMap(prunedKeys, prunedValues, zeroTag = zeroTag)
   }
@@ -523,9 +545,9 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   override def pruningCleanup(removedNode: UniqueAddress): ORMap[A, B] = {
     val pruningCleanupedKeys = keys.pruningCleanup(removedNode)
     val pruningCleanupedValues = values.foldLeft(values) {
-      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) ⇒
+      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) =>
         acc.updated(key, data.pruningCleanup(removedNode).asInstanceOf[B])
-      case (acc, _) ⇒ acc
+      case (acc, _) => acc
     }
     new ORMap(pruningCleanupedKeys, pruningCleanupedValues, zeroTag = zeroTag)
   }
@@ -535,8 +557,8 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   override def toString: String = s"OR$entries"
 
   override def equals(o: Any): Boolean = o match {
-    case other: ORMap[_, _] ⇒ keys == other.keys && values == other.values
-    case _                  ⇒ false
+    case other: ORMap[_, _] => keys == other.keys && values == other.values
+    case _                  => false
   }
 
   override def hashCode: Int = {
@@ -553,4 +575,6 @@ object ORMapKey {
 }
 
 @SerialVersionUID(1L)
-final case class ORMapKey[A, B <: ReplicatedData](_id: String) extends Key[ORMap[A, B]](_id) with ReplicatedDataSerialization
+final case class ORMapKey[A, B <: ReplicatedData](_id: String)
+    extends Key[ORMap[A, B]](_id)
+    with ReplicatedDataSerialization

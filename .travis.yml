@@ -9,8 +9,8 @@ scala:
 
 before_install:
   # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@1.8.192-12
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@~1.8.202-08
 
 addons:
   apt:
@@ -28,9 +28,9 @@ cache:
     - $HOME/.jabba/jdk
 
 script:
-  - jabba use "adopt@1.8.192-12"
+  - jabba use "adopt@~1.8.202-08"
   # need to override as the default is to test
-  - sbt -jvm-opts .jvmopts-travis ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues test:compile
+  - sbt -jvm-opts .jvmopts-travis ";++$TRAVIS_SCALA_VERSION update ;++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues ;++$TRAVIS_SCALA_VERSION test:compile ;++$TRAVIS_SCALA_VERSION validateCompile"
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
   # check policies, if on master also upload

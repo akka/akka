@@ -6,7 +6,7 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 import java.util.function.Supplier
-import java.util.{ List ⇒ JList }
+import java.util.{ List => JList }
 
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
@@ -17,6 +17,7 @@ import akka.annotation.DoNotInherit
 import akka.util.unused
 
 object FishingOutcomes {
+
   /**
    * Consume this message and continue with the next
    */
@@ -214,7 +215,10 @@ abstract class TestProbe[M] {
   /**
    * Same as the other `fishForMessage` but includes the provided hint in all error messages
    */
-  def fishForMessage(max: Duration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M]
+  def fishForMessage(
+      max: Duration,
+      hint: String,
+      fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M]
 
   /**
    * Expect the given actor to be stopped or stop within the given timeout or

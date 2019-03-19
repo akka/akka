@@ -26,20 +26,18 @@ object ActorSourceSinkExample {
     case object Complete extends Protocol
     case class Fail(ex: Exception) extends Protocol
 
-    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](
-      completionMatcher = {
-        case Complete ⇒
-      },
-      failureMatcher = {
-        case Fail(ex) ⇒ ex
-      },
-      bufferSize = 8,
-      overflowStrategy = OverflowStrategy.fail
-    )
+    val source: Source[Protocol, ActorRef[Protocol]] = ActorSource.actorRef[Protocol](completionMatcher = {
+      case Complete =>
+    }, failureMatcher = {
+      case Fail(ex) => ex
+    }, bufferSize = 8, overflowStrategy = OverflowStrategy.fail)
 
-    val ref = source.collect {
-      case Message(msg) ⇒ msg
-    }.to(Sink.foreach(println)).run()
+    val ref = source
+      .collect {
+        case Message(msg) => msg
+      }
+      .to(Sink.foreach(println))
+      .run()
 
     ref ! Message("msg1")
     // ref ! "msg2" Does not compile
@@ -59,11 +57,8 @@ object ActorSourceSinkExample {
 
     val actor: ActorRef[Protocol] = ???
 
-    val sink: Sink[Protocol, NotUsed] = ActorSink.actorRef[Protocol](
-      ref = actor,
-      onCompleteMessage = Complete,
-      onFailureMessage = Fail.apply
-    )
+    val sink: Sink[Protocol, NotUsed] =
+      ActorSink.actorRef[Protocol](ref = actor, onCompleteMessage = Complete, onFailureMessage = Fail.apply)
 
     Source.single(Message("msg1")).runWith(sink)
     // #actor-sink-ref
@@ -92,8 +87,7 @@ object ActorSourceSinkExample {
       onFailureMessage = Fail.apply,
       messageAdapter = Message.apply,
       onInitMessage = Init.apply,
-      ackMessage = Ack
-    )
+      ackMessage = Ack)
 
     Source.single("msg1").runWith(sink)
     // #actor-sink-ref-with-ack

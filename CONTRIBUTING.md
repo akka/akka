@@ -147,6 +147,13 @@ project akka-cluster
 multi-jvm:testOnly akka.cluster.SunnyWeather
 ```
 
+To format the Scala source code:
+```
+sbt
+akka-cluster/scalafmtAll
+akka-persistence/scalafmtAll
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
@@ -183,6 +190,11 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 ```
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
+
+If you have already run all tests and now just need to check that everything is formatted and or mima passes there
+are a set of `all*` commands aliases for running `test:compile` (also formats), `mimaReportBinaryIssues`, and `validateCompile` 
+(compiles `multi-jvm` if enabled for that project). See `build.sbt` or use completion to find the most appropriate one 
+e.g. `allCluster`, `allTyped`.
 
 ## Binary compatibility
 
@@ -355,7 +367,10 @@ In such situations we prefer 'internal' over 'impl' as a package name.
 
 ### Scala style 
 
-Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka uses [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) to enforce some of the code style rules.
+
+When IntelliJ detects the `.scalafmt.conf` and promts "Scalafmt configuration detected in this project" you should
+select "Continue using IntelliJ formatter" and instead install the [Scalafmt IntelliJ plugin](https://scalameta.org/scalafmt/docs/installation.html#intellij). Install the nightly plugin (until version 2.0.0 or later becomes stable) and enable "Format on save".
 
 ### Java style
 

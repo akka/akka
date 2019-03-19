@@ -32,7 +32,7 @@ object MaterializerState {
   @ApiMayChange
   def streamSnapshots(mat: Materializer): Future[immutable.Seq[StreamSnapshot]] = {
     mat match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         import impl.system.dispatcher
         requestFromSupervisor(impl.supervisor)
     }
@@ -40,19 +40,18 @@ object MaterializerState {
 
   /** INTERNAL API */
   @InternalApi
-  private[akka] def requestFromSupervisor(supervisor: ActorRef)(implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
+  private[akka] def requestFromSupervisor(supervisor: ActorRef)(
+      implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
     // FIXME arbitrary timeout
     implicit val timeout: Timeout = 10.seconds
     (supervisor ? StreamSupervisor.GetChildren)
       .mapTo[StreamSupervisor.Children]
-      .flatMap(msg ⇒
-        Future.sequence(msg.children.toVector.map(requestFromChild))
-      )
+      .flatMap(msg => Future.sequence(msg.children.toVector.map(requestFromChild)))
   }
 
   /** INTERNAL API */
   @InternalApi
-  private[akka] def requestFromChild(child: ActorRef)(implicit ec: ExecutionContext): Future[StreamSnapshot] = {
+  private[akka] def requestFromChild(child: ActorRef): Future[StreamSnapshot] = {
     // FIXME arbitrary timeout
     implicit val timeout: Timeout = 10.seconds
     (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot]
@@ -67,6 +66,7 @@ object MaterializerState {
  */
 @DoNotInherit @ApiMayChange
 sealed trait StreamSnapshot {
+
   /**
    * Running interpreters
    */
@@ -102,10 +102,12 @@ sealed trait UninitializedInterpreter extends InterpreterSnapshot
  */
 @DoNotInherit @ApiMayChange
 sealed trait RunningInterpreter extends InterpreterSnapshot {
+
   /**
    * Each of the materialized graph stage logics running inside the interpreter
    */
   def logics: immutable.Seq[LogicSnapshot]
+
   /**
    * Each connection between logics in the interpreter
    */
@@ -155,42 +157,51 @@ sealed trait ConnectionSnapshot {
  */
 @InternalApi
 final private[akka] case class StreamSnapshotImpl(
-  self:               ActorPath,
-  activeInterpreters: Seq[RunningInterpreter],
-  newShells:          Seq[UninitializedInterpreter]) extends StreamSnapshot with HideImpl
+    self: ActorPath,
+    activeInterpreters: Seq[RunningInterpreter],
+    newShells: Seq[UninitializedInterpreter])
+    extends StreamSnapshot
+    with HideImpl
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class UninitializedInterpreterImpl(logics: immutable.Seq[LogicSnapshot]) extends UninitializedInterpreter
+private[akka] final case class UninitializedInterpreterImpl(logics: immutable.Seq[LogicSnapshot])
+    extends UninitializedInterpreter
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] final case class RunningInterpreterImpl(
-  logics:             immutable.Seq[LogicSnapshot],
-  connections:        immutable.Seq[ConnectionSnapshot],
-  queueStatus:        String,
-  runningLogicsCount: Int,
-  stoppedLogics:      immutable.Seq[LogicSnapshot]) extends RunningInterpreter with HideImpl
+    logics: immutable.Seq[LogicSnapshot],
+    connections: immutable.Seq[ConnectionSnapshot],
+    queueStatus: String,
+    runningLogicsCount: Int,
+    stoppedLogics: immutable.Seq[LogicSnapshot])
+    extends RunningInterpreter
+    with HideImpl
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attributes: Attributes) extends LogicSnapshot with HideImpl
+private[akka] final case class LogicSnapshotImpl(index: Int, label: String, attributes: Attributes)
+    extends LogicSnapshot
+    with HideImpl
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] final case class ConnectionSnapshotImpl(
-  id:    Int,
-  in:    LogicSnapshot,
-  out:   LogicSnapshot,
-  state: ConnectionSnapshot.ConnectionState) extends ConnectionSnapshot with HideImpl
+    id: Int,
+    in: LogicSnapshot,
+    out: LogicSnapshot,
+    state: ConnectionSnapshot.ConnectionState)
+    extends ConnectionSnapshot
+    with HideImpl
 
 /**
  * INTERNAL API

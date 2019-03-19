@@ -20,7 +20,12 @@ import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API */
 @InternalApi private[akka] object FileSubscriber {
-  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[OpenOption]) = {
+  def props(
+      f: Path,
+      completionPromise: Promise[IOResult],
+      bufSize: Int,
+      startPosition: Long,
+      openOptions: Set[OpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
     require(startPosition >= 0, s"startPosition must be >= 0 (was $startPosition)")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, startPosition, openOptions).withDeploy(Deploy.local)
@@ -28,9 +33,14 @@ import scala.util.{ Failure, Success, Try }
 }
 
 /** INTERNAL API */
-@InternalApi private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[OpenOption])
-  extends akka.stream.actor.ActorSubscriber
-  with ActorLogging {
+@InternalApi private[akka] class FileSubscriber(
+    f: Path,
+    completionPromise: Promise[IOResult],
+    bufSize: Int,
+    startPosition: Long,
+    openOptions: Set[OpenOption])
+    extends akka.stream.actor.ActorSubscriber
+    with ActorLogging {
 
   override protected val requestStrategy = WatermarkRequestStrategy(highWatermark = bufSize)
 
@@ -38,35 +48,36 @@ import scala.util.{ Failure, Success, Try }
 
   private var bytesWritten: Long = 0
 
-  override def preStart(): Unit = try {
-    chan = FileChannel.open(f, openOptions.asJava)
-    if (startPosition > 0) {
-      chan.position(startPosition)
+  override def preStart(): Unit =
+    try {
+      chan = FileChannel.open(f, openOptions.asJava)
+      if (startPosition > 0) {
+        chan.position(startPosition)
+      }
+
+      super.preStart()
+    } catch {
+      case ex: Exception =>
+        closeAndComplete(Failure(ex))
+        cancel()
     }
 
-    super.preStart()
-  } catch {
-    case ex: Exception ⇒
-      closeAndComplete(Failure(ex))
-      cancel()
-  }
-
   def receive = {
-    case ActorSubscriberMessage.OnNext(bytes: ByteString) ⇒
+    case ActorSubscriberMessage.OnNext(bytes: ByteString) =>
       try {
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
-        case ex: Exception ⇒
+        case ex: Exception =>
           closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
           cancel()
       }
 
-    case ActorSubscriberMessage.OnError(ex) ⇒
+    case ActorSubscriberMessage.OnError(ex) =>
       log.error(ex, "Tearing down FileSink({}) due to upstream error", f)
       closeAndComplete(Failure(AbruptIOTerminationException(IOResult(bytesWritten, Success(Done)), ex)))
       context.stop(self)
 
-    case ActorSubscriberMessage.OnComplete ⇒ context.stop(self)
+    case ActorSubscriberMessage.OnComplete => context.stop(self)
   }
 
   override def postStop(): Unit = {
@@ -82,12 +93,14 @@ import scala.util.{ Failure, Success, Try }
       if (chan ne null) chan.close()
       completionPromise.tryComplete(result)
     } catch {
-      case closingException: Exception ⇒ result match {
-        case Success(ioResult) ⇒
-          val statusWithClosingException = ioResult.status.transform(d ⇒ Failure(closingException), ex ⇒ Failure(closingException.initCause(ex)))
-          completionPromise.trySuccess(ioResult.copy(status = statusWithClosingException))
-        case Failure(ex) ⇒ completionPromise.tryFailure(closingException.initCause(ex))
-      }
+      case closingException: Exception =>
+        result match {
+          case Success(ioResult) =>
+            val statusWithClosingException =
+              ioResult.status.transform(_ => Failure(closingException), ex => Failure(closingException.initCause(ex)))
+            completionPromise.trySuccess(ioResult.copy(status = statusWithClosingException))
+          case Failure(ex) => completionPromise.tryFailure(closingException.initCause(ex))
+        }
     }
   }
 }

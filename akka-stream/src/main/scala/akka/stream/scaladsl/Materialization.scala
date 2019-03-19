@@ -11,13 +11,13 @@ import akka.NotUsed
  * left (first) or only the right (second) of two input values.
  */
 object Keep {
-  private val _left = (l: Any, r: Any) ⇒ l
-  private val _right = (l: Any, r: Any) ⇒ r
-  private val _both = (l: Any, r: Any) ⇒ (l, r)
-  private val _none = (l: Any, r: Any) ⇒ NotUsed
+  private val _left = (l: Any, r: Any) => l
+  private val _right = (l: Any, r: Any) => r
+  private val _both = (l: Any, r: Any) => (l, r)
+  private val _none = (l: Any, r: Any) => NotUsed
 
-  def left[L, R]: (L, R) ⇒ L = _left.asInstanceOf[(L, R) ⇒ L]
-  def right[L, R]: (L, R) ⇒ R = _right.asInstanceOf[(L, R) ⇒ R]
-  def both[L, R]: (L, R) ⇒ (L, R) = _both.asInstanceOf[(L, R) ⇒ (L, R)]
-  def none[L, R]: (L, R) ⇒ NotUsed = _none.asInstanceOf[(L, R) ⇒ NotUsed]
+  def left[L, R]: (L, R) => L = _left.asInstanceOf[(L, R) => L]
+  def right[L, R]: (L, R) => R = _right.asInstanceOf[(L, R) => R]
+  def both[L, R]: (L, R) => (L, R) = _both.asInstanceOf[(L, R) => (L, R)]
+  def none[L, R]: (L, R) => NotUsed = _none.asInstanceOf[(L, R) => NotUsed]
 }

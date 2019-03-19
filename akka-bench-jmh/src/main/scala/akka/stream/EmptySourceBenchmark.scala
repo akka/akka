@@ -40,5 +40,5 @@ class EmptySourceBenchmark {
     Rewrite to GraphStage:
      [info] EmptySourceBenchmark.empty  thrpt   10  17.556 ± 2.865  ops/ms
 
-   */
+ */
 }

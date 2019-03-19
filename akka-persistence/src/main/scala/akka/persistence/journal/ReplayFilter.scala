@@ -20,11 +20,11 @@ import scala.collection.mutable.LinkedHashSet
  */
 private[akka] object ReplayFilter {
   def props(
-    persistentActor: ActorRef,
-    mode:            Mode,
-    windowSize:      Int,
-    maxOldWriters:   Int,
-    debugEnabled:    Boolean): Props = {
+      persistentActor: ActorRef,
+      mode: Mode,
+      windowSize: Int,
+      maxOldWriters: Int,
+      debugEnabled: Boolean): Props = {
     require(windowSize > 0, "windowSize must be > 0")
     require(maxOldWriters > 0, "maxOldWriters must be > 0")
     require(mode != Disabled, "mode must not be Disabled")
@@ -32,11 +32,8 @@ private[akka] object ReplayFilter {
   }
 
   // for binary compatibility
-  def props(
-    persistentActor: ActorRef,
-    mode:            Mode,
-    windowSize:      Int,
-    maxOldWriters:   Int): Props = props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+  def props(persistentActor: ActorRef, mode: Mode, windowSize: Int, maxOldWriters: Int): Props =
+    props(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   sealed trait Mode
   case object Fail extends Mode
@@ -48,15 +45,20 @@ private[akka] object ReplayFilter {
 /**
  * INTERNAL API
  */
-private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-                                 windowSize: Int, maxOldWriters: Int, debugEnabled: Boolean)
-  extends Actor with ActorLogging {
+private[akka] class ReplayFilter(
+    persistentActor: ActorRef,
+    mode: ReplayFilter.Mode,
+    windowSize: Int,
+    maxOldWriters: Int,
+    debugEnabled: Boolean)
+    extends Actor
+    with ActorLogging {
   import JournalProtocol._
-  import ReplayFilter.{ Warn, Fail, RepairByDiscardOld, Disabled }
+  import ReplayFilter.{ Disabled, Fail, RepairByDiscardOld, Warn }
 
   // for binary compatibility
-  def this(persistentActor: ActorRef, mode: ReplayFilter.Mode,
-           windowSize: Int, maxOldWriters: Int) = this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
+  def this(persistentActor: ActorRef, mode: ReplayFilter.Mode, windowSize: Int, maxOldWriters: Int) =
+    this(persistentActor, mode, windowSize, maxOldWriters, debugEnabled = false)
 
   val buffer = new LinkedList[ReplayedMessage]()
   val oldWriters = LinkedHashSet.empty[String]
@@ -64,7 +66,7 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
   var seqNo = -1L
 
   def receive = {
-    case r @ ReplayedMessage(persistent) ⇒
+    case r @ ReplayedMessage(persistent) =>
       if (debugEnabled)
         log.debug("Replay: {}", persistent)
       try {
@@ -81,10 +83,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
               "Perhaps, events were journaled out of sequence, or duplicate persistentId for different entities?"
             logIssue(errMsg)
             mode match {
-              case RepairByDiscardOld ⇒ // discard
-              case Fail               ⇒ throw new IllegalStateException(errMsg)
-              case Warn               ⇒ buffer.add(r)
-              case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+              case RepairByDiscardOld => // discard
+              case Fail               => throw new IllegalStateException(errMsg)
+              case Warn               => buffer.add(r)
+              case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
             }
           } else {
             // note that it is alright with == seqNo, since such may be emitted EventSeq
@@ -99,10 +101,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
             "Perhaps, the old writer kept journaling messages after the new writer created, or duplicate persistentId for different entities?"
           logIssue(errMsg)
           mode match {
-            case RepairByDiscardOld ⇒ // discard
-            case Fail               ⇒ throw new IllegalStateException(errMsg)
-            case Warn               ⇒ buffer.add(r)
-            case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+            case RepairByDiscardOld => // discard
+            case Fail               => throw new IllegalStateException(errMsg)
+            case Warn               => buffer.add(r)
+            case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
           }
 
         } else {
@@ -125,10 +127,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
                 "Perhaps, the new writer journaled the event out of sequence, or duplicate persistentId for different entities?"
               logIssue(errMsg)
               mode match {
-                case RepairByDiscardOld ⇒ iter.remove() // discard
-                case Fail               ⇒ throw new IllegalStateException(errMsg)
-                case Warn               ⇒ // keep
-                case Disabled           ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+                case RepairByDiscardOld => iter.remove() // discard
+                case Fail               => throw new IllegalStateException(errMsg)
+                case Warn               => // keep
+                case Disabled           => throw new IllegalArgumentException("mode must not be Disabled")
               }
 
             }
@@ -138,10 +140,10 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
         }
 
       } catch {
-        case e: IllegalStateException if mode == Fail ⇒ fail(e)
+        case e: IllegalStateException if mode == Fail => fail(e)
       }
 
-    case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) ⇒
+    case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
       if (debugEnabled)
         log.debug("Replay completed: {}", msg)
       sendBuffered()
@@ -151,23 +153,22 @@ private[akka] class ReplayFilter(persistentActor: ActorRef, mode: ReplayFilter.M
 
   def sendBuffered(): Unit = {
     val iter = buffer.iterator()
-    while (iter.hasNext())
-      persistentActor.tell(iter.next(), Actor.noSender)
+    while (iter.hasNext()) persistentActor.tell(iter.next(), Actor.noSender)
     buffer.clear()
   }
 
   def logIssue(errMsg: String): Unit = mode match {
-    case Warn | RepairByDiscardOld ⇒ log.warning(errMsg)
-    case Fail                      ⇒ log.error(errMsg)
-    case Disabled                  ⇒ throw new IllegalArgumentException("mode must not be Disabled")
+    case Warn | RepairByDiscardOld => log.warning(errMsg)
+    case Fail                      => log.error(errMsg)
+    case Disabled                  => throw new IllegalArgumentException("mode must not be Disabled")
   }
 
   def fail(cause: IllegalStateException): Unit = {
     buffer.clear()
     persistentActor.tell(ReplayMessagesFailure(cause), Actor.noSender)
     context.become {
-      case _: ReplayedMessage ⇒ // discard
-      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) ⇒
+      case _: ReplayedMessage => // discard
+      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
         context.stop(self)
     }
   }

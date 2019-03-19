@@ -770,4 +770,26 @@ public class IntegrationDocTest extends AbstractJavaTest {
       }
     };
   }
+
+  @Test
+  public void illustrateSourceActorRef() throws Exception {
+    new TestKit(system) {
+      {
+        // #source-actorRef
+        int bufferSize = 10;
+
+        Source<Integer, ActorRef> source =
+            Source.actorRef(
+                bufferSize, OverflowStrategy.dropHead()); // note: backpressure is not supported
+        ActorRef actorRef =
+            source.map(x -> x * x).to(Sink.foreach(x -> System.out.println("got: " + x))).run(mat);
+
+        actorRef.tell(1, ActorRef.noSender());
+        actorRef.tell(2, ActorRef.noSender());
+        actorRef.tell(3, ActorRef.noSender());
+        actorRef.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
+        // #source-actorRef
+      }
+    };
+  }
 }

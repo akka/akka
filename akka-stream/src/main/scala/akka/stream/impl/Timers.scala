@@ -35,7 +35,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     import scala.concurrent.duration._
     if (timeout > 1.second) 1.second
     else {
-      FiniteDuration(math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2), TimeUnit.NANOSECONDS)
+      FiniteDuration(
+        math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
+        TimeUnit.NANOSECONDS)
     }
   }
 
@@ -213,7 +215,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   }
 
-  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
+  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () => O)
+      extends GraphStage[FlowShape[I, O]] {
     val in: Inlet[I] = Inlet("IdleInject.in")
     val out: Outlet[O] = Outlet("IdleInject.out")
 

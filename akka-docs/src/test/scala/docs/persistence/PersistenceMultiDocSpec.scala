@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-import akka.persistence.{ RuntimePluginConfig, PersistentActor }
+import akka.persistence.{ PersistentActor, RuntimePluginConfig }
 import com.typesafe.config.ConfigFactory
 
 object PersistenceMultiDocSpec {
@@ -71,16 +71,24 @@ object PersistenceMultiDocSpec {
     override def snapshotPluginId = s"snapshot-store-plugin-$runtimeDistinction"
 
     // Configuration which contains the journal plugin id defined above
-    override def journalPluginConfig = ConfigFactory.empty().withValue(
-      s"journal-plugin-$runtimeDistinction",
-      context.system.settings.config.getValue("journal-plugin") // or a very different configuration coming from an external service.
-    )
+    override def journalPluginConfig =
+      ConfigFactory
+        .empty()
+        .withValue(
+          s"journal-plugin-$runtimeDistinction",
+          context.system.settings.config
+            .getValue("journal-plugin") // or a very different configuration coming from an external service.
+        )
 
     // Configuration which contains the snapshot store plugin id defined above
-    override def snapshotPluginConfig = ConfigFactory.empty().withValue(
-      s"snapshot-plugin-$runtimeDistinction",
-      context.system.settings.config.getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
-    )
+    override def snapshotPluginConfig =
+      ConfigFactory
+        .empty()
+        .withValue(
+          s"snapshot-plugin-$runtimeDistinction",
+          context.system.settings.config
+            .getValue("snapshot-store-plugin") // or a very different configuration coming from an external service.
+        )
 
   }
 

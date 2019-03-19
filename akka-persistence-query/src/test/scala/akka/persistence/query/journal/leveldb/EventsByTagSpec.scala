@@ -38,18 +38,17 @@ object EventsByTagSpec {
 class ColorTagger extends WriteEventAdapter {
   val colors = Set("green", "black", "blue")
   override def toJournal(event: Any): Any = event match {
-    case s: String ⇒
-      var tags = colors.foldLeft(Set.empty[String])((acc, c) ⇒ if (s.contains(c)) acc + c else acc)
+    case s: String =>
+      var tags = colors.foldLeft(Set.empty[String])((acc, c) => if (s.contains(c)) acc + c else acc)
       if (tags.isEmpty) event
       else Tagged(event, tags)
-    case _ ⇒ event
+    case _ => event
   }
 
   override def manifest(event: Any): String = ""
 }
 
-class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
-  with Cleanup with ImplicitSender {
+class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
@@ -75,7 +74,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
       expectMsg(s"a green leaf-done")
 
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = NoOffset)
-      greenSrc.runWith(TestSink.probe[Any])
+      greenSrc
+        .runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple"))
         .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana"))
@@ -85,7 +85,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
         .expectComplete()
 
       val blackSrc = queries.currentEventsByTag(tag = "black", offset = Sequence(0L))
-      blackSrc.runWith(TestSink.probe[Any])
+      blackSrc
+        .runWith(TestSink.probe[Any])
         .request(5)
         .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car"))
         .expectComplete()
@@ -95,7 +96,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
       val c = system.actorOf(TestActor.props("c"))
 
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
-      val probe = greenSrc.runWith(TestSink.probe[Any])
+      val probe = greenSrc
+        .runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple"))
         .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana"))
@@ -113,7 +115,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(2L))
-      val probe = greenSrc.runWith(TestSink.probe[Any])
+      val probe = greenSrc
+        .runWith(TestSink.probe[Any])
         .request(10)
         // note that banana is not included, since exclusive offset
         .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
@@ -127,7 +130,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
       val d = system.actorOf(TestActor.props("d"))
 
       val blackSrc = queries.eventsByTag(tag = "black", offset = NoOffset)
-      val probe = blackSrc.runWith(TestSink.probe[Any])
+      val probe = blackSrc
+        .runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car"))
         .expectNoMessage(100.millis)
@@ -146,7 +150,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
 
     "find events from offset (exclusive)" in {
       val greenSrc = queries.eventsByTag(tag = "green", offset = Sequence(2L))
-      val probe = greenSrc.runWith(TestSink.probe[Any])
+      val probe = greenSrc
+        .runWith(TestSink.probe[Any])
         .request(10)
         // note that banana is not included, since exclusive offset
         .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))

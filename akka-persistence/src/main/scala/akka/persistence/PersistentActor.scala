@@ -4,38 +4,30 @@
 
 package akka.persistence
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 
-import akka.actor._
-import akka.japi.Procedure
-import akka.japi.Util
-import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
+import akka.actor._
 import akka.annotation.InternalApi
+import akka.japi.Procedure
+import akka.japi.Util
+import com.typesafe.config.Config
 
 abstract class RecoveryCompleted
+
 /**
  * Sent to a [[PersistentActor]] when the journal replay has been finished.
  */
 @SerialVersionUID(1L)
 case object RecoveryCompleted extends RecoveryCompleted {
+
   /**
    * Java API: get the singleton instance
    */
   def getInstance = this
 }
-
-/**
- * Reply message to a successful [[Eventsourced#deleteMessages]] request.
- */
-final case class DeleteMessagesSuccess(toSequenceNr: Long)
-
-/**
- * Reply message to a failed [[Eventsourced#deleteMessages]] request.
- */
-final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
 
 /**
  * Recovery mode configuration object to be returned in [[PersistentActor#recovery]].
@@ -57,9 +49,9 @@ final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
  */
 @SerialVersionUID(1L)
 final case class Recovery(
-  fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
-  toSequenceNr: Long                      = Long.MaxValue,
-  replayMax:    Long                      = Long.MaxValue)
+    fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
+    toSequenceNr: Long = Long.MaxValue,
+    replayMax: Long = Long.MaxValue)
 
 object Recovery {
 
@@ -122,6 +114,7 @@ sealed trait StashOverflowStrategy
  * Discard the message to [[akka.actor.DeadLetter]].
  */
 case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
+
   /**
    * Java API: get the singleton instance
    */
@@ -135,6 +128,7 @@ case object DiscardToDeadLetterStrategy extends StashOverflowStrategy {
  * to replay.
  */
 case object ThrowOverflowExceptionStrategy extends StashOverflowStrategy {
+
   /**
    * Java API: get the singleton instance
    */
@@ -195,7 +189,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param event event to be persisted
    * @param handler handler for each persisted `event`
    */
-  def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
+  def persist[A](event: A)(handler: A => Unit): Unit = {
     internalPersist(event)(handler)
   }
 
@@ -207,7 +201,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+  def persistAll[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
     internalPersistAll(events)(handler)
   }
 
@@ -234,7 +228,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param event event to be persisted
    * @param handler handler for each persisted `event`
    */
-  def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
+  def persistAsync[A](event: A)(handler: A => Unit): Unit = {
     internalPersistAsync(event)(handler)
   }
 
@@ -246,7 +240,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
-  def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+  def persistAllAsync[A](events: immutable.Seq[A])(handler: A => Unit): Unit = {
     internalPersistAllAsync(events)(handler)
   }
 
@@ -267,7 +261,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param event event to be handled in the future, when preceding persist operations have been processes
    * @param handler handler for the given `event`
    */
-  def deferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
+  def deferAsync[A](event: A)(handler: A => Unit): Unit = {
     internalDeferAsync(event)(handler)
   }
 
@@ -289,7 +283,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
    * @param event event to be handled in the future, when preceding persist operations have been processes
    * @param handler handler for the given `event`
    */
-  def defer[A](event: A)(handler: A ⇒ Unit): Unit = {
+  def defer[A](event: A)(handler: A => Unit): Unit = {
     internalDefer(event)(handler)
   }
 }
@@ -303,11 +297,11 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
   final def onReceive(message: Any) = onReceiveCommand(message)
 
   final def receiveRecover: Receive = {
-    case msg ⇒ onReceiveRecover(msg)
+    case msg => onReceiveRecover(msg)
   }
 
   final def receiveCommand: Receive = {
-    case msg ⇒ onReceiveCommand(msg)
+    case msg => onReceiveCommand(msg)
   }
 
   /**
@@ -336,7 +330,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each persisted `event`
    */
   def persist[A](event: A, handler: Procedure[A]): Unit =
-    internalPersist(event)(event ⇒ handler(event))
+    internalPersist(event)(event => handler(event))
 
   /**
    * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
@@ -347,7 +341,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each persisted `events`
    */
   def persistAll[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    internalPersistAll(Util.immutableSeq(events))(event ⇒ handler(event))
+    internalPersistAll(Util.immutableSeq(events))(event => handler(event))
 
   /**
    * JAVA API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -373,7 +367,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each persisted `event`
    */
   def persistAsync[A](event: A)(handler: Procedure[A]): Unit =
-    internalPersistAsync(event)(event ⇒ handler(event))
+    internalPersistAsync(event)(event => handler(event))
 
   /**
    * JAVA API: asynchronously persists `events` in specified order. This is equivalent to calling
@@ -384,7 +378,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for each persisted `events`
    */
   def persistAllAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    internalPersistAllAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+    internalPersistAllAsync(Util.immutableSeq(events))(event => handler(event))
 
   /**
    * Defer the handler execution until all pending handlers have been executed.
@@ -404,7 +398,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for the given `event`
    */
   def deferAsync[A](event: A)(handler: Procedure[A]): Unit =
-    internalDeferAsync(event)(event ⇒ handler(event))
+    internalDeferAsync(event)(event => handler(event))
 
   /**
    * Defer the handler execution until all pending handlers have been executed. It is guaranteed that no new commands
@@ -425,7 +419,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
    * @param handler handler for the given `event`
    */
   def defer[A](event: A)(handler: Procedure[A]): Unit = {
-    internalDefer(event)(event ⇒ handler(event))
+    internalDefer(event)(event => handler(event))
   }
 
   /**
@@ -458,6 +452,7 @@ abstract class UntypedPersistentActor extends UntypedActor with Eventsourced wit
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
 abstract class AbstractPersistentActor extends AbstractActor with AbstractPersistentActorLike {
+
   /**
    * Recovery handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
@@ -547,7 +542,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for each persisted `event`
    */
   def persist[A](event: A, handler: Procedure[A]): Unit =
-    internalPersist(event)(event ⇒ handler(event))
+    internalPersist(event)(event => handler(event))
 
   /**
    * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
@@ -558,7 +553,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for each persisted `events`
    */
   def persistAll[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    internalPersistAll(Util.immutableSeq(events))(event ⇒ handler(event))
+    internalPersistAll(Util.immutableSeq(events))(event => handler(event))
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -579,7 +574,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for each persisted `event`
    */
   def persistAsync[A](event: A, handler: Procedure[A]): Unit =
-    internalPersistAsync(event)(event ⇒ handler(event))
+    internalPersistAsync(event)(event => handler(event))
 
   /**
    * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
@@ -590,7 +585,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for each persisted `events`
    */
   def persistAllAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
-    internalPersistAllAsync(Util.immutableSeq(events))(event ⇒ handler(event))
+    internalPersistAllAsync(Util.immutableSeq(events))(event => handler(event))
 
   /**
    * Defer the handler execution until all pending handlers have been executed.
@@ -610,7 +605,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for the given `event`
    */
   def deferAsync[A](event: A)(handler: Procedure[A]): Unit =
-    internalDeferAsync(event)(event ⇒ handler(event))
+    internalDeferAsync(event)(event => handler(event))
 
   /**
    * Defer the handler execution until all pending handlers have been executed. It is guaranteed that no new commands
@@ -631,7 +626,7 @@ abstract class AbstractPersistentActor extends AbstractActor with AbstractPersis
    * @param handler handler for the given `event`
    */
   def defer[A](event: A)(handler: Procedure[A]): Unit = {
-    internalDefer(event)(event ⇒ handler(event))
+    internalDefer(event)(event => handler(event))
   }
 
 }

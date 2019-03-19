@@ -27,21 +27,24 @@ import javax.net.ssl.SSLEngine
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
-class TlsTcpWithSHA1PRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithSHA1PRNGSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = "SHA1PRNG"
       enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
     }
     """))
 
-class TlsTcpWithDefaultRNGSecureSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithDefaultRNGSecureSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
       enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
     }
     """))
 
-class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
       enabled-algorithms = [""SSL_RSA_WITH_NULL_MD5""]
@@ -62,7 +65,8 @@ object TlsTcpSpec {
 }
 
 abstract class TlsTcpSpec(config: Config)
-  extends ArteryMultiNodeSpec(config.withFallback(TlsTcpSpec.config)) with ImplicitSender {
+    extends ArteryMultiNodeSpec(config.withFallback(TlsTcpSpec.config))
+    with ImplicitSender {
 
   val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = address(systemB)
@@ -83,14 +87,14 @@ abstract class TlsTcpSpec(config: Config)
       val port = address.port.get
 
       val engine = provider.createServerSSLEngine(host, port)
-      val gotAllSupported = provider.SSLEnabledAlgorithms diff engine.getSupportedCipherSuites.toSet
-      val gotAllEnabled = provider.SSLEnabledAlgorithms diff engine.getEnabledCipherSuites.toSet
+      val gotAllSupported = provider.SSLEnabledAlgorithms.diff(engine.getSupportedCipherSuites.toSet)
+      val gotAllEnabled = provider.SSLEnabledAlgorithms.diff(engine.getEnabledCipherSuites.toSet)
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
       gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
       engine.getSupportedProtocols.contains(provider.SSLProtocol) ||
-        (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
+      (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
     } catch {
-      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) ⇒
+      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) =>
         info(e.toString)
         false
     }
@@ -106,10 +110,10 @@ abstract class TlsTcpSpec(config: Config)
     expectMsg("ping-1")
 
     // and some more
-    (2 to 10).foreach { n ⇒
+    (2 to 10).foreach { n =>
       echoRef ! s"ping-$n"
     }
-    receiveN(9) should equal((2 to 10).map(n ⇒ s"ping-$n"))
+    receiveN(9) should equal((2 to 10).map(n => s"ping-$n"))
   }
 
   "Artery with TLS/TCP" must {
@@ -124,7 +128,7 @@ abstract class TlsTcpSpec(config: Config)
         // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n ⇒
+          val randomBytes = (1 to 10).map { n =>
             rng.nextBytes(bytes)
             bytes.toVector
           }.toSet
@@ -172,12 +176,13 @@ abstract class TlsTcpSpec(config: Config)
 
 }
 
-class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
-  ConfigFactory.parseString("""
+class TlsTcpWithHostnameVerificationSpec
+    extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       hostname-verification = on
     }
-    """).withFallback(TlsTcpSpec.config)) with ImplicitSender {
+    """).withFallback(TlsTcpSpec.config))
+    with ImplicitSender {
 
   val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = address(systemB)
@@ -196,24 +201,24 @@ class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
   }
 }
 
-class TlsTcpWithActorSystemSetupSpec
-  extends ArteryMultiNodeSpec(TlsTcpSpec.config) with ImplicitSender {
+class TlsTcpWithActorSystemSetupSpec extends ArteryMultiNodeSpec(TlsTcpSpec.config) with ImplicitSender {
 
   val sslProviderServerProbe = TestProbe()
   val sslProviderClientProbe = TestProbe()
 
-  val sslProviderSetup = SSLEngineProviderSetup(sys ⇒ new ConfigSSLEngineProvider(sys) {
-    override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
-      sslProviderServerProbe.ref ! "createServerSSLEngine"
-      super.createServerSSLEngine(hostname, port)
-    }
+  val sslProviderSetup = SSLEngineProviderSetup(sys =>
+    new ConfigSSLEngineProvider(sys) {
+      override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
+        sslProviderServerProbe.ref ! "createServerSSLEngine"
+        super.createServerSSLEngine(hostname, port)
+      }
 
-    override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
-      sslProviderClientProbe.ref ! "createClientSSLEngine"
-      super.createClientSSLEngine(hostname, port)
-    }
+      override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
+        sslProviderClientProbe.ref ! "createClientSSLEngine"
+        super.createClientSSLEngine(hostname, port)
+      }
 
-  })
+    })
 
   val systemB = newRemoteSystem(name = Some("systemB"), setup = Some(ActorSystemSetup(sslProviderSetup)))
   val addressB = address(systemB)

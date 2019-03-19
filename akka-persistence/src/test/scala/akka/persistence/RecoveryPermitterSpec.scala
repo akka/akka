@@ -21,7 +21,7 @@ object RecoveryPermitterSpec {
     Props(new TestPersistentActor(name, probe, throwFromRecoveryCompleted))
 
   class TestPersistentActor(name: String, probe: ActorRef, throwFromRecoveryCompleted: Boolean)
-    extends PersistentActor {
+      extends PersistentActor {
 
     override def persistenceId = name
 
@@ -30,21 +30,20 @@ object RecoveryPermitterSpec {
     }
 
     override def receiveRecover: Receive = {
-      case RecoveryCompleted ⇒
+      case RecoveryCompleted =>
         probe ! RecoveryCompleted
         if (throwFromRecoveryCompleted)
           throw new TestExc
     }
     override def receiveCommand: Receive = {
-      case "stop" ⇒
+      case "stop" =>
         context.stop(self)
     }
   }
 
 }
 
-class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
@@ -169,7 +168,7 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
       p3.expectMsg(RecoveryCompleted)
       p3.expectMsg("postStop")
       // it's restarting
-      (1 to 5).foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         p3.expectMsg(RecoveryCompleted)
         p3.expectMsg("postStop")
       }
@@ -188,4 +187,3 @@ class RecoveryPermitterSpec extends PersistenceSpec(ConfigFactory.parseString(
   }
 
 }
-

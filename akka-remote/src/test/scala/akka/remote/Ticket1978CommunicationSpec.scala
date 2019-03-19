@@ -11,7 +11,7 @@ import java.util.zip.GZIPOutputStream
 import akka.actor._
 import akka.event.NoMarkerLogging
 import akka.pattern.ask
-import akka.remote.Configuration.{ CipherConfig, getCipherConfig }
+import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
 import akka.remote.transport.netty.SSLSettings
 import akka.testkit._
 import akka.util.Timeout
@@ -55,16 +55,29 @@ object Configuration {
     }
                      """
 
-  final case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int,
-                                provider: Option[ConfigSSLEngineProvider])
+  final case class CipherConfig(
+      runTest: Boolean,
+      config: Config,
+      cipher: String,
+      localPort: Int,
+      remotePort: Int,
+      provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
-    val localPort, remotePort = { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
+    val localPort, remotePort = {
+      val s = new java.net.ServerSocket(0);
+      try s.getLocalPort
+      finally s.close()
+    }
     try {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
-      val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
-      val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
+      val config =
+        ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
+      val fullConfig = config
+        .withFallback(AkkaSpec.testConf)
+        .withFallback(ConfigFactory.load)
+        .getConfig("akka.remote.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
       val sslEngineProvider = new ConfigSSLEngineProvider(NoMarkerLogging, settings)
@@ -76,36 +89,44 @@ object Configuration {
         throw new NoSuchAlgorithmException(sRng)
 
       val engine = sslEngineProvider.createClientSSLEngine()
-      val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
-      val gotAllEnabled = enabled.toSet diff engine.getEnabledCipherSuites.toSet
+      val gotAllSupported = enabled.toSet.diff(engine.getSupportedCipherSuites.toSet)
+      val gotAllEnabled = enabled.toSet.diff(engine.getEnabledCipherSuites.toSet)
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
       gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
       engine.getSupportedProtocols.contains(settings.SSLProtocol) ||
-        (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
+      (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
 
       CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {
-      case _: IllegalArgumentException | _: NoSuchAlgorithmException ⇒
+      case _: IllegalArgumentException | _: NoSuchAlgorithmException =>
         CipherConfig(false, AkkaSpec.testConf, cipher, localPort, remotePort, None) // Cannot match against the message since the message might be localized :S
     }
   }
 }
 
-class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+class Ticket1978SHA1PRNGSpec
+    extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
-class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+class Ticket1978DefaultRNGSecureSpec
+    extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
-class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "SSL_RSA_WITH_NULL_MD5"))
+class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
+    extends Ticket1978CommunicationSpec(getCipherConfig("", "SSL_RSA_WITH_NULL_MD5"))
 
-class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
+class Ticket1978NonExistingRNGSecureSpec
+    extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
 
-abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) extends AkkaSpec(cipherConfig.config) with ImplicitSender {
+abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
+    extends AkkaSpec(cipherConfig.config)
+    with ImplicitSender {
 
   implicit val timeout: Timeout = Timeout(10.seconds)
 
   lazy val other: ActorSystem = ActorSystem(
     "remote-sys",
-    ConfigFactory.parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort).withFallback(system.settings.config))
+    ConfigFactory
+      .parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort)
+      .withFallback(system.settings.config))
 
   override def afterTermination(): Unit = {
     if (cipherConfig.runTest) {
@@ -117,15 +138,18 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
   ("-") must {
     if (cipherConfig.runTest && preCondition) {
-      val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender() ! ((("pong", x), sender())) } }), "echo")
-      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
+      val ignoreMe = other.actorOf(Props(new Actor {
+        def receive = { case ("ping", x) => sender() ! ((("pong", x), sender())) }
+      }), "echo")
+      val otherAddress =
+        other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
       "generate random" in {
         val rng = cipherConfig.provider.get.createSecureRandom()
         val bytes = Array.ofDim[Byte](16)
         // awaitAssert just in case we are very unlucky to get same sequence more than once
         awaitAssert {
-          val randomBytes = (1 to 10).map { n ⇒
+          val randomBytes = (1 to 10).map { n =>
             rng.nextBytes(bytes)
             bytes.toVector
           }.toSet
@@ -158,8 +182,8 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
           expectMsgType[ActorIdentity].ref.get
         }
 
-        for (i ← 1 to 1000) here ! (("ping", i))
-        for (i ← 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) ⇒ true }
+        for (i <- 1 to 1000) here ! (("ping", i))
+        for (i <- 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) => true }
       }
 
       "support ask" in within(timeout.duration) {
@@ -169,7 +193,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
           expectMsgType[ActorIdentity].ref.get
         }
 
-        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
+        val f = for (i <- 1 to 1000) yield (here ? (("ping", i))).mapTo(classTag[((String, Int), ActorRef)])
         Await.result(Future.sequence(f), remaining).map(_._1._1).toSet should ===(Set("pong"))
       }
 

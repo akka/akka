@@ -20,15 +20,18 @@ import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
  * INTERNAL API
  */
 private[akka] object EventsByTagPublisher {
-  def props(tag: String, fromOffset: Long, toOffset: Long, refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int, writeJournalPluginId: String): Props = {
+  def props(
+      tag: String,
+      fromOffset: Long,
+      toOffset: Long,
+      refreshInterval: Option[FiniteDuration],
+      maxBufSize: Int,
+      writeJournalPluginId: String): Props = {
     refreshInterval match {
-      case Some(interval) ⇒
-        Props(new LiveEventsByTagPublisher(tag, fromOffset, toOffset, interval,
-          maxBufSize, writeJournalPluginId))
-      case None ⇒
-        Props(new CurrentEventsByTagPublisher(tag, fromOffset, toOffset,
-          maxBufSize, writeJournalPluginId))
+      case Some(interval) =>
+        Props(new LiveEventsByTagPublisher(tag, fromOffset, toOffset, interval, maxBufSize, writeJournalPluginId))
+      case None =>
+        Props(new CurrentEventsByTagPublisher(tag, fromOffset, toOffset, maxBufSize, writeJournalPluginId))
     }
   }
 
@@ -43,9 +46,13 @@ private[akka] object EventsByTagPublisher {
  */
 // FIXME needs a be rewritten as a GraphStage
 private[akka] abstract class AbstractEventsByTagPublisher(
-  val tag: String, val fromOffset: Long,
-  val maxBufSize: Int, val writeJournalPluginId: String)
-  extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+    val tag: String,
+    val fromOffset: Long,
+    val maxBufSize: Int,
+    val writeJournalPluginId: String)
+    extends ActorPublisher[EventEnvelope]
+    with DeliveryBuffer[EventEnvelope]
+    with ActorLogging {
   import EventsByTagPublisher._
 
   val journal: ActorRef = Persistence(context.system).journalFor(writeJournalPluginId)
@@ -57,22 +64,22 @@ private[akka] abstract class AbstractEventsByTagPublisher(
   def receive = init
 
   def init: Receive = {
-    case _: Request ⇒ receiveInitialRequest()
-    case Continue   ⇒ // skip, wait for first Request
-    case Cancel     ⇒ context.stop(self)
+    case _: Request => receiveInitialRequest()
+    case Continue   => // skip, wait for first Request
+    case Cancel     => context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
 
   def idle: Receive = {
-    case Continue | _: LeveldbJournal.TaggedEventAppended ⇒
+    case Continue | _: LeveldbJournal.TaggedEventAppended =>
       if (timeForReplay)
         replay()
 
-    case _: Request ⇒
+    case _: Request =>
       receiveIdleRequest()
 
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }
 
@@ -89,7 +96,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
   }
 
   def replaying(limit: Int): Receive = {
-    case ReplayedTaggedMessage(p, _, offset) ⇒
+    case ReplayedTaggedMessage(p, _, offset) =>
       buf :+= EventEnvelope(
         offset = Sequence(offset),
         persistenceId = p.persistenceId,
@@ -98,21 +105,21 @@ private[akka] abstract class AbstractEventsByTagPublisher(
       currOffset = offset
       deliverBuf()
 
-    case RecoverySuccess(highestSeqNr) ⇒
+    case RecoverySuccess(highestSeqNr) =>
       log.debug("replay completed for tag [{}], currOffset [{}]", tag, currOffset)
       receiveRecoverySuccess(highestSeqNr)
 
-    case ReplayMessagesFailure(cause) ⇒
+    case ReplayMessagesFailure(cause) =>
       log.debug("replay failed for tag [{}], due to [{}]", tag, cause.getMessage)
       deliverBuf()
       onErrorThenStop(cause)
 
-    case _: Request ⇒
+    case _: Request =>
       deliverBuf()
 
-    case Continue | _: LeveldbJournal.TaggedEventAppended ⇒ // skip during replay
+    case Continue | _: LeveldbJournal.TaggedEventAppended => // skip during replay
 
-    case Cancel ⇒
+    case Cancel =>
       context.stop(self)
   }
 
@@ -124,11 +131,13 @@ private[akka] abstract class AbstractEventsByTagPublisher(
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class LiveEventsByTagPublisher(
-  tag: String, fromOffset: Long, override val toOffset: Long,
-  refreshInterval: FiniteDuration,
-  maxBufSize:      Int, writeJournalPluginId: String)
-  extends AbstractEventsByTagPublisher(
-    tag, fromOffset, maxBufSize, writeJournalPluginId) {
+    tag: String,
+    fromOffset: Long,
+    override val toOffset: Long,
+    refreshInterval: FiniteDuration,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
+    extends AbstractEventsByTagPublisher(tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
   val tickTask: Cancellable =
@@ -162,10 +171,12 @@ private[akka] class LiveEventsByTagPublisher(
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class CurrentEventsByTagPublisher(
-  tag: String, fromOffset: Long, var _toOffset: Long,
-  maxBufSize: Int, writeJournalPluginId: String)
-  extends AbstractEventsByTagPublisher(
-    tag, fromOffset, maxBufSize, writeJournalPluginId) {
+    tag: String,
+    fromOffset: Long,
+    var _toOffset: Long,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
+    extends AbstractEventsByTagPublisher(tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
   override def toOffset: Long = _toOffset

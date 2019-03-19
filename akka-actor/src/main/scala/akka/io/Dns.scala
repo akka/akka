@@ -11,7 +11,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.util.unused
 
@@ -45,24 +45,29 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     override def consistentHashKey = name
   }
 
-  case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address]) extends Command {
+  case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address])
+      extends Command {
     val addrOption: Option[InetAddress] = IpVersionSelector.getInetAddress(ipv4.headOption, ipv6.headOption)
 
     @throws[UnknownHostException]
     def addr: InetAddress = addrOption match {
-      case Some(ipAddress) ⇒ ipAddress
-      case None            ⇒ throw new UnknownHostException(name)
+      case Some(ipAddress) => ipAddress
+      case None            => throw new UnknownHostException(name)
     }
   }
 
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
-      val ipv4: immutable.Seq[Inet4Address] = addresses.iterator.collect({
-        case a: Inet4Address ⇒ a
-      }).to(immutable.IndexedSeq)
-      val ipv6: immutable.Seq[Inet6Address] = addresses.iterator.collect({
-        case a: Inet6Address ⇒ a
-      }).to(immutable.IndexedSeq)
+      val ipv4: immutable.Seq[Inet4Address] = addresses.iterator
+        .collect({
+          case a: Inet4Address => a
+        })
+        .to(immutable.IndexedSeq)
+      val ipv6: immutable.Seq[Inet6Address] = addresses.iterator
+        .collect({
+          case a: Inet6Address => a
+        })
+        .to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
   }
@@ -93,7 +98,8 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String) extends IO.Extension {
+class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String)
+    extends IO.Extension {
 
   private val asyncDns = new ConcurrentHashMap[String, ActorRef]
 
@@ -109,16 +115,26 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   @InternalApi
   private[akka] def loadAsyncDns(managerName: String): ActorRef = {
     // This can't pass in `this` as then AsyncDns would pick up the system settings
-    asyncDns.computeIfAbsent(managerName, new JFunction[String, ActorRef] {
-      override def apply(r: String): ActorRef = {
-        val settings = new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
-        val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
-        system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
-        system.systemActorOf(
-          props = Props(provider.managerClass, settings.Resolver, system, settings.ResolverConfig, provider.cache, settings.Dispatcher, provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
-          name = managerName)
-      }
-    })
+    asyncDns.computeIfAbsent(
+      managerName,
+      new JFunction[String, ActorRef] {
+        override def apply(r: String): ActorRef = {
+          val settings =
+            new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
+          val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
+          system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
+          system.systemActorOf(
+            props = Props(
+              provider.managerClass,
+              settings.Resolver,
+              system,
+              settings.ResolverConfig,
+              provider.cache,
+              settings.Dispatcher,
+              provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
+            name = managerName)
+        }
+      })
   }
 
   /**
@@ -129,9 +145,11 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
    * For binary compat as DnsExt constructor didn't used to have internal API on
    */
   @InternalApi
-  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
+  def this(system: ExtendedActorSystem) =
+    this(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
 
   class Settings private[DnsExt] (config: Config, resolverName: String) {
+
     /**
      * Load the default resolver
      */
@@ -149,7 +167,8 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
 
   // System DNS resolver
-  val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
+  val provider: DnsProvider =
+    system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
 
   // System DNS cache
   val cache: Dns = provider.cache
@@ -169,7 +188,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
 object IpVersionSelector {
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
     System.getProperty("java.net.preferIPv6Addresses") match {
-      case "true" ⇒ ipv6 orElse ipv4
-      case _      ⇒ ipv4 orElse ipv6
+      case "true" => ipv6.orElse(ipv4)
+      case _      => ipv4.orElse(ipv6)
     }
 }

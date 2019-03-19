@@ -10,9 +10,9 @@ import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
+
 import scala.language.existentials
 import scala.collection.immutable.Map.Map1
-
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.SingleSource
 
@@ -65,19 +65,19 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     else if (first eq PushNotUsed) {
       // No need to push NotUsed and Pop it immediately
       second match {
-        case Pop               ⇒ EmptyTraversal
-        case Concat(Pop, rest) ⇒ rest
-        case _                 ⇒ Concat(PushNotUsed, second)
+        case Pop               => EmptyTraversal
+        case Concat(Pop, rest) => rest
+        case _                 => Concat(PushNotUsed, second)
       }
     } else {
       // Limit the tree by rotations
       first match {
-        case Concat(firstfirst, firstsecond) ⇒
+        case Concat(firstfirst, firstsecond) =>
           // Note that we DON'T use firstfirst.concat(firstsecond.concat(second)) here,
           // although that would fully linearize the tree.
           // The reason is to simply avoid going n^2. The rotation below is of constant time and good enough.
           Concat(firstfirst, Concat(firstsecond, second))
-        case _ ⇒ Concat(first, second)
+        case _ => Concat(first, second)
       }
     }
   }
@@ -120,7 +120,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  *
  * See the `TraversalTestUtils` class and the `testMaterialize` method for a simple example.
  */
-@InternalApi private[akka] final case class MaterializeAtomic(module: AtomicModule[Shape, Any], outToSlots: Array[Int]) extends Traversal {
+@InternalApi private[akka] final case class MaterializeAtomic(module: AtomicModule[Shape, Any], outToSlots: Array[Int])
+    extends Traversal {
   override def toString: String = s"MaterializeAtomic($module, ${outToSlots.mkString("[", ", ", "]")})"
 
   override def rewireFirstTo(relativeOffset: Int): Traversal = copy(outToSlots = Array(relativeOffset))
@@ -154,18 +155,19 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  * INTERNAL API
  */
 @InternalApi private[akka] final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
-  def apply(arg: Any): Any = mapper.asInstanceOf[Any ⇒ Any](arg)
+  def apply(arg: Any): Any = mapper.asInstanceOf[Any => Any](arg)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
+@InternalApi private[akka] final case class Compose(composer: AnyFunction2, reverse: Boolean = false)
+    extends MaterializedValueOp {
   def apply(arg1: Any, arg2: Any): Any = {
     if (reverse)
-      composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
+      composer.asInstanceOf[(Any, Any) => Any](arg2, arg1)
     else
-      composer.asInstanceOf[(Any, Any) ⇒ Any](arg1, arg2)
+      composer.asInstanceOf[(Any, Any) => Any](arg1, arg2)
   }
 }
 
@@ -195,8 +197,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 @InternalApi private[akka] object TraversalBuilder {
   // The most generic function1 and function2 (also completely useless, as we have thrown away all types)
   // needs to be casted once to be useful (pending runtime exception in cases of bugs).
-  type AnyFunction1 = Nothing ⇒ Any
-  type AnyFunction2 = (Nothing, Nothing) ⇒ Any
+  type AnyFunction1 = Nothing => Any
+  type AnyFunction2 = (Nothing, Nothing) => Any
 
   private val cachedEmptyCompleted = CompletedTraversalBuilder(PushNotUsed, 0, Map.empty, Attributes.none)
 
@@ -258,7 +260,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         val b = CompletedTraversalBuilder(
           traversalSoFar = MaterializeAtomic(module, new Array[Int](module.shape.outlets.size)),
           inSlots = module.shape.inlets.size,
-          inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap,
+          inToOffset = module.shape.inlets.map(in => in -> in.id).toMap,
           Attributes.none)
         b
       } else {
@@ -277,7 +279,6 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
    */
   @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
     var current: Traversal = t
-    var slot = 0
 
     def prindent(s: String): Unit = println(" | " * indent + s)
 
@@ -285,20 +286,21 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       var nextStep: Traversal = EmptyTraversal
 
       current match {
-        case PushNotUsed                        ⇒ prindent("push NotUsed")
-        case Pop                                ⇒ prindent("pop mat")
-        case _: Transform                       ⇒ prindent("transform mat")
-        case Compose(_, false)                  ⇒ prindent("compose mat")
-        case Compose(_, true)                   ⇒ prindent("compose reversed mat")
-        case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
-        case PopAttributes                      ⇒ prindent("pop attr")
-        case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
-        case ExitIsland                         ⇒ prindent("exit island")
-        case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
-        case Concat(first, next) ⇒
+        case PushNotUsed          => prindent("push NotUsed")
+        case Pop                  => prindent("pop mat")
+        case _: Transform         => prindent("transform mat")
+        case Compose(_, false)    => prindent("compose mat")
+        case Compose(_, true)     => prindent("compose reversed mat")
+        case PushAttributes(attr) => prindent("push attr " + attr)
+        case PopAttributes        => prindent("pop attr")
+        case EnterIsland(tag)     => prindent("enter island " + tag)
+        case ExitIsland           => prindent("exit island")
+        case MaterializeAtomic(mod, outToSlots) =>
+          prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
+        case Concat(first, next) =>
           printTraversal(first, indent + 1)
           nextStep = next
-        case _ ⇒
+        case _ =>
       }
 
       current = nextStep
@@ -316,20 +318,20 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       var nextStep: Traversal = EmptyTraversal
 
       current match {
-        case MaterializeAtomic(mod, outToSlots) ⇒
+        case MaterializeAtomic(mod, outToSlots) =>
           println(s"materialize $mod")
           val base = slot
-          mod.shape.inlets.foreach { in ⇒
+          mod.shape.inlets.foreach { in =>
             println(s"  wiring $in to $slot")
             slot += 1
           }
-          mod.shape.outlets.foreach { out ⇒
+          mod.shape.outlets.foreach { out =>
             println(s"  wiring $out to ${base + outToSlots(out.id)}")
           }
-        case Concat(first, next) ⇒
+        case Concat(first, next) =>
           slot = printWiring(first, slot)
           nextStep = next
-        case _ ⇒
+        case _ =>
       }
 
       current = nextStep
@@ -343,27 +345,27 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
    */
   def getSingleSource[A >: Null](graph: Graph[SourceShape[A], _]): OptionVal[SingleSource[A]] = {
     graph match {
-      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single)
-      case _ ⇒
+      case single: SingleSource[A] @unchecked => OptionVal.Some(single)
+      case _ =>
         graph.traversalBuilder match {
-          case l: LinearTraversalBuilder ⇒
+          case l: LinearTraversalBuilder =>
             l.pendingBuilder match {
-              case OptionVal.Some(a: AtomicTraversalBuilder) ⇒
+              case OptionVal.Some(a: AtomicTraversalBuilder) =>
                 a.module match {
-                  case m: GraphStageModule[_, _] ⇒
+                  case m: GraphStageModule[_, _] =>
                     m.stage match {
-                      case single: SingleSource[A] @unchecked ⇒
+                      case single: SingleSource[A] @unchecked =>
                         // It would be != EmptyTraversal if mapMaterializedValue was used and then we can't optimize.
                         if ((l.traversalSoFar eq EmptyTraversal) && !l.attributes.isAsync)
                           OptionVal.Some(single)
                         else OptionVal.None
-                      case _ ⇒ OptionVal.None
+                      case _ => OptionVal.None
                     }
-                  case _ ⇒ OptionVal.None
+                  case _ => OptionVal.None
                 }
-              case _ ⇒ OptionVal.None
+              case _ => OptionVal.None
             }
-          case _ ⇒ OptionVal.None
+          case _ => OptionVal.None
         }
     }
   }
@@ -484,11 +486,12 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class CompletedTraversalBuilder(
-  traversalSoFar: Traversal,
-  inSlots:        Int,
-  inToOffset:     Map[InPort, Int],
-  attributes:     Attributes,
-  islandTag:      OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
+    traversalSoFar: Traversal,
+    inSlots: Int,
+    inToOffset: Map[InPort, Int],
+    attributes: Attributes,
+    islandTag: OptionVal[IslandTag] = OptionVal.None)
+    extends TraversalBuilder {
 
   override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     val key = new BuilderKey
@@ -496,14 +499,14 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       reverseBuildSteps = key :: Nil,
       inSlots = inSlots,
       inOffsets = inToOffset,
-      pendingBuilders = Map(key → this),
+      pendingBuilders = Map(key -> this),
       attributes = attributes).add(submodule, shape, combineMat)
   }
 
   override def traversal: Traversal = {
     val withIsland = islandTag match {
-      case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(traversalSoFar).concat(ExitIsland)
-      case _                   ⇒ traversalSoFar
+      case OptionVal.Some(tag) => EnterIsland(tag).concat(traversalSoFar).concat(ExitIsland)
+      case _                   => traversalSoFar
     }
 
     if (attributes eq Attributes.none) withIsland
@@ -518,7 +521,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   override def isTraversalComplete: Boolean = true
 
   override def wire(out: OutPort, in: InPort): TraversalBuilder =
-    throw new UnsupportedOperationException(s"Cannot wire ports in a completed builder. ${out.mappedTo} ~> ${in.mappedTo}")
+    throw new UnsupportedOperationException(
+      s"Cannot wire ports in a completed builder. ${out.mappedTo} ~> ${in.mappedTo}")
 
   override def internalSetAttributes(attributes: Attributes): TraversalBuilder =
     copy(attributes = attributes)
@@ -527,8 +531,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
     this.islandTag match {
-      case OptionVal.None    ⇒ copy(islandTag = OptionVal(islandTag))
-      case OptionVal.Some(_) ⇒ this
+      case OptionVal.None    => copy(islandTag = OptionVal(islandTag))
+      case OptionVal.Some(_) => this
     }
 
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
@@ -549,10 +553,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class AtomicTraversalBuilder(
-  module:      AtomicModule[Shape, Any],
-  outToSlot:   Array[Int],
-  unwiredOuts: Int,
-  attributes:  Attributes) extends TraversalBuilder {
+    module: AtomicModule[Shape, Any],
+    outToSlot: Array[Int],
+    unwiredOuts: Int,
+    attributes: Attributes)
+    extends TraversalBuilder {
 
   override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     // TODO: Use automatically a linear builder if applicable
@@ -589,7 +594,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         val inlets = module.shape.inlets
         if (inlets.isEmpty) Map.empty
         else if (Shape.hasOnePort(inlets)) new Map1(inlets.head, inlets.head.id)
-        else inlets.iterator.map(in ⇒ in.asInstanceOf[InPort] → in.id).toMap
+        else inlets.iterator.map(in => in.asInstanceOf[InPort] -> in.id).toMap
       }
       CompletedTraversalBuilder(
         traversalSoFar = MaterializeAtomic(module, newOutToSlot),
@@ -612,22 +617,34 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 @InternalApi private[akka] object LinearTraversalBuilder {
 
   // TODO: Remove
-  private val cachedEmptyLinear = LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, Attributes.none)
+  private val cachedEmptyLinear =
+    LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, Attributes.none)
 
   private[this] final val wireBackward: Array[Int] = Array(-1)
   private[this] final val noWire: Array[Int] = Array()
 
   def empty(attributes: Attributes = Attributes.none): LinearTraversalBuilder =
     if (attributes eq Attributes.none) cachedEmptyLinear
-    else LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, attributes, EmptyTraversal)
+    else
+      LinearTraversalBuilder(
+        OptionVal.None,
+        OptionVal.None,
+        0,
+        0,
+        PushNotUsed,
+        OptionVal.None,
+        attributes,
+        EmptyTraversal)
 
   /**
    * Create a traversal builder specialized for linear graphs. This is designed to be much faster and lightweight
    * than its generic counterpart. It can be freely mixed with the generic builder in both ways.
    */
   def fromModule(module: AtomicModule[Shape, Any], attributes: Attributes): LinearTraversalBuilder = {
-    if (module.shape.inlets.size > 1) throw new IllegalStateException("Modules with more than one input port cannot be linear.")
-    if (module.shape.outlets.size > 1) throw new IllegalStateException("Modules with more than one output port cannot be linear.")
+    if (module.shape.inlets.size > 1)
+      throw new IllegalStateException("Modules with more than one input port cannot be linear.")
+    if (module.shape.outlets.size > 1)
+      throw new IllegalStateException("Modules with more than one output port cannot be linear.")
     TraversalBuilder.initShape(module.shape)
 
     val inPortOpt = OptionVal(module.shape.inlets.headOption.orNull)
@@ -657,19 +674,19 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   }
 
   def fromBuilder(
-    traversalBuilder: TraversalBuilder,
-    shape:            Shape,
-    combine:          AnyFunction2     = Keep.right): LinearTraversalBuilder = {
+      traversalBuilder: TraversalBuilder,
+      shape: Shape,
+      combine: AnyFunction2 = Keep.right): LinearTraversalBuilder = {
     traversalBuilder match {
-      case linear: LinearTraversalBuilder ⇒
+      case linear: LinearTraversalBuilder =>
         if (combine eq Keep.right) linear
         else empty().append(linear, combine)
 
-      case completed: CompletedTraversalBuilder ⇒
+      case completed: CompletedTraversalBuilder =>
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
         val inOffs = inOpt match {
-          case OptionVal.Some(in) ⇒ completed.offsetOf(in)
-          case OptionVal.None     ⇒ 0
+          case OptionVal.Some(in) => completed.offsetOf(in)
+          case OptionVal.None     => 0
         }
 
         LinearTraversalBuilder(
@@ -681,12 +698,12 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           pendingBuilder = OptionVal.None,
           Attributes.none)
 
-      case composite ⇒
+      case composite =>
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
         val out = shape.outlets.head // Cannot be empty, otherwise it would be a CompletedTraversalBuilder
         val inOffs = inOpt match {
-          case OptionVal.Some(in) ⇒ composite.offsetOf(in)
-          case OptionVal.None     ⇒ 0
+          case OptionVal.Some(in) => composite.offsetOf(in)
+          case OptionVal.None     => 0
         }
 
         LinearTraversalBuilder(
@@ -715,20 +732,22 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  * See comments in akka.stream.impl.package for more details.
  */
 @InternalApi private[akka] final case class LinearTraversalBuilder(
-  inPort:               OptionVal[InPort],
-  outPort:              OptionVal[OutPort],
-  inOffset:             Int,
-  override val inSlots: Int,
-  traversalSoFar:       Traversal,
-  pendingBuilder:       OptionVal[TraversalBuilder],
-  attributes:           Attributes,
-  beforeBuilder:        Traversal                   = EmptyTraversal,
-  islandTag:            OptionVal[IslandTag]        = OptionVal.None) extends TraversalBuilder {
+    inPort: OptionVal[InPort],
+    outPort: OptionVal[OutPort],
+    inOffset: Int,
+    override val inSlots: Int,
+    traversalSoFar: Traversal,
+    pendingBuilder: OptionVal[TraversalBuilder],
+    attributes: Attributes,
+    beforeBuilder: Traversal = EmptyTraversal,
+    islandTag: OptionVal[IslandTag] = OptionVal.None)
+    extends TraversalBuilder {
 
   protected def isEmpty: Boolean = inSlots == 0 && outPort.isEmpty
 
   override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
-    throw new UnsupportedOperationException("LinearTraversal does not support free-form addition. Add it into a" +
+    throw new UnsupportedOperationException(
+      "LinearTraversal does not support free-form addition. Add it into a" +
       "composite builder instead and add the second module to that.")
   }
 
@@ -751,8 +770,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
     val withIslandTag = islandTag match {
-      case OptionVal.None      ⇒ t
-      case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(t).concat(ExitIsland)
+      case OptionVal.None      => t
+      case OptionVal.Some(tag) => EnterIsland(tag).concat(t).concat(ExitIsland)
     }
 
     if (attributes eq Attributes.none) withIslandTag
@@ -778,18 +797,17 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   override def wire(out: OutPort, in: InPort): TraversalBuilder = {
     if (outPort.contains(out) && inPort.contains(in)) {
       pendingBuilder match {
-        case OptionVal.Some(composite) ⇒
+        case OptionVal.Some(composite) =>
           copy(
             inPort = OptionVal.None,
             outPort = OptionVal.None,
-            traversalSoFar =
-              applyIslandAndAttributes(
-                beforeBuilder.concat(
-                  composite
-                    .assign(out, inOffset - composite.offsetOfModule(out))
-                    .traversal).concat(traversalSoFar)),
-            pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
-        case OptionVal.None ⇒
+            traversalSoFar = applyIslandAndAttributes(
+              beforeBuilder
+                .concat(composite.assign(out, inOffset - composite.offsetOfModule(out)).traversal)
+                .concat(traversalSoFar)),
+            pendingBuilder = OptionVal.None,
+            beforeBuilder = EmptyTraversal)
+        case OptionVal.None =>
           copy(
             inPort = OptionVal.None,
             outPort = OptionVal.None,
@@ -802,8 +820,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   override def offsetOfModule(out: OutPort): Int = {
     if (outPort.contains(out)) {
       pendingBuilder match {
-        case OptionVal.Some(composite) ⇒ composite.offsetOfModule(out)
-        case OptionVal.None            ⇒ 0 // Output belongs to the last module, which will be materialized *first*
+        case OptionVal.Some(composite) => composite.offsetOfModule(out)
+        case OptionVal.None            => 0 // Output belongs to the last module, which will be materialized *first*
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
@@ -821,22 +839,15 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
     if (outPort.contains(out)) {
       pendingBuilder match {
-        case OptionVal.Some(composite) ⇒
+        case OptionVal.Some(composite) =>
           copy(
             outPort = OptionVal.None,
-            traversalSoFar =
-              applyIslandAndAttributes(
-                beforeBuilder.concat(
-                  composite
-                    .assign(out, relativeSlot)
-                    .traversal
-                    .concat(traversalSoFar))),
+            traversalSoFar = applyIslandAndAttributes(
+              beforeBuilder.concat(composite.assign(out, relativeSlot).traversal.concat(traversalSoFar))),
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
-        case OptionVal.None ⇒
-          copy(
-            outPort = OptionVal.None,
-            traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
+        case OptionVal.None =>
+          copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be assigned in this builder")
@@ -857,15 +868,15 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   def append(toAppend: LinearTraversalBuilder, matCompose: AnyFunction2): LinearTraversalBuilder = {
 
     if (toAppend.isEmpty) {
-      copy(
-        traversalSoFar = PushNotUsed.concat(LinearTraversalBuilder.addMatCompose(traversalSoFar, matCompose)))
+      copy(traversalSoFar = PushNotUsed.concat(LinearTraversalBuilder.addMatCompose(traversalSoFar, matCompose)))
     } else if (this.isEmpty) {
       toAppend.copy(
         traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
     } else {
       if (outPort.isDefined) {
         if (toAppend.inPort.isEmpty)
-          throw new IllegalArgumentException("Appended linear module must have an unwired input port because there is a dangling output.")
+          throw new IllegalArgumentException(
+            "Appended linear module must have an unwired input port because there is a dangling output.")
 
         /*
          * To understand how append works, first the general structure of the LinearTraversalBuilder must be
@@ -907,7 +918,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
          * different.
          */
         val assembledTraversalForThis = this.pendingBuilder match {
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             /*
              * This is the case where we are a pure linear builder (all composites have been already completed),
              * which means that traversalSoFar contains everything already, except the final attributes and islands
@@ -946,7 +957,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
               rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots)
             }
 
-          case OptionVal.Some(composite) ⇒
+          case OptionVal.Some(composite) =>
             /*
              * This is the case where our last module is a composite, and since it does not have its output port
              * wired yet, the traversal is split into the parts, traversalSoFar, pendingBuilder and beforeBuilder.
@@ -982,9 +993,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
              *
              * (remember that this is the _reverse_ of the Flow DSL order)
              */
-            beforeBuilder
-              .concat(compositeTraversal)
-              .concat(traversalSoFar)
+            beforeBuilder.concat(compositeTraversal).concat(traversalSoFar)
         }
 
         /*
@@ -1000,7 +1009,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
          * There are two variants, depending whether toAppend is purely linear or if it has a composite at the end.
          */
         toAppend.pendingBuilder match {
-          case OptionVal.None ⇒
+          case OptionVal.None =>
             /*
              * This is the simple case, when the other is purely linear. We just concatenate the traversals
              * and do some bookkeeping.
@@ -1019,7 +1028,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
               islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
 
-          case OptionVal.Some(composite) ⇒
+          case OptionVal.Some(_) =>
             /*
              * In this case we need to assemble as much as we can, and create a new "sandwich" of
              *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
@@ -1033,8 +1042,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
             // First prepare island enter and exit if tags are present
             toAppend.islandTag match {
-              case OptionVal.None ⇒ // Nothing changes
-              case OptionVal.Some(tag) ⇒
+              case OptionVal.None      => // Nothing changes
+              case OptionVal.Some(tag) =>
                 // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
                 // Exit the island just after the appended builder (they should not applied to _this_ builder)
@@ -1089,8 +1098,9 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
    */
   override def makeIsland(islandTag: IslandTag): LinearTraversalBuilder =
     this.islandTag match {
-      case OptionVal.Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
-      case OptionVal.None      ⇒ copy(islandTag = OptionVal.Some(islandTag))
+      case OptionVal.Some(_) =>
+        this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case OptionVal.None => copy(islandTag = OptionVal.Some(islandTag))
     }
 }
 
@@ -1142,16 +1152,17 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
  * @param unwiredOuts      Number of output ports that have not yet been wired/assigned
  */
 @InternalApi private[akka] final case class CompositeTraversalBuilder(
-  finalSteps:         Traversal                         = EmptyTraversal,
-  reverseBuildSteps:  List[TraversalBuildStep]          = AppendTraversal(PushNotUsed) :: Nil,
-  inSlots:            Int                               = 0,
-  inOffsets:          Map[InPort, Int]                  = Map.empty,
-  inBaseOffsetForOut: Map[OutPort, Int]                 = Map.empty,
-  pendingBuilders:    Map[BuilderKey, TraversalBuilder] = Map.empty,
-  outOwners:          Map[OutPort, BuilderKey]          = Map.empty,
-  unwiredOuts:        Int                               = 0,
-  attributes:         Attributes,
-  islandTag:          OptionVal[IslandTag]              = OptionVal.None) extends TraversalBuilder {
+    finalSteps: Traversal = EmptyTraversal,
+    reverseBuildSteps: List[TraversalBuildStep] = AppendTraversal(PushNotUsed) :: Nil,
+    inSlots: Int = 0,
+    inOffsets: Map[InPort, Int] = Map.empty,
+    inBaseOffsetForOut: Map[OutPort, Int] = Map.empty,
+    pendingBuilders: Map[BuilderKey, TraversalBuilder] = Map.empty,
+    outOwners: Map[OutPort, BuilderKey] = Map.empty,
+    unwiredOuts: Int = 0,
+    attributes: Attributes,
+    islandTag: OptionVal[IslandTag] = OptionVal.None)
+    extends TraversalBuilder {
 
   override def toString: String =
     s"""
@@ -1185,27 +1196,23 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       var remaining = reverseBuildSteps
       while (remaining.nonEmpty) {
         remaining.head match {
-          case key: BuilderKey ⇒
+          case key: BuilderKey =>
             // At this point all the builders we have are completed and we can finally build our traversal
             traversal = pendingBuilders(key).traversal.concat(traversal)
-          case AppendTraversal(toAppend) ⇒
+          case AppendTraversal(toAppend) =>
             traversal = toAppend.concat(traversal)
         }
         remaining = remaining.tail
       }
 
       val finalTraversal = islandTag match {
-        case OptionVal.None      ⇒ traversal
-        case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(traversal).concat(ExitIsland)
+        case OptionVal.None      => traversal
+        case OptionVal.Some(tag) => EnterIsland(tag).concat(traversal).concat(ExitIsland)
       }
 
       // The CompleteTraversalBuilder only keeps the minimum amount of necessary information that is needed for it
       // to be embedded in a larger graph, making partial graph reuse much more efficient.
-      CompletedTraversalBuilder(
-        traversalSoFar = finalTraversal,
-        inSlots,
-        inOffsets,
-        attributes)
+      CompletedTraversalBuilder(traversalSoFar = finalTraversal, inSlots, inOffsets, attributes)
     } else this
   }
 
@@ -1251,22 +1258,22 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     val newBuildSteps =
       if (combineMat == Keep.left) {
         AppendTraversal(Pop) ::
-          builderKey ::
-          reverseBuildSteps
+        builderKey ::
+        reverseBuildSteps
       } else if (combineMat == Keep.right) {
         builderKey ::
-          AppendTraversal(Pop) ::
-          reverseBuildSteps
+        AppendTraversal(Pop) ::
+        reverseBuildSteps
       } else if (combineMat == Keep.none) {
         AppendTraversal(PushNotUsed) ::
-          AppendTraversal(Pop) ::
-          AppendTraversal(Pop) ::
-          builderKey ::
-          reverseBuildSteps
+        AppendTraversal(Pop) ::
+        AppendTraversal(Pop) ::
+        builderKey ::
+        reverseBuildSteps
       } else {
         AppendTraversal(Compose(combineMat)) ::
-          builderKey ::
-          reverseBuildSteps
+        builderKey ::
+        reverseBuildSteps
       }
 
     val added = if (submodule.isTraversalComplete) {
@@ -1337,8 +1344,9 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder = {
     this.islandTag match {
-      case OptionVal.None ⇒ copy(islandTag = OptionVal(islandTag))
-      case _              ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case OptionVal.None => copy(islandTag = OptionVal(islandTag))
+      case _ =>
+        this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
     }
   }
 }

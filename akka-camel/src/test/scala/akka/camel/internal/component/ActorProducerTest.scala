@@ -32,7 +32,11 @@ import akka.util.Timeout
 import akka.actor._
 import akka.testkit._
 
-class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with WordSpecLike with Matchers with ActorProducerFixture {
+class ActorProducerTest
+    extends TestKit(ActorSystem("ActorProducerTest"))
+    with WordSpecLike
+    with Matchers
+    with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {
@@ -327,7 +331,8 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
   }
 }
 
-private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach { self: TestKit with Matchers with Suite ⇒
+private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach {
+  self: TestKit with Matchers with Suite =>
   var camel: Camel = _
   var exchange: CamelExchangeAdapter = _
   var callback: AsyncCallback = _
@@ -346,17 +351,17 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
 
     val sys = mock[ExtendedActorSystem]
     val config = ConfigFactory.defaultReference()
-    when(sys.dispatcher) thenReturn system.dispatcher
-    when(sys.dynamicAccess) thenReturn system.asInstanceOf[ExtendedActorSystem].dynamicAccess
-    when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
-    when(sys.name) thenReturn ("mocksystem")
+    when(sys.dispatcher).thenReturn(system.dispatcher)
+    when(sys.dynamicAccess).thenReturn(system.asInstanceOf[ExtendedActorSystem].dynamicAccess)
+    when(sys.settings).thenReturn(new Settings(this.getClass.getClassLoader, config, "mocksystem"))
+    when(sys.name).thenReturn("mocksystem")
 
     def camelWithMocks = new DefaultCamel(sys) {
       override val log = mock[MarkerLoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
       override lazy val context = mock[DefaultCamelContext]
-      override val settings = new CamelSettings(ConfigFactory.parseString(
-        """
+      override val settings = new CamelSettings(
+        ConfigFactory.parseString("""
           akka {
             camel {
               jmx = off
@@ -368,7 +373,8 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
               }
             }
           }
-        """).withFallback(config), sys.dynamicAccess)
+        """).withFallback(config),
+        sys.dynamicAccess)
     }
     camel = camelWithMocks
 
@@ -386,7 +392,11 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
 
   def msg(s: String) = CamelMessage(s, Map.empty)
 
-  def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: FiniteDuration = 20 seconds) = {
+  def given(
+      actor: ActorRef = probe.ref,
+      outCapable: Boolean = true,
+      autoAck: Boolean = true,
+      replyTimeout: FiniteDuration = 20 seconds) = {
     prepareMocks(actor, outCapable = outCapable)
     new ActorProducer(configure(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }
@@ -402,7 +412,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
     val callbackValue = new AtomicBoolean()
 
     def done(doneSync: Boolean): Unit = {
-      callbackValue set doneSync
+      callbackValue.set(doneSync)
       callbackReceived.countDown()
     }
 
@@ -410,12 +420,17 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
       if (!callbackReceived.await(timeout.length, timeout.unit)) fail("Callback not received!")
       else callbackValue.get
 
-    def expectDoneSyncWithin(implicit timeout: FiniteDuration): Unit = if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
-    def expectDoneAsyncWithin(implicit timeout: FiniteDuration): Unit = if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
+    def expectDoneSyncWithin(implicit timeout: FiniteDuration): Unit =
+      if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
+    def expectDoneAsyncWithin(implicit timeout: FiniteDuration): Unit =
+      if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
 
   }
 
-  def configure(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: FiniteDuration = 20 seconds) = {
+  def configure(
+      endpointUri: String = "test-uri",
+      isAutoAck: Boolean = true,
+      _replyTimeout: FiniteDuration = 20 seconds) = {
     val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
     endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout
@@ -423,13 +438,14 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   }
 
   def prepareMocks(actor: ActorRef, message: CamelMessage = message, outCapable: Boolean): Unit = {
-    when(actorEndpointPath.findActorIn(any[ActorSystem])) thenReturn Option(actor)
-    when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
-    when(exchange.isOutCapable) thenReturn outCapable
+    when(actorEndpointPath.findActorIn(any[ActorSystem])).thenReturn(Option(actor))
+    when(exchange.toRequestMessage(any[Map[String, Any]])).thenReturn(message)
+    when(exchange.isOutCapable).thenReturn(outCapable)
   }
 
-  def echoActor = system.actorOf(Props(new Actor {
-    def receive = { case msg ⇒ sender() ! "received " + msg }
-  }), name = "echoActor")
+  def echoActor =
+    system.actorOf(Props(new Actor {
+      def receive = { case msg => sender() ! "received " + msg }
+    }), name = "echoActor")
 
 }

@@ -23,8 +23,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object ClusterReceptionistSpec {
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
       akka.loglevel = DEBUG # issue #24960
       akka.actor {
         provider = cluster
@@ -54,13 +53,13 @@ object ClusterReceptionistSpec {
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
   case object Perish extends PingProtocol
 
-  val pingPongBehavior = Behaviors.receive[PingProtocol] { (_, msg) ⇒
+  val pingPongBehavior = Behaviors.receive[PingProtocol] { (_, msg) =>
     msg match {
-      case Ping(respondTo) ⇒
+      case Ping(respondTo) =>
         respondTo ! Pong
         Behaviors.same
 
-      case Perish ⇒
+      case Perish =>
         Behaviors.stopped
     }
   }
@@ -68,21 +67,22 @@ object ClusterReceptionistSpec {
   class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
-      case _: Ping ⇒ "a"
-      case Pong    ⇒ "b"
-      case Perish  ⇒ "c"
+      case _: Ping => "a"
+      case Pong    => "b"
+      case Perish  => "c"
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case p: Ping ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong    ⇒ Array.emptyByteArray
-      case Perish  ⇒ Array.emptyByteArray
+      case p: Ping =>
+        ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
+      case Pong   => Array.emptyByteArray
+      case Perish => Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "a" ⇒ Ping(ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
-      case "b" ⇒ Pong
-      case "c" ⇒ Perish
+      case "a" => Ping(ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
+      case "b" => Pong
+      case "c" => Perish
     }
   }
 
@@ -252,32 +252,37 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         try {
           val system3 = testKit3.system
-          system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
+          system1.log.debug(
+            "Starting system3 at same hostname port as system2, uid: [{}]",
+            Cluster(system3).selfMember.uniqueAddress.longUid)
           val clusterNode3 = Cluster(system3)
           clusterNode3.manager ! Join(clusterNode1.selfMember.address)
           val regProbe3 = TestProbe[Any]()(system3)
 
           // and registers the same service key
           val service3 = testKit3.spawn(pingPongBehavior, "instance")
-          system3.log.debug("Spawning/registering ping service in new incarnation {}#{}", service3.path, service3.path.uid)
+          system3.log.debug(
+            "Spawning/registering ping service in new incarnation {}#{}",
+            service3.path,
+            service3.path.uid)
           system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
           regProbe3.expectMessage(Registered(PingKey, service3))
           system3.log.debug("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
 
           // make sure it joined fine and node1 has upped it
           regProbe1.awaitAssert {
-            clusterNode1.state.members.exists(m ⇒
-              m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
+            clusterNode1.state.members.exists(
+              m =>
+                m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
                 m.status == MemberStatus.Up &&
-                !clusterNode1.state.unreachable(m)
-            )
+                !clusterNode1.state.unreachable(m))
           }
 
           // we should get either empty message and then updated with the new incarnation actor
           // or just updated with the new service directly
           val msg = regProbe1.fishForMessage(20.seconds) {
-            case PingKey.Listing(entries) if entries.size == 1 ⇒ FishingOutcome.Complete
-            case _: Listing                                    ⇒ FishingOutcome.ContinueAndIgnore
+            case PingKey.Listing(entries) if entries.size == 1 => FishingOutcome.Complete
+            case _: Listing                                    => FishingOutcome.ContinueAndIgnore
           }
           val PingKey.Listing(entries) = msg.last
           entries should have size 1
@@ -297,8 +302,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "not lose removals on concurrent updates to same key" in {
-      val config = ConfigFactory.parseString(
-        """
+      val config = ConfigFactory.parseString("""
           # disable delta propagation so we can have repeatable concurrent writes
           # without delta reaching between nodes already
           akka.cluster.distributed-data.delta-crdt.enabled=false
@@ -322,26 +326,23 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         // one actor on each node up front
         val actor1 = testKit1.spawn(Behaviors.receive[AnyRef] {
-          case (ctx, "stop") ⇒
+          case (ctx, "stop") =>
             ctx.log.info("Stopping")
             Behaviors.stopped
-          case _ ⇒ Behaviors.same
+          case _ => Behaviors.same
         }, "actor1")
         val actor2 = testKit2.spawn(Behaviors.empty[AnyRef], "actor2")
 
         system1.receptionist ! Register(TheKey, actor1)
         system1.receptionist ! Subscribe(TheKey, regProbe1.ref)
-        regProbe1.awaitAssert(
-          regProbe1.expectMessage(Listing(TheKey, Set(actor1))),
-          5.seconds
-        )
+        regProbe1.awaitAssert(regProbe1.expectMessage(Listing(TheKey, Set(actor1))), 5.seconds)
 
         system2.receptionist ! Subscribe(TheKey, regProbe2.ref)
         regProbe2.fishForMessage(10.seconds) {
-          case TheKey.Listing(actors) if actors.nonEmpty ⇒
+          case TheKey.Listing(actors) if actors.nonEmpty =>
             println(actors)
             FishingOutcomes.complete
-          case _ ⇒ FishingOutcomes.continue
+          case _ => FishingOutcomes.continue
         }
         system1.log.info("Saw actor on both nodes")
 
@@ -354,15 +355,15 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         // we should now, eventually, see the removal on both nodes
         regProbe1.fishForMessage(10.seconds) {
-          case TheKey.Listing(actors) if actors.size == 1 ⇒
+          case TheKey.Listing(actors) if actors.size == 1 =>
             FishingOutcomes.complete
-          case _ ⇒
+          case _ =>
             FishingOutcomes.continue
         }
         regProbe2.fishForMessage(10.seconds) {
-          case TheKey.Listing(actors) if actors.size == 1 ⇒
+          case TheKey.Listing(actors) if actors.size == 1 =>
             FishingOutcomes.complete
-          case _ ⇒
+          case _ =>
             FishingOutcomes.continue
         }
 

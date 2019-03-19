@@ -49,9 +49,12 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
   val maxPruningDissemination = 3.seconds
 
   def startReplicator(sys: ActorSystem): ActorRef =
-    sys.actorOf(Replicator.props(
-      ReplicatorSettings(sys).withGossipInterval(1.second)
-        .withPruning(pruningInterval = 1.second, maxPruningDissemination)), "replicator")
+    sys.actorOf(
+      Replicator.props(
+        ReplicatorSettings(sys)
+          .withGossipInterval(1.second)
+          .withPruning(pruningInterval = 1.second, maxPruningDissemination)),
+      "replicator")
   val replicator = startReplicator(system)
   val timeout = 5.seconds.dilated
 
@@ -59,7 +62,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -150,7 +153,9 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
 
       runOn(first) {
         val address = cluster2.selfAddress
-        val sys3 = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val sys3 = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
                   akka.remote.artery.canonical.port = ${address.port.get}
                   akka.remote.netty.tcp.port = ${address.port.get}
                   """).withFallback(system.settings.config))
@@ -190,4 +195,3 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
   }
 
 }
-

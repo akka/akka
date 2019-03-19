@@ -31,16 +31,26 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 
   private def setupStream(
-    outboundContext: OutboundContext, timeout: FiniteDuration = 5.seconds,
-    retryInterval:           FiniteDuration = 10.seconds,
-    injectHandshakeInterval: FiniteDuration = 10.seconds,
-    livenessProbeInterval:   Duration       = Duration.Undefined): (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
+      outboundContext: OutboundContext,
+      timeout: FiniteDuration = 5.seconds,
+      retryInterval: FiniteDuration = 10.seconds,
+      injectHandshakeInterval: FiniteDuration = 10.seconds,
+      livenessProbeInterval: Duration = Duration.Undefined)
+      : (TestPublisher.Probe[String], TestSubscriber.Probe[Any]) = {
 
-    TestSource.probe[String]
-      .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
-      .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, timeout, retryInterval,
-        injectHandshakeInterval, livenessProbeInterval))
-      .map(env ⇒ env.message)
+    TestSource
+      .probe[String]
+      .map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.None))
+      .via(
+        new OutboundHandshake(
+          system,
+          outboundContext,
+          outboundEnvelopePool,
+          timeout,
+          retryInterval,
+          injectHandshakeInterval,
+          livenessProbeInterval))
+      .map(env => env.message)
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

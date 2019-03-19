@@ -25,12 +25,13 @@ object ClusterShardingMinMembersSpec {
   case object StopEntity
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int ⇒ id.toString
-  }
+  val extractShardId: ShardRegion.ExtractShardId = msg =>
+    msg match {
+      case id: Int => id.toString
+    }
 
 }
 
@@ -66,7 +67,8 @@ abstract class ClusterShardingMinMembersSpecConfig(val mode: String) extends Mul
 object PersistentClusterShardingMinMembersSpecConfig extends ClusterShardingMinMembersSpecConfig("persistence")
 object DDataClusterShardingMinMembersSpecConfig extends ClusterShardingMinMembersSpecConfig("ddata")
 
-class PersistentClusterShardingMinMembersSpec extends ClusterShardingMinMembersSpec(PersistentClusterShardingMinMembersSpecConfig)
+class PersistentClusterShardingMinMembersSpec
+    extends ClusterShardingMinMembersSpec(PersistentClusterShardingMinMembersSpecConfig)
 class DDataClusterShardingMinMembersSpec extends ClusterShardingMinMembersSpec(DDataClusterShardingMinMembersSpecConfig)
 
 class PersistentClusterShardingMinMembersMultiJvmNode1 extends PersistentClusterShardingMinMembersSpec
@@ -77,27 +79,30 @@ class DDataClusterShardingMinMembersMultiJvmNode1 extends DDataClusterShardingMi
 class DDataClusterShardingMinMembersMultiJvmNode2 extends DDataClusterShardingMinMembersSpec
 class DDataClusterShardingMinMembersMultiJvmNode3 extends DDataClusterShardingMinMembersSpec
 
-abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingMinMembersSpec._
   import config._
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  val storageLocations = List(
+    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -105,7 +110,8 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
   val cluster = Cluster(system)
 
   def startSharding(): Unit = {
-    val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+    val allocationStrategy =
+      new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
     ClusterSharding(system).start(
       typeName = "Entity",
       entityProps = TestActors.echoActorProps,
@@ -195,4 +201,3 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
 
   }
 }
-

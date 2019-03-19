@@ -15,7 +15,7 @@ class DispatcherActorsSpec extends AkkaSpec {
   class SlowActor(finishedCounter: CountDownLatch) extends Actor {
 
     def receive = {
-      case x: Int ⇒ {
+      case x: Int => {
         Thread.sleep(50) // slow actor
         finishedCounter.countDown()
       }
@@ -24,7 +24,7 @@ class DispatcherActorsSpec extends AkkaSpec {
 
   class FastActor(finishedCounter: CountDownLatch) extends Actor {
     def receive = {
-      case x: Int ⇒ {
+      case x: Int => {
         finishedCounter.countDown()
       }
     }
@@ -38,12 +38,12 @@ class DispatcherActorsSpec extends AkkaSpec {
       val f = system.actorOf(Props(new FastActor(fFinished)))
 
       // send a lot of stuff to s
-      for (i ← 1 to 50) {
+      for (i <- 1 to 50) {
         s ! i
       }
 
       // send some messages to f
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         f ! i
       }
 

@@ -18,7 +18,7 @@ object ReliableProxyDocSpec {
     val proxy = context.actorOf(ReliableProxy.props(targetPath, 100.millis))
 
     def receive = {
-      case "hello" ⇒ proxy ! "world!"
+      case "hello" => proxy ! "world!"
     }
   }
   //#demo
@@ -31,11 +31,11 @@ object ReliableProxyDocSpec {
     var client: ActorRef = _
 
     def receive = {
-      case "go" ⇒
+      case "go" =>
         proxy ! 42
         client = sender()
-      case FSM.CurrentState(`proxy`, initial) ⇒
-      case FSM.Transition(`proxy`, from, to) ⇒
+      case FSM.CurrentState(`proxy`, initial) =>
+      case FSM.Transition(`proxy`, from, to) =>
         if (to == ReliableProxy.Idle)
           client ! "done"
     }
@@ -43,17 +43,17 @@ object ReliableProxyDocSpec {
   //#demo-transition
 
   class WatchingProxyParent(targetPath: ActorPath) extends Actor {
-    val proxy = context.watch(context.actorOf(
-      ReliableProxy.props(targetPath, 100.millis, reconnectAfter = 500.millis, maxReconnects = 3)))
+    val proxy = context.watch(
+      context.actorOf(ReliableProxy.props(targetPath, 100.millis, reconnectAfter = 500.millis, maxReconnects = 3)))
 
     var client: Option[ActorRef] = None
 
     def receive = {
-      case "hello" ⇒
+      case "hello" =>
         proxy ! "world!"
         client = Some(sender())
-      case Terminated(`proxy`) ⇒
-        client foreach { _ ! "terminated" }
+      case Terminated(`proxy`) =>
+        client.foreach { _ ! "terminated" }
     }
   }
 }

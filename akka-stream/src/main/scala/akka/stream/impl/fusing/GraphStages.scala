@@ -29,9 +29,10 @@ import scala.concurrent.{ Future, Promise }
  */
 // TODO: Fix variance issues
 @InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
-  shape:      S,
-  attributes: Attributes,
-  stage:      GraphStageWithMaterializedValue[S, M]) extends AtomicModule[S, M] {
+    shape: S,
+    attributes: Attributes,
+    stage: GraphStageWithMaterializedValue[S, M])
+    extends AtomicModule[S, M] {
 
   override def withAttributes(attributes: Attributes): AtomicModule[S, M] =
     if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
@@ -59,13 +60,14 @@ import scala.concurrent.{ Future, Promise }
   private object Identity extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.identityOp
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      def onPush(): Unit = push(out, grab(in))
-      def onPull(): Unit = pull(in)
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
+        def onPush(): Unit = push(out, grab(in))
+        def onPull(): Unit = pull(in)
 
-      setHandler(in, this)
-      setHandler(out, this)
-    }
+        setHandler(in, this)
+        setHandler(out, this)
+      }
 
     override def toString = "Identity"
   }
@@ -78,31 +80,32 @@ import scala.concurrent.{ Future, Promise }
   @InternalApi private[akka] final class Detacher[T] extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.detacher
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) with InHandler with OutHandler {
 
-      def onPush(): Unit = {
-        if (isAvailable(out)) {
-          push(out, grab(in))
-          tryPull(in)
+        def onPush(): Unit = {
+          if (isAvailable(out)) {
+            push(out, grab(in))
+            tryPull(in)
+          }
         }
-      }
 
-      override def onUpstreamFinish(): Unit = {
-        if (!isAvailable(in)) completeStage()
-      }
-
-      def onPull(): Unit = {
-        if (isAvailable(in)) {
-          push(out, grab(in))
-          if (isClosed(in)) completeStage()
-          else pull(in)
+        override def onUpstreamFinish(): Unit = {
+          if (!isAvailable(in)) completeStage()
         }
+
+        def onPull(): Unit = {
+          if (isAvailable(in)) {
+            push(out, grab(in))
+            if (isClosed(in)) completeStage()
+            else pull(in)
+          }
+        }
+
+        setHandlers(in, out, this)
+
+        override def preStart(): Unit = tryPull(in)
       }
-
-      setHandlers(in, out, this)
-
-      override def preStart(): Unit = tryPull(in)
-    }
 
     override def toString = "Detacher"
   }
@@ -155,8 +158,8 @@ import scala.concurrent.{ Future, Promise }
 
   private class FlowMonitorImpl[T] extends AtomicReference[Any](Initialized) with FlowMonitor[T] {
     override def state = get match {
-      case s: StreamState[_] ⇒ s.asInstanceOf[StreamState[T]]
-      case msg               ⇒ Received(msg.asInstanceOf[T])
+      case s: StreamState[_] => s.asInstanceOf[StreamState[T]]
+      case msg               => Received(msg.asInstanceOf[T])
     }
   }
 
@@ -195,8 +198,8 @@ import scala.concurrent.{ Future, Promise }
 
         override def postStop(): Unit = {
           monitor.state match {
-            case Finished | _: Failed ⇒
-            case _                    ⇒ monitor.set(Failed(new AbruptStageTerminationException(this)))
+            case Finished | _: Failed =>
+            case _                    => monitor.set(Failed(new AbruptStageTerminationException(this)))
           }
         }
 
@@ -215,23 +218,8 @@ import scala.concurrent.{ Future, Promise }
   def monitor[T]: GraphStageWithMaterializedValue[FlowShape[T, T], FlowMonitor[T]] =
     new MonitorFlow[T]
 
-  private object TickSource {
-    class TickSourceCancellable(cancelled: AtomicBoolean) extends Cancellable {
-      private val cancelPromise = Promise[Done]()
-
-      def cancelFuture: Future[Done] = cancelPromise.future
-
-      override def cancel(): Boolean = {
-        if (!isCancelled) cancelPromise.trySuccess(Done)
-        true
-      }
-
-      override def isCancelled: Boolean = cancelled.get()
-    }
-  }
-
   final class TickSource[T](val initialDelay: FiniteDuration, val interval: FiniteDuration, val tick: T)
-    extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
+      extends GraphStageWithMaterializedValue[SourceShape[T], Cancellable] {
     override val shape = SourceShape(Outlet[T]("TickSource.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.tickSource
@@ -242,7 +230,7 @@ import scala.concurrent.{ Future, Promise }
         val cancelCallback: AtomicReference[Option[AsyncCallback[Unit]]] = new AtomicReference(None)
 
         override def preStart() = {
-          cancelCallback.set(Some(getAsyncCallback[Unit](_ ⇒ completeStage())))
+          cancelCallback.set(Some(getAsyncCallback[Unit](_ => completeStage())))
           if (cancelled.get)
             completeStage()
           else
@@ -288,9 +276,8 @@ import scala.concurrent.{ Future, Promise }
     override def toString: String = "SingleSource"
   }
 
-  final class FutureFlattenSource[T, M](
-    futureSource: Future[Graph[SourceShape[T], M]])
-    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+  final class FutureFlattenSource[T, M](futureSource: Future[Graph[SourceShape[T], M]])
+      extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
     ReactiveStreamsCompliance.requireNonNullElement(futureSource)
 
     val out: Outlet[T] = Outlet("FutureFlattenSource.out")
@@ -306,30 +293,32 @@ import scala.concurrent.{ Future, Promise }
 
         override def preStart(): Unit =
           futureSource.value match {
-            case Some(it) ⇒
+            case Some(it) =>
               // this optimisation avoids going through any execution context, in similar vein to FastFuture
               onFutureSourceCompleted(it)
-            case _ ⇒
+            case _ =>
               val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
               futureSource.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
           }
 
         // initial handler (until future completes)
-        setHandler(out, new OutHandler {
-          def onPull(): Unit = {}
+        setHandler(
+          out,
+          new OutHandler {
+            def onPull(): Unit = {}
 
-          override def onDownstreamFinish(): Unit = {
-            if (!materialized.isCompleted) {
-              // we used to try to materialize the "inner" source here just to get
-              // the materialized value, but that is not safe and may cause the graph shell
-              // to leak/stay alive after the stage completes
+            override def onDownstreamFinish(): Unit = {
+              if (!materialized.isCompleted) {
+                // we used to try to materialize the "inner" source here just to get
+                // the materialized value, but that is not safe and may cause the graph shell
+                // to leak/stay alive after the stage completes
 
-              materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
+                materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
+              }
+
+              super.onDownstreamFinish()
             }
-
-            super.onDownstreamFinish()
-          }
-        })
+          })
 
         def onPush(): Unit =
           push(out, sinkIn.grab())
@@ -344,24 +333,26 @@ import scala.concurrent.{ Future, Promise }
           if (!sinkIn.isClosed) sinkIn.cancel()
 
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
-          result.map { graph ⇒
-            val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
-            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
-            materialized.success(matVal)
+          result
+            .map { graph =>
+              val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
+              val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
+              materialized.success(matVal)
 
-            setHandler(out, this)
-            sinkIn.setHandler(this)
+              setHandler(out, this)
+              sinkIn.setHandler(this)
 
-            if (isAvailable(out)) {
-              sinkIn.pull()
+              if (isAvailable(out)) {
+                sinkIn.pull()
+              }
+
             }
-
-          }.recover {
-            case t ⇒
-              sinkIn.cancel()
-              materialized.failure(t)
-              failStage(t)
-          }
+            .recover {
+              case t =>
+                sinkIn.cancel()
+                materialized.failure(t)
+                failStage(t)
+            }
         }
       }
 
@@ -388,8 +379,8 @@ import scala.concurrent.{ Future, Promise }
 
           def onFutureCompleted(result: Try[T]): Unit = {
             result match {
-              case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
-              case scala.util.Failure(t) ⇒ failStage(t)
+              case scala.util.Success(v) => emit(out, v, () => completeStage())
+              case scala.util.Failure(t) => failStage(t)
             }
           }
 
@@ -440,7 +431,6 @@ import scala.concurrent.{ Future, Promise }
 
       (logic, promise.future)
     }
-
   }
 
   /**
@@ -454,10 +444,10 @@ import scala.concurrent.{ Future, Promise }
    * which adds a detacher operator to every input.
    */
   @InternalApi private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
-    GraphDSL.create() { implicit builder ⇒
+    GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
       val concat = builder.add(stage)
-      val ds = concat.inlets.map { inlet ⇒
+      val ds = concat.inlets.map { inlet =>
         val detacher = builder.add(GraphStages.detacher[T])
         detacher ~> inlet
         detacher.in
@@ -466,4 +456,3 @@ import scala.concurrent.{ Future, Promise }
     }
 
 }
-

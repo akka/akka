@@ -2,3 +2,14 @@
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.recipientTerminatedExcpetion")
 # No longer needed, package private implicit #26350
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ccompat.package.fromCanBuildFrom")
+# Add optional field to ApiMayChange annotation #26409
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.annotation.ApiMayChange.issue")
+
+# Simplify backoff supervision API #19016
+ProblemFilters.exclude[MissingClassProblem]("akka.pattern.BackoffOnRestartSupervisor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.replyWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.finalStopMessage")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.handleMessageToChild")

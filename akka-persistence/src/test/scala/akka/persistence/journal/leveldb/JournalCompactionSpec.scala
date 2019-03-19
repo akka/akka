@@ -16,7 +16,8 @@ import org.apache.commons.io.FileUtils
 
 import scala.util.Random
 
-class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalNoCompactionSpec")) {
+class JournalNoCompactionSpec
+    extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalNoCompactionSpec")) {
 
   "A LevelDB-based persistent actor" must {
     "NOT compact the journal if compaction is not activated by configuration" in {
@@ -26,7 +27,7 @@ class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBui
       val deletionBatchSize = 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -50,7 +51,8 @@ class JournalNoCompactionSpec extends JournalCompactionSpecBase(SpecComponentBui
   }
 }
 
-class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionSpec", 500)) {
+class JournalCompactionSpec
+    extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionSpec", 500)) {
 
   "A LevelDB-based persistent actor" must {
     "compact the journal upon message deletions of configured persistence ids" in {
@@ -60,7 +62,7 @@ class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuild
       val deletionBatchSize = builder.compactionInterval // 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -84,7 +86,8 @@ class JournalCompactionSpec extends JournalCompactionSpecBase(SpecComponentBuild
   }
 }
 
-class JournalCompactionThresholdSpec extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionThresholdSpec", 500)) {
+class JournalCompactionThresholdSpec
+    extends JournalCompactionSpecBase(SpecComponentBuilder("leveldb-JournalCompactionThresholdSpec", 500)) {
 
   "A LevelDB-based persistent actor" must {
     "compact the journal only after the threshold implied by the configured compaction interval has been exceeded" in {
@@ -94,7 +97,7 @@ class JournalCompactionThresholdSpec extends JournalCompactionSpecBase(SpecCompo
       val deletionBatchSize = builder.compactionInterval // 500
       var oldJournalSize = 0L
 
-      for (i ← 0L.until(totalMessages)) {
+      for (i <- 0L.until(totalMessages)) {
         logger ! Generate
         watcher.expectMsg(Generated(i))
       }
@@ -141,11 +144,12 @@ object JournalCompactionSpec {
   class SpecComponentBuilder(val specId: String, val compactionInterval: Long) {
 
     def config: Config = {
-      PersistenceSpec.config("leveldb", specId, extraConfig = Some(
-        s"""
+      PersistenceSpec.config(
+        "leveldb",
+        specId,
+        extraConfig = Some(s"""
            | akka.persistence.journal.leveldb.compaction-intervals.$specId = $compactionInterval
-        """.stripMargin
-      ))
+        """.stripMargin))
     }
 
     def createLogger(system: ActorSystem, watcher: ActorRef): ActorRef = {
@@ -181,16 +185,16 @@ object JournalCompactionSpec {
     import EventLogger._
 
     override def receiveRecover: Receive = {
-      case Event(seqNr, _) ⇒ log.info("Recovered event {}", seqNr)
+      case Event(seqNr, _) => log.info("Recovered event {}", seqNr)
     }
 
     override def receiveCommand: Receive = {
-      case Generate ⇒
+      case Generate =>
         persist(Event(lastSequenceNr, randomText()))(onEventPersisted)
-      case Delete(toSeqNr) ⇒
+      case Delete(toSeqNr) =>
         log.info("Deleting messages up to {}", toSeqNr)
         deleteMessages(toSeqNr)
-      case evt: DeleteMessagesSuccess ⇒
+      case evt: DeleteMessagesSuccess =>
         watcher ! evt
     }
 

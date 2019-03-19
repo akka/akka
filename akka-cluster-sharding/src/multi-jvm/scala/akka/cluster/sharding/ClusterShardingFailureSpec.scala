@@ -33,19 +33,19 @@ object ClusterShardingFailureSpec {
     var n = 0
 
     def receive = {
-      case Get(id)   ⇒ sender() ! Value(id, n)
-      case Add(_, i) ⇒ n += i
+      case Get(id)   => sender() ! Value(id, n)
+      case Add(_, i) => n += i
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case m @ Get(id)    ⇒ (id, m)
-    case m @ Add(id, _) ⇒ (id, m)
+    case m @ Get(id)    => (id, m)
+    case m @ Add(id, _) => (id, m)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    ⇒ id.charAt(0).toString
-    case Add(id, _) ⇒ id.charAt(0).toString
+    case Get(id)    => id.charAt(0).toString
+    case Add(id, _) => id.charAt(0).toString
   }
 
 }
@@ -88,7 +88,8 @@ abstract class ClusterShardingFailureSpecConfig(val mode: String) extends MultiN
 object PersistentClusterShardingFailureSpecConfig extends ClusterShardingFailureSpecConfig("persistence")
 object DDataClusterShardingFailureSpecConfig extends ClusterShardingFailureSpecConfig("ddata")
 
-class PersistentClusterShardingFailureSpec extends ClusterShardingFailureSpec(PersistentClusterShardingFailureSpecConfig)
+class PersistentClusterShardingFailureSpec
+    extends ClusterShardingFailureSpec(PersistentClusterShardingFailureSpecConfig)
 class DDataClusterShardingFailureSpec extends ClusterShardingFailureSpec(DDataClusterShardingFailureSpecConfig)
 
 class PersistentClusterShardingFailureMultiJvmNode1 extends PersistentClusterShardingFailureSpec
@@ -99,29 +100,32 @@ class DDataClusterShardingFailureMultiJvmNode1 extends DDataClusterShardingFailu
 class DDataClusterShardingFailureMultiJvmNode2 extends DDataClusterShardingFailureSpec
 class DDataClusterShardingFailureMultiJvmNode3 extends DDataClusterShardingFailureSpec
 
-abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConfig)
+    extends MultiNodeSpec(config)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterShardingFailureSpec._
   import config._
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
+  val storageLocations = List(
+    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
   override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   val cluster = Cluster(system)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       startSharding()
 
       within(remaining) {
@@ -276,4 +280,3 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
   }
 }
-

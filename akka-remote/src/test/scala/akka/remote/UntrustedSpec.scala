@@ -35,9 +35,9 @@ object UntrustedSpec {
     context.actorOf(Props(classOf[FakeUser], testActor), "user")
 
     def receive = {
-      case IdentifyReq(path) ⇒ context.actorSelection(path).tell(Identify(None), sender())
-      case StopChild(name)   ⇒ context.child(name) foreach context.stop
-      case msg               ⇒ testActor forward msg
+      case IdentifyReq(path) => context.actorSelection(path).tell(Identify(None), sender())
+      case StopChild(name)   => context.child(name).foreach(context.stop)
+      case msg               => testActor.forward(msg)
     }
   }
 
@@ -46,14 +46,14 @@ object UntrustedSpec {
       testActor ! s"${self.path.name} stopped"
     }
     def receive = {
-      case msg ⇒ testActor forward msg
+      case msg => testActor.forward(msg)
     }
   }
 
   class FakeUser(testActor: ActorRef) extends Actor {
     context.actorOf(Props(classOf[Child], testActor), "receptionist")
     def receive = {
-      case msg ⇒ testActor forward msg
+      case msg => testActor.forward(msg)
     }
   }
 
@@ -69,7 +69,9 @@ akka.loglevel = DEBUG # test verifies debug
 
   import UntrustedSpec._
 
-  val client = ActorSystem("UntrustedSpec-client", ConfigFactory.parseString("""
+  val client = ActorSystem(
+    "UntrustedSpec-client",
+    ConfigFactory.parseString("""
       akka.actor.provider = remote
       akka.remote.netty.tcp.port = 0
   """))
@@ -87,8 +89,7 @@ akka.loglevel = DEBUG # test verifies debug
 
   lazy val target2 = {
     val p = TestProbe()(client)
-    client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(
-      IdentifyReq("child2"), p.ref)
+    client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(IdentifyReq("child2"), p.ref)
     p.expectMsgType[ActorIdentity].ref.get
   }
 
@@ -113,8 +114,8 @@ akka.loglevel = DEBUG # test verifies debug
       system.eventStream.subscribe(system.actorOf(Props(new Actor {
         import Logging._
         def receive = {
-          case d @ Debug(_, _, msg: String) if msg contains "dropping" ⇒ logProbe.ref ! d
-          case _ ⇒
+          case d @ Debug(_, _, msg: String) if msg contains "dropping" => logProbe.ref ! d
+          case _                                                       =>
         }
       }).withDeploy(Deploy.local), "debugSniffer"), classOf[Logging.Debug])
 
@@ -134,7 +135,7 @@ akka.loglevel = DEBUG # test verifies debug
       client.actorOf(Props(new Actor {
         context.watch(target2)
         def receive = {
-          case x ⇒ testActor forward x
+          case x => testActor.forward(x)
         }
       }).withDeploy(Deploy.local))
       receptionist ! StopChild("child2")
@@ -151,8 +152,7 @@ akka.loglevel = DEBUG # test verifies debug
 
     "discard actor selection with non root anchor" in {
       val p = TestProbe()(client)
-      client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(
-        Identify(None), p.ref)
+      client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(Identify(None), p.ref)
       val clientReceptionistRef = p.expectMsgType[ActorIdentity].ref.get
 
       val sel = ActorSelection(clientReceptionistRef, receptionist.path.toStringWithoutAddress)

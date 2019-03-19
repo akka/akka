@@ -16,7 +16,9 @@ import akka.persistence.typed.scaladsl
 
 /** INTERNAL API */
 @InternalApi
-private[akka] abstract class EffectImpl[+Event, State] extends javadsl.ReplyEffect[Event, State] with scaladsl.ReplyEffect[Event, State] {
+private[akka] abstract class EffectImpl[+Event, State]
+    extends javadsl.ReplyEffect[Event, State]
+    with scaladsl.ReplyEffect[Event, State] {
   /* All events that will be persisted in this effect */
   override def events: immutable.Seq[Event] = Nil
 
@@ -37,15 +39,18 @@ private[akka] abstract class EffectImpl[+Event, State] extends javadsl.ReplyEffe
 /** INTERNAL API */
 @InternalApi
 private[akka] object CompositeEffect {
-  def apply[Event, State](effect: scaladsl.Effect[Event, State], sideEffects: SideEffect[State]): CompositeEffect[Event, State] =
+  def apply[Event, State](
+      effect: scaladsl.Effect[Event, State],
+      sideEffects: SideEffect[State]): CompositeEffect[Event, State] =
     CompositeEffect[Event, State](effect, sideEffects :: Nil)
 }
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class CompositeEffect[Event, State](
-  persistingEffect: scaladsl.Effect[Event, State],
-  _sideEffects:     immutable.Seq[SideEffect[State]]) extends EffectImpl[Event, State] {
+    persistingEffect: scaladsl.Effect[Event, State],
+    _sideEffects: immutable.Seq[SideEffect[State]])
+    extends EffectImpl[Event, State] {
 
   override val events: immutable.Seq[Event] = persistingEffect.events
 
@@ -65,7 +70,8 @@ private[akka] case class Persist[Event, State](event: Event) extends EffectImpl[
 
 /** INTERNAL API */
 @InternalApi
-private[akka] case class PersistAll[Event, State](override val events: immutable.Seq[Event]) extends EffectImpl[Event, State]
+private[akka] case class PersistAll[Event, State](override val events: immutable.Seq[Event])
+    extends EffectImpl[Event, State]
 
 /** INTERNAL API */
 @InternalApi
@@ -74,4 +80,3 @@ private[akka] case object Unhandled extends EffectImpl[Nothing, Nothing]
 /** INTERNAL API */
 @InternalApi
 private[akka] case object Stash extends EffectImpl[Nothing, Nothing]
-

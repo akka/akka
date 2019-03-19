@@ -164,7 +164,7 @@ declare -r publish_path="${release_server}:${release_path}"
 
 JAVA_VERSION=`java -version 2>&1 | grep -E "java version|openjdk version" | cut -d '"' -f2 | cut -d '.' -f1`
 
-[[ $JAVA_VERSION -ge 9 ]] || fail "Java version is not at least 9"
+[[ $JAVA_VERSION -ge 11 ]] || fail "Java version is not at least 11"
 
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
@@ -371,7 +371,7 @@ if [ $dry_run ]; then
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   important sbt "deployRsync ${release_server}"
-  important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads --exclude ${release_dir}/docs ${release_dir}/ ${publish_path}/
+  important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude downloads --exclude docs ${release_dir}/ ${publish_path}/
   #important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
   #important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"

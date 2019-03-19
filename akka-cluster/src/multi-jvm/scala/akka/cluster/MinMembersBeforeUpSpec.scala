@@ -17,9 +17,10 @@ object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
-    "akka.cluster.min-nr-of-members = 3")).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("akka.cluster.min-nr-of-members = 3"))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 object MinMembersBeforeUpWithWeaklyUpMultiJvmSpec extends MultiNodeConfig {
@@ -27,10 +28,12 @@ object MinMembersBeforeUpWithWeaklyUpMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.cluster.min-nr-of-members = 3
-      akka.cluster.allow-weakly-up-members = on""")).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+      akka.cluster.allow-weakly-up-members = on"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 object MinMembersOfRoleBeforeUpMultiJvmSpec extends MultiNodeConfig {
@@ -38,15 +41,14 @@ object MinMembersOfRoleBeforeUpMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
-    "akka.cluster.role.backend.min-nr-of-members = 2")).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("akka.cluster.role.backend.min-nr-of-members = 2"))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 
-  nodeConfig(first)(
-    ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
+  nodeConfig(first)(ConfigFactory.parseString("akka.cluster.roles =[frontend]"))
 
-  nodeConfig(second, third)(
-    ConfigFactory.parseString("akka.cluster.roles =[backend]"))
+  nodeConfig(second, third)(ConfigFactory.parseString("akka.cluster.roles =[backend]"))
 }
 
 class MinMembersBeforeUpMultiJvmNode1 extends MinMembersBeforeUpSpec
@@ -101,8 +103,8 @@ abstract class MinMembersOfRoleBeforeUpSpec extends MinMembersBeforeUpBase(MinMe
 }
 
 abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def first: RoleName
   def second: RoleName
@@ -113,7 +115,7 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
     cluster.registerOnMemberUp(onUpLatch.countDown())
 
     runOn(first) {
-      cluster join myself
+      cluster.join(myself)
       awaitAssert {
         clusterView.refreshCurrentState()
         clusterView.status should ===(Joining)
@@ -127,14 +129,14 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       cluster.join(first)
     }
     runOn(first, second) {
-      val expectedAddresses = Set(first, second) map address
+      val expectedAddresses = Set(first, second).map(address)
       awaitAssert {
         clusterView.refreshCurrentState()
         clusterView.members.map(_.address) should ===(expectedAddresses)
       }
       clusterView.members.unsorted.map(_.status) should ===(Set(Joining))
       // and it should not change
-      1 to 5 foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         Thread.sleep(1000)
         clusterView.members.map(_.address) should ===(expectedAddresses)
         clusterView.members.unsorted.map(_.status) should ===(Set(Joining))

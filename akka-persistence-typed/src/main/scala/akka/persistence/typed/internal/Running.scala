@@ -6,10 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.Failure
-import scala.util.Success
 
-import akka.Done
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -21,10 +18,18 @@ import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.Callback
+import akka.persistence.typed.DeleteSnapshotsCompleted
+import akka.persistence.typed.DeleteSnapshotsFailed
+import akka.persistence.typed.DeleteMessagesCompleted
+import akka.persistence.typed.DeleteMessagesFailed
+import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
+import akka.persistence.typed.SnapshotCompleted
+import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.Stop
 import akka.persistence.typed.UnstashAll
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 
 /**
@@ -48,11 +53,11 @@ import akka.persistence.typed.scaladsl.Effect
 @InternalApi
 private[akka] object Running {
 
-  final case class RunningState[State](
-    seqNr:              Long,
-    state:              State,
-    receivedPoisonPill: Boolean
-  ) {
+  trait WithSeqNrAccessible {
+    def currentSequenceNumber: Long
+  }
+
+  final case class RunningState[State](seqNr: Long, state: State, receivedPoisonPill: Boolean) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -66,46 +71,113 @@ private[akka] object Running {
     }
   }
 
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] =
-    new Running(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
+    val running = new Running(setup.setMdc(MDC.RunningCmds))
+    new running.HandlingCommands(state)
+  }
 }
 
 // ===============================================
 
 /** INTERNAL API */
-@InternalApi private[akka] class Running[C, E, S](
-  override val setup: BehaviorSetup[C, E, S])
-  extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
+@InternalApi private[akka] final class Running[C, E, S](override val setup: BehaviorSetup[C, E, S])
+    extends JournalInteractions[C, E, S]
+    with SnapshotInteractions[C, E, S]
+    with StashManagement[C, E, S] {
   import InternalProtocol._
   import Running.RunningState
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
+  private val storingSnapshotMdc = MDC.create(setup.persistenceId, MDC.StoringSnapshot)
 
-  def handlingCommands(state: RunningState[S]): Behavior[InternalProtocol] = {
+  final class HandlingCommands(state: RunningState[S])
+      extends AbstractBehavior[InternalProtocol]
+      with WithSeqNrAccessible {
+
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case IncomingCommand(c: C @unchecked) => onCommand(state, c)
+      case SnapshotterResponse(r)           => onSnapshotterResponse(r)
+      case JournalResponse(r)               => onJournalResponse(r)
+      case _                                => Behaviors.unhandled
+    }
+
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
+        else new HandlingCommands(state.copy(receivedPoisonPill = true))
+    }
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
+    /** Handle journal responses for non-persist events workloads. */
+    def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
+      val signal = response match {
+        case DeleteMessagesSuccess(toSequenceNr) =>
+          setup.log.debug("Persistent messages to [{}] deleted successfully.", toSequenceNr)
+          internalDeleteSnapshots(toSequenceNr)
+          Some(DeleteMessagesCompleted(toSequenceNr))
+
+        case DeleteMessagesFailure(e, toSequenceNr) =>
+          Some(DeleteMessagesFailed(toSequenceNr, e))
+        case _ =>
+          None
+      }
+
+      signal match {
+        case Some(sig) =>
+          setup.onSignal(sig)
+          this
+        case None =>
+          Behaviors.unhandled // unexpected journal response
+      }
+    }
+
+    /** Handle snapshot responses for non-persist events workloads. */
+    def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+      val signal = response match {
+        case DeleteSnapshotsSuccess(criteria) =>
+          Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)))
+        case DeleteSnapshotsFailure(criteria, error) =>
+          Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), error))
+        case DeleteSnapshotSuccess(meta) =>
+          Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)))
+        case DeleteSnapshotFailure(meta, error) =>
+          Some(DeleteSnapshotsFailed(DeletionTarget.Individual(meta), error))
+        case _ =>
+          None
+      }
+
+      signal match {
+        case Some(sig) =>
+          setup.onSignal(sig)
+          this
+        case None =>
+          Behaviors.unhandled // unexpected snapshot response
+      }
+    }
+
     @tailrec def applyEffects(
-      msg:         Any,
-      state:       RunningState[S],
-      effect:      Effect[E, S],
-      sideEffects: immutable.Seq[SideEffect[S]] = Nil
-    ): Behavior[InternalProtocol] = {
+        msg: Any,
+        state: RunningState[S],
+        effect: Effect[E, S],
+        sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
         setup.log.debug(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
-          msg.getClass.getName, effect, sideEffects.size)
+          msg.getClass.getName,
+          effect,
+          sideEffects.size)
 
       effect match {
-        case CompositeEffect(eff, currentSideEffects) ⇒
+        case CompositeEffect(eff, currentSideEffects) =>
           // unwrap and accumulate effects
           applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
 
-        case Persist(event) ⇒
+        case Persist(event) =>
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
@@ -119,14 +191,14 @@ private[akka] object Running {
 
           persistingEvents(newState2, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
 
-        case PersistAll(events) ⇒
+        case PersistAll(events) =>
           if (events.nonEmpty) {
             // apply the event before persist so that validation exception is handled before persisting
             // the invalid event, in case such validation is implemented in the event handler.
             // also, ensure that there is an event handler for each single event
             var seqNr = state.seqNr
             val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
-              case ((currentState, snapshot), event) ⇒
+              case ((currentState, snapshot), event) =>
                 seqNr += 1
                 val shouldSnapshot = snapshot || setup.snapshotWhen(currentState.state, event, seqNr)
                 (currentState.applyEvent(setup, event), shouldSnapshot)
@@ -143,16 +215,16 @@ private[akka] object Running {
             tryUnstashOne(applySideEffects(sideEffects, state))
           }
 
-        case _: PersistNothing.type ⇒
+        case _: PersistNothing.type =>
           tryUnstashOne(applySideEffects(sideEffects, state))
 
-        case _: Unhandled.type ⇒
+        case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
-          setup.context.system.toUntyped.eventStream.publish(
-            UnhandledMessage(msg, setup.context.system.toUntyped.deadLetters, setup.context.self.toUntyped))
+          setup.context.system.toUntyped.eventStream
+            .publish(UnhandledMessage(msg, setup.context.system.toUntyped.deadLetters, setup.context.self.toUntyped))
           tryUnstashOne(applySideEffects(sideEffects, state))
 
-        case _: Stash.type ⇒
+        case _: Stash.type =>
           stashUser(IncomingCommand(msg))
           tryUnstashOne(applySideEffects(sideEffects, state))
       }
@@ -169,54 +241,47 @@ private[akka] object Running {
 
     setup.setMdc(runningCmdsMdc)
 
-    Behaviors.receiveMessage[InternalProtocol] {
-      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
-      case _                                ⇒ Behaviors.unhandled
-    }.receiveSignal {
-      case (_, PoisonPill) ⇒
-        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
-        else handlingCommands(state.copy(receivedPoisonPill = true))
-    }
-
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
   // ===============================================
 
   def persistingEvents(
-    state:                      RunningState[S],
-    numberOfEvents:             Int,
-    shouldSnapshotAfterPersist: Boolean,
-    sideEffects:                immutable.Seq[SideEffect[S]]
-  ): Behavior[InternalProtocol] = {
+      state: RunningState[S],
+      numberOfEvents: Int,
+      shouldSnapshotAfterPersist: Boolean,
+      sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdc(persistingEventsMdc)
     new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
   /** INTERNAL API */
   @InternalApi private[akka] class PersistingEvents(
-    var state:                  RunningState[S],
-    numberOfEvents:             Int,
-    shouldSnapshotAfterPersist: Boolean,
-    var sideEffects:            immutable.Seq[SideEffect[S]])
-    extends AbstractBehavior[InternalProtocol] {
+      var state: RunningState[S],
+      numberOfEvents: Int,
+      shouldSnapshotAfterPersist: Boolean,
+      var sideEffects: immutable.Seq[SideEffect[S]])
+      extends AbstractBehavior[InternalProtocol]
+      with WithSeqNrAccessible {
 
     private var eventCounter = 0
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
-        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
-        case JournalResponse(r)                ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
-        case RecoveryPermitGranted             ⇒ Behaviors.unhandled
+        case JournalResponse(r)                => onJournalResponse(r)
+        case in: IncomingCommand[C @unchecked] => onCommand(in)
+        case SnapshotterResponse(r) =>
+          setup.log.warning("Unexpected SnapshotterResponse {}", r)
+          Behaviors.unhandled
+        case RecoveryTickEvent(_)  => Behaviors.unhandled
+        case RecoveryPermitGranted => Behaviors.unhandled
       }
     }
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
-        if (setup.settings.logOnStashing) setup.log.debug(
-          "Discarding message [{}], because actor is to be stopped", cmd)
+        if (setup.settings.logOnStashing)
+          setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
@@ -224,8 +289,7 @@ private[akka] object Running {
       }
     }
 
-    final def onJournalResponse(
-      response: Response): Behavior[InternalProtocol] = {
+    final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       setup.log.debug("Received Journal response: {}", response)
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
@@ -235,79 +299,116 @@ private[akka] object Running {
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) this
         else {
-          if (shouldSnapshotAfterPersist)
+          if (shouldSnapshotAfterPersist && state.state != null) {
             internalSaveSnapshot(state)
-
-          tryUnstashOne(applySideEffects(sideEffects, state))
+            storingSnapshot(state, sideEffects)
+          } else
+            tryUnstashOne(applySideEffects(sideEffects, state))
         }
       }
 
       response match {
-        case WriteMessageSuccess(p, id) ⇒
+        case WriteMessageSuccess(p, id) =>
           if (id == setup.writerIdentity.instanceId)
             onWriteResponse(p)
           else this
 
-        case WriteMessageRejected(p, cause, id) ⇒
+        case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
-        case WriteMessageFailure(p, cause, id) ⇒
+        case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           else this
 
-        case WriteMessagesSuccessful ⇒
+        case WriteMessagesSuccessful =>
           // ignore
           this
 
-        case WriteMessagesFailed(_) ⇒
+        case WriteMessagesFailed(_) =>
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 
-        case _ ⇒
+        case _ =>
           // ignore all other messages, since they relate to recovery handling which we're not dealing with in Running phase
           Behaviors.unhandled
       }
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
-      case PoisonPill ⇒
+      case PoisonPill =>
         // wait for journal responses before stopping
         state = state.copy(receivedPoisonPill = true)
         this
     }
 
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
-  private def onSnapshotterResponse(
-    response: SnapshotProtocol.Response,
-    outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    response match {
-      case SaveSnapshotSuccess(meta) ⇒
-        setup.onSnapshot(meta, Success(Done))
-        outer
-      case SaveSnapshotFailure(meta, ex) ⇒
-        setup.onSnapshot(meta, Failure(ex))
-        outer
+  // ===============================================
 
-      // FIXME not implemented
-      case DeleteSnapshotFailure(_, _)  ⇒ ???
-      case DeleteSnapshotSuccess(_)     ⇒ ???
-      case DeleteSnapshotsFailure(_, _) ⇒ ???
-      case DeleteSnapshotsSuccess(_)    ⇒ ???
+  def storingSnapshot(state: RunningState[S], sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
+    setup.setMdc(storingSnapshotMdc)
 
-      // ignore LoadSnapshot messages
-      case _ ⇒
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing)
+          setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
         Behaviors.unhandled
+      } else {
+        stashUser(cmd)
+        storingSnapshot(state, sideEffects)
+      }
     }
+
+    def onSnapshotterResponse(response: SnapshotProtocol.Response): Unit = {
+      val signal = response match {
+        case e @ SaveSnapshotSuccess(meta) =>
+          // # 24698 The deletion of old events are automatic, snapshots are triggered by the SaveSnapshotSuccess.
+          setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
+          if (setup.retention.deleteEventsOnSnapshot)
+            internalDeleteEvents(e, state) // if successful, DeleteMessagesSuccess then internalDeleteSnapshots
+          else
+            internalDeleteSnapshots(meta.sequenceNr)
+
+          Some(SnapshotCompleted(meta))
+
+        case SaveSnapshotFailure(meta, error) =>
+          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
+          Some(SnapshotFailed(meta, error))
+
+        case _ =>
+          None
+      }
+
+      setup.log.debug("Received snapshot event [{}], returning signal [{}].", response, signal)
+      signal.foreach(setup.onSignal _)
+    }
+
+    Behaviors
+      .receiveMessage[InternalProtocol] {
+        case cmd: IncomingCommand[C] @unchecked =>
+          onCommand(cmd)
+        case SnapshotterResponse(r) =>
+          onSnapshotterResponse(r)
+          tryUnstashOne(applySideEffects(sideEffects, state))
+        case _ =>
+          Behaviors.unhandled
+      }
+      .receiveSignal {
+        case (_, PoisonPill) =>
+          // wait for snapshot response before stopping
+          storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects)
+      }
+
   }
 
   // --------------------------
 
   def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: RunningState[S]): Behavior[InternalProtocol] = {
-    var behavior: Behavior[InternalProtocol] = handlingCommands(state)
+    var behavior: Behavior[InternalProtocol] = new HandlingCommands(state)
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop
@@ -324,22 +425,22 @@ private[akka] object Running {
   }
 
   def applySideEffect(
-    effect:   SideEffect[S],
-    state:    RunningState[S],
-    behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+      effect: SideEffect[S],
+      state: RunningState[S],
+      behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     effect match {
-      case _: Stop.type @unchecked ⇒
+      case _: Stop.type @unchecked =>
         Behaviors.stopped
 
-      case _: UnstashAll.type @unchecked ⇒
+      case _: UnstashAll.type @unchecked =>
         unstashAll()
         behavior
 
-      case callback: Callback[_] ⇒
+      case callback: Callback[_] =>
         callback.sideEffect(state.state)
         behavior
 
-      case _ ⇒
+      case _ =>
         throw new IllegalArgumentException(s"Unsupported side effect detected [${effect.getClass.getName}]")
     }
   }

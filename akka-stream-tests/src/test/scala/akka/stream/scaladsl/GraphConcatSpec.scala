@@ -15,7 +15,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
   override type Outputs = Int
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val concat = b add Concat[Outputs]()
+    val concat = b.add(Concat[Outputs]())
 
     override def left: Inlet[Outputs] = concat.in(0)
     override def right: Inlet[Outputs] = concat.in(1)
@@ -29,24 +29,25 @@ class GraphConcatSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val concat1 = b.add(Concat[Int]())
+          val concat2 = b.add(Concat[Int]())
 
-        val concat1 = b add Concat[Int]()
-        val concat2 = b add Concat[Int]()
+          Source(List.empty[Int]) ~> concat1.in(0)
+          Source(1 to 4) ~> concat1.in(1)
 
-        Source(List.empty[Int]) ~> concat1.in(0)
-        Source(1 to 4) ~> concat1.in(1)
+          concat1.out ~> concat2.in(0)
+          Source(5 to 10) ~> concat2.in(1)
 
-        concat1.out ~> concat2.in(0)
-        Source(5 to 10) ~> concat2.in(1)
-
-        concat2.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+          concat2.out ~> Sink.fromSubscriber(probe)
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
-      for (i ← 1 to 10) {
+      for (i <- 1 to 10) {
         subscription.request(1)
         probe.expectNext(i)
       }
@@ -132,13 +133,15 @@ class GraphConcatSpec extends TwoStreamsSetup {
       val promise = Promise[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val concat = b add Concat[Int]()
-        Source(List(1, 2, 3)) ~> concat.in(0)
-        Source.fromFuture(promise.future) ~> concat.in(1)
-        concat.out ~> Sink.fromSubscriber(subscriber)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val concat = b.add(Concat[Int]())
+          Source(List(1, 2, 3)) ~> concat.in(0)
+          Source.fromFuture(promise.future) ~> concat.in(1)
+          concat.out ~> Sink.fromSubscriber(subscriber)
+          ClosedShape
+        })
+        .run()
 
       val subscription = subscriber.expectSubscription()
       subscription.request(4)

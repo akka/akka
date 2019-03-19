@@ -39,7 +39,7 @@ private[akka] object LoggerClass {
 
       suitableClass.getOrElse(default)
     } catch {
-      case NonFatal(_) ⇒ default
+      case NonFatal(_) => default
     }
   }
 

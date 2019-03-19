@@ -9,7 +9,7 @@ import akka.cluster.{ Cluster, ClusterReadView }
 import akka.testkit.{ AkkaSpec, LongRunningTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
 
@@ -22,14 +22,12 @@ class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
   }
 
   val baseConfig: Config =
-    ConfigFactory.parseString(
-      """
+    ConfigFactory.parseString("""
      akka.actor.provider = "cluster"
      akka.coordinated-shutdown.terminate-actor-system = on
      akka.remote.netty.tcp.port = 0
      akka.remote.artery.canonical.port = 0
-     """
-    )
+     """)
 
   "A Joining Node" must {
 
@@ -37,8 +35,7 @@ class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
     "NOT be allowed to join a cluster using a different value for akka.cluster.sharding.state-store-mode" taggedAs LongRunningTest in {
 
       val joinNodeConfig =
-        ConfigFactory.parseString(
-          """
+        ConfigFactory.parseString("""
               akka.cluster {
 
                 # use 'persistence' for state store
@@ -48,8 +45,7 @@ class JoinConfigCompatCheckShardingSpec extends AkkaSpec() {
                   enforce-on-join = on
                 }
               }
-            """
-        )
+            """)
 
       val seedNode = ActorSystem(system.name, baseConfig)
       val joiningNode = ActorSystem(system.name, joinNodeConfig.withFallback(baseConfig))

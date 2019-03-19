@@ -19,8 +19,7 @@ object AsyncSerializeSpec {
   case class Message3(str: String)
   case class Message4(str: String)
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
        akka {
         actor {
           serializers {
@@ -42,23 +41,23 @@ object AsyncSerializeSpec {
 
     override def toBinaryAsync(o: AnyRef): Future[Array[Byte]] = {
       o match {
-        case Message1(msg) ⇒ Future.successful(msg.getBytes)
-        case Message2(msg) ⇒ Future.successful(msg.getBytes)
+        case Message1(msg) => Future.successful(msg.getBytes)
+        case Message2(msg) => Future.successful(msg.getBytes)
       }
     }
 
     override def fromBinaryAsync(bytes: Array[Byte], manifest: String): Future[AnyRef] = {
       manifest match {
-        case "1" ⇒ Future.successful(Message1(new String(bytes)))
-        case "2" ⇒ Future.successful(Message2(new String(bytes)))
+        case "1" => Future.successful(Message1(new String(bytes)))
+        case "2" => Future.successful(Message2(new String(bytes)))
       }
     }
 
     override def identifier: Int = 9000
 
     override def manifest(o: AnyRef): String = o match {
-      case _: Message1 ⇒ "1"
-      case _: Message2 ⇒ "2"
+      case _: Message1 => "1"
+      case _: Message2 => "2"
     }
   }
 
@@ -66,23 +65,23 @@ object AsyncSerializeSpec {
 
     override def toBinaryAsyncCS(o: AnyRef): CompletionStage[Array[Byte]] = {
       o match {
-        case Message3(msg) ⇒ CompletableFuture.completedFuture(msg.getBytes)
-        case Message4(msg) ⇒ CompletableFuture.completedFuture(msg.getBytes)
+        case Message3(msg) => CompletableFuture.completedFuture(msg.getBytes)
+        case Message4(msg) => CompletableFuture.completedFuture(msg.getBytes)
       }
     }
 
     override def fromBinaryAsyncCS(bytes: Array[Byte], manifest: String): CompletionStage[AnyRef] = {
       manifest match {
-        case "1" ⇒ CompletableFuture.completedFuture(Message3(new String(bytes)))
-        case "2" ⇒ CompletableFuture.completedFuture(Message4(new String(bytes)))
+        case "1" => CompletableFuture.completedFuture(Message3(new String(bytes)))
+        case "2" => CompletableFuture.completedFuture(Message4(new String(bytes)))
       }
     }
 
     override def identifier: Int = 9001
 
     override def manifest(o: AnyRef): String = o match {
-      case _: Message3 ⇒ "1"
-      case _: Message4 ⇒ "2"
+      case _: Message3 => "1"
+      case _: Message4 => "2"
     }
   }
 
@@ -105,7 +104,7 @@ class AsyncSerializeSpec extends AkkaSpec(AsyncSerializeSpec.config) {
     }
 
     "logs warning if sync methods called" in {
-      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 1) intercept {
+      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 1).intercept {
         ser.serialize(Message1("to async"))
       }
     }
@@ -115,7 +114,7 @@ class AsyncSerializeSpec extends AkkaSpec(AsyncSerializeSpec.config) {
 
       val serializer = ser.findSerializerFor(msg3).asInstanceOf[TestAsyncSerializerCS]
 
-      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 2) intercept {
+      EventFilter.warning(start = "Async serializer called synchronously", occurrences = 2).intercept {
         val binary = ser.serialize(msg3).get
         val back = ser.deserialize(binary, serializer.identifier, serializer.manifest(msg3)).get
         back shouldEqual msg3

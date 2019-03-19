@@ -12,7 +12,7 @@ import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
 
 import scala.collection.JavaConverters._
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 
 abstract class JoinConfigCompatChecker {
 
@@ -45,7 +45,7 @@ object JoinConfigCompatChecker {
     // return all not found required keys
     val result =
       requiredKeys.collect {
-        case requiredKey if !allKeys.contains(requiredKey) ⇒ requiredKey + " is missing"
+        case requiredKey if !allKeys.contains(requiredKey) => requiredKey + " is missing"
       }
 
     if (result.isEmpty) Valid
@@ -73,10 +73,9 @@ object JoinConfigCompatChecker {
       // NOTE: we only check the key if effectively required
       // because config may contain more keys than required for this checker
       val incompatibleKeys =
-        toCheck.entrySet().asScala
-          .collect {
-            case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) ⇒ s"${entry.getKey} is incompatible"
-          }
+        toCheck.entrySet().asScala.collect {
+          case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
+        }
 
       if (incompatibleKeys.isEmpty) Valid
       else Invalid(incompatibleKeys.to(im.Seq))
@@ -97,10 +96,9 @@ object JoinConfigCompatChecker {
   private[cluster] def filterWithKeys(requiredKeys: im.Seq[String], config: Config): Config = {
 
     val filtered =
-      config.entrySet().asScala
-        .collect {
-          case e if requiredKeys.contains(e.getKey) ⇒ (e.getKey, e.getValue)
-        }
+      config.entrySet().asScala.collect {
+        case e if requiredKeys.contains(e.getKey) => (e.getKey, e.getValue)
+      }
 
     ConfigFactory.parseMap(filtered.toMap.asJava)
   }
@@ -111,9 +109,11 @@ object JoinConfigCompatChecker {
    * from the passed `requiredKeys` Seq.
    */
   @InternalApi
-  private[cluster] def removeSensitiveKeys(requiredKeys: im.Seq[String], clusterSettings: ClusterSettings): im.Seq[String] = {
-    requiredKeys.filter { key ⇒
-      !clusterSettings.SensitiveConfigPaths.exists(s ⇒ key.startsWith(s))
+  private[cluster] def removeSensitiveKeys(
+      requiredKeys: im.Seq[String],
+      clusterSettings: ClusterSettings): im.Seq[String] = {
+    requiredKeys.filter { key =>
+      !clusterSettings.SensitiveConfigPaths.exists(s => key.startsWith(s))
     }
   }
 
@@ -138,7 +138,7 @@ object JoinConfigCompatChecker {
   private[cluster] def load(system: ExtendedActorSystem, clusterSettings: ClusterSettings): JoinConfigCompatChecker = {
 
     val checkers =
-      clusterSettings.ConfigCompatCheckers.map { fqcn ⇒
+      clusterSettings.ConfigCompatCheckers.map { fqcn =>
         system.dynamicAccess
           .createInstanceFor[JoinConfigCompatChecker](fqcn, im.Seq.empty)
           .get // can't continue if we can't load it
@@ -151,7 +151,7 @@ object JoinConfigCompatChecker {
         "akka.version" +: checkers.flatMap(_.requiredKeys).to(im.Seq)
       }
       override def check(toValidate: Config, clusterConfig: Config): ConfigValidation =
-        checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) ⇒
+        checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) =>
           acc ++ checker.check(toValidate, clusterConfig)
         }
     }
@@ -165,15 +165,16 @@ sealed trait ConfigValidation {
 
   def concat(that: ConfigValidation) = {
     (this, that) match {
-      case (Invalid(a), Invalid(b)) ⇒ Invalid(a ++ b)
-      case (_, i @ Invalid(_))      ⇒ i
-      case (i @ Invalid(_), _)      ⇒ i
-      case _                        ⇒ Valid
+      case (Invalid(a), Invalid(b)) => Invalid(a ++ b)
+      case (_, i @ Invalid(_))      => i
+      case (i @ Invalid(_), _)      => i
+      case _                        => Valid
     }
   }
 }
 
 case object Valid extends ConfigValidation {
+
   /**
    * Java API: get the singleton instance
    */
