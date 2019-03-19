@@ -126,15 +126,17 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
        * Hack to allow multiple termination notifications per target
        * FIXME #26505: replace by simple map in our state
        */
-      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit =
-        ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
+      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit = {
+        val x = ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
           innerCtx.watch(target)
-          Behaviors.receive[Nothing]((_, _) => Behaviors.same).receiveSignal {
+          Behaviors.receiveSignal[Nothing] {
             case (_, Terminated(`target`)) =>
               ctx.self ! msg
               Behaviors.stopped
           }
         })
+        println(x)
+      }
 
       def notifySubscribersFor(key: AbstractServiceKey, state: ServiceRegistry): Unit = {
         // filter tombstoned refs to avoid an extra update

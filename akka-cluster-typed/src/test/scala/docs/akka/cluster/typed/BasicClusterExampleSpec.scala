@@ -68,8 +68,8 @@ class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually 
       val system1 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys1Port).withFallback(configSystem1))
       val system2 = ActorSystem[Nothing](Behaviors.empty, "ClusterSystem", config(sys2Port).withFallback(configSystem2))
       try {
-        val cluster1 = Cluster(system1)
-        val cluster2 = Cluster(system2)
+        Cluster(system1)
+        Cluster(system2)
       } finally {
         system1.terminate().futureValue
         system2.terminate().futureValue

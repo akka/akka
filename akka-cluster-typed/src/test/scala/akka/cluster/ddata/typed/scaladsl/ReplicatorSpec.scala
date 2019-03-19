@@ -60,37 +60,35 @@ object ReplicatorSpec {
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
-        Behaviors.receive[ClientCommand] { (ctx, msg) =>
-          msg match {
-            case Increment =>
-              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ :+ 1)
-              Behaviors.same
+        Behaviors.receiveMessage[ClientCommand] {
+          case Increment =>
+            replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ :+ 1)
+            Behaviors.same
 
-            case GetValue(replyTo) =>
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
-              Behaviors.same
+          case GetValue(replyTo) =>
+            replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
+            Behaviors.same
 
-            case GetCachedValue(replyTo) =>
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
-              Behaviors.same
+          case GetCachedValue(replyTo) =>
+            replyTo ! cachedValue
+            Behaviors.same
 
-            case internal: InternalMsg =>
-              internal match {
-                case InternalUpdateResponse(_) => Behaviors.same // ok
+          case internal: InternalMsg =>
+            internal match {
+              case InternalUpdateResponse(_) => Behaviors.same // ok
 
-                case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) =>
-                  val value = rsp.get(Key).value.toInt
-                  replyTo ! value
-                  Behaviors.same
+              case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) =>
+                val value = rsp.get(Key).value.toInt
+                replyTo ! value
+                Behaviors.same
 
-                case InternalGetResponse(rsp) =>
-                  Behaviors.unhandled // not dealing with failures
+              case InternalGetResponse(_) =>
+                Behaviors.unhandled // not dealing with failures
 
-                case InternalChanged(chg @ Replicator.Changed(Key)) =>
-                  val value = chg.get(Key).value.intValue
-                  behavior(value)
-              }
-          }
+              case InternalChanged(chg @ Replicator.Changed(Key)) =>
+                val value = chg.get(Key).value.intValue
+                behavior(value)
+            }
         }
       }
 
@@ -103,12 +101,12 @@ object ReplicatorSpec {
       val replicator: ActorRef[Replicator.Command] = ???
       implicit val timeout = Timeout(3.seconds)
       implicit val scheduler: Scheduler = ???
-      implicit val cluster: Cluster = ???
+      implicit val cluster: SelfUniqueAddress= ???
 
       val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
 
       val reply2: Future[UpdateResponse[GCounter]] =
-        replicator.ask(Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1))
+        replicator.ask(Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ :+ 1))
 
       val reply3: Future[DeleteResponse[GCounter]] = replicator.ask(Replicator.Delete(Key, Replicator.WriteLocal))
 

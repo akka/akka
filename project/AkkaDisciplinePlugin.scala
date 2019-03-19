@@ -21,7 +21,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
   
-  val strictProjects = Set("akka-discovery", "akka-stream-typed")
+  val strictProjects = Set("akka-discovery", "akka-stream-typed", "akka-cluster-typed")
 
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
@@ -43,6 +43,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
                                } else {
                                  disciplineScalacOptions -- undisciplineScalacOptions
                                }).toSeq,
+      Test / scalacOptions --= Seq("-Ywarn-dead-code", "-Ywarn-value-discard"),
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       // Discipline is not needed for the docs compilation run (which uses
       // different compiler phases from the regular run), and in particular
@@ -66,6 +67,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         case _             =>
           Nil
       }))
+ 
 
   /**
     * Remain visibly filtered for future code quality work and removing.
@@ -84,6 +86,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Yno-adapted-args",
     "-Ywarn-numeric-widen",
     // end
+    "-deprecation",
     "-Xfuture",
     "-Xlint",
     "-Ywarn-dead-code",
