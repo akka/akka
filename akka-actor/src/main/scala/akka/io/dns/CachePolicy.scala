@@ -15,7 +15,8 @@ object CachePolicy {
   case object Forever extends CachePolicy
 
   final class Ttl private (val value: FiniteDuration) extends CachePolicy {
-    if (value < Duration.Zero) throw new IllegalArgumentException(s"TTL values must be a positive value (zero included).")
+    if (value < Duration.Zero)
+      throw new IllegalArgumentException(s"TTL values must be a positive value (zero included).")
     import akka.util.JavaDurationConverters._
     def getValue: java.time.Duration = value.asJava
 
@@ -32,7 +33,9 @@ object CachePolicy {
   object Ttl {
     def unapply(ttl: Ttl): Option[FiniteDuration] = Some(ttl.value)
     def fromPositive(value: FiniteDuration): Ttl = {
-      if (value <= Duration.Zero) throw new IllegalArgumentException(s"Positive TTL values must be a strictly positive value. Use Ttl.never for zero.")
+      if (value <= Duration.Zero)
+        throw new IllegalArgumentException(
+          s"Positive TTL values must be a strictly positive value. Use Ttl.never for zero.")
       new Ttl(value)
     }
     def fromPositive(value: java.time.Duration): Ttl = fromPositive(value.asScala)
