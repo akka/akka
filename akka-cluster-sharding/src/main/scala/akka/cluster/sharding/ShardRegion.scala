@@ -14,12 +14,12 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
+
 import akka.Done
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings
@@ -283,14 +283,15 @@ object ShardRegion {
    *
    * For the statistics for the entire cluster, see [[GetClusterShardingStats$]].
    */
-  @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery
+  @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
    */
   def getRegionStatsInstance = GetShardRegionStats
 
-  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int]) {
+  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int])
+      extends ClusterShardingSerializable {
 
     /**
      * Java API

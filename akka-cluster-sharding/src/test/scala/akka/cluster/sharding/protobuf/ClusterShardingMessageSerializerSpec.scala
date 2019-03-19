@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
+import akka.serialization.SerializationExtension
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   import ShardCoordinator.Internal._
@@ -22,6 +23,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   val regionProxy2 = system.actorOf(Props.empty, "regionProxy2")
 
   def checkSerialization(obj: AnyRef): Unit = {
+    SerializationExtension(system).findSerializerFor(obj).identifier should ===(serializer.identifier)
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     ref should ===(obj)
