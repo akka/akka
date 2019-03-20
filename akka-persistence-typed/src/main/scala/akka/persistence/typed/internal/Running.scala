@@ -240,7 +240,7 @@ private[akka] object Running {
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         if (setup.settings.logOnStashing)
-          setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
+          setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
@@ -313,7 +313,7 @@ private[akka] object Running {
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         if (setup.settings.logOnStashing)
-          setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
+          setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
         stashUser(cmd)
