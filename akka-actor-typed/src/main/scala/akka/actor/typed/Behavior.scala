@@ -244,7 +244,7 @@ object Behavior {
    * INTERNAL API
    */
   @InternalApi private[akka] val unhandledSignal
-      : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
+    : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) => UnhandledBehavior
   }
 
@@ -321,33 +321,6 @@ object Behavior {
         canonicalize(deferred(ctx), deferred, ctx)
       case _ => behavior
     }
-
-  /**
-   * INTERNAL API
-   *
-   * Return special behaviors as is, start deferred, if behavior is "non-special" apply the wrap function `f` to get
-   * and return the result from that. Useful for cases where a [[Behavior]] implementation that is decorating another
-   * behavior has processed a message and needs to re-wrap the resulting behavior with itself.
-   */
-  @InternalApi
-  @tailrec
-  private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: TypedActorContext[T])(
-      f: Behavior[T] => Behavior[U]): Behavior[U] = {
-    if (currentBehavior eq nextBehavior) same
-    else {
-      (nextBehavior._tag: @switch) match {
-        case BehaviorTags.SameBehavior      => same
-        case BehaviorTags.UnhandledBehavior => unhandled
-        case BehaviorTags.StoppedBehavior =>
-          val stopped = nextBehavior.asInstanceOf[StoppedBehavior[T]]
-          stopped.unsafeCast[U] // won't receive more messages so cast is safe
-        case BehaviorTags.DeferredBehavior =>
-          val deferred = nextBehavior.asInstanceOf[DeferredBehavior[T]]
-          wrap(currentBehavior, start(deferred, ctx), ctx)(f)
-        case _ => f(nextBehavior)
-      }
-    }
-  }
 
   /**
    * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack are started
