@@ -10,12 +10,15 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object NullEmptyStateSpec {
 
   private val conf = ConfigFactory.parseString(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 }
@@ -23,6 +26,9 @@ object NullEmptyStateSpec {
 class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.conf) with WordSpecLike {
 
   implicit val testSettings = TestKitSettings(system)
+
+  import akka.actor.typed.scaladsl.adapter._
+  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     EventSourcedBehavior[String, String, String](
