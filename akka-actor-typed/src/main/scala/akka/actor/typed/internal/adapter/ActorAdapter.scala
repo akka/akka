@@ -113,11 +113,13 @@ import scala.util.control.Exception.Catcher
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
-      b match {
-        case f: FailedBehavior =>
+      b._tag match {
+        case BehaviorTags.FailedBehavior =>
+          val f = b.asInstanceOf[FailedBehavior]
           // For the parent untyped supervisor to pick up the exception
           throw TypedActorFailedException(f.cause)
-        case stopped: StoppedBehavior[T] =>
+        case BehaviorTags.StoppedBehavior =>
+          val stopped = b.asInstanceOf[StoppedBehavior[T]]
           behavior = new ComposedStoppingBehavior[T](behavior, stopped)
           context.stop(self)
         case _ =>

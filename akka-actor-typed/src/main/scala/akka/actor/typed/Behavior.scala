@@ -22,7 +22,7 @@ import scala.annotation.switch
 private[akka] object BehaviorTags {
 
   // optimization - by keeping an identifier for each concrete subtype of behavior
-  // we can do table switches instead of instance of checks when interpreting
+  // without gaps we can do table switches instead of instance of checks when interpreting
   // note that these must be compile time constants for it to work
   final val ExtensibleBehavior = 1
   final val EmptyBehavior = 2
@@ -244,7 +244,7 @@ object Behavior {
    * INTERNAL API
    */
   @InternalApi private[akka] val unhandledSignal
-      : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
+    : PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) => UnhandledBehavior
   }
 
@@ -332,14 +332,22 @@ object Behavior {
   @InternalApi
   @tailrec
   private[akka] def wrap[T, U](currentBehavior: Behavior[_], nextBehavior: Behavior[T], ctx: TypedActorContext[T])(
-      f: Behavior[T] => Behavior[U]): Behavior[U] =
-    nextBehavior match {
-      case SameBehavior | `currentBehavior` => same
-      case UnhandledBehavior                => unhandled
-      case stopped: StoppedBehavior[T]      => stopped.unsafeCast[U] // won't receive more messages so cast is safe
-      case deferred: DeferredBehavior[T]    => wrap(currentBehavior, start(deferred, ctx), ctx)(f)
-      case other                            => f(other)
+      f: Behavior[T] => Behavior[U]): Behavior[U] = {
+    if (currentBehavior eq nextBehavior) same
+    else {
+      (nextBehavior._tag: @switch) match {
+        case BehaviorTags.SameBehavior      => same
+        case BehaviorTags.UnhandledBehavior => unhandled
+        case BehaviorTags.StoppedBehavior =>
+          val stopped = nextBehavior.asInstanceOf[StoppedBehavior[T]]
+          stopped.unsafeCast[U] // won't receive more messages so cast is safe
+        case BehaviorTags.DeferredBehavior =>
+          val deferred = nextBehavior.asInstanceOf[DeferredBehavior[T]]
+          wrap(currentBehavior, start(deferred, ctx), ctx)(f)
+        case _ => f(nextBehavior)
+      }
     }
+  }
 
   /**
    * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack are started
@@ -386,20 +394,15 @@ object Behavior {
    * out with a `Stopped` behavior is allowed, though.
    */
   def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
-    behavior match {
-      case SameBehavior | UnhandledBehavior =>
-        throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
-      case x => x
-    }
+    if (behavior._tag == BehaviorTags.SameBehavior || behavior._tag == BehaviorTags.UnhandledBehavior)
+      throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
+    else behavior
 
   /**
    * Returns true if the given behavior is not stopped.
    */
-  def isAlive[T](behavior: Behavior[T]): Boolean = behavior match {
-    case _: StoppedBehavior[_] => false
-    case _: FailedBehavior     => false
-    case _                     => true
-  }
+  def isAlive[T](behavior: Behavior[T]): Boolean =
+    !(behavior._tag == BehaviorTags.StoppedBehavior || behavior._tag == BehaviorTags.FailedBehavior)
 
   /**
    * Returns true if the given behavior is the special `unhandled` marker.
@@ -409,10 +412,7 @@ object Behavior {
   /**
    * Returns true if the given behavior is the special `Unhandled` marker.
    */
-  def isDeferred[T](behavior: Behavior[T]): Boolean = behavior match {
-    case _: DeferredBehavior[T] => true
-    case _                      => false
-  }
+  def isDeferred[T](behavior: Behavior[T]): Boolean = behavior._tag == BehaviorTags.DeferredBehavior
 
   /**
    * Execute the behavior with the given message
