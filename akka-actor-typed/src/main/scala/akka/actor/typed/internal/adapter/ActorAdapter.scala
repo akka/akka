@@ -21,6 +21,8 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
 
+import scala.annotation.switch
+
 /**
  * INTERNAL API
  */
@@ -111,20 +113,19 @@ import scala.util.control.Exception.Catcher
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    if (Behavior.isUnhandled(b)) unhandled(msg)
-    else {
-      b._tag match {
-        case BehaviorTags.FailedBehavior =>
-          val f = b.asInstanceOf[FailedBehavior]
-          // For the parent untyped supervisor to pick up the exception
-          throw TypedActorFailedException(f.cause)
-        case BehaviorTags.StoppedBehavior =>
-          val stopped = b.asInstanceOf[StoppedBehavior[T]]
-          behavior = new ComposedStoppingBehavior[T](behavior, stopped)
-          context.stop(self)
-        case _ =>
-          behavior = Behavior.canonicalize(b, behavior, ctx)
-      }
+    (b._tag: @switch) match {
+      case BehaviorTags.UnhandledBehavior =>
+        unhandled(msg)
+      case BehaviorTags.FailedBehavior =>
+        val f = b.asInstanceOf[FailedBehavior]
+        // For the parent untyped supervisor to pick up the exception
+        throw TypedActorFailedException(f.cause)
+      case BehaviorTags.StoppedBehavior =>
+        val stopped = b.asInstanceOf[StoppedBehavior[T]]
+        behavior = new ComposedStoppingBehavior[T](behavior, stopped)
+        context.stop(self)
+      case _ =>
+        behavior = Behavior.canonicalize(b, behavior, ctx)
     }
   }
 
