@@ -123,7 +123,8 @@ private[akka] final class ReplayingEvents[C, E, S](
   private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
-      if (setup.settings.logOnStashing) setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
+      if (setup.settings.logOnStashing)
+        setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
