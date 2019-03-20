@@ -15,8 +15,8 @@ import scala.util.Success
 import scala.util.Try
 
 import akka.Done
-import akka.testkit.EventFilter
-import akka.actor.testkit.typed.{ TestException, TestKitSettings }
+import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -47,6 +47,7 @@ import akka.persistence.typed.EventSourcedSignal
 import akka.persistence.typed.RetentionCriteria
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import akka.testkit.EventFilter
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -323,9 +324,6 @@ object EventSourcedBehaviorSpec {
 class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
 
   import EventSourcedBehaviorSpec._
-
-  private implicit val testSettings: TestKitSettings = TestKitSettings(system)
-
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val materializer = ActorMaterializer()(system.toUntyped)
@@ -833,9 +831,35 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       state.history shouldEqual (0 until state.value).toVector
     }
 
+    "fail fast if persistenceId is null" in {
+      intercept[IllegalArgumentException] {
+        PersistenceId(null)
+      }
+      val probe = TestProbe[AnyRef]
+      EventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1).intercept {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(null))))
+        probe.expectTerminated(ref)
+      }
+      EventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1).intercept {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = null)))
+        probe.expectTerminated(ref)
+      }
+    }
+
+    "fail fast if persistenceId is empty" in {
+      intercept[IllegalArgumentException] {
+        PersistenceId("")
+      }
+      val probe = TestProbe[AnyRef]
+      EventFilter[ActorInitializationException](start = "persistenceId must not be empty", occurrences = 1).intercept {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(""))))
+        probe.expectTerminated(ref)
+      }
+    }
+
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
-      val w = Behaviors.setup[Any] { (ctx) =>
+      val w = Behaviors.setup[Any] { ctx =>
         ctx.watch(toWatch)
         Behaviors
           .receive[Any] { (_, _) =>

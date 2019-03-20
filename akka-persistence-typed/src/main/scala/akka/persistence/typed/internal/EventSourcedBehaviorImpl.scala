@@ -71,6 +71,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   import EventSourcedBehaviorImpl.WriterIdentity
 
+  if (persistenceId eq null)
+    throw new IllegalArgumentException("persistenceId must not be null")
+
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
     ctx.setLoggerClass(loggerClass)
