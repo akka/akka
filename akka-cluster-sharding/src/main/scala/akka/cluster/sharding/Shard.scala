@@ -27,6 +27,7 @@ import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
 import akka.cluster.ddata.Replicator._
 import akka.persistence._
+import akka.util.PrettyDuration._
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 import akka.pattern.pipe
 
@@ -87,11 +88,11 @@ private[akka] object Shard {
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
       extends ClusterShardingSerializable
 
-  final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
-  final case object LeaseRetry
-  val LeaseRetryTimer = "lease-retry"
+  private[akka] final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
+  private[akka] final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
-  final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
+  private[akka] final case object LeaseRetry extends DeadLetterSuppression
+  private val LeaseRetryTimer = "lease-retry"
 
   object State {
     val Empty = State()
@@ -240,7 +241,7 @@ private[akka] class Shard(
       context.parent ! ShardInitialized(shardId)
       context.become(next)
     case LeaseAcquireResult(false, None) =>
-      log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval)
+      log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval.pretty)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseAcquireResult(false, Some(t)) =>
       log.error(
@@ -272,7 +273,7 @@ private[akka] class Shard(
   def receiveLeaseLost(msg: LeaseLost): Unit = {
     // The shard region will re-create this when it receives a message for this shard
     log.error("Shard type [{}] id [{}] lease lost. Reason: {}", typeName, shardId, msg.reason)
-    // should we try and stop entities with the stop message or just stop ASAP?
+    // Stop entities ASAP rather than send termination message
     context.stop(self)
 
   }

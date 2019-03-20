@@ -21,7 +21,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
   
-  val strictProjects = Set("akka-discovery")
+  val strictProjects = Set("akka-discovery", "akka-coordination")
 
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")

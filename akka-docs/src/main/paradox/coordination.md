@@ -95,9 +95,10 @@ If a user prefers to have outside intervention in this case for maximum safety t
 Create a configuration location with the following configuration:
 
 * `lease-class` property for the FQN of the lease implementation
-* `hearthbeat-timeout` if the node that acquired the leases crashes, how long should the lease be held before another owner can get it 
-* `heartbeat-interval` interval for communicating with the third party to confirm the lease is still held
-* `lease-operation-timeout` lease implementations are expected to time out the @scala[`Future`s]@java[`CompletionStages`s] returned by `acquire` and `release` this is how long that timeout can be. Lease implementations can choose to not implement this and ignore this timeout
+
+And implement the following properties where the defaults comes from `akka.coordination.lease`:
+
+@@snip [reference.conf](/akka-coordination/src/main/resources/reference.conf) { #defaults }
 
 This configuration location is passed into `getLease`.
 
