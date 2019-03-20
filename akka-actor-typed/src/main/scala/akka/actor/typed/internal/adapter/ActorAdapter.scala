@@ -222,7 +222,9 @@ import akka.annotation.InternalApi
       case null                   => // skip PostStop
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case b => Behavior.interpretSignal(b, ctx, PostStop)
+      case b =>
+        if (_ctx eq null) initializeContext()
+        Behavior.interpretSignal(b, ctx, PostStop)
     }
 
     behavior = Behavior.stopped
