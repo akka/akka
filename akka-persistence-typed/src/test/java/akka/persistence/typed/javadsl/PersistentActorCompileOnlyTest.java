@@ -9,6 +9,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.SnapshotSelectionCriteria;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
@@ -100,7 +101,7 @@ public class PersistentActorCompileOnlyTest {
 
           @Override
           public EventHandler<SimpleState, SimpleEvent> eventHandler() {
-            return (state, event) -> state.addEvent(event);
+            return SimpleState::addEvent;
           }
 
           // #install-event-adapter
@@ -110,6 +111,44 @@ public class PersistentActorCompileOnlyTest {
           }
           // #install-event-adapter
         };
+
+    static class AdditionalSettings
+        extends EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> {
+
+      public AdditionalSettings(PersistenceId persistenceId) {
+        super(new PersistenceId("p1"));
+      }
+
+      @Override
+      public SimpleState emptyState() {
+        return new SimpleState();
+      }
+
+      @Override
+      public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
+        return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+      }
+
+      @Override
+      public EventHandler<SimpleState, SimpleEvent> eventHandler() {
+        return SimpleState::addEvent;
+      }
+
+      @Override
+      public SnapshotSelectionCriteria snapshotSelectionCriteria() {
+        return SnapshotSelectionCriteria.none();
+      }
+
+      @Override
+      public String journalPluginId() {
+        return "other.journal";
+      }
+
+      @Override
+      public String snapshotPluginId() {
+        return "other.snapshot-store";
+      }
+    }
   }
 
   abstract static class WithAck {
