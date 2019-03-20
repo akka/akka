@@ -72,7 +72,7 @@ Configure `akka-dns` to be used as the discovery implementation in your `applica
 
 @@snip[application.conf](/akka-discovery/src/test/scala/akka/discovery/dns/DnsDiscoverySpec.scala){ #configure-dns }
 
-From there on, you can use the generic API that hides the fact which discovery method is being used by calling::
+From there on, you can use the generic API that hides the fact which discovery method is being used by calling:
 
 Scala
 :   ```scala
@@ -94,7 +94,7 @@ Java
 
 ### How it works
 
-DNS discovery will use either A/AAAA records or SRV records depending on whether a `Simple` or `Full` lookup is issued..
+DNS discovery will use either A/AAAA records or SRV records depending on whether a `Simple` or `Full` lookup is issued.
 The advantage of SRV records is that they can include a port.
 
 #### SRV records
@@ -244,7 +244,7 @@ any Akka Management module should be used if also using Akka Discovery.
 Migration steps:
 
 * Any custom discovery method should now implement `akka.discovery.ServiceDiscovery`
-* `discovery-method` now has to be a configuration location under `akka.discovery` with at minimum a property `class` specifying the fully qualified name of the implementation of `akka.discovery.ServiceDiscovery`. 
+* `discovery-method` now has to be a configuration location under `akka.discovery` with at minimum a property `class` specifying the fully qualified name of the implementation of `akka.discovery.ServiceDiscovery`
   Previous versions allowed this to be a class name or a fully qualified config location e.g. `akka.discovery.kubernetes-api` rather than just `kubernetes-api`
 
 
