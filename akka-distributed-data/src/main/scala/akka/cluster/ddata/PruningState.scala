@@ -8,6 +8,7 @@ import akka.actor.Address
 import akka.cluster.Member
 import akka.cluster.UniqueAddress
 import akka.annotation.InternalApi
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -21,6 +22,7 @@ import akka.annotation.InternalApi
   }
   final case class PruningPerformed(obsoleteTime: Long) extends PruningState {
     def isObsolete(currentTime: Long): Boolean = obsoleteTime <= currentTime
+    def addSeen(@unused node: Address): PruningState = this
   }
 }
 
@@ -44,5 +46,5 @@ import akka.annotation.InternalApi
           this
     }
 
-  def addSeen(node: Address): PruningState = this
+  def addSeen(node: Address): PruningState
 }

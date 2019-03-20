@@ -38,6 +38,7 @@ private[akka] object ReplayingSnapshot {
 @InternalApi
 private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup[C, E, S])
     extends JournalInteractions[C, E, S]
+    with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S] {
 
   import InternalProtocol._

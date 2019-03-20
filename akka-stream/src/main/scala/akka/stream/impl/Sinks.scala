@@ -588,7 +588,11 @@ import akka.util.ccompat._
             override def onUpstreamFailure(ex: Throwable): Unit = {
               // propagate exception irrespective if the cached element has been pushed or not
               subOutlet.fail(ex)
-              maybeCompleteStage()
+              // #25410 if we fail the stage here directly, the SubSource may not have been started yet,
+              // which can happen if upstream fails immediately after emitting a first value.
+              // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
+              // scheduling it lets the interpreter first start the substream
+              getAsyncCallback[Throwable](failStage).invoke(ex)
             }
           })
 

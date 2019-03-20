@@ -8,6 +8,7 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
 import akka.testkit.TestKit
+import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
@@ -16,7 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
 
-class StubbedServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
+class StubbedServiceDiscovery(@unused system: ExtendedActorSystem) extends ServiceDiscovery {
 
   override def lookup(query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     if (query.serviceName == "stubbed") {

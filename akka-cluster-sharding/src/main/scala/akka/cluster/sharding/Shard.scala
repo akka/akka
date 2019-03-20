@@ -82,9 +82,10 @@ private[akka] object Shard {
 
   @SerialVersionUID(1L) final case class CurrentShardState(shardId: ShardRegion.ShardId, entityIds: Set[EntityId])
 
-  @SerialVersionUID(1L) case object GetShardStats extends ShardQuery
+  @SerialVersionUID(1L) case object GetShardStats extends ShardQuery with ClusterShardingSerializable
 
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
+      extends ClusterShardingSerializable
 
   final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
   final case object LeaseRetry

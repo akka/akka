@@ -150,9 +150,15 @@ import akka.annotation.InternalApi
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) => throw DeathPactException(ref)
-    case _: Signal       => // that's ok
-    case other           => super.unhandled(other)
+
+    case Terminated(ref) =>
+      // this should never get here, because if it did, the death pact could
+      // not be supervised - interpretSignal is where this actually happens
+      throw DeathPactException(ref)
+    case _: Signal =>
+    // that's ok
+    case other =>
+      super.unhandled(other)
   }
 
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {

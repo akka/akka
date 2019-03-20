@@ -15,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.util.ConstantFun
 import akka.util.OptionVal
@@ -35,9 +36,11 @@ private[akka] final class BehaviorSetup[C, E, S](
     val eventAdapter: EventAdapter[E, _],
     val snapshotWhen: (S, E, Long) ⇒ Boolean,
     val recovery: Recovery,
+    val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
     val stashState: StashState) {
+
   import InternalProtocol.RecoveryTickEvent
   import akka.actor.typed.scaladsl.adapter._
 

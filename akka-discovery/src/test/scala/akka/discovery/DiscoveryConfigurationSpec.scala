@@ -143,12 +143,11 @@ class FakeTestDiscovery extends ServiceDiscovery {
 
 class FakeTestDiscovery2 extends FakeTestDiscovery
 
-class DiscoveryException(message: String) extends Exception
+class DiscoveryException(message: String) extends Exception(message)
 
-class ExceptionThrowingDiscovery extends ServiceDiscovery {
-
-  def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = ???
-
-  throw new DiscoveryException("Test Exception")
-
+class ExceptionThrowingDiscovery extends FakeTestDiscovery {
+  bad()
+  def bad(): Unit = {
+    throw new DiscoveryException("oh no")
+  }
 }
