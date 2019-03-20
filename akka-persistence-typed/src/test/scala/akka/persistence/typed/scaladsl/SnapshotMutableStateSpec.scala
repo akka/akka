@@ -52,8 +52,19 @@ object SnapshotMutableStateSpec {
       }
     }
 
-    def deleteAsync(metadata: UntypedSnapshotMetadata) = ???
-    def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria) = ???
+    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
+      }
+      Future.successful(())
+    }
+
+    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == persistenceId && criteria.matches(meta)
+      }
+      Future.successful(())
+    }
   }
 
   def conf: Config = ConfigFactory.parseString(s"""
