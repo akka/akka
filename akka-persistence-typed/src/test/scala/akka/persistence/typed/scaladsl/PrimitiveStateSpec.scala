@@ -17,6 +17,7 @@ import org.scalatest.WordSpecLike
 object PrimitiveStateSpec {
 
   private val conf = ConfigFactory.parseString(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 }
