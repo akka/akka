@@ -20,7 +20,6 @@ import scala.util.Try
 import scala.util.control.Exception.Catcher
 import akka.{ actor => untyped }
 import akka.annotation.InternalApi
-import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -47,9 +46,10 @@ import akka.util.OptionVal
   protected var behavior: Behavior[T] = _initialBehavior
   final def currentBehavior: Behavior[T] = behavior
 
+  // context adapter construction must be lazy because so that it is not created before the system is ready
+  // when the adapter is used for the user guardian (which avoids touching context until it is safe)
   private var _ctx: ActorContextAdapter[T] = _
   def ctx: ActorContextAdapter[T] = {
-    // lazily create ctx on first access
     if (_ctx eq null) _ctx = new ActorContextAdapter[T](context, this)
     _ctx
   }
@@ -197,7 +197,6 @@ import akka.util.OptionVal
       behavior = validateAsInitial(Behavior.start(behavior, ctx))
     }
     // either was stopped initially or became stopped on start
-    // FIXME what about stop signal/postStop callback here?
     if (!isAlive(behavior)) context.stop(self)
   }
 
@@ -208,18 +207,15 @@ import akka.util.OptionVal
 
   override def postRestart(reason: Throwable): Unit = {
     behavior = validateAsInitial(Behavior.start(behavior, ctx))
-    // FIXME what about stop signal/postStop callback here?
     if (!isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
     behavior match {
-      case null                   => // skip PostStop - FIXME will it ever be null here?
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case b => Behavior.interpretSignal(b, ctx, PostStop)
     }
-
     behavior = Behavior.stopped
   }
 }
