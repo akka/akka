@@ -99,7 +99,9 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
-      replicator2.tell(Update(KeyA, GCounter(), WriteLocal)(_.increment(distributedData2.selfUniqueAddress, 2)), probe2.ref)
+      replicator2.tell(
+        Update(KeyA, GCounter(), WriteLocal)(_.increment(distributedData2.selfUniqueAddress, 2)),
+        probe2.ref)
       probe2.expectMsg(UpdateSuccess(KeyA, None))
 
       enterBarrier("updates-done")
