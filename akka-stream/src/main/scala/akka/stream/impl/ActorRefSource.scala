@@ -26,14 +26,17 @@ object ActorRefSource {
     overflowStrategy: OverflowStrategy,
     completionMatcher: PartialFunction[Any, Unit],
     failureMatcher: PartialFunction[Any, Throwable])
-    extends GraphStageWithEagerMaterializedValue[SourceShape[T], ActorRef] {
+    extends GraphStageWithMaterializedValue[SourceShape[T], ActorRef] {
   import ActorRefSource._
 
   val out: Outlet[T] = Outlet[T]("actorRefSource.out")
 
   override val shape: SourceShape[T] = SourceShape.of(out)
 
-  override def createLogicAndEagerMaterializedValue(
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
+    throw new IllegalStateException("Not supported")
+
+  private[akka] override def createLogicAndEagerMaterializedValue(
       inheritedAttributes: Attributes,
       eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
     val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape) with StageLogging

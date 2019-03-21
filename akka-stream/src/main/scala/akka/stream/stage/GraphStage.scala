@@ -7,11 +7,11 @@ package akka.stream.stage
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.annotation._
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.japi.function.{ Effect, Procedure }
-import akka.stream.{ Materializer, _ }
+import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage
-import akka.stream.impl.fusing._
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
@@ -23,19 +23,35 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 
 /**
- * INTERNAL API
+ * Scala API: A GraphStage represents a reusable graph stream processing operator.
+ *
+ * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
+ * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
+ * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
+ *
+ * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
+ * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
+ *
+ * See also [[AbstractGraphStageWithMaterializedValue]] for Java DSL for this operator.
  */
-@InternalApi
-private[akka] abstract class GraphStageWithEagerMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
+abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
-  @throws(classOf[Exception])
+  /**
+   * Grants eager access to materializer for special purposes.
+   *
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] def createLogicAndEagerMaterializedValue(
       inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, M)
+      materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
+
+  @throws(classOf[Exception])
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  private var _traversalBuilder: TraversalBuilder = _
+  private var _traversalBuilder: TraversalBuilder = null
 
   /**
    * INTERNAL API
@@ -50,30 +66,7 @@ private[akka] abstract class GraphStageWithEagerMaterializedValue[+S <: Shape, +
   }
 
   final override def withAttributes(attr: Attributes): Graph[S, M] =
-    new GenericGraphWithChangedAttributes(shape, this.traversalBuilder, attr)
-}
-
-/**
- * Scala API: A GraphStage represents a reusable graph stream processing operator.
- *
- * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
- * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
- * value you can instead extende [[GraphStage]] which materializes a [[NotUsed]] value.
- *
- * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
- * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
- *
- * See also [[AbstractGraphStageWithMaterializedValue]] for Java DSL for this operator.
- */
-abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends GraphStageWithEagerMaterializedValue[S, M] {
-
-  @throws(classOf[Exception])
-  private[akka] final def createLogicAndEagerMaterializedValue(
-      inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
-
-  @throws(classOf[Exception])
-  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
+    new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
 }
 
 /**
@@ -335,7 +328,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * If possible a link back to the operator that the logic was created with, used for debugging.
    */
-  private[stream] var originalStage: OptionVal[GraphStageWithEagerMaterializedValue[_ <: Shape, _]] = OptionVal.None
+  private[stream] var originalStage: OptionVal[GraphStageWithMaterializedValue[_ <: Shape, _]] = OptionVal.None
 
   /**
    * INTERNAL API
