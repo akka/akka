@@ -37,7 +37,8 @@ import akka.event.LoggingFilterWithMarker
     with internal.InternalRecipientRef[T]
     with ExtensionsImpl {
 
-  untypedSystem.assertInitialized()
+  // note that the untypedSystem may not be initialized yet here, and that is fine because
+  // it is unlikely that anything gets a hold of the extension until the system is started
 
   import ActorRefAdapter.sendSystemMessage
 
@@ -58,7 +59,7 @@ import akka.event.LoggingFilterWithMarker
   def isTerminated: Boolean = whenTerminated.isCompleted
 
   final override val path
-      : untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
+    : untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
 
   override def toString: String = untypedSystem.toString
 
@@ -74,7 +75,7 @@ import akka.event.LoggingFilterWithMarker
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override val log: Logger = new LoggerAdapterImpl(
+  override lazy val log: Logger = new LoggerAdapterImpl(
     untypedSystem.eventStream,
     getClass,
     name,

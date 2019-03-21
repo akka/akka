@@ -12,14 +12,15 @@ import akka.actor.ActorInitializationException
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
-
 import akka.{ actor => untyped }
 import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -47,9 +48,11 @@ import akka.annotation.InternalApi
   final def currentBehavior: Behavior[T] = behavior
 
   private var _ctx: ActorContextAdapter[T] = _
-  def ctx: ActorContextAdapter[T] =
-    if (_ctx ne null) _ctx
-    else throw new IllegalStateException("Context was accessed before typed actor was started.")
+  def ctx: ActorContextAdapter[T] = {
+    // lazily create ctx on first access
+    if (_ctx eq null) _ctx = new ActorContextAdapter[T](context, this)
+    _ctx
+  }
 
   /**
    * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
@@ -188,21 +191,13 @@ import akka.annotation.InternalApi
     }
   }
 
-  override def preStart(): Unit =
-    if (!isAlive(behavior)) {
-      if (behavior == Behavior.stopped) context.stop(self)
-      else {
-        // post stop hook may touch context
-        initializeContext()
-        context.stop(self)
-      }
-    } else
-      start()
-
-  protected def start(): Unit = {
-    context.become(running)
-    initializeContext()
-    behavior = validateAsInitial(Behavior.start(behavior, ctx))
+  override def preStart(): Unit = {
+    if (isAlive(behavior)) {
+      context.become(running)
+      behavior = validateAsInitial(Behavior.start(behavior, ctx))
+    }
+    // either was stopped initially or became stopped on start
+    // FIXME what about stop signal/postStop callback here?
     if (!isAlive(behavior)) context.stop(self)
   }
 
@@ -212,14 +207,14 @@ import akka.annotation.InternalApi
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    initializeContext()
     behavior = validateAsInitial(Behavior.start(behavior, ctx))
+    // FIXME what about stop signal/postStop callback here?
     if (!isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
     behavior match {
-      case null                   => // skip PostStop
+      case null                   => // skip PostStop - FIXME will it ever be null here?
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
       case b => Behavior.interpretSignal(b, ctx, PostStop)
@@ -227,57 +222,6 @@ import akka.annotation.InternalApi
 
     behavior = Behavior.stopped
   }
-
-  protected def initializeContext(): Unit = {
-    _ctx = new ActorContextAdapter[T](context, this)
-  }
-}
-
-/**
- * INTERNAL API
- *
- * A special adapter for the guardian which will defer processing until a special `Start` signal has been received.
- * That will allow to defer typed processing until the untyped ActorSystem has completely started up.
- */
-@InternalApi
-private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
-  import Behavior._
-
-  override def preStart(): Unit =
-    if (!isAlive(behavior))
-      context.stop(self)
-    else
-      context.become(waitingForStart(Nil))
-
-  def waitingForStart(stashed: List[Any]): Receive = {
-    case GuardianActorAdapter.Start =>
-      start()
-
-      stashed.reverse.foreach(receive)
-    case other =>
-      // unlikely to happen but not impossible
-      context.become(waitingForStart(other :: stashed))
-  }
-
-  override def postRestart(reason: Throwable): Unit = {
-    initializeContext()
-
-    super.postRestart(reason)
-  }
-
-  override def postStop(): Unit = {
-    initializeContext()
-
-    super.postStop()
-  }
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[typed] object GuardianActorAdapter {
-  case object Start
-
 }
 
 /**
