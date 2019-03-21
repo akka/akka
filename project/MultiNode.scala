@@ -68,6 +68,8 @@ object MultiNode extends AutoPlugin {
     SbtMultiJvm.multiJvmSettings ++
       inConfig(MultiJvm)(scalafmtConfigSettings) ++
       Seq(
+        // Hack because 'provided' dependencies by default are not picked up by the multi-jvm plugin:
+        managedClasspath in MultiJvm ++= (managedClasspath in Compile).value.filter(_.data.name.contains("silencer-lib")),
         jvmOptions in MultiJvm := defaultMultiJvmOptions,
         scalacOptions in MultiJvm := (scalacOptions in Test).value,
         logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
