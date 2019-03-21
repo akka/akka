@@ -1219,26 +1219,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
-    _stageActor match {
-      case null =>
-        val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
-        _stageActor
-      case existing =>
-        existing.become(receive)
-        existing
-    }
+    getEagerStageActor(interpreter.materializer)(receive)
 
   @InternalApi
-  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer, poisonPillFallback: Boolean = false)(
+  protected[akka] def getEagerStageActor(
+      eagerMaterializer: Materializer,
+      poisonPillFallback: Boolean = false)( // fallback required for source actor backwards compatibility
       receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
         _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillFallback)
         _stageActor
-      case _ ⇒
-        throw new IllegalStateException("Cannot become in eager initialization")
+      case existing ⇒
+        existing.become(receive)
+        existing
     }
 
   /**
