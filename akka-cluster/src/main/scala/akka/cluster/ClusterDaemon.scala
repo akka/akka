@@ -1477,7 +1477,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
 }
 
-
 /**
  * INTERNAL API.
  *
