@@ -16,8 +16,9 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import scala.concurrent.Await
 import akka.cluster.MemberStatus
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object DurablePruningSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")

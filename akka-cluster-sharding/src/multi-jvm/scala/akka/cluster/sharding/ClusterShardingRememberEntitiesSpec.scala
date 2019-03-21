@@ -15,7 +15,7 @@ import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 import scala.concurrent.duration._
 
