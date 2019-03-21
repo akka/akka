@@ -58,8 +58,8 @@ import akka.event.LoggingFilterWithMarker
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 
-  final override val path
-    : untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
+  final override val path: untyped.ActorPath =
+    untyped.RootActorPath(untyped.Address("akka", untypedSystem.name)) / "user"
 
   override def toString: String = untypedSystem.toString
 

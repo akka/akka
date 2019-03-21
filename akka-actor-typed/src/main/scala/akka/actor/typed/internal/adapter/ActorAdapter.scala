@@ -38,12 +38,12 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T])
+@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T])
     extends untyped.Actor
     with untyped.ActorLogging {
   import Behavior._
 
-  protected var behavior: Behavior[T] = _initialBehavior
+  private var behavior: Behavior[T] = _initialBehavior
   final def currentBehavior: Behavior[T] = behavior
 
   // context adapter construction must be lazy because so that it is not created before the system is ready

@@ -31,14 +31,13 @@ private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behav
 
   import GuardianStartupBehavior.Start
 
-  private val stash = StashBuffer[T](256) // we should typically not see many messages here, worth configuring?
+  private val stash = StashBuffer[T](1000)
 
   override def onMessage(msg: Any): Behavior[Any] =
     msg match {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.setup(ctx =>
-          stash.unstashAll(ctx.asInstanceOf[ActorContext[T]], guardianBehavior).asInstanceOf[Behavior[Any]])
+        Behaviors.setup(ctx => stash.unstashAll(ctx.asInstanceOf[ActorContext[T]], guardianBehavior).unsafeCast[Any])
       case other =>
         stash.stash(other.asInstanceOf[T])
         this

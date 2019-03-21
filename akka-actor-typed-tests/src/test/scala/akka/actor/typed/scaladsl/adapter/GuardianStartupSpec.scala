@@ -4,6 +4,9 @@
 
 package akka.actor.typed.scaladsl.adapter
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystemImpl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -19,17 +22,16 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
 
     "should get a message sent to it early" in {
       var system: ActorSystem[String] = null
-      @volatile var lastMsg = ""
+      val sawMsg = new CountDownLatch(1)
       val guardianBehavior = Behaviors.receiveMessage[String] { msg =>
-        lastMsg = msg
+        if (msg == "msg") sawMsg.countDown()
         Behaviors.same
       }
       try {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-get-all")
         system ! "msg"
 
-        val probe = TestProbe()(system)
-        probe.awaitAssert(lastMsg should ===("msg"))
+        sawMsg.await(3, TimeUnit.SECONDS) should === (true)
 
       } finally {
         if (system ne null)
@@ -39,18 +41,17 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
 
     "should not start before untyped system initialization is complete" in {
       var system: ActorSystem[String] = null
-      @volatile var untypedSystemInitialized = false
+      val initialized = new CountDownLatch(1)
       val guardianBehavior = Behaviors.setup[String] { ctx =>
         ctx.system.toUntyped.asInstanceOf[ActorSystemImpl].assertInitialized()
-        untypedSystemInitialized = true
+        initialized.countDown()
         Behaviors.empty
       }
       try {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-initialized")
         system ! "msg"
 
-        val probe = TestProbe()(system)
-        probe.awaitAssert(untypedSystemInitialized should ===(true))
+        initialized.await(3, TimeUnit.SECONDS) should === (true)
 
       } finally {
         if (system ne null)
@@ -60,15 +61,15 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
 
     "have its shutdown hook run on immediate shutdown (after start)" in {
       var system: ActorSystem[String] = null
-      @volatile var stopHookExecuted = false
+      val stopHookExecuted = new CountDownLatch(1)
       // note that an immediately stopped (ActorSystem(Behaviors.stopped) is not allowed
-      val guardianBehavior = Behaviors.setup[String](_ => Behaviors.stopped(() => stopHookExecuted = true))
+      val guardianBehavior = Behaviors.setup[String](_ => Behaviors.stopped(() => stopHookExecuted.countDown()))
 
       try {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-stop-hook")
 
         system.whenTerminated.futureValue
-        stopHookExecuted should ===(true)
+        stopHookExecuted.await(3, TimeUnit.SECONDS) should ===(true)
 
       } finally {
         if (system ne null)
