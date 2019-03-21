@@ -369,7 +369,7 @@ private[akka] object Running {
           // # 24698 The deletion of old events are automatic, snapshots are triggered by the SaveSnapshotSuccess.
           setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
           if (setup.retention.deleteEventsOnSnapshot)
-            internalDeleteEvents(e, state) // if successful, DeleteMessagesSuccess then internalDeleteSnapshots
+            internalDeleteEvents(e, state)
           else
             internalDeleteSnapshots(meta.sequenceNr)
 

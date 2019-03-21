@@ -752,6 +752,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     "delete snapshots automatically, based on criteria" in {
       val unexpected = (signal: EventSourcedSignal) => fail(s"Unexpected signal [$signal].")
 
+      val snapshotEvery = 2
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[Done]]()
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
@@ -761,35 +762,35 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         Behaviors.setup[Command](
           ctx ⇒
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-              .snapshotEvery(2)
-              .withRetention(
-                RetentionCriteria(snapshotEveryNEvents = 2, keepNSnapshots = 2, deleteEventsOnSnapshot = false))))
+              .snapshotEvery(snapshotEvery)
+              .withRetention(RetentionCriteria(snapshotEveryNEvents = snapshotEvery, keepNSnapshots = 2))))
 
-      persistentActor ! IncrementWithPersistAll(3)
+      persistentActor ! IncrementWithPersistAll(10)
       persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
+      replyProbe.expectMessage(State(10, (0 until 10).toVector))
       snapshotProbe.expectMessage(Try(Done))
       retentionProbe.expectMessageType[Success[DeleteSnapshotsCompleted]].value match {
         case DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(maxSequenceNr, _, minSequenceNr, _))) =>
-          maxSequenceNr shouldEqual 2
-          minSequenceNr shouldEqual 0
+          maxSequenceNr shouldEqual 9
+          minSequenceNr shouldEqual 5
         case signal => unexpected(signal)
       }
 
-      persistentActor ! IncrementWithPersistAll(3)
+      persistentActor ! IncrementWithPersistAll(10)
       snapshotProbe.expectMessage(Try(Done))
       retentionProbe.expectMessageType[Success[DeleteSnapshotsCompleted]].value match {
         case DeleteSnapshotsCompleted(Criteria(SnapshotSelectionCriteria(maxSequenceNr, _, minSequenceNr, _))) =>
-          maxSequenceNr shouldEqual 5
-          minSequenceNr shouldEqual 1
+          maxSequenceNr shouldEqual 19
+          minSequenceNr shouldEqual 15
         case signal => unexpected(signal)
       }
 
       persistentActor ! GetValue(replyProbe.ref)
-      replyProbe.expectMessage(State(6, Vector(0, 1, 2, 3, 4, 5)))
+      replyProbe.expectMessage(State(20, (0 until 20).toVector))
     }
 
     "optionally delete both old messages and snapshots" in {
+      val snapshotEvery = 2
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[Done]]()
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
@@ -799,9 +800,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         Behaviors.setup[Command](
           ctx ⇒
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-              .snapshotEvery(2)
+              .snapshotEvery(snapshotEvery)
               .withRetention(
-                RetentionCriteria(snapshotEveryNEvents = 2, keepNSnapshots = 2, deleteEventsOnSnapshot = true))))
+                RetentionCriteria(snapshotEveryNEvents = snapshotEvery, keepNSnapshots = 2, deleteEventsOnSnapshot = true))))
 
       persistentActor ! IncrementWithPersistAll(10)
       persistentActor ! GetValue(replyProbe.ref)
