@@ -1440,7 +1440,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       }
       val probes = Vector.fill(10)(TestProbe())
 
-      (probes.zip(commands)).foreach {
+      probes.zip(commands).foreach {
         case (p, c) =>
           persistentActor.tell(c, p.ref)
       }
@@ -1530,7 +1530,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("a-2")
         expectMsg("d-3")
         expectMsg("d-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithPersistActor)
@@ -1543,7 +1543,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("pa-a-2")
         expectMsg("d-a-3")
         expectMsg("d-a-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithAsyncPersistActor)
@@ -1569,7 +1569,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         p2.expectMsg("pa-b-5")
         p2.expectMsg("d-b-6")
 
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncMixedCallsPPADDPADPersistActor)
@@ -1581,7 +1581,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         expectMsg("d-1")
         expectMsg("d-2")
         expectMsg("d-3")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithNoPersistCallsPersistActor)
@@ -1602,7 +1602,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
         p2.expectMsg("pa-b-2")
         p2.expectMsg("d-b-3")
         p2.expectMsg("d-b-4")
-        expectNoMsg(100.millis)
+        expectNoMessage(100.millis)
       }
 
       test(deferringAsyncWithAsyncPersistActor)
