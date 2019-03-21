@@ -31,7 +31,7 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-get-all")
         system ! "msg"
 
-        sawMsg.await(3, TimeUnit.SECONDS) should === (true)
+        sawMsg.await(3, TimeUnit.SECONDS) should ===(true)
 
       } finally {
         if (system ne null)
@@ -51,7 +51,7 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-initialized")
         system ! "msg"
 
-        initialized.await(3, TimeUnit.SECONDS) should === (true)
+        initialized.await(3, TimeUnit.SECONDS) should ===(true)
 
       } finally {
         if (system ne null)

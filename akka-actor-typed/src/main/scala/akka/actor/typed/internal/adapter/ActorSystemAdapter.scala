@@ -75,7 +75,7 @@ import akka.event.LoggingFilterWithMarker
   }
   override def dynamicAccess: untyped.DynamicAccess = untypedSystem.dynamicAccess
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
-  override lazy val log: Logger = new LoggerAdapterImpl(
+  override val log: Logger = new LoggerAdapterImpl(
     untypedSystem.eventStream,
     getClass,
     name,
