@@ -153,10 +153,15 @@ import akka.util.ConstantFun
     }
 
     val started = Behavior.start(behavior, ctx)
-    if (Behavior.isUnhandled(started))
-      throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
-    if (Behavior.isAlive(started)) {
-      interpretOne(started)
+    val actualInitialBehavior =
+      if (Behavior.isUnhandled(started))
+        throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
+      else if (started == Behavior.same) {
+        ctx.asScala.asInstanceOf[ActorContextAdapter[T]].currentBehavior
+      } else started
+
+    if (Behavior.isAlive(actualInitialBehavior)) {
+      interpretOne(actualInitialBehavior)
     } else {
       // fixme rest of stash to dead letter?
       started

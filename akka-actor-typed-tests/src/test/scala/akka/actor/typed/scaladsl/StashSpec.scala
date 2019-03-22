@@ -562,19 +562,15 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
         val stash = StashBuffer[String](10)
         stash.stash("one")
 
-        // FIXME #26148 using AbstractBehavior because unstashAll doesn't support Behavior.same
-
         // unstashing is inside setup
-        new AbstractBehavior[String] {
-          override def onMessage(msg: String): Behavior[String] = msg match {
-            case "unstash" =>
-              Behaviors.setup[String] { ctx =>
-                stash.unstashAll(ctx, this)
-              }
-            case _ =>
-              probe.ref ! msg
-              Behavior.same
-          }
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            Behaviors.setup[String] { ctx =>
+              stash.unstashAll(ctx, Behaviors.same)
+            }
+          case msg =>
+            probe.ref ! msg
+            Behavior.same
         }
       })
 
@@ -647,5 +643,24 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       probe.expectTerminated(ref)
     }
 
+    "work with initial same" in {
+      val probe = TestProbe[Any]
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+        stash.stash("two")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.same)
+          case msg =>
+            probe.ref ! msg
+            Behavior.same
+        }
+      })
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectMessage("two")
+    }
   }
 }
