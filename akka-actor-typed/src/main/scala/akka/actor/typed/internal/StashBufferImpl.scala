@@ -9,10 +9,12 @@ import java.util.function.{ Function => JFunction }
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-
 import akka.actor.typed.Behavior
+import akka.actor.typed.Behavior.SameBehavior
+import akka.actor.typed.Behavior.UnhandledBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
+import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
 import akka.annotation.InternalApi
@@ -125,8 +127,9 @@ import akka.util.ConstantFun
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
-        val nextB = try {
-          messages.next() match {
+        val message = messages.next()
+        val interpretResult = try {
+          message match {
             case sig: Signal => Behavior.interpretSignal(b2, ctx, sig)
             case msg         => Behavior.interpretMessage(b2, ctx, msg)
           }
@@ -134,11 +137,29 @@ import akka.util.ConstantFun
           case NonFatal(e) => throw UnstashException(e, b2)
         }
 
-        interpretOne(Behavior.canonicalize(nextB, b2, ctx)) // recursive
+        val actualNext =
+          if (interpretResult == Behavior.same) b2
+          else if (Behavior.isUnhandled(interpretResult)) {
+            ctx.asScala.asInstanceOf[ActorContextAdapter[_]].onUnhandled(message)
+            b2
+          } else if (!Behavior.isAlive(interpretResult)) {
+            throw new UnsupportedOperationException("Stopping while unstashing not supported")
+          } else {
+            interpretResult
+          }
+
+        interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
       }
     }
 
-    interpretOne(Behavior.start(behavior, ctx))
+    val started = Behavior.start(behavior, ctx)
+    if (Behavior.isUnhandled(started))
+      throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
+    if (Behavior.isAlive(started)) {
+      interpretOne(started)
+    } else {
+      throw new IllegalArgumentException("Cannot unstash with stopped as starting behavior")
+    }
   }
 
   override def unstash(

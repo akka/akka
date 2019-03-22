@@ -110,6 +110,12 @@ import scala.concurrent.duration._
   override def setLoggerClass(clazz: Class[_]): Unit = {
     initLoggerWithClass(clazz)
   }
+
+  /**
+   * Made accessible only to allow stash to deal with unhandled messages just like if they were interpreted by
+   * the adapter itself, even though the unstashing is actually happen inside the behavior stack
+   */
+  def onUnhandled(msg: Any): Unit = adapter.unhandled(msg)
 }
 
 /**

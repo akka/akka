@@ -582,6 +582,25 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("one")
     }
 
-  }
+    "deal with unhandled the same way as normal unhandled" in {
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
 
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.receiveMessage {
+              case _ => Behavior.unhandled
+            })
+          case _ =>
+            Behavior.same
+        }
+      })
+
+      EventFilter.warning(start = "unhandled message from", occurrences = 1).intercept {
+        ref ! "unstash"
+      }
+    }
+
+  }
 }
