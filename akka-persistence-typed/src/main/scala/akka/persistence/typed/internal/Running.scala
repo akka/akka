@@ -14,8 +14,18 @@ import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.persistence.DeleteMessagesFailure
+import akka.persistence.DeleteMessagesSuccess
+import akka.persistence.DeleteSnapshotFailure
+import akka.persistence.DeleteSnapshotSuccess
+import akka.persistence.DeleteSnapshotsFailure
+import akka.persistence.DeleteSnapshotsSuccess
+import akka.persistence.JournalProtocol
 import akka.persistence.JournalProtocol._
-import akka.persistence._
+import akka.persistence.PersistentRepr
+import akka.persistence.SaveSnapshotFailure
+import akka.persistence.SaveSnapshotSuccess
+import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.Callback
 import akka.persistence.typed.DeleteSnapshotsCompleted
@@ -27,6 +37,8 @@ import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
+import akka.persistence.typed.SnapshotMetadata
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.Stop
 import akka.persistence.typed.UnstashAll
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
@@ -323,11 +335,11 @@ private[akka] object Running {
           else
             internalDeleteSnapshots(setup.retention.toSequenceNumber(meta.sequenceNr))
 
-          Some(SnapshotCompleted(meta))
+          Some(SnapshotCompleted(SnapshotMetadata.fromUntyped(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
           setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
-          Some(SnapshotFailed(meta, error))
+          Some(SnapshotFailed(SnapshotMetadata.fromUntyped(meta), error))
 
         case _ =>
           onDeleteSnapshotResponse(response)
@@ -433,13 +445,13 @@ private[akka] object Running {
   def onDeleteSnapshotResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     val signal = response match {
       case DeleteSnapshotsSuccess(criteria) =>
-        Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)))
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromUntyped(criteria))))
       case DeleteSnapshotsFailure(criteria, error) =>
-        Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), error))
+        Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(SnapshotSelectionCriteria.fromUntyped(criteria)), error))
       case DeleteSnapshotSuccess(meta) =>
-        Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)))
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(SnapshotMetadata.fromUntyped(meta))))
       case DeleteSnapshotFailure(meta, error) =>
-        Some(DeleteSnapshotsFailed(DeletionTarget.Individual(meta), error))
+        Some(DeleteSnapshotsFailed(DeletionTarget.Individual(SnapshotMetadata.fromUntyped(meta)), error))
       case _ =>
         None
     }
