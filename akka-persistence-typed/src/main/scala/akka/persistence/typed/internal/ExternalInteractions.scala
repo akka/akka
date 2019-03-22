@@ -143,6 +143,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
+    setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else
@@ -151,16 +152,17 @@ private[akka] trait SnapshotInteractions[C, E, S] {
         setup.selfUntyped)
   }
 
-  /** Deletes the snapshot identified by `sequenceNr`. */
+  /** Deletes the snapshots up to and including the `sequenceNr`. */
   protected def internalDeleteSnapshots(toSequenceNr: Long): Unit = {
-    setup.log.debug("Deleting snapshot  to [{}]", toSequenceNr)
-
-    val deleteTo = toSequenceNr - 1
-    val deleteFrom = math.max(0, setup.retention.toSequenceNumber(deleteTo))
-    val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = deleteFrom, maxSequenceNr = deleteTo)
-
-    setup.log.debug("Deleting snapshots from [{}] to [{}]", deleteFrom, deleteTo)
-    setup.snapshotStore
-      .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+    if (toSequenceNr > 0) {
+      // We could use 0 as fromSequenceNr to delete all older snapshots, but that might be inefficient for
+      // large ranges depending on how it's implemented in the snapshot plugin. Therefore we use the
+      // same window as defined for how much to keep in the retention criteria
+      val fromSequenceNr = setup.retention.toSequenceNumber(toSequenceNr)
+      val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
+      setup.log.debug("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
+      setup.snapshotStore
+        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+    }
   }
 }
