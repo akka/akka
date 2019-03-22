@@ -38,7 +38,7 @@ import akka.util.OptionVal
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")
 
-  private[akka] override def createLogicAndEagerMaterializedValue(
+  private[akka] override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
       eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
     val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape) with StageLogging

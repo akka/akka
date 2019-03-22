@@ -42,7 +42,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
    * INTERNAL API
    */
   @InternalApi
-  private[akka] def createLogicAndEagerMaterializedValue(
+  private[akka] def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
       materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
 
@@ -1221,6 +1221,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
     getEagerStageActor(interpreter.materializer)(receive)
 
+  /**
+   * INTERNAL API
+   */
   @InternalApi
   protected[akka] def getEagerStageActor(
       eagerMaterializer: Materializer,
