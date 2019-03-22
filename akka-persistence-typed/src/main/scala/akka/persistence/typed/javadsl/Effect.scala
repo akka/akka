@@ -79,7 +79,7 @@ import akka.persistence.typed.internal._
    * @see [[Effect.thenUnstashAll]]
    */
   def unstashAll(): Effect[Event, State] =
-    none().andThen(SideEffect.unstashAll())
+    none().thenUnstashAll()
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -142,7 +142,7 @@ import akka.persistence.typed.internal._
   /**
    * Run the given callback after the current Effect
    */
-  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
+  def andThen(chainedEffect: State => Unit): Effect[Event, State]
 
   /** The side effect is to stop the actor */
   def thenStop(): Effect[Event, State]

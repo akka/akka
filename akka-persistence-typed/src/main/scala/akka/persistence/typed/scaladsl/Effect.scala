@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import scala.collection.{ immutable => im }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.internal.ReplyEffectImpl
 import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
@@ -126,8 +125,7 @@ trait Effect[+Event, State] {
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
-  final def thenRun(callback: State => Unit): Effect[Event, State] =
-    CompositeEffect(this, SideEffect(callback))
+  def thenRun(callback: State => Unit): Effect[Event, State]
 
   /** The side effect is to stop the actor */
   def thenStop(): Effect[Event, State]
@@ -154,8 +152,7 @@ trait Effect[+Event, State] {
    * finding mistakes.
    */
   def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
-      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State] =
-    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
+      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State]
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
