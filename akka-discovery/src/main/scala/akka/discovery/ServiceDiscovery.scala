@@ -119,7 +119,7 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
- * @throws java.lang.IllegalArgumentException if [[serviceName]] is 'null' or an empty String
+ * @param serviceName must not be 'null' or an empty String
  */
 final class Lookup(val serviceName: String, val portName: Option[String], val protocol: Option[String]) {
 
@@ -236,7 +236,7 @@ case object Lookup {
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
    *
-   * @throws NullPointerException If the passed string is null
+   * @throws java.lang.NullPointerException If the passed string is null
    * @throws java.lang.IllegalArgumentException If the string doesn't not conform with the SRV format
    */
   def parseSrv(str: String): Lookup =
