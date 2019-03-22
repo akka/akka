@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.SnapshotSelectionCriteria;
+import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
