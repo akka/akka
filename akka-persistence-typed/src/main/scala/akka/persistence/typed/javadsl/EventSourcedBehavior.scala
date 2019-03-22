@@ -14,7 +14,6 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
@@ -140,7 +139,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
-  def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest
+  def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
