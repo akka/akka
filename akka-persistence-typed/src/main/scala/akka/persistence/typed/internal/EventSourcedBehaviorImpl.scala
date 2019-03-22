@@ -20,7 +20,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.DeleteMessagesFailed
+import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
@@ -96,7 +96,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
       case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
         ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
-      case DeleteMessagesFailed(toSequenceNr, failure) =>
+      case DeleteEventsFailed(toSequenceNr, failure) =>
         ctx.log.warning("Failed to delete messages toSequenceNr [{}] due to [{}].", toSequenceNr, failure)
     }
 

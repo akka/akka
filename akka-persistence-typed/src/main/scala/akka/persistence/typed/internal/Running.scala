@@ -20,8 +20,8 @@ import akka.persistence.journal.Tagged
 import akka.persistence.typed.Callback
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
-import akka.persistence.typed.DeleteMessagesCompleted
-import akka.persistence.typed.DeleteMessagesFailed
+import akka.persistence.typed.DeleteEventsCompleted
+import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SideEffect
@@ -97,8 +97,8 @@ private[akka] object Running {
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
-      case SnapshotterResponse(r)           => onSnapshotterResponse(r)
-      case JournalResponse(r)               => onJournalResponse(r)
+      case JournalResponse(r)               => onDeleteEventsJournalResponse(r)
+      case SnapshotterResponse(r)           => onDeleteSnapshotResponse(r)
       case _                                => Behaviors.unhandled
     }
 
@@ -111,53 +111,6 @@ private[akka] object Running {
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
-    }
-
-    /** Handle journal responses for non-persist events workloads. */
-    def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
-      val signal = response match {
-        case DeleteMessagesSuccess(toSequenceNr) =>
-          setup.log.debug("Persistent messages to [{}] deleted successfully.", toSequenceNr)
-          internalDeleteSnapshots(toSequenceNr)
-          Some(DeleteMessagesCompleted(toSequenceNr))
-
-        case DeleteMessagesFailure(e, toSequenceNr) =>
-          Some(DeleteMessagesFailed(toSequenceNr, e))
-        case _ =>
-          None
-      }
-
-      signal match {
-        case Some(sig) =>
-          setup.onSignal(sig)
-          this
-        case None =>
-          Behaviors.unhandled // unexpected journal response
-      }
-    }
-
-    /** Handle snapshot responses for non-persist events workloads. */
-    def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-      val signal = response match {
-        case DeleteSnapshotsSuccess(criteria) =>
-          Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)))
-        case DeleteSnapshotsFailure(criteria, error) =>
-          Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), error))
-        case DeleteSnapshotSuccess(meta) =>
-          Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)))
-        case DeleteSnapshotFailure(meta, error) =>
-          Some(DeleteSnapshotsFailed(DeletionTarget.Individual(meta), error))
-        case _ =>
-          None
-      }
-
-      signal match {
-        case Some(sig) =>
-          setup.onSignal(sig)
-          this
-        case None =>
-          Behaviors.unhandled // unexpected snapshot response
-      }
     }
 
     @tailrec def applyEffects(
@@ -270,11 +223,9 @@ private[akka] object Running {
       msg match {
         case JournalResponse(r)                => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] => onCommand(in)
-        case SnapshotterResponse(r) =>
-          setup.log.warning("Unexpected SnapshotterResponse {}", r)
-          Behaviors.unhandled
-        case RecoveryTickEvent(_)  => Behaviors.unhandled
-        case RecoveryPermitGranted => Behaviors.unhandled
+        case SnapshotterResponse(r)            => onDeleteSnapshotResponse(r)
+        case RecoveryTickEvent(_)              => Behaviors.unhandled
+        case RecoveryPermitGranted             => Behaviors.unhandled
       }
     }
 
@@ -332,8 +283,7 @@ private[akka] object Running {
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 
         case _ =>
-          // ignore all other messages, since they relate to recovery handling which we're not dealing with in Running phase
-          Behaviors.unhandled
+          onDeleteEventsJournalResponse(response)
       }
     }
 
@@ -371,7 +321,7 @@ private[akka] object Running {
           if (setup.retention.deleteEventsOnSnapshot)
             internalDeleteEvents(e, state)
           else
-            internalDeleteSnapshots(meta.sequenceNr)
+            internalDeleteSnapshots(setup.retention.toSequenceNumber(meta.sequenceNr))
 
           Some(SnapshotCompleted(meta))
 
@@ -380,17 +330,20 @@ private[akka] object Running {
           Some(SnapshotFailed(meta, error))
 
         case _ =>
+          onDeleteSnapshotResponse(response)
           None
       }
 
-      setup.log.debug("Received snapshot event [{}], returning signal [{}].", response, signal)
-      signal.foreach(setup.onSignal _)
+      setup.log.debug("Received snapshot response [{}], emitting signal [{}].", response, signal)
+      signal.foreach(setup.onSignal)
     }
 
     Behaviors
       .receiveMessage[InternalProtocol] {
         case cmd: IncomingCommand[C] @unchecked =>
           onCommand(cmd)
+        case JournalResponse(r) =>
+          onDeleteEventsJournalResponse(r)
         case SnapshotterResponse(r) =>
           onSnapshotterResponse(r)
           tryUnstashOne(applySideEffects(sideEffects, state))
@@ -442,6 +395,61 @@ private[akka] object Running {
 
       case _ =>
         throw new IllegalArgumentException(s"Unsupported side effect detected [${effect.getClass.getName}]")
+    }
+  }
+
+  /**
+   * Handle journal responses for non-persist events workloads.
+   * These are performed in the background and may happen in all phases.
+   */
+  def onDeleteEventsJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
+    val signal = response match {
+      case DeleteMessagesSuccess(toSequenceNr) =>
+        setup.log.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
+        // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
+        // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
+        // starting at the snapshot at toSequenceNr would be invalid.
+        internalDeleteSnapshots(toSequenceNr - 1)
+        Some(DeleteEventsCompleted(toSequenceNr))
+      case DeleteMessagesFailure(e, toSequenceNr) =>
+        Some(DeleteEventsFailed(toSequenceNr, e))
+      case _ =>
+        None
+    }
+
+    signal match {
+      case Some(sig) =>
+        setup.onSignal(sig)
+        Behaviors.same
+      case None =>
+        Behaviors.unhandled // unexpected journal response
+    }
+  }
+
+  /**
+   * Handle snapshot responses for non-persist events workloads.
+   * These are performed in the background and may happen in all phases.
+   */
+  def onDeleteSnapshotResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+    val signal = response match {
+      case DeleteSnapshotsSuccess(criteria) =>
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)))
+      case DeleteSnapshotsFailure(criteria, error) =>
+        Some(DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), error))
+      case DeleteSnapshotSuccess(meta) =>
+        Some(DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)))
+      case DeleteSnapshotFailure(meta, error) =>
+        Some(DeleteSnapshotsFailed(DeletionTarget.Individual(meta), error))
+      case _ =>
+        None
+    }
+
+    signal match {
+      case Some(sig) =>
+        setup.onSignal(sig)
+        Behaviors.same
+      case None =>
+        Behaviors.unhandled // unexpected snapshot response
     }
   }
 

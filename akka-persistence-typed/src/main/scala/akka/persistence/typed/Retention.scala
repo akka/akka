@@ -32,7 +32,7 @@ final case class RetentionCriteria(snapshotEveryNEvents: Long, keepNSnapshots: L
    */
   def toSequenceNumber(lastSequenceNr: Long): Long = {
     // Delete old events, retain the latest
-    lastSequenceNr - (keepNSnapshots * snapshotEveryNEvents)
+    math.max(0, lastSequenceNr - (keepNSnapshots * snapshotEveryNEvents))
   }
 }
 
