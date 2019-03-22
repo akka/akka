@@ -10,8 +10,6 @@ import java.util.function.{ Function => JFunction }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.SameBehavior
-import akka.actor.typed.Behavior.UnhandledBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.internal.adapter.ActorContextAdapter
@@ -142,13 +140,15 @@ import akka.util.ConstantFun
           else if (Behavior.isUnhandled(interpretResult)) {
             ctx.asScala.asInstanceOf[ActorContextAdapter[_]].onUnhandled(message)
             b2
-          } else if (!Behavior.isAlive(interpretResult)) {
-            throw new UnsupportedOperationException("Stopping while unstashing not supported")
           } else {
             interpretResult
           }
 
-        interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
+        if (Behavior.isAlive(actualNext))
+          interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
+        else
+          // fixme rest of stash to dead letter?
+          actualNext
       }
     }
 
@@ -158,7 +158,8 @@ import akka.util.ConstantFun
     if (Behavior.isAlive(started)) {
       interpretOne(started)
     } else {
-      throw new IllegalArgumentException("Cannot unstash with stopped as starting behavior")
+      // fixme rest of stash to dead letter?
+      started
     }
   }
 

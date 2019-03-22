@@ -602,5 +602,50 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
+    "fail quick on invalid start behavior" in {
+      val stash = StashBuffer[String](10)
+      stash.stash("one")
+      intercept[IllegalArgumentException](stash.unstashAll(null, Behavior.unhandled))
+    }
+
+    "deal with initial stop" in {
+      val probe = TestProbe[Any]
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.stopped)
+        }
+      })
+
+      ref ! "unstash"
+      probe.expectTerminated(ref)
+    }
+
+    "deal with stop" in {
+      val probe = TestProbe[Any]
+      val ref = spawn(Behaviors.setup[String] { ctx =>
+        val stash = StashBuffer[String](10)
+        stash.stash("one")
+        stash.stash("two")
+
+        Behaviors.receiveMessage {
+          case "unstash" =>
+            stash.unstashAll(ctx, Behaviors.receiveMessage {
+              case unstashed =>
+                probe.ref ! unstashed
+                Behavior.stopped
+            })
+          case _ =>
+            Behavior.same
+        }
+      })
+      ref ! "unstash"
+      probe.expectMessage("one")
+      probe.expectTerminated(ref)
+    }
+
   }
 }
