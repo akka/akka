@@ -37,10 +37,14 @@ object ActorMaterializer {
    */
   def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
       implicit context: ActorRefFactory): ActorMaterializer = {
-    val system = actorSystemOf(context)
+    namePrefix match {
+      case Some(prefix) if (prefix.trim.isEmpty) => throw new IllegalArgumentException(s"namePrefix has to be a non-empty string, got $namePrefix")
+      case _ =>
+        val system = actorSystemOf(context)
 
-    val settings = materializerSettings.getOrElse(ActorMaterializerSettings(system))
-    apply(settings, namePrefix.getOrElse("flow"))(context)
+        val settings = materializerSettings.getOrElse(ActorMaterializerSettings(system))
+        apply(settings, namePrefix.getOrElse("flow"))(context)
+    }
   }
 
   /**
