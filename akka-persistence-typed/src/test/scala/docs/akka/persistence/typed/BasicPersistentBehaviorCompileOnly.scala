@@ -4,12 +4,14 @@
 
 package docs.akka.persistence.typed
 
-import akka.actor.typed.ActorRef
+import scala.concurrent.duration._
+
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-
-import scala.concurrent.duration._
+import akka.persistence.typed.DeleteEventsFailed
+import akka.persistence.typed.DeleteSnapshotsFailed
+import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 
@@ -174,5 +176,55 @@ object BasicPersistentBehaviorCompileOnly {
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
   //#snapshotSelection
+
+  //#snapshotDeletes
+  import akka.persistence.typed.RetentionCriteria
+
+  val snapshotRetention = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply,    // do something based on a particular command
+    eventHandler = (state, evt) => state)               // do something based on a particular state
+    .snapshotWhen {
+      case (state, BookingCompleted(_), sequenceNumber) => true
+      case (state, event, sequenceNumber)               => false
+    }
+    .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5))
+  //#snapshotDeletes
+
+  //#snapshotAndEventDeletes
+  import akka.persistence.typed.RetentionCriteria
+
+  val snapshotAndEventsRetention = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
+    eventHandler = (state, evt) => state)            // do something based on a particular event and state
+    .snapshotWhen {
+      case (state, BookingCompleted(_), sequenceNumber) => true
+      case (state, event, sequenceNumber)               => false
+    }
+    .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5, deleteEventsOnSnapshot = true))
+  //#snapshotAndEventDeletes
+
+  //#fullDeletesSampleWithSignals
+  import akka.persistence.typed.RetentionCriteria
+
+  val fullDeletesSampleWithSignals = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
+    eventHandler = (state, evt) => state)            // do something based on a particular event and state
+    .snapshotWhen {
+      case (state, BookingCompleted(_), sequenceNumber) => true
+      case (state, event, sequenceNumber)               => false
+    }
+    .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5, deleteEventsOnSnapshot = true))
+    .receiveSignal { // optionally respond to signals
+      case _: SnapshotFailed => // react to failure
+      case _: DeleteSnapshotsFailed => // react to failure
+      case _: DeleteEventsFailed => // react to failure
+    }
+  //#fullDeletesSampleWithSignals
 
 }

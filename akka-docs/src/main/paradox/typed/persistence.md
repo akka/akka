@@ -4,6 +4,7 @@
 
 * [Persistence - coding style](persistence-style.md)
 * [Persistence - snapshotting](persistence-snapshot.md)
+* [Persistence - lifecycle](persistence-lifecycle.md)
 
 @@@
 
@@ -332,21 +333,6 @@ The same @ref:[serialization](../serialization.md) mechanism as for untyped
 actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events
 you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
-
-## Recovery
-
-It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
-
-Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
-
-Java
-:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
-
-The `RecoveryCompleted` contains the current `State`.
-
-@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
 
 ## Tagging
 
