@@ -79,7 +79,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       implicit val timeout = akka.util.Timeout(10.millis)
 
       Source(1 to 5)
-        .map(_ + " nope")
+        .map(_.toString + " nope")
         .via(ActorFlow.ask[String, Asking, Reply](4)(dontReply)(Asking(_, _)))
         .to(Sink.fromSubscriber(c))
         .run()
