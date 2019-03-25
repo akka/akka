@@ -56,7 +56,6 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
           val leaseConfig = system.settings.config
             .getConfig(configPath)
             .withFallback(system.settings.config.getConfig("akka.coordination.lease"))
-          println(leaseConfig)
           loadLease(LeaseSettings(leaseConfig, leaseName, ownerName), configPath)
         }
       })
@@ -64,6 +63,7 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
 
   private def loadLease(leaseSettings: LeaseSettings, configPath: String): Lease = {
     val fqcn = leaseSettings.leaseConfig.getString("lease-class")
+    require(fqcn.nonEmpty, "lease-class must not be empty")
     val dynamicAccess = system.dynamicAccess
     dynamicAccess
       .createInstanceFor[Lease](

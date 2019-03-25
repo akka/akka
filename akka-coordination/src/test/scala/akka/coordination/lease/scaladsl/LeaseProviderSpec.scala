@@ -8,7 +8,8 @@ import scala.concurrent.Future
 import akka.actor.ExtendedActorSystem
 import akka.coordination.lease.LeaseSettings
 import akka.testkit.{ AkkaSpec, EventFilter }
-import com.typesafe.config.{ ConfigException, ConfigFactory }
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 
 object LeaseProviderSpec {
@@ -46,6 +47,7 @@ object LeaseProviderSpec {
 
   lease-missing {
   }
+
   lease-unknown {
     lease-class = "foo.wrong.ClassName"
     heartbeat-timeout = 120s
@@ -108,9 +110,9 @@ class LeaseProviderSpec extends AkkaSpec(LeaseProviderSpec.config) {
     }
 
     "throw if missing lease-class config" in {
-      intercept[ConfigException] {
+      intercept[IllegalArgumentException] {
         LeaseProvider(system).getLease("x", "lease-missing", "owner1")
-      }
+      }.getMessage should include("lease-class must not be empty")
     }
 
     "throw if unknown lease-class config" in {

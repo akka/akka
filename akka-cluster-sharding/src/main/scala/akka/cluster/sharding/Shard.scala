@@ -35,6 +35,7 @@ import scala.concurrent.duration._
 
 /**
  * INTERNAL API
+ *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 private[akka] object Shard {
@@ -88,8 +89,7 @@ private[akka] object Shard {
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
       extends ClusterShardingSerializable
 
-  final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable])
-      extends DeadLetterSuppression
+  final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
   final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
   final case object LeaseRetry extends DeadLetterSuppression
