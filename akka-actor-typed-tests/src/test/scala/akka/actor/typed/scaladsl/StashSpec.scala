@@ -579,23 +579,38 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "deal with unhandled the same way as normal unhandled" in {
+      val probe = TestProbe[String]()
       val ref = spawn(Behaviors.setup[String] { ctx =>
         val stash = StashBuffer[String](10)
-        stash.stash("one")
+        stash.stash("unhandled")
+        stash.stash("handled")
+        stash.stash("handled")
+        stash.stash("unhandled")
+        stash.stash("handled")
+
+        def unstashing(n: Int): Behavior[String] =
+          Behaviors.receiveMessage {
+            case "unhandled" => Behavior.unhandled
+            case "handled" =>
+              probe.ref ! s"handled $n"
+              unstashing(n + 1)
+          }
 
         Behaviors.receiveMessage {
           case "unstash" =>
-            stash.unstashAll(ctx, Behaviors.receiveMessage {
-              case _ => Behavior.unhandled
-            })
-          case _ =>
-            Behavior.same
+            stash.unstashAll(ctx, unstashing(1))
         }
       })
 
-      EventFilter.warning(start = "unhandled message from", occurrences = 1).intercept {
+      EventFilter.warning(start = "unhandled message from", occurrences = 2).intercept {
         ref ! "unstash"
       }
+      probe.expectMessage("handled 1")
+      probe.expectMessage("handled 2")
+      probe.expectMessage("handled 3")
+
+      ref ! "handled"
+      probe.expectMessage("handled 4")
     }
 
     "fail quick on invalid start behavior" in {
