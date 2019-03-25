@@ -1017,7 +1017,6 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         logInfo("Self downed, waiting for removal")
       stay
     case Event(ReleaseLeaseFailure(t), _) =>
-      // TODO we could retry
       log.error(
         t,
         "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")

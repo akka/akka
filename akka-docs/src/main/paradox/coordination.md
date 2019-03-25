@@ -40,7 +40,7 @@ Scala
 :  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #lease-usage }
 
 Java
-:  @@snip [LeaseDocTest.scala](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #lease-usage }
+:  @@snip [LeaseDocTest.java](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #lease-usage }
 
 Acquiring a lease returns a @scala[Future]@java[CompletionStage] as lease implementations typically are implemented 
 via a third party system such as the Kubernetes API server or Zookeeper.
@@ -86,8 +86,8 @@ The methods should provide the following guarantees:
 
 * `acquire` should complete with: `true` if the lease has been acquired, `false` if the lease is taken by another owner, or fail if it can't communicate with the third party system implementing the lease.
 * `release` should complete with: `true` if the lease has definitely been released, `false` if the lease has definitely not been released, or fail if it is unknown if the lease has been released.
-* `checkLease` should return false until an `acquire` Future has completed and should return `false` if the lease is lost due to an error communicating with the third party. Check lease should also not block.
-* The `acquire` lease lost callback should only be called after an `aquire` future has completed and should be called if the lease is lose e.g. due to losing communication with the third party system.
+* `checkLease` should return false until an `acquire` @scala[Future]@java[CompletionStage] has completed and should return `false` if the lease is lost due to an error communicating with the third party. Check lease should also not block.
+* The `acquire` lease lost callback should only be called after an `aquire` @scala[Future]@java[CompletionStage] has completed and should be called if the lease is lose e.g. due to losing communication with the third party system.
 
 In addition it is expected that a lease implementation will include a time to live mechanism meaning that a lease won't be held for ever in case the node crashes.
 If a user prefers to have outside intervention in this case for maximum safety then the time to live can be set to infinite.

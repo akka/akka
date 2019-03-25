@@ -58,7 +58,6 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
   val probe = TestProbe()(system)
 
   log.info("Creating lease {}", settings)
-  println("Creating lease " + settings)
 
   TestLeaseExt(system).setTestLease(settings.leaseName, this)
 

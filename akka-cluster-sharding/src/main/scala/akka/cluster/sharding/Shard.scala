@@ -88,11 +88,11 @@ private[akka] object Shard {
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
       extends ClusterShardingSerializable
 
-  private[akka] final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable])
+  final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable])
       extends DeadLetterSuppression
-  private[akka] final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
+  final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
-  private[akka] final case object LeaseRetry extends DeadLetterSuppression
+  final case object LeaseRetry extends DeadLetterSuppression
   private val LeaseRetryTimer = "lease-retry"
 
   object State {
