@@ -471,7 +471,7 @@ Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotDeletes }
 
 On async deletion, either a `SnapshotCompleted` or `SnapshotFailed` is emitted. Successful completion is logged by the system at log level `debug`, failures at log level `error`.
-You can leverage `EventSourcedSignal` to react to outcomes with @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`].
+You can leverage `EventSourcedSignal` to react to outcomes @scala[with `receiveSignal` handler] @java[by overriding `receiveSignal`].
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #fullDeletesSampleWithSignals }
@@ -480,8 +480,13 @@ Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotDeletesSifullDeletesSampleWithSignalsgnal }
 
 ## Event deletion
-If snapshot-based recovery is enabled, you can elect to have the system automatically delete older events by enabling `RetentionCriteria.deleteEventsOnSnapshot`, which is disabled by default. 
-Additionally you can leverage `EventSourcedSignal` to react to outcomes with `EventSourcedBehavior.receiveSignal`.
+
+Deleting events in event sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
+If snapshot-based recovery is enabled, after a snapshot has been successfully stored, a delete (journaled by a single event sourced actor) up until the sequence number of the data held by that snapshot can be issued.
+This will safely delete the previous events, while still providing access to the accumulated state during replays by loading the snapshot.
+ 
+To elect to use this, enable `RetentionCriteria.deleteEventsOnSnapshot` which is disabled by default. 
+You can leverage `EventSourcedSignal` to react to outcomes @scala[with `receiveSignal` handler] @java[by overriding `receiveSignal`].
    
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotAndEventDeletes }
@@ -490,6 +495,13 @@ Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotAndEventDeletes }
  
 On `SaveSnapshotSuccess`, old events would be deleted based on `RetentionCriteria` prior to old snapshots being deleted. On async deletion, either `DeleteEventsCompleted` or `DeleteEventsFailed` is returned. Successful completion is logged by the 
-system at log level `debug`, failures at log level `error`. You can leverage `EventSourcedSignal` to react to outcomes with `EventSourcedBehavior.receiveSignal`.
+system at log level `debug`, failures at log level `error`.
 
 Message deletion does not affect the highest sequence number of the journal, even if all messages were deleted from it after a delete occurs.
+
+@@@ note
+
+It is up to the journal implementation whether events are actually removed from storage.
+Deleting events prevents future replaying of old events to apply new state.
+
+@@@ note
