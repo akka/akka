@@ -14,7 +14,6 @@ import scala.util.control.NonFatal
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
 import akka.annotation.InternalApi
@@ -140,7 +139,7 @@ import akka.util.ConstantFun
         val actualNext =
           if (interpretResult == Behavior.same) b2
           else if (Behavior.isUnhandled(interpretResult)) {
-            ctx.asScala.asInstanceOf[ActorContextAdapter[_]].onUnhandled(message)
+            ctx.asScala.onUnhandled(message)
             b2
           } else {
             interpretResult
@@ -160,7 +159,7 @@ import akka.util.ConstantFun
       if (Behavior.isUnhandled(started))
         throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
       else if (started == Behavior.same) {
-        ctx.asScala.asInstanceOf[ActorContextAdapter[T]].currentBehavior
+        ctx.asScala.currentBehavior
       } else started
 
     if (Behavior.isAlive(actualInitialBehavior)) {

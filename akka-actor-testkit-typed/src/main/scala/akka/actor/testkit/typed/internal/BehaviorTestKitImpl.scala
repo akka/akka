@@ -28,7 +28,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     with akka.actor.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
-  private[akka] val context = new EffectfulActorContext[T](_path)
+  private[akka] val context = new EffectfulActorContext[T](_path, () => currentBehavior)
 
   private[akka] def as[U]: BehaviorTestKitImpl[U] = this.asInstanceOf[BehaviorTestKitImpl[U]]
 
