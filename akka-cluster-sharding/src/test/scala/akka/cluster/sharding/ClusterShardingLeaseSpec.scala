@@ -24,6 +24,9 @@ object ClusterShardingLeaseSpec {
     akka.cluster.sharding {
        use-lease = "test-lease"
        lease-retry-interval = 200ms
+       distributed-data.durable {
+        keys = []
+       }
      }
     """).withFallback(TestLease.config)
 

@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
+import akka.Done
 import akka.actor.{
   Actor,
   ActorLogging,
@@ -21,7 +22,7 @@ import akka.actor.{
 }
 import akka.util.{ ConstantFun, MessageBufferMap }
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
@@ -32,6 +33,7 @@ import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 import akka.pattern.pipe
 
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -207,21 +209,40 @@ private[akka] class Shard(
     case None    => 5.seconds // not used
   }
 
-  initialized(receiveCommand, ConstantFun.unitToUnit)
+  override def preStart(): Unit = {
+    acquireLeaseIfNeeded()
+  }
 
-  def initialized(next: Receive, onDone: () => Unit): Unit = {
+  // Override to execute logic once the lease has been acquired
+  // Will be called on the actor thread
+  def onLeaseAcquired(): Future[Done] = {
+    // do anything before message processing
+    context.become(receiveCommand)
+    Future.successful(Done)
+  }
+
+  def acquireLeaseIfNeeded(): Unit = {
     lease match {
       case Some(l) =>
         tryGetLease(l)
-        context.become(awaitingLease(next, onDone))
+        context.become(awaitingLease())
       case None =>
-        onDone()
-        context.parent ! ShardInitialized(shardId)
-        context.become(next)
+        becomeInitialized()
     }
   }
 
-  def tryGetLease(l: Lease) = {
+  private def becomeInitialized(): Unit = {
+    onLeaseAcquired().onComplete {
+      case Success(_) =>
+        log.debug("Shard initialized")
+        context.parent ! ShardInitialized(shardId)
+      case Failure(t) =>
+        log.error(t, "Unable to initialize shard")
+        context.stop(context.self)
+    }
+  }
+
+  private def tryGetLease(l: Lease) = {
     log.info("Acquiring lease {}", l.settings)
     pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover {
       case t => LeaseAcquireResult(acquired = false, Some(t))
@@ -235,12 +256,10 @@ private[akka] class Shard(
 
   // Don't send back ShardInitialized so that messages are buffered in the ShardRegion
   // while awaiting the lease
-  def awaitingLease(next: Receive, onDone: () => Unit): Receive = {
+  def awaitingLease(): Receive = {
     case LeaseAcquireResult(true, _) =>
-      log.info("Acquired lease. Ready to accept commands.")
-      onDone()
-      context.parent ! ShardInitialized(shardId)
-      context.become(next)
+      log.debug("Acquired lease")
+      becomeInitialized()
     case LeaseAcquireResult(false, None) =>
       log.error(
         "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
@@ -639,14 +658,22 @@ private[akka] class PersistentShard(
   import Shard._
   import settings.tuningParameters._
 
+  override def preStart(): Unit = {
+    // override to not acquire the lease on start up, acquire after persistent recovery
+  }
+
+  override def onLeaseAcquired(): Future[Done] = {
+    context.become(receiveCommand)
+    restartRememberedEntities()
+    unstashAll()
+    Future.successful(Done)
+  }
+
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
 
   override def journalPluginId: String = settings.journalPluginId
 
   override def snapshotPluginId: String = settings.snapshotPluginId
-
-  // would be initialized after recovery completed
-  override def initialized(next: Receive, onDone: () => Unit): Unit = {}
 
   override def receive = receiveCommand
 
@@ -667,8 +694,7 @@ private[akka] class PersistentShard(
     case EntityStopped(id)                 => state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
-      restartRememberedEntities()
-      super.initialized(receiveCommand, ConstantFun.unitToUnit)
+      acquireLeaseIfNeeded()
       log.debug("PersistentShard recovery completed shard [{}] with [{}] entities", shardId, state.entities.size)
   }
 
@@ -753,8 +779,14 @@ private[akka] class DDataShard(
     stateKeys(i)
   }
 
-  // get initial state from ddata replicator
-  getState()
+  val initializedPromise = Promise[Done]
+
+  override def onLeaseAcquired(): Future[Done] = {
+    log.info("Lease Acquired. Getting state from DData")
+    getState()
+    context.become(waitingForState(Set.empty))
+    initializedPromise.future
+  }
 
   private def getState(): Unit = {
     (0 until numberOfKeys).map { i =>
@@ -762,18 +794,16 @@ private[akka] class DDataShard(
     }
   }
 
-  // would be initialized after recovery completed
-  override def initialized(next: Receive, onDone: () => Unit): Unit = {}
-
   override def receive = waitingForState(Set.empty)
 
   // This state will stash all commands
   private def waitingForState(gotKeys: Set[Int]): Receive = {
     def receiveOne(i: Int): Unit = {
       val newGotKeys = gotKeys + i
-      if (newGotKeys.size == numberOfKeys)
+      if (newGotKeys.size == numberOfKeys) {
+        initializedPromise.complete(Success(Done))
         recoveryCompleted()
-      else
+      } else
         context.become(waitingForState(newGotKeys))
     }
 
@@ -800,8 +830,8 @@ private[akka] class DDataShard(
 
   private def recoveryCompleted(): Unit = {
     restartRememberedEntities()
-    super.initialized(receiveCommand, () => unstashAll())
     log.debug("DDataShard recovery completed shard [{}] with [{}] entities", shardId, state.entities.size)
+    context.become(receiveCommand)
   }
 
   override def processChange[E <: StateChange](event: E)(handler: E => Unit): Unit = {
