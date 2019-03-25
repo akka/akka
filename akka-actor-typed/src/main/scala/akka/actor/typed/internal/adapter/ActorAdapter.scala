@@ -9,17 +9,17 @@ package adapter
 import java.lang.reflect.InvocationTargetException
 
 import akka.actor.ActorInitializationException
+import akka.{ actor => untyped }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
-import akka.{ actor => untyped }
-import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

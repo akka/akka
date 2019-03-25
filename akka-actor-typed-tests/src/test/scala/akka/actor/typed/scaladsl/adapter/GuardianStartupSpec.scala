@@ -20,7 +20,7 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
 
   "The user guardian" must {
 
-    "should get a message sent to it early" in {
+    "get a message sent to it early" in {
       var system: ActorSystem[String] = null
       val sawMsg = new CountDownLatch(1)
       val guardianBehavior = Behaviors.receiveMessage[String] { msg =>
@@ -39,7 +39,7 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "should not start before untyped system initialization is complete" in {
+    "not start before untyped system initialization is complete" in {
       var system: ActorSystem[String] = null
       val initialized = new CountDownLatch(1)
       val guardianBehavior = Behaviors.setup[String] { ctx =>
