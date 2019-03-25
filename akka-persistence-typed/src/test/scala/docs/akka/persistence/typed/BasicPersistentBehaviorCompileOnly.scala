@@ -183,8 +183,8 @@ object BasicPersistentBehaviorCompileOnly {
   val snapshotRetention = EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
-    commandHandler = (state, cmd) => Effect.noReply,    // do something based on a particular command
-    eventHandler = (state, evt) => state)               // do something based on a particular state
+    commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command
+    eventHandler = (state, evt) => state) // do something based on a particular state
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
@@ -199,7 +199,7 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
-    eventHandler = (state, evt) => state)            // do something based on a particular event and state
+    eventHandler = (state, evt) => state) // do something based on a particular event and state
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
@@ -214,16 +214,16 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => Effect.noReply, // do something based on a particular command and state
-    eventHandler = (state, evt) => state)            // do something based on a particular event and state
+    eventHandler = (state, evt) => state) // do something based on a particular event and state
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
     .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5, deleteEventsOnSnapshot = true))
     .receiveSignal { // optionally respond to signals
-      case _: SnapshotFailed => // react to failure
+      case _: SnapshotFailed        => // react to failure
       case _: DeleteSnapshotsFailed => // react to failure
-      case _: DeleteEventsFailed => // react to failure
+      case _: DeleteEventsFailed    => // react to failure
     }
   //#fullDeletesSampleWithSignals
 
