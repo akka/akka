@@ -88,7 +88,8 @@ private[akka] object Shard {
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
       extends ClusterShardingSerializable
 
-  private[akka] final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
+  private[akka] final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable])
+      extends DeadLetterSuppression
   private[akka] final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
   private[akka] final case object LeaseRetry extends DeadLetterSuppression
@@ -241,7 +242,11 @@ private[akka] class Shard(
       context.parent ! ShardInitialized(shardId)
       context.become(next)
     case LeaseAcquireResult(false, None) =>
-      log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval.pretty)
+      log.error(
+        "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
+        typeName,
+        shardId,
+        leaseRetryInterval.pretty)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseAcquireResult(false, Some(t)) =>
       log.error(

@@ -57,8 +57,7 @@ object LeaseProviderSpec {
     lease-class = "${classOf[LeaseProviderSpec.LeaseA].getName}"
   }
 
-  """
-  )
+  """)
 }
 
 class LeaseProviderSpec extends AkkaSpec(LeaseProviderSpec.config) {
