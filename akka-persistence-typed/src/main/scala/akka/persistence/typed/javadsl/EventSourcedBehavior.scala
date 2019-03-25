@@ -100,16 +100,6 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
     EventHandlerBuilder.builder[State, Event]()
 
   /**
-   * Override and define that snapshot should be saved every N events.
-   *
-   * If this is overridden `shouldSnapshot` is not used.
-   *
-   * @return number of events between snapshots, should be greater than 0
-   * @see [[EventSourcedBehavior#shouldSnapshot]]
-   */
-  def snapshotEvery(): Long = 0L
-
-  /**
    * Initiates a snapshot if the given function returns true.
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.
@@ -148,14 +138,14 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
 
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
-  def retentionCriteria: RetentionCriteria = RetentionCriteria()
+  def retentionCriteria: RetentionCriteria = RetentionCriteria.default
 
   /**
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val snapshotWhen: (State, Event, Long) => Boolean = { (state, event, seqNr) =>
-      val n = snapshotEvery()
+      val n = retentionCriteria.snapshotEveryNEvents
       if (n > 0)
         seqNr % n == 0
       else

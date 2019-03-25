@@ -69,7 +69,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotWhen: (State, Event, Long) ⇒ Boolean = ConstantFun.scalaAnyThreeToFalse,
     recovery: Recovery = Recovery(),
-    retention: RetentionCriteria = RetentionCriteria(),
+    retention: RetentionCriteria = RetentionCriteria.default,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
     extends EventSourcedBehavior[Command, Event, State] {
@@ -173,11 +173,6 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
     copy(snapshotWhen = predicate)
 
-  override def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State] = {
-    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
-    copy(snapshotWhen = (_, _, seqNr) => seqNr % numberOfEvents == 0)
-  }
-
   override def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "journal plugin id must not be null; use empty string for 'default' journal")
     copy(journalPluginId = if (id != "") Some(id) else None)
@@ -193,8 +188,12 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = Recovery(selection.toUntyped))
   }
 
-  override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =
-    copy(retention = criteria)
+  override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] = {
+    require(
+      criteria.snapshotEveryNEvents > 0,
+      s"'snapshotEveryNEvents' must be positive but was ${criteria.snapshotEveryNEvents}")
+    copy(retention = criteria, snapshotWhen = (_, _, seqNr) => seqNr % criteria.snapshotEveryNEvents == 0)
+  }
 
   override def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State] =
     copy(tagger = tagger)

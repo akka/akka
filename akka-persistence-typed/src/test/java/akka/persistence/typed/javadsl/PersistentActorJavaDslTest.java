@@ -413,6 +413,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   }
 
                   @Override
+                  public RetentionCriteria retentionCriteria() {
+                    return RetentionCriteria.snapshotEvery(0).withKeepNSnapshots(0);
+                  }
+
+                  @Override
                   public SignalHandler signalHandler() {
                     return newSignalHandlerBuilder()
                         .onSignal(
