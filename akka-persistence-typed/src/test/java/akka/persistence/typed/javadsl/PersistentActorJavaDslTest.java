@@ -11,7 +11,6 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.event.Logging;
 import akka.japi.Pair;
-import akka.persistence.SnapshotMetadata;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;

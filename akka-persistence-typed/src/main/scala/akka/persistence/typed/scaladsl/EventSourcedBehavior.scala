@@ -10,16 +10,16 @@ import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Signal
-import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.internal.InterceptorImpl
+import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
-import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RetentionCriteria
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {

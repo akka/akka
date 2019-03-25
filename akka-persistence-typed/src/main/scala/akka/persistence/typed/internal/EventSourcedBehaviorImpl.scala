@@ -19,8 +19,12 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence._
-import akka.persistence.typed.DeleteMessagesFailed
+import akka.persistence.JournalProtocol
+import akka.persistence.Recovery
+import akka.persistence.RecoveryPermitter
+import akka.persistence.SnapshotMetadata
+import akka.persistence.SnapshotProtocol
+import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
@@ -30,6 +34,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
@@ -71,6 +76,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   import EventSourcedBehaviorImpl.WriterIdentity
 
+  if (persistenceId eq null)
+    throw new IllegalArgumentException("persistenceId must not be null")
+
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
     ctx.setLoggerClass(loggerClass)
@@ -81,7 +89,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
     val actualSignalHandler: PartialFunction[Signal, Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
-      case SnapshotCompleted(meta: SnapshotMetadata) ⇒
+      case SnapshotCompleted(meta) ⇒
         ctx.log.debug("Save snapshot successful, snapshot metadata [{}]", meta)
       case SnapshotFailed(meta, failure) ⇒
         ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}]", meta)
@@ -93,7 +101,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
       case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
         ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
-      case DeleteMessagesFailed(toSequenceNr, failure) =>
+      case DeleteEventsFailed(toSequenceNr, failure) =>
         ctx.log.warning("Failed to delete messages toSequenceNr [{}] due to [{}].", toSequenceNr, failure)
     }
 
@@ -182,7 +190,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withSnapshotSelectionCriteria(
       selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
-    copy(recovery = Recovery(selection))
+    copy(recovery = Recovery(selection.toUntyped))
   }
 
   override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =

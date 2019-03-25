@@ -30,7 +30,8 @@ private[akka] object RequestingRecoveryPermit {
 @InternalApi
 private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: BehaviorSetup[C, E, S])
     extends StashManagement[C, E, S]
-    with JournalInteractions[C, E, S] {
+    with JournalInteractions[C, E, S]
+    with SnapshotInteractions[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
     // request a permit, as only once we obtain one we can start replaying

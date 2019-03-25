@@ -18,10 +18,10 @@ class VersionVectorSpec
     with Matchers
     with BeforeAndAfterAll {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
-  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3)
-  val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
+  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
+  val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)
 
   override def afterAll: Unit = {
     shutdown()
@@ -83,7 +83,7 @@ class VersionVectorSpec
     }
 
     "pass misc comparison test 3" in {
-      var vv1_1 = VersionVector()
+      val vv1_1 = VersionVector()
       val vv2_1 = vv1_1 + node1
 
       val vv1_2 = VersionVector()
@@ -253,9 +253,9 @@ class VersionVectorSpec
       val a1 = a + node1
       val b1 = b + node2
 
-      var a2 = a1 + node1
-      var c = a2.merge(b1)
-      var c1 = c + node3
+      val a2 = a1 + node1
+      val c = a2.merge(b1)
+      val c1 = c + node3
 
       (c1 > a2) should be(true)
       (c1 > b1) should be(true)

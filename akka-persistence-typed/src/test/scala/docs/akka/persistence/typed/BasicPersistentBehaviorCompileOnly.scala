@@ -165,14 +165,14 @@ object BasicPersistentBehaviorCompileOnly {
   //#snapshottingPredicate
 
   //#snapshotSelection
-  import akka.persistence.SnapshotSelectionCriteria
+  import akka.persistence.typed.SnapshotSelectionCriteria
 
   val snapshotSelection = EventSourcedBehavior[Command, Event, State](
     persistenceId = PersistenceId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
-    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.None)
+    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
   //#snapshotSelection
 
 }

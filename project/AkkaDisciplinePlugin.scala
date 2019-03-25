@@ -34,7 +34,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
-
+  
   lazy val disciplineSettings =
     scalaFixSettings ++
     scoverageSettings ++ Seq(
@@ -97,6 +97,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit",
-    "-Ywarn-numeric-widen")
+  )
 
 }
