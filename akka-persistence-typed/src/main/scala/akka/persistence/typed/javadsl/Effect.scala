@@ -5,12 +5,11 @@
 package akka.persistence.typed.javadsl
 
 import scala.collection.JavaConverters._
-
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
 /**
@@ -80,7 +79,7 @@ import akka.persistence.typed.internal._
    * @see [[Effect.thenUnstashAll]]
    */
   def unstashAll(): Effect[Event, State] =
-    none().andThen(SideEffect.unstashAll())
+    none().thenUnstashAll()
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -139,11 +138,6 @@ import akka.persistence.typed.internal._
    */
   final def thenRun(callback: function.Effect): Effect[Event, State] =
     CompositeEffect(this, SideEffect[State]((_: State) => callback.apply()))
-
-  /**
-   * Run the given callback after the current Effect
-   */
-  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
 
   /** The side effect is to stop the actor */
   def thenStop(): Effect[Event, State]

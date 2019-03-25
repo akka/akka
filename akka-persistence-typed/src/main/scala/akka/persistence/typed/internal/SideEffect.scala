@@ -2,11 +2,10 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed
+package akka.persistence.typed.internal
 
 import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
-import akka.japi.function
 
 /**
  * A [[SideEffect]] is an side effect that can be chained after a main effect.
@@ -14,9 +13,10 @@ import akka.japi.function
  * Persist, none and unhandled are main effects. Then any number of
  * call backs can be added to these effects with `andThen`.
  *
- * Not for user extension
+ * INTERNAL API
  */
-sealed abstract class SideEffect[State]
+@InternalApi
+private[akka] sealed abstract class SideEffect[State]
 
 /** INTERNAL API */
 @InternalApi
@@ -47,26 +47,12 @@ private[akka] case object Stop extends SideEffect[Nothing]
 @InternalApi
 private[akka] case object UnstashAll extends SideEffect[Nothing]
 
-object SideEffect {
+/** INTERNAL API */
+@InternalApi
+private[akka] object SideEffect {
 
-  /**
-   * Create a ChainedEffect that can be run after Effects
-   */
   def apply[State](callback: State => Unit): SideEffect[State] =
     new Callback(callback)
 
-  /**
-   * Java API
-   *
-   * Create a ChainedEffect that can be run after Effects
-   */
-  def create[State](callback: function.Procedure[State]): SideEffect[State] =
-    new Callback(s => callback.apply(s))
-
-  def stop[State](): SideEffect[State] = Stop.asInstanceOf[SideEffect[State]]
-
-  /**
-   * Unstash the commands that were stashed with `javadsl.EffectFactories.stash` or `scaladsl.Effect.stash`
-   */
   def unstashAll[State](): SideEffect[State] = UnstashAll.asInstanceOf[SideEffect[State]]
 }
