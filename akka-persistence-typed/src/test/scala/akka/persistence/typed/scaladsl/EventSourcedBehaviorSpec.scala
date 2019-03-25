@@ -878,6 +878,91 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       }
     }
 
+    "fail fast if default journal plugin is not defined" in {
+      // new ActorSystem without persistence config
+      val testkit2 = ActorTestKit(
+        ActorTestKitBase.testNameFromCallStack(),
+        ConfigFactory.parseString("""
+          akka.loggers = [akka.testkit.TestEventListener]
+          """))
+      try {
+        EventFilter[ActorInitializationException](start = "Default journal plugin is not configured", occurrences = 1)
+          .intercept {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system.toUntyped)
+      } finally {
+        testkit2.shutdownTestKit()
+      }
+    }
+
+    "fail fast if given journal plugin is not defined" in {
+      // new ActorSystem without persistence config
+      val testkit2 = ActorTestKit(
+        ActorTestKitBase.testNameFromCallStack(),
+        ConfigFactory.parseString("""
+          akka.loggers = [akka.testkit.TestEventListener]
+          """))
+      try {
+        EventFilter[ActorInitializationException](
+          start = "Journal plugin [missing] configuration doesn't exist",
+          occurrences = 1).intercept {
+          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
+          val probe = testkit2.createTestProbe()
+          probe.expectTerminated(ref)
+        }(testkit2.system.toUntyped)
+      } finally {
+        testkit2.shutdownTestKit()
+      }
+    }
+
+    "warn if default snapshot plugin is not defined" in {
+      // new ActorSystem without snapshot plugin config
+      val testkit2 = ActorTestKit(
+        ActorTestKitBase.testNameFromCallStack(),
+        ConfigFactory.parseString(s"""
+          akka.loggers = [akka.testkit.TestEventListener]
+          akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+          akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+          """))
+      try {
+        EventFilter
+          .warning(start = "No default snapshot store configured", occurrences = 1)
+          .intercept {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
+            val probe = testkit2.createTestProbe[State]()
+            // verify that it's not terminated
+            ref ! GetValue(probe.ref)
+            probe.expectMessage(State(0, Vector.empty))
+          }(testkit2.system.toUntyped)
+      } finally {
+        testkit2.shutdownTestKit()
+      }
+    }
+
+    "fail fast if given snapshot plugin is not defined" in {
+      // new ActorSystem without snapshot plugin config
+      val testkit2 = ActorTestKit(
+        ActorTestKitBase.testNameFromCallStack(),
+        ConfigFactory.parseString(s"""
+          akka.loggers = [akka.testkit.TestEventListener]
+          akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+          akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+          """))
+      try {
+        EventFilter[ActorInitializationException](
+          start = "Snapshot store plugin [missing] configuration doesn't exist",
+          occurrences = 1).intercept {
+          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
+          val probe = testkit2.createTestProbe()
+          probe.expectTerminated(ref)
+        }(testkit2.system.toUntyped)
+      } finally {
+        testkit2.shutdownTestKit()
+      }
+    }
+
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
       val w = Behaviors.setup[Any] { ctx =>
