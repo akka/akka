@@ -5,17 +5,19 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
+
 import akka.annotation.InternalApi
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
-import akka.persistence.typed.scaladsl.ReplyEffect
 
 /** INTERNAL API */
 @InternalApi
 private[akka] abstract class EffectImpl[+Event, State]
-    extends javadsl.ReplyEffect[Event, State]
-    with scaladsl.ReplyEffect[Event, State] {
+    extends javadsl.EffectBuilder[Event, State]
+    with javadsl.ReplyEffect[Event, State]
+    with scaladsl.ReplyEffect[Event, State]
+    with scaladsl.EffectBuilder[Event, State] {
   /* All events that will be persisted in this effect */
   override def events: immutable.Seq[Event] = Nil
 
@@ -23,7 +25,7 @@ private[akka] abstract class EffectImpl[+Event, State]
     CompositeEffect(this, new Callback[State](chainedEffect))
 
   override def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
-      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State] =
+      replyWithMessage: State => ReplyMessage): EffectImpl[Event, State] =
     CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
 
   override def thenUnstashAll(): EffectImpl[Event, State] =
@@ -41,7 +43,7 @@ private[akka] abstract class EffectImpl[+Event, State]
 @InternalApi
 private[akka] object CompositeEffect {
   def apply[Event, State](
-      effect: scaladsl.Effect[Event, State],
+      effect: scaladsl.EffectBuilder[Event, State],
       sideEffects: SideEffect[State]): CompositeEffect[Event, State] =
     CompositeEffect[Event, State](effect, sideEffects :: Nil)
 }
@@ -49,7 +51,7 @@ private[akka] object CompositeEffect {
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class CompositeEffect[Event, State](
-    persistingEffect: scaladsl.Effect[Event, State],
+    persistingEffect: scaladsl.EffectBuilder[Event, State],
     _sideEffects: immutable.Seq[SideEffect[State]])
     extends EffectImpl[Event, State] {
 
