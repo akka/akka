@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.camel;
 
-//#Consumer-mina
+// #Consumer-mina
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 
-public class MyEndpoint extends UntypedConsumerActor{
+public class MyEndpoint extends UntypedConsumerActor {
   private String uri;
 
   public String getEndpointUri() {
@@ -18,8 +18,7 @@ public class MyEndpoint extends UntypedConsumerActor{
   public void onReceive(Object message) throws Exception {
     if (message instanceof CamelMessage) {
       /* ... */
-    } else
-      unhandled(message);
+    } else unhandled(message);
   }
 
   // Extra constructor to change the default uri,
@@ -32,4 +31,4 @@ public class MyEndpoint extends UntypedConsumerActor{
     this.uri = "mina2:tcp://localhost:6200?textline=true";
   }
 }
-//#Consumer-mina
+// #Consumer-mina

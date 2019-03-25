@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -43,10 +43,11 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       name = "echo")
 
     within(10.seconds) {
+      import akka.util.ccompat.imm._
       awaitAssert {
-        Cluster(from) join Cluster(to).selfAddress
+        Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
-        Cluster(from).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
     }
   }
@@ -73,8 +74,7 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
         val sys1port = Cluster(sys1).selfAddress.port.get
 
         val sys3Config =
-          ConfigFactory.parseString(
-            s"""
+          ConfigFactory.parseString(s"""
             akka.remote.artery.canonical.port=$sys1port
             akka.remote.netty.tcp.port=$sys1port
             """).withFallback(system.settings.config)
@@ -119,4 +119,3 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       shutdown(sys3)
   }
 }
-

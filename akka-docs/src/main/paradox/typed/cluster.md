@@ -18,9 +18,9 @@ Cluster API.
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
+  of being the subject of final development. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
+  this module in production just yet.
 
 @@@
 
@@ -55,7 +55,7 @@ Java
 
 The Cluster extensions gives you access to:
 
-* manager: An `ActorRef[ClusterCommand]` where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
+* manager: An @scala[`ActorRef[ClusterCommand]`]@java[`ActorRef<ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
 * subscriptions: An `ActorRef[ClusterStateSubscription]` where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
 * state: The current `CurrentClusterState`
 

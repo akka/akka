@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,6 +7,7 @@ package akka.stream
 import scala.collection.immutable
 
 private[akka] abstract class TransformerLike[-T, +U] {
+
   /**
    * Invoked for each element to produce a (possibly empty) sequence of
    * output elements.
@@ -46,4 +47,3 @@ private[akka] abstract class TransformerLike[-T, +U] {
   def cleanup(): Unit = ()
 
 }
-

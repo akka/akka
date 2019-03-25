@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -25,7 +25,7 @@ public class BlockingDispatcherTest {
       Thread.sleep(5000 * 6);
 
     } catch (InterruptedException e) {
-      //swallow the exception
+      // swallow the exception
     } finally {
       system.terminate();
     }

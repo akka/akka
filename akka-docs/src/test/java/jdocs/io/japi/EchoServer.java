@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io.japi;
@@ -22,8 +22,10 @@ public class EchoServer {
     try {
       final CountDownLatch latch = new CountDownLatch(1);
       final ActorRef watcher = system.actorOf(Props.create(Watcher.class, latch), "watcher");
-      final ActorRef nackServer = system.actorOf(Props.create(EchoManager.class, EchoHandler.class), "nack");
-      final ActorRef ackServer = system.actorOf(Props.create(EchoManager.class, SimpleEchoHandler.class), "ack");
+      final ActorRef nackServer =
+          system.actorOf(Props.create(EchoManager.class, EchoHandler.class), "nack");
+      final ActorRef ackServer =
+          system.actorOf(Props.create(EchoManager.class, SimpleEchoHandler.class), "ack");
       watcher.tell(nackServer, ActorRef.noSender());
       watcher.tell(ackServer, ActorRef.noSender());
       latch.await(10, TimeUnit.MINUTES);
@@ -31,5 +33,4 @@ public class EchoServer {
       system.terminate();
     }
   }
-
 }

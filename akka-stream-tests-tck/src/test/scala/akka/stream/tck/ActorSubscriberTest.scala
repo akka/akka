@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
@@ -13,7 +13,7 @@ import org.reactivestreams.Subscriber
 object ActorSubscriberOneByOneRequestTest {
   class StrategySubscriber(val requestStrategy: RequestStrategy) extends ActorSubscriber {
 
-    override def receive: Receive = { case _ ⇒ }
+    override def receive: Receive = { case _ => }
   }
 }
 

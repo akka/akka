@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -19,7 +19,7 @@ import akka.stream.stage.OutHandler
 class BenchTestSource(elementCount: Int) extends GraphStage[SourceShape[java.lang.Integer]] {
 
   private val elements = new Array[java.lang.Integer](elementCount)
-  (1 to elementCount).map(n ⇒ elements(n - 1) = n)
+  (1 to elementCount).map(n => elements(n - 1) = n)
 
   val out: Outlet[java.lang.Integer] = Outlet("BenchTestSource")
   override val shape: SourceShape[java.lang.Integer] = SourceShape(out)

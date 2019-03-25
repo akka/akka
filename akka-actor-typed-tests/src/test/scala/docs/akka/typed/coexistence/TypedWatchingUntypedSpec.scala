@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed.coexistence
@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.adapter._
 //#adapter-import
 import akka.testkit.TestProbe
 //#import-alias
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 //#import-alias
 import org.scalatest.WordSpec
 import scala.concurrent.duration._
@@ -29,7 +29,7 @@ object TypedWatchingUntypedSpec {
     case object Pong extends Command
 
     val behavior: Behavior[Command] =
-      Behaviors.setup { context ⇒
+      Behaviors.setup { context =>
         // context.actorOf is an implicit extension method
         val untyped = context.actorOf(Untyped.props(), "second")
 
@@ -39,16 +39,18 @@ object TypedWatchingUntypedSpec {
         // illustrating how to pass sender, toUntyped is an implicit extension method
         untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
 
-        Behaviors.receiveMessagePartial[Command] {
-          case Pong ⇒
-            // it's not possible to get the sender, that must be sent in message
-            // context.stop is an implicit extension method
-            context.stop(untyped)
-            Behaviors.same
-        } receiveSignal {
-          case (_, akka.actor.typed.Terminated(_)) ⇒
-            Behaviors.stopped
-        }
+        Behaviors
+          .receivePartial[Command] {
+            case (context, Pong) =>
+              // it's not possible to get the sender, that must be sent in message
+              // context.stop is an implicit extension method
+              context.stop(untyped)
+              Behaviors.same
+          }
+          .receiveSignal {
+            case (_, akka.actor.typed.Terminated(_)) =>
+              Behaviors.stopped
+          }
       }
   }
   //#typed
@@ -59,7 +61,7 @@ object TypedWatchingUntypedSpec {
   }
   class Untyped extends untyped.Actor {
     override def receive = {
-      case Typed.Ping(replyTo) ⇒
+      case Typed.Ping(replyTo) =>
         replyTo ! Typed.Pong
     }
   }

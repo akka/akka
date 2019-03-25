@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -76,8 +76,7 @@ class FlowMonitorSpec extends StreamSpec {
         TestSource.probe[Any].monitor.to(Sink.ignore).run()(mat)
       mat.shutdown()
 
-      awaitAssert(
-        monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
+      awaitAssert(monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
     }
 
   }

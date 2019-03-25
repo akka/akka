@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 //#package
@@ -27,13 +27,12 @@ class MultiNodeSampleSpecMultiJvmNode2 extends MultiNodeSample
 object MultiNodeSample {
   class Ponger extends Actor {
     def receive = {
-      case "ping" ⇒ sender() ! "pong"
+      case "ping" => sender() ! "pong"
     }
   }
 }
 
-class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
-  with STMultiNodeSpec with ImplicitSender {
+class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig) with STMultiNodeSpec with ImplicitSender {
 
   import MultiNodeSample._
   import MultiNodeSampleConfig._

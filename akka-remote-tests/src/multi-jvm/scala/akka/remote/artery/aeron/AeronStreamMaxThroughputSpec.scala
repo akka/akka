@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -10,6 +10,8 @@ import java.util.concurrent.Executors
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -34,8 +36,7 @@ object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (20)
        akka.test.AeronStreamMaxThroughputSpec.totalMessagesFactor = 1.0
        akka {
@@ -50,10 +51,7 @@ object AeronStreamMaxThroughputSpec extends MultiNodeConfig {
        }
        """)))
 
-  final case class TestSettings(
-    testName:      String,
-    totalMessages: Long,
-    payloadSize:   Int)
+  final case class TestSettings(testName: String, totalMessages: Long, payloadSize: Int)
 
   def iterate(start: Long, end: Long): Iterator[Long] = new AbstractIterator[Long] {
     private[this] var first = true
@@ -74,12 +72,14 @@ class AeronStreamMaxThroughputSpecMultiJvmNode1 extends AeronStreamMaxThroughput
 class AeronStreamMaxThroughputSpecMultiJvmNode2 extends AeronStreamMaxThroughputSpec
 
 abstract class AeronStreamMaxThroughputSpec
-  extends MultiNodeSpec(AeronStreamMaxThroughputSpec)
-  with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(AeronStreamMaxThroughputSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import AeronStreamMaxThroughputSpec._
 
-  val totalMessagesFactor = system.settings.config.getDouble("akka.test.AeronStreamMaxThroughputSpec.totalMessagesFactor")
+  val totalMessagesFactor =
+    system.settings.config.getDouble("akka.test.AeronStreamMaxThroughputSpec.totalMessagesFactor")
 
   var plot = PlotResult()
 
@@ -144,7 +144,8 @@ abstract class AeronStreamMaxThroughputSpec
   def printTotal(testName: String, total: Long, startTime: Long, payloadSize: Long): Unit = {
     val d = (System.nanoTime - startTime).nanos.toMillis
     val throughput = 1000.0 * total / d
-    println(f"=== AeronStreamMaxThroughput $testName: " +
+    println(
+      f"=== AeronStreamMaxThroughput $testName: " +
       f"${throughput}%,.0f msg/s, ${throughput * payloadSize}%,.0f bytes/s, " +
       s"payload size $payloadSize, " +
       s"$d ms to deliver $total messages")
@@ -157,18 +158,9 @@ abstract class AeronStreamMaxThroughputSpec
   }
 
   val scenarios = List(
-    TestSettings(
-      testName = "size-100",
-      totalMessages = adjustedTotalMessages(1000000),
-      payloadSize = 100),
-    TestSettings(
-      testName = "size-1k",
-      totalMessages = adjustedTotalMessages(100000),
-      payloadSize = 1000),
-    TestSettings(
-      testName = "size-10k",
-      totalMessages = adjustedTotalMessages(10000),
-      payloadSize = 10000))
+    TestSettings(testName = "size-100", totalMessages = adjustedTotalMessages(1000000), payloadSize = 100),
+    TestSettings(testName = "size-1k", totalMessages = adjustedTotalMessages(100000), payloadSize = 1000),
+    TestSettings(testName = "size-10k", totalMessages = adjustedTotalMessages(10000), payloadSize = 10000))
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
@@ -180,9 +172,10 @@ abstract class AeronStreamMaxThroughputSpec
       var count = 0L
       val done = TestLatch(1)
       val killSwitch = KillSwitches.shared(testName)
-      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+      Source
+        .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
-        .runForeach { envelope ⇒
+        .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           rep.onMessage(1, bytes.length)
           count += 1
@@ -194,10 +187,9 @@ abstract class AeronStreamMaxThroughputSpec
             killSwitch.shutdown()
           }
           pool.release(envelope)
-        }.onFailure {
-          case e ⇒
-            e.printStackTrace
         }
+        .failed
+        .foreach { _.printStackTrace }
 
       enterBarrier(receiverName + "-started")
       Await.ready(done, barrierTimeout)
@@ -211,8 +203,9 @@ abstract class AeronStreamMaxThroughputSpec
 
       val payload = ("0" * payloadSize).getBytes("utf-8")
       val t0 = System.nanoTime()
-      Source.fromIterator(() ⇒ iterate(1, totalMessages))
-        .map { n ⇒
+      Source
+        .fromIterator(() => iterate(1, totalMessages))
+        .map { n =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()
@@ -235,7 +228,7 @@ abstract class AeronStreamMaxThroughputSpec
       enterBarrier("udp-port-started")
     }
 
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be great for ${s.testName}, payloadSize = ${s.payloadSize}" in test(s)
     }
 

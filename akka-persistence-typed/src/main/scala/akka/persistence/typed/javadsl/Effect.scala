@@ -1,30 +1,31 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
 
-import akka.annotation.DoNotInherit
-import akka.japi.function
-import akka.persistence.typed.internal._
-import akka.persistence.typed.SideEffect
 import scala.collection.JavaConverters._
 
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.japi.function
 import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal._
 
 /**
  * INTERNAL API: see `class EffectFactories`
  */
-@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing, Nothing]
+@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing]
 
 /**
  * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
- * Created via [[PersistentBehavior.Effect]].
+ * Created via [[EventSourcedBehavior.Effect]].
  *
  * Not for user extension
  */
-@DoNotInherit sealed class EffectFactories[Command, Event, State] {
+@DoNotInherit sealed class EffectFactories[Event, State] {
+
   /**
    * Persist a single event
    */
@@ -53,24 +54,55 @@ import akka.persistence.typed.ExpectingReply
   def unhandled(): Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
 
   /**
+   * Stash the current command. Can be unstashed later with `Effect.thenUnstashAll`
+   * or `EffectFactories.unstashAll`.
+   *
+   * Note that the stashed commands are kept in an in-memory buffer, so in case of a crash they will not be
+   * processed. They will also be discarded if the actor is restarted (or stopped) due to that an exception was
+   * thrown from processing a command or side effect after persisting. The stash buffer is preserved for persist
+   * failures if an `onPersistFailure` backoff supervisor strategy is defined.
+   *
+   * Side effects can be chained with `andThen`.
+   */
+  def stash(): ReplyEffect[Event, State] =
+    Stash.asInstanceOf[Effect[Event, State]].thenNoReply()
+
+  /**
+   * Unstash the commands that were stashed with `EffectFactories.stash`.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   *
+   * Side effects can be chained with `andThen`, but note that the side effect is run immediately and not after
+   * processing all unstashed commands.
+   *
+   * @see [[Effect.thenUnstashAll]]
+   */
+  def unstashAll(): Effect[Event, State] =
+    none().andThen(SideEffect.unstashAll())
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[PersistentBehaviorWithEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+  def reply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
     none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
 
   /**
-   * When [[PersistentBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
    * isn't a [[ReplyEffect]]. This `noReply` can be used as a conscious decision that a reply shouldn't be
    * sent for a specific command or the reply will be sent later.
    */
@@ -83,23 +115,30 @@ import akka.persistence.typed.ExpectingReply
  *
  * Additional side effects can be performed in the callback `andThen`
  *
- * Instances of `Effect` are available through factories [[PersistentBehavior.Effect]].
+ * Instances of `Effect` are available through factories [[EventSourcedBehavior.Effect]].
  *
  * Not intended for user extension.
  */
 @DoNotInherit abstract class Effect[+Event, State] {
-  self: EffectImpl[Event, State] ⇒
+  self: EffectImpl[Event, State] =>
+
   /**
    * Run the given callback. Callbacks are run sequentially.
+   *
+   * @tparam NewState The type of the state after the event is persisted, when not specified will be the same as `State`
+   *                  but if a known subtype of `State` is expected that can be specified instead (preferrably by
+   *                  explicitly typing the lambda parameter like so: `thenRun((SubState state) -> { ... })`).
+   *                  If the state is not of the expected type an [[java.lang.ClassCastException]] is thrown.
+   *
    */
-  final def thenRun(callback: function.Procedure[State]): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[State](s ⇒ callback.apply(s)))
+  final def thenRun[NewState <: State](callback: function.Procedure[NewState]): Effect[Event, State] =
+    CompositeEffect(this, SideEffect[State](s => callback.apply(s.asInstanceOf[NewState])))
 
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
   final def thenRun(callback: function.Effect): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[State]((_: State) ⇒ callback.apply()))
+    CompositeEffect(this, SideEffect[State]((_: State) => callback.apply()))
 
   /**
    * Run the given callback after the current Effect
@@ -110,22 +149,33 @@ import akka.persistence.typed.ExpectingReply
   def thenStop(): Effect[Event, State]
 
   /**
+   * Unstash the commands that were stashed with `EffectFactories.stash`.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   */
+  def thenUnstashAll(): Effect[Event, State]
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo().tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[PersistentBehaviorWithEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
-    CompositeEffect(this, SideEffect[State](newState ⇒ cmd.replyTo ! replyWithMessage(newState)))
+  def thenReply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
+    CompositeEffect(this, SideEffect[State](newState => cmd.replyTo ! replyWithMessage(newState)))
 
   /**
-   * When [[PersistentBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
    * isn't a [[ReplyEffect]]. This `thenNoReply` can be used as a conscious decision that a reply shouldn't be
    * sent for a specific command or the reply will be sent later.
    */
@@ -134,10 +184,10 @@ import akka.persistence.typed.ExpectingReply
 }
 
 /**
- * [[PersistentBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
+ * [[EventSourcedBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
  * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @DoNotInherit abstract class ReplyEffect[+Event, State] extends Effect[Event, State] {
-  self: EffectImpl[Event, State] ⇒
+  self: EffectImpl[Event, State] =>
 }

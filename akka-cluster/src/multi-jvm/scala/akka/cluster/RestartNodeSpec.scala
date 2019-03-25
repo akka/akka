@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -23,19 +23,19 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import akka.util.ccompat.imm._
 
 object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 5s
       akka.cluster.allow-weakly-up-members = off
       #akka.remote.use-passive-connections = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   /**
    * This was used together with sleep in EndpointReader before deliverAndAck
@@ -46,10 +46,10 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
     context.actorSelection(RootActorPath(a) / "user" / "address-receiver") ! Identify(None)
 
     def receive = {
-      case ActorIdentity(None, Some(ref)) ⇒
+      case ActorIdentity(None, Some(ref)) =>
         context.watch(ref)
         replyTo ! Done
-      case t: Terminated ⇒
+      case t: Terminated =>
     }
   }
 }
@@ -59,8 +59,9 @@ class RestartNodeMultiJvmNode2 extends RestartNodeSpec
 class RestartNodeMultiJvmNode3 extends RestartNodeSpec
 
 abstract class RestartNodeSpec
-  extends MultiNodeSpec(RestartNodeMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+    extends MultiNodeSpec(RestartNodeMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender {
 
   import RestartNodeMultiJvmSpec._
 
@@ -95,7 +96,7 @@ abstract class RestartNodeSpec
       runOn(first, third) {
         system.actorOf(Props(new Actor {
           def receive = {
-            case a: UniqueAddress ⇒
+            case a: UniqueAddress =>
               secondUniqueAddress = a
               sender() ! "ok"
           }
@@ -106,7 +107,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         enterBarrier("second-address-receiver-ready")
         secondUniqueAddress = Cluster(secondSystem).selfUniqueAddress
-        List(first, third) foreach { r ⇒
+        List(first, third).foreach { r =>
           system.actorSelection(RootActorPath(r) / "user" / "address-receiver") ! secondUniqueAddress
           expectMsg(5.seconds, "ok")
         }
@@ -121,7 +122,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         Cluster(secondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(secondSystem).readView.members.size should ===(3))
-        awaitAssert(Cluster(secondSystem).readView.members.map(_.status) should ===(Set(Up)))
+        awaitAssert(Cluster(secondSystem).readView.members.unsorted.map(_.status) should ===(Set(Up)))
       }
       enterBarrier("started")
 
@@ -139,12 +140,12 @@ abstract class RestartNodeSpec
       runOn(second) {
         Cluster(restartedSecondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(restartedSecondSystem).readView.members.size should ===(3))
-        awaitAssert(Cluster(restartedSecondSystem).readView.members.map(_.status) should ===(Set(Up)))
+        awaitAssert(Cluster(restartedSecondSystem).readView.members.unsorted.map(_.status) should ===(Set(Up)))
       }
       runOn(first, third) {
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
-          Cluster(system).readView.members.exists { m ⇒
+          Cluster(system).readView.members.exists { m =>
             m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }

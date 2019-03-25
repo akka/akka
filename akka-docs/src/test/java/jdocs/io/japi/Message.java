@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2013-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2013-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io.japi;
 
-//#message
+// #message
 public class Message {
-  
-  static public class Person {
+
+  public static class Person {
     private final String first;
     private final String last;
 
@@ -23,7 +23,6 @@ public class Message {
     public String getLast() {
       return last;
     }
-
   }
 
   private final Person[] persons;
@@ -42,4 +41,4 @@ public class Message {
     return happinessCurve;
   }
 }
-//#message
+// #message

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io.compression
@@ -10,11 +10,13 @@ import akka.annotation.InternalApi
 import akka.stream.Attributes
 
 /** INTERNAL API */
-@InternalApi private[akka] class DeflateDecompressor(maxBytesPerChunk: Int)
-  extends DeflateDecompressorBase(maxBytesPerChunk) {
+@InternalApi private[akka] class DeflateDecompressor(maxBytesPerChunk: Int, nowrap: Boolean)
+    extends DeflateDecompressorBase(maxBytesPerChunk) {
+
+  def this(maxBytesPerChunk: Int) = this(maxBytesPerChunk, false) // for binary compatibility
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
-    override val inflater: Inflater = new Inflater()
+    override val inflater: Inflater = new Inflater(nowrap)
 
     override case object inflating extends Inflate(noPostProcessing = true) {
       override def onTruncation(): Unit = completeStage()
@@ -26,4 +28,3 @@ import akka.stream.Attributes
     startWith(inflating)
   }
 }
-

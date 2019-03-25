@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -34,7 +34,7 @@ object TestExtras {
         onlyTestTags := Params.testTagsOnly,
 
         // add filters for tests excluded by name
-        testOptions in Test ++= excludeTestNames.value.toSeq.map(exclude ⇒ Tests.Filter(test ⇒ !test.contains(exclude))),
+        testOptions in Test ++= excludeTestNames.value.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))),
 
         // add arguments for tests excluded by tag
         testOptions in Test ++= {

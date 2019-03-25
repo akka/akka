@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
@@ -32,12 +31,13 @@ object ClusterSingletonManagerStartupSpec extends MultiNodeConfig {
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
   class Echo(testActor: ActorRef) extends Actor {
     def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }
@@ -47,14 +47,17 @@ class ClusterSingletonManagerStartupMultiJvmNode1 extends ClusterSingletonManage
 class ClusterSingletonManagerStartupMultiJvmNode2 extends ClusterSingletonManagerStartupSpec
 class ClusterSingletonManagerStartupMultiJvmNode3 extends ClusterSingletonManagerStartupSpec
 
-class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonManagerStartupSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerStartupSpec
+    extends MultiNodeSpec(ClusterSingletonManagerStartupSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerStartupSpec._
 
   override def initialParticipants = roles.size
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createSingleton()
     }
   }
@@ -70,9 +73,8 @@ class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonM
 
   lazy val echoProxy: ActorRef = {
     system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = "/user/echo",
-        settings = ClusterSingletonProxySettings(system)),
+      ClusterSingletonProxy
+        .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
       name = "echoProxy")
   }
 

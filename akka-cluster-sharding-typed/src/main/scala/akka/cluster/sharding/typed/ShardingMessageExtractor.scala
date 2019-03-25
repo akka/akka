@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
+
+import akka.annotation.InternalApi
+import akka.cluster.sharding.ShardRegion.HashCodeMessageExtractor
 
 object ShardingMessageExtractor {
 
@@ -20,14 +23,10 @@ object ShardingMessageExtractor {
   /**
    * Scala API: Create a message extractor for a protocol where the entity id is available in each message.
    */
-  def noEnvelope[M](
-    numberOfShards: Int,
-    stopMessage:    M)(
-    extractEntityId: M ⇒ String): ShardingMessageExtractor[M, M] =
+  def noEnvelope[M](numberOfShards: Int, stopMessage: M)(extractEntityId: M => String): ShardingMessageExtractor[M, M] =
     new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
       def entityId(message: M) = extractEntityId(message)
     }
-
 }
 
 /**
@@ -70,12 +69,11 @@ abstract class ShardingMessageExtractor[E, M] {
  *
  * @tparam M The type of message accepted by the entity actor
  */
-final class HashCodeMessageExtractor[M](
-  val numberOfShards: Int)
-  extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
+final class HashCodeMessageExtractor[M](val numberOfShards: Int)
+    extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
 
   override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
 }
 
@@ -87,11 +85,9 @@ final class HashCodeMessageExtractor[M](
  *
  * @tparam M The type of message accepted by the entity actor
  */
-abstract class HashCodeNoEnvelopeMessageExtractor[M](
-  val numberOfShards: Int)
-  extends ShardingMessageExtractor[M, M] {
+abstract class HashCodeNoEnvelopeMessageExtractor[M](val numberOfShards: Int) extends ShardingMessageExtractor[M, M] {
 
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override final def unwrapMessage(message: M): M = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
@@ -108,4 +104,3 @@ abstract class HashCodeNoEnvelopeMessageExtractor[M](
  * and have the message types themselves carry identifiers.
  */
 final case class ShardingEnvelope[M](entityId: String, message: M) // TODO think if should remain a case class
-

@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Failure
@@ -18,7 +18,7 @@ object SwitchableLoggedBehaviorSpec {
 class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
   import akka.remote.transport.SwitchableLoggedBehaviorSpec._
 
-  private def defaultBehavior = new SwitchableLoggedBehavior[Unit, Int]((_) ⇒ Future.successful(3), (_) ⇒ ())
+  private def defaultBehavior = new SwitchableLoggedBehavior[Unit, Int]((_) => Future.successful(3), (_) => ())
 
   "A SwitchableLoggedBehavior" must {
 
@@ -31,13 +31,13 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
     "be able to push generic behavior" in {
       val behavior = defaultBehavior
 
-      behavior.push((_) ⇒ Future.successful(4))
+      behavior.push((_) => Future.successful(4))
       Await.result(behavior(()), timeout.duration) should ===(4)
 
-      behavior.push((_) ⇒ Future.failed(TestException))
+      behavior.push((_) => Future.failed(TestException))
       behavior(()).value match {
-        case Some(Failure(`TestException`)) ⇒
-        case _                              ⇒ fail("Expected exception")
+        case Some(Failure(`TestException`)) =>
+        case _                              => fail("Expected exception")
       }
     }
 
@@ -54,8 +54,8 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       behavior.pushError(TestException)
 
       behavior(()).value match {
-        case Some(Failure(e)) if e eq TestException ⇒
-        case _                                      ⇒ fail("Expected exception")
+        case Some(Failure(e)) if e eq TestException =>
+        case _                                      => fail("Expected exception")
       }
     }
 
@@ -85,7 +85,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       Await.result(behavior(()), timeout.duration) should ===(3)
     }
 
-    "enable delayed completition" in {
+    "enable delayed completion" in {
       val behavior = defaultBehavior
       val controlPromise = behavior.pushDelayed
       val f = behavior(())
@@ -96,9 +96,9 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(f.isCompleted)
     }
 
-    "log calls and parametrers" in {
+    "log calls and parameters" in {
       val logPromise = Promise[Int]()
-      val behavior = new SwitchableLoggedBehavior[Int, Int]((i) ⇒ Future.successful(3), (i) ⇒ logPromise.success(i))
+      val behavior = new SwitchableLoggedBehavior[Int, Int]((i) => Future.successful(3), (i) => logPromise.success(i))
 
       behavior(11)
       Await.result(logPromise.future, timeout.duration) should ===(11)

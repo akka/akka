@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.actor.{ Actor, PoisonPill, Props }
 import akka.stream.ActorMaterializer
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.TestActors
@@ -19,7 +18,7 @@ object FlowWatchSpec {
 
   class Replier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒ sender() ! Reply(msg)
+      case msg: Int => sender() ! Reply(msg)
     }
   }
 
@@ -34,7 +33,8 @@ class FlowWatchSpec extends StreamSpec {
 
     implicit val timeout = akka.util.Timeout(10.seconds)
 
-    val replyOnInts = system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")
+    val replyOnInts =
+      system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")
 
     val dontReply = system.actorOf(TestActors.blackholeProps.withDispatcher("akka.test.stream-dispatcher"), "dontReply")
 
@@ -59,7 +59,8 @@ class FlowWatchSpec extends StreamSpec {
       intercept[RuntimeException] {
         r ! PoisonPill
         Await.result(done, remainingOrDefault)
-      }.getMessage should startWith("Actor watched by [Watch] has terminated! Was: Actor[akka://FlowWatchSpec/user/wanna-fail#")
+      }.getMessage should startWith(
+        "Actor watched by [Watch] has terminated! Was: Actor[akka://FlowWatchSpec/user/wanna-fail#")
     }
 
     "should handle cancel properly" in assertAllStagesStopped {

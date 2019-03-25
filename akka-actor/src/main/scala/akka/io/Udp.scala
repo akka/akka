@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -12,6 +12,7 @@ import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
+import akka.util.ccompat._
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -94,9 +95,10 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * message, or the manager will reply with a [[CommandFailed]] message.
    */
   final case class Bind(
-    handler:      ActorRef,
-    localAddress: InetSocketAddress,
-    options:      immutable.Traversable[SocketOption] = Nil) extends Command
+      handler: ActorRef,
+      localAddress: InetSocketAddress,
+      options: immutable.Traversable[SocketOption] = Nil)
+      extends Command
 
   /**
    * Send this message to the listener actor that previously sent a [[Bound]]
@@ -190,7 +192,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
   private[io] class UdpSettings(_config: Config) extends SelectionHandlerSettings(_config) {
     import _config._
 
-    val NrOfSelectors: Int = getInt("nr-of-selectors") requiring (_ > 0, "nr-of-selectors must be > 0")
+    val NrOfSelectors: Int = getInt("nr-of-selectors").requiring(_ > 0, "nr-of-selectors must be > 0")
     val DirectBufferSize: Int = getIntBytes("direct-buffer-size")
     val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
     val BatchReceiveLimit: Int = getInt("receive-throughput")
@@ -214,9 +216,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   val settings: UdpSettings = new UdpSettings(system.settings.config.getConfig("akka.io.udp"))
 
   val manager: ActorRef = {
-    system.systemActorOf(
-      props = Props(classOf[UdpManager], this).withDeploy(Deploy.local),
-      name = "IO-UDP-FF")
+    system.systemActorOf(props = Props(classOf[UdpManager], this).withDeploy(Deploy.local), name = "IO-UDP-FF")
   }
 
   /**
@@ -227,7 +227,8 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
   /**
    * INTERNAL API
    */
-  private[io] val bufferPool: BufferPool = new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
+  private[io] val bufferPool: BufferPool =
+    new DirectByteBufferPool(settings.DirectBufferSize, settings.MaxDirectBufferPoolSize)
 }
 
 /**
@@ -235,7 +236,7 @@ class UdpExt(system: ExtendedActorSystem) extends IO.Extension {
  */
 object UdpMessage {
   import Udp._
-  import java.lang.{ Iterable ⇒ JIterable }
+  import java.lang.{ Iterable => JIterable }
   import scala.collection.JavaConverters._
 
   /**
@@ -245,6 +246,7 @@ object UdpMessage {
    * to recognize which write failed when receiving a [[Udp.CommandFailed]] message.
    */
   def noAck(token: AnyRef): NoAck = NoAck(token)
+
   /**
    * Default [[Udp.NoAck]] instance which is used when no acknowledgment information is
    * explicitly provided. Its “token” is `null`.
@@ -268,6 +270,7 @@ object UdpMessage {
    * [[Udp.Bind]] in that case.
    */
   def send(payload: ByteString, target: InetSocketAddress, ack: Event): Command = Send(payload, target, ack)
+
   /**
    * The same as `send(payload, target, noAck())`.
    */
@@ -280,7 +283,8 @@ object UdpMessage {
    * message, or the manager will reply with a [[Udp.CommandFailed]] message.
    */
   def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption]): Command =
-    Bind(handler, endpoint, options.asScala.to)
+    Bind(handler, endpoint, options.asScala.to(immutable.IndexedSeq))
+
   /**
    * Bind without specifying options.
    */
@@ -303,7 +307,8 @@ object UdpMessage {
    * The “simple sender” will not stop itself, you will have to send it a [[akka.actor.PoisonPill]]
    * when you want to close the socket.
    */
-  def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to)
+  def simpleSender(options: JIterable[SocketOption]): Command = SimpleSender(options.asScala.to(immutable.IndexedSeq))
+
   /**
    * Retrieve a simple sender without specifying options.
    */

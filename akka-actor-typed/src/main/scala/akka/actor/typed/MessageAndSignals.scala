@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import java.util.Optional
+import akka.annotation.DoNotInherit
 
 /**
  * Envelope that is published on the eventStream for every message that is
- * dropped due to overfull queues.
+ * dropped due to overfull queues or routers with no routees.
  */
 final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
+
   /** Java API */
   def getRecipient(): ActorRef[Void] = recipient.asInstanceOf[ActorRef[Void]]
 }
@@ -18,7 +19,9 @@ final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
 /**
  * Exception that an actor fails with if it does not handle a Terminated message.
  */
-final case class DeathPactException(ref: ActorRef[Nothing]) extends RuntimeException(s"death pact with $ref was triggered") {
+final case class DeathPactException(ref: ActorRef[Nothing])
+    extends RuntimeException(s"death pact with $ref was triggered") {
+
   /** Java API */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 }
@@ -34,8 +37,7 @@ trait Signal
 /**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
  * the behavior with the fresh one (i.e. this signal is received within the
- * behavior that failed). The replacement behavior will receive PreStart as its
- * first signal.
+ * behavior that failed).
  */
 sealed abstract class PreRestart extends Signal
 case object PreRestart extends PreRestart {
@@ -58,6 +60,11 @@ case object PostStop extends PostStop {
   def instance: PostStop = this
 }
 
+object Terminated {
+  def apply(ref: ActorRef[Nothing]): Terminated = new Terminated(ref)
+  def unapply(t: Terminated): Option[ActorRef[Nothing]] = Some(t.ref)
+}
+
 /**
  * Lifecycle signal that is fired when an Actor that was watched has terminated.
  * Watching is performed by invoking the
@@ -71,20 +78,43 @@ case object PostStop extends PostStop {
  *
  * @param ref Scala API: the `ActorRef` for the terminated actor
  */
-final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
-  /**
-   * Scala API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be `None`.
-   */
-  def failure: Option[Throwable] = Option(failed)
+@DoNotInherit
+sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
 
   /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 
-  /**
-   * Java API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be an empty `Optional`.
-   */
-  def getFailure: Optional[Throwable] = Optional.ofNullable(failed)
+  override def toString: String = s"Terminated($ref)"
 
+  override def hashCode(): Int = ref.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case Terminated(`ref`) => true
+    case _                 => false
+  }
+}
+
+object ChildFailed {
+  def apply(ref: ActorRef[Nothing], cause: Throwable): ChildFailed = new ChildFailed(ref, cause)
+  def unapply(t: ChildFailed): Option[(ActorRef[Nothing], Throwable)] = Some((t.ref, t.cause))
+}
+
+/**
+ * Child has failed due an uncaught exception
+ */
+final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Terminated(ref) {
+
+  /**
+   * Java API
+   */
+  def getCause(): Throwable = cause
+
+  override def toString: String = s"ChildFailed($ref,${cause.getClass.getName})"
+
+  override def hashCode(): Int = ref.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case ChildFailed(`ref`, `cause`) => true
+    case _                           => false
+  }
 }

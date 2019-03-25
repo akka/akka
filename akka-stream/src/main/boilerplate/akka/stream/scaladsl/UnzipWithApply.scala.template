@@ -1,21 +1,20 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.impl.StreamLayout
 import akka.stream.stage._
 
 object UnzipWithApply {
-  import scala.language.implicitConversions
 
   abstract trait UnzipWithCreator[In, Out, T] {
     def create(unzipper: Function1[In, Out]): T
   }
 
   [2..22#trait UnzipWithCreator1[In, [#A1#]] extends UnzipWithCreator[In, Tuple1[[#A1#]], UnzipWith1[In, [#A1#]]] {
-    override def create(unzipper: In ⇒ ([#A1#])): UnzipWith1[In, [#A1#]] = {
+    override def create(unzipper: In => ([#A1#])): UnzipWith1[In, [#A1#]] = {
       new UnzipWith1(unzipper)
     }
   }
@@ -34,7 +33,7 @@ trait UnzipWithApply {
    *
    * @param unzipper unzipping-function from the input value to 1 output values
    */
-   def apply[In, [#A1#]](unzipper: In ⇒ Tuple1[[#A1#]])(implicit creator: UnzipWithCreator1[Any, [#Any#]]): UnzipWith1[In, [#A1#]] = {
+   def apply[In, [#A1#]](unzipper: In => Tuple1[[#A1#]])(implicit creator: UnzipWithCreator1[Any, [#Any#]]): UnzipWith1[In, [#A1#]] = {
      creator.asInstanceOf[UnzipWithCreator1[In, [#A1#]]].create(unzipper)
    }#
 
@@ -42,7 +41,7 @@ trait UnzipWithApply {
 }
 
 [2..22#/** `UnzipWith` specialized for 1 outputs */
-class UnzipWith1[In, [#A1#]](val unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOutShape1[In, [#A1#]]] {
+class UnzipWith1[In, [#A1#]](val unzipper: In => ([#A1#])) extends GraphStage[FanOutShape1[In, [#A1#]]] {
   override def initialAttributes = Attributes.name("UnzipWith1")
   override val shape: FanOutShape1[In, [#A1#]] = new FanOutShape1[In, [#A1#]]("UnzipWith1")
   def in: Inlet[In] = shape.in

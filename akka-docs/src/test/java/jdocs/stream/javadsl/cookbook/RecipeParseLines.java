@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.javadsl.cookbook;
@@ -41,19 +41,21 @@ public class RecipeParseLines extends RecipeTest {
 
   @Test
   public void parseLines() throws Exception {
-    final Source<ByteString, NotUsed> rawData = Source.from(Arrays.asList(
-      ByteString.fromString("Hello World"),
-      ByteString.fromString("\r"),
-      ByteString.fromString("!\r"),
-      ByteString.fromString("\nHello Akka!\r\nHello Streams!"),
-      ByteString.fromString("\r\n\r\n")));
+    final Source<ByteString, NotUsed> rawData =
+        Source.from(
+            Arrays.asList(
+                ByteString.fromString("Hello World"),
+                ByteString.fromString("\r"),
+                ByteString.fromString("!\r"),
+                ByteString.fromString("\nHello Akka!\r\nHello Streams!"),
+                ByteString.fromString("\r\n\r\n")));
 
-    //#parse-lines
-    final Source<String, NotUsed> lines = rawData
-      .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, FramingTruncation.ALLOW))
-      .map(b -> b.utf8String());
-    //#parse-lines
+    // #parse-lines
+    final Source<String, NotUsed> lines =
+        rawData
+            .via(Framing.delimiter(ByteString.fromString("\r\n"), 100, FramingTruncation.ALLOW))
+            .map(b -> b.utf8String());
+    // #parse-lines
     lines.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
   }
-
 }

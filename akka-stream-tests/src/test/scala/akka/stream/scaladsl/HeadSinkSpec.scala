@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -9,13 +9,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
+  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
   implicit val materializer = ActorMaterializer(settings)
 
@@ -47,9 +45,9 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
     "yield the first error" in assertAllStagesStopped {
       val ex = new RuntimeException("ex")
-      intercept[RuntimeException] {
+      (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
-      } should be theSameInstanceAs (ex)
+      } should be).theSameInstanceAs(ex)
     }
 
     "yield NoSuchElementException for empty stream" in assertAllStagesStopped {
@@ -73,9 +71,9 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
     "yield the first error" in assertAllStagesStopped {
       val ex = new RuntimeException("ex")
-      intercept[RuntimeException] {
+      (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
-      } should be theSameInstanceAs (ex)
+      } should be).theSameInstanceAs(ex)
     }
 
     "yield None for empty stream" in assertAllStagesStopped {
@@ -85,8 +83,7 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
     "fail on abrupt termination" in {
       val mat = ActorMaterializer()
       val source = TestPublisher.probe()
-      val f = Source.fromPublisher(source)
-        .runWith(Sink.headOption)(mat)
+      val f = Source.fromPublisher(source).runWith(Sink.headOption)(mat)
       mat.shutdown()
 
       // this one always fails with the AbruptTerminationException rather than the

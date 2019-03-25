@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -8,8 +8,6 @@ package scaladsl
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.WordSpecLike
-
-import scala.concurrent.duration._
 
 class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
@@ -20,7 +18,7 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receiveMessagePartial[Command] {
-          case Command2 ⇒
+          case Command2 =>
             probe.ref ! Command2
             Behaviors.same
         }
@@ -37,7 +35,7 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receivePartial[Command] {
-          case (_, Command2) ⇒
+          case (_, Command2) =>
             probe.ref ! Command2
             Behaviors.same
         }

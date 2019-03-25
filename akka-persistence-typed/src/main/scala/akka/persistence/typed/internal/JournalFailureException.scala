@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -15,5 +15,7 @@ import akka.persistence.typed.PersistenceId
 @InternalApi
 final private[akka] class JournalFailureException(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
   def this(persistenceId: PersistenceId, sequenceNr: Long, eventType: String, cause: Throwable) =
-    this(s"Failed to persist event type [$eventType] with sequence number [$sequenceNr] for persistenceId [${persistenceId.id}]", cause)
+    this(
+      s"Failed to persist event type [$eventType] with sequence number [$sequenceNr] for persistenceId [${persistenceId.id}]",
+      cause)
 }

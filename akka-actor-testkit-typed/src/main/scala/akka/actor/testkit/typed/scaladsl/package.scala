@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
@@ -10,7 +10,7 @@ package object scaladsl {
 
   /**
    * Scala API. Scale timeouts (durations) during tests with the configured
-   * 'akka.test.timefactor'.
+   * 'akka.actor.testkit.typed.timefactor'.
    * Implicit class providing `dilated` method.
    *
    * {{{

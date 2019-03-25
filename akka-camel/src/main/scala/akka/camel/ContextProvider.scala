@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel
@@ -12,6 +12,7 @@ import org.apache.camel.impl.DefaultCamelContext
  * An instance of this class must be instantiable using a no-arg constructor.
  */
 trait ContextProvider {
+
   /**
    * Retrieve or create a Camel Context for the given actor system
    * Called once per actor system

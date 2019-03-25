@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,7 +7,6 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -26,8 +25,7 @@ object TransportFailConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
       akka.remote {
         transport-failure-detector {
@@ -52,7 +50,7 @@ class TransportFailMultiJvmNode2 extends TransportFailSpec
 object TransportFailSpec {
   class Subject extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 

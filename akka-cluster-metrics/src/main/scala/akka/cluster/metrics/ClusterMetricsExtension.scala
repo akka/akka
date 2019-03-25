@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -44,11 +44,14 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
    *
    * Supervision strategy.
    */
-  private[metrics] val strategy = system.dynamicAccess.createInstanceFor[SupervisorStrategy](
-    SupervisorStrategyProvider, immutable.Seq(classOf[Config] → SupervisorStrategyConfiguration))
+  private[metrics] val strategy = system.dynamicAccess
+    .createInstanceFor[SupervisorStrategy](
+      SupervisorStrategyProvider,
+      immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
     .getOrElse {
       val log: LoggingAdapter = Logging(system, getClass.getName)
-      log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[ClusterMetricsStrategy].getName}.")
+      log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[
+        ClusterMetricsStrategy].getName}.")
       new ClusterMetricsStrategy(SupervisorStrategyConfiguration)
     }
 
@@ -84,5 +87,6 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
 object ClusterMetricsExtension extends ExtensionId[ClusterMetricsExtension] with ExtensionIdProvider {
   override def lookup = ClusterMetricsExtension
   override def get(system: ActorSystem): ClusterMetricsExtension = super.get(system)
-  override def createExtension(system: ExtendedActorSystem): ClusterMetricsExtension = new ClusterMetricsExtension(system)
+  override def createExtension(system: ExtendedActorSystem): ClusterMetricsExtension =
+    new ClusterMetricsExtension(system)
 }

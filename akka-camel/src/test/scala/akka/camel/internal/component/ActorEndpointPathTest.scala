@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel.internal.component
@@ -15,7 +15,7 @@ class ActorEndpointPathTest extends WordSpec with SharedCamelSystem with Matcher
   def find(path: String) = ActorEndpointPath.fromCamelPath(path).findActorIn(system)
 
   "findActorIn returns Some(actor ref) if actor exists" in {
-    val path = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }), "knownactor").path
+    val path = system.actorOf(Props(new Actor { def receive = { case _ => } }), "knownactor").path
     find(path.toString) should be('defined)
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.RARP
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
@@ -21,8 +20,7 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        akka {
          loglevel = INFO
          actor.provider = remote
@@ -34,8 +32,8 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
+      case "shutdown" => context.system.terminate()
+      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
     }
   }
 
@@ -45,8 +43,9 @@ class HandshakeRestartReceiverSpecMultiJvmNode1 extends HandshakeRestartReceiver
 class HandshakeRestartReceiverSpecMultiJvmNode2 extends HandshakeRestartReceiverSpec
 
 abstract class HandshakeRestartReceiverSpec
-  extends MultiNodeSpec(HandshakeRestartReceiverSpec)
-  with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(HandshakeRestartReceiverSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import HandshakeRestartReceiverSpec._
 
@@ -56,7 +55,10 @@ abstract class HandshakeRestartReceiverSpec
     super.afterAll()
   }
 
-  def identifyWithUid(rootPath: ActorPath, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(
+      rootPath: ActorPath,
+      actorName: String,
+      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(rootPath / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -105,7 +107,9 @@ abstract class HandshakeRestartReceiverSpec
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject2")

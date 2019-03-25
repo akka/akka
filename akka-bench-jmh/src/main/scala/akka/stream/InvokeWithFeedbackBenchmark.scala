@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -33,7 +33,8 @@ class InvokeWithFeedbackBenchmark {
 
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
-      Source.queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategies.Backpressure)
+      Source
+        .queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
         .toMat(Sink.queue[Int]())(Keep.both)
         .run()
 
@@ -45,7 +46,7 @@ class InvokeWithFeedbackBenchmark {
   @OperationsPerInvocation(100000)
   @Benchmark
   def pass_through_100k_elements(): Unit = {
-    (0 to 100000).foreach { n ⇒
+    (0 to 100000).foreach { n =>
       val f = sinkQueue.pull()
       Await.result(sourceQueue.offer(n), waitForResult)
       Await.result(f, waitForResult)

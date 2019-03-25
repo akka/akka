@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl.adapter
@@ -17,6 +17,6 @@ import akka.actor.typed.Props
  * example of that.
  */
 object PropsAdapter {
-  def apply[T](behavior: ⇒ Behavior[T], deploy: Props = Props.empty): akka.actor.Props =
-    akka.actor.typed.internal.adapter.PropsAdapter(() ⇒ behavior, deploy)
+  def apply[T](behavior: => Behavior[T], deploy: Props = Props.empty): akka.actor.Props =
+    akka.actor.typed.internal.adapter.PropsAdapter(() => behavior, deploy)
 }

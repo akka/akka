@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -15,26 +15,26 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.3.6"
+  val sslConfigVersion = "0.3.7"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.11.2"
+  val aeronVersion = "1.15.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.7", "2.11.12"),
+    crossScalaVersions := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
+    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 ⇒ "1.14.0" // does not work for 2.11
-        case _                       ⇒ "1.13.2"
+        case Some((2, n)) if n >= 12 => "1.14.0" // does not work for 2.11
+        case _                       => "1.13.2"
       }),
-    scalaTestVersion := "3.0.5",
+    scalaTestVersion := "3.0.6-SNAP6",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 ⇒ "0.9.0"
-        case Some((2, n)) if n == 12 ⇒ "0.8.0"
-        case _                       ⇒ "0.7.0"
+        case Some((2, n)) if n >= 13 => "0.9.0"
+        case Some((2, n)) if n == 12 => "0.8.0"
+        case _                       => "0.7.0"
       }
     })
 
@@ -148,12 +148,14 @@ object Dependencies {
 
   val actor = l ++= Seq(config, java8Compat.value)
 
+  val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
+
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
   val actorTests = l ++= Seq(
     Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs,
-    Test.dockerClient
+    Test.dockerClient, Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
   )
 
   val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
@@ -210,16 +212,16 @@ object Dependencies {
 }
 
 object DependencyHelpers {
-  case class ScalaVersionDependentModuleID(modules: String ⇒ Seq[ModuleID]) {
+  case class ScalaVersionDependentModuleID(modules: String => Seq[ModuleID]) {
     def %(config: String): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version ⇒ modules(version).map(_ % config))
+      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
   }
   object ScalaVersionDependentModuleID {
-    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ ⇒ mod)
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID = versioned(_ => mod)
 
-    def versioned(f: String ⇒ ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v ⇒ Seq(f(v)))
+    def versioned(f: String => ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID(v => Seq(f(v)))
     def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
-      ScalaVersionDependentModuleID(version ⇒ if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
+      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
   }
 
   /**
@@ -227,16 +229,16 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies ++= modules.flatMap(m ⇒ m.modules(scalaVersion.value))
+    libraryDependencies ++= modules.flatMap(m => m.modules(scalaVersion.value))
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
-  val nominalScalaVersion: String ⇒ String = {
+  val nominalScalaVersion: String => String = {
     // matches:
     // 2.12.0-M1
     // 2.12.0-RC1
     // 2.12.0
-    case version @ ScalaVersion() ⇒ version
+    case version @ ScalaVersion() => version
     // transforms 2.12.0-custom-version to 2.12.0
-    case version                  ⇒ version.takeWhile(_ != '-')
+    case version                  => version.takeWhile(_ != '-')
   }
 }

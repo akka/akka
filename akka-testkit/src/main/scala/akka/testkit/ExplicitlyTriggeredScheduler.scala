@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -7,8 +7,6 @@ package akka.testkit
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-
-import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -19,6 +17,8 @@ import scala.util.Try
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
+import akka.util.unused
+import com.typesafe.config.Config
 
 /**
  * For testing: scheduler that does not look at the clock, but must be
@@ -30,17 +30,20 @@ import akka.event.LoggingAdapter
  * easier, but these tests might fail to catch race conditions that only
  * happen when tasks are scheduled in parallel in 'real time'.
  */
-class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: ThreadFactory) extends Scheduler {
+class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, @unused tf: ThreadFactory)
+    extends Scheduler {
 
   private case class Item(time: Long, interval: Option[FiniteDuration], runnable: Runnable)
 
   private val currentTime = new AtomicLong()
   private val scheduled = new ConcurrentHashMap[Item, Unit]()
 
-  override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+  override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, Some(interval), runnable)
 
-  override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+  override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(
+      implicit executor: ExecutionContext): Cancellable =
     schedule(delay, None, runnable)
 
   /**
@@ -58,38 +61,38 @@ class ExplicitlyTriggeredScheduler(config: Config, log: LoggingAdapter, tf: Thre
 
     val newTime = currentTime.get + amount.toMillis
     if (log.isDebugEnabled)
-      log.debug(s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(newTime).map(item ⇒ s"\n- $item"))
+      log.debug(
+        s"Time proceeds from ${currentTime.get} to $newTime, currently scheduled for this period:" + scheduledTasks(
+          newTime).map(item => s"\n- $item"))
 
     executeTasks(newTime)
     currentTime.set(newTime)
   }
 
   private def scheduledTasks(runTo: Long): Seq[Item] =
-    scheduled
-      .keySet()
-      .asScala
-      .filter(_.time <= runTo)
-      .toList
-      .sortBy(_.time)
+    scheduled.keySet().asScala.filter(_.time <= runTo).toList.sortBy(_.time)
 
   @tailrec
   private[testkit] final def executeTasks(runTo: Long): Unit = {
     scheduledTasks(runTo).headOption match {
-      case Some(task) ⇒
+      case Some(task) =>
         currentTime.set(task.time)
         val runResult = Try(task.runnable.run())
         scheduled.remove(task)
 
         if (runResult.isSuccess)
-          task.interval.foreach(i ⇒ scheduled.put(task.copy(time = task.time + i.toMillis), ()))
+          task.interval.foreach(i => scheduled.put(task.copy(time = task.time + i.toMillis), ()))
 
         // running the runnable might have scheduled new events
         executeTasks(runTo)
-      case _ ⇒ // Done
+      case _ => // Done
     }
   }
 
-  private def schedule(initialDelay: FiniteDuration, interval: Option[FiniteDuration], runnable: Runnable): Cancellable = {
+  private def schedule(
+      initialDelay: FiniteDuration,
+      interval: Option[FiniteDuration],
+      runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
     val item = Item(firstTime, interval, runnable)
     log.debug("Scheduled item for {}: {}", firstTime, item)

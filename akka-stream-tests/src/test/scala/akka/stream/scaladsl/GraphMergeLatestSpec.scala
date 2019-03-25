@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.stream._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
@@ -19,7 +18,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
   override type Outputs = List[Int]
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val merge = b add MergeLatest[Int](2)
+    val merge = b.add(MergeLatest[Int](2))
 
     override def left: Inlet[Int] = merge.in(0)
     override def right: Inlet[Int] = merge.in(1)
@@ -35,15 +34,17 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up3 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val m = b.add(MergeLatest[Int](3))
+      val (in1, in2, in3) = RunnableGraph
+        .fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
+          val m = b.add(MergeLatest[Int](3))
 
-        s1 ~> m
-        s2 ~> m
-        s3 ~> m
-        m.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+          s1 ~> m
+          s2 ~> m
+          s3 ~> m
+          m.out ~> Sink.fromSubscriber(probe)
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -67,15 +68,17 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up3 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val m = b.add(MergeLatest[Int](3))
+      val (in1, in2, in3) = RunnableGraph
+        .fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b => (s1, s2, s3) =>
+          val m = b.add(MergeLatest[Int](3))
 
-        s1 ~> m
-        s2 ~> m
-        s3 ~> m
-        m.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+          s1 ~> m
+          s2 ~> m
+          s3 ~> m
+          m.out ~> Sink.fromSubscriber(probe)
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -112,13 +115,15 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
     }
 
     "work with one-way merge" in {
-      val result = Source.fromGraph(GraphDSL.create() { implicit b ⇒
-        val merge = b.add(MergeLatest[Int](1))
-        val source = b.add(Source(1 to 3))
+      val result = Source
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val merge = b.add(MergeLatest[Int](1))
+          val source = b.add(Source(1 to 3))
 
-        source ~> merge
-        SourceShape(merge.out)
-      }).runFold(Seq[List[Int]]())(_ :+ _)
+          source ~> merge
+          SourceShape(merge.out)
+        })
+        .runFold(Seq[List[Int]]())(_ :+ _)
 
       Await.result(result, 3.seconds) should ===(Seq(List(1), List(2), List(3)))
     }
@@ -128,14 +133,16 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val up2 = TestSource.probe[Int]
       val probe = TestSubscriber.manualProbe[List[Int]]()
 
-      val (in1, in2) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b ⇒ (s1, s2) ⇒
-        val m = b.add(MergeLatest[Int](2, true))
+      val (in1, in2) = RunnableGraph
+        .fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b => (s1, s2) =>
+          val m = b.add(MergeLatest[Int](2, true))
 
-        s1 ~> m
-        s2 ~> m
-        m.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+          s1 ~> m
+          s2 ~> m
+          m.out ~> Sink.fromSubscriber(probe)
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 

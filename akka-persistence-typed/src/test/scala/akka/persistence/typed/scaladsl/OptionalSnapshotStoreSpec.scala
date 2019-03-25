@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
-import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
@@ -24,19 +24,16 @@ object OptionalSnapshotStoreSpec {
 
   case class Event(id: Long = System.currentTimeMillis())
 
-  def persistentBehavior(
-    probe: TestProbe[State],
-    name:  String           = UUID.randomUUID().toString) =
-    PersistentBehavior[Command, Event, State](
+  def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
+    EventSourcedBehavior[Command, Event, State](
       persistenceId = PersistenceId(name),
       emptyState = State(),
-      commandHandler = CommandHandler.command {
-        _ ⇒ Effect.persist(Event()).thenRun(probe.ref ! _)
+      commandHandler = CommandHandler.command { _ =>
+        Effect.persist(Event()).thenRun(probe.ref ! _)
       },
       eventHandler = {
-        case (_, _) ⇒ State()
-      }
-    ).snapshotWhen { case _ ⇒ true }
+        case (_, _) => State()
+      }).snapshotWhen { case _ => true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
     persistentBehavior(probe).withSnapshotPluginId("akka.persistence.snapshot-store.local")

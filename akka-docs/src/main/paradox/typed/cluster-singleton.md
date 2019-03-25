@@ -15,9 +15,9 @@ To use Cluster Singleton, you must add the following dependency in your project:
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
+  of being the subject of final development. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
+  this module in production just yet.
 
 @@@
 
@@ -72,6 +72,20 @@ Java
 
 Be aware that this means there will be times when the singleton won't be running as restart is delayed.
 See @ref[Fault Tolerance](./fault-tolerance.md) for a full list of supervision options.
+
+
+## Application specific stop message
+
+An application specific `stopMessage` can be used to close the resources before actually stopping the singleton actor. 
+This `stopMessage` is sent to the singleton actor to tell it to finish its work, close resources, and stop. The hand-over to the new oldest node is completed when the
+singleton actor is terminated.
+If the shutdown logic does not include any asynchronous actions it can be executed in the `PostStop` signal handler.
+
+Scala
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #stop-message }
+
+Java
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #stop-message }
 
 
 ## Accessing singleton of another data centre

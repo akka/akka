@@ -1,20 +1,15 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
-
-import akka.remote.transport.AssociationHandle
 
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociateExplicitly, ForceDisassociate, Direction }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.remote.testconductor.RoleName
@@ -25,8 +20,9 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString(
+      """
       # Keep it long, we don't want reconnects
       akka.remote.retry-gate-closed-for  = 1 s
 
@@ -43,8 +39,8 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid → self)
+      case "shutdown" => context.system.terminate()
+      case "identify" => sender() ! (AddressUidExtension(context.system).addressUid -> self)
     }
   }
 
@@ -53,8 +49,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 class RemoteRestartedQuarantinedSpecMultiJvmNode1 extends RemoteRestartedQuarantinedSpec
 class RemoteRestartedQuarantinedSpecMultiJvmNode2 extends RemoteRestartedQuarantinedSpec
 
-abstract class RemoteRestartedQuarantinedSpec
-  extends RemotingMultiNodeSpec(RemoteRestartedQuarantinedSpec) {
+abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(RemoteRestartedQuarantinedSpec) {
 
   import RemoteRestartedQuarantinedSpec._
 
@@ -113,14 +108,16 @@ abstract class RemoteRestartedQuarantinedSpec
         }
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
+          case ThisActorSystemQuarantinedEvent(local, remote) =>
         }
 
         enterBarrier("still-quarantined")
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
                     akka.remote.retry-gate-closed-for = 0.5 s
                     akka.remote.netty.tcp {
                       hostname = ${address.host.get}
@@ -130,10 +127,14 @@ abstract class RemoteRestartedQuarantinedSpec
 
         // retry because it's possible to loose the initial message here, see issue #17314
         val probe = TestProbe()(freshSystem)
-        probe.awaitAssert({
-          freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
-          probe.expectMsgType[ActorIdentity](1.second).ref should not be (None)
-        }, 30.seconds)
+        probe.awaitAssert(
+          {
+            freshSystem
+              .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
+              .tell(Identify("subject"), probe.ref)
+            probe.expectMsgType[ActorIdentity](1.second).ref should not be (None)
+          },
+          30.seconds)
 
         // Now the other system will be able to pass, too
         freshSystem.actorOf(Props[Subject], "subject")

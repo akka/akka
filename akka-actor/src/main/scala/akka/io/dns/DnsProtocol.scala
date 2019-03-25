@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
@@ -7,9 +7,8 @@ package akka.io.dns
 import java.util
 
 import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.ApiMayChange
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{ immutable => im }
 import scala.collection.JavaConverters._
 
 /**
@@ -21,10 +20,8 @@ import scala.collection.JavaConverters._
  * and responses can more information than plain IP addresses (e.g. ports for SRV records).
  *
  */
-@ApiMayChange
 object DnsProtocol {
 
-  @ApiMayChange
   sealed trait RequestType
   final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
   final case object Srv extends RequestType
@@ -65,14 +62,16 @@ object DnsProtocol {
    * @param records resource records for the query
    * @param additionalRecords records that relate to the query but are not strictly answers
    */
-  @ApiMayChange
-  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
+  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord])
+      extends NoSerializationVerificationNeeded {
+
     /**
      * Java API
      *
      * Records for the query
      */
     def getRecords(): util.List[ResourceRecord] = records.asJava
+
     /**
      * Java API
      *
@@ -82,13 +81,10 @@ object DnsProtocol {
     def getAdditionalRecords(): util.List[ResourceRecord] = additionalRecords.asJava
   }
 
-  @ApiMayChange
   object Resolved {
 
-    @ApiMayChange
     def apply(name: String, records: im.Seq[ResourceRecord]): Resolved =
       new Resolved(name, records, Nil)
   }
 
 }
-

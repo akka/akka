@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 //#or-else
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
 
 //#or-else
 import scala.concurrent.duration._

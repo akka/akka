@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.camel;
@@ -16,23 +16,23 @@ import org.junit.Test;
 public class CamelExtensionTest extends AbstractJavaTest {
   @Test
   public void getCamelExtension() {
-    //#CamelExtension
+    // #CamelExtension
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
     CamelContext camelContext = camel.context();
     ProducerTemplate producerTemplate = camel.template();
-    //#CamelExtension
+    // #CamelExtension
     TestKit.shutdownActorSystem(system);
   }
+
   public void addActiveMQComponent() {
-    //#CamelExtensionAddComponent
+    // #CamelExtensionAddComponent
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
     CamelContext camelContext = camel.context();
     // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent(
     //   "vm://localhost?broker.persistent=false"));
-    //#CamelExtensionAddComponent
+    // #CamelExtensionAddComponent
     TestKit.shutdownActorSystem(system);
   }
-
 }

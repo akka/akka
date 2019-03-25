@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -32,8 +32,8 @@ trait SourceQueue[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult]
 
   /**
-   * Method returns a [[CompletionStage]] that will be completed if the stream completes,
-   * or will be failed when the operator faces an internal failure.
+   * Method returns a [[CompletionStage]] that will be completed if this
+   * operator completes, or will be failed when the stream is failed.
    */
   def watchCompletion(): CompletionStage[Done]
 }
@@ -42,21 +42,29 @@ trait SourceQueue[T] {
  * This trait adds completion support to [[SourceQueue]].
  */
 trait SourceQueueWithComplete[T] extends SourceQueue[T] {
+
   /**
    * Complete the stream normally. Use `watchCompletion` to be notified of this
    * operation’s success.
+   *
+   * Note that this only means the elements have been passed downstream, not
+   * that downstream has successfully processed them.
    */
   def complete(): Unit
 
   /**
    * Complete the stream with a failure. Use `watchCompletion` to be notified of this
    * operation’s success.
+   *
+   * Note that this only means the elements have been passed downstream, not
+   * that downstream has successfully processed them.
    */
   def fail(ex: Throwable): Unit
 
   /**
-   * Method returns a [[Future]] that will be completed if the stream completes,
-   * or will be failed when the operator faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
+   * Method returns a [[CompletionStage]] that will be completed if this
+   * operator completes, or will be failed when the stream fails,
+   * for example when [[SourceQueueWithComplete.fail]] is invoked.
    */
   override def watchCompletion(): CompletionStage[Done]
 }
@@ -80,9 +88,9 @@ trait SinkQueue[T] {
  * This trait adds cancel support to [[SinkQueue]].
  */
 trait SinkQueueWithCancel[T] extends SinkQueue[T] {
+
   /**
    * Cancel the stream.
    */
   def cancel(): Unit
 }
-

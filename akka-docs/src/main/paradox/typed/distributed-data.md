@@ -12,6 +12,15 @@ To use Akka Cluster Distributed Data Typed, you must add the following dependenc
 
 ## Introduction
 
+@@@ warning
+
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
+  of being the subject of final development. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet.
+
+@@@
+
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 The keys are unique identifiers with type information of the data values. The values
@@ -39,8 +48,8 @@ actor provides the API for interacting with the data and is accessed through the
 
 The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]
 @java[`akka.cluster.ddata.typed.scaladsl.Replicator`] but the actual CRDTs are the 
-same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require an @scala[implicit] untyped `Cluster`
-for now, we hope to improve this in the future ([issue #25746](https://github.com/akka/akka/issues/25746)).
+same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require a @scala[implicit] `akka.cluster.ddata.SelfUniqueAddress.SelfUniqueAddress`,
+available from @scala[`implicit val node = DistributedData(system).selfUniqueAddress`]@java[SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();].
 
 The replicator can contain multiple entries each containing a replicated data type, we therefore need to create a 
 key identifying the entry and helping us know what type it has, and then use that key for every interaction with

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.slf4j
@@ -35,21 +35,21 @@ object Slf4jLoggingFilterSpec {
   class TestLogger extends Actor {
     var target: Option[ActorRef] = None
     override def receive: Receive = {
-      case InitializeLogger(bus) ⇒
+      case InitializeLogger(bus) =>
         bus.subscribe(context.self, classOf[SetTarget])
         sender() ! LoggerInitialized
-      case SetTarget(ref) ⇒
+      case SetTarget(ref) =>
         target = Some(ref)
         ref ! ("OK")
-      case event: LogEvent ⇒
+      case event: LogEvent =>
         println("# event: " + event)
-        target foreach { _ ! event }
+        target.foreach { _ ! event }
     }
   }
 
   class DebugLevelProducer extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.warning(s)
         log.info(s)
         println("# DebugLevelProducer: " + log.isDebugEnabled)
@@ -59,7 +59,7 @@ object Slf4jLoggingFilterSpec {
 
   class WarningLevelProducer extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.warning(s)
         log.info(s)
         log.debug(s)

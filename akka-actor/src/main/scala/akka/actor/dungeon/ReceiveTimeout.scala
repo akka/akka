@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -13,7 +13,7 @@ private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)
 }
 
-private[akka] trait ReceiveTimeout { this: ActorCell ⇒
+private[akka] trait ReceiveTimeout { this: ActorCell =>
 
   import ReceiveTimeout._
   import ActorCell._
@@ -27,7 +27,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
   final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
     val (recvtimeout, task) = receiveTimeoutData
     recvtimeout match {
-      case f: FiniteDuration ⇒
+      case f: FiniteDuration =>
         // The fact that timeout is FiniteDuration and task is emptyCancellable
         // means that a user called `context.setReceiveTimeout(...)`
         // while sending the ReceiveTimeout message is not scheduled yet.
@@ -36,7 +36,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
         if (reschedule || (task eq emptyCancellable))
           rescheduleReceiveTimeout(f)
 
-      case _ ⇒ cancelReceiveTimeout()
+      case _ => cancelReceiveTimeout()
     }
   }
 

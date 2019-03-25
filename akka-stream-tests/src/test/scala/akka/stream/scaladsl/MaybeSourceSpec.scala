@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -36,8 +36,10 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "allow external triggering of empty completion" in assertAllStagesStopped {
-      val neverSource = Source.maybe[Int].filter(_ ⇒ false)
-      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+      val neverSource = Source.maybe[Int].filter(_ => false)
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) =>
+        acc + 1
+      }
 
       val (neverPromise, counterFuture) = neverSource.toMat(counterSink)(Keep.both).run()
 
@@ -71,7 +73,9 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
     "allow external triggering of onError" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
-      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) =>
+        acc + 1
+      }
 
       val (neverPromise, counterFuture) = neverSource.toMat(counterSink)(Keep.both).run()
 

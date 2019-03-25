@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -57,15 +57,16 @@ class ClusterConfigSpec extends AkkaSpec {
     }
 
     "be able to parse non-default cluster config elements" in {
-      val settings = new ClusterSettings(ConfigFactory.parseString(
-        """
+      val settings = new ClusterSettings(
+        ConfigFactory.parseString("""
           |akka {
           |  cluster {
           |    roles = [ "hamlet" ]
           |    multi-data-center.self-data-center = "blue"
           |  }
           |}
-        """.stripMargin).withFallback(ConfigFactory.load()), system.name)
+        """.stripMargin).withFallback(ConfigFactory.load()),
+        system.name)
       import settings._
       Roles should ===(Set("hamlet", ClusterSettings.DcRolePrefix + "blue"))
       SelfDataCenter should ===("blue")

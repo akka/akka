@@ -147,10 +147,24 @@ project akka-cluster
 multi-jvm:testOnly akka.cluster.SunnyWeather
 ```
 
+To format the Scala source code:
+```
+sbt
+akka-cluster/scalafmtAll
+akka-persistence/scalafmtAll
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
 Strange behavior has been reported by users that have tried it.
+
+### Compiling with Graal JIT
+
+Akka, like most Scala projects, compiles faster with the Graal JIT enabled. The easiest way to use it for compiling Akka is to:
+
+* Use a JDK > 10
+* Use the following JVM options for SBT e.g. by adding them to the `SBT_OPTS` environment variable: `-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler`
 
 ## The `validatePullRequest` task
 
@@ -177,6 +191,11 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
+If you have already run all tests and now just need to check that everything is formatted and or mima passes there
+are a set of `all*` commands aliases for running `test:compile` (also formats), `mimaReportBinaryIssues`, and `validateCompile` 
+(compiles `multi-jvm` if enabled for that project). See `build.sbt` or use completion to find the most appropriate one 
+e.g. `allCluster`, `allTyped`.
+
 ## Binary compatibility
 
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
@@ -200,6 +219,8 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is concerning internal classes (often recognisable by package names like `dungeon`, `impl`, `internal` etc.)
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
 - other tricky situations
+
+The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
 
 ## Pull request requirements
 
@@ -265,7 +286,7 @@ If you'd like to check if your links and formatting look good in JavaDoc (and no
 sbt -Dakka.genjavadoc.enabled=true javaunidoc:doc
 ```
 
-Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`.
+Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`. This requires a jdk version 9 or later.
 
 ## External dependencies
 
@@ -346,7 +367,10 @@ In such situations we prefer 'internal' over 'impl' as a package name.
 
 ### Scala style 
 
-Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka uses [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) to enforce some of the code style rules.
+
+When IntelliJ detects the `.scalafmt.conf` and promts "Scalafmt configuration detected in this project" you should
+select "Continue using IntelliJ formatter" and instead install the [Scalafmt IntelliJ plugin](https://scalameta.org/scalafmt/docs/installation.html#intellij). Install the nightly plugin (until version 2.0.0 or later becomes stable) and enable "Format on save".
 
 ### Java style
 
@@ -433,7 +457,8 @@ Scala has proven the most viable way to do it, as long as you keep the following
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
    `abstract class`.
-   
+      
+1. Any method definition in a class that will be part of the Java API should not use any default parameters, as they will show up ugly when using them from Java, use plain old method overloading instead.
    
 
 ### Overview of Scala types and their Java counterparts

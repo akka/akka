@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal }
+import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContext }
 import akka.util.OptionVal
 
 /**
@@ -25,30 +25,30 @@ import akka.util.OptionVal
 abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
   private var _receive: OptionVal[Receive[T]] = OptionVal.None
   private def receive: Receive[T] = _receive match {
-    case OptionVal.None ⇒
+    case OptionVal.None =>
       val receive = createReceive
       _receive = OptionVal.Some(receive)
       receive
-    case OptionVal.Some(r) ⇒ r
+    case OptionVal.Some(r) => r
   }
 
   @throws(classOf[Exception])
-  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+  override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
     receive.receive(ctx, msg)
 
   @throws(classOf[Exception])
-  override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
+  override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] =
     receive.receiveSignal(ctx, msg)
 
   /**
    * Implement this to define how messages and signals are processed. Use the
-   * [[AbstractBehavior.receiveBuilder]] to define the message dispatch.
+   * [[AbstractBehavior.newReceiveBuilder]] to define the message dispatch.
    */
   def createReceive: Receive[T]
 
   /**
-   * Create a [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
+   * Create a new [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
    * Typically used from [[AbstractBehavior.createReceive]].
    */
-  def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
+  def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
 }

@@ -1,14 +1,19 @@
-import akka.{ParadoxSupport, AutomaticModuleName}
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader,
+  CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin,
+  JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
-
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import spray.boilerplate.BoilerplatePlugin
+addCommandAlias(
+  name  ="fixall",
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
 import akka.AkkaBuild._
 import akka.{AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator}
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys.{initialCommands, parallelExecution}
+import spray.boilerplate.BoilerplatePlugin
 
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
@@ -16,7 +21,7 @@ initialize := {
   initialize.value
 }
 
-akka.AkkaBuild.buildSettings
+// akka.AkkaBuild.buildSettings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
@@ -41,7 +46,9 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
-  streamTyped
+  benchJmhTyped,
+  streamTyped,
+  discovery
 )
 
 lazy val root = Project(
@@ -49,10 +56,16 @@ lazy val root = Project(
   base = file(".")
 ).aggregate(aggregatedProjects: _*)
  .settings(rootSettings: _*)
- .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
+ .settings(unidocRootIgnoreProjects :=
+   (CrossVersion.partialVersion(scalaVersion.value) match {
+     case Some((2, n)) if n == 11 => aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
+     case _                       => Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs)
+   }),
+   crossScalaVersions := Nil, // Allows some modules (typed) to be only for 2.12 sbt/sbt#3465
+ )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
- )
+ ).enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
@@ -91,14 +104,28 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
     Seq(
       actor,
       stream, streamTests,
-      persistence, persistenceTyped,
-      distributedData, clusterTyped,
+      persistence, distributedData,
       testkit
     ).map(_ % "compile->compile;compile->test"): _*
   )
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
+
+// typed benchmarks only on 2.12+
+lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
+  .dependsOn(
+    Seq(
+      persistenceTyped,
+      distributedData, clusterTyped,
+      testkit, benchJmh
+    ).map(_ % "compile->compile;compile->test"): _*
+  )
+  .settings(Dependencies.benchJmh)
+  .settings(AkkaBuild.noScala211)
+  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
+  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
+
 
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")
@@ -191,7 +218,7 @@ lazy val distributedData = akkaModule("akka-distributed-data")
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
-    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream, actorTyped,
     camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
@@ -208,10 +235,10 @@ lazy val docs = akkaModule("akka-docs")
   .settings(Dependencies.docs)
   .settings(
     name in (Compile, paradox) := "Akka",
-    paradoxProperties ++= Map(
-      "akka.canonical.base_url" -> "http://doc.akka.io/docs/akka/current",
+    Compile / paradoxProperties ++= Map(
+      "canonical.base_url" -> "https://doc.akka.io/docs/akka/current",
       "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
-      "extref.akka.http.base_url" -> "http://doc.akka.io/docs/akka-http/current/%s",
+      "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
       "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
       "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
       "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&project=%s",
@@ -219,7 +246,7 @@ lazy val docs = akkaModule("akka-docs")
       "scaladoc.akka.base_url" -> "https://doc.akka.io/api/akka/2.5",
       "scaladoc.akka.http.base_url" -> "https://doc.akka.io/api/akka-http/current",
       "javadoc.akka.base_url" -> "https://doc.akka.io/japi/akka/2.5",
-      "javadoc.akka.http.base_url" -> "http://doc.akka.io/japi/akka-http/current",
+      "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
       "scala.version" -> scalaVersion.value,
       "scala.binary_version" -> scalaBinaryVersion.value,
       "akka.version" -> version.value,
@@ -232,16 +259,18 @@ lazy val docs = akkaModule("akka-docs")
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
     ),
-    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
+    Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
+  .settings(AkkaBuild.noScala211)
   .enablePlugins(
     AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
     StreamOperatorsIndexGenerator)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -383,6 +412,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
+  .settings(AkkaBuild.noScala211)
   .settings(
     initialCommands := """
       import akka.actor.typed._
@@ -405,6 +435,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   )
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
@@ -423,6 +454,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
@@ -439,6 +471,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
@@ -455,6 +488,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
   .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
@@ -463,6 +497,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
+  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
@@ -471,14 +506,56 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
     actorTestkitTyped % "compile->compile;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
+  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
+lazy val discovery = akkaModule("akka-discovery")
+  .dependsOn(
+    actor,
+    testkit % "test->test",
+    actorTests % "test->test"
+  )
+  .settings(Dependencies.discovery)
+  .settings(AutomaticModuleName.settings("akka.discovery"))
+  .settings(OSGi.discovery)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
+    .enablePlugins(ReproducibleBuildsPlugin)
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
-    .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
 
+/* Command aliases one can run locally against a module
+  - where three or more tasks should be checked for faster turnaround
+  - to avoid another push and CI cycle should mima or paradox fail.
+  - the assumption is the user has already run tests, hence the test:compile. */
+def commandValue(p: Project, externalTest: Option[Project] = None) = {
+  val test = externalTest.getOrElse(p)
+  val optionalMima = if (p.id.endsWith("-typed")) "" else s";${p.id}/mimaReportBinaryIssues"
+  val optionalExternalTestFormat = externalTest.map(t => s";${t.id}/scalafmtAll").getOrElse("")
+  s";${p.id}/scalafmtAll$optionalExternalTestFormat;${test.id}/test:compile$optionalMima;${docs.id}/paradox;${test.id}:validateCompile"
+}
+addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
+addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
+addCommandAlias("allClusterCore", commandValue(cluster))
+addCommandAlias("allClusterMetrics", commandValue(clusterMetrics))
+addCommandAlias("allDistributedData", commandValue(distributedData))
+addCommandAlias("allClusterSharding", commandValue(clusterSharding))
+addCommandAlias("allClusterTools", commandValue(clusterTools))
+addCommandAlias("allCluster", Seq(
+  commandValue(cluster),
+  commandValue(distributedData),
+  commandValue(clusterSharding),
+  commandValue(clusterTools)).mkString)
+addCommandAlias("allPersistence", commandValue(persistence))
+addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
+addCommandAlias("allDiscovery", commandValue(discovery))
+addCommandAlias("allTyped", Seq(
+  commandValue(actorTyped, Some(actorTypedTests)),
+  commandValue(actorTestkitTyped),
+  commandValue(clusterTyped),
+  commandValue(clusterShardingTyped),
+  commandValue(persistenceTyped),
+  commandValue(streamTyped)).mkString)

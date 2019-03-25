@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -13,10 +13,6 @@ import akka.testkit.TestActors
 import com.typesafe.config.ConfigFactory
 
 object HandshakeRetrySpec {
-
-  // need the port before systemB is started
-  val portB = SocketUtil.temporaryLocalPort(udp = true)
-
   val commonConfig = ConfigFactory.parseString(s"""
      akka.remote.artery.advanced.handshake-timeout = 10s
      akka.remote.artery.advanced.image-liveness-timeout = 7s
@@ -25,19 +21,18 @@ object HandshakeRetrySpec {
 }
 
 class HandshakeRetrySpec extends ArteryMultiNodeSpec(HandshakeRetrySpec.commonConfig) with ImplicitSender {
-  import HandshakeRetrySpec._
+
+  val portB = freePort()
 
   "Artery handshake" must {
 
     "be retried during handshake-timeout (no message loss)" in {
       def sel = system.actorSelection(s"akka://systemB@localhost:$portB/user/echo")
       sel ! "hello"
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
-      val systemB = newRemoteSystem(
-        name = Some("systemB"),
-        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB")
-      )
+      val systemB =
+        newRemoteSystem(name = Some("systemB"), extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       expectMsg("hello")

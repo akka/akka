@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -40,5 +40,5 @@ class EmptySourceBenchmark {
     Rewrite to GraphStage:
      [info] EmptySourceBenchmark.empty  thrpt   10  17.556 ± 2.865  ops/ms
 
-   */
+ */
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package tutorial_4
@@ -27,10 +27,10 @@ class DeviceSpec extends AkkaSpec {
       val deviceActor = system.actorOf(Device.props("group", "device"))
 
       deviceActor.tell(DeviceManager.RequestTrackDevice("wrongGroup", "device"), probe.ref)
-      probe.expectNoMsg(500.milliseconds)
+      probe.expectNoMessage(500.milliseconds)
 
       deviceActor.tell(DeviceManager.RequestTrackDevice("group", "Wrongdevice"), probe.ref)
-      probe.expectNoMsg(500.milliseconds)
+      probe.expectNoMessage(500.milliseconds)
     }
     //#device-registration-tests
 

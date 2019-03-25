@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
@@ -20,15 +20,17 @@ abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 
   override def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = TestSubscriber.probe[Outputs]()
-    RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
-      val f = fixture(b)
+    RunnableGraph
+      .fromGraph(GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        val f = fixture(b)
 
-      Source.fromPublisher(p1) ~> f.left
-      Source.fromPublisher(p2) ~> f.right
-      f.out ~> Sink.fromSubscriber(subscriber)
-      ClosedShape
-    }).run()
+        Source.fromPublisher(p1) ~> f.left
+        Source.fromPublisher(p2) ~> f.right
+        f.out ~> Sink.fromSubscriber(subscriber)
+        ClosedShape
+      })
+      .run()
 
     subscriber
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
@@ -38,8 +38,8 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
    * `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case Snapshot(data) ⇒ snapshotToBinary(data.asInstanceOf[AnyRef])
-    case _              ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case Snapshot(data) => snapshotToBinary(data.asInstanceOf[AnyRef])
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**

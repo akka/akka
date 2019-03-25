@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -8,7 +8,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
+import testkit.MultiNodeConfig
 import akka.testkit._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
@@ -16,8 +16,7 @@ import com.typesafe.config.ConfigFactory
 
 class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -29,19 +28,21 @@ class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
 class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = false))
 
-class ArteryLookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
-class ArteryLookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
+class ArteryLookupRemoteActorMultiJvmNode1
+    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
+class ArteryLookupRemoteActorMultiJvmNode2
+    extends LookupRemoteActorSpec(new LookupRemoteActorMultiJvmSpec(artery = true))
 
 object LookupRemoteActorSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 }
 
 abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import LookupRemoteActorSpec._
 
@@ -67,4 +68,3 @@ abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmS
   }
 
 }
-

@@ -15,9 +15,9 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
+  of being the subject of final development. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
+  this module in production just yet.
 
 @@@
 
@@ -141,7 +141,7 @@ The console output may look like this:
 
 The next example is more realistic and demonstrates some important patterns:
 
-* Using a sealed trait and case class/objects to represent multiple messages an actor can receive
+* Using @scala[a sealed trait and case class/objects]@java[an interface and classes implementing that interface] to represent multiple messages an actor can receive
 * Handle sessions by using child actors
 * Handling state by changing behavior
 * Using multiple typed actors to represent different parts of a protocol in a type safe way
@@ -357,6 +357,10 @@ As the state is mutable, we never return a different behavior from the message l
 the `AbstractBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
 We could also return `Behavior.same` to achieve the same.
 
+@java[In this sample we make separate statements for creating the behavior builder, but it also returns the builder
+itself from each step so a more fluent behavior definition style is also possible. What you should prefer depends on
+how big the set of messages the actor accepts is.]
+
 It is also possible to return a new different `AbstractBehavior`, for example to represent a different state in a
 finite state machine (FSM), or use one of the functional behavior factories to combine the object oriented 
 with the functional style for different parts of the lifecycle of the same Actor behavior.
@@ -398,9 +402,8 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 
 #### Trying it out
 
-In order to see this chat room in action we need to write a client Actor that can use it, for this 
-stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the
-functional style gabbler from the sample above:
+In order to see this chat room in action we need to write a client Actor that can use it
+@scala[, for this stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the functional style gabbler from the sample above]:
 
 Scala
 :  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-gabbler }

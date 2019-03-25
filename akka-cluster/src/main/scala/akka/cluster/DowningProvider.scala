@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -21,12 +21,12 @@ private[cluster] object DowningProvider {
    */
   def load(fqcn: String, system: ActorSystem): DowningProvider = {
     val eas = system.asInstanceOf[ExtendedActorSystem]
-    eas.dynamicAccess.createInstanceFor[DowningProvider](
-      fqcn,
-      List((classOf[ActorSystem], system))).recover {
-        case e ⇒ throw new ConfigurationException(
-          s"Could not create cluster downing provider [$fqcn]", e)
-      }.get
+    eas.dynamicAccess
+      .createInstanceFor[DowningProvider](fqcn, List((classOf[ActorSystem], system)))
+      .recover {
+        case e => throw new ConfigurationException(s"Could not create cluster downing provider [$fqcn]", e)
+      }
+      .get
   }
 
 }

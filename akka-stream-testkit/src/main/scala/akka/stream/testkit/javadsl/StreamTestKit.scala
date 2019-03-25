@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit.javadsl
@@ -17,8 +17,8 @@ object StreamTestKit {
    */
   def assertAllStagesStopped(mat: Materializer): Unit =
     mat match {
-      case impl: PhasedFusingActorMaterializer ⇒
+      case impl: PhasedFusingActorMaterializer =>
         scaladsl.StreamTestKit.assertNoChildren(impl.system, impl.supervisor)
-      case _ ⇒
+      case _ =>
     }
 }

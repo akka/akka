@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor;
@@ -8,7 +8,7 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 
@@ -19,7 +19,7 @@ public class ActorSystemTest extends JUnitSuite {
 
   @Rule
   public final AkkaJUnitActorSystemResource actorSystemResource =
-    new AkkaJUnitActorSystemResource("ActorSystemTest");
+      new AkkaJUnitActorSystemResource("ActorSystemTest");
 
   private ActorSystem system = null;
 

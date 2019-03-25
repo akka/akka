@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -31,17 +31,17 @@ object Main {
       try {
         val appClass = system.asInstanceOf[ExtendedActorSystem].dynamicAccess.getClassFor[Actor](args(0)).get
         val app = system.actorOf(Props(appClass), "app")
-        val terminator = system.actorOf(Props(classOf[Terminator], app), "app-terminator")
+        system.actorOf(Props(classOf[Terminator], app), "app-terminator")
       } catch {
-        case NonFatal(e) ⇒ system.terminate(); throw e
+        case NonFatal(e) => system.terminate(); throw e
       }
     }
   }
 
   class Terminator(app: ActorRef) extends Actor with ActorLogging {
-    context watch app
+    context.watch(app)
     def receive = {
-      case Terminated(_) ⇒
+      case Terminated(_) =>
         log.info("application supervisor has terminated, shutting down")
         context.system.terminate()
     }

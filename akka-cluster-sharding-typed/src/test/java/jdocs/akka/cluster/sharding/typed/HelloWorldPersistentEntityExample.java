@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.sharding.typed;
@@ -13,24 +13,24 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-//#persistent-entity-import
+// #persistent-entity-import
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.PersistentEntity;
+import akka.cluster.sharding.typed.javadsl.EventSourcedEntity;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
-//#persistent-entity-import
+// #persistent-entity-import
 
-//#persistent-entity-usage-import
+// #persistent-entity-usage-import
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.util.Timeout;
-//#persistent-entity-usage-import
+// #persistent-entity-usage-import
 
 public class HelloWorldPersistentEntityExample {
 
-  //#persistent-entity-usage
+  // #persistent-entity-usage
 
   public static class HelloWorldService {
     private final ActorSystem<?> system;
@@ -43,29 +43,29 @@ public class HelloWorldPersistentEntityExample {
       sharding = ClusterSharding.get(system);
 
       sharding.init(
-        Entity.ofPersistentEntity(
-          HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
+          Entity.ofPersistentEntity(
+              HelloWorld.ENTITY_TYPE_KEY,
+              ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
     }
 
     // usage example
     public CompletionStage<Integer> sayHello(String worldId, String whom) {
       EntityRef<HelloWorld.Command> entityRef =
-        sharding.entityRefFor(HelloWorld.ENTITY_TYPE_KEY, worldId);
+          sharding.entityRefFor(HelloWorld.ENTITY_TYPE_KEY, worldId);
       CompletionStage<HelloWorld.Greeting> result =
           entityRef.ask(replyTo -> new HelloWorld.Greet(whom, replyTo), askTimeout);
       return result.thenApply(greeting -> greeting.numberOfPeople);
     }
   }
-  //#persistent-entity-usage
+  // #persistent-entity-usage
 
-  //#persistent-entity
+  // #persistent-entity
 
-  public static class HelloWorld extends PersistentEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
+  public static class HelloWorld
+      extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
-    interface Command {
-    }
+    interface Command {}
 
     public static final class Greet implements Command {
       public final String whom;
@@ -101,8 +101,7 @@ public class HelloWorldPersistentEntityExample {
     static final class KnownPeople {
       private Set<String> names = Collections.emptySet();
 
-      KnownPeople() {
-      }
+      KnownPeople() {}
 
       private KnownPeople(Set<String> names) {
         this.names = names;
@@ -120,7 +119,7 @@ public class HelloWorldPersistentEntityExample {
     }
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
-      EntityTypeKey.create(Command.class, "HelloWorld");
+        EntityTypeKey.create(Command.class, "HelloWorld");
 
     public HelloWorld(ActorContext<Command> ctx, String entityId) {
       super(ENTITY_TYPE_KEY, entityId);
@@ -133,21 +132,19 @@ public class HelloWorldPersistentEntityExample {
 
     @Override
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
-      return commandHandlerBuilder(KnownPeople.class)
-        .matchCommand(Greet.class, this::greet)
-        .build();
+      return newCommandHandlerBuilder().forAnyState().onCommand(Greet.class, this::greet).build();
     }
 
     private Effect<Greeted, KnownPeople> greet(KnownPeople state, Greet cmd) {
-      return Effect().persist(new Greeted(cmd.whom))
-        .thenRun(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
+      return Effect()
+          .persist(new Greeted(cmd.whom))
+          .thenRun(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
     }
 
     @Override
     public EventHandler<KnownPeople, Greeted> eventHandler() {
       return (state, evt) -> state.add(evt.whom);
     }
-
   }
-  //#persistent-entity
+  // #persistent-entity
 }

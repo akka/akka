@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.japi
 
 import akka.util.Subclassification
-import akka.actor.{ ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem }
 
 /**
  * Java API: See documentation for [[akka.event.EventBus]]
@@ -191,7 +191,8 @@ abstract class ScanningEventBus[E, S, C] extends EventBus[E, S, C] {
  * E is the Event type
  */
 abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, ActorRef, ActorRef] {
-  private val bus = new akka.event.ActorEventBus with akka.event.ManagedActorClassification with akka.event.ActorClassifier {
+  private val bus = new akka.event.ActorEventBus with akka.event.ManagedActorClassification
+  with akka.event.ActorClassifier {
     type Event = E
 
     override val system = ManagedActorEventBus.this.system
@@ -217,4 +218,3 @@ abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, 
   override def unsubscribe(subscriber: ActorRef): Unit = bus.unsubscribe(subscriber)
   override def publish(event: E): Unit = bus.publish(event)
 }
-

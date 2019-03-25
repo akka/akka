@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -18,7 +18,7 @@ class RecipeKeepAlive extends RecipeSpec {
       //#inject-keepalive
       import scala.concurrent.duration._
       val injectKeepAlive: Flow[ByteString, ByteString, NotUsed] =
-        Flow[ByteString].keepAlive(1.second, () ⇒ keepaliveMessage)
+        Flow[ByteString].keepAlive(1.second, () => keepaliveMessage)
       //#inject-keepalive
 
       // No need to test, this is a built-in stage with proper tests

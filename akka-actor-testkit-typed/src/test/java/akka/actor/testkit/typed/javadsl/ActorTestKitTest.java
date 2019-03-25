@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl;
@@ -8,7 +8,7 @@ import akka.Done;
 import akka.actor.typed.javadsl.Behaviors;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
@@ -19,8 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ActorTestKitTest extends JUnitSuite {
 
-  @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void systemNameShouldComeFromTestClassViaJunitResource() {
@@ -51,10 +50,12 @@ public class ActorTestKitTest extends JUnitSuite {
   @Test
   public void testKitShouldSpawnActor() throws Exception {
     final CompletableFuture<Done> started = new CompletableFuture<>();
-    testKit.spawn(Behaviors.setup((context) -> {
-      started.complete(done());
-      return Behaviors.same();
-    }));
+    testKit.spawn(
+        Behaviors.setup(
+            (context) -> {
+              started.complete(done());
+              return Behaviors.same();
+            }));
     started.get(3, TimeUnit.SECONDS);
   }
 }

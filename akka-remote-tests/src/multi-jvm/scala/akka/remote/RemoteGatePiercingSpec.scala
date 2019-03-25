@@ -1,20 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import akka.remote.transport.AssociationHandle
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociateExplicitly, ForceDisassociate, Direction }
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.remote.testconductor.RoleName
@@ -25,24 +22,23 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 5 s
     """)))
 
-  nodeConfig(first)(
-    ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 d # Keep it long"))
+  nodeConfig(first)(ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 d # Keep it long"))
 
-  nodeConfig(second)(
-    ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 s # Keep it short"))
+  nodeConfig(second)(ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 s # Keep it short"))
 
   testTransport(on = true)
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
+      case "shutdown" => context.system.terminate()
     }
   }
 
@@ -51,8 +47,7 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
 class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
-abstract class RemoteGatePiercingSpec
-  extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
+abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._
 
@@ -75,8 +70,10 @@ abstract class RemoteGatePiercingSpec
         enterBarrier("actors-communicate")
 
         EventFilter.warning(pattern = "address is now gated", occurrences = 1).intercept {
-          Await.result(RARP(system).provider.transport.managementCommand(
-            ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)), 3.seconds)
+          Await.result(
+            RARP(system).provider.transport
+              .managementCommand(ForceDisassociateExplicitly(node(second).address, AssociationHandle.Unknown)),
+            3.seconds)
         }
 
         enterBarrier("gated")

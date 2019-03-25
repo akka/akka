@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -28,7 +28,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
         def receive = {
-          case "hello" ⇒ helloLatch.countDown()
+          case "hello" => helloLatch.countDown()
         }
 
         override def postStop(): Unit = {
@@ -53,19 +53,19 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val doneLatch = new TestLatch(connectionCount)
 
       val counter = new AtomicInteger
-      var replies = Map.empty[Int, Int].withDefaultValue(0)
+      var replies: Map[Int, Int] = Map.empty.withDefaultValue(0)
 
       val actor = system.actorOf(RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
         lazy val id = counter.getAndIncrement()
         def receive = {
-          case "hit" ⇒ sender() ! id
-          case "end" ⇒ doneLatch.countDown()
+          case "hit" => sender() ! id
+          case "end" => doneLatch.countDown()
         }
       })), "round-robin")
 
-      for (_ ← 1 to iterationCount; _ ← 1 to connectionCount) {
+      for (_ <- 1 to iterationCount; _ <- 1 to connectionCount) {
         val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
-        replies = replies + (id → (replies(id) + 1))
+        replies += (id -> (replies(id) + 1))
       }
 
       counter.get should ===(connectionCount)
@@ -73,7 +73,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       actor ! akka.routing.Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ should ===(iterationCount) }
+      replies.values.foreach { _ should ===(iterationCount) }
     }
 
     "deliver a broadcast message using the !" in {
@@ -82,7 +82,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
         def receive = {
-          case "hello" ⇒ helloLatch.countDown()
+          case "hello" => helloLatch.countDown()
         }
 
         override def postStop(): Unit = {
@@ -123,13 +123,13 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val iterationCount = 10
       val doneLatch = new TestLatch(connectionCount)
 
-      var replies = Map.empty[String, Int].withDefaultValue(0)
+      var replies: Map[String, Int] = Map.empty.withDefaultValue(0)
 
-      val paths = (1 to connectionCount) map { n ⇒
+      val paths = (1 to connectionCount).map { n =>
         val ref = system.actorOf(Props(new Actor {
           def receive = {
-            case "hit" ⇒ sender() ! self.path.name
-            case "end" ⇒ doneLatch.countDown()
+            case "hit" => sender() ! self.path.name
+            case "end" => doneLatch.countDown()
           }
         }), name = "target-" + n)
         ref.path.toStringWithoutAddress
@@ -137,15 +137,15 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       val actor = system.actorOf(RoundRobinGroup(paths).props(), "round-robin-group1")
 
-      for (_ ← 1 to iterationCount; _ ← 1 to connectionCount) {
+      for (_ <- 1 to iterationCount; _ <- 1 to connectionCount) {
         val id = Await.result((actor ? "hit").mapTo[String], timeout.duration)
-        replies = replies + (id → (replies(id) + 1))
+        replies += (id -> (replies(id) + 1))
       }
 
       actor ! akka.routing.Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
-      replies.values foreach { _ should ===(iterationCount) }
+      replies.values.foreach { _ should ===(iterationCount) }
     }
   }
 
@@ -154,45 +154,47 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val connectionCount = 10
       val iterationCount = 10
 
-      var replies = Map.empty[String, Int].withDefaultValue(0)
+      var replies: Map[String, Int] = Map.empty.withDefaultValue(0)
 
       val actor = system.actorOf(Props(new Actor {
         var n = 0
         var router = Router(RoundRobinRoutingLogic())
 
         def receive = {
-          case p: Props ⇒
+          case p: Props =>
             n += 1
             val c = context.actorOf(p, name = "child-" + n)
             context.watch(c)
             router = router.addRoutee(c)
-          case Terminated(c) ⇒
+          case Terminated(c) =>
             router = router.removeRoutee(c)
             if (router.routees.isEmpty)
               context.stop(self)
-          case other ⇒ router.route(other, sender())
+          case other => router.route(other, sender())
         }
       }))
 
       val childProps = Props(new Actor {
         def receive = {
-          case "hit" ⇒ sender() ! self.path.name
-          case "end" ⇒ context.stop(self)
+          case "hit" => sender() ! self.path.name
+          case "end" => context.stop(self)
         }
       })
 
-      (1 to connectionCount) foreach { _ ⇒ actor ! childProps }
+      (1 to connectionCount).foreach { _ =>
+        actor ! childProps
+      }
 
-      for (_ ← 1 to iterationCount; _ ← 1 to connectionCount) {
+      for (_ <- 1 to iterationCount; _ <- 1 to connectionCount) {
         val id = Await.result((actor ? "hit").mapTo[String], timeout.duration)
-        replies = replies + (id → (replies(id) + 1))
+        replies += (id -> (replies(id) + 1))
       }
 
       watch(actor)
       actor ! akka.routing.Broadcast("end")
       expectTerminated(actor)
 
-      replies.values foreach { _ should ===(iterationCount) }
+      replies.values.foreach { _ should ===(iterationCount) }
     }
   }
 

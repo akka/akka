@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
-import java.io.{ FileInputStream, InputStreamReader }
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
+import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
+
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -25,7 +26,6 @@ object AkkaBuild {
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
-    Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
       version in ThisBuild := "2.5-SNAPSHOT"
@@ -46,8 +46,8 @@ object AkkaBuild {
 
   val (mavenLocalResolver, mavenLocalResolverSettings) =
     System.getProperty("akka.build.M2Dir") match {
-      case null ⇒ (Resolver.mavenLocal, Seq.empty)
-      case path ⇒
+      case null => (Resolver.mavenLocal, Seq.empty)
+      case path =>
         // Maven resolver settings
         def deliverPattern(outputPath: File): String =
           (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
@@ -78,12 +78,12 @@ object AkkaBuild {
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
   } ++ Seq(
-    pomIncludeRepository := (_ ⇒ false) // do not leak internal repositories during staging
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls")
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -98,7 +98,8 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (System.getProperty("java.version").startsWith("1.")) Seq()
+        if (System.getProperty("java.version").startsWith("1."))
+          Seq("-target:jvm-1.8")
         else
           if (scalaBinaryVersion.value == "2.11")
             Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
@@ -106,7 +107,7 @@ object AkkaBuild {
             // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
             Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
+      scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       javacOptions in compile ++= DefaultJavacOptions ++ (
         if (System.getProperty("java.version").startsWith("1."))
@@ -125,12 +126,22 @@ object AkkaBuild {
 
       crossVersion := CrossVersion.binary,
 
+      // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
+      // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
+      unmanagedSourceDirectories in Compile += {
+        val sourceDir = (sourceDirectory in Compile).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+          case _                       => sourceDir / "scala-2.13-"
+        }
+      },
+
       ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
       licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-      homepage := Some(url("http://akka.io/")),
+      homepage := Some(url("https://akka.io/")),
 
-      apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+      apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
 
       initialCommands :=
         """|import language.postfixOps
@@ -188,7 +199,7 @@ object AkkaBuild {
         val base = (javaOptions in Test).value
         val akkaSysProps: Seq[String] =
           sys.props.filter(_._1.startsWith("akka"))
-            .map { case (key, value) ⇒ s"-D$key=$value" }(breakOut)
+            .map { case (key, value) => s"-D$key=$value" }(breakOut)
 
         base ++ akkaSysProps
       },
@@ -198,12 +209,12 @@ object AkkaBuild {
       testGrouping in Test := {
         val original: Seq[Tests.Group] = (testGrouping in Test).value
 
-        original.map { group ⇒
+        original.map { group =>
           group.runPolicy match {
-            case Tests.SubProcess(forkOptions) ⇒
+            case Tests.SubProcess(forkOptions) =>
               group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
                 workingDirectory = Some(new File(System.getProperty("user.dir"))))))
-            case _ ⇒ group
+            case _ => group
           }
         }
       },
@@ -220,7 +231,12 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none"))
+    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
+
+
+  lazy val noScala211 = Seq(
+    crossScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("2.11"))
+  )
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._

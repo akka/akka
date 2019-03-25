@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -22,6 +22,7 @@ import akka.util.{ Helpers, JavaDurationConverters, Timeout }
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
+import akka.util.ccompat._
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -29,7 +30,7 @@ import scala.compat.java8.FutureConverters
  */
 @SerialVersionUID(1L)
 abstract class ActorSelection extends Serializable {
-  this: ScalaActorSelection ⇒
+  this: ScalaActorSelection =>
 
   protected[akka] val anchor: ActorRef
 
@@ -42,7 +43,9 @@ abstract class ActorSelection extends Serializable {
    * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
    */
   def tell(msg: Any, sender: ActorRef): Unit =
-    ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef], sender,
+    ActorSelection.deliverSelection(
+      anchor.asInstanceOf[InternalActorRef],
+      sender,
       ActorSelectionMessage(msg, path, wildcardFanOut = false))
 
   /**
@@ -50,7 +53,7 @@ abstract class ActorSelection extends Serializable {
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
+  def forward(message: Any)(implicit context: ActorContext): Unit = tell(message, context.sender())
 
   /**
    * Resolve the [[ActorRef]] matching this selection.
@@ -65,9 +68,9 @@ abstract class ActorSelection extends Serializable {
   def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
     val p = Promise[ActorRef]()
-    this.ask(Identify(None)) onComplete {
-      case Success(ActorIdentity(_, Some(ref))) ⇒ p.success(ref)
-      case _                                    ⇒ p.failure(ActorNotFound(this))
+    this.ask(Identify(None)).onComplete {
+      case Success(ActorIdentity(_, Some(ref))) => p.success(ref)
+      case _                                    => p.failure(ActorNotFound(this))
     }
     p.future
   }
@@ -94,6 +97,7 @@ abstract class ActorSelection extends Serializable {
    * supplied `timeout`.
    *
    */
+  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
   def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
     FutureConverters.toJava[ActorRef](resolveOne(timeout))
 
@@ -107,9 +111,22 @@ abstract class ActorSelection extends Serializable {
    * supplied `timeout`.
    *
    */
-  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = {
+  @deprecated("Use the overloaded method resolveOne which accepts java.time.Duration instead.", since = "2.5.20")
+  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = resolveOne(timeout)
+
+  /**
+   * Java API for [[#resolveOne]]
+   *
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   */
+  def resolveOne(timeout: java.time.Duration): CompletionStage[ActorRef] = {
     import JavaDurationConverters._
-    resolveOneCS(timeout.asScala)
+    FutureConverters.toJava[ActorRef](resolveOne(timeout.asScala))
   }
 
   override def toString: String = {
@@ -139,8 +156,8 @@ abstract class ActorSelection extends Serializable {
    */
   def toSerializationFormat: String = {
     val anchorPath = anchor match {
-      case a: ActorRefWithCell ⇒ anchor.path.toStringWithAddress(a.provider.getDefaultAddress)
-      case _                   ⇒ anchor.path.toString
+      case a: ActorRefWithCell => anchor.path.toStringWithAddress(a.provider.getDefaultAddress)
+      case _                   => anchor.path.toString
     }
 
     val builder = new java.lang.StringBuilder()
@@ -154,8 +171,8 @@ abstract class ActorSelection extends Serializable {
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case s: ActorSelection ⇒ this.anchor == s.anchor && this.path == s.path
-    case _                 ⇒ false
+    case s: ActorSelection => this.anchor == s.anchor && this.path == s.path
+    case _                 => false
   }
 
   override lazy val hashCode: Int = {
@@ -189,12 +206,14 @@ object ActorSelection {
    * intention is to send messages frequently.
    */
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
-    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.collect({
-      case x if !x.isEmpty ⇒
-        if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
-        else if (x == "..") SelectParent
-        else SelectChildName(x)
-    })(scala.collection.breakOut)
+    val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
+      .collect({
+        case x if !x.isEmpty =>
+          if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
+          else if (x == "..") SelectParent
+          else SelectChildName(x)
+      })
+      .to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled
@@ -215,19 +234,21 @@ object ActorSelection {
 
       @tailrec def rec(ref: InternalActorRef): Unit = {
         ref match {
-          case refWithCell: ActorRefWithCell ⇒
-
-            def emptyRef = new EmptyLocalActorRef(refWithCell.provider, anchor.path / sel.elements.map(_.toString),
-              refWithCell.underlying.system.eventStream)
+          case refWithCell: ActorRefWithCell =>
+            def emptyRef =
+              new EmptyLocalActorRef(
+                refWithCell.provider,
+                anchor.path / sel.elements.map(_.toString),
+                refWithCell.underlying.system.eventStream)
 
             iter.next() match {
-              case SelectParent ⇒
+              case SelectParent =>
                 val parent = ref.getParent
                 if (iter.isEmpty)
                   parent.tell(sel.msg, sender)
                 else
                   rec(parent)
-              case SelectChildName(name) ⇒
+              case SelectChildName(name) =>
                 val child = refWithCell.getSingleChild(name)
                 if (child == Nobody) {
                   // don't send to emptyRef after wildcard fan-out
@@ -236,18 +257,18 @@ object ActorSelection {
                   child.tell(sel.msg, sender)
                 else
                   rec(child)
-              case p: SelectChildPattern ⇒
+              case p: SelectChildPattern =>
                 // fan-out when there is a wildcard
                 val chldr = refWithCell.children
                 if (iter.isEmpty) {
                   // leaf
-                  val matchingChildren = chldr.filter(c ⇒ p.pattern.matcher(c.path.name).matches)
+                  val matchingChildren = chldr.filter(c => p.pattern.matcher(c.path.name).matches)
                   if (matchingChildren.isEmpty && !sel.wildcardFanOut)
                     emptyRef.tell(sel, sender)
                   else
                     matchingChildren.foreach(_.tell(sel.msg, sender))
                 } else {
-                  val matchingChildren = chldr.filter(c ⇒ p.pattern.matcher(c.path.name).matches)
+                  val matchingChildren = chldr.filter(c => p.pattern.matcher(c.path.name).matches)
                   // don't send to emptyRef after wildcard fan-out
                   if (matchingChildren.isEmpty && !sel.wildcardFanOut)
                     emptyRef.tell(sel, sender)
@@ -255,12 +276,12 @@ object ActorSelection {
                     val m = sel.copy(
                       elements = iter.toVector,
                       wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
-                    matchingChildren.foreach(c ⇒ deliverSelection(c.asInstanceOf[InternalActorRef], sender, m))
+                    matchingChildren.foreach(c => deliverSelection(c.asInstanceOf[InternalActorRef], sender, m))
                   }
                 }
             }
 
-          case _ ⇒
+          case _ =>
             // foreign ref, continue by sending ActorSelectionMessage to it with remaining elements
             ref.tell(sel.copy(elements = iter.toVector), sender)
         }
@@ -275,9 +296,9 @@ object ActorSelection {
  * as per the usual implicit ActorRef pattern.
  */
 trait ScalaActorSelection {
-  this: ActorSelection ⇒
+  this: ActorSelection =>
 
-  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
+  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = tell(msg, sender)
 }
 
 /**
@@ -288,14 +309,15 @@ trait ScalaActorSelection {
  */
 @SerialVersionUID(2L) // it has protobuf serialization in akka-remote
 private[akka] final case class ActorSelectionMessage(
-  msg:            Any,
-  elements:       immutable.Iterable[SelectionPathElement],
-  wildcardFanOut: Boolean)
-  extends AutoReceivedMessage with PossiblyHarmful {
+    msg: Any,
+    elements: immutable.Iterable[SelectionPathElement],
+    wildcardFanOut: Boolean)
+    extends AutoReceivedMessage
+    with PossiblyHarmful {
 
   def identifyRequest: Option[Identify] = msg match {
-    case x: Identify ⇒ Some(x)
-    case _           ⇒ None
+    case x: Identify => Some(x)
+    case _           => None
   }
 }
 
@@ -336,4 +358,3 @@ private[akka] case object SelectParent extends SelectionPathElement {
  */
 @SerialVersionUID(1L)
 final case class ActorNotFound(selection: ActorSelection) extends RuntimeException("Actor not found for: " + selection)
-

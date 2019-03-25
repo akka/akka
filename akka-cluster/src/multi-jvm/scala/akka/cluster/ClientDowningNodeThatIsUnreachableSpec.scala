@@ -1,17 +1,15 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
-import scala.collection.immutable
 
-final case class ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean)
+    extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -20,21 +18,31 @@ final case class ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetect
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
-class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
 
-class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4
+    extends ClientDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
 
-abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDowningNodeThatIsUnreachableMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+abstract class ClientDowningNodeThatIsUnreachableSpec(
+    multiNodeConfig: ClientDowningNodeThatIsUnreachableMultiNodeConfig)
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
-  def this(failureDetectorPuppet: Boolean) = this(ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet))
+  def this(failureDetectorPuppet: Boolean) =
+    this(ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet))
 
   import multiNodeConfig._
 

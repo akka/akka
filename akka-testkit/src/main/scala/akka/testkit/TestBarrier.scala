@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -32,9 +32,9 @@ class TestBarrier(count: Int) {
     try {
       barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
-      case e: TimeoutException ⇒
-        throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
-          format (timeout.toString, TestKitExtension(system).TestTimeFactor))
+      case _: TimeoutException =>
+        throw new TestBarrierTimeoutException(
+          "Timeout of %s and time factor of %s".format(timeout.toString, TestKitExtension(system).TestTimeFactor))
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.camel
@@ -12,21 +12,20 @@ import language.existentials
 object CustomRoute {
   object Sample1 {
     //#CustomRoute
-    import akka.actor.{ Props, ActorSystem, Actor, ActorRef }
-    import akka.camel.{ CamelMessage, CamelExtension }
+    import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+    import akka.camel.{ CamelExtension, CamelMessage }
     import org.apache.camel.builder.RouteBuilder
     import akka.camel._
     class Responder extends Actor {
       def receive = {
-        case msg: CamelMessage ⇒
-          sender() ! (msg.mapBody {
-            body: String ⇒ "received %s" format body
+        case msg: CamelMessage =>
+          sender() ! (msg.mapBody { body: String =>
+            "received %s".format(body)
           })
       }
     }
 
-    class CustomRouteBuilder(system: ActorSystem, responder: ActorRef)
-      extends RouteBuilder {
+    class CustomRouteBuilder(system: ActorSystem, responder: ActorRef) extends RouteBuilder {
       def configure: Unit = {
         from("jetty:http://localhost:8877/camel/custom").to(responder)
       }
@@ -47,10 +46,10 @@ object CustomRoute {
 
     class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
       def receive = {
-        case msg: CamelMessage ⇒ throw new Exception("error: %s" format msg.body)
+        case msg: CamelMessage => throw new Exception("error: %s".format(msg.body))
       }
-      override def onRouteDefinition = (rd) ⇒ rd.onException(classOf[Exception]).
-        handled(true).transform(Builder.exceptionMessage).end
+      override def onRouteDefinition =
+        (rd) => rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
 
       final override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
         sender() ! Failure(reason)

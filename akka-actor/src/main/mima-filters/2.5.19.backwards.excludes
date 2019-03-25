@@ -1,0 +1,15 @@
+# Changed caching of async DNS lookups to store them directly against the DnsProtocol.RequestType #25987
+# Internal API
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$QueryType")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$SrvType$")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.AsyncDnsCache.put")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv6Type$")
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsResolver$Ipv4Type$")
+
+# #25960 AddressTerminated in FunctionRef
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.FunctionRef.eventStream")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.FunctionRef.this")
+
+# Changes related to adding Scala 2.13.0-M5 support
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildrenIterable.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildRestartsIterable.this")

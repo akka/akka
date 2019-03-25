@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -16,11 +16,11 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "must correctly install the signal handler" in {
       val probe = TestProbe[Done]("probe")
       val behavior =
-        Behaviors.setup[Nothing] { context ⇒
+        Behaviors.setup[Nothing] { context =>
           val stoppedChild = context.spawn(Behaviors.stopped, "stopped-child")
           context.watch(stoppedChild)
           Behaviors.receiveSignal[Nothing] {
-            case (_, Terminated(`stoppedChild`)) ⇒
+            case (_, Terminated(`stoppedChild`)) =>
               probe.ref ! Done
               Behaviors.stopped
           }

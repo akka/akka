@@ -1,30 +1,25 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
 import language.postfixOps
-import scala.collection.immutable
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
-import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.Address
 import akka.actor.Props
 import akka.actor.PoisonPill
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Terminated
 import akka.actor.ActorSelection
 
 object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
@@ -44,6 +39,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
@@ -51,7 +47,7 @@ object ClusterSingletonManagerChaosSpec extends MultiNodeConfig {
     testActor ! EchoStarted
 
     def receive = {
-      case _ ⇒ sender() ! self
+      case _ => sender() ! self
     }
   }
 }
@@ -64,14 +60,17 @@ class ClusterSingletonManagerChaosMultiJvmNode5 extends ClusterSingletonManagerC
 class ClusterSingletonManagerChaosMultiJvmNode6 extends ClusterSingletonManagerChaosSpec
 class ClusterSingletonManagerChaosMultiJvmNode7 extends ClusterSingletonManagerChaosSpec
 
-class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonManagerChaosSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerChaosSpec
+    extends MultiNodeSpec(ClusterSingletonManagerChaosSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerChaosSpec._
 
   override def initialParticipants = roles.size
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createSingleton()
     }
   }
@@ -87,7 +86,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def crash(roles: RoleName*): Unit = {
     runOn(controller) {
-      roles foreach { r ⇒
+      roles.foreach { r =>
         log.info("Shutdown [{}]", node(r).address)
         testConductor.exit(r, 0).await
       }
@@ -102,7 +101,7 @@ class ClusterSingletonManagerChaosSpec extends MultiNodeSpec(ClusterSingletonMan
       memberProbe.expectMsgType[MemberUp](15.seconds).member.address should ===(node(nodes.head).address)
     }
     runOn(nodes.head) {
-      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) ⇒ m.address }.toSet should ===(
+      memberProbe.receiveN(nodes.size, 15.seconds).collect { case MemberUp(m) => m.address }.toSet should ===(
         nodes.map(node(_).address).toSet)
     }
     enterBarrier(nodes.head.name + "-up")

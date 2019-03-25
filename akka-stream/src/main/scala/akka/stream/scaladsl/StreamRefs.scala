@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.annotation.ApiMayChange
-import akka.stream.{ SinkRef, SourceRef, StreamRefAttributes }
+import akka.stream.{ SinkRef, SourceRef }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.util.OptionVal
 

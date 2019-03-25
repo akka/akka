@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -25,7 +25,7 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
       val ring = HeartbeatNodeRing(cc, nodes, Set.empty, 3)
       ring.myReceivers should ===(ring.receivers(cc))
 
-      nodes foreach { n ⇒
+      nodes.foreach { n =>
         val receivers = ring.receivers(n)
         receivers.size should ===(3)
         receivers should not contain (n)

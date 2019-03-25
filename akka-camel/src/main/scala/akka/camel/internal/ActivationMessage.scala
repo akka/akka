@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel.internal
@@ -7,6 +7,7 @@ package akka.camel.internal
 import akka.actor.ActorRef
 
 private[camel] object ActivationProtocol {
+
   /**
    * Super class of all activation messages. Registration of the Camel [[akka.camel.Consumer]]s and [[akka.camel.Producer]]s
    * is done asynchronously. Activation messages are sent in the Camel extension when endpoints are

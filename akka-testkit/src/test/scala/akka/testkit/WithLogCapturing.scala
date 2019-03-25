@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -14,7 +14,7 @@ import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 /**
  * Mixin this trait to a test to make log lines appear only when the test failed.
  */
-trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
+trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
   implicit def system: ActorSystem
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
@@ -48,7 +48,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
   }
 
   /** Adds a prefix to every line printed out during execution of the thunk. */
-  private def withPrefixedOut[T](prefix: String)(thunk: ⇒ T): T = {
+  private def withPrefixedOut[T](prefix: String)(thunk: => T): T = {
     val oldOut = Console.out
     val prefixingOut =
       new PrintStream(new OutputStream {
@@ -65,19 +65,19 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
 }
 
 /**
- * An adaption of TestEventListener that never prints debug logs itself. Use together with [[akka.http.impl.util.WithLogCapturing]].
+ * An adaption of TestEventListener that never prints debug logs itself. Use together with [[akka.testkit.WithLogCapturing]].
  * It allows to enable noisy DEBUG logging for tests and silence pre/post test DEBUG output completely while still showing
  * test-specific DEBUG output selectively
  */
 class DebugLogSilencingTestEventListener extends TestEventListener {
   override def print(event: Any): Unit = event match {
-    case d: Debug ⇒ // ignore
-    case _        ⇒ super.print(event)
+    case _: Debug => // ignore
+    case _        => super.print(event)
   }
 }
 
 /**
- * An adaption of TestEventListener that does not print out any logs. Use together with [[akka.http.impl.util.WithLogCapturing]].
+ * An adaption of TestEventListener that does not print out any logs. Use together with [[akka.testkit.WithLogCapturing]].
  * It allows to enable noisy logging for tests and silence pre/post test log output completely while still showing
  * test-specific log output selectively on failures.
  */

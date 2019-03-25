@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -16,8 +16,7 @@ class SinkRecipeDocSpec extends RecipeSpec {
       //#forseachAsync-processing
       //def asyncProcessing(value: Int): Future[Unit] = _
 
-      Source(1 to 100)
-        .runWith(Sink.foreachAsync(10)(asyncProcessing))
+      Source(1 to 100).runWith(Sink.foreachAsync(10)(asyncProcessing))
       //#forseachAsync-processing
     }
   }

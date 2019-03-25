@@ -1,0 +1,2 @@
+# Rename internal method #25840
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.getEntity")

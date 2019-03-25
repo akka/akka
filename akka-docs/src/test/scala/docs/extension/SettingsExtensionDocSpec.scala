@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.extension
@@ -23,9 +23,7 @@ import akka.testkit.AkkaSpec
 class SettingsImpl(config: Config) extends Extension {
   val DbUri: String = config.getString("myapp.db.uri")
   val CircuitBreakerTimeout: Duration =
-    Duration(
-      config.getMilliseconds("myapp.circuit-breaker.timeout"),
-      TimeUnit.MILLISECONDS)
+    Duration(config.getMilliseconds("myapp.circuit-breaker.timeout"), TimeUnit.MILLISECONDS)
 }
 //#extension
 
@@ -67,7 +65,7 @@ object SettingsExtensionDocSpec {
 
     //#extension-usage-actor
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
     }
 
     def connect(dbUri: String, circuitBreakerTimeout: Duration) = {

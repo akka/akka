@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.javadsl
@@ -19,7 +19,9 @@ trait CurrentEventsByPersistenceIdQuery extends ReadJournal {
    * the "result set". Events that are stored after the query is completed are
    * not included in the event stream.
    */
-  def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long,
-                                   toSequenceNr: Long): Source[EventEnvelope, NotUsed]
+  def currentEventsByPersistenceId(
+      persistenceId: String,
+      fromSequenceNr: Long,
+      toSequenceNr: Long): Source[EventEnvelope, NotUsed]
 
 }

@@ -30,13 +30,13 @@ to see what this looks like in practice.
 
 ## Introduction
 
-Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
-is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
-persistence is that only changes to an actor's internal state are persisted but never its current state directly
-(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
-allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
-changes to these actors from which they can rebuild internal state. This can be either the full history of changes
-or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
+Akka persistence enables stateful actors to persist their state so that it can be recovered when an actor
+is either restarted, such as after a JVM crash, by a supervisor or a manual stop-start, or migrated within a cluster. The key concept behind Akka
+persistence is that only the _events_ received by the actor are persisted, not the actual state of the actor
+(though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
+allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
+events to the actor, allowing it to rebuild its state. This can be either the full history of changes
+or starting from a checkpoint in a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
 communication with at-least-once message delivery semantics.
 
 @@@ note
@@ -59,14 +59,14 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
  * @scala[`PersistentActor`]@java[`AbstractPersistentActor`]: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
 them in a thread-safe manner. It can be used to implement both *command* as well as *event sourced* actors.
 When a persistent actor is started or restarted, journaled messages are replayed to that actor so that it can
-recover internal state from these messages.
+recover its state from these messages.
  * @scala[`AtLeastOnceDelivery`]@java[`AbstractPersistentActorAtLeastOnceDelivery`]: To send messages with at-least-once delivery semantics to destinations, also in
 case of sender and receiver JVM crashes.
  * `AsyncWriteJournal`: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
 The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
 Replicated journals are available as [Community plugins](http://akka.io/community/).
- * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's internal state. Snapshots are
+ * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](http://akka.io/community/)
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
@@ -131,7 +131,7 @@ The easiest way to run this example yourself is to download the ready to run
 @scala[@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)]
 @java[@extref[Akka Persistence Sample with Java](ecs:akka-samples-persistence-java)]
 together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-sample-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-persistence-java)].
+The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-samples-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-persistence-java)].
 
 @@@ note
 
@@ -466,6 +466,8 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #backoff }
 
+See @ref:[Supervision strategies](general/supervision.md#supervision-strategies) for more details about actor supervision.
+
 If persistence of an event is rejected before it is stored, e.g. due to serialization error,
 `onPersistRejected` will be invoked (logging a warning by default), and the actor continues with
 next message.
@@ -649,7 +651,7 @@ where `metadata` is of type `SnapshotMetadata`:
 
 @@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
 
-During recovery, the persistent actor is offered a previously saved snapshot via a `SnapshotOffer` message from
+During recovery, the persistent actor is offered the latest saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.
 
 Scala
@@ -679,7 +681,7 @@ saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
 or the @scala[`PersistentActor`]@java[persistent actor] can pick a snapshot store explicitly by overriding @scala[`def snapshotPluginId: String`]@java[`String snapshotPluginId()`].
 
-Since it is acceptable for some applications to not use any snapshotting, it is legal to not configure a snapshot store.
+Because some use cases may not benefit from or need snapshots, it is perfectly valid not to not configure a snapshot store.
 However, Akka will log a warning message when this situation is detected and then continue to operate until
 an actor tries to store a snapshot, at which point the operation will fail (by replying with an `SaveSnapshotFailure` for example).
 
@@ -727,7 +729,7 @@ active entity (`PersistentActor`) for each id within a data center. Lightbend's
 [Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
 supports active-active persistent entities across data centers.
 
-The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices 
 around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
 @scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
 @java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 

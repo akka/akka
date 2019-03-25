@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -8,7 +8,7 @@ import akka.actor.typed._
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.util.Timeout
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -36,7 +36,7 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
+trait ActorContext[T] extends TypedActorContext[T] {
 
   /**
    * Get the `javadsl` of this `ActorContext`.
@@ -65,12 +65,26 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
   def system: ActorSystem[Nothing]
 
   /**
-   * An actor specific logger
+   * An actor specific logger.
+   *
+   * The logger will have the actor path as `logSource` and will an estimated source class for the actor
+   * which is calculated when the logger is first used (the logger is lazily created upon first use). If this
+   * yields the wrong class or another class is preferred this can be achieved through `Logger.withLoggerClass`
+   * or `setLoggerClass`.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
   def log: Logger
+
+  /**
+   * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
+   * has ghe given class as logging class. Logger source will be actor path.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   */
+  def setLoggerClass(clazz: Class[_]): Unit
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
@@ -167,7 +181,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
+  def setReceiveTimeout(timeout: FiniteDuration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.
@@ -215,12 +229,12 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * The function is applied inside the "parent" actor and can safely access
    * state of the "parent".
    */
-  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U]
 
   /**
    * INTERNAL API: See `spawnMessageAdapter` with name parameter
    */
-  @InternalApi private[akka] def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U]
+  @InternalApi private[akka] def spawnMessageAdapter[U](f: U => T): ActorRef[U]
 
   /**
    * Create a message adapter that will convert or wrap messages such that other Actor’s
@@ -248,7 +262,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U]
+  def messageAdapter[U: ClassTag](f: U => T): ActorRef[U]
 
   /**
    * Perform a single request-response message interaction with another actor, and transform the messages back to
@@ -273,6 +287,16 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+
+  /**
+   * Sends the result of the given `Future` to this Actor (“`self`”), after adapted it with
+   * the given function.
+   *
+   * This method is thread-safe and can be called from other threads than the ordinary
+   * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
+   */
+  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit
 
 }

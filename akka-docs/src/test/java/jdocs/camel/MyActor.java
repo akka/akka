@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.camel;
-//#ProducerTemplate
+// #ProducerTemplate
 import akka.actor.UntypedAbstractActor;
 import akka.camel.Camel;
 import akka.camel.CamelExtension;
@@ -16,4 +16,4 @@ public class MyActor extends UntypedAbstractActor {
     template.sendBody("direct:news", message);
   }
 }
-//#ProducerTemplate
+// #ProducerTemplate

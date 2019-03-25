@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.net.InetSocketAddress
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
 import akka.actor._
+import akka.util.ccompat._
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -70,8 +71,10 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * has been successfully enqueued to the O/S kernel.
    */
   final case class Send(payload: ByteString, ack: Any) extends Command {
-    require(ack
-      != null, "ack must be non-null. Use NoAck if you don't want acks.")
+    require(
+      ack
+        != null,
+      "ack must be non-null. Use NoAck if you don't want acks.")
 
     def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
   }
@@ -86,10 +89,11 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * All received datagrams will be sent to the designated `handler` actor.
    */
   final case class Connect(
-    handler:       ActorRef,
-    remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]           = None,
-    options:       immutable.Traversable[SocketOption] = Nil) extends Command
+      handler: ActorRef,
+      remoteAddress: InetSocketAddress,
+      localAddress: Option[InetSocketAddress] = None,
+      options: immutable.Traversable[SocketOption] = Nil)
+      extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the
@@ -179,23 +183,21 @@ object UdpConnectedMessage {
    * All received datagrams will be sent to the designated `handler` actor.
    */
   def connect(
-    handler:       ActorRef,
-    remoteAddress: InetSocketAddress,
-    localAddress:  InetSocketAddress,
-    options:       JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
+      handler: ActorRef,
+      remoteAddress: InetSocketAddress,
+      localAddress: InetSocketAddress,
+      options: JIterable[SocketOption]): Command = Connect(handler, remoteAddress, Some(localAddress), options)
+
   /**
    * Connect without specifying the `localAddress`.
    */
-  def connect(
-    handler:       ActorRef,
-    remoteAddress: InetSocketAddress,
-    options:       JIterable[SocketOption]): Command = Connect(handler, remoteAddress, None, options)
+  def connect(handler: ActorRef, remoteAddress: InetSocketAddress, options: JIterable[SocketOption]): Command =
+    Connect(handler, remoteAddress, None, options)
+
   /**
    * Connect without specifying the `localAddress` or `options`.
    */
-  def connect(
-    handler:       ActorRef,
-    remoteAddress: InetSocketAddress): Command = Connect(handler, remoteAddress, None, Nil)
+  def connect(handler: ActorRef, remoteAddress: InetSocketAddress): Command = Connect(handler, remoteAddress, None, Nil)
 
   /**
    * This message is understood by the connection actors to send data to their
@@ -206,6 +208,7 @@ object UdpConnectedMessage {
    * has been successfully enqueued to the O/S kernel.
    */
   def send(data: ByteString, ack: AnyRef): Command = Send(data, ack)
+
   /**
    * Send without requesting acknowledgment.
    */
@@ -246,8 +249,8 @@ object UdpConnectedMessage {
    */
   def resumeReading: Command = ResumeReading
 
-  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
     import scala.collection.JavaConverters._
-    coll.asScala.to[immutable.Traversable]
+    coll.asScala.to(immutable.Iterable)
   }
 }

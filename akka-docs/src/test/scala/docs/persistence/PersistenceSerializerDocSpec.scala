@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
@@ -8,7 +8,7 @@ import com.typesafe.config._
 import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
-import akka.serialization.{ Serializer, SerializationExtension }
+import akka.serialization.{ SerializationExtension, Serializer }
 import akka.testkit.TestKit
 
 class PersistenceSerializerDocSpec extends WordSpec {

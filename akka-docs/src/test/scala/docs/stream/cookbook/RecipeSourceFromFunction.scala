@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -17,7 +17,7 @@ class RecipeSourceFromFunction extends RecipeSpec {
       def builderFunction(): String = UUID.randomUUID.toString
 
       //#source-from-function
-      val source = Source.repeat(NotUsed).map(_ ⇒ builderFunction())
+      val source = Source.repeat(NotUsed).map(_ => builderFunction())
       //#source-from-function
 
       val f = source.take(2).runWith(Sink.seq)

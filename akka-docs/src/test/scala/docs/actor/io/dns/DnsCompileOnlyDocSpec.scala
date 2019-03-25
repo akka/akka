@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor.io.dns
@@ -34,16 +34,16 @@ object DnsCompileOnlyDocSpec {
 
   {
     //#actor-api-async
-    val resolved: Future[DnsProtocol.Resolved] = (IO(Dns) ? DnsProtocol.Resolve("google.com")).mapTo[DnsProtocol.Resolved]
+    val resolved: Future[DnsProtocol.Resolved] =
+      (IO(Dns) ? DnsProtocol.Resolve("google.com")).mapTo[DnsProtocol.Resolved]
     //#actor-api-async
   }
 
   {
     //#srv
-    val resolved: Future[DnsProtocol.Resolved] = (IO(Dns) ? DnsProtocol.Resolve("your-service", Srv))
-      .mapTo[DnsProtocol.Resolved]
+    val resolved: Future[DnsProtocol.Resolved] =
+      (IO(Dns) ? DnsProtocol.Resolve("your-service", Srv)).mapTo[DnsProtocol.Resolved]
     //#srv
   }
 
 }
-

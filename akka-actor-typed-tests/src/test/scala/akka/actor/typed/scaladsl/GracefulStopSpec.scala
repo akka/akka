@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -19,27 +19,24 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context =>
           context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) ⇒
+            case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
           context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) ⇒
+            case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child2")
 
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! "parent-done"
-                Behaviors.same
-            }
+          Behaviors.stopped { () =>
+            // cleanup function body
+            probe.ref ! "parent-done"
           }
+
         }
 
       spawn(behavior)
@@ -52,15 +49,11 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { _ ⇒
+        Behaviors.setup[akka.NotUsed] { _ =>
           // do not spawn any children
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! Done
-                Behaviors.same
-            }
+          Behaviors.stopped { () =>
+            // cleanup function body
+            probe.ref ! Done
           }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.compat.java8.FunctionConverters._
 
@@ -29,17 +29,17 @@ import scala.compat.java8.FunctionConverters._
     effectQueue.offer(new SpawnedAnonymous(behavior, props, ref))
     ref
   }
-  override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] = {
+  override def spawnMessageAdapter[U](f: U => T): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f)
     effectQueue.offer(new SpawnedAnonymousAdapter(ref))
     ref
   }
-  override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
+  override def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f, name)
     effectQueue.offer(new SpawnedAdapter(name, ref))
     ref
   }
-  override def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U] = {
+  override def messageAdapter[U: ClassTag](f: U => T): ActorRef[U] = {
     val ref = super.messageAdapter(f)
     effectQueue.offer(MessageAdapter(implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]], f))
     ref
@@ -83,4 +83,3 @@ import scala.compat.java8.FunctionConverters._
     super.scheduleOnce(delay, target, message)
   }
 }
-

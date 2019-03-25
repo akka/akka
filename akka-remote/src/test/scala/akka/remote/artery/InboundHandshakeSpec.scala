@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -36,13 +36,16 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+  private def setupStream(
+      inboundContext: InboundContext,
+      timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
-    TestSource.probe[AnyRef]
-      .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid,
-        inboundContext.association(addressA.uid)))
+    TestSource
+      .probe[AnyRef]
+      .map(msg =>
+        InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, inboundContext.association(addressA.uid)))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
-      .map { case env: InboundEnvelope ⇒ env.message }
+      .map { case env: InboundEnvelope => env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }
@@ -70,8 +73,10 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       upstream.sendNext(HandshakeReq(addressA, addressB.address))
       upstream.sendNext("msg1")
       downstream.expectNext("msg1")
-      val uniqueRemoteAddress = Await.result(
-        inboundContext.association(addressA.address).associationState.uniqueRemoteAddress, remainingOrDefault)
+      val uniqueRemoteAddress =
+        Await.result(
+          inboundContext.association(addressA.address).associationState.uniqueRemoteAddress,
+          remainingOrDefault)
       uniqueRemoteAddress should ===(addressA)
       downstream.cancel()
     }

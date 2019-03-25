@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -10,15 +10,13 @@ import language.postfixOps
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
-import akka.testkit._
+import testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
       """).withFallback(RemotingMultiNodeSpec.commonConfig)))
@@ -44,19 +42,19 @@ class ArteryNewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec(new NewRemote
 object NewRemoteActorSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 
   class SomeActorWithParam(ignored: String) extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 }
 
 abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import NewRemoteActorSpec._
 
@@ -127,7 +125,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
         // master system is supposed to be shutdown after slave
         // this should be triggered by slave system.terminate
-        expectMsgPF() { case Terminated(`actor`) ⇒ true }
+        expectMsgPF() { case Terminated(`actor`) => true }
       }
 
       runOn(slave) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
@@ -29,9 +29,11 @@ object ManualTime {
    */
   def get[A](system: ActorSystem[A]): ManualTime =
     system.scheduler match {
-      case sc: akka.testkit.ExplicitlyTriggeredScheduler ⇒ new ManualTime(sc)
-      case _ ⇒ throw new IllegalArgumentException("ActorSystem not configured with explicitly triggered scheduler, " +
-        "make sure to include akka.actor.testkit.typed.javadsl.ManualTime.config() when setting up the test")
+      case sc: akka.testkit.ExplicitlyTriggeredScheduler => new ManualTime(sc)
+      case _ =>
+        throw new IllegalArgumentException(
+          "ActorSystem not configured with explicitly triggered scheduler, " +
+          "make sure to include akka.actor.testkit.typed.javadsl.ManualTime.config() when setting up the test")
     }
 
 }

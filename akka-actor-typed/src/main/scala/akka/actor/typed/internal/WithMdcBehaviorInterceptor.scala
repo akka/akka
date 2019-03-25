@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal }
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
 
 import scala.collection.immutable.HashMap
@@ -14,12 +14,12 @@ import scala.collection.immutable.HashMap
  * INTERNAL API
  */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
-  val noMdcPerMessage = (_: Any) ⇒ Map.empty[String, Any]
+  val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
 
   def apply[T](
-    staticMdc:     Map[String, Any],
-    mdcForMessage: T ⇒ Map[String, Any],
-    behavior:      Behavior[T]): Behavior[T] = {
+      staticMdc: Map[String, Any],
+      mdcForMessage: T => Map[String, Any],
+      behavior: Behavior[T]): Behavior[T] = {
 
     val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
     BehaviorImpl.intercept(interceptor)(behavior)
@@ -33,12 +33,13 @@ import scala.collection.immutable.HashMap
  * INTERNAL API
  */
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
-  staticMdc:     Map[String, Any],
-  mdcForMessage: T ⇒ Map[String, Any]) extends BehaviorInterceptor[T, T] {
+    staticMdc: Map[String, Any],
+    mdcForMessage: T => Map[String, Any])
+    extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
-  override def aroundStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
+  override def aroundStart(ctx: TypedActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     // when declaring we expect the outermost to win
     // for example with
     // val behavior = ...
@@ -49,30 +50,30 @@ import scala.collection.immutable.HashMap
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) ⇒
+        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
-          loop(i.nestedBehavior.asInstanceOf[Behavior[T]])
+          loop(i.nestedBehavior)
 
-        case w: WrappingBehavior[T, T] ⇒
+        case w: WrappingBehavior[T, T] =>
           val nested = w.nestedBehavior
           val inner = loop(nested)
           if (inner eq nested) w
           else w.replaceNested(inner)
 
-        case b ⇒ b
+        case b => b
       }
     }
 
-    loop(target.start(ctx)).asInstanceOf[Behavior[T]]
+    loop(target.start(ctx))
   }
 
   // in the normal case, a new withMDC replaces the previous one
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case _: WithMdcBehaviorInterceptor[_] ⇒ true
-    case _                                ⇒ false
+    case _: WithMdcBehaviorInterceptor[_] => true
+    case _                                => false
   }
 
-  override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val mdc = merge(staticMdc, mdcForMessage(msg))
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =
@@ -84,7 +85,7 @@ import scala.collection.immutable.HashMap
     next
   }
 
-  override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
     try {
       target(ctx, signal)

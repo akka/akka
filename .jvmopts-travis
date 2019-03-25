@@ -1,0 +1,7 @@
+# This is used to configure the sbt instance that Travis launches
+
+-Xms2G
+-Xmx2G
+-Xss2M
+-XX:ReservedCodeCacheSize=256m
+

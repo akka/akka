@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -11,7 +11,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 18
+  private val latestPatchOf25 = 21
   private val latestPatchOf24 = 20
 
   override def requires = MimaPlugin
@@ -23,8 +23,9 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions: Seq[String] = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = (0 to latestPatchOf25).map(patch ⇒ s"2.5.$patch")
-      val akka24StreamVersions = (2 to 12) map ("2.4." + _)
+      val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
+      val akka24StreamVersions = (2 to 12).map("2.4." + _)
+      val akka25DiscoveryVersions = (19 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka24WithScala212 =
         (13 to latestPatchOf24)
           .map("2.4." + _)
@@ -35,17 +36,24 @@ object MiMa extends AutoPlugin {
         "akka-stream-testkit")
       val akka250NewArtifacts = Seq(
         "akka-persistence-query")
+      val akka2519NewArtifacts = Seq(
+        "akka-discovery"
+      )
 
       scalaBinaryVersion match {
-        case "2.11" ⇒
-          if (akka250NewArtifacts.contains(projectName)) akka25Versions
+        case "2.11" =>
+          if (akka2519NewArtifacts.contains(projectName))
+            akka25DiscoveryVersions
+          else if (akka250NewArtifacts.contains(projectName)) akka25Versions
           else {
             if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
             else Seq.empty
           } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
 
-        case "2.12" ⇒
-          if (akka250NewArtifacts.contains(projectName))
+        case "2.12" =>
+          if (akka2519NewArtifacts.contains(projectName))
+            akka25DiscoveryVersions
+          else if (akka250NewArtifacts.contains(projectName))
             akka25Versions
           else
             akka24WithScala212 ++ akka25Versions
@@ -61,7 +69,7 @@ object MiMa extends AutoPlugin {
       "akka-distributed-data")
 
     // check against all binary compatible artifacts
-    versions.map { v ⇒
+    versions.map { v =>
       val adjustedProjectName =
         if (akka25PromotedArtifacts(projectName) && v.startsWith("2.4"))
           projectName + "-experimental"

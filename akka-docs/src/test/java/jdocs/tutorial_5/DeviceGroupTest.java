@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.tutorial_5;
@@ -20,9 +20,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import org.scalatest.junit.JUnitSuite;
-
-import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class DeviceGroupTest extends JUnitSuite {
 
@@ -124,17 +122,17 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // using awaitAssert to retry because it might take longer for the groupActor
     // to see the Terminated, that order is undefined
-    probe.awaitAssert(() -> {
-      groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
-      DeviceGroup.ReplyDeviceList r = 
-        probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-      assertEquals(1L, r.requestId);
-      assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
-      return null;
-    });
+    probe.awaitAssert(
+        () -> {
+          groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
+          DeviceGroup.ReplyDeviceList r = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+          assertEquals(1L, r.requestId);
+          assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
+          return null;
+        });
   }
 
-  //#group-query-integration-test
+  // #group-query-integration-test
   @Test
   public void testCollectTemperaturesFromAllActiveDevices() {
     TestKit probe = new TestKit(system);
@@ -160,15 +158,16 @@ public class DeviceGroupTest extends JUnitSuite {
     // No temperature for device 3
 
     groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
-    DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
+    DeviceGroup.RespondAllTemperatures response =
+        probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
     assertEquals(0L, response.requestId);
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
     expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
-    expectedTemperatures.put("device3", new DeviceGroup.TemperatureNotAvailable());
+    expectedTemperatures.put("device3", DeviceGroup.TemperatureNotAvailable.INSTANCE);
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
-  //#group-query-integration-test
+  // #group-query-integration-test
 }

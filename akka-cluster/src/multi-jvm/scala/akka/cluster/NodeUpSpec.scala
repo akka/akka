@@ -1,11 +1,9 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -25,9 +23,7 @@ object NodeUpMultiJvmSpec extends MultiNodeConfig {
 class NodeUpMultiJvmNode1 extends NodeUpSpec
 class NodeUpMultiJvmNode2 extends NodeUpSpec
 
-abstract class NodeUpSpec
-  extends MultiNodeSpec(NodeUpMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class NodeUpSpec extends MultiNodeSpec(NodeUpMultiJvmSpec) with MultiNodeClusterSpec {
 
   import NodeUpMultiJvmSpec._
   import ClusterEvent._
@@ -56,9 +52,9 @@ abstract class NodeUpSpec
       val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.subscribe(system.actorOf(Props(new Actor {
         def receive = {
-          case event: MemberEvent ⇒
+          case event: MemberEvent =>
             unexpected.set(unexpected.get + event.member)
-          case _: CurrentClusterState ⇒ // ignore
+          case _: CurrentClusterState => // ignore
         }
       })), classOf[MemberEvent])
       enterBarrier("listener-registered")
@@ -69,7 +65,7 @@ abstract class NodeUpSpec
       enterBarrier("joined-again")
 
       // let it run for a while to make sure that nothing bad happens
-      for (n ← 1 to 20) {
+      for (n <- 1 to 20) {
         Thread.sleep(100.millis.dilated.toMillis)
         unexpected.get should ===(SortedSet.empty)
         clusterView.members.forall(_.status == MemberStatus.Up) should ===(true)

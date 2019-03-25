@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Prevent package clashes with the Java examples:
@@ -8,7 +8,7 @@ package docs.tutorial_1
 //#print-refs
 package com.example
 
-import akka.actor.{ Actor, Props, ActorSystem }
+import akka.actor.{ Actor, ActorSystem, Props }
 import scala.io.StdIn
 
 object PrintMyActorRefActor {
@@ -18,7 +18,7 @@ object PrintMyActorRefActor {
 
 class PrintMyActorRefActor extends Actor {
   override def receive: Receive = {
-    case "printit" ⇒
+    case "printit" =>
       val secondRef = context.actorOf(Props.empty, "second-actor")
       println(s"Second: $secondRef")
   }
@@ -27,12 +27,12 @@ class PrintMyActorRefActor extends Actor {
 
 import akka.testkit.AkkaSpec
 
+//#start-stop
 object StartStopActor1 {
   def props: Props =
     Props(new StartStopActor1)
 }
 
-//#start-stop
 class StartStopActor1 extends Actor {
   override def preStart(): Unit = {
     println("first started")
@@ -41,7 +41,7 @@ class StartStopActor1 extends Actor {
   override def postStop(): Unit = println("first stopped")
 
   override def receive: Receive = {
-    case "stop" ⇒ context.stop(self)
+    case "stop" => context.stop(self)
   }
 }
 
@@ -60,17 +60,17 @@ class StartStopActor2 extends Actor {
 }
 //#start-stop
 
+//#supervise
 object SupervisingActor {
   def props: Props =
     Props(new SupervisingActor)
 }
 
-//#supervise
 class SupervisingActor extends Actor {
   val child = context.actorOf(SupervisedActor.props, "supervised-actor")
 
   override def receive: Receive = {
-    case "failChild" ⇒ child ! "fail"
+    case "failChild" => child ! "fail"
   }
 }
 
@@ -84,7 +84,7 @@ class SupervisedActor extends Actor {
   override def postStop(): Unit = println("supervised actor stopped")
 
   override def receive: Receive = {
-    case "fail" ⇒
+    case "fail" =>
       println("supervised actor fails now")
       throw new Exception("I failed!")
   }

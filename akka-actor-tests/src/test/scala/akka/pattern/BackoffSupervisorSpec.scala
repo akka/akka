@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -23,8 +23,8 @@ object BackoffSupervisorSpec {
 
   class Child(probe: ActorRef) extends Actor {
     def receive = {
-      case "boom" ⇒ throw new TestException
-      case msg    ⇒ probe ! msg
+      case "boom" => throw new TestException
+      case msg    => probe ! msg
     }
   }
 
@@ -35,8 +35,8 @@ object BackoffSupervisorSpec {
 
   class ManualChild(probe: ActorRef) extends Actor {
     def receive = {
-      case "boom" ⇒ throw new TestException
-      case msg ⇒
+      case "boom" => throw new TestException
+      case msg =>
         probe ! msg
         context.parent ! BackoffSupervisor.Reset
     }
@@ -46,8 +46,10 @@ object BackoffSupervisorSpec {
 class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
-  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
+    Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
+    Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
@@ -89,19 +91,15 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       }
       filterException[TestException] {
         val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Stop
+          case _: TestException => SupervisorStrategy.Stop
         }
         val restartingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Restart
+          case _: TestException => SupervisorStrategy.Restart
         }
 
-        assertCustomStrategy(
-          create(onStopOptions()
-            .withSupervisorStrategy(stoppingStrategy)))
+        assertCustomStrategy(create(onStopOptions().withSupervisorStrategy(stoppingStrategy)))
 
-        assertCustomStrategy(
-          create(onFailureOptions()
-            .withSupervisorStrategy(restartingStrategy)))
+        assertCustomStrategy(create(onFailureOptions().withSupervisorStrategy(restartingStrategy)))
       }
     }
 
@@ -159,27 +157,27 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         }
 
         val stoppingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Stop
+          case _: TestException => SupervisorStrategy.Stop
         }
         val restartingStrategy = OneForOneStrategy() {
-          case _: TestException ⇒ SupervisorStrategy.Restart
+          case _: TestException => SupervisorStrategy.Restart
         }
 
         assertManualReset(
-          create(onStopOptions(ManualChild.props(testActor))
-            .withManualReset
-            .withSupervisorStrategy(stoppingStrategy)))
+          create(onStopOptions(ManualChild.props(testActor)).withManualReset.withSupervisorStrategy(stoppingStrategy)))
 
         assertManualReset(
-          create(onFailureOptions(ManualChild.props(testActor))
-            .withManualReset
-            .withSupervisorStrategy(restartingStrategy)))
+          create(
+            onFailureOptions(ManualChild.props(testActor)).withManualReset.withSupervisorStrategy(restartingStrategy)))
       }
     }
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1).withReplyWhileStopped("child was stopped"))
+        val supervisor = create(
+          Backoff
+            .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1)
+            .withReplyWhileStopped("child was stopped"))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -201,7 +199,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
+        val supervisor =
+          create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -232,15 +231,15 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           (29, 5.minutes, 10.minutes, 0d, 10.minutes),
           (29, 10000.days, 10000.days, 0d, 10000.days),
           (Int.MaxValue, 10000.days, 10000.days, 0d, 10000.days))
-      forAll(delayTable) { (
-        restartCount: Int,
-        minBackoff: FiniteDuration,
-        maxBackoff: FiniteDuration,
-        randomFactor: Double,
-        expectedResult: FiniteDuration) ⇒
-
-        val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-        assert(calculatedValue === expectedResult)
+      forAll(delayTable) {
+        (
+            restartCount: Int,
+            minBackoff: FiniteDuration,
+            maxBackoff: FiniteDuration,
+            randomFactor: Double,
+            expectedResult: FiniteDuration) =>
+          val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+          assert(calculatedValue === expectedResult)
       }
     }
 
@@ -330,9 +329,45 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         awaitAssert(c3 should !==(c2))
         watch(c3)
         c3 ! "boom"
-        expectTerminated(c3)
-        expectTerminated(supervisor)
+        withClue("Expected child and supervisor to terminate") {
+          Set(expectMsgType[Terminated].actor, expectMsgType[Terminated].actor) shouldEqual Set(c3, supervisor)
+        }
+
       }
+    }
+
+    "stop restarting the child if final stop message received (Backoff.onStop)" in {
+      val stopMessage = "stop"
+      val supervisor: ActorRef = create(onStopOptions(maxNrOfRetries = 100).withFinalStopMessage(_ == stopMessage))
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
+      watch(c1)
+      watch(supervisor)
+
+      supervisor ! stopMessage
+      expectMsg("stop")
+      c1 ! PoisonPill
+      expectTerminated(c1)
+      expectTerminated(supervisor)
+    }
+
+    "supervisor must not stop when final stop message has not been received" in {
+      val stopMessage = "stop"
+      val supervisorWatcher = TestProbe()
+      val supervisor: ActorRef = create(onStopOptions(maxNrOfRetries = 100).withFinalStopMessage(_ == stopMessage))
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
+      watch(c1)
+      watch(supervisor)
+      supervisorWatcher.watch(supervisor)
+
+      c1 ! PoisonPill
+      expectTerminated(c1)
+      supervisor ! "ping"
+      supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
+
+      supervisor ! stopMessage
+      expectTerminated(supervisor)
     }
   }
 }

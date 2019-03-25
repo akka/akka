@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -16,15 +16,20 @@ class SeparateDispatcherFutureActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Integer.class, i -> {
-        System.out.println("Calling blocking Future on separate dispatcher: " + i);
-        Future<Integer> f = Futures.future(() -> {
-          Thread.sleep(5000);
-          System.out.println("Blocking future finished: " + i);
-          return i;
-        }, ec);
-      })
-      .build();
+        .match(
+            Integer.class,
+            i -> {
+              System.out.println("Calling blocking Future on separate dispatcher: " + i);
+              Future<Integer> f =
+                  Futures.future(
+                      () -> {
+                        Thread.sleep(5000);
+                        System.out.println("Blocking future finished: " + i);
+                        return i;
+                      },
+                      ec);
+            })
+        .build();
   }
 }
 // #separate-dispatcher

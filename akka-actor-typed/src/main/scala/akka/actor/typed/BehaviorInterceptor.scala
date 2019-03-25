@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -18,12 +18,23 @@ abstract class BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
 
   /**
+   * Allows for applying the interceptor only to certain message types. Useful if the official protocol and the actual
+   * protocol of an actor causes problems, for example class cast exceptions for a message not of type `O` that
+   * the actor still knows how to deal with. Note that this is only possible to use when `O` and `I` are the same type.
+   *
+   * @return A subtype of `O` that should be intercepted or `null` to intercept all `O`s.
+   *         Subtypes of `O` matching this are passed directly to the inner behavior without interception.
+   */
+  // null for all to avoid having to deal with class tag/explicit class in the default case of no filter
+  def interceptMessageType: Class[_ <: O] = null
+
+  /**
    * Override to intercept actor startup. To trigger startup of
    * the next behavior in the stack, call `target.start()`.
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def aroundStart(ctx: ActorContext[O], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Behavior[I] =
     target.start(ctx)
 
   /**
@@ -33,7 +44,7 @@ abstract class BehaviorInterceptor[O, I] {
    *
    * @return The behavior for next message or signal
    */
-  def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
+  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I]
 
   /**
    * Intercept a signal sent to the running actor. Pass the signal on to the next behavior
@@ -41,7 +52,7 @@ abstract class BehaviorInterceptor[O, I] {
    *
    * @return The behavior for next message or signal
    */
-  def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
+  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
 
   /**
    * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
@@ -61,7 +72,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait PreStartTarget[T] {
-    def start(ctx: ActorContext[_]): Behavior[T]
+    def start(ctx: TypedActorContext[_]): Behavior[T]
   }
 
   /**
@@ -71,7 +82,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait ReceiveTarget[T] {
-    def apply(ctx: ActorContext[_], msg: T): Behavior[T]
+    def apply(ctx: TypedActorContext[_], msg: T): Behavior[T]
 
     /**
      * INTERNAL API
@@ -82,7 +93,7 @@ object BehaviorInterceptor {
      * is taking place.
      */
     @InternalApi
-    private[akka] def signalRestart(ctx: ActorContext[_]): Unit
+    private[akka] def signalRestart(ctx: TypedActorContext[_]): Unit
   }
 
   /**
@@ -92,7 +103,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait SignalTarget[T] {
-    def apply(ctx: ActorContext[_], signal: Signal): Behavior[T]
+    def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[T]
   }
 
 }

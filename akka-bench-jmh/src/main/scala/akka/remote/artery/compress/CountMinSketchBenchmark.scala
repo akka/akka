@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -32,7 +32,7 @@ class CountMinSketchBenchmark {
   @Setup
   def init(): Unit = {
     countMinSketch = new CountMinSketch(d, w, seed)
-    (0 to 8191).foreach { index ⇒
+    (0 to 8191).foreach { index =>
       preallocateIds(index) = rand.nextInt()
       preallocateValues(index) = Math.abs(rand.nextInt())
     }

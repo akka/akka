@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,7 +8,6 @@ import akka.Done
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 
@@ -53,7 +52,12 @@ class FlowWatchTerminationSpec extends StreamSpec {
     "complete future for graph" in assertAllStagesStopped {
       implicit val ec = system.dispatcher
 
-      val ((sourceProbe, future), sinkProbe) = TestSource.probe[Int].watchTermination()(Keep.both).concat(Source(2 to 5)).toMat(TestSink.probe[Int])(Keep.both).run()
+      val ((sourceProbe, future), sinkProbe) = TestSource
+        .probe[Int]
+        .watchTermination()(Keep.both)
+        .concat(Source(2 to 5))
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
       future.pipeTo(testActor)
       sinkProbe.request(5)
       sourceProbe.sendNext(1)
@@ -63,8 +67,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
       sourceProbe.sendComplete()
       expectMsg(Done)
 
-      sinkProbe.expectNextN(2 to 5)
-        .expectComplete()
+      sinkProbe.expectNextN(2 to 5).expectComplete()
     }
 
     "fail future when stream abruptly terminated" in {

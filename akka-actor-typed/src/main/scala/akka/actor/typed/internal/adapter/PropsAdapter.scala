@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -13,7 +13,10 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] object PropsAdapter {
-  def apply[T](behavior: () ⇒ Behavior[T], deploy: Props = Props.empty, isGuardian: Boolean = false): akka.actor.Props = {
+  def apply[T](
+      behavior: () => Behavior[T],
+      deploy: Props = Props.empty,
+      isGuardian: Boolean = false): akka.actor.Props = {
     val props =
       if (isGuardian)
         akka.actor.Props(new GuardianActorAdapter(behavior()))
@@ -21,8 +24,8 @@ import akka.annotation.InternalApi
         akka.actor.Props(new ActorAdapter(behavior()))
 
     (deploy.firstOrElse[DispatcherSelector](DispatcherDefault()) match {
-      case _: DispatcherDefault          ⇒ props
-      case DispatcherFromConfig(name, _) ⇒ props.withDispatcher(name)
+      case _: DispatcherDefault          => props
+      case DispatcherFromConfig(name, _) => props.withDispatcher(name)
     }).withDeploy(Deploy.local) // disallow remote deployment for typed actors
   }
 

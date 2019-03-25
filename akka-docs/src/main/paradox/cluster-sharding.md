@@ -173,8 +173,8 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `R1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `R1` can be handled by `R1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
+ 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
@@ -223,11 +223,19 @@ The logic that decides which shards to rebalance is defined in a pluggable shard
 allocation strategy. The default implementation `ShardCoordinator.LeastShardAllocationStrategy`
 picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
 They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
-i.e. new members in the cluster. There is a configurable threshold of how large the difference
-must be to begin the rebalancing. This strategy can be replaced by an application specific
-implementation.
+i.e. new members in the cluster.
 
-### Shard Coordinator State
+For the `LeastShardAllocationStrategy` there is a configurable threshold (`rebalance-threshold`) of
+how large the difference must be to begin the rebalancing. The difference between number of shards in
+the region with most shards and the region with least shards must be greater than the `rebalance-threshold`
+for the rebalance to occur.
+
+A `rebalance-threshold` of 1 gives the best distribution and therefore typically the best choice.
+A higher threshold means that more shards can be rebalanced at the same time instead of one-by-one.
+That has the advantage that the rebalance process can be quicker but has the drawback that the
+the number of shards (and therefore load) between different nodes may be significantly different.
+
+### ShardCoordinator State
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
 @ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. When a crashed or
@@ -404,6 +412,8 @@ Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
+
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
 
 ## Graceful Shutdown
 

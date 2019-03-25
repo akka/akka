@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi;
@@ -12,5 +12,4 @@ public class JAPI {
   public static <T> Seq<T> seq(T... ts) {
     return Util.immutableSeq(ts);
   }
-  
 }

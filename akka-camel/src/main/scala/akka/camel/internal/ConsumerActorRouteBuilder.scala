@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel.internal
@@ -20,14 +20,19 @@ import scala.language.existentials
  *
  *
  */
-private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: ActorRef, config: ConsumerConfig, settings: CamelSettings) extends RouteBuilder {
+private[camel] class ConsumerActorRouteBuilder(
+    endpointUri: String,
+    consumer: ActorRef,
+    config: ConsumerConfig,
+    settings: CamelSettings)
+    extends RouteBuilder {
 
   protected def targetActorUri = CamelPath.toUri(consumer, config.autoAck, config.replyTimeout)
 
   def configure(): Unit =
     applyUserRouteCustomization(
       settings.Conversions.apply(
-        endpointUri take endpointUri.indexOf(":"), // e.g. "http" from "http://whatever/..."
+        endpointUri.take(endpointUri.indexOf(":")), // e.g. "http" from "http://whatever/..."
         from(endpointUri).routeId(consumer.path.toString))).to(targetActorUri)
 
   def applyUserRouteCustomization(rd: RouteDefinition) = config.onRouteDefinition(rd)

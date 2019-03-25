@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -51,7 +51,7 @@ private[akka] final class AddressTerminatedTopic extends Extension {
   }
 
   def publish(msg: AddressTerminated): Unit = {
-    subscribers.get foreach { _.tell(msg, ActorRef.noSender) }
+    subscribers.get.foreach { _.tell(msg, ActorRef.noSender) }
   }
 
 }

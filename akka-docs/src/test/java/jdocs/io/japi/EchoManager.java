@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io.japi;
@@ -20,8 +20,7 @@ import akka.io.TcpMessage;
 
 public class EchoManager extends AbstractActor {
 
-  final LoggingAdapter log = Logging
-      .getLogger(getContext().getSystem(), getSelf());
+  final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), getSelf());
 
   final Class<?> handlerClass;
 
@@ -36,12 +35,11 @@ public class EchoManager extends AbstractActor {
 
   @Override
   public void preStart() throws Exception {
-    //#manager
+    // #manager
     final ActorRef tcpManager = Tcp.get(getContext().getSystem()).manager();
-    //#manager
+    // #manager
     tcpManager.tell(
-        TcpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0), 100),
-       getSelf());
+        TcpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0), 100), getSelf());
   }
 
   @Override
@@ -53,29 +51,37 @@ public class EchoManager extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .match(Bound.class, msg -> {
-        log.info("listening on [{}]", msg.localAddress());
-      })
-      .match(Tcp.CommandFailed.class, failed -> {
-        if (failed.cmd() instanceof Bind) {
-          log.warning("cannot bind to [{}]", ((Bind) failed.cmd()).localAddress());
-          getContext().stop(getSelf());
-        } else {
-          log.warning("unknown command failed [{}]", failed.cmd());
-        }
-      })
-      .match(Connected.class, conn -> {
-        log.info("received connection from [{}]", conn.remoteAddress());
-        final ActorRef connection = getSender();
-        final ActorRef handler = getContext().actorOf(
-            Props.create(handlerClass, connection, conn.remoteAddress()));
-        //#echo-manager
-        connection.tell(TcpMessage.register(handler,
-            true, // <-- keepOpenOnPeerClosed flag
-            true), getSelf());
-        //#echo-manager
-      })
-      .build();
+        .match(
+            Bound.class,
+            msg -> {
+              log.info("listening on [{}]", msg.localAddress());
+            })
+        .match(
+            Tcp.CommandFailed.class,
+            failed -> {
+              if (failed.cmd() instanceof Bind) {
+                log.warning("cannot bind to [{}]", ((Bind) failed.cmd()).localAddress());
+                getContext().stop(getSelf());
+              } else {
+                log.warning("unknown command failed [{}]", failed.cmd());
+              }
+            })
+        .match(
+            Connected.class,
+            conn -> {
+              log.info("received connection from [{}]", conn.remoteAddress());
+              final ActorRef connection = getSender();
+              final ActorRef handler =
+                  getContext()
+                      .actorOf(Props.create(handlerClass, connection, conn.remoteAddress()));
+              // #echo-manager
+              connection.tell(
+                  TcpMessage.register(
+                      handler, true, // <-- keepOpenOnPeerClosed flag
+                      true),
+                  getSelf());
+              // #echo-manager
+            })
+        .build();
   }
-
 }

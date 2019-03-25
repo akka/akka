@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.contrib.jul
@@ -19,9 +19,9 @@ object JavaLoggerSpec {
 
   class LogProducer extends Actor with ActorLogging {
     def receive = {
-      case e: Exception ⇒
+      case e: Exception =>
         log.error(e, e.getMessage)
-      case (s: String, x: Int) ⇒
+      case (s: String, x: Int) =>
         log.info(s, x)
     }
   }

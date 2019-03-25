@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.scaladsl
 
 import org.scalatest.WordSpecLike
 import akka.actor.testkit.typed.TestKitSettings
+import akka.cluster.ddata.SelfUniqueAddress
 
 // #sample
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
-import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
+import akka.cluster.ddata.{ GCounter, GCounterKey }
 import akka.actor.testkit.typed.scaladsl._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -27,8 +27,7 @@ import scala.concurrent.duration._
 
 object ReplicatorSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -47,12 +46,8 @@ object ReplicatorSpec {
 
   val Key = GCounterKey("counter")
 
-  def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
-    Behaviors.setup[ClientCommand] { ctx ⇒
-
-      // The distributed data types still need the implicit untyped Cluster.
-      // We will look into another solution for that.
-
+  def client(replicator: ActorRef[Replicator.Command])(implicit node: SelfUniqueAddress): Behavior[ClientCommand] =
+    Behaviors.setup[ClientCommand] { ctx =>
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.messageAdapter(InternalUpdateResponse.apply)
 
@@ -65,35 +60,36 @@ object ReplicatorSpec {
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
-        Behaviors.receive[ClientCommand] { (ctx, msg) ⇒
+        Behaviors.receive[ClientCommand] { (ctx, msg) =>
           msg match {
-            case Increment ⇒
-              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ + 1)
+            case Increment =>
+              replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ :+ 1)
               Behaviors.same
 
-            case GetValue(replyTo) ⇒
+            case GetValue(replyTo) =>
               replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
               Behaviors.same
 
-            case GetCachedValue(replyTo) ⇒
-              replicator ! Replicator.Get(Key, Replicator.ReadLocal, getResponseAdapter, Some(replyTo))
+            case GetCachedValue(replyTo) =>
+              replyTo ! cachedValue
               Behaviors.same
 
-            case internal: InternalMsg ⇒ internal match {
-              case InternalUpdateResponse(_) ⇒ Behaviors.same // ok
+            case internal: InternalMsg =>
+              internal match {
+                case InternalUpdateResponse(_) => Behaviors.same // ok
 
-              case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) ⇒
-                val value = rsp.get(Key).value.toInt
-                replyTo ! value
-                Behaviors.same
+                case InternalGetResponse(rsp @ Replicator.GetSuccess(Key, Some(replyTo: ActorRef[Int] @unchecked))) =>
+                  val value = rsp.get(Key).value.toInt
+                  replyTo ! value
+                  Behaviors.same
 
-              case InternalGetResponse(rsp) ⇒
-                Behaviors.unhandled // not dealing with failures
+                case InternalGetResponse(rsp) =>
+                  Behaviors.unhandled // not dealing with failures
 
-              case InternalChanged(chg @ Replicator.Changed(Key)) ⇒
-                val value = chg.get(Key).value.intValue
-                behavior(value)
-            }
+                case InternalChanged(chg @ Replicator.Changed(Key)) =>
+                  val value = chg.get(Key).value.intValue
+                  behavior(value)
+              }
           }
         }
       }
@@ -109,14 +105,14 @@ object ReplicatorSpec {
       implicit val scheduler: Scheduler = ???
       implicit val cluster: Cluster = ???
 
-      val reply1: Future[GetResponse[GCounter]] = replicator ? Replicator.Get(Key, Replicator.ReadLocal)
+      val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
 
       val reply2: Future[UpdateResponse[GCounter]] =
-        replicator ? Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1)
+        replicator.ask(Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal)(_ + 1))
 
-      val reply3: Future[DeleteResponse[GCounter]] = replicator ? Replicator.Delete(Key, Replicator.WriteLocal)
+      val reply3: Future[DeleteResponse[GCounter]] = replicator.ask(Replicator.Delete(Key, Replicator.WriteLocal))
 
-      val reply4: Future[ReplicaCount] = replicator ? Replicator.GetReplicaCount()
+      val reply4: Future[ReplicaCount] = replicator.ask(Replicator.GetReplicaCount())
 
       // suppress unused compiler warnings
       println("" + reply1 + reply2 + reply3 + reply4)
@@ -131,7 +127,7 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
 
   implicit val testSettings = TestKitSettings(system)
   val settings = ReplicatorSettings(system)
-  implicit val cluster = Cluster(system.toUntyped)
+  implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 
@@ -172,6 +168,9 @@ class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) wi
       c ! GetValue(probe.ref)
       probe.expectMessage(1)
     }
+
+    "have the prefixed replicator name" in {
+      ReplicatorSettings.name(system) should ===("typedDdataReplicator")
+    }
   }
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl.adapter
@@ -16,6 +16,7 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 @InternalApi private[akka] class AdapterExtension(sys: akka.actor.ActorSystem) extends akka.actor.Extension {
   val adapter = ActorSystemAdapter(sys)
 }
+
 /**
  * Internal API
  */

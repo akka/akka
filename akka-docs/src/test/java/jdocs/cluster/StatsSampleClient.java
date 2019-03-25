@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.cluster;
@@ -39,20 +39,20 @@ public class StatsSampleClient extends AbstractActor {
   public StatsSampleClient(String servicePath) {
     this.servicePath = servicePath;
     Duration interval = Duration.ofMillis(2);
-    tickTask = getContext()
-        .getSystem()
-        .scheduler()
-        .schedule(interval, interval, getSelf(), "tick",
-            getContext().dispatcher(), null);
+    tickTask =
+        getContext()
+            .getSystem()
+            .scheduler()
+            .schedule(interval, interval, getSelf(), "tick", getContext().getDispatcher(), null);
   }
 
-  //subscribe to cluster changes, MemberEvent
+  // subscribe to cluster changes, MemberEvent
   @Override
   public void preStart() {
     cluster.subscribe(getSelf(), MemberEvent.class, ReachabilityEvent.class);
   }
 
-  //re-subscribe when restart
+  // re-subscribe when restart
   @Override
   public void postStop() {
     cluster.unsubscribe(getSelf());
@@ -62,41 +62,49 @@ public class StatsSampleClient extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .matchEquals("tick", x -> !nodes.isEmpty(), x -> {
-        // just pick any one
-        List<Address> nodesList = new ArrayList<Address>(nodes);
-        Address address = nodesList.get(ThreadLocalRandom.current().nextInt(
-          nodesList.size()));
-        ActorSelection service = getContext().actorSelection(address + servicePath);
-        service.tell(new StatsJob("this is the text that will be analyzed"),
-         getSelf());
-      })
-      .match(StatsResult.class, System.out::println)
-      .match(JobFailed.class, System.out::println)
-      .match(CurrentClusterState.class, state -> {
-        nodes.clear();
-        for (Member member : state.getMembers()) {
-          if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
-            nodes.add(member.address());
-          }
-        }
-      })
-      .match(MemberUp.class, mUp -> {
-        if (mUp.member().hasRole("compute"))
-          nodes.add(mUp.member().address());
-      })
-      .match(MemberEvent.class, event -> {
-        nodes.remove(event.member().address());
-      })
-      .match(UnreachableMember.class, unreachable -> {
-        nodes.remove(unreachable.member().address());
-      })
-      .match(ReachableMember.class, reachable -> {
-        if (reachable.member().hasRole("compute"))
-          nodes.add(reachable.member().address());
-
-      })
-      .build();
+        .matchEquals(
+            "tick",
+            x -> !nodes.isEmpty(),
+            x -> {
+              // just pick any one
+              List<Address> nodesList = new ArrayList<Address>(nodes);
+              Address address =
+                  nodesList.get(ThreadLocalRandom.current().nextInt(nodesList.size()));
+              ActorSelection service = getContext().actorSelection(address + servicePath);
+              service.tell(new StatsJob("this is the text that will be analyzed"), getSelf());
+            })
+        .match(StatsResult.class, System.out::println)
+        .match(JobFailed.class, System.out::println)
+        .match(
+            CurrentClusterState.class,
+            state -> {
+              nodes.clear();
+              for (Member member : state.getMembers()) {
+                if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
+                  nodes.add(member.address());
+                }
+              }
+            })
+        .match(
+            MemberUp.class,
+            mUp -> {
+              if (mUp.member().hasRole("compute")) nodes.add(mUp.member().address());
+            })
+        .match(
+            MemberEvent.class,
+            event -> {
+              nodes.remove(event.member().address());
+            })
+        .match(
+            UnreachableMember.class,
+            unreachable -> {
+              nodes.remove(unreachable.member().address());
+            })
+        .match(
+            ReachableMember.class,
+            reachable -> {
+              if (reachable.member().hasRole("compute")) nodes.add(reachable.member().address());
+            })
+        .build();
   }
-
 }

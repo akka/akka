@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
@@ -44,8 +44,8 @@ trait AsyncRecovery {
    *
    * @see [[AsyncWriteJournal]]
    */
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long,
-                          max: Long)(recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit]
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      recoveryCallback: PersistentRepr => Unit): Future[Unit]
 
   /**
    * Plugin API: asynchronously reads the highest stored sequence number for the

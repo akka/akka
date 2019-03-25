@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.annotation.DoNotInherit
 
 import java.util.concurrent.ThreadLocalRandom
 
@@ -19,8 +19,9 @@ object BehaviorTestKit {
    */
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
   }
+
   /**
    * JAVA API
    */
@@ -39,6 +40,7 @@ object BehaviorTestKit {
  */
 @DoNotInherit
 abstract class BehaviorTestKit[T] {
+
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
@@ -127,4 +129,14 @@ abstract class BehaviorTestKit[T] {
    * Send the signal to the beheavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def getAllLogEntries(): java.util.List[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
 }

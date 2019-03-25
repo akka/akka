@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.camel;
-//#Consumer1
+// #Consumer1
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.event.Logging;
@@ -21,8 +21,7 @@ public class Consumer1 extends UntypedConsumerActor {
       CamelMessage camelMessage = (CamelMessage) message;
       String body = camelMessage.getBodyAs(String.class, getCamelContext());
       log.info("Received message: {}", body);
-    } else
-      unhandled(message);
+    } else unhandled(message);
   }
 }
-//#Consumer1
+// #Consumer1

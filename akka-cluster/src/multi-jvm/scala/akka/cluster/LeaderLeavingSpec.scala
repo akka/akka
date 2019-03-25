@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -20,18 +19,17 @@ object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 0s")).
-    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 0s"))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
 class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec
 class LeaderLeavingMultiJvmNode2 extends LeaderLeavingSpec
 class LeaderLeavingMultiJvmNode3 extends LeaderLeavingSpec
 
-abstract class LeaderLeavingSpec
-  extends MultiNodeSpec(LeaderLeavingMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class LeaderLeavingSpec extends MultiNodeSpec(LeaderLeavingMultiJvmSpec) with MultiNodeClusterSpec {
 
   import LeaderLeavingMultiJvmSpec._
   import ClusterEvent._
@@ -63,11 +61,11 @@ abstract class LeaderLeavingSpec
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
-              case state: CurrentClusterState ⇒
-                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
+              case state: CurrentClusterState =>
+                if (state.members.exists(m => m.address == oldLeaderAddress && m.status == Exiting))
                   exitingLatch.countDown()
-              case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
-              case _ ⇒ // ignore
+              case MemberExited(m) if m.address == oldLeaderAddress => exitingLatch.countDown()
+              case _                                                => // ignore
             }
           }).withDeploy(Deploy.local)), classOf[MemberEvent])
           enterBarrier("registered-listener")

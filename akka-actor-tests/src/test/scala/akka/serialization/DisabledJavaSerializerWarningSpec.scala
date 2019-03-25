@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -15,8 +15,7 @@ object DisabledJavaSerializerWarningSpec {
   final case class Msg(s: String)
 }
 
-class DisabledJavaSerializerWarningSpec extends AkkaSpec(
-  """
+class DisabledJavaSerializerWarningSpec extends AkkaSpec("""
   akka.actor {
     allow-java-serialization = off
     serialize-messages = on

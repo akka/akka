@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
@@ -17,7 +17,7 @@ import scala.collection.immutable
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl(address / name withUid uid)
+    new TestInboxImpl((address / name).withUid(uid))
   }
 
   private[akka] val address = RootActorPath(Address("akka.actor.typed.inbox", "anonymous"))
@@ -36,6 +36,7 @@ object TestInbox {
  */
 @DoNotInherit
 trait TestInbox[T] {
+
   /**
    * The actor ref of the inbox
    */

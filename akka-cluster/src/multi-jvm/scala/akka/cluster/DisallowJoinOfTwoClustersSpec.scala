@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -26,8 +25,8 @@ class DisallowJoinOfTwoClustersMultiJvmNode4 extends DisallowJoinOfTwoClustersSp
 class DisallowJoinOfTwoClustersMultiJvmNode5 extends DisallowJoinOfTwoClustersSpec
 
 abstract class DisallowJoinOfTwoClustersSpec
-  extends MultiNodeSpec(DisallowJoinOfTwoClustersMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(DisallowJoinOfTwoClustersMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import DisallowJoinOfTwoClustersMultiJvmSpec._
 
@@ -66,7 +65,7 @@ abstract class DisallowJoinOfTwoClustersSpec
       }
 
       // no change expected
-      1 to 5 foreach { _ ⇒
+      (1 to 5).foreach { _ =>
         clusterView.members.size should ===(expectedSize)
         Thread.sleep(1000)
       }

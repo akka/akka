@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, TestProbe, ImplicitSender }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -27,7 +27,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promiseRef = PromiseRef(5.seconds)
 
       val target = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       target ! Request(promiseRef.ref)
@@ -57,13 +57,13 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promise = Promise[Int]()
 
       val alice = system.actorOf(Props(new Actor {
-        def receive = { case Response ⇒ promise.success(42) }
+        def receive = { case Response => promise.success(42) }
       }))
 
       val promiseRef = PromiseRef.wrap(alice, promise)
 
       val bob = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       bob ! Request(promiseRef.ref)

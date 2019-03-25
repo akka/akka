@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.cluster;
@@ -8,12 +8,12 @@ import java.math.BigInteger;
 import java.io.Serializable;
 
 public class FactorialResult implements Serializable {
-	private static final long serialVersionUID = 1L;
-	public final int n;
-	public final BigInteger factorial;
+  private static final long serialVersionUID = 1L;
+  public final int n;
+  public final BigInteger factorial;
 
-	FactorialResult(int n, BigInteger factorial) {
-		this.n = n;
-		this.factorial = factorial;
-	}
+  FactorialResult(int n, BigInteger factorial) {
+    this.n = n;
+    this.factorial = factorial;
+  }
 }

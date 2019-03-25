@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -16,27 +16,30 @@ import akka.actor._
  * INTERNAL API
  */
 private[io] class UdpSender(
-  val udp:         UdpExt,
-  channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  options:         immutable.Traversable[SocketOption])
-  extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    val udp: UdpExt,
+    channelRegistry: ChannelRegistry,
+    commander: ActorRef,
+    options: immutable.Traversable[SocketOption])
+    extends Actor
+    with ActorLogging
+    with WithUdpSend
+    with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   val channel = {
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
-    options foreach { _.beforeDatagramBind(socket) }
+    options.foreach { _.beforeDatagramBind(socket) }
 
     datagramChannel
   }
   channelRegistry.register(channel, initialOps = 0)
 
   def receive: Receive = {
-    case registration: ChannelRegistration ⇒
+    case registration: ChannelRegistration =>
       options.foreach {
-        case v2: Inet.SocketOptionV2 ⇒ v2.afterConnect(channel.socket)
-        case _                       ⇒
+        case v2: Inet.SocketOptionV2 => v2.afterConnect(channel.socket)
+        case _                       =>
       }
       commander ! SimpleSenderReady
       context.become(sendHandlers(registration))
@@ -46,8 +49,7 @@ private[io] class UdpSender(
     log.debug("Closing DatagramChannel after being stopped")
     try channel.close()
     catch {
-      case NonFatal(e) ⇒ log.debug("Error closing DatagramChannel: {}", e)
+      case NonFatal(e) => log.debug("Error closing DatagramChannel: {}", e)
     }
   }
 }
-

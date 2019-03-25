@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.actor;
@@ -27,7 +27,8 @@ public class ActorSubscriberTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("ActorSubscriberTest", AkkaSpec.testConf());
 
   public static class TestSubscriber extends UntypedActorSubscriber {
 
@@ -63,7 +64,10 @@ public class ActorSubscriberTest extends StreamTest {
   @Test
   public void mustHaveJavaAPI() {
     final TestKit probe = new TestKit(system);
-    final ActorRef ref = system.actorOf(Props.create(TestSubscriber.class, probe.getRef()).withDispatcher("akka.test.stream-dispatcher"));
+    final ActorRef ref =
+        system.actorOf(
+            Props.create(TestSubscriber.class, probe.getRef())
+                .withDispatcher("akka.test.stream-dispatcher"));
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3);
 
@@ -75,5 +79,4 @@ public class ActorSubscriberTest extends StreamTest {
     probe.expectMsgEquals(3);
     probe.expectMsgEquals("done");
   }
-
 }

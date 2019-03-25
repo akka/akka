@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.javadsl;
@@ -19,25 +19,24 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.Assert.assertEquals;
-
 public class ClusterShardingPersistenceTest extends JUnitSuite {
 
-  public static final Config config = ConfigFactory.parseString(
-          "akka.actor.provider = cluster \n" +
-          "akka.remote.netty.tcp.port = 0 \n" +
-          "akka.remote.artery.canonical.port = 0 \n" +
-          "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
-          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+  public static final Config config =
+      ConfigFactory.parseString(
+          "akka.actor.provider = cluster \n"
+              + "akka.remote.netty.tcp.port = 0 \n"
+              + "akka.remote.artery.canonical.port = 0 \n"
+              + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
+              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
   interface Command {}
+
   static class Add implements Command {
     public final String s;
 
@@ -45,6 +44,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       this.s = s;
     }
   }
+
   static class AddWithConfirmation implements Command, ExpectingReply<Done> {
     final String s;
     private final ActorRef<Done> replyTo;
@@ -59,6 +59,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       return replyTo;
     }
   }
+
   static class Get implements Command {
     final ActorRef<String> replyTo;
 
@@ -66,16 +67,15 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       this.replyTo = replyTo;
     }
   }
+
   static enum StopPlz implements Command {
     INSTANCE
   }
 
-
-
-  static class TestPersistentEntity extends PersistentEntity<Command, String, String> {
+  static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
-      EntityTypeKey.create(Command.class, "HelloWorld");
+        EntityTypeKey.create(Command.class, "HelloWorld");
 
     public TestPersistentEntity(String entityId) {
       super(ENTITY_TYPE_KEY, entityId);
@@ -88,11 +88,12 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public CommandHandler<Command, String, String> commandHandler() {
-      return commandHandlerBuilder(String.class)
-        .matchCommand(Add.class, this::add)
-        .matchCommand(AddWithConfirmation.class, this::addWithConfirmation)
-        .matchCommand(Get.class, this::getState)
-        .build();
+      return newCommandHandlerBuilder()
+          .forAnyState()
+          .onCommand(Add.class, this::add)
+          .onCommand(AddWithConfirmation.class, this::addWithConfirmation)
+          .onCommand(Get.class, this::getState)
+          .build();
     }
 
     private Effect<String, String> add(String state, Add cmd) {
@@ -100,8 +101,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
 
     private Effect<String, String> addWithConfirmation(String state, AddWithConfirmation cmd) {
-      return Effect().persist(cmd.s)
-        .thenReply(cmd, newState -> Done.getInstance());
+      return Effect().persist(cmd.s).thenReply(cmd, newState -> Done.getInstance());
     }
 
     private Effect<String, String> getState(String state, Get cmd) {
@@ -111,16 +111,12 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return eventHandlerBuilder()
-        .matchEvent(String.class, this::applyEvent)
-        .build();
+      return newEventHandlerBuilder().forAnyState().onEvent(String.class, this::applyEvent).build();
     }
 
     private String applyEvent(String state, String evt) {
-      if (state.equals(""))
-        return evt;
-      else
-        return state + "|" + evt;
+      if (state.equals("")) return evt;
+      else return state + "|" + evt;
     }
   }
 
@@ -134,9 +130,11 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
-      sharding.init(Entity.ofPersistentEntity(TestPersistentEntity.ENTITY_TYPE_KEY,
-        entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
-      .withStopMessage(StopPlz.INSTANCE));
+      sharding.init(
+          Entity.ofPersistentEntity(
+                  TestPersistentEntity.ENTITY_TYPE_KEY,
+                  entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
+              .withStopMessage(StopPlz.INSTANCE));
 
       _sharding = sharding;
     }
@@ -159,11 +157,13 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     TestProbe<Done> p1 = testKit.createTestProbe();
     EntityRef<Command> ref = sharding().entityRefFor(TestPersistentEntity.ENTITY_TYPE_KEY, "456");
     Timeout askTimeout = Timeout.create(p1.getRemainingOrDefault());
-    CompletionStage<Done> done1 =ref.ask(replyTo -> new AddWithConfirmation("a", replyTo), askTimeout);
+    CompletionStage<Done> done1 =
+        ref.ask(replyTo -> new AddWithConfirmation("a", replyTo), askTimeout);
     done1.thenAccept(d -> p1.getRef().tell(d));
     p1.expectMessage(Done.getInstance());
 
-    CompletionStage<Done> done2 =ref.ask(replyTo -> new AddWithConfirmation("b", replyTo), askTimeout);
+    CompletionStage<Done> done2 =
+        ref.ask(replyTo -> new AddWithConfirmation("b", replyTo), askTimeout);
     done1.thenAccept(d -> p1.getRef().tell(d));
     p1.expectMessage(Done.getInstance());
 
@@ -171,5 +171,4 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     ref.tell(new Get(p2.getRef()));
     p2.expectMessage("456:a|b");
   }
-
 }

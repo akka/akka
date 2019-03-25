@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -19,6 +19,6 @@ object AutomaticModuleName  {
   private val AutomaticModuleName = "Automatic-Module-Name"
 
   def settings(name: String): Seq[Def.Setting[Task[Seq[PackageOption]]]] = Seq(
-    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName → name)
+    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName -> name)
   )
 }

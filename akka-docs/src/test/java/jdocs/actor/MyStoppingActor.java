@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
 
-//#my-stopping-actor
+// #my-stopping-actor
 import akka.actor.ActorRef;
 import akka.actor.AbstractActor;
 
@@ -17,14 +17,9 @@ public class MyStoppingActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-      .matchEquals("interrupt-child", m ->
-        getContext().stop(child)
-      )
-      .matchEquals("done", m ->
-        getContext().stop(getSelf())
-      )
-      .build();
+        .matchEquals("interrupt-child", m -> getContext().stop(child))
+        .matchEquals("done", m -> getContext().stop(getSelf()))
+        .build();
   }
 }
-//#my-stopping-actor
-
+// #my-stopping-actor

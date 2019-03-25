@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal.receptionist
@@ -21,4 +21,3 @@ final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatCheck
   override def check(toCheck: Config, actualConfig: Config): ConfigValidation =
     JoinConfigCompatChecker.fullMatch(requiredKeys, toCheck, actualConfig)
 }
-

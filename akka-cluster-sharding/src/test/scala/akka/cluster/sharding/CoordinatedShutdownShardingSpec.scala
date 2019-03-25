@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -16,6 +16,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
+import akka.util.ccompat.imm._
 
 object CoordinatedShutdownShardingSpec {
   val config =
@@ -27,11 +28,11 @@ object CoordinatedShutdownShardingSpec {
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg: Int ⇒ (msg.toString, msg)
+    case msg: Int => (msg.toString, msg)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case msg: Int ⇒ (msg % 10).toString
+    case msg: Int => (msg % 10).toString
   }
 }
 
@@ -42,26 +43,38 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
   val sys2 = ActorSystem(system.name, system.settings.config)
   val sys3 = system
 
-  val region1 = ClusterSharding(sys1).start("type1", Props[EchoActor](), ClusterShardingSettings(sys1),
-    extractEntityId, extractShardId)
-  val region2 = ClusterSharding(sys2).start("type1", Props[EchoActor](), ClusterShardingSettings(sys2),
-    extractEntityId, extractShardId)
-  val region3 = ClusterSharding(sys3).start("type1", Props[EchoActor](), ClusterShardingSettings(sys3),
-    extractEntityId, extractShardId)
+  val region1 = ClusterSharding(sys1).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys1),
+    extractEntityId,
+    extractShardId)
+  val region2 = ClusterSharding(sys2).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys2),
+    extractEntityId,
+    extractShardId)
+  val region3 = ClusterSharding(sys3).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys3),
+    extractEntityId,
+    extractShardId)
 
   val probe1 = TestProbe()(sys1)
   val probe2 = TestProbe()(sys2)
   val probe3 = TestProbe()(sys3)
 
-  CoordinatedShutdown(sys1).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () ⇒
+  CoordinatedShutdown(sys1).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () =>
     probe1.ref ! "CS-unbind-1"
     Future.successful(Done)
   }
-  CoordinatedShutdown(sys2).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () ⇒
+  CoordinatedShutdown(sys2).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () =>
     probe2.ref ! "CS-unbind-2"
     Future.successful(Done)
   }
-  CoordinatedShutdown(sys3).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () ⇒
+  CoordinatedShutdown(sys3).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "unbind") { () =>
     probe3.ref ! "CS-unbind-3"
     Future.successful(Done)
   }
@@ -95,9 +108,9 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
       within(10.seconds) {
         awaitAssert {
           Cluster(sys1).state.members.size should ===(2)
-          Cluster(sys1).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(sys1).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
           Cluster(sys2).state.members.size should ===(2)
-          Cluster(sys2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(sys2).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }
 
@@ -105,11 +118,11 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
       within(10.seconds) {
         awaitAssert {
           Cluster(sys1).state.members.size should ===(3)
-          Cluster(sys1).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(sys1).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
           Cluster(sys2).state.members.size should ===(3)
-          Cluster(sys2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(sys2).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
           Cluster(sys3).state.members.size should ===(3)
-          Cluster(sys3).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          Cluster(sys3).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }
 

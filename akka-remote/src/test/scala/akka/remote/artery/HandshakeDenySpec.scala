@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,12 +32,14 @@ class HandshakeDenySpec extends ArteryMultiNodeSpec(HandshakeDenySpec.commonConf
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
-      EventFilter.warning(start = "Dropping Handshake Request from").intercept {
-        sel ! Identify("hi echo")
-        // handshake timeout and Identify message in SendQueue is sent to deadLetters,
-        // which generates the ActorIdentity(None)
-        expectMsg(5.seconds, ActorIdentity("hi echo", None))
-      }(systemB)
+      EventFilter
+        .warning(start = "Dropping Handshake Request from")
+        .intercept {
+          sel ! Identify("hi echo")
+          // handshake timeout and Identify message in SendQueue is sent to deadLetters,
+          // which generates the ActorIdentity(None)
+          expectMsg(5.seconds, ActorIdentity("hi echo", None))
+        }(systemB)
     }
 
   }

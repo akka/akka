@@ -227,12 +227,12 @@ implicit val executionContext: ExecutionContext = context.dispatcher
 @@@ div { .group-java }
 
 ```java
-ExecutionContext ec = getContext().dispatcher();
+ExecutionContext ec = getContext().getDispatcher();
 ```
 
 @@@
 
-Using @scala[`context.dispatcher`] @java[`getContext().dispatcher()`] as the dispatcher on which the blocking `Future`
+Using @scala[`context.dispatcher`] @java[`getContext().getDispatcher()`] as the dispatcher on which the blocking `Future`
 executes can be a problem, since this dispatcher is by default used for all other actor processing
 unless you @ref:[set up a separate dispatcher for the actor](dispatchers.md#setting-the-dispatcher-for-an-actor).
 

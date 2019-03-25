@@ -76,7 +76,7 @@ not used yet, the built-in scheduler facility. Using the scheduler is simple:
 * We get the scheduler from the `ActorSystem`, which, in turn,
 is accessible from the actor's context: @scala[`context.system.scheduler`]@java[`getContext().getSystem().scheduler()`]. This needs an @scala[implicit] `ExecutionContext` which
 is the thread-pool that will execute the timer task itself. In our case, we use the same dispatcher
-as the actor by @scala[importing `import context.dispatcher`] @java[passing in `getContext().dispatcher()`].
+as the actor by @scala[importing `import context.dispatcher`] @java[passing in `getContext().getDispatcher()`].
 * The
 @scala[`scheduler.scheduleOnce(time, actorRef, message)`] @java[`scheduler.scheduleOnce(time, actorRef, message, executor, sender)`] method will schedule the message `message` into the future by the
 specified `time` and send it to the actor `actorRef`.
@@ -116,7 +116,7 @@ For our use case:
 that has been stopped in the meantime.
    * We can reach the deadline and receive a `CollectionTimeout`.
 
-In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
+In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
 
 To accomplish this, add the following to your `DeviceGroupQuery` source file:
 

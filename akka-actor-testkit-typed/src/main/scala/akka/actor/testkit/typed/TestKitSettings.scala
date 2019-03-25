@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
@@ -11,14 +11,8 @@ import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.actor.typed.ActorSystem
 
-import scala.util.control.NoStackTrace
-
-/**
- * Exception without stack trace to use for verifying exceptions in tests
- */
-final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
-
 object TestKitSettings {
+
   /**
    * Reads configuration settings from `akka.actor.testkit.typed` section.
    */
@@ -50,15 +44,19 @@ final class TestKitSettings(val config: Config) {
 
   import akka.util.Helpers._
 
-  val TestTimeFactor = config.getDouble("timefactor").
-    requiring(tf ⇒ !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
+  val TestTimeFactor = config
+    .getDouble("timefactor")
+    .requiring(tf => !tf.isInfinite && tf > 0, "timefactor must be positive finite double")
 
   /** dilated with `TestTimeFactor` */
   val SingleExpectDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("single-expect-default"))
+
   /** dilated with `TestTimeFactor` */
   val ExpectNoMessageDefaultTimeout: FiniteDuration = dilated(config.getMillisDuration("expect-no-message-default"))
+
   /** dilated with `TestTimeFactor` */
   val DefaultTimeout: Timeout = Timeout(dilated(config.getMillisDuration("default-timeout")))
+
   /** dilated with `TestTimeFactor` */
   val DefaultActorSystemShutdownTimeout: FiniteDuration = dilated(config.getMillisDuration("system-shutdown-default"))
 

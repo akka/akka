@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testconductor
 
-import akka.actor.{ Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem, ActorContext, ActorSystem }
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
 import com.typesafe.config.Config

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.javadsl
@@ -8,7 +8,6 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.actor.typed.ActorRef
-import akka.stream.ActorAttributes
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
 
@@ -56,8 +55,13 @@ object ActorFlow {
    * @tparam Q Question message type that is spoken by the target actor
    * @tparam A Answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
-  def ask[I, Q, A](ref: ActorRef[Q], timeout: java.time.Duration, makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[I, A, NotUsed] =
-    akka.stream.typed.scaladsl.ActorFlow.ask[I, Q, A](parallelism = 2)(ref)((i, ref) ⇒ makeMessage(i, ref))(JavaDurationConverters.asFiniteDuration(timeout))
+  def ask[I, Q, A](
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[I, A, NotUsed] =
+    akka.stream.typed.scaladsl.ActorFlow
+      .ask[I, Q, A](parallelism = 2)(ref)((i, ref) => makeMessage(i, ref))(
+        JavaDurationConverters.asFiniteDuration(timeout))
       .asJava
 
   /**
@@ -93,8 +97,13 @@ object ActorFlow {
    * @tparam Q Question message type that is spoken by the target actor
    * @tparam A Answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
-  def ask[I, Q, A](parallelism: Int, ref: ActorRef[Q], timeout: java.time.Duration, makeMessage: (I, ActorRef[A]) ⇒ Q): Flow[I, A, NotUsed] =
-    akka.stream.typed.scaladsl.ActorFlow.ask[I, Q, A](parallelism)(ref)((i, ref) ⇒ makeMessage(i, ref))(timeout.toMillis.millis)
+  def ask[I, Q, A](
+      parallelism: Int,
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: (I, ActorRef[A]) => Q): Flow[I, A, NotUsed] =
+    akka.stream.typed.scaladsl.ActorFlow
+      .ask[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
       .asJava
 
 }

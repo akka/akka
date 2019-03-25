@@ -1,32 +1,29 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.remote.testconductor.RoleName
 import akka.actor.Identify
 import scala.concurrent.Await
-import akka.remote.transport.Transport.InvalidAssociationException
 import akka.remote.transport.AssociationHandle
 
 object Ticket15109Spec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(
+      ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       ## Keep it tight, otherwise reestablishing a connection takes too much time
@@ -39,7 +36,7 @@ object Ticket15109Spec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "ping" ⇒ sender() ! "pong"
+      case "ping" => sender() ! "pong"
     }
   }
 
@@ -89,8 +86,10 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
       runOn(second) {
         // Force a disassociation. Using the message Shutdown, which is suboptimal here, but this is the only
         // DisassociateInfo that triggers the code-path we want to test
-        Await.result(RARP(system).provider.transport.managementCommand(
-          ForceDisassociateExplicitly(node(first).address, AssociationHandle.Shutdown)), 3.seconds)
+        Await.result(
+          RARP(system).provider.transport
+            .managementCommand(ForceDisassociateExplicitly(node(first).address, AssociationHandle.Shutdown)),
+          3.seconds)
       }
 
       enterBarrier("disassociated")

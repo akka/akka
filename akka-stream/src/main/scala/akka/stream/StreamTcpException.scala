@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -14,4 +14,3 @@ class BindFailedException extends StreamTcpException("bind failed")
 case object BindFailedException extends BindFailedException
 
 class ConnectionException(msg: String) extends StreamTcpException(msg)
-

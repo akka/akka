@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.javadsl
@@ -11,6 +11,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ExtensionSetup
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.ddata.SelfUniqueAddress
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -34,10 +35,13 @@ object DistributedData extends ExtensionId[DistributedData] {
  */
 @DoNotInherit
 abstract class DistributedData extends Extension {
+
   /**
    * `ActorRef` of the [[Replicator]] .
    */
   def replicator: ActorRef[Replicator.Command]
+
+  def selfUniqueAddress: SelfUniqueAddress
 }
 
 /**
@@ -48,10 +52,13 @@ abstract class DistributedData extends Extension {
   override val replicator: ActorRef[Replicator.Command] =
     akka.cluster.ddata.typed.scaladsl.DistributedData(system).replicator.narrow[Replicator.Command]
 
+  override val selfUniqueAddress: SelfUniqueAddress =
+    akka.cluster.ddata.typed.scaladsl.DistributedData(system).selfUniqueAddress
+
 }
 
 object DistributedDataSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ DistributedData): DistributedDataSetup =
+  def apply[T <: Extension](createExtension: ActorSystem[_] => DistributedData): DistributedDataSetup =
     new DistributedDataSetup(new java.util.function.Function[ActorSystem[_], DistributedData] {
       override def apply(sys: ActorSystem[_]): DistributedData = createExtension(sys)
     }) // TODO can be simplified when compiled only with Scala >= 2.12
@@ -64,4 +71,4 @@ object DistributedDataSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class DistributedDataSetup(createExtension: java.util.function.Function[ActorSystem[_], DistributedData])
-  extends ExtensionSetup[DistributedData](DistributedData, createExtension)
+    extends ExtensionSetup[DistributedData](DistributedData, createExtension)

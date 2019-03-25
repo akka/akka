@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2013-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2013-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
 
-class DefaultTimeoutSpec
-  extends WordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
+class DefaultTimeoutSpec extends WordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 
   implicit lazy val system = ActorSystem("AkkaCustomSpec")
 

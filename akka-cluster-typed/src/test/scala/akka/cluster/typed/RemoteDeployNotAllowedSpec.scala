@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -12,11 +12,10 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.{ WordSpec, WordSpecLike }
+import org.scalatest.WordSpecLike
 
 object RemoteDeployNotAllowedSpec {
-  def config = ConfigFactory.parseString(
-    s"""
+  def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = warning
       actor {
@@ -35,8 +34,7 @@ object RemoteDeployNotAllowedSpec {
     }
     """)
 
-  def configWithRemoteDeployment(otherSystemPort: Int) = ConfigFactory.parseString(
-    s"""
+  def configWithRemoteDeployment(otherSystemPort: Int) = ConfigFactory.parseString(s"""
       akka.actor.deployment {
         "/*" {
           remote = "akka://sampleActorSystem@127.0.0.1:$otherSystemPort"
@@ -45,7 +43,9 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends ScalaTestWithActorTestKit(RemoteDeployNotAllowedSpec.config) with WordSpecLike {
+class RemoteDeployNotAllowedSpec
+    extends ScalaTestWithActorTestKit(RemoteDeployNotAllowedSpec.config)
+    with WordSpecLike {
 
   "Typed cluster" must {
 
@@ -58,34 +58,38 @@ class RemoteDeployNotAllowedSpec extends ScalaTestWithActorTestKit(RemoteDeployN
       case class SpawnChild(name: String) extends GuardianProtocol
       case object SpawnAnonymous extends GuardianProtocol
 
-      val guardianBehavior = Behaviors.receive[GuardianProtocol] { (ctx, msg) ⇒
-
+      val guardianBehavior = Behaviors.receive[GuardianProtocol] { (ctx, msg) =>
         msg match {
-          case SpawnChild(name) ⇒
+          case SpawnChild(name) =>
             // this should throw
             try {
-              ctx.spawn(
-                Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty },
-                name)
+              ctx.spawn(Behaviors.setup[AnyRef] { ctx =>
+                Behaviors.empty
+              }, name)
             } catch {
-              case ex: Exception ⇒ probe.ref ! ex
+              case ex: Exception => probe.ref ! ex
             }
             Behaviors.same
 
-          case SpawnAnonymous ⇒
+          case SpawnAnonymous =>
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty })
+              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx =>
+                Behaviors.empty
+              })
             } catch {
-              case ex: Exception ⇒ probe.ref ! ex
+              case ex: Exception => probe.ref ! ex
             }
             Behaviors.same
         }
 
       }
 
-      val system2 = ActorSystem(guardianBehavior, system.name,
-        RemoteDeployNotAllowedSpec.configWithRemoteDeployment(node1.selfMember.address.port.get))
+      val system2 =
+        ActorSystem(
+          guardianBehavior,
+          system.name,
+          RemoteDeployNotAllowedSpec.configWithRemoteDeployment(node1.selfMember.address.port.get))
       try {
         val node2 = Cluster(system2)
         node2.manager ! Join(node1.selfMember.address)

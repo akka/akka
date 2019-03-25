@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -20,7 +20,9 @@ class RecipeLoggingElements extends RecipeSpec {
       val mySource = Source(List("1", "2", "3"))
 
       //#println-debug
-      val loggedSource = mySource.map { elem ⇒ println(elem); elem }
+      val loggedSource = mySource.map { elem =>
+        println(elem); elem
+      }
       //#println-debug
 
       loggedSource.runWith(Sink.ignore)
@@ -33,14 +35,10 @@ class RecipeLoggingElements extends RecipeSpec {
 
       //#log-custom
       // customise log levels
-      mySource.log("before-map")
-        .withAttributes(
-          Attributes.logLevels(
-            onElement = Logging.WarningLevel,
-            onFinish = Logging.InfoLevel,
-            onFailure = Logging.DebugLevel
-          )
-        )
+      mySource
+        .log("before-map")
+        .withAttributes(Attributes
+          .logLevels(onElement = Logging.WarningLevel, onFinish = Logging.InfoLevel, onFailure = Logging.DebugLevel))
         .map(analyse)
 
       // or provide custom logging adapter

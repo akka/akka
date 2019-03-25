@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util;
 
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
 public class JavaDuration extends JUnitSuite {
@@ -19,5 +19,4 @@ public class JavaDuration extends JUnitSuite {
     assert Duration.Zero().lteq(Duration.Inf());
     assert Duration.Inf().gt(Duration.Zero().neg());
   }
-
 }

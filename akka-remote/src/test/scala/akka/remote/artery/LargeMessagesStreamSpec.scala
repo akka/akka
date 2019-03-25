@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -19,13 +19,12 @@ object LargeMessagesStreamSpec {
 
   class EchoSize extends Actor {
     def receive = {
-      case Ping(bytes) ⇒ sender() ! Pong(bytes.size)
+      case Ping(bytes) => sender() ! Pong(bytes.size)
     }
   }
 }
 
-class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
-  """
+class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.large-message-destinations = [ "/user/large" ]
     }

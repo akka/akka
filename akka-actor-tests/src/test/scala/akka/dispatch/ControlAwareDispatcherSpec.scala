@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.actor.{ Actor, Props }
 
 object ControlAwareDispatcherSpec {
@@ -48,7 +48,7 @@ class ControlAwareDispatcherSpec extends AkkaSpec(ControlAwareDispatcherSpec.con
         self ! ImportantMessage
 
         def receive = {
-          case x ⇒ testActor ! x
+          case x => testActor ! x
         }
       }).withDispatcher(dispatcherKey))
 

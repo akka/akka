@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.camel;
-//#Producer
+// #Producer
 import akka.camel.javaapi.UntypedProducerActor;
 
 public class Orders extends UntypedProducerActor {
@@ -11,4 +11,4 @@ public class Orders extends UntypedProducerActor {
     return "jms:queue:Orders";
   }
 }
-//#Producer
+// #Producer

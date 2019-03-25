@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -24,7 +24,7 @@ class RestartCounterSpec extends WordSpec with Matchers {
 
     "allow sporadic restarts" in {
       val counter = new RestartCounter(3, 10.millis)
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         counter.restart() should ===(true)
         Thread.sleep(20)
       }

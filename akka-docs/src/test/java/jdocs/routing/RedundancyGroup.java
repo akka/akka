@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.routing;
 
-//#group
+// #group
 import java.util.List;
 
 import akka.actor.ActorSystem;
@@ -19,17 +19,16 @@ import static jdocs.routing.CustomRouterDocTest.RedundancyRoutingLogic;
 public class RedundancyGroup extends GroupBase {
   private final List<String> paths;
   private final int nbrCopies;
-  
+
   public RedundancyGroup(List<String> paths, int nbrCopies) {
     this.paths = paths;
     this.nbrCopies = nbrCopies;
   }
 
   public RedundancyGroup(Config config) {
-    this(config.getStringList("routees.paths"),
-      config.getInt("nbr-copies"));
+    this(config.getStringList("routees.paths"), config.getInt("nbr-copies"));
   }
-  
+
   @Override
   public java.lang.Iterable<String> getPaths(ActorSystem system) {
     return paths;
@@ -40,10 +39,9 @@ public class RedundancyGroup extends GroupBase {
     return new Router(new RedundancyRoutingLogic(nbrCopies));
   }
 
-  @Override 
+  @Override
   public String routerDispatcher() {
     return Dispatchers.DefaultDispatcherId();
   }
- 
 }
-//#group
+// #group

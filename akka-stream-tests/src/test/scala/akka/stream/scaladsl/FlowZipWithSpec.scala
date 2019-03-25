@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -58,7 +58,7 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
         subscription.request(2)
       }
       probe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
+        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
       }
       probe.expectNoMsg(200.millis)
     }
@@ -102,10 +102,11 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
       val sourceCount = Source(List("one", "two", "three"))
       val sourceFruits = Source(List("apple", "orange", "banana"))
 
-      sourceCount.zipWith(sourceFruits) {
-        (countStr, fruitName) ⇒
+      sourceCount
+        .zipWith(sourceFruits) { (countStr, fruitName) =>
           s"$countStr $fruitName"
-      }.runWith(Sink.foreach(println))
+        }
+        .runWith(Sink.foreach(println))
       // this will print 'one apple', 'two orange', 'three banana'
       //#zip-with
     }
