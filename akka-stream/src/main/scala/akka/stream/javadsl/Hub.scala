@@ -132,10 +132,11 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def ofStateful[T](clazz: Class[T],
-                                  partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
-                                  startAfterNrOfConsumers: Int,
-                                  bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
+  @ApiMayChange def ofStateful[T](
+      clazz: Class[T],
+      partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
+      startAfterNrOfConsumers: Int,
+      bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
     val p: () => (akka.stream.scaladsl.PartitionHub.ConsumerInfo, T) => Long = () => {
       val f = partitioner.get()
       (info, elem) => f.applyAsLong(info, elem)
@@ -146,9 +147,10 @@ object PartitionHub {
       .asJava
   }
 
-  @ApiMayChange def ofStateful[T](clazz: Class[T],
-                                  partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
-                                  startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
+  @ApiMayChange def ofStateful[T](
+      clazz: Class[T],
+      partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
+      startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
     ofStateful(clazz, partitioner, startAfterNrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
 
   /**
@@ -180,18 +182,20 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def of[T](clazz: Class[T],
-                          partitioner: BiFunction[Integer, T, Integer],
-                          startAfterNrOfConsumers: Int,
-                          bufferSize: Int): Sink[T, Source[T, NotUsed]] =
+  @ApiMayChange def of[T](
+      clazz: Class[T],
+      partitioner: BiFunction[Integer, T, Integer],
+      startAfterNrOfConsumers: Int,
+      bufferSize: Int): Sink[T, Source[T, NotUsed]] =
     akka.stream.scaladsl.PartitionHub
       .sink[T]((size, elem) => partitioner.apply(size, elem), startAfterNrOfConsumers, bufferSize)
       .mapMaterializedValue(_.asJava)
       .asJava
 
-  @ApiMayChange def of[T](clazz: Class[T],
-                          partitioner: BiFunction[Integer, T, Integer],
-                          startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
+  @ApiMayChange def of[T](
+      clazz: Class[T],
+      partitioner: BiFunction[Integer, T, Integer],
+      startAfterNrOfConsumers: Int): Sink[T, Source[T, NotUsed]] =
     of(clazz, partitioner, startAfterNrOfConsumers, akka.stream.scaladsl.PartitionHub.defaultBufferSize)
 
   @DoNotInherit @ApiMayChange trait ConsumerInfo {

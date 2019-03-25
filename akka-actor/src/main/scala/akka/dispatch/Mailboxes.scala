@@ -27,10 +27,11 @@ object Mailboxes {
   final val NoMailboxRequirement = ""
 }
 
-private[akka] class Mailboxes(val settings: ActorSystem.Settings,
-                              val eventStream: EventStream,
-                              dynamicAccess: DynamicAccess,
-                              deadLetters: ActorRef) {
+private[akka] class Mailboxes(
+    val settings: ActorSystem.Settings,
+    val eventStream: EventStream,
+    dynamicAccess: DynamicAccess,
+    deadLetters: ActorRef) {
 
   import Mailboxes._
 
@@ -70,9 +71,10 @@ private[akka] class Mailboxes(val settings: ActorSystem.Settings,
             }
             .recover {
               case e =>
-                throw new ConfigurationException(s"Type [${k}] specified as akka.actor.mailbox.requirement " +
-                                                 s"[${v}] in config can't be loaded due to [${e.getMessage}]",
-                                                 e)
+                throw new ConfigurationException(
+                  s"Type [${k}] specified as akka.actor.mailbox.requirement " +
+                  s"[${v}] in config can't be loaded due to [${e.getMessage}]",
+                  e)
             }
             .get
       }
@@ -147,9 +149,10 @@ private[akka] class Mailboxes(val settings: ActorSystem.Settings,
     // TODO remove in 2.3
     if (!hasMailboxType && !mailboxSizeWarningIssued && dispatcherConfig.hasPath("mailbox-size")) {
       eventStream.publish(
-        Warning("mailboxes",
-                getClass,
-                s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
+        Warning(
+          "mailboxes",
+          getClass,
+          s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
       mailboxSizeWarningIssued = true
     }
 

@@ -113,9 +113,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
     val createFailureDetector = () =>
-      FailureDetectorLoader.load(settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
-                                 settings.MultiDataCenter.CrossDcFailureDetectorSettings.config,
-                                 system)
+      FailureDetectorLoader.load(
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.config,
+        system)
 
     new DefaultFailureDetectorRegistry(createFailureDetector)
   }
@@ -133,10 +134,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   private[cluster] val scheduler: Scheduler = {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
-      logInfo("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
-              "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
-              (1000 / system.scheduler.maxFrequency).toInt,
-              SchedulerTickDuration.toMillis)
+      logInfo(
+        "Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
+        "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
+        (1000 / system.scheduler.maxFrequency).toInt,
+        SchedulerTickDuration.toMillis)
 
       val cfg = ConfigFactory
         .parseString(s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms")
@@ -146,10 +148,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         case tf                           => tf
       }
       system.dynamicAccess
-        .createInstanceFor[Scheduler](system.settings.SchedulerClass,
-                                      immutable.Seq(classOf[Config] -> cfg,
-                                                    classOf[LoggingAdapter] -> log,
-                                                    classOf[ThreadFactory] -> threadFactory))
+        .createInstanceFor[Scheduler](
+          system.settings.SchedulerClass,
+          immutable
+            .Seq(classOf[Config] -> cfg, classOf[LoggingAdapter] -> log, classOf[ThreadFactory] -> threadFactory))
         .get
     } else {
       // delegate to system.scheduler, but don't close over system
@@ -255,8 +257,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   @varargs def subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Class[_]*): Unit = {
     require(to.length > 0, "at least one `ClusterDomainEvent` class is required")
-    require(to.forall(classOf[ClusterDomainEvent].isAssignableFrom),
-            s"subscribe to `akka.cluster.ClusterEvent.ClusterDomainEvent` or subclasses, was [${to.map(_.getName).mkString(", ")}]")
+    require(
+      to.forall(classOf[ClusterDomainEvent].isAssignableFrom),
+      s"subscribe to `akka.cluster.ClusterEvent.ClusterDomainEvent` or subclasses, was [${to.map(_.getName).mkString(", ")}]")
     clusterCore ! InternalClusterAction.Subscribe(subscriber, initialStateMode, to.toSet)
   }
 
@@ -518,12 +521,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
         log.error(cause, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
       else
-        log.error(cause,
-                  "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
-                  selfAddress,
-                  arg1,
-                  arg2,
-                  arg3)
+        log.error(
+          cause,
+          "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
+          selfAddress,
+          arg1,
+          arg2,
+          arg3)
     }
 
     private def logAtLevel(logLevel: LogLevel, message: String): Unit = {
@@ -554,12 +558,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.log(logLevel, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
         else
-          log.log(logLevel,
-                  "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
-                  selfAddress,
-                  arg1,
-                  arg2,
-                  arg3)
+          log.log(
+            logLevel,
+            "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
+            selfAddress,
+            arg1,
+            arg2,
+            arg3)
 
     private def isLevelEnabled(logLevel: LogLevel): Boolean =
       LogInfo || logLevel < Logging.InfoLevel

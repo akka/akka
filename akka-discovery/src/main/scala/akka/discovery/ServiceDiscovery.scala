@@ -150,9 +150,10 @@ final class Lookup(val serviceName: String, val portName: Option[String], val pr
   def getProtocol: Optional[String] =
     protocol.asJava
 
-  private def copy(serviceName: String = serviceName,
-                   portName: Option[String] = portName,
-                   protocol: Option[String] = protocol): Lookup =
+  private def copy(
+      serviceName: String = serviceName,
+      portName: Option[String] = portName,
+      protocol: Option[String] = protocol): Lookup =
     new Lookup(serviceName, portName, protocol)
 
   override def toString: String = s"Lookup($serviceName,$portName,$protocol)"
@@ -198,7 +199,30 @@ case object Lookup {
 
   private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
 
-  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
+  /**
+   * Validates domain name:
+   * (as defined in https://tools.ietf.org/html/rfc1034)
+   *
+   * - a label has 1 to 63 chars
+   * - valid chars for a label are: a-z, A-Z, 0-9 and -
+   * - a label can't start with a 'hyphen' (-)
+   * - a label can't start with a 'digit' (0-9)
+   * - a label can't end with a 'hyphen' (-)
+   * - labels are separated by a 'dot' (.)
+   *
+   * Starts with a label:
+   * Label Pattern: (?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)
+   *      (?![0-9-]) => negative look ahead, first char can't be hyphen (-) or digit (0-9)
+   *      [A-Za-z0-9-]{1,63} => digits, letters and hyphen, from 1 to 63
+   *      (?<!-) => negative look behind, last char can't be hyphen (-)
+   *
+   * A label can be followed by other labels:
+   *    Pattern: (\.(?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)))*
+   *      . => separated by a . (dot)
+   *      label pattern => (?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)
+   *      * => match zero or more times
+   */
+  private val DomainName = "^((?![0-9-])[A-Za-z0-9-]{1,63}(?<!-))((\\.(?![0-9-])[A-Za-z0-9-]{1,63}(?<!-)))*$".r
 
   /**
    * Create a service Lookup from a string with format:
@@ -207,10 +231,10 @@ case object Lookup {
    *
    * If the passed string conforms with this format, a SRV Lookup is returned.
    * The serviceName part must be a valid domain name.
+   * (as defined in https://tools.ietf.org/html/rfc1034)
    *
    * The string is parsed and dismembered to build a Lookup as following:
    * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
-   *
    *
    * @throws NullPointerException If the passed string is null
    * @throws IllegalArgumentException If the string doesn't not conform with the SRV format

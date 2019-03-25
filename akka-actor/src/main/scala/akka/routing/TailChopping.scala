@@ -46,10 +46,11 @@ import scala.util.Random
  * @param context execution context used by scheduler
  */
 @SerialVersionUID(1L)
-final case class TailChoppingRoutingLogic(scheduler: Scheduler,
-                                          within: FiniteDuration,
-                                          interval: FiniteDuration,
-                                          context: ExecutionContext)
+final case class TailChoppingRoutingLogic(
+    scheduler: Scheduler,
+    within: FiniteDuration,
+    interval: FiniteDuration,
+    context: ExecutionContext)
     extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee = {
     if (routees.isEmpty) NoRoutee
@@ -61,10 +62,11 @@ final case class TailChoppingRoutingLogic(scheduler: Scheduler,
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] final case class TailChoppingRoutees(scheduler: Scheduler,
-                                                   routees: immutable.IndexedSeq[Routee],
-                                                   within: FiniteDuration,
-                                                   interval: FiniteDuration)(implicit ec: ExecutionContext)
+private[akka] final case class TailChoppingRoutees(
+    scheduler: Scheduler,
+    routees: immutable.IndexedSeq[Routee],
+    within: FiniteDuration,
+    interval: FiniteDuration)(implicit ec: ExecutionContext)
     extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit = {
@@ -147,22 +149,24 @@ private[akka] final case class TailChoppingRoutees(scheduler: Scheduler,
  *   supervision, death watch and router management messages
  */
 @SerialVersionUID(1L)
-final case class TailChoppingPool(val nrOfInstances: Int,
-                                  override val resizer: Option[Resizer] = None,
-                                  within: FiniteDuration,
-                                  interval: FiniteDuration,
-                                  override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-                                  override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                                  override val usePoolDispatcher: Boolean = false)
+final case class TailChoppingPool(
+    val nrOfInstances: Int,
+    override val resizer: Option[Resizer] = None,
+    within: FiniteDuration,
+    interval: FiniteDuration,
+    override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+    override val usePoolDispatcher: Boolean = false)
     extends Pool
     with PoolOverrideUnsetConfig[TailChoppingPool] {
 
   def this(config: Config) =
-    this(nrOfInstances = config.getInt("nr-of-instances"),
-         within = config.getMillisDuration("within"),
-         interval = config.getMillisDuration("tail-chopping-router.interval"),
-         resizer = Resizer.fromConfig(config),
-         usePoolDispatcher = config.hasPath("pool-dispatcher"))
+    this(
+      nrOfInstances = config.getInt("nr-of-instances"),
+      within = config.getMillisDuration("within"),
+      interval = config.getMillisDuration("tail-chopping-router.interval"),
+      resizer = Resizer.fromConfig(config),
+      usePoolDispatcher = config.hasPath("pool-dispatcher"))
 
   /**
    * Java API
@@ -243,16 +247,18 @@ final case class TailChoppingPool(val nrOfInstances: Int,
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   router management messages
  */
-final case class TailChoppingGroup(val paths: immutable.Iterable[String],
-                                   within: FiniteDuration,
-                                   interval: FiniteDuration,
-                                   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+final case class TailChoppingGroup(
+    val paths: immutable.Iterable[String],
+    within: FiniteDuration,
+    interval: FiniteDuration,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     extends Group {
 
   def this(config: Config) =
-    this(paths = immutableSeq(config.getStringList("routees.paths")),
-         within = config.getMillisDuration("within"),
-         interval = config.getMillisDuration("tail-chopping-router.interval"))
+    this(
+      paths = immutableSeq(config.getStringList("routees.paths")),
+      within = config.getMillisDuration("within"),
+      interval = config.getMillisDuration("tail-chopping-router.interval"))
 
   /**
    * Java API

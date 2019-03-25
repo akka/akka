@@ -82,9 +82,10 @@ private[akka] object Shard {
 
   @SerialVersionUID(1L) final case class CurrentShardState(shardId: ShardRegion.ShardId, entityIds: Set[EntityId])
 
-  @SerialVersionUID(1L) case object GetShardStats extends ShardQuery
+  @SerialVersionUID(1L) case object GetShardStats extends ShardQuery with ClusterShardingSerializable
 
   @SerialVersionUID(1L) final case class ShardStats(shardId: ShardRegion.ShardId, entityCount: Int)
+      extends ClusterShardingSerializable
 
   final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
   final case object LeaseRetry
@@ -107,35 +108,38 @@ private[akka] object Shard {
    * If `settings.rememberEntities` is enabled the `PersistentShard`
    * subclass is used, otherwise `Shard`.
    */
-  def props(typeName: String,
-            shardId: ShardRegion.ShardId,
-            entityProps: String => Props,
-            settings: ClusterShardingSettings,
-            extractEntityId: ShardRegion.ExtractEntityId,
-            extractShardId: ShardRegion.ExtractShardId,
-            handOffStopMessage: Any,
-            replicator: ActorRef,
-            majorityMinCap: Int): Props = {
+  def props(
+      typeName: String,
+      shardId: ShardRegion.ShardId,
+      entityProps: String => Props,
+      settings: ClusterShardingSettings,
+      extractEntityId: ShardRegion.ExtractEntityId,
+      extractShardId: ShardRegion.ExtractShardId,
+      handOffStopMessage: Any,
+      replicator: ActorRef,
+      majorityMinCap: Int): Props = {
     if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
       Props(
-        new DDataShard(typeName,
-                       shardId,
-                       entityProps,
-                       settings,
-                       extractEntityId,
-                       extractShardId,
-                       handOffStopMessage,
-                       replicator,
-                       majorityMinCap)).withDeploy(Deploy.local)
+        new DDataShard(
+          typeName,
+          shardId,
+          entityProps,
+          settings,
+          extractEntityId,
+          extractShardId,
+          handOffStopMessage,
+          replicator,
+          majorityMinCap)).withDeploy(Deploy.local)
     } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
       Props(
-        new PersistentShard(typeName,
-                            shardId,
-                            entityProps,
-                            settings,
-                            extractEntityId,
-                            extractShardId,
-                            handOffStopMessage)).withDeploy(Deploy.local)
+        new PersistentShard(
+          typeName,
+          shardId,
+          entityProps,
+          settings,
+          extractEntityId,
+          extractShardId,
+          handOffStopMessage)).withDeploy(Deploy.local)
     else
       Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
         .withDeploy(Deploy.local)
@@ -155,7 +159,7 @@ private[akka] object Shard {
  */
 private[akka] class Shard(typeName: String,
                           shardId: ShardRegion.ShardId,
-                          entityProps: String ⇒ Props,
+                          entityProps: String => Props,
                           settings: ClusterShardingSettings,
                           extractEntityId: ShardRegion.ExtractEntityId,
                           extractShardId: ShardRegion.ExtractShardId,
@@ -277,10 +281,11 @@ private[akka] class Shard(typeName: String,
     if (passivateIdleTask.isDefined) {
       lastMessageTimestamp = lastMessageTimestamp.updated(start.entityId, System.nanoTime())
     }
-    getOrCreateEntity(start.entityId,
-                      _ =>
-                        processChange(EntityStarted(start.entityId))(_ =>
-                          requester ! ShardRegion.StartEntityAck(start.entityId, shardId)))
+    getOrCreateEntity(
+      start.entityId,
+      _ =>
+        processChange(EntityStarted(start.entityId))(_ =>
+          requester ! ShardRegion.StartEntityAck(start.entityId, shardId)))
   }
 
   def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
@@ -464,12 +469,13 @@ private[akka] class Shard(typeName: String,
 }
 
 private[akka] object RememberEntityStarter {
-  def props(region: ActorRef,
-            typeName: String,
-            shardId: ShardRegion.ShardId,
-            ids: Set[ShardRegion.EntityId],
-            settings: ClusterShardingSettings,
-            requestor: ActorRef) =
+  def props(
+      region: ActorRef,
+      typeName: String,
+      shardId: ShardRegion.ShardId,
+      ids: Set[ShardRegion.EntityId],
+      settings: ClusterShardingSettings,
+      requestor: ActorRef) =
     Props(new RememberEntityStarter(region, typeName, shardId, ids, settings, requestor))
 
   private case object Tick extends NoSerializationVerificationNeeded
@@ -478,12 +484,13 @@ private[akka] object RememberEntityStarter {
 /**
  * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
  */
-private[akka] class RememberEntityStarter(region: ActorRef,
-                                          typeName: String,
-                                          shardId: ShardRegion.ShardId,
-                                          ids: Set[ShardRegion.EntityId],
-                                          settings: ClusterShardingSettings,
-                                          requestor: ActorRef)
+private[akka] class RememberEntityStarter(
+    region: ActorRef,
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    ids: Set[ShardRegion.EntityId],
+    settings: ClusterShardingSettings,
+    requestor: ActorRef)
     extends Actor
     with ActorLogging {
 
@@ -539,9 +546,10 @@ private[akka] trait RememberingShard {
     entityRecoveryStrategy match {
       case "all" => EntityRecoveryStrategy.allStrategy()
       case "constant" =>
-        EntityRecoveryStrategy.constantStrategy(context.system,
-                                                entityRecoveryConstantRateStrategyFrequency,
-                                                entityRecoveryConstantRateStrategyNumberOfEntities)
+        EntityRecoveryStrategy.constantStrategy(
+          context.system,
+          entityRecoveryConstantRateStrategyFrequency,
+          entityRecoveryConstantRateStrategyNumberOfEntities)
     }
   }
 
@@ -603,13 +611,14 @@ private[akka] trait RememberingShard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] class PersistentShard(typeName: String,
-                                    shardId: ShardRegion.ShardId,
-                                    entityProps: String => Props,
-                                    override val settings: ClusterShardingSettings,
-                                    extractEntityId: ShardRegion.ExtractEntityId,
-                                    extractShardId: ShardRegion.ExtractShardId,
-                                    handOffStopMessage: Any)
+private[akka] class PersistentShard(
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: String => Props,
+    override val settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any)
     extends Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
     with RememberingShard
     with PersistentActor
@@ -663,10 +672,11 @@ private[akka] class PersistentShard(typeName: String,
       case DeleteMessagesSuccess(toSequenceNr) =>
         val deleteTo = toSequenceNr - 1
         val deleteFrom = math.max(0, deleteTo - (keepNrOfBatches * snapshotAfter))
-        log.debug("PersistentShard messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]",
-                  toSequenceNr,
-                  deleteFrom,
-                  deleteTo)
+        log.debug(
+          "PersistentShard messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]",
+          toSequenceNr,
+          deleteFrom,
+          deleteTo)
         deleteSnapshots(SnapshotSelectionCriteria(minSequenceNr = deleteFrom, maxSequenceNr = deleteTo))
 
       case DeleteMessagesFailure(reason, toSequenceNr) =>
@@ -691,15 +701,16 @@ private[akka] class PersistentShard(typeName: String,
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] class DDataShard(typeName: String,
-                               shardId: ShardRegion.ShardId,
-                               entityProps: String => Props,
-                               override val settings: ClusterShardingSettings,
-                               extractEntityId: ShardRegion.ExtractEntityId,
-                               extractShardId: ShardRegion.ExtractShardId,
-                               handOffStopMessage: Any,
-                               replicator: ActorRef,
-                               majorityMinCap: Int)
+private[akka] class DDataShard(
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: String => Props,
+    override val settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any,
+    replicator: ActorRef,
+    majorityMinCap: Int)
     extends Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
     with RememberingShard
     with Stash
@@ -761,8 +772,9 @@ private[akka] class DDataShard(typeName: String,
         receiveOne(i)
 
       case GetFailure(_, _) =>
-        log.error("The DDataShard was unable to get an initial state within 'waiting-for-state-timeout': {} millis",
-                  waitingForStateTimeout.toMillis)
+        log.error(
+          "The DDataShard was unable to get an initial state within 'waiting-for-state-timeout': {} millis",
+          waitingForStateTimeout.toMillis)
         // parent ShardRegion supervisor will notice that it terminated and will start it again, after backoff
         context.stop(self)
 
@@ -825,10 +837,11 @@ private[akka] class DDataShard(typeName: String,
       }
 
     case ModifyFailure(_, error, cause, Some((`evt`, _))) =>
-      log.error(cause,
-                "The DDataShard was unable to update state with error {} and event {}. Shard will be restarted",
-                error,
-                evt)
+      log.error(
+        cause,
+        "The DDataShard was unable to update state with error {} and event {}. Shard will be restarted",
+        error,
+        evt)
       throw cause
 
     case _ => stash()
@@ -839,9 +852,10 @@ private[akka] class DDataShard(typeName: String,
 object EntityRecoveryStrategy {
   def allStrategy(): EntityRecoveryStrategy = new AllAtOnceEntityRecoveryStrategy()
 
-  def constantStrategy(actorSystem: ActorSystem,
-                       frequency: FiniteDuration,
-                       numberOfEntities: Int): EntityRecoveryStrategy =
+  def constantStrategy(
+      actorSystem: ActorSystem,
+      frequency: FiniteDuration,
+      numberOfEntities: Int): EntityRecoveryStrategy =
     new ConstantRateEntityRecoveryStrategy(actorSystem, frequency, numberOfEntities)
 }
 
@@ -861,9 +875,10 @@ final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
     if (entities.isEmpty) Set.empty else Set(Future.successful(entities))
 }
 
-final class ConstantRateEntityRecoveryStrategy(actorSystem: ActorSystem,
-                                               frequency: FiniteDuration,
-                                               numberOfEntities: Int)
+final class ConstantRateEntityRecoveryStrategy(
+    actorSystem: ActorSystem,
+    frequency: FiniteDuration,
+    numberOfEntities: Int)
     extends EntityRecoveryStrategy {
 
   import ShardRegion.EntityId

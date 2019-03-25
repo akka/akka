@@ -212,6 +212,10 @@ from other nodes might not be visible yet.
 When using @scala[`WriteLocal`]@java[`writeLocal`] the update is only written to the local replica and then disseminated
 in the background with the gossip protocol, which can take few seconds to spread to all nodes.
 
+When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages, in the event that the `modify` function
+threw an exception, or, if using durable storage, if storing failed.
+
 `WriteAll` and `ReadAll` is the strongest consistency level, but also the slowest and with
 lowest availability. For example, it is enough that one node is unavailable for a `Get` request
 and you will not receive the value.

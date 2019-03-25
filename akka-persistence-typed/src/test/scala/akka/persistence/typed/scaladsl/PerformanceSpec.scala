@@ -71,18 +71,19 @@ object PerformanceSpec {
     Behaviors
       .supervise({
         val parameters = Parameters()
-        EventSourcedBehavior[Command, String, String](persistenceId = PersistenceId(name),
-                                                      "",
-                                                      commandHandler = CommandHandler.command {
-                                                        case StopMeasure ⇒
-                                                          Effect.none.thenRun(_ => probe.ref ! StopMeasure)
-                                                        case FailAt(sequence) ⇒
-                                                          Effect.none.thenRun(_ => parameters.failAt = sequence)
-                                                        case command ⇒ other(command, parameters)
-                                                      },
-                                                      eventHandler = {
-                                                        case (state, _) => state
-                                                      }).receiveSignal {
+        EventSourcedBehavior[Command, String, String](
+          persistenceId = PersistenceId(name),
+          "",
+          commandHandler = CommandHandler.command {
+            case StopMeasure ⇒
+              Effect.none.thenRun(_ => probe.ref ! StopMeasure)
+            case FailAt(sequence) ⇒
+              Effect.none.thenRun(_ => parameters.failAt = sequence)
+            case command ⇒ other(command, parameters)
+          },
+          eventHandler = {
+            case (state, _) => state
+          }).receiveSignal {
           case RecoveryCompleted(_) =>
             if (parameters.every(1000)) print("r")
         }
@@ -123,10 +124,11 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
 
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
-  def stressPersistentActor(persistentActor: ActorRef[Command],
-                            probe: TestProbe[Reply],
-                            failAt: Option[Long],
-                            description: String): Unit = {
+  def stressPersistentActor(
+      persistentActor: ActorRef[Command],
+      probe: TestProbe[Reply],
+      failAt: Option[Long],
+      description: String): Unit = {
     failAt.foreach { persistentActor ! FailAt(_) }
     val m = new Measure(loadCycles)
     m.startMeasure()

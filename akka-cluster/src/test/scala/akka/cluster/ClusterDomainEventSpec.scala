@@ -99,26 +99,30 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val dc3BMemberUp = TestMember(Address("akka.tcp", "sys", "dc3B", 2552), Up, Set.empty[String], "dc3")
 
       val reachability1 = Reachability.empty
-      val g1 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
-                      overview = GossipOverview(reachability = reachability1))
+      val g1 = Gossip(
+        members = SortedSet(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
+        overview = GossipOverview(reachability = reachability1))
 
       val reachability2 = reachability1
         .unreachable(aUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
         .unreachable(dc2BMemberUp.uniqueAddress, dc2AMemberDown.uniqueAddress)
-      val g2 = Gossip(members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
-                      overview = GossipOverview(reachability = reachability2))
+      val g2 = Gossip(
+        members = SortedSet(aUp, bUp, dc2AMemberDown, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp),
+        overview = GossipOverview(reachability = reachability2))
 
       Set(aUp, bUp, dc2AMemberUp, dc2BMemberUp, dc3AMemberUp, dc3BMemberUp).foreach { member =>
         val otherDc =
           if (member.dataCenter == ClusterSettings.DefaultDataCenter) Seq("dc2")
           else Seq()
 
-        diffUnreachableDataCenter(MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-                                  MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
+        diffUnreachableDataCenter(
+          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
+          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
           otherDc.map(UnreachableDataCenter))
 
-        diffReachableDataCenter(MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-                                MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
+        diffReachableDataCenter(
+          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
+          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
           otherDc.map(ReachableDataCenter))
       }
     }
@@ -234,19 +238,20 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
       val g2 = Gossip(members = SortedSet(bUp, cUp, dExiting, eJoining))
       diffRolesLeader(state(g0), state(g1)) should ===(
         Set(
-            // since this role is implicitly added
-            RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(aUp.address)),
-            RoleLeaderChanged("AA", Some(aUp.address)),
-            RoleLeaderChanged("AB", Some(aUp.address)),
-            RoleLeaderChanged("BB", Some(bUp.address)),
-            RoleLeaderChanged("DD", Some(dLeaving.address)),
-            RoleLeaderChanged("DE", Some(dLeaving.address)),
-            RoleLeaderChanged("EE", Some(eUp.address))))
+          // since this role is implicitly added
+          RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(aUp.address)),
+          RoleLeaderChanged("AA", Some(aUp.address)),
+          RoleLeaderChanged("AB", Some(aUp.address)),
+          RoleLeaderChanged("BB", Some(bUp.address)),
+          RoleLeaderChanged("DD", Some(dLeaving.address)),
+          RoleLeaderChanged("DE", Some(dLeaving.address)),
+          RoleLeaderChanged("EE", Some(eUp.address))))
       diffRolesLeader(state(g1), state(g2)) should ===(
-        Set(RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(bUp.address)),
-            RoleLeaderChanged("AA", None),
-            RoleLeaderChanged("AB", Some(bUp.address)),
-            RoleLeaderChanged("DE", Some(eJoining.address))))
+        Set(
+          RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(bUp.address)),
+          RoleLeaderChanged("AA", None),
+          RoleLeaderChanged("AB", Some(bUp.address)),
+          RoleLeaderChanged("DE", Some(eJoining.address))))
     }
 
     "not be produced for role leader changes in other data centers" in {

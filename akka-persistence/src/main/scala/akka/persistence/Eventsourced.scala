@@ -153,18 +153,20 @@ private[persistence] trait Eventsourced
   protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
     event match {
       case Some(evt) =>
-        log.error(cause,
-                  "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
-                  "persistenceId [{}].",
-                  evt.getClass.getName,
-                  lastSequenceNr,
-                  persistenceId)
+        log.error(
+          cause,
+          "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
+          "persistenceId [{}].",
+          evt.getClass.getName,
+          lastSequenceNr,
+          persistenceId)
       case None =>
-        log.error(cause,
-                  "Persistence failure when replaying events for persistenceId [{}]. " +
-                  "Last known sequence number [{}]",
-                  persistenceId,
-                  lastSequenceNr)
+        log.error(
+          cause,
+          "Persistence failure when replaying events for persistenceId [{}]. " +
+          "Last known sequence number [{}]",
+          persistenceId,
+          lastSequenceNr)
     }
 
   /**
@@ -181,11 +183,12 @@ private[persistence] trait Eventsourced
    * @param event the event that was to be persisted
    */
   protected def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.error(cause,
-              "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
-              event.getClass.getName,
-              seqNr,
-              persistenceId)
+    log.error(
+      cause,
+      "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
+      event.getClass.getName,
+      seqNr,
+      persistenceId)
   }
 
   /**
@@ -197,12 +200,13 @@ private[persistence] trait Eventsourced
    * @param event the event that was to be persisted
    */
   protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    log.error(cause,
-              "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-              event.getClass.getName,
-              seqNr,
-              persistenceId,
-              cause.getMessage)
+    log.error(
+      cause,
+      "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
+      event.getClass.getName,
+      seqNr,
+      persistenceId,
+      cause.getMessage)
   }
 
   private def stashInternally(currMsg: Any): Unit =
@@ -296,26 +300,30 @@ private[persistence] trait Eventsourced
     message match {
       case RecoveryCompleted => // mute
       case SaveSnapshotFailure(m, e) =>
-        log.warning("Failed to saveSnapshot given metadata [{}] due to: [{}: {}]",
-                    m,
-                    e.getClass.getCanonicalName,
-                    e.getMessage)
+        log.warning(
+          "Failed to saveSnapshot given metadata [{}] due to: [{}: {}]",
+          m,
+          e.getClass.getCanonicalName,
+          e.getMessage)
       case DeleteSnapshotFailure(m, e) =>
-        log.warning("Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]",
-                    m,
-                    e.getClass.getCanonicalName,
-                    e.getMessage)
+        log.warning(
+          "Failed to deleteSnapshot given metadata [{}] due to: [{}: {}]",
+          m,
+          e.getClass.getCanonicalName,
+          e.getMessage)
       case DeleteSnapshotsFailure(c, e) =>
-        log.warning("Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]",
-                    c,
-                    e.getClass.getCanonicalName,
-                    e.getMessage)
+        log.warning(
+          "Failed to deleteSnapshots given criteria [{}] due to: [{}: {}]",
+          c,
+          e.getClass.getCanonicalName,
+          e.getMessage)
       case DeleteMessagesFailure(e, toSequenceNr) =>
-        log.warning("Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
-                    toSequenceNr,
-                    persistenceId,
-                    e.getClass.getCanonicalName,
-                    e.getMessage)
+        log.warning(
+          "Failed to deleteMessages toSequenceNr [{}] for persistenceId [{}] due to [{}: {}].",
+          toSequenceNr,
+          persistenceId,
+          e.getClass.getCanonicalName,
+          e.getMessage)
       case m => super.unhandled(m)
     }
   }
@@ -378,11 +386,12 @@ private[persistence] trait Eventsourced
     pendingStashingPersistInvocations += 1
     pendingInvocations.addLast(StashingHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
     eventBatch ::= AtomicWrite(
-      PersistentRepr(event,
-                     persistenceId = persistenceId,
-                     sequenceNr = nextSequenceNr(),
-                     writerUuid = writerUuid,
-                     sender = sender()))
+      PersistentRepr(
+        event,
+        persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(),
+        writerUuid = writerUuid,
+        sender = sender()))
   }
 
   /**
@@ -400,11 +409,12 @@ private[persistence] trait Eventsourced
       }
       eventBatch ::= AtomicWrite(
         events.map(
-          PersistentRepr.apply(_,
-                               persistenceId = persistenceId,
-                               sequenceNr = nextSequenceNr(),
-                               writerUuid = writerUuid,
-                               sender = sender())))
+          PersistentRepr.apply(
+            _,
+            persistenceId = persistenceId,
+            sequenceNr = nextSequenceNr(),
+            writerUuid = writerUuid,
+            sender = sender())))
     }
   }
 
@@ -418,11 +428,12 @@ private[persistence] trait Eventsourced
         "Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingInvocations.addLast(AsyncHandlerInvocation(event, handler.asInstanceOf[Any => Unit]))
     eventBatch ::= AtomicWrite(
-      PersistentRepr(event,
-                     persistenceId = persistenceId,
-                     sequenceNr = nextSequenceNr(),
-                     writerUuid = writerUuid,
-                     sender = sender()))
+      PersistentRepr(
+        event,
+        persistenceId = persistenceId,
+        sequenceNr = nextSequenceNr(),
+        writerUuid = writerUuid,
+        sender = sender()))
   }
 
   /**
@@ -439,11 +450,12 @@ private[persistence] trait Eventsourced
       }
       eventBatch ::= AtomicWrite(
         events.map(
-          PersistentRepr(_,
-                         persistenceId = persistenceId,
-                         sequenceNr = nextSequenceNr(),
-                         writerUuid = writerUuid,
-                         sender = sender())))
+          PersistentRepr(
+            _,
+            persistenceId = persistenceId,
+            sequenceNr = nextSequenceNr(),
+            writerUuid = writerUuid,
+            sender = sender())))
     }
   }
 
@@ -513,9 +525,10 @@ private[persistence] trait Eventsourced
    * Or delete all by using `Long.MaxValue` as the `toSequenceNr`
    * {{{ m.copy(sequenceNr = Long.MaxValue) }}}
    */
-  @InternalApi private[akka] def internalDeleteMessagesBeforeSnapshot(e: SaveSnapshotSuccess,
-                                                                      keepNrOfBatches: Int,
-                                                                      snapshotAfter: Int): Unit = {
+  @InternalApi private[akka] def internalDeleteMessagesBeforeSnapshot(
+      e: SaveSnapshotSuccess,
+      keepNrOfBatches: Int,
+      snapshotAfter: Int): Unit = {
     /* Delete old events but keep the latest around
       1. It's not safe to delete all events immediately because snapshots are typically stored with
          a weaker consistency level. A replay might "see" the deleted events before it sees the stored
@@ -648,8 +661,9 @@ private[persistence] trait Eventsourced
           returnRecoveryPermit()
 
         case RecoveryTick(true) =>
-          try onRecoveryFailure(new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
-                                event = None)
+          try onRecoveryFailure(
+            new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
+            event = None)
           finally context.stop(self)
           returnRecoveryPermit()
 

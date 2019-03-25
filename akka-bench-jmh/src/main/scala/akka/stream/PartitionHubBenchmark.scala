@@ -68,9 +68,10 @@ class PartitionHubBenchmark {
     val latch = new CountDownLatch(NumberOfStreams)
 
     val source = testSource.runWith(
-      PartitionHub.sink[java.lang.Integer]((size, elem) => elem.intValue % NumberOfStreams,
-                                           startAfterNrOfConsumers = NumberOfStreams,
-                                           bufferSize = BufferSize))(materializer)
+      PartitionHub.sink[java.lang.Integer](
+        (size, elem) => elem.intValue % NumberOfStreams,
+        startAfterNrOfConsumers = NumberOfStreams,
+        bufferSize = BufferSize))(materializer)
 
     for (_ <- 0 until NumberOfStreams)
       source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)

@@ -52,8 +52,9 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       lastEvents() should be(Set(Cancel, OnError(TE)))
     }
 
-    "resume when Map throws" in new OneBoundedSetupWithDecider[Int](Supervision.resumingDecider,
-                                                                    Map((x: Int) => if (x == 0) throw TE else x)) {
+    "resume when Map throws" in new OneBoundedSetupWithDecider[Int](
+      Supervision.resumingDecider,
+      Map((x: Int) => if (x == 0) throw TE else x)) {
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)

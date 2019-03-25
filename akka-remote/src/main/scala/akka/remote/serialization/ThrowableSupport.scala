@@ -57,8 +57,9 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
       if (protoT.hasCause) {
         val cause = payloadSupport.deserializePayload(protoT.getCause).asInstanceOf[Throwable]
         system.dynamicAccess
-          .createInstanceFor[Throwable](protoT.getClassName,
-                                        List(classOf[String] -> protoT.getMessage, classOf[Throwable] -> cause))
+          .createInstanceFor[Throwable](
+            protoT.getClassName,
+            List(classOf[String] -> protoT.getMessage, classOf[Throwable] -> cause))
           .get
       } else {
         // Important security note: before creating an instance of from the class name we
@@ -73,10 +74,11 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
     val stackTrace =
       protoT.getStackTraceList.asScala.map { elem =>
         val fileName = elem.getFileName
-        new StackTraceElement(elem.getClassName,
-                              elem.getMethodName,
-                              if (fileName.length > 0) fileName else null,
-                              elem.getLineNumber)
+        new StackTraceElement(
+          elem.getClassName,
+          elem.getMethodName,
+          if (fileName.length > 0) fileName else null,
+          elem.getLineNumber)
       }.toArray
     t.setStackTrace(stackTrace)
     t

@@ -48,7 +48,7 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBind
 
   val systemWithAsyncDnsAsResolver = ActorSystem("AsyncDnsSystem", configWithAsyncDnsResolverAsDefault)
 
-  private def testSrvRecords(discovery: ServiceDiscovery): Unit = {
+  private def testSrvRecords(discovery: ServiceDiscovery) = {
     val name = "_service._tcp.foo.test."
 
     def lookup() =
@@ -56,9 +56,10 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBind
         .lookup(Lookup("foo.test.").withPortName("service").withProtocol("tcp"), resolveTimeout = 10.seconds)
         .futureValue
 
-    val expected = Set(ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
-                       ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
-                       ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
+    val expected = Set(
+      ResolvedTarget("a-single.foo.test", Some(5060), Some(InetAddress.getByName("192.168.1.20"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.21"))),
+      ResolvedTarget("a-double.foo.test", Some(65535), Some(InetAddress.getByName("192.168.1.22"))))
 
     val result1 = lookup()
     result1.addresses.toSet shouldEqual expected
@@ -70,7 +71,7 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBind
     result2.serviceName shouldEqual name
   }
 
-  private def testIpRecords(discovery: ServiceDiscovery): Unit = {
+  private def testIpRecords(discovery: ServiceDiscovery) = {
     val name = "a-single.foo.test"
 
     val expected = Set(ResolvedTarget("192.168.1.20", None, Some(InetAddress.getByName("192.168.1.20"))))

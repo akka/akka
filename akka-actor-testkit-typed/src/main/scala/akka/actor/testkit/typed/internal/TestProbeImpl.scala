@@ -266,9 +266,10 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def fishForMessage(max: JDuration, fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
     fishForMessage(max, "", fisher)
 
-  override def fishForMessage(max: JDuration,
-                              hint: String,
-                              fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
+  override def fishForMessage(
+      max: JDuration,
+      hint: String,
+      fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
     fishForMessage_internal(max.asScala.dilated, hint, fisher.apply).asJava
 
   private def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M => FishingOutcome): List[M] = {
@@ -281,9 +282,10 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
             try fisher(message)
             catch {
               case ex: MatchError =>
-                throw new AssertionError(s"Unexpected message $message while fishing for messages, " +
-                                         s"seen messages ${seen.reverse}, hint: $hint",
-                                         ex)
+                throw new AssertionError(
+                  s"Unexpected message $message while fishing for messages, " +
+                  s"seen messages ${seen.reverse}, hint: $hint",
+                  ex)
             }
           outcome match {
             case FishingOutcome.Complete    => (message :: seen).reverse

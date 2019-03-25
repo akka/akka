@@ -50,13 +50,14 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
   private def behavior(serviceRegistry: LocalServiceRegistry, subscriptions: SubscriptionRegistry): Behavior[Any] = {
 
     // Helper to create new state
-    def next(newRegistry: LocalServiceRegistry = serviceRegistry,
-             newSubscriptions: SubscriptionRegistry = subscriptions) =
+    def next(
+        newRegistry: LocalServiceRegistry = serviceRegistry,
+        newSubscriptions: SubscriptionRegistry = subscriptions) =
       behavior(newRegistry, newSubscriptions)
 
     /*
      * Hack to allow multiple termination notifications per target
-     * FIXME: replace by simple map in our state
+     * FIXME #26505: replace by simple map in our state
      */
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
@@ -69,8 +70,9 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       })
 
     // Helper that makes sure that subscribers are notified when an entry is changed
-    def updateRegistry(changedKeysHint: Set[AbstractServiceKey],
-                       f: LocalServiceRegistry => LocalServiceRegistry): Behavior[Any] = {
+    def updateRegistry(
+        changedKeysHint: Set[AbstractServiceKey],
+        f: LocalServiceRegistry => LocalServiceRegistry): Behavior[Any] = {
       val newRegistry = f(serviceRegistry)
 
       def notifySubscribersFor[T](key: AbstractServiceKey): Unit = {

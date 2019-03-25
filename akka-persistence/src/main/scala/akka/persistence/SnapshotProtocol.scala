@@ -99,10 +99,11 @@ final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  * @see [[Recovery]]
  */
 @SerialVersionUID(1L)
-final case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue,
-                                           maxTimestamp: Long = Long.MaxValue,
-                                           minSequenceNr: Long = 0L,
-                                           minTimestamp: Long = 0L) {
+final case class SnapshotSelectionCriteria(
+    maxSequenceNr: Long = Long.MaxValue,
+    maxTimestamp: Long = Long.MaxValue,
+    minSequenceNr: Long = 0L,
+    minTimestamp: Long = 0L) {
 
   /**
    * INTERNAL API.

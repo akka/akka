@@ -139,14 +139,16 @@ object BenchmarkActors {
   }
 
   def requireRightNumberOfCores(numCores: Int) =
-    require(Runtime.getRuntime.availableProcessors == numCores,
-            s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}")
+    require(
+      Runtime.getRuntime.availableProcessors == numCores,
+      s"Update the cores constant to ${Runtime.getRuntime.availableProcessors}")
 
-  def benchmarkPingPongActors(numMessagesPerActorPair: Int,
-                              numActors: Int,
-                              dispatcher: String,
-                              throughPut: Int,
-                              shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
+  def benchmarkPingPongActors(
+      numMessagesPerActorPair: Int,
+      numActors: Int,
+      dispatcher: String,
+      throughPut: Int,
+      shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
     val numPairs = numActors / 2
     val totalNumMessages = numPairs * numMessagesPerActorPair
     val (actors, latch) = startPingPongActorPairs(numMessagesPerActorPair, numPairs, dispatcher)
@@ -156,11 +158,12 @@ object BenchmarkActors {
     printProgress(totalNumMessages, numActors, startNanoTime)
   }
 
-  def benchmarkEchoActors(numMessagesPerActorPair: Int,
-                          numActors: Int,
-                          dispatcher: String,
-                          batchSize: Int,
-                          shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
+  def benchmarkEchoActors(
+      numMessagesPerActorPair: Int,
+      numActors: Int,
+      dispatcher: String,
+      batchSize: Int,
+      shutdownTimeout: Duration)(implicit system: ActorSystem): Unit = {
     val numPairs = numActors / 2
     val totalNumMessages = numPairs * numMessagesPerActorPair
     val (actors, latch) = startEchoActorPairs(numMessagesPerActorPair, numPairs, dispatcher, batchSize)

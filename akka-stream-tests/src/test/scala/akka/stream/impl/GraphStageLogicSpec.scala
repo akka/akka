@@ -128,8 +128,9 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with S
         setHandler(shape.in, EagerTerminateInput)
         setHandler(shape.out, EagerTerminateOutput)
         override def preStart(): Unit =
-          readN(shape.in, n)(_ => failStage(new IllegalStateException("Shouldn't happen!")),
-                             e => emitMultiple(shape.out, e.iterator, () => completeStage()))
+          readN(shape.in, n)(
+            _ => failStage(new IllegalStateException("Shouldn't happen!")),
+            e => emitMultiple(shape.out, e.iterator, () => completeStage()))
       }
   }
 

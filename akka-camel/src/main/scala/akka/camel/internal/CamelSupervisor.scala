@@ -104,10 +104,11 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
   private var consumers = Set[ActorRef]()
 
   class RegistryLogStrategy()(_decider: SupervisorStrategy.Decider) extends OneForOneStrategy()(_decider) {
-    override def logFailure(context: ActorContext,
-                            child: ActorRef,
-                            cause: Throwable,
-                            decision: SupervisorStrategy.Directive): Unit =
+    override def logFailure(
+        context: ActorContext,
+        child: ActorRef,
+        cause: Throwable,
+        decision: SupervisorStrategy.Directive): Unit =
       cause match {
         case _: ActorActivationException | _: ActorDeActivationException =>
           try context.system.eventStream.publish {

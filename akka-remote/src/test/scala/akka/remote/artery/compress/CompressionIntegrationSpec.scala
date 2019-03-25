@@ -52,10 +52,10 @@ class CompressionIntegrationSpec
       // listen for compression table events
       val aManifestProbe = TestProbe()(system)
       val bManifestProbe = TestProbe()(systemB)
-      system.eventStream.subscribe(aManifestProbe.ref,
-                                   classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
-      systemB.eventStream.subscribe(bManifestProbe.ref,
-                                    classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+      system.eventStream
+        .subscribe(aManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+      systemB.eventStream
+        .subscribe(bManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
       val aRefProbe = TestProbe()(system)
       val bRefProbe = TestProbe()(systemB)
       system.eventStream.subscribe(aRefProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
@@ -200,10 +200,10 @@ class CompressionIntegrationSpec
     // listen for compression table events
     val aManifestProbe = TestProbe()(system)
     val bManifestProbe = TestProbe()(systemB2)
-    system.eventStream.subscribe(aManifestProbe.ref,
-                                 classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
-    systemB2.eventStream.subscribe(bManifestProbe.ref,
-                                   classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+    system.eventStream
+      .subscribe(aManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+    systemB2.eventStream
+      .subscribe(bManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
     val aRefProbe = TestProbe()(system)
     val bRefProbe = TestProbe()(systemB2)
     system.eventStream.subscribe(aRefProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
@@ -275,8 +275,9 @@ class CompressionIntegrationSpec
     val systemWrap = newRemoteSystem(extraConfig = Some(extraConfig))
 
     val receivedActorRefCompressionTableProbe = TestProbe()(system)
-    system.eventStream.subscribe(receivedActorRefCompressionTableProbe.ref,
-                                 classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
+    system.eventStream.subscribe(
+      receivedActorRefCompressionTableProbe.ref,
+      classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
 
     def createAndIdentify(i: Int) = {
       val echoWrap = systemWrap.actorOf(TestActors.echoActorProps, s"echo_$i")

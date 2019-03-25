@@ -280,9 +280,10 @@ object AskableActorRef {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def negativeTimeoutException(recipient: Any,
-                                                          message: Any,
-                                                          sender: ActorRef): IllegalArgumentException = {
+  @InternalApi private[akka] def negativeTimeoutException(
+      recipient: Any,
+      message: Any,
+      sender: ActorRef): IllegalArgumentException = {
     new IllegalArgumentException(
       s"Timeout length must be positive, question not sent to [$recipient]. " +
       messagePartOfException(message, sender))
@@ -291,9 +292,10 @@ object AskableActorRef {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def recipientTerminatedException(recipient: Any,
-                                                              message: Any,
-                                                              sender: ActorRef): AskTimeoutException = {
+  @InternalApi private[akka] def recipientTerminatedException(
+      recipient: Any,
+      message: Any,
+      sender: ActorRef): AskTimeoutException = {
     new AskTimeoutException(
       s"Recipient [$recipient] had already been terminated. " +
       messagePartOfException(message, sender))
@@ -302,9 +304,10 @@ object AskableActorRef {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def unsupportedRecipientType(recipient: Any,
-                                                          message: Any,
-                                                          sender: ActorRef): IllegalArgumentException = {
+  @InternalApi private[akka] def unsupportedRecipientType(
+      recipient: Any,
+      message: Any,
+      sender: ActorRef): IllegalArgumentException = {
     new IllegalArgumentException(
       s"Unsupported recipient type, question not sent to [$recipient]. " +
       messagePartOfException(message, sender))
@@ -497,9 +500,10 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
  *
  * INTERNAL API
  */
-private[akka] final class PromiseActorRef private (val provider: ActorRefProvider,
-                                                   val result: Promise[Any],
-                                                   _mcn: String)
+private[akka] final class PromiseActorRef private (
+    val provider: ActorRefProvider,
+    val result: Promise[Any],
+    _mcn: String)
     extends MinimalActorRef {
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
@@ -666,12 +670,13 @@ private[akka] object PromiseActorRef {
   private val ActorStopResult = Failure(ActorKilledException("Stopped"))
   private val defaultOnTimeout: String => Throwable = str => new AskTimeoutException(str)
 
-  def apply(provider: ActorRefProvider,
-            timeout: Timeout,
-            targetName: Any,
-            messageClassName: String,
-            sender: ActorRef = Actor.noSender,
-            onTimeout: String => Throwable = defaultOnTimeout): PromiseActorRef = {
+  def apply(
+      provider: ActorRefProvider,
+      timeout: Timeout,
+      targetName: Any,
+      messageClassName: String,
+      sender: ActorRef = Actor.noSender,
+      onTimeout: String => Throwable = defaultOnTimeout): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName)

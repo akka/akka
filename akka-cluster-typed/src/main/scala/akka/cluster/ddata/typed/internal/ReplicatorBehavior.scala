@@ -26,28 +26,31 @@ import akka.actor.typed.Terminated
   import akka.cluster.ddata.typed.javadsl.{ Replicator => JReplicator }
   import akka.cluster.ddata.typed.scaladsl.{ Replicator => SReplicator }
 
-  private case class InternalChanged[A <: ReplicatedData](chg: dd.Replicator.Changed[A],
-                                                          subscriber: ActorRef[JReplicator.Changed[A]])
+  private case class InternalChanged[A <: ReplicatedData](
+      chg: dd.Replicator.Changed[A],
+      subscriber: ActorRef[JReplicator.Changed[A]])
       extends JReplicator.Command
 
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
   val additionalAskTimeout = 1.second
 
-  def behavior(settings: dd.ReplicatorSettings,
-               underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
+  def behavior(
+      settings: dd.ReplicatorSettings,
+      underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
     Behaviors.setup { ctx =>
       val untypedReplicator = underlyingReplicator match {
         case Some(ref) => ref
         case None      =>
-          // FIXME perhaps add supervisor for restarting
+          // FIXME perhaps add supervisor for restarting, see PR https://github.com/akka/akka/pull/25988
           val untypedReplicatorProps = dd.Replicator.props(settings)
           ctx.actorOf(untypedReplicatorProps, name = "underlying")
       }
 
       def withState(
-          subscribeAdapters: Map[ActorRef[JReplicator.Changed[ReplicatedData]],
-                                 ActorRef[dd.Replicator.Changed[ReplicatedData]]]): Behavior[SReplicator.Command] = {
+          subscribeAdapters: Map[
+            ActorRef[JReplicator.Changed[ReplicatedData]],
+            ActorRef[dd.Replicator.Changed[ReplicatedData]]]): Behavior[SReplicator.Command] = {
 
         def stopSubscribeAdapter(
             subscriber: ActorRef[JReplicator.Changed[ReplicatedData]]): Behavior[SReplicator.Command] = {
@@ -65,8 +68,9 @@ import akka.actor.typed.Terminated
           .receive[SReplicator.Command] { (ctx, msg) =>
             msg match {
               case cmd: SReplicator.Get[_] =>
-                untypedReplicator.tell(dd.Replicator.Get(cmd.key, cmd.consistency, cmd.request),
-                                       sender = cmd.replyTo.toUntyped)
+                untypedReplicator.tell(
+                  dd.Replicator.Get(cmd.key, cmd.consistency, cmd.request),
+                  sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Get[d] =>
@@ -91,8 +95,9 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: SReplicator.Update[_] =>
-                untypedReplicator.tell(dd.Replicator.Update(cmd.key, cmd.writeConsistency, cmd.request)(cmd.modify),
-                                       sender = cmd.replyTo.toUntyped)
+                untypedReplicator.tell(
+                  dd.Replicator.Update(cmd.key, cmd.writeConsistency, cmd.request)(cmd.modify),
+                  sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Update[d] =>
@@ -102,9 +107,10 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Update(cmd.key,
-                                                            cmd.writeConsistency.toUntyped,
-                                                            cmd.request.asScala)(cmd.modify))
+                  (untypedReplicator ? dd.Replicator.Update(
+                    cmd.key,
+                    cmd.writeConsistency.toUntyped,
+                    cmd.request.asScala)(cmd.modify))
                     .mapTo[dd.Replicator.UpdateResponse[d]]
                     .map {
                       case rsp: dd.Replicator.UpdateSuccess[d] => JReplicator.UpdateSuccess(rsp.key, rsp.request.asJava)
@@ -121,8 +127,9 @@ import akka.actor.typed.Terminated
 
               case cmd: SReplicator.Subscribe[_] =>
                 // For the Scala API the Changed messages can be sent directly to the subscriber
-                untypedReplicator.tell(dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toUntyped),
-                                       sender = cmd.subscriber.toUntyped)
+                untypedReplicator.tell(
+                  dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toUntyped),
+                  sender = cmd.subscriber.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Subscribe[ReplicatedData] @unchecked =>
@@ -133,8 +140,9 @@ import akka.actor.typed.Terminated
                   InternalChanged(chg, cmd.subscriber)
                 }
 
-                untypedReplicator.tell(dd.Replicator.Subscribe(cmd.key, adapter.toUntyped),
-                                       sender = akka.actor.ActorRef.noSender)
+                untypedReplicator.tell(
+                  dd.Replicator.Subscribe(cmd.key, adapter.toUntyped),
+                  sender = akka.actor.ActorRef.noSender)
 
                 ctx.watch(cmd.subscriber)
 
@@ -148,8 +156,9 @@ import akka.actor.typed.Terminated
                 stopSubscribeAdapter(cmd.subscriber)
 
               case cmd: SReplicator.Delete[_] =>
-                untypedReplicator.tell(dd.Replicator.Delete(cmd.key, cmd.consistency, cmd.request),
-                                       sender = cmd.replyTo.toUntyped)
+                untypedReplicator.tell(
+                  dd.Replicator.Delete(cmd.key, cmd.consistency, cmd.request),
+                  sender = cmd.replyTo.toUntyped)
                 Behaviors.same
 
               case cmd: JReplicator.Delete[d] =>

@@ -74,24 +74,28 @@ private[cluster] final case class Gossip(
     def ifTrueThrow(func: => Boolean, expected: String, actual: String): Unit =
       if (func) throw new IllegalArgumentException(s"$expected, but found [$actual]")
 
-    ifTrueThrow(members.exists(_.status == Removed),
-                expected = s"Live members must not have status [$Removed]",
-                actual = s"${members.filter(_.status == Removed)}")
+    ifTrueThrow(
+      members.exists(_.status == Removed),
+      expected = s"Live members must not have status [$Removed]",
+      actual = s"${members.filter(_.status == Removed)}")
 
     val inReachabilityButNotMember = overview.reachability.allObservers.diff(members.map(_.uniqueAddress))
-    ifTrueThrow(inReachabilityButNotMember.nonEmpty,
-                expected = "Nodes not part of cluster in reachability table",
-                actual = inReachabilityButNotMember.mkString(", "))
+    ifTrueThrow(
+      inReachabilityButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster in reachability table",
+      actual = inReachabilityButNotMember.mkString(", "))
 
     val inReachabilityVersionsButNotMember = overview.reachability.versions.keySet.diff(members.map(_.uniqueAddress))
-    ifTrueThrow(inReachabilityVersionsButNotMember.nonEmpty,
-                expected = "Nodes not part of cluster in reachability versions table",
-                actual = inReachabilityVersionsButNotMember.mkString(", "))
+    ifTrueThrow(
+      inReachabilityVersionsButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster in reachability versions table",
+      actual = inReachabilityVersionsButNotMember.mkString(", "))
 
     val seenButNotMember = overview.seen.diff(members.map(_.uniqueAddress))
-    ifTrueThrow(seenButNotMember.nonEmpty,
-                expected = "Nodes not part of cluster have marked the Gossip as seen",
-                actual = seenButNotMember.mkString(", "))
+    ifTrueThrow(
+      seenButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster have marked the Gossip as seen",
+      actual = seenButNotMember.mkString(", "))
   }
 
   @transient private lazy val membersMap: Map[UniqueAddress, Member] =
@@ -271,8 +275,9 @@ private[cluster] final case class Gossip(
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
 @SerialVersionUID(1L)
-private[cluster] final case class GossipOverview(seen: Set[UniqueAddress] = Set.empty,
-                                                 reachability: Reachability = Reachability.empty) {
+private[cluster] final case class GossipOverview(
+    seen: Set[UniqueAddress] = Set.empty,
+    reachability: Reachability = Reachability.empty) {
 
   override def toString =
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
@@ -295,11 +300,12 @@ object GossipEnvelope {
  * different in that case.
  */
 @SerialVersionUID(2L)
-private[cluster] class GossipEnvelope private (val from: UniqueAddress,
-                                               val to: UniqueAddress,
-                                               @volatile var g: Gossip,
-                                               serDeadline: Deadline,
-                                               @transient @volatile var ser: () => Gossip)
+private[cluster] class GossipEnvelope private (
+    val from: UniqueAddress,
+    val to: UniqueAddress,
+    @volatile var g: Gossip,
+    serDeadline: Deadline,
+    @transient @volatile var ser: () => Gossip)
     extends ClusterMessage {
 
   def gossip: Gossip = {

@@ -335,7 +335,7 @@ class ORSetSpec extends WordSpec with Matchers {
     "work for clear" in {
       val s1 = ORSet.empty[String]
       val s2 = s1.add(node1, "a").add(node1, "b")
-      val s3 = s2.resetDelta.clear(node1)
+      val s3 = s2.resetDelta.clear()
       val s4 = s3.resetDelta.add(node1, "c")
       s2.merge(s3) should ===(s3)
       s2.mergeDelta(s3.delta.get) should ===(s3)
@@ -511,9 +511,10 @@ class ORSetSpec extends WordSpec with Matchers {
 
     "verify mergeDisjointKeys" in {
       val keys: Set[Any] = Set("K3", "K4", "K5")
-      val elements: Map[Any, VersionVector] = Map("K3" -> VersionVector(nodeA, 4L),
-                                                  "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
-                                                  "K5" -> VersionVector(nodeA, 2L))
+      val elements: Map[Any, VersionVector] = Map(
+        "K3" -> VersionVector(nodeA, 4L),
+        "K4" -> VersionVector(TreeMap(nodeA -> 3L, nodeD -> 8L)),
+        "K5" -> VersionVector(nodeA, 2L))
       val vvector = VersionVector(TreeMap(nodeA -> 3L, nodeD -> 7L))
       val acc: Map[Any, VersionVector] = Map("K1" -> VersionVector(nodeA, 3L))
       val expectedDots = acc ++ Map("K3" -> VersionVector(nodeA, 4L), "K4" -> VersionVector(nodeD, 8L)) // "a" -> 3 removed, optimized to include only those unseen
@@ -599,16 +600,19 @@ class ORSetSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val s1 = ORSet.empty.add(node1, "a").add(node2, "b")
-      val s2: ORSet[String] = s1
+      val _: ORSet[String] = s1
       val ORSet(elements1) = s1 // `unapply[A](s: ORSet[A])` is used here
       val elements2: Set[String] = elements1
+      elements2 should be(Set("a", "b"))
 
       Changed(ORSetKey[String]("key"))(s1) match {
         case c @ Changed(ORSetKey("key")) =>
-          val x: ORSet[String] = c.dataValue
+          val _: ORSet[String] = c.dataValue
           val ORSet(elements3) = c.dataValue
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
 
       val msg: Any = Changed(ORSetKey[String]("key"))(s1)
@@ -620,6 +624,8 @@ class ORSetSpec extends WordSpec with Matchers {
           //   but trait Set is invariant in type A. You may wish to investigate a wildcard type such as _ <: Any. (SLS 3.2.10)
           val elements4: Set[Any] = elements3
           elements4 should be(Set("a", "b"))
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 

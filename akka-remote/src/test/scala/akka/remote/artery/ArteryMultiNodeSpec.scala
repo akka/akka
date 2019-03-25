@@ -42,9 +42,10 @@ abstract class ArteryMultiNodeSpec(config: Config)
    * @return A new actor system configured with artery enabled. The system will
    *         automatically be terminated after test is completed to avoid leaks.
    */
-  def newRemoteSystem(extraConfig: Option[String] = None,
-                      name: Option[String] = None,
-                      setup: Option[ActorSystemSetup] = None): ActorSystem = {
+  def newRemoteSystem(
+      extraConfig: Option[String] = None,
+      name: Option[String] = None,
+      setup: Option[ActorSystemSetup] = None): ActorSystem = {
     val config =
       ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(localSystem.settings.config)(str =>
         ConfigFactory.parseString(str).withFallback(localSystem.settings.config)))

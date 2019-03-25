@@ -43,38 +43,33 @@ object EventSourcedBehaviorReplySpec {
   def counter(persistenceId: PersistenceId): Behavior[Command[_]] =
     Behaviors.setup(ctx => counter(ctx, persistenceId))
 
-  def counter(ctx: ActorContext[Command[_]],
-              persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
-    EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](persistenceId,
-                                                                       emptyState = State(0, Vector.empty),
-                                                                       commandHandler = (state, command) =>
-                                                                         command match {
+  def counter(
+      ctx: ActorContext[Command[_]],
+      persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
+    EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
+      persistenceId,
+      emptyState = State(0, Vector.empty),
+      commandHandler = (state, command) =>
+        command match {
 
-                                                                           case cmd: IncrementWithConfirmation =>
-                                                                             Effect
-                                                                               .persist(Incremented(1))
-                                                                               .thenReply(cmd)(_ => Done)
+          case cmd: IncrementWithConfirmation =>
+            Effect.persist(Incremented(1)).thenReply(cmd)(_ => Done)
 
-                                                                           case cmd: IncrementReplyLater =>
-                                                                             Effect
-                                                                               .persist(Incremented(1))
-                                                                               .thenRun((_: State) =>
-                                                                                 ctx.self ! ReplyNow(cmd.replyTo))
-                                                                               .thenNoReply()
+          case cmd: IncrementReplyLater =>
+            Effect.persist(Incremented(1)).thenRun((_: State) => ctx.self ! ReplyNow(cmd.replyTo)).thenNoReply()
 
-                                                                           case cmd: ReplyNow =>
-                                                                             Effect.reply(cmd)(Done)
+          case cmd: ReplyNow =>
+            Effect.reply(cmd)(Done)
 
-                                                                           case query: GetValue =>
-                                                                             Effect.reply(query)(state)
+          case query: GetValue =>
+            Effect.reply(query)(state)
 
-                                                                         },
-                                                                       eventHandler = (state, evt) =>
-                                                                         evt match {
-                                                                           case Incremented(delta) =>
-                                                                             State(state.value + delta,
-                                                                                   state.history :+ state.value)
-                                                                         })
+        },
+      eventHandler = (state, evt) =>
+        evt match {
+          case Incremented(delta) =>
+            State(state.value + delta, state.history :+ state.value)
+        })
   }
 }
 

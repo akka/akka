@@ -41,21 +41,23 @@ object CircuitBreakerProxy {
    * @param failureMap           function to map a failure into a response message. The failing response message is wrapped
    *                             into a [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] object
    */
-  def props(target: ActorRef,
-            maxFailures: Int,
-            callTimeout: Timeout,
-            resetTimeout: Timeout,
-            circuitEventListener: Option[ActorRef],
-            failureDetector: Any => Boolean,
-            failureMap: CircuitOpenFailure => Any) =
+  def props(
+      target: ActorRef,
+      maxFailures: Int,
+      callTimeout: Timeout,
+      resetTimeout: Timeout,
+      circuitEventListener: Option[ActorRef],
+      failureDetector: Any => Boolean,
+      failureMap: CircuitOpenFailure => Any) =
     Props(
-      new CircuitBreakerProxy(target,
-                              maxFailures,
-                              callTimeout,
-                              resetTimeout,
-                              circuitEventListener,
-                              failureDetector,
-                              failureMap))
+      new CircuitBreakerProxy(
+        target,
+        maxFailures,
+        callTimeout,
+        resetTimeout,
+        circuitEventListener,
+        failureDetector,
+        failureMap))
 
   sealed trait CircuitBreakerCommand
 
@@ -77,14 +79,15 @@ object CircuitBreakerProxy {
 
   final case class CircuitBreakerStateData(failureCount: Int = 0, firstHalfOpenMessageSent: Boolean = false)
 
-  final case class CircuitBreakerPropsBuilder(maxFailures: Int,
-                                              callTimeout: Timeout,
-                                              resetTimeout: Timeout,
-                                              circuitEventListener: Option[ActorRef] = None,
-                                              failureDetector: Any => Boolean = { _ =>
-                                                false
-                                              },
-                                              openCircuitFailureConverter: CircuitOpenFailure => Any = identity) {
+  final case class CircuitBreakerPropsBuilder(
+      maxFailures: Int,
+      callTimeout: Timeout,
+      resetTimeout: Timeout,
+      circuitEventListener: Option[ActorRef] = None,
+      failureDetector: Any => Boolean = { _ =>
+        false
+      },
+      openCircuitFailureConverter: CircuitOpenFailure => Any = identity) {
 
     def withMaxFailures(value: Int) = copy(maxFailures = value)
     def withCallTimeout(value: Timeout) = copy(callTimeout = value)
@@ -99,13 +102,14 @@ object CircuitBreakerProxy {
      * @param target the target actor ref
      */
     def props(target: ActorRef) =
-      CircuitBreakerProxy.props(target,
-                                maxFailures,
-                                callTimeout,
-                                resetTimeout,
-                                circuitEventListener,
-                                failureDetector,
-                                openCircuitFailureConverter)
+      CircuitBreakerProxy.props(
+        target,
+        maxFailures,
+        callTimeout,
+        resetTimeout,
+        circuitEventListener,
+        failureDetector,
+        openCircuitFailureConverter)
 
   }
 
@@ -119,13 +123,14 @@ object CircuitBreakerProxy {
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
-final class CircuitBreakerProxy(target: ActorRef,
-                                maxFailures: Int,
-                                callTimeout: Timeout,
-                                resetTimeout: Timeout,
-                                circuitEventListener: Option[ActorRef],
-                                failureDetector: Any => Boolean,
-                                failureMap: CircuitOpenFailure => Any)
+final class CircuitBreakerProxy(
+    target: ActorRef,
+    maxFailures: Int,
+    callTimeout: Timeout,
+    resetTimeout: Timeout,
+    circuitEventListener: Option[ActorRef],
+    failureDetector: Any => Boolean,
+    failureMap: CircuitOpenFailure => Any)
     extends Actor
     with ActorLogging
     with FSM[CircuitBreakerState, CircuitBreakerStateData] {
@@ -199,16 +204,18 @@ final class CircuitBreakerProxy(target: ActorRef,
         stay
 
       case Event(openNotification @ CircuitOpenFailure(_), _) =>
-        log.warning("Unexpected circuit open notification {} sent to myself. Please report this as a bug.",
-                    openNotification)
+        log.warning(
+          "Unexpected circuit open notification {} sent to myself. Please report this as a bug.",
+          openNotification)
         stay
 
       case Event(message, state) =>
         val failureNotification = failureMap(CircuitOpenFailure(message))
-        log.debug("OPEN: Failing request for message {}, sending failure notification {} to sender {}",
-                  message,
-                  failureNotification,
-                  sender)
+        log.debug(
+          "OPEN: Failing request for message {}, sending failure notification {} to sender {}",
+          message,
+          failureNotification,
+          sender)
         sender ! failureNotification
         stay
 
@@ -237,10 +244,11 @@ final class CircuitBreakerProxy(target: ActorRef,
 
       case Event(message, CircuitBreakerStateData(_, true)) =>
         val failureNotification = failureMap(CircuitOpenFailure(message))
-        log.debug("HALF-OPEN: Failing request for message {}, sending failure notification {} to sender {}",
-                  message,
-                  failureNotification,
-                  sender)
+        log.debug(
+          "HALF-OPEN: Failing request for message {}, sending failure notification {} to sender {}",
+          message,
+          failureNotification,
+          sender)
         sender ! failureNotification
         stay
     }
@@ -251,9 +259,10 @@ final class CircuitBreakerProxy(target: ActorRef,
 
     target.ask(message)(callTimeout).onComplete {
       case Success(response) =>
-        log.debug("Request '{}' has been replied to with response {}, forwarding to original sender {}",
-                  message,
-                  currentSender)
+        log.debug(
+          "Request '{}' has been replied to with response {}, forwarding to original sender {}",
+          message,
+          currentSender)
 
         currentSender ! response
 

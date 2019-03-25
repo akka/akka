@@ -19,23 +19,25 @@ class ReverseArrowSpec extends StreamSpec {
   "Reverse Arrows in the Graph DSL" must {
 
     "work from Inlets" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       s.in <~ source
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            s.in <~ source
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work from SinkShape" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       s <~ source
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            s <~ source
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work from Sink" in {
@@ -74,15 +76,16 @@ class ReverseArrowSpec extends StreamSpec {
     }
 
     "work from FlowShape" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       val f: FlowShape[Int, Int] = b.add(Flow[Int])
-                       f <~ source
-                       f ~> s
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            val f: FlowShape[Int, Int] = b.add(Flow[Int])
+            f <~ source
+            f ~> s
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work from UniformFanInShape" in {
@@ -114,47 +117,51 @@ class ReverseArrowSpec extends StreamSpec {
     }
 
     "work towards Outlets" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       val o: Outlet[Int] = b.add(source).out
-                       s <~ o
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            val o: Outlet[Int] = b.add(source).out
+            s <~ o
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work towards SourceShape" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       val o: SourceShape[Int] = b.add(source)
-                       s <~ o
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            val o: SourceShape[Int] = b.add(source)
+            s <~ o
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work towards Source" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       s <~ source
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            s <~ source
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work towards FlowShape" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       val f: FlowShape[Int, Int] = b.add(Flow[Int])
-                       s <~ f
-                       source ~> f
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            val f: FlowShape[Int, Int] = b.add(Flow[Int])
+            s <~ f
+            source ~> f
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work towards UniformFanInShape" in {
@@ -218,23 +225,25 @@ class ReverseArrowSpec extends StreamSpec {
     }
 
     "work across a Flow" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       s <~ Flow[Int] <~ source
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            s <~ Flow[Int] <~ source
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
     "work across a FlowShape" in {
-      Await.result(RunnableGraph
-                     .fromGraph(GraphDSL.create(sink) { implicit b => s =>
-                       s <~ b.add(Flow[Int]) <~ source
-                       ClosedShape
-                     })
-                     .run(),
-                   1.second) should ===(Seq(1, 2, 3))
+      Await.result(
+        RunnableGraph
+          .fromGraph(GraphDSL.create(sink) { implicit b => s =>
+            s <~ b.add(Flow[Int]) <~ source
+            ClosedShape
+          })
+          .run(),
+        1.second) should ===(Seq(1, 2, 3))
     }
 
   }

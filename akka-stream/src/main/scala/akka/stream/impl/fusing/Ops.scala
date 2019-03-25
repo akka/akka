@@ -394,18 +394,19 @@ private[stream] object Collect {
         }
       })
 
-      setHandler(in,
-                 new InHandler {
-                   override def onPush(): Unit = ()
+      setHandler(
+        in,
+        new InHandler {
+          override def onPush(): Unit = ()
 
-                   override def onUpstreamFinish(): Unit =
-                     setHandler(out, new OutHandler {
-                       override def onPull(): Unit = {
-                         push(out, aggregator)
-                         completeStage()
-                       }
-                     })
-                 })
+          override def onUpstreamFinish(): Unit =
+            setHandler(out, new OutHandler {
+              override def onPull(): Unit = {
+                push(out, aggregator)
+                completeStage()
+              }
+            })
+        })
 
       override def onPull(): Unit = pull(in)
 
@@ -910,8 +911,9 @@ private[stream] object Collect {
           case s: DropHead =>
             elem =>
               if (buffer.isFull) {
-                log.log(s.logLevel,
-                        "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+                log.log(
+                  s.logLevel,
+                  "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
                 buffer.dropHead()
               }
               buffer.enqueue(elem)
@@ -919,8 +921,9 @@ private[stream] object Collect {
           case s: DropTail =>
             elem =>
               if (buffer.isFull) {
-                log.log(s.logLevel,
-                        "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+                log.log(
+                  s.logLevel,
+                  "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
                 buffer.dropTail()
               }
               buffer.enqueue(elem)
@@ -939,8 +942,9 @@ private[stream] object Collect {
             elem =>
               if (!buffer.isFull) buffer.enqueue(elem)
               else
-                log.log(s.logLevel,
-                        "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
+                log.log(
+                  s.logLevel,
+                  "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
               pull(in)
           case s: Backpressure =>
             elem =>
@@ -997,10 +1001,11 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class Batch[In, Out](val max: Long,
-                                                           val costFn: In => Long,
-                                                           val seed: In => Out,
-                                                           val aggregate: (Out, In) => Out)
+@InternalApi private[akka] final case class Batch[In, Out](
+    val max: Long,
+    val costFn: In => Long,
+    val seed: In => Out,
+    val aggregate: (Out, In) => Out)
     extends GraphStage[FlowShape[In, Out]] {
 
   val in = Inlet[In]("Batch.in")
@@ -1479,11 +1484,12 @@ private[stream] object Collect {
           logLevels.onFailure match {
             case Logging.ErrorLevel => log.error(cause, "[{}] Upstream failed.", name)
             case level =>
-              log.log(level,
-                      "[{}] Upstream failed, cause: {}: {}",
-                      name,
-                      Logging.simpleName(cause.getClass),
-                      cause.getMessage)
+              log.log(
+                level,
+                "[{}] Upstream failed, cause: {}: {}",
+                name,
+                Logging.simpleName(cause.getClass),
+                cause.getMessage)
           }
 
         super.onUpstreamFailure(cause)
@@ -1558,9 +1564,10 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GroupedWeightedWithin[T](val maxWeight: Long,
-                                                                costFn: T => Long,
-                                                                val interval: FiniteDuration)
+@InternalApi private[akka] final class GroupedWeightedWithin[T](
+    val maxWeight: Long,
+    costFn: T => Long,
+    val interval: FiniteDuration)
     extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   require(maxWeight > 0, "maxWeight must be greater than 0")
   require(interval > Duration.Zero)
@@ -1936,8 +1943,9 @@ private[stream] object Collect {
  */
 @InternalApi private[stream] object RecoverWith
 
-@InternalApi private[akka] final class RecoverWith[T, M](val maximumRetries: Int,
-                                                         val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]])
+@InternalApi private[akka] final class RecoverWith[T, M](
+    val maximumRetries: Int,
+    val pf: PartialFunction[Throwable, Graph[SourceShape[T], M]])
     extends SimpleLinearGraphStage[T] {
 
   override def initialAttributes = DefaultAttributes.recoverWith
@@ -2175,23 +2183,24 @@ private[stream] object Collect {
         // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
         setKeepGoing(true)
 
-        setHandler(in,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       subOutlet.push(grab(in))
-                     }
-                     override def onUpstreamFinish(): Unit = {
-                       if (firstElementPushed) {
-                         subOutlet.complete()
-                         maybeCompleteStage()
-                       }
-                     }
-                     override def onUpstreamFailure(ex: Throwable): Unit = {
-                       // propagate exception irrespective if the cached element has been pushed or not
-                       subOutlet.fail(ex)
-                       maybeCompleteStage()
-                     }
-                   })
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              subOutlet.push(grab(in))
+            }
+            override def onUpstreamFinish(): Unit = {
+              if (firstElementPushed) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              // propagate exception irrespective if the cached element has been pushed or not
+              subOutlet.fail(ex)
+              maybeCompleteStage()
+            }
+          })
 
         setHandler(out, new OutHandler {
           override def onPull(): Unit = {

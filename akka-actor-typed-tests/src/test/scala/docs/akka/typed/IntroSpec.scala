@@ -133,8 +133,9 @@ object IntroSpec {
         message match {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
-            val ses = context.spawn(session(context.self, screenName, client),
-                                    name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
+            val ses = context.spawn(
+              session(context.self, screenName, client),
+              name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             chatRoom(ses :: sessions)
           case PublishSessionMessage(screenName, message) =>
@@ -144,9 +145,10 @@ object IntroSpec {
         }
       }
 
-    private def session(room: ActorRef[PublishSessionMessage],
-                        screenName: String,
-                        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
+    private def session(
+        room: ActorRef[PublishSessionMessage],
+        screenName: String,
+        client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receive { (context, message) =>
         message match {
           case PostMessage(message) =>

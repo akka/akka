@@ -20,10 +20,11 @@ import akka.io.UdpConnected._
 /**
  * INTERNAL API
  */
-private[io] class UdpConnection(udpConn: UdpConnectedExt,
-                                channelRegistry: ChannelRegistry,
-                                commander: ActorRef,
-                                connect: Connect)
+private[io] class UdpConnection(
+    udpConn: UdpConnectedExt,
+    channelRegistry: ChannelRegistry,
+    commander: ActorRef,
+    connect: Connect)
     extends Actor
     with ActorLogging
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -158,10 +159,11 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
       thunk
     } catch {
       case NonFatal(e) =>
-        log.debug("Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
-                  remoteAddress,
-                  localAddress.getOrElse("undefined"),
-                  e)
+        log.debug(
+          "Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
+          remoteAddress,
+          localAddress.getOrElse("undefined"),
+          e)
         commander ! CommandFailed(connect)
         context.stop(self)
     }

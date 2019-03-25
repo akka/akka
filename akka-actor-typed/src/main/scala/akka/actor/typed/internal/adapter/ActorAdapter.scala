@@ -150,9 +150,15 @@ import akka.annotation.InternalApi
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) => throw DeathPactException(ref)
-    case _: Signal       => // that's ok
-    case other           => super.unhandled(other)
+
+    case Terminated(ref) =>
+      // this should never get here, because if it did, the death pact could
+      // not be supervised - interpretSignal is where this actually happens
+      throw DeathPactException(ref)
+    case _: Signal =>
+    // that's ok
+    case other =>
+      super.unhandled(other)
   }
 
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
@@ -277,8 +283,9 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ComposedStoppingBehavior[T](lastBehavior: Behavior[T],
-                                                                    stopBehavior: StoppedBehavior[T])
+@InternalApi private[typed] final class ComposedStoppingBehavior[T](
+    lastBehavior: Behavior[T],
+    stopBehavior: StoppedBehavior[T])
     extends ExtensibleBehavior[T] {
   override def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
     throw new IllegalStateException("Stopping, should never receieve a message")

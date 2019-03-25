@@ -206,11 +206,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val probe = TestProbe()
     val receiver = system.actorOf(Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
-    val sink = Sink.actorRefWithAck(receiver,
-                                    onInitMessage = InitMessage,
-                                    ackMessage = AckMessage,
-                                    onCompleteMessage = OnCompleteMessage,
-                                    onFailureMessage = onErrorMessage)
+    val sink = Sink.actorRefWithAck(
+      receiver,
+      onInitMessage = InitMessage,
+      ackMessage = AckMessage,
+      onCompleteMessage = OnCompleteMessage,
+      onFailureMessage = onErrorMessage)
 
     words.map(_.toLowerCase).runWith(sink)
 
@@ -295,13 +296,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#external-service-mapAsyncUnordered
 
     probe.receiveN(7).toSet should be(
-      Set("rolandkuhn@somewhere.com",
-          "patriknw@somewhere.com",
-          "bantonsson@somewhere.com",
-          "drewhk@somewhere.com",
-          "ktosopl@somewhere.com",
-          "mmartynas@somewhere.com",
-          "akkateam@somewhere.com"))
+      Set(
+        "rolandkuhn@somewhere.com",
+        "patriknw@somewhere.com",
+        "bantonsson@somewhere.com",
+        "drewhk@somewhere.com",
+        "ktosopl@somewhere.com",
+        "mmartynas@somewhere.com",
+        "akkateam@somewhere.com"))
   }
 
   "careful managed blocking with mapAsync" in {
@@ -332,13 +334,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#blocking-mapAsync
 
     probe.receiveN(7).toSet should be(
-      Set("rolandkuhn".hashCode.toString,
-          "patriknw".hashCode.toString,
-          "bantonsson".hashCode.toString,
-          "drewhk".hashCode.toString,
-          "ktosopl".hashCode.toString,
-          "mmartynas".hashCode.toString,
-          "akkateam".hashCode.toString))
+      Set(
+        "rolandkuhn".hashCode.toString,
+        "patriknw".hashCode.toString,
+        "bantonsson".hashCode.toString,
+        "drewhk".hashCode.toString,
+        "ktosopl".hashCode.toString,
+        "mmartynas".hashCode.toString,
+        "akkateam".hashCode.toString))
   }
 
   "careful managed blocking with map" in {
@@ -452,16 +455,17 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#sometimes-slow-mapAsyncUnordered
 
     probe.receiveN(10).toSet should be(
-      Set("after: A",
-          "after: B",
-          "after: C",
-          "after: D",
-          "after: E",
-          "after: F",
-          "after: G",
-          "after: H",
-          "after: I",
-          "after: J"))
+      Set(
+        "after: A",
+        "after: B",
+        "after: C",
+        "after: D",
+        "after: E",
+        "after: F",
+        "after: G",
+        "after: H",
+        "after: I",
+        "after: J"))
   }
 
   "illustrate use of source queue" in {

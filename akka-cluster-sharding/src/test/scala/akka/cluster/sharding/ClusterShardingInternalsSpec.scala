@@ -45,19 +45,21 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
       val extractEntityId = mock[ShardRegion.ExtractEntityId]
       val extractShardId = mock[ShardRegion.ExtractShardId]
 
-      clusterSharding.start(typeName = typeName,
-                            entityProps = Props.empty,
-                            settings = settingsWithRole,
-                            extractEntityId = extractEntityId,
-                            extractShardId = extractShardId,
-                            allocationStrategy = mock[ShardAllocationStrategy],
-                            handOffStopMessage = PoisonPill)
+      clusterSharding.start(
+        typeName = typeName,
+        entityProps = Props.empty,
+        settings = settingsWithRole,
+        extractEntityId = extractEntityId,
+        extractShardId = extractShardId,
+        allocationStrategy = mock[ShardAllocationStrategy],
+        handOffStopMessage = PoisonPill)
 
-      verify(clusterSharding).startProxy(ArgumentMatchers.eq(typeName),
-                                         ArgumentMatchers.eq(settingsWithRole.role),
-                                         ArgumentMatchers.eq(None),
-                                         ArgumentMatchers.eq(extractEntityId),
-                                         ArgumentMatchers.eq(extractShardId))
+      verify(clusterSharding).startProxy(
+        ArgumentMatchers.eq(typeName),
+        ArgumentMatchers.eq(settingsWithRole.role),
+        ArgumentMatchers.eq(None),
+        ArgumentMatchers.eq(extractEntityId),
+        ArgumentMatchers.eq(extractShardId))
     }
 
     "HandOffStopper must stop the entity even if the entity doesn't handle handOffStopMessage" in {

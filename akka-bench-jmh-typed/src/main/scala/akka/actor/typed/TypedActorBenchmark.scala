@@ -39,7 +39,7 @@ class TypedActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  @Param(Array("akka.actor.ManyToOneArrayMailbox")) //  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.actor.ManyToOneArrayMailbox"))
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))

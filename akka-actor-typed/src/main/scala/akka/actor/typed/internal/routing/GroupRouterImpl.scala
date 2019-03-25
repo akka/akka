@@ -17,9 +17,9 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class GroupRouterBuilder[T] private[akka] (key: ServiceKey[T],
-                                                                    logicFactory: () => RoutingLogic[T] = () =>
-                                                                      new RoutingLogics.RandomLogic[T]())
+private[akka] final case class GroupRouterBuilder[T] private[akka] (
+    key: ServiceKey[T],
+    logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RandomLogic[T]())
     extends javadsl.GroupRouter[T]
     with scaladsl.GroupRouter[T] {
 

@@ -102,8 +102,13 @@ final class RemoteSettings(val config: Config) {
   }.requiring(_ > Duration.Zero, "initial-system-message-delivery-timeout must be > 0")
 
   val QuarantineSilentSystemTimeout: FiniteDuration = {
-    config.getMillisDuration("akka.remote.quarantine-after-silence")
-  }.requiring(_ > Duration.Zero, "quarantine-after-silence must be > 0")
+    val key = "akka.remote.quarantine-after-silence"
+    config.getString(key).toLowerCase match {
+      case "off" | "false" => Duration.Zero
+      case _ =>
+        config.getMillisDuration(key).requiring(_ > Duration.Zero, "quarantine-after-silence must be > 0")
+    }
+  }
 
   val QuarantineDuration: FiniteDuration = {
     config
@@ -129,9 +134,10 @@ final class RemoteSettings(val config: Config) {
 
   val Transports: immutable.Seq[(String, immutable.Seq[String], Config)] = transportNames.map { name =>
     val transportConfig = transportConfigFor(name)
-    (transportConfig.getString("transport-class"),
-     immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
-     transportConfig)
+    (
+      transportConfig.getString("transport-class"),
+      immutableSeq(transportConfig.getStringList("applied-adapters")).reverse,
+      transportConfig)
   }
 
   val Adapters: Map[String, String] = configToMap(getConfig("akka.remote.adapters"))

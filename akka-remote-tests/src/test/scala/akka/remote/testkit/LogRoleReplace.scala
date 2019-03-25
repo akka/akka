@@ -45,8 +45,9 @@ object LogRoleReplace extends ClipboardOwner {
     val replacer = new LogRoleReplace
 
     if (args.length == 0) {
-      replacer.process(new BufferedReader(new InputStreamReader(System.in)),
-                       new PrintWriter(new OutputStreamWriter(System.out)))
+      replacer.process(
+        new BufferedReader(new InputStreamReader(System.in)),
+        new PrintWriter(new OutputStreamWriter(System.out)))
 
     } else if (args(0) == "clipboard") {
       val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard

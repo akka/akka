@@ -44,8 +44,9 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    */
   def this(customConfig: String) =
     this(
-      ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]),
-                          ConfigFactory.parseString(customConfig)))
+      ActorTestKit.create(
+        TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]),
+        ConfigFactory.parseString(customConfig)))
 
   /**
    * Use a custom config for the actor system.

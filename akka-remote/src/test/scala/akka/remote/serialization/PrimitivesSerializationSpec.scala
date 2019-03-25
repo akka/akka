@@ -115,10 +115,11 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
   }
 
   "ByteStringSerializer" must {
-    Seq("empty string" -> ByteString.empty,
-        "simple content" -> ByteString("hello"),
-        "concatenated content" -> (ByteString("hello") ++ ByteString("world")),
-        "sliced content" -> ByteString("helloabc").take(5)).foreach {
+    Seq(
+      "empty string" -> ByteString.empty,
+      "simple content" -> ByteString("hello"),
+      "concatenated content" -> (ByteString("hello") ++ ByteString("world")),
+      "sliced content" -> ByteString("helloabc").take(5)).foreach {
       case (scenario, item) =>
         s"resolve serializer for [$scenario]" in {
           val serializer = SerializationExtension(system)

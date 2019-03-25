@@ -84,8 +84,9 @@ class ConsistentHashingRouterSpec
         case Msg2(key, _) => key
       }
       val router2 =
-        system.actorOf(ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]),
-                       "router2")
+        system.actorOf(
+          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]),
+          "router2")
 
       router2 ! Msg2("a", "A")
       val destinationA = expectMsgType[ActorRef]

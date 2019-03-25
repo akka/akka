@@ -62,9 +62,10 @@ class SteppingInMemPersistentActorBoundedStashingSpec(strategyConfig: String)
       SteppingInmemJournal
         .config("persistence-bounded-stash")
         .withFallback(
-          PersistenceSpec.config("stepping-inmem",
-                                 "SteppingInMemPersistentActorBoundedStashingSpec",
-                                 extraConfig = Some(strategyConfig))))
+          PersistenceSpec.config(
+            "stepping-inmem",
+            "SteppingInMemPersistentActorBoundedStashingSpec",
+            extraConfig = Some(strategyConfig))))
     with BeforeAndAfterEach
     with ImplicitSender {
 

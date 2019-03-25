@@ -26,18 +26,17 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
-  // ---------- journal interactions ---------
-
   protected def internalPersist(state: Running.RunningState[S], event: EventOrTagged): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
 
     val senderNotKnownBecauseAkkaTyped = null
-    val repr = PersistentRepr(event,
-                              persistenceId = setup.persistenceId.id,
-                              sequenceNr = newState.seqNr,
-                              writerUuid = setup.writerIdentity.writerUuid,
-                              sender = senderNotKnownBecauseAkkaTyped)
+    val repr = PersistentRepr(
+      event,
+      persistenceId = setup.persistenceId.id,
+      sequenceNr = newState.seqNr,
+      writerUuid = setup.writerIdentity.writerUuid,
+      sender = senderNotKnownBecauseAkkaTyped)
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
@@ -46,18 +45,20 @@ private[akka] trait JournalInteractions[C, E, S] {
     newState
   }
 
-  protected def internalPersistAll(events: immutable.Seq[EventOrTagged],
-                                   state: Running.RunningState[S]): Running.RunningState[S] = {
+  protected def internalPersistAll(
+      events: immutable.Seq[EventOrTagged],
+      state: Running.RunningState[S]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
       val writes = events.map { event =>
         newState = newState.nextSequenceNr()
-        PersistentRepr(event,
-                       persistenceId = setup.persistenceId.id,
-                       sequenceNr = newState.seqNr,
-                       writerUuid = setup.writerIdentity.writerUuid,
-                       sender = ActorRef.noSender)
+        PersistentRepr(
+          event,
+          persistenceId = setup.persistenceId.id,
+          sequenceNr = newState.seqNr,
+          writerUuid = setup.writerIdentity.writerUuid,
+          sender = ActorRef.noSender)
       }
       val write = AtomicWrite(writes)
 
@@ -71,11 +72,12 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
-    setup.journal ! ReplayMessages(fromSeqNr,
-                                   toSeqNr,
-                                   setup.recovery.replayMax,
-                                   setup.persistenceId.id,
-                                   setup.selfUntyped)
+    setup.journal ! ReplayMessages(
+      fromSeqNr,
+      toSeqNr,
+      setup.recovery.replayMax,
+      setup.persistenceId.id,
+      setup.selfUntyped)
   }
 
   protected def requestRecoveryPermit(): Unit = {
@@ -102,7 +104,35 @@ private[akka] trait JournalInteractions[C, E, S] {
     } // else, no need to return the permit
   }
 
-  // ---------- snapshot store interactions ---------
+  /**
+   * On [[akka.persistence.SaveSnapshotSuccess]], if [[akka.persistence.typed.RetentionCriteria.deleteEventsOnSnapshot]]
+   * is enabled, old messages are deleted based on [[akka.persistence.typed.RetentionCriteria.snapshotEveryNEvents]]
+   * before old snapshots are deleted.
+   */
+  protected def internalDeleteEvents(e: SaveSnapshotSuccess, state: Running.RunningState[S]): Unit =
+    if (setup.retention.deleteEventsOnSnapshot) {
+      val toSequenceNr = setup.retention.toSequenceNumber(e.metadata.sequenceNr)
+
+      if (toSequenceNr > 0) {
+        val lastSequenceNr = state.seqNr
+        val self = setup.selfUntyped
+
+        if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
+          setup.journal ! JournalProtocol.DeleteMessagesTo(e.metadata.persistenceId, toSequenceNr, self)
+        else
+          self ! DeleteMessagesFailure(
+            new RuntimeException(
+              s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
+            toSequenceNr)
+      }
+    }
+}
+
+/** INTERNAL API */
+@InternalApi
+private[akka] trait SnapshotInteractions[C, E, S] {
+
+  def setup: BehaviorSetup[C, E, S]
 
   /**
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
@@ -113,6 +143,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
+    setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else
@@ -121,4 +152,17 @@ private[akka] trait JournalInteractions[C, E, S] {
         setup.selfUntyped)
   }
 
+  /** Deletes the snapshots up to and including the `sequenceNr`. */
+  protected def internalDeleteSnapshots(toSequenceNr: Long): Unit = {
+    if (toSequenceNr > 0) {
+      // We could use 0 as fromSequenceNr to delete all older snapshots, but that might be inefficient for
+      // large ranges depending on how it's implemented in the snapshot plugin. Therefore we use the
+      // same window as defined for how much to keep in the retention criteria
+      val fromSequenceNr = setup.retention.toSequenceNumber(toSequenceNr)
+      val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
+      setup.log.debug("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
+      setup.snapshotStore
+        .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfUntyped)
+    }
+  }
 }

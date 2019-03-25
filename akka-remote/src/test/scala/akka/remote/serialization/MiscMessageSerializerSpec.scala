@@ -70,62 +70,64 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
   val ref = system.actorOf(Props.empty, "hello")
 
   "MiscMessageSerializer" must {
-    Seq("Identify" -> Identify("some-message"),
-        "Identify with None" -> Identify(None),
-        "Identify with Some" -> Identify(Some("value")),
-        "ActorIdentity without actor ref" -> ActorIdentity("some-message", ref = None),
-        "ActorIdentity with actor ref" -> ActorIdentity("some-message", ref = Some(testActor)),
-        "TestException" -> new TestException("err"),
-        "TestExceptionNoStack" -> new TestExceptionNoStack("err2"),
-        "TestException with cause" -> new TestException("err3", new TestException("cause")),
-        "Status.Success" -> Status.Success("value"),
-        "Status.Failure" -> Status.Failure(new TestException("err")),
-        "Status.Failure JavaSer" -> Status.Failure(new OtherException("exc")), // exc with JavaSerializer
-        "ActorRef" -> ref,
-        "Some" -> Some("value"),
-        "None" -> None,
-        "Optional.present" -> Optional.of("value2"),
-        "Optional.empty" -> Optional.empty(),
-        "Kill" -> Kill,
-        "PoisonPill" -> PoisonPill,
-        "RemoteWatcher.Heartbeat" -> RemoteWatcher.Heartbeat,
-        "RemoteWatcher.HertbeatRsp" -> RemoteWatcher.HeartbeatRsp(65537),
-        "Done" -> Done,
-        "NotUsed" -> NotUsed,
-        "Address" -> Address("akka", "system", "host", 1337),
-        "UniqueAddress" -> akka.remote.UniqueAddress(Address("akka", "system", "host", 1337), 82751),
-        "LocalScope" -> LocalScope,
-        "RemoteScope" -> RemoteScope(Address("akka", "system", "localhost", 2525)),
-        "Config" -> system.settings.config,
-        "Empty Config" -> ConfigFactory.empty(),
-        "FromConfig" -> FromConfig,
-        // routers
-        "DefaultResizer" -> DefaultResizer(),
-        "BalancingPool" -> BalancingPool(nrOfInstances = 25),
-        "BalancingPool with custom dispatcher" -> BalancingPool(nrOfInstances = 25, routerDispatcher = "my-dispatcher"),
-        "BroadcastPool" -> BroadcastPool(nrOfInstances = 25),
-        "BroadcastPool with custom dispatcher and resizer" -> BroadcastPool(nrOfInstances = 25,
-                                                                            routerDispatcher = "my-dispatcher",
-                                                                            usePoolDispatcher = true,
-                                                                            resizer = Some(DefaultResizer())),
-        "RandomPool" -> RandomPool(nrOfInstances = 25),
-        "RandomPool with custom dispatcher" -> RandomPool(nrOfInstances = 25, routerDispatcher = "my-dispatcher"),
-        "RoundRobinPool" -> RoundRobinPool(25),
-        "ScatterGatherFirstCompletedPool" -> ScatterGatherFirstCompletedPool(25, within = 3.seconds),
-        "TailChoppingPool" -> TailChoppingPool(25, within = 3.seconds, interval = 1.second),
-        "RemoteRouterConfig" -> RemoteRouterConfig(local = RandomPool(25),
-                                                   nodes = List(Address("akka", "system", "localhost", 2525))))
-      .foreach {
-        case (scenario, item) =>
-          s"resolve serializer for $scenario" in {
-            val serializer = SerializationExtension(system)
-            serializer.serializerFor(item.getClass).getClass should ===(classOf[MiscMessageSerializer])
-          }
+    Seq(
+      "Identify" -> Identify("some-message"),
+      "Identify with None" -> Identify(None),
+      "Identify with Some" -> Identify(Some("value")),
+      "ActorIdentity without actor ref" -> ActorIdentity("some-message", ref = None),
+      "ActorIdentity with actor ref" -> ActorIdentity("some-message", ref = Some(testActor)),
+      "TestException" -> new TestException("err"),
+      "TestExceptionNoStack" -> new TestExceptionNoStack("err2"),
+      "TestException with cause" -> new TestException("err3", new TestException("cause")),
+      "Status.Success" -> Status.Success("value"),
+      "Status.Failure" -> Status.Failure(new TestException("err")),
+      "Status.Failure JavaSer" -> Status.Failure(new OtherException("exc")), // exc with JavaSerializer
+      "ActorRef" -> ref,
+      "Some" -> Some("value"),
+      "None" -> None,
+      "Optional.present" -> Optional.of("value2"),
+      "Optional.empty" -> Optional.empty(),
+      "Kill" -> Kill,
+      "PoisonPill" -> PoisonPill,
+      "RemoteWatcher.Heartbeat" -> RemoteWatcher.Heartbeat,
+      "RemoteWatcher.HertbeatRsp" -> RemoteWatcher.HeartbeatRsp(65537),
+      "Done" -> Done,
+      "NotUsed" -> NotUsed,
+      "Address" -> Address("akka", "system", "host", 1337),
+      "UniqueAddress" -> akka.remote.UniqueAddress(Address("akka", "system", "host", 1337), 82751),
+      "LocalScope" -> LocalScope,
+      "RemoteScope" -> RemoteScope(Address("akka", "system", "localhost", 2525)),
+      "Config" -> system.settings.config,
+      "Empty Config" -> ConfigFactory.empty(),
+      "FromConfig" -> FromConfig,
+      // routers
+      "DefaultResizer" -> DefaultResizer(),
+      "BalancingPool" -> BalancingPool(nrOfInstances = 25),
+      "BalancingPool with custom dispatcher" -> BalancingPool(nrOfInstances = 25, routerDispatcher = "my-dispatcher"),
+      "BroadcastPool" -> BroadcastPool(nrOfInstances = 25),
+      "BroadcastPool with custom dispatcher and resizer" -> BroadcastPool(
+        nrOfInstances = 25,
+        routerDispatcher = "my-dispatcher",
+        usePoolDispatcher = true,
+        resizer = Some(DefaultResizer())),
+      "RandomPool" -> RandomPool(nrOfInstances = 25),
+      "RandomPool with custom dispatcher" -> RandomPool(nrOfInstances = 25, routerDispatcher = "my-dispatcher"),
+      "RoundRobinPool" -> RoundRobinPool(25),
+      "ScatterGatherFirstCompletedPool" -> ScatterGatherFirstCompletedPool(25, within = 3.seconds),
+      "TailChoppingPool" -> TailChoppingPool(25, within = 3.seconds, interval = 1.second),
+      "RemoteRouterConfig" -> RemoteRouterConfig(
+        local = RandomPool(25),
+        nodes = List(Address("akka", "system", "localhost", 2525)))).foreach {
+      case (scenario, item) =>
+        s"resolve serializer for $scenario" in {
+          val serializer = SerializationExtension(system)
+          serializer.serializerFor(item.getClass).getClass should ===(classOf[MiscMessageSerializer])
+        }
 
-          s"serialize and de-serialize $scenario" in {
-            verifySerialization(item)
-          }
-      }
+        s"serialize and de-serialize $scenario" in {
+          verifySerialization(item)
+        }
+    }
 
     "reject invalid manifest" in {
       intercept[IllegalArgumentException] {

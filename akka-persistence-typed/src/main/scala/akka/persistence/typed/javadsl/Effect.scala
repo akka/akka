@@ -94,8 +94,9 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage](cmd: ExpectingReply[ReplyMessage],
-                          replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+  def reply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
     none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
@@ -168,8 +169,9 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage],
-                              replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
+  def thenReply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
     CompositeEffect(this, SideEffect[State](newState => cmd.replyTo ! replyWithMessage(newState)))
 
   /**

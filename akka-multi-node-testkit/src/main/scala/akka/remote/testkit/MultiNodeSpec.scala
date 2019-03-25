@@ -210,11 +210,12 @@ object MultiNodeSpec {
   require(selfIndex >= 0 && selfIndex < maxNodes, "multinode.index is out of bounds: " + selfIndex)
 
   private[testkit] val nodeConfig = mapToConfig(
-    Map("akka.actor.provider" -> "remote",
-        "akka.remote.artery.canonical.hostname" -> selfName,
-        "akka.remote.netty.tcp.hostname" -> selfName,
-        "akka.remote.netty.tcp.port" -> selfPort,
-        "akka.remote.artery.canonical.port" -> selfPort))
+    Map(
+      "akka.actor.provider" -> "remote",
+      "akka.remote.artery.canonical.hostname" -> selfName,
+      "akka.remote.netty.tcp.hostname" -> selfName,
+      "akka.remote.netty.tcp.port" -> selfPort,
+      "akka.remote.artery.canonical.port" -> selfPort))
 
   private[testkit] val baseConfig: Config =
     ConfigFactory.parseString("""
@@ -261,10 +262,11 @@ object MultiNodeSpec {
  * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
  * val is fine.
  */
-abstract class MultiNodeSpec(val myself: RoleName,
-                             _system: ActorSystem,
-                             _roles: immutable.Seq[RoleName],
-                             deployments: RoleName => Seq[String])
+abstract class MultiNodeSpec(
+    val myself: RoleName,
+    _system: ActorSystem,
+    _roles: immutable.Seq[RoleName],
+    deployments: RoleName => Seq[String])
     extends TestKit(_system)
     with MultiNodeSpecCallbacks {
 
@@ -359,8 +361,9 @@ abstract class MultiNodeSpec(val myself: RoleName,
    * }}}
    */
   def initialParticipants: Int
-  require(initialParticipants > 0,
-          "initialParticipants must be a 'def' or early initializer, and it must be greater zero")
+  require(
+    initialParticipants > 0,
+    "initialParticipants must be a 'def' or early initializer, and it must be greater zero")
   require(initialParticipants <= maxNodes, "not enough nodes to run this test")
 
   /**
@@ -390,8 +393,9 @@ abstract class MultiNodeSpec(val myself: RoleName,
    * the innermost enclosing `within` block or the default `BarrierTimeout`
    */
   def enterBarrier(name: String*): Unit =
-    testConductor.enter(Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
-                        name.to(immutable.Seq))
+    testConductor.enter(
+      Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
+      name.to(immutable.Seq))
 
   /**
    * Query the controller for the transport address of the given node (by role name) and

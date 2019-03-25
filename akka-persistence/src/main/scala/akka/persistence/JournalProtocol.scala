@@ -37,9 +37,10 @@ private[persistence] object JournalProtocol {
    * @param messages messages to be written.
    * @param persistentActor write requestor.
    */
-  final case class WriteMessages(messages: immutable.Seq[PersistentEnvelope],
-                                 persistentActor: ActorRef,
-                                 actorInstanceId: Int)
+  final case class WriteMessages(
+      messages: immutable.Seq[PersistentEnvelope],
+      persistentActor: ActorRef,
+      actorInstanceId: Int)
       extends Request
       with NoSerializationVerificationNeeded
 
@@ -106,11 +107,12 @@ private[persistence] object JournalProtocol {
    * @param persistenceId requesting persistent actor id.
    * @param persistentActor requesting persistent actor.
    */
-  final case class ReplayMessages(fromSequenceNr: Long,
-                                  toSequenceNr: Long,
-                                  max: Long,
-                                  persistenceId: String,
-                                  persistentActor: ActorRef)
+  final case class ReplayMessages(
+      fromSequenceNr: Long,
+      toSequenceNr: Long,
+      max: Long,
+      persistenceId: String,
+      persistentActor: ActorRef)
       extends Request
 
   /**
@@ -142,3 +144,13 @@ private[persistence] object JournalProtocol {
   final case class ReplayMessagesFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
 }
+
+/**
+ * Reply message to a successful [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesSuccess(toSequenceNr: Long) extends JournalProtocol.Response
+
+/**
+ * Reply message to a failed [[JournalProtocol.DeleteMessagesTo]] request.
+ */
+final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long) extends JournalProtocol.Response

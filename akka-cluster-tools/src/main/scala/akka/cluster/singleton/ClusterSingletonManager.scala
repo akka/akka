@@ -477,8 +477,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   val selfUniqueAddressOption = Some(cluster.selfUniqueAddress)
   import cluster.settings.LogInfo
 
-  require(role.forall(cluster.selfRoles.contains),
-          s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
+  require(
+    role.forall(cluster.selfRoles.contains),
+    s"This cluster member [${cluster.selfAddress}] doesn't have the role [$role]")
 
   private val singletonLeaseName = s"${context.system.name}-singleton-${settings.singletonName}"
 
@@ -614,9 +615,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
             goto(BecomingOldest).using(BecomingOldestData(previousOldestOption))
         }
       } else {
-        logInfo("Younger observed OldestChanged: [{} -> {}]",
-                previousOldestOption.map(_.address),
-                oldestOption.map(_.address))
+        logInfo(
+          "Younger observed OldestChanged: [{} -> {}]",
+          previousOldestOption.map(_.address),
+          oldestOption.map(_.address))
         getNextOldestChanged()
         stay.using(YoungerData(oldestOption))
       }
@@ -658,9 +660,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (sender().path.address == previousOldest.address)
         tryGoToOldest()
       else {
-        logInfo("Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
-                sender().path.address,
-                previousOldest.address)
+        logInfo(
+          "Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
+          sender().path.address,
+          previousOldest.address)
         stay
       }
 
@@ -696,9 +699,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
             case Some(previousOldest) =>
               if (previousOldest == senderUniqueAddress) sender() ! HandOverToMe
               else
-                logInfo("Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
-                        sender().path.address,
-                        previousOldest.address)
+                logInfo(
+                  "Ignoring TakeOver request in BecomingOldest from [{}]. Expected previous oldest [{}]",
+                  sender().path.address,
+                  previousOldest.address)
               stay
             case None =>
               sender() ! HandOverToMe

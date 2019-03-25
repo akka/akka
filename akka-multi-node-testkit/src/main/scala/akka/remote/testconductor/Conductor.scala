@@ -79,9 +79,10 @@ trait Conductor { this: TestConductorExt =>
    * @param participants gives the number of participants which shall connect
    * before any of their startClient() operations complete.
    */
-  def startController(participants: Int,
-                      name: RoleName,
-                      controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
+  def startController(
+      participants: Int,
+      name: RoleName,
+      controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
     _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
@@ -424,12 +425,11 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   import BarrierCoordinator._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(Server,
-                                    controllerPort,
-                                    settings.ServerSocketWorkerPoolSize,
-                                    new ConductorHandler(settings.QueryTimeout,
-                                                         self,
-                                                         Logging(context.system, classOf[ConductorHandler].getName)))
+  val connection = RemoteConnection(
+    Server,
+    controllerPort,
+    settings.ServerSocketWorkerPoolSize,
+    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, classOf[ConductorHandler].getName)))
 
   /*
    * Supervision of the BarrierCoordinator means to catch all his bad emotions

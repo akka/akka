@@ -184,27 +184,25 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val DeltaPropagationManifest = "Q"
   val DeltaNackManifest = "R"
 
-  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](GetManifest -> getFromBinary,
-                                                                                          GetSuccessManifest -> getSuccessFromBinary,
-                                                                                          NotFoundManifest -> notFoundFromBinary,
-                                                                                          GetFailureManifest -> getFailureFromBinary,
-                                                                                          SubscribeManifest -> subscribeFromBinary,
-                                                                                          UnsubscribeManifest -> unsubscribeFromBinary,
-                                                                                          ChangedManifest -> changedFromBinary,
-                                                                                          DataEnvelopeManifest -> dataEnvelopeFromBinary,
-                                                                                          WriteManifest -> writeFromBinary,
-                                                                                          WriteAckManifest -> (_ =>
-                                                                                            WriteAck),
-                                                                                          ReadManifest -> readFromBinary,
-                                                                                          ReadResultManifest -> readResultFromBinary,
-                                                                                          StatusManifest -> statusFromBinary,
-                                                                                          GossipManifest -> gossipFromBinary,
-                                                                                          DeltaPropagationManifest -> deltaPropagationFromBinary,
-                                                                                          WriteNackManifest -> (_ =>
-                                                                                            WriteNack),
-                                                                                          DeltaNackManifest -> (_ =>
-                                                                                            DeltaNack),
-                                                                                          DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
+  private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
+    GetManifest -> getFromBinary,
+    GetSuccessManifest -> getSuccessFromBinary,
+    NotFoundManifest -> notFoundFromBinary,
+    GetFailureManifest -> getFailureFromBinary,
+    SubscribeManifest -> subscribeFromBinary,
+    UnsubscribeManifest -> unsubscribeFromBinary,
+    ChangedManifest -> changedFromBinary,
+    DataEnvelopeManifest -> dataEnvelopeFromBinary,
+    WriteManifest -> writeFromBinary,
+    WriteAckManifest -> (_ => WriteAck),
+    ReadManifest -> readFromBinary,
+    ReadResultManifest -> readResultFromBinary,
+    StatusManifest -> statusFromBinary,
+    GossipManifest -> gossipFromBinary,
+    DeltaPropagationManifest -> deltaPropagationFromBinary,
+    WriteNackManifest -> (_ => WriteNack),
+    DeltaNackManifest -> (_ => DeltaNack),
+    DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: DataEnvelope        => DataEnvelopeManifest
@@ -263,7 +261,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def statusToProto(status: Status): dm.Status = {
     val b = dm.Status.newBuilder()
     b.setChunk(status.chunk).setTotChunks(status.totChunks)
-    val entries = status.digests.foreach {
+    status.digests.foreach {
       case (key, digest) =>
         b.addEntries(dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteString.copyFrom(digest.toArray)))
     }
@@ -272,14 +270,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
-    Status(status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
-           status.getChunk,
-           status.getTotChunks)
+    Status(
+      status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
+      status.getChunk,
+      status.getTotChunks)
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
     val b = dm.Gossip.newBuilder().setSendBack(gossip.sendBack)
-    val entries = gossip.updatedData.foreach {
+    gossip.updatedData.foreach {
       case (key, data) =>
         b.addEntries(dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data)))
     }
@@ -288,15 +287,16 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
-    Gossip(gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
-           sendBack = gossip.getSendBack)
+    Gossip(
+      gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
+      sendBack = gossip.getSendBack)
   }
 
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
     val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation.fromNode))
     if (deltaPropagation.reply)
       b.setReply(deltaPropagation.reply)
-    val entries = deltaPropagation.deltas.foreach {
+    deltaPropagation.deltas.foreach {
       case (key, Delta(data, fromSeqNr, toSeqNr)) =>
         val b2 = dm.DeltaPropagation.Entry
           .newBuilder()
@@ -313,13 +313,14 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def deltaPropagationFromBinary(bytes: Array[Byte]): DeltaPropagation = {
     val deltaPropagation = dm.DeltaPropagation.parseFrom(bytes)
     val reply = deltaPropagation.hasReply && deltaPropagation.getReply
-    DeltaPropagation(uniqueAddressFromProto(deltaPropagation.getFromNode),
-                     reply,
-                     deltaPropagation.getEntriesList.asScala.iterator.map { e =>
-                       val fromSeqNr = e.getFromSeqNr
-                       val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
-                       e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
-                     }.toMap)
+    DeltaPropagation(
+      uniqueAddressFromProto(deltaPropagation.getFromNode),
+      reply,
+      deltaPropagation.getEntriesList.asScala.iterator.map { e =>
+        val fromSeqNr = e.getFromSeqNr
+        val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
+        e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
+      }.toMap)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {
@@ -330,11 +331,14 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case _: ReadAll      => -1
     }
 
+    val timoutInMillis = get.consistency.timeout.toMillis
+    require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
+
     val b = dm.Get
       .newBuilder()
       .setKey(otherMessageToProto(get.key))
       .setConsistency(consistencyValue)
-      .setTimeout(get.consistency.timeout.toMillis.toInt)
+      .setTimeout(timoutInMillis.toInt)
 
     get.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
@@ -344,7 +348,11 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val get = dm.Get.parseFrom(bytes)
     val key = otherMessageFromProto(get.getKey).asInstanceOf[KeyR]
     val request = if (get.hasRequest()) Some(otherMessageFromProto(get.getRequest)) else None
-    val timeout = Duration(get.getTimeout, TimeUnit.MILLISECONDS)
+    // 32-bit unsigned protobuf integers are mapped to
+    // 32-bit signed Java ints, using the leftmost bit as sign.
+    val timeout =
+      if (get.getTimeout < 0) Duration(Int.MaxValue.toLong + (get.getTimeout - Int.MaxValue), TimeUnit.MILLISECONDS)
+      else Duration(get.getTimeout.toLong, TimeUnit.MILLISECONDS)
     val consistency = get.getConsistency match {
       case 0  => ReadMajority(timeout)
       case -1 => ReadAll(timeout)

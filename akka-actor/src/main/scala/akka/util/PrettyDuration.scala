@@ -39,10 +39,11 @@ private[akka] object PrettyDuration {
           val unit = chooseUnit(nanos)
           val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
 
-          s"%.${precision}g %s%s".formatLocal(Locale.ROOT,
-                                              value,
-                                              abbreviate(unit),
-                                              if (includeNanos) s" ($nanos ns)" else "")
+          s"%.${precision}g %s%s".formatLocal(
+            Locale.ROOT,
+            value,
+            abbreviate(unit),
+            if (includeNanos) s" ($nanos ns)" else "")
 
         case Duration.MinusInf => s"-∞ (minus infinity)"
         case Duration.Inf      => s"∞ (infinity)"

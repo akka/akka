@@ -37,9 +37,10 @@ class ActorBenchmark {
 
   //@Param(Array("akka.actor.ManyToOneArrayMailbox"))
   @Param(
-    Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
-          "akka.actor.ManyToOneArrayMailbox",
-          "akka.actor.JCToolsMailbox"))
+    Array(
+      "akka.dispatch.SingleConsumerOnlyUnboundedMailbox",
+      "akka.actor.ManyToOneArrayMailbox",
+      "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
@@ -52,8 +53,9 @@ class ActorBenchmark {
 
     requireRightNumberOfCores(threads)
 
-    system = ActorSystem("ActorBenchmark",
-                         ConfigFactory.parseString(s"""
+    system = ActorSystem(
+      "ActorBenchmark",
+      ConfigFactory.parseString(s"""
        akka.actor {
 
          default-mailbox.mailbox-capacity = 512

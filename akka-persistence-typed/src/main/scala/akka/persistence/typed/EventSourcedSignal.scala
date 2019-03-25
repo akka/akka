@@ -6,8 +6,7 @@ package akka.persistence.typed
 
 import akka.actor.typed.Signal
 import akka.annotation.DoNotInherit
-import akka.persistence.SnapshotMetadata
-import akka.persistence.SnapshotSelectionCriteria
+import akka.annotation.InternalApi
 
 /**
  * Supertype for all Akka Persistence Typed specific signals
@@ -24,6 +23,7 @@ final case class RecoveryCompleted[State](state: State) extends EventSourcedSign
    */
   def getState(): State = state
 }
+
 final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {
 
   /**
@@ -39,6 +39,7 @@ final case class SnapshotCompleted(metadata: SnapshotMetadata) extends EventSour
    */
   def getSnapshotMetadata(): SnapshotMetadata = metadata
 }
+
 final case class SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable) extends EventSourcedSignal {
 
   /**
@@ -52,14 +53,46 @@ final case class SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable) 
   def getSnapshotMetadata(): SnapshotMetadata = metadata
 }
 
-final case class DeleteSnapshotCompleted(target: DeletionTarget) extends EventSourcedSignal {
+object SnapshotMetadata {
+
+  /**
+   * @param persistenceId id of persistent actor from which the snapshot was taken.
+   * @param sequenceNr sequence number at which the snapshot was taken.
+   * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
+   *                  in milliseconds from the epoch of 1970-01-01T00:00:00Z.
+   */
+  def apply(persistenceId: String, sequenceNr: Long, timestamp: Long): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, timestamp)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def fromUntyped(metadata: akka.persistence.SnapshotMetadata): SnapshotMetadata =
+    new SnapshotMetadata(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp)
+}
+
+/**
+ * Snapshot metadata.
+ *
+ * @param persistenceId id of persistent actor from which the snapshot was taken.
+ * @param sequenceNr sequence number at which the snapshot was taken.
+ * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
+ *                  in milliseconds from the epoch of 1970-01-01T00:00:00Z.
+ */
+final class SnapshotMetadata(val persistenceId: String, val sequenceNr: Long, val timestamp: Long) {
+  override def toString: String =
+    s"SnapshotMetadata($persistenceId,$sequenceNr,$timestamp)"
+}
+
+final case class DeleteSnapshotsCompleted(target: DeletionTarget) extends EventSourcedSignal {
 
   /**
    * Java API
    */
   def getTarget(): DeletionTarget = target
 }
-final case class DeleteSnapshotFailed(target: DeletionTarget, failure: Throwable) extends EventSourcedSignal {
+
+final case class DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable) extends EventSourcedSignal {
 
   /**
    * Java API
@@ -70,6 +103,27 @@ final case class DeleteSnapshotFailed(target: DeletionTarget, failure: Throwable
    * Java API
    */
   def getTarget(): DeletionTarget = target
+}
+
+final case class DeleteEventsCompleted(toSequenceNr: Long) extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getToSequenceNr(): Long = toSequenceNr
+}
+
+final case class DeleteEventsFailed(toSequenceNr: Long, failure: Throwable) extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getFailure(): Throwable = failure
+
+  /**
+   * Java API
+   */
+  def getToSequenceNr(): Long = toSequenceNr
 }
 
 /**

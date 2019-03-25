@@ -18,10 +18,11 @@ import scala.runtime.AbstractFunction2
  * and roles.
  */
 @SerialVersionUID(1L)
-class Member private[cluster] (val uniqueAddress: UniqueAddress,
-                               private[cluster] val upNumber: Int, // INTERNAL API
-                               val status: MemberStatus,
-                               val roles: Set[String])
+class Member private[cluster] (
+    val uniqueAddress: UniqueAddress,
+    private[cluster] val upNumber: Int, // INTERNAL API
+    val status: MemberStatus,
+    val roles: Set[String])
     extends Serializable {
 
   lazy val dataCenter: DataCenter = roles
@@ -168,9 +169,10 @@ object Member {
    * INTERNAL API.
    */
   @InternalApi
-  private[akka] def pickHighestPriority(a: Set[Member],
-                                        b: Set[Member],
-                                        tombstones: Map[UniqueAddress, Long]): Set[Member] = {
+  private[akka] def pickHighestPriority(
+      a: Set[Member],
+      b: Set[Member],
+      tombstones: Map[UniqueAddress, Long]): Set[Member] = {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.uniqueAddress)
     // pick highest MemberStatus
@@ -268,13 +270,14 @@ object MemberStatus {
    * INTERNAL API
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
-    Map(Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),
-        WeaklyUp -> Set(Up, Leaving, Down, Removed),
-        Up -> Set(Leaving, Down, Removed),
-        Leaving -> Set(Exiting, Down, Removed),
-        Down -> Set(Removed),
-        Exiting -> Set(Removed, Down),
-        Removed -> Set.empty[MemberStatus])
+    Map(
+      Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),
+      WeaklyUp -> Set(Up, Leaving, Down, Removed),
+      Up -> Set(Leaving, Down, Removed),
+      Leaving -> Set(Exiting, Down, Removed),
+      Down -> Set(Removed),
+      Exiting -> Set(Removed, Down),
+      Removed -> Set.empty[MemberStatus])
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
@@ -314,6 +317,6 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
+  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

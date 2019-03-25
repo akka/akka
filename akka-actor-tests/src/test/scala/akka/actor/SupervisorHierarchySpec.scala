@@ -63,13 +63,14 @@ object SupervisorHierarchySpec {
   case object PongOfDeath
   final case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
   final case class ErrorLog(msg: String, log: Vector[Event])
-  final case class Failure(directive: Directive,
-                           stop: Boolean,
-                           depth: Int,
-                           var failPre: Int,
-                           var failPost: Int,
-                           val failConstr: Int,
-                           stopKids: Int)
+  final case class Failure(
+      directive: Directive,
+      stop: Boolean,
+      depth: Int,
+      var failPre: Int,
+      var failPost: Int,
+      val failConstr: Int,
+      stopKids: Int)
       extends RuntimeException("Failure")
       with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
@@ -89,12 +90,13 @@ object SupervisorHierarchySpec {
       extends DispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
-      new Dispatcher(this,
-                     config.getString("id"),
-                     config.getInt("throughput"),
-                     config.getNanosDuration("throughput-deadline-time"),
-                     configureExecutor(),
-                     config.getMillisDuration("shutdown-timeout")) {
+      new Dispatcher(
+        this,
+        config.getString("id"),
+        config.getInt("throughput"),
+        config.getNanosDuration("throughput-deadline-time"),
+        configureExecutor(),
+        config.getMillisDuration("shutdown-timeout")) {
 
         override def suspend(cell: ActorCell): Unit = {
           cell.actor match {
@@ -517,17 +519,18 @@ object SupervisorHierarchySpec {
         nextJob.next match {
           case Ping(ref) => ref ! "ping"
           case Fail(ref, dir) =>
-            val f = Failure(dir,
-                            stop = random012 > 0,
-                            depth = random012,
-                            failPre = random012,
-                            failPost = random012,
-                            failConstr = random012,
-                            stopKids = random012 match {
-                              case 0 => 0
-                              case 1 => random.nextInt(breadth / 2)
-                              case 2 => 1000
-                            })
+            val f = Failure(
+              dir,
+              stop = random012 > 0,
+              depth = random012,
+              failPre = random012,
+              failPost = random012,
+              failConstr = random012,
+              stopKids = random012 match {
+                case 0 => 0
+                case 1 => random.nextInt(breadth / 2)
+                case 2 => 1000
+              })
             ref ! f
         }
         if (idleChildren.nonEmpty) self ! Work
@@ -843,11 +846,12 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       val preStartCalled = new AtomicInteger(0)
       val postRestartCalled = new AtomicInteger(0)
 
-      filterEvents(EventFilter[Failure](),
-                   EventFilter[ActorInitializationException](),
-                   EventFilter[IllegalArgumentException]("OH NO!"),
-                   EventFilter.error(start = "changing Recreate into Create"),
-                   EventFilter.error(start = "changing Resume into Create")) {
+      filterEvents(
+        EventFilter[Failure](),
+        EventFilter[ActorInitializationException](),
+        EventFilter[IllegalArgumentException]("OH NO!"),
+        EventFilter.error(start = "changing Recreate into Create"),
+        EventFilter.error(start = "changing Resume into Create")) {
         val failResumer =
           system.actorOf(
             Props(new Actor {
@@ -892,14 +896,15 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
     "survive being stressed" taggedAs LongRunningTest in {
       system.eventStream.publish(
-        Mute(EventFilter[Failure](),
-             EventFilter.warning("Failure"),
-             EventFilter[ActorInitializationException](),
-             EventFilter[NoSuchElementException]("head of empty list"),
-             EventFilter.error(start = "changing Resume into Restart"),
-             EventFilter.error(start = "changing Resume into Create"),
-             EventFilter.error(start = "changing Recreate into Create"),
-             EventFilter.warning(start = "received dead ")))
+        Mute(
+          EventFilter[Failure](),
+          EventFilter.warning("Failure"),
+          EventFilter[ActorInitializationException](),
+          EventFilter[NoSuchElementException]("head of empty list"),
+          EventFilter.error(start = "changing Resume into Restart"),
+          EventFilter.error(start = "changing Resume into Create"),
+          EventFilter.error(start = "changing Recreate into Create"),
+          EventFilter.warning(start = "received dead ")))
 
       val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
 

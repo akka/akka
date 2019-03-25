@@ -169,9 +169,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         case StreamSubscriptionTimeoutTerminationMode.NoopTermination =>
         // do nothing
         case StreamSubscriptionTimeoutTerminationMode.WarnTermination =>
-          materializer.logger.warning("Substream subscription timeout triggered after {} in prefixAndTail({}).",
-                                      timeout,
-                                      n)
+          materializer.logger.warning(
+            "Substream subscription timeout triggered after {} in prefixAndTail({}).",
+            timeout,
+            n)
       }
     }
 
@@ -251,9 +252,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GroupBy[T, K](val maxSubstreams: Int,
-                                                     val keyFor: T => K,
-                                                     val allowClosedSubstreamRecreation: Boolean = false)
+@InternalApi private[akka] final class GroupBy[T, K](
+    val maxSubstreams: Int,
+    val keyFor: T => K,
+    val allowClosedSubstreamRecreation: Boolean = false)
     extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("GroupBy.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("GroupBy.out")
@@ -456,21 +458,24 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   /** Splits after the current element. The current element will be the last element in the current substream. */
   case object SplitAfter extends SplitDecision
 
-  def when[T](p: T => Boolean,
-              substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+  def when[T](
+      p: T => Boolean,
+      substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
     new Split(Split.SplitBefore, p, substreamCancelStrategy)
 
-  def after[T](p: T => Boolean,
-               substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
+  def after[T](
+      p: T => Boolean,
+      substreamCancelStrategy: SubstreamCancelStrategy): Graph[FlowShape[T, Source[T, NotUsed]], NotUsed] =
     new Split(Split.SplitAfter, p, substreamCancelStrategy)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Split[T](val decision: Split.SplitDecision,
-                                                val p: T => Boolean,
-                                                val substreamCancelStrategy: SubstreamCancelStrategy)
+@InternalApi private[akka] final class Split[T](
+    val decision: Split.SplitDecision,
+    val p: T => Boolean,
+    val substreamCancelStrategy: SubstreamCancelStrategy)
     extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
@@ -495,20 +500,21 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
     }
 
-    setHandler(out,
-               new OutHandler {
-                 override def onPull(): Unit = {
-                   if (substreamSource eq null) {
-                     //can be already pulled from substream in case split after
-                     if (!hasBeenPulled(in)) pull(in)
-                   } else if (substreamWaitingToBePushed) pushSubstreamSource()
-                 }
+    setHandler(
+      out,
+      new OutHandler {
+        override def onPull(): Unit = {
+          if (substreamSource eq null) {
+            //can be already pulled from substream in case split after
+            if (!hasBeenPulled(in)) pull(in)
+          } else if (substreamWaitingToBePushed) pushSubstreamSource()
+        }
 
-                 override def onDownstreamFinish(): Unit = {
-                   // If the substream is already cancelled or it has not been handed out, we can go away
-                   if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) completeStage()
-                 }
-               })
+        override def onDownstreamFinish(): Unit = {
+          // If the substream is already cancelled or it has not been handed out, we can go away
+          if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) completeStage()
+        }
+      })
 
     val initInHandler = new InHandler {
       override def onPush(): Unit = {
@@ -773,9 +779,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   }
 
   def timeout(d: FiniteDuration): Boolean =
-    status.compareAndSet(null,
-                         ActorSubscriberMessage.OnError(
-                           new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
+    status.compareAndSet(
+      null,
+      ActorSubscriberMessage.OnError(
+        new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     setHandler(out, this)

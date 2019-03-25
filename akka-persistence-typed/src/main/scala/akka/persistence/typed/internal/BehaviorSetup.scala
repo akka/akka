@@ -15,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.util.ConstantFun
 import akka.util.OptionVal
@@ -23,20 +24,23 @@ import akka.util.OptionVal
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
  */
 @InternalApi
-private[akka] final class BehaviorSetup[C, E, S](val context: ActorContext[InternalProtocol],
-                                                 val persistenceId: PersistenceId,
-                                                 val emptyState: S,
-                                                 val commandHandler: EventSourcedBehavior.CommandHandler[C, E, S],
-                                                 val eventHandler: EventSourcedBehavior.EventHandler[S, E],
-                                                 val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
-                                                 private val signalHandler: PartialFunction[Signal, Unit],
-                                                 val tagger: E ⇒ Set[String],
-                                                 val eventAdapter: EventAdapter[E, _],
-                                                 val snapshotWhen: (S, E, Long) ⇒ Boolean,
-                                                 val recovery: Recovery,
-                                                 var holdingRecoveryPermit: Boolean,
-                                                 val settings: EventSourcedSettings,
-                                                 val stashState: StashState) {
+private[akka] final class BehaviorSetup[C, E, S](
+    val context: ActorContext[InternalProtocol],
+    val persistenceId: PersistenceId,
+    val emptyState: S,
+    val commandHandler: EventSourcedBehavior.CommandHandler[C, E, S],
+    val eventHandler: EventSourcedBehavior.EventHandler[S, E],
+    val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
+    private val signalHandler: PartialFunction[Signal, Unit],
+    val tagger: E ⇒ Set[String],
+    val eventAdapter: EventAdapter[E, _],
+    val snapshotWhen: (S, E, Long) ⇒ Boolean,
+    val recovery: Recovery,
+    val retention: RetentionCriteria,
+    var holdingRecoveryPermit: Boolean,
+    val settings: EventSourcedSettings,
+    val stashState: StashState) {
+
   import InternalProtocol.RecoveryTickEvent
   import akka.actor.typed.scaladsl.adapter._
 
@@ -82,10 +86,11 @@ private[akka] final class BehaviorSetup[C, E, S](val context: ActorContext[Inter
         context.system.scheduler
           .scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped, RecoveryTickEvent(snapshot = true))
       else
-        context.system.scheduler.schedule(settings.recoveryEventTimeout,
-                                          settings.recoveryEventTimeout,
-                                          context.self.toUntyped,
-                                          RecoveryTickEvent(snapshot = false))
+        context.system.scheduler.schedule(
+          settings.recoveryEventTimeout,
+          settings.recoveryEventTimeout,
+          context.self.toUntyped,
+          RecoveryTickEvent(snapshot = false))
     recoveryTimer = OptionVal.Some(timer)
   }
 

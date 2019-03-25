@@ -207,9 +207,10 @@ object PersistentFSM {
    * @tparam D state data type
    */
   @InternalApi
-  private[persistence] case class PersistentFSMSnapshot[D](stateIdentifier: String,
-                                                           data: D,
-                                                           timeout: Option[FiniteDuration])
+  private[persistence] case class PersistentFSMSnapshot[D](
+      stateIdentifier: String,
+      data: D,
+      timeout: Option[FiniteDuration])
       extends Message
 
   /**
@@ -337,27 +338,29 @@ object PersistentFSM {
    * accumulated while processing the last message, possibly domain event and handler
    * to be executed after FSM moves to the new state (also triggered when staying in the same state)
    */
-  final case class State[S, D, E](stateName: S,
-                                  stateData: D,
-                                  timeout: Option[FiniteDuration] = None,
-                                  stopReason: Option[Reason] = None,
-                                  replies: List[Any] = Nil,
-                                  domainEvents: Seq[E] = Nil,
-                                  afterTransitionDo: D => Unit = { _: D =>
-                                  })(private[akka] val notifies: Boolean = true) {
+  final case class State[S, D, E](
+      stateName: S,
+      stateData: D,
+      timeout: Option[FiniteDuration] = None,
+      stopReason: Option[Reason] = None,
+      replies: List[Any] = Nil,
+      domainEvents: Seq[E] = Nil,
+      afterTransitionDo: D => Unit = { _: D =>
+      })(private[akka] val notifies: Boolean = true) {
 
     /**
      * Copy object and update values if needed.
      */
     @InternalApi
-    private[akka] def copy(stateName: S = stateName,
-                           stateData: D = stateData,
-                           timeout: Option[FiniteDuration] = timeout,
-                           stopReason: Option[Reason] = stopReason,
-                           replies: List[Any] = replies,
-                           notifies: Boolean = notifies,
-                           domainEvents: Seq[E] = domainEvents,
-                           afterTransitionDo: D => Unit = afterTransitionDo): State[S, D, E] = {
+    private[akka] def copy(
+        stateName: S = stateName,
+        stateData: D = stateData,
+        timeout: Option[FiniteDuration] = timeout,
+        stopReason: Option[Reason] = stopReason,
+        replies: List[Any] = replies,
+        notifies: Boolean = notifies,
+        domainEvents: Seq[E] = domainEvents,
+        afterTransitionDo: D => Unit = afterTransitionDo): State[S, D, E] = {
       State(stateName, stateData, timeout, stopReason, replies, domainEvents, afterTransitionDo)(notifies)
     }
 

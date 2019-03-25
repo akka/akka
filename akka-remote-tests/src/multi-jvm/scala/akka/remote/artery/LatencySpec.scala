@@ -82,22 +82,24 @@ object LatencySpec extends MultiNodeConfig {
     }
   }
 
-  def receiverProps(reporter: RateReporter,
-                    settings: TestSettings,
-                    totalMessages: Int,
-                    sendTimes: AtomicLongArray,
-                    histogram: Histogram,
-                    plotsRef: ActorRef,
-                    BenchmarkFileReporter: BenchmarkFileReporter): Props =
+  def receiverProps(
+      reporter: RateReporter,
+      settings: TestSettings,
+      totalMessages: Int,
+      sendTimes: AtomicLongArray,
+      histogram: Histogram,
+      plotsRef: ActorRef,
+      BenchmarkFileReporter: BenchmarkFileReporter): Props =
     Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef, BenchmarkFileReporter))
 
-  class Receiver(reporter: RateReporter,
-                 settings: TestSettings,
-                 totalMessages: Int,
-                 sendTimes: AtomicLongArray,
-                 histogram: Histogram,
-                 plotsRef: ActorRef,
-                 BenchmarkFileReporter: BenchmarkFileReporter)
+  class Receiver(
+      reporter: RateReporter,
+      settings: TestSettings,
+      totalMessages: Int,
+      sendTimes: AtomicLongArray,
+      histogram: Histogram,
+      plotsRef: ActorRef,
+      BenchmarkFileReporter: BenchmarkFileReporter)
       extends Actor {
     import settings._
 
@@ -138,11 +140,12 @@ object LatencySpec extends MultiNodeConfig {
       }
     }
 
-    def printTotal(testName: String,
-                   payloadSize: Long,
-                   histogram: Histogram,
-                   totalDurationNanos: Long,
-                   reporter: BenchmarkFileReporter): Unit = {
+    def printTotal(
+        testName: String,
+        payloadSize: Long,
+        histogram: Histogram,
+        totalDurationNanos: Long,
+        reporter: BenchmarkFileReporter): Unit = {
       def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
       val throughput = 1000.0 * histogram.getTotalCount / math.max(1, totalDurationNanos.nanos.toMillis)
 
@@ -157,18 +160,20 @@ object LatencySpec extends MultiNodeConfig {
 
       taskRunnerMetrics.printHistograms()
 
-      val plots = LatencyPlots(PlotResult().add(testName, percentile(50.0)),
-                               PlotResult().add(testName, percentile(90.0)),
-                               PlotResult().add(testName, percentile(99.0)))
+      val plots = LatencyPlots(
+        PlotResult().add(testName, percentile(50.0)),
+        PlotResult().add(testName, percentile(90.0)),
+        PlotResult().add(testName, percentile(99.0)))
       plotsRef ! plots
     }
   }
 
-  final case class TestSettings(testName: String,
-                                messageRate: Int, // msg/s
-                                payloadSize: Int,
-                                repeat: Int,
-                                realMessage: Boolean)
+  final case class TestSettings(
+      testName: String,
+      messageRate: Int, // msg/s
+      payloadSize: Int,
+      repeat: Int,
+      realMessage: Boolean)
 
 }
 
@@ -214,31 +219,36 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
 
   val scenarios = List(
     TestSettings(testName = "warmup", messageRate = 10000, payloadSize = 100, repeat = repeatCount, realMessage),
-    TestSettings(testName = "rate-100-size-100",
-                 messageRate = 100,
-                 payloadSize = 100,
-                 repeat = repeatCount,
-                 realMessage),
-    TestSettings(testName = "rate-1000-size-100",
-                 messageRate = 1000,
-                 payloadSize = 100,
-                 repeat = repeatCount,
-                 realMessage),
-    TestSettings(testName = "rate-10000-size-100",
-                 messageRate = 10000,
-                 payloadSize = 100,
-                 repeat = repeatCount,
-                 realMessage),
-    TestSettings(testName = "rate-20000-size-100",
-                 messageRate = 20000,
-                 payloadSize = 100,
-                 repeat = repeatCount,
-                 realMessage),
-    TestSettings(testName = "rate-1000-size-1k",
-                 messageRate = 1000,
-                 payloadSize = 1000,
-                 repeat = repeatCount,
-                 realMessage))
+    TestSettings(
+      testName = "rate-100-size-100",
+      messageRate = 100,
+      payloadSize = 100,
+      repeat = repeatCount,
+      realMessage),
+    TestSettings(
+      testName = "rate-1000-size-100",
+      messageRate = 1000,
+      payloadSize = 100,
+      repeat = repeatCount,
+      realMessage),
+    TestSettings(
+      testName = "rate-10000-size-100",
+      messageRate = 10000,
+      payloadSize = 100,
+      repeat = repeatCount,
+      realMessage),
+    TestSettings(
+      testName = "rate-20000-size-100",
+      messageRate = 20000,
+      payloadSize = 100,
+      repeat = repeatCount,
+      realMessage),
+    TestSettings(
+      testName = "rate-1000-size-1k",
+      messageRate = 1000,
+      payloadSize = 1000,
+      repeat = repeatCount,
+      realMessage))
 
   def test(testSettings: TestSettings, BenchmarkFileReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
@@ -290,12 +300,13 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
 
             val msg =
               if (testSettings.realMessage)
-                TestMessage(id = i,
-                            name = "abc",
-                            status = i % 2 == 0,
-                            description = "ABC",
-                            payload = payload,
-                            items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
+                TestMessage(
+                  id = i,
+                  name = "abc",
+                  status = i % 2 == 0,
+                  description = "ABC",
+                  payload = payload,
+                  items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
               else payload
 
             echo.tell(payload, receiver)
@@ -315,9 +326,10 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
         val p = plotProbe.expectMsgType[LatencyPlots]
         // only use the last repeat for the plots
         if (n == repeat) {
-          plots = plots.copy(plot50 = plots.plot50.addAll(p.plot50),
-                             plot90 = plots.plot90.addAll(p.plot90),
-                             plot99 = plots.plot99.addAll(p.plot99))
+          plots = plots.copy(
+            plot50 = plots.plot50.addAll(p.plot50),
+            plot90 = plots.plot90.addAll(p.plot90),
+            plot99 = plots.plot99.addAll(p.plot99))
         }
       }
 

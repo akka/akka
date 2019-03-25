@@ -197,10 +197,11 @@ object TLSProtocol {
    * on client authentication requirements while `clientAuth = Some(ClientAuth.None)`
    * switches off client authentication.
    */
-  case class NegotiateNewSession(enabledCipherSuites: Option[immutable.Seq[String]],
-                                 enabledProtocols: Option[immutable.Seq[String]],
-                                 clientAuth: Option[TLSClientAuth],
-                                 sslParameters: Option[SSLParameters])
+  case class NegotiateNewSession(
+      enabledCipherSuites: Option[immutable.Seq[String]],
+      enabledProtocols: Option[immutable.Seq[String]],
+      clientAuth: Option[TLSClientAuth],
+      sslParameters: Option[SSLParameters])
       extends SslTlsOutbound {
 
     /**

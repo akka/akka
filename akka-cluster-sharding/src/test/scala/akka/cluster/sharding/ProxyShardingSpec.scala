@@ -41,10 +41,11 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
     clusterSharding.startProxy("myType", Some(role), idExtractor, shardResolver)
 
   "Proxy should be found" in {
-    val proxyActor: ActorRef = Await.result(system
-                                              .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeProxy")
-                                              .resolveOne(FiniteDuration(5, SECONDS)),
-                                            3.seconds)
+    val proxyActor: ActorRef = Await.result(
+      system
+        .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeProxy")
+        .resolveOne(FiniteDuration(5, SECONDS)),
+      3.seconds)
 
     proxyActor.path should not be null
     proxyActor.path.toString should endWith("Proxy")
@@ -60,10 +61,11 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
 
   "Shard coordinator should be found" in {
     val shardCoordinator: ActorRef =
-      Await.result(system
-                     .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
-                     .resolveOne(FiniteDuration(5, SECONDS)),
-                   3.seconds)
+      Await.result(
+        system
+          .actorSelection("akka://ProxyShardingSpec/system/sharding/myTypeCoordinator")
+          .resolveOne(FiniteDuration(5, SECONDS)),
+        3.seconds)
 
     shardCoordinator.path should not be null
     shardCoordinator.path.toString should endWith("Coordinator")

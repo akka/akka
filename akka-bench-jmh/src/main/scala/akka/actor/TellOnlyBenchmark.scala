@@ -26,8 +26,9 @@ class TellOnlyBenchmark {
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    system = ActorSystem("TellOnlyBenchmark",
-                         ConfigFactory.parseString(s"""| akka {
+    system = ActorSystem(
+      "TellOnlyBenchmark",
+      ConfigFactory.parseString(s"""| akka {
           |   log-dead-letters = off
           |   actor {
           |     default-dispatcher {
@@ -119,18 +120,20 @@ object TellOnlyBenchmark {
       new DroppingMessageQueue
   }
 
-  class DroppingDispatcher(_configurator: MessageDispatcherConfigurator,
-                           _id: String,
-                           _throughput: Int,
-                           _throughputDeadlineTime: Duration,
-                           _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-                           _shutdownTimeout: FiniteDuration)
-      extends Dispatcher(_configurator,
-                         _id,
-                         _throughput,
-                         _throughputDeadlineTime,
-                         _executorServiceFactoryProvider,
-                         _shutdownTimeout) {
+  class DroppingDispatcher(
+      _configurator: MessageDispatcherConfigurator,
+      _id: String,
+      _throughput: Int,
+      _throughputDeadlineTime: Duration,
+      _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
+      _shutdownTimeout: FiniteDuration)
+      extends Dispatcher(
+        _configurator,
+        _id,
+        _throughput,
+        _throughputDeadlineTime,
+        _executorServiceFactoryProvider,
+        _shutdownTimeout) {
 
     override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
       val mbox = receiver.mailbox
@@ -146,11 +149,12 @@ object TellOnlyBenchmark {
       extends MessageDispatcherConfigurator(config, prerequisites) {
 
     override def dispatcher(): MessageDispatcher =
-      new DroppingDispatcher(this,
-                             config.getString("id"),
-                             config.getInt("throughput"),
-                             config.getNanosDuration("throughput-deadline-time"),
-                             configureExecutor(),
-                             config.getMillisDuration("shutdown-timeout"))
+      new DroppingDispatcher(
+        this,
+        config.getString("id"),
+        config.getInt("throughput"),
+        config.getNanosDuration("throughput-deadline-time"),
+        configureExecutor(),
+        config.getMillisDuration("shutdown-timeout"))
   }
 }

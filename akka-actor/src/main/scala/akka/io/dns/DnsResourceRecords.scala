@@ -68,12 +68,13 @@ private[dns] object CNameRecord {
   }
 }
 
-final case class SRVRecord(override val name: String,
-                           override val ttl: Ttl,
-                           priority: Int,
-                           weight: Int,
-                           port: Int,
-                           target: String)
+final case class SRVRecord(
+    override val name: String,
+    override val ttl: Ttl,
+    priority: Int,
+    weight: Int,
+    port: Int,
+    target: String)
     extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {}
 
 /**
@@ -94,11 +95,12 @@ private[dns] object SRVRecord {
   }
 }
 
-final case class UnknownRecord(override val name: String,
-                               override val ttl: Ttl,
-                               override val recType: Short,
-                               override val recClass: Short,
-                               data: ByteString)
+final case class UnknownRecord(
+    override val name: String,
+    override val ttl: Ttl,
+    override val recType: Short,
+    override val recClass: Short,
+    data: ByteString)
     extends ResourceRecord(name, ttl, recType, recClass) {}
 
 /**
@@ -111,12 +113,13 @@ private[dns] object UnknownRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String,
-                ttl: Ttl,
-                recType: Short,
-                recClass: Short,
-                @unused length: Short,
-                it: ByteIterator): UnknownRecord =
+  def parseBody(
+      name: String,
+      ttl: Ttl,
+      recType: Short,
+      recClass: Short,
+      @unused length: Short,
+      it: ByteIterator): UnknownRecord =
     UnknownRecord(name, ttl, recType, recClass, it.toByteString)
 }
 

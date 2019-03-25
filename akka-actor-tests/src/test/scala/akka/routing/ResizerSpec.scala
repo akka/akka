@@ -160,13 +160,14 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       // make sure the pool starts at the expected lower limit and grows to the upper as needed
       // as influenced by the backlog of blocking pooled actors
 
-      val resizer = DefaultResizer(lowerBound = 3,
-                                   upperBound = 5,
-                                   rampupRate = 0.1,
-                                   backoffRate = 0.0,
-                                   pressureThreshold = 1,
-                                   messagesPerResize = 1,
-                                   backoffThreshold = 0.0)
+      val resizer = DefaultResizer(
+        lowerBound = 3,
+        upperBound = 5,
+        rampupRate = 0.1,
+        backoffRate = 0.0,
+        pressureThreshold = 1,
+        messagesPerResize = 1,
+        backoffThreshold = 0.0)
 
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props(new Actor {
         def receive = {
@@ -203,13 +204,14 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
     }
 
     "backoff" in within(10 seconds) {
-      val resizer = DefaultResizer(lowerBound = 2,
-                                   upperBound = 5,
-                                   rampupRate = 1.0,
-                                   backoffRate = 1.0,
-                                   backoffThreshold = 0.40,
-                                   pressureThreshold = 1,
-                                   messagesPerResize = 2)
+      val resizer = DefaultResizer(
+        lowerBound = 2,
+        upperBound = 5,
+        rampupRate = 1.0,
+        backoffRate = 1.0,
+        backoffThreshold = 0.40,
+        pressureThreshold = 1,
+        messagesPerResize = 2)
 
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props(new Actor {
         def receive = {

@@ -128,9 +128,10 @@ private[persistence] object AsyncWriteTarget {
 @SerialVersionUID(1L)
 class AsyncReplayTimeoutException(msg: String) extends AkkaException(msg)
 
-private class ReplayMediator(replayCallback: PersistentRepr => Unit,
-                             replayCompletionPromise: Promise[Unit],
-                             replayTimeout: Duration)
+private class ReplayMediator(
+    replayCallback: PersistentRepr => Unit,
+    replayCompletionPromise: Promise[Unit],
+    replayTimeout: Duration)
     extends Actor {
   import AsyncWriteTarget._
 

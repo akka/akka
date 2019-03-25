@@ -225,9 +225,10 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private def deserializeJoin(bytes: Array[Byte]): InternalClusterAction.Join = {
     val m = cm.Join.parseFrom(bytes)
     val roles = Set.empty[String] ++ m.getRolesList.asScala
-    InternalClusterAction.Join(uniqueAddressFromProto(m.getNode),
-                               if (roles.exists(_.startsWith(ClusterSettings.DcRolePrefix))) roles
-                               else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter))
+    InternalClusterAction.Join(
+      uniqueAddressFromProto(m.getNode),
+      if (roles.exists(_.startsWith(ClusterSettings.DcRolePrefix))) roles
+      else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter))
   }
 
   private def deserializeWelcome(bytes: Array[Byte]): InternalClusterAction.Welcome = {
@@ -482,10 +483,11 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     }
 
     def memberFromProto(member: cm.Member) =
-      new Member(addressMapping(member.getAddressIndex),
-                 member.getUpNumber,
-                 memberStatusFromInt(member.getStatus.getNumber),
-                 rolesFromProto(member.getRolesIndexesList.asScala.toSeq))
+      new Member(
+        addressMapping(member.getAddressIndex),
+        member.getUpNumber,
+        memberStatusFromInt(member.getStatus.getNumber),
+        rolesFromProto(member.getRolesIndexesList.asScala.toSeq))
 
     def rolesFromProto(roleIndexes: Seq[Integer]): Set[String] = {
       var containsDc = false
@@ -525,15 +527,17 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
   private def gossipEnvelopeFromProto(envelope: cm.GossipEnvelope): GossipEnvelope = {
     val serializedGossip = envelope.getSerializedGossip
-    GossipEnvelope(uniqueAddressFromProto(envelope.getFrom),
-                   uniqueAddressFromProto(envelope.getTo),
-                   Deadline.now + GossipTimeToLive,
-                   () => gossipFromProto(cm.Gossip.parseFrom(decompress(serializedGossip.toByteArray))))
+    GossipEnvelope(
+      uniqueAddressFromProto(envelope.getFrom),
+      uniqueAddressFromProto(envelope.getTo),
+      Deadline.now + GossipTimeToLive,
+      () => gossipFromProto(cm.Gossip.parseFrom(decompress(serializedGossip.toByteArray))))
   }
 
   private def gossipStatusFromProto(status: cm.GossipStatus): GossipStatus =
-    GossipStatus(uniqueAddressFromProto(status.getFrom),
-                 vectorClockFromProto(status.getVersion, status.getAllHashesList.asScala.toVector))
+    GossipStatus(
+      uniqueAddressFromProto(status.getFrom),
+      vectorClockFromProto(status.getVersion, status.getAllHashesList.asScala.toVector))
 
   def deserializeClusterRouterPool(bytes: Array[Byte]): ClusterRouterPool = {
     val crp = cm.ClusterRouterPool.parseFrom(bytes)
@@ -547,14 +551,15 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
   private def clusterRouterPoolSettingsFromProto(crps: cm.ClusterRouterPoolSettings): ClusterRouterPoolSettings = {
     // For backwards compatibility, useRoles is the combination of getUseRole and getUseRolesList
-    ClusterRouterPoolSettings(totalInstances = crps.getTotalInstances,
-                              maxInstancesPerNode = crps.getMaxInstancesPerNode,
-                              allowLocalRoutees = crps.getAllowLocalRoutees,
-                              useRoles = if (crps.hasUseRole) {
-                                crps.getUseRolesList.asScala.toSet + crps.getUseRole
-                              } else {
-                                crps.getUseRolesList.asScala.toSet
-                              })
+    ClusterRouterPoolSettings(
+      totalInstances = crps.getTotalInstances,
+      maxInstancesPerNode = crps.getMaxInstancesPerNode,
+      allowLocalRoutees = crps.getAllowLocalRoutees,
+      useRoles = if (crps.hasUseRole) {
+        crps.getUseRolesList.asScala.toSet + crps.getUseRole
+      } else {
+        crps.getUseRolesList.asScala.toSet
+      })
   }
 
 }

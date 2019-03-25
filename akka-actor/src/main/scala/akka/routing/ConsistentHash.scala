@@ -112,13 +112,14 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
 
 object ConsistentHash {
   def apply[T: ClassTag](nodes: Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
-    new ConsistentHash(immutable.SortedMap.empty[Int, T] ++
-                       (for {
-                         node <- nodes
-                         nodeHash = hashFor(node.toString)
-                         vnode <- 1 to virtualNodesFactor
-                       } yield (concatenateNodeHash(nodeHash, vnode) -> node)),
-                       virtualNodesFactor)
+    new ConsistentHash(
+      immutable.SortedMap.empty[Int, T] ++
+      (for {
+        node <- nodes
+        nodeHash = hashFor(node.toString)
+        vnode <- 1 to virtualNodesFactor
+      } yield (concatenateNodeHash(nodeHash, vnode) -> node)),
+      virtualNodesFactor)
   }
 
   /**

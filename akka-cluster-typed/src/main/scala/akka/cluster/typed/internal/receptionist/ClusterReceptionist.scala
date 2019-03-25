@@ -82,8 +82,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
           ctx.messageAdapter[Replicator.ReplicatorMessage] {
             case changed: Replicator.Changed[_] @unchecked =>
-              ChangeFromReplicator(changed.key.asInstanceOf[DDataKey],
-                                   changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
+              ChangeFromReplicator(
+                changed.key.asInstanceOf[DDataKey],
+                changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
           }
 
         registry.allDdataKeys.foreach(key =>
@@ -92,9 +93,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         // remove entries when members are removed
         val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
           ctx.messageAdapter[MemberRemoved] { case MemberRemoved(member, _) => NodeRemoved(member.uniqueAddress) }
-        setup.cluster.subscribe(clusterEventMessageAdapter.toUntyped,
-                                ClusterEvent.InitialStateAsEvents,
-                                classOf[MemberRemoved])
+        setup.cluster.subscribe(
+          clusterEventMessageAdapter.toUntyped,
+          ClusterEvent.InitialStateAsEvents,
+          classOf[MemberRemoved])
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
@@ -122,7 +124,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
       /*
        * Hack to allow multiple termination notifications per target
-       * FIXME: replace by simple map in our state
+       * FIXME #26505: replace by simple map in our state
        */
       def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit =
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
@@ -161,13 +163,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
           if (removals.nonEmpty) {
             if (ctx.log.isDebugEnabled)
-              ctx.log.debug("Node(s) [{}] removed, updating registry removing: [{}]",
-                            addresses.mkString(","),
-                            removals
-                              .map {
-                                case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
-                              }
-                              .mkString(","))
+              ctx.log.debug(
+                "Node(s) [{}] removed, updating registry removing: [{}]",
+                addresses.mkString(","),
+                removals
+                  .map {
+                    case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
+                  }
+                  .mkString(","))
 
             // shard changes over the ddata keys they belong to
             val removalsPerDdataKey = registry.entriesPerDdataKey(removals)
@@ -236,12 +239,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           val newRegistry = registry.withServiceRegistry(ddataKey, newState)
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
-              ctx.log.debug("Change from replicator: [{}], changes: [{}], tombstones [{}]",
-                            newState.entries.entries,
-                            changedKeys
-                              .map(key => key.asServiceKey.id -> newState.entriesFor(key).mkString("[", ", ", "]"))
-                              .mkString(", "),
-                            registry.tombstones.mkString(", "))
+              ctx.log.debug(
+                "Change from replicator: [{}], changes: [{}], tombstones [{}]",
+                newState.entries.entries,
+                changedKeys
+                  .map(key => key.asServiceKey.id -> newState.entriesFor(key).mkString("[", ", ", "]"))
+                  .mkString(", "),
+                registry.tombstones.mkString(", "))
             }
             changedKeys.foreach { changedKey =>
               notifySubscribersFor(changedKey, newState)

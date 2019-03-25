@@ -122,9 +122,10 @@ import akka.util.ccompat._
  * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-@InternalApi private[akka] final class SubscriberSink[In](subscriber: Subscriber[In],
-                                                          val attributes: Attributes,
-                                                          shape: SinkShape[In])
+@InternalApi private[akka] final class SubscriberSink[In](
+    subscriber: Subscriber[In],
+    val attributes: Attributes,
+    shape: SinkShape[In])
     extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
@@ -153,9 +154,10 @@ import akka.util.ccompat._
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-@InternalApi private[akka] final class ActorSubscriberSink[In](props: Props,
-                                                               val attributes: Attributes,
-                                                               shape: SinkShape[In])
+@InternalApi private[akka] final class ActorSubscriberSink[In](
+    props: Props,
+    val attributes: Attributes,
+    shape: SinkShape[In])
     extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
@@ -172,11 +174,12 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef,
-                                                        onCompleteMessage: Any,
-                                                        onFailureMessage: Throwable => Any,
-                                                        val attributes: Attributes,
-                                                        shape: SinkShape[In])
+@InternalApi private[akka] final class ActorRefSink[In](
+    ref: ActorRef,
+    onCompleteMessage: Any,
+    onFailureMessage: Throwable => Any,
+    val attributes: Attributes,
+    shape: SinkShape[In])
     extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
@@ -570,23 +573,28 @@ import akka.util.ccompat._
         // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
         setKeepGoing(true)
 
-        setHandler(in,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       subOutlet.push(grab(in))
-                     }
-                     override def onUpstreamFinish(): Unit = {
-                       if (firstElementPushed) {
-                         subOutlet.complete()
-                         maybeCompleteStage()
-                       }
-                     }
-                     override def onUpstreamFailure(ex: Throwable): Unit = {
-                       // propagate exception irrespective if the cached element has been pushed or not
-                       subOutlet.fail(ex)
-                       maybeCompleteStage()
-                     }
-                   })
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              subOutlet.push(grab(in))
+            }
+            override def onUpstreamFinish(): Unit = {
+              if (firstElementPushed) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              // propagate exception irrespective if the cached element has been pushed or not
+              subOutlet.fail(ex)
+              // #25410 if we fail the stage here directly, the SubSource may not have been started yet,
+              // which can happen if upstream fails immediately after emitting a first value.
+              // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
+              // scheduling it lets the interpreter first start the substream
+              getAsyncCallback[Throwable](failStage).invoke(ex)
+            }
+          })
 
         subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {

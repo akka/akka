@@ -28,8 +28,9 @@ import akka.testkit.TestActors
 
 class ReplicatedDataSerializerSpec
     extends TestKit(
-      ActorSystem("ReplicatedDataSerializerSpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "ReplicatedDataSerializerSpec",
+        ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
@@ -142,7 +143,10 @@ class ReplicatedDataSerializerSpec
           .tell(Identify("2"), testActor)
         val echo2 = expectMsgType[ActorIdentity].ref.get
 
-        val msg = ORSet.empty[ActorRef].add(Cluster(system), echo1).add(Cluster(system), echo2)
+        val msg = ORSet
+          .empty[ActorRef]
+          .add(Cluster(system).selfUniqueAddress, echo1)
+          .add(Cluster(system).selfUniqueAddress, echo2)
         echo2.tell(msg, testActor)
         val reply = expectMsgType[ORSet[ActorRef]]
         reply.elements should ===(Set(echo1, echo2))
@@ -156,8 +160,8 @@ class ReplicatedDataSerializerSpec
       checkSerialization(ORSet().add(address1, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
-      checkSerialization(ORSet().add(address1, "a").resetDelta.clear(address2).delta.get)
-      checkSerialization(ORSet().add(address1, "a").clear(address2).delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.clear().delta.get)
+      checkSerialization(ORSet().add(address1, "a").clear().delta.get)
     }
 
     "serialize large GSet" in {
@@ -202,10 +206,12 @@ class ReplicatedDataSerializerSpec
       checkSerialization(GCounter().increment(address1, 3))
       checkSerialization(GCounter().increment(address1, 2).increment(address2, 5))
 
-      checkSameContent(GCounter().increment(address1, 2).increment(address2, 5),
-                       GCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
-      checkSameContent(GCounter().increment(address1, 2).increment(address3, 5),
-                       GCounter().increment(address3, 5).increment(address1, 2))
+      checkSameContent(
+        GCounter().increment(address1, 2).increment(address2, 5),
+        GCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
+      checkSameContent(
+        GCounter().increment(address1, 2).increment(address3, 5),
+        GCounter().increment(address3, 5).increment(address1, 2))
     }
 
     "serialize PNCounter" in {
@@ -215,12 +221,15 @@ class ReplicatedDataSerializerSpec
       checkSerialization(PNCounter().increment(address1, 2).increment(address2, 5))
       checkSerialization(PNCounter().increment(address1, 2).increment(address2, 5).decrement(address1, 1))
 
-      checkSameContent(PNCounter().increment(address1, 2).increment(address2, 5),
-                       PNCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
-      checkSameContent(PNCounter().increment(address1, 2).increment(address3, 5),
-                       PNCounter().increment(address3, 5).increment(address1, 2))
-      checkSameContent(PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
-                       PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
+      checkSameContent(
+        PNCounter().increment(address1, 2).increment(address2, 5),
+        PNCounter().increment(address2, 5).increment(address1, 1).increment(address1, 1))
+      checkSameContent(
+        PNCounter().increment(address1, 2).increment(address3, 5),
+        PNCounter().increment(address3, 5).increment(address1, 2))
+      checkSameContent(
+        PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
+        PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
     }
 
     "serialize ORMap" in {

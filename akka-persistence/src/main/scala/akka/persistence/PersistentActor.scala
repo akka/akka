@@ -6,14 +6,14 @@ package akka.persistence
 
 import java.lang.{ Iterable => JIterable }
 
-import akka.actor._
-import akka.japi.Procedure
-import akka.japi.Util
-import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
+import akka.actor._
 import akka.annotation.InternalApi
+import akka.japi.Procedure
+import akka.japi.Util
+import com.typesafe.config.Config
 
 abstract class RecoveryCompleted
 
@@ -28,16 +28,6 @@ case object RecoveryCompleted extends RecoveryCompleted {
    */
   def getInstance = this
 }
-
-/**
- * Reply message to a successful [[Eventsourced#deleteMessages]] request.
- */
-final case class DeleteMessagesSuccess(toSequenceNr: Long)
-
-/**
- * Reply message to a failed [[Eventsourced#deleteMessages]] request.
- */
-final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
 
 /**
  * Recovery mode configuration object to be returned in [[PersistentActor#recovery]].
@@ -58,9 +48,10 @@ final case class DeleteMessagesFailure(cause: Throwable, toSequenceNr: Long)
  * @param replayMax maximum number of messages to replay. Default is no limit.
  */
 @SerialVersionUID(1L)
-final case class Recovery(fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
-                          toSequenceNr: Long = Long.MaxValue,
-                          replayMax: Long = Long.MaxValue)
+final case class Recovery(
+    fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest,
+    toSequenceNr: Long = Long.MaxValue,
+    replayMax: Long = Long.MaxValue)
 
 object Recovery {
 

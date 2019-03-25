@@ -66,18 +66,21 @@ import scala.concurrent.{ Future, Promise }
         } else
           overflowStrategy match {
             case s: DropHead =>
-              log.log(s.logLevel,
-                      "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+              log.log(
+                s.logLevel,
+                "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
               buffer.dropHead()
               enqueueAndSuccess(offer)
             case s: DropTail =>
-              log.log(s.logLevel,
-                      "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+              log.log(
+                s.logLevel,
+                "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
               buffer.dropTail()
               enqueueAndSuccess(offer)
             case s: DropBuffer =>
-              log.log(s.logLevel,
-                      "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+              log.log(
+                s.logLevel,
+                "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
               buffer.clear()
               enqueueAndSuccess(offer)
             case s: DropNew =>
@@ -95,7 +98,7 @@ import scala.concurrent.{ Future, Promise }
                 case Some(_) =>
                   offer.promise.failure(
                     new IllegalStateException(
-                      "You have to wait for previous offer to be resolved to send another request"))
+                      "You have to wait for the previous offer to be resolved to send another request"))
                 case None =>
                   pendingOffer = Some(offer)
               }

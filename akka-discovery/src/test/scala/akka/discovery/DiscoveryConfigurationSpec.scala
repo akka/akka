@@ -29,8 +29,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
     "select implementation from config by config name (inside akka.discovery namespace)" in {
       val className = classOf[FakeTestDiscovery].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec",
-                            ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = akka-mock-inside
 
@@ -48,8 +49,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
       val className1 = classOf[FakeTestDiscovery].getCanonicalName
       val className2 = classOf[FakeTestDiscovery2].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec",
-                            ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -72,8 +74,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
       val className1 = classOf[FakeTestDiscovery].getCanonicalName
       val className2 = classOf[FakeTestDiscovery2].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec",
-                            ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = mock1
 
@@ -97,8 +100,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
     "throw a specific discovery method exception" in {
       val className = classOf[ExceptionThrowingDiscovery].getCanonicalName
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec",
-                            ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = "mock1"
                mock1 {
@@ -115,8 +119,9 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
     "throw an illegal argument exception for not existing method" in {
       val className = "className"
 
-      val sys = ActorSystem("DiscoveryConfigurationSpec",
-                            ConfigFactory.parseString(s"""
+      val sys = ActorSystem(
+        "DiscoveryConfigurationSpec",
+        ConfigFactory.parseString(s"""
             akka.discovery {
               method = "$className"
             }
@@ -138,12 +143,11 @@ class FakeTestDiscovery extends ServiceDiscovery {
 
 class FakeTestDiscovery2 extends FakeTestDiscovery
 
-class DiscoveryException(message: String) extends Exception
+class DiscoveryException(message: String) extends Exception(message)
 
-class ExceptionThrowingDiscovery extends ServiceDiscovery {
-
-  def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = ???
-
-  throw new DiscoveryException("Test Exception")
-
+class ExceptionThrowingDiscovery extends FakeTestDiscovery {
+  bad()
+  def bad(): Unit = {
+    throw new DiscoveryException("oh no")
+  }
 }

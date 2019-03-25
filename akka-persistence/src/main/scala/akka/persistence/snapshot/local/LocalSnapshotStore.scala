@@ -39,8 +39,9 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   private val serializationExtension = SerializationExtension(context.system)
   private var saving = immutable.Set.empty[SnapshotMetadata] // saving in progress
 
-  override def loadAsync(persistenceId: String,
-                         criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+  override def loadAsync(
+      persistenceId: String,
+      criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     //
     // Heuristics:
     //
@@ -145,8 +146,9 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
       snapshotDir,
       s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
-  private def snapshotMetadatas(persistenceId: String,
-                                criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
+  private def snapshotMetadatas(
+      persistenceId: String,
+      criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
     val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else {

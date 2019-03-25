@@ -43,9 +43,10 @@ abstract class ActorSelection extends Serializable {
    * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
    */
   def tell(msg: Any, sender: ActorRef): Unit =
-    ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef],
-                                    sender,
-                                    ActorSelectionMessage(msg, path, wildcardFanOut = false))
+    ActorSelection.deliverSelection(
+      anchor.asInstanceOf[InternalActorRef],
+      sender,
+      ActorSelectionMessage(msg, path, wildcardFanOut = false))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -235,9 +236,10 @@ object ActorSelection {
         ref match {
           case refWithCell: ActorRefWithCell =>
             def emptyRef =
-              new EmptyLocalActorRef(refWithCell.provider,
-                                     anchor.path / sel.elements.map(_.toString),
-                                     refWithCell.underlying.system.eventStream)
+              new EmptyLocalActorRef(
+                refWithCell.provider,
+                anchor.path / sel.elements.map(_.toString),
+                refWithCell.underlying.system.eventStream)
 
             iter.next() match {
               case SelectParent =>
@@ -271,8 +273,9 @@ object ActorSelection {
                   if (matchingChildren.isEmpty && !sel.wildcardFanOut)
                     emptyRef.tell(sel, sender)
                   else {
-                    val m = sel.copy(elements = iter.toVector,
-                                     wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
+                    val m = sel.copy(
+                      elements = iter.toVector,
+                      wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
                     matchingChildren.foreach(c => deliverSelection(c.asInstanceOf[InternalActorRef], sender, m))
                   }
                 }
@@ -305,9 +308,10 @@ trait ScalaActorSelection {
  * message is delivered by traversing the various actor paths involved.
  */
 @SerialVersionUID(2L) // it has protobuf serialization in akka-remote
-private[akka] final case class ActorSelectionMessage(msg: Any,
-                                                     elements: immutable.Iterable[SelectionPathElement],
-                                                     wildcardFanOut: Boolean)
+private[akka] final case class ActorSelectionMessage(
+    msg: Any,
+    elements: immutable.Iterable[SelectionPathElement],
+    wildcardFanOut: Boolean)
     extends AutoReceivedMessage
     with PossiblyHarmful {
 

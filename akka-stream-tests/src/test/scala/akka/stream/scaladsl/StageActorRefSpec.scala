@@ -213,24 +213,25 @@ object StageActorRefSpec {
           }
         }
 
-        setHandler(in,
-                   new InHandler {
-                     override def onPush(): Unit = {
-                       sum += grab(in)
-                       p.trySuccess(sum)
-                       completeStage()
-                     }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              sum += grab(in)
+              p.trySuccess(sum)
+              completeStage()
+            }
 
-                     override def onUpstreamFinish(): Unit = {
-                       p.trySuccess(sum)
-                       completeStage()
-                     }
+            override def onUpstreamFinish(): Unit = {
+              p.trySuccess(sum)
+              completeStage()
+            }
 
-                     override def onUpstreamFailure(ex: Throwable): Unit = {
-                       p.tryFailure(ex)
-                       failStage(ex)
-                     }
-                   })
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              p.tryFailure(ex)
+              failStage(ex)
+            }
+          })
       }
 
       logic -> p.future

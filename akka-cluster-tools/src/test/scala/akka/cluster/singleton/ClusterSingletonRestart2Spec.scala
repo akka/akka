@@ -47,16 +47,18 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
 
   val sys1 = ActorSystem(system.name, system.settings.config)
   val sys2 = ActorSystem(system.name, system.settings.config)
-  val sys3 = ActorSystem(system.name,
-                         ConfigFactory.parseString("akka.cluster.roles = [other]").withFallback(system.settings.config))
+  val sys3 = ActorSystem(
+    system.name,
+    ConfigFactory.parseString("akka.cluster.roles = [other]").withFallback(system.settings.config))
   var sys4: ActorSystem = null
 
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     if (Cluster(from).selfRoles.contains("singleton"))
       from.actorOf(
-        ClusterSingletonManager.props(singletonProps = ClusterSingletonRestart2Spec.singletonActorProps,
-                                      terminationMessage = PoisonPill,
-                                      settings = ClusterSingletonManagerSettings(from).withRole("singleton")),
+        ClusterSingletonManager.props(
+          singletonProps = ClusterSingletonRestart2Spec.singletonActorProps,
+          terminationMessage = PoisonPill,
+          settings = ClusterSingletonManagerSettings(from).withRole("singleton")),
         name = "echo")
 
     within(45.seconds) {

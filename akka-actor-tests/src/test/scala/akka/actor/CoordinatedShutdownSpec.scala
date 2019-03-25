@@ -107,18 +107,19 @@ class CoordinatedShutdownSpec
     "have pre-defined phases from config" in {
       import CoordinatedShutdown._
       CoordinatedShutdown(system).orderedPhases should ===(
-        List(PhaseBeforeServiceUnbind,
-             PhaseServiceUnbind,
-             PhaseServiceRequestsDone,
-             PhaseServiceStop,
-             PhaseBeforeClusterShutdown,
-             PhaseClusterShardingShutdownRegion,
-             PhaseClusterLeave,
-             PhaseClusterExiting,
-             PhaseClusterExitingDone,
-             PhaseClusterShutdown,
-             PhaseBeforeActorSystemTerminate,
-             PhaseActorSystemTerminate))
+        List(
+          PhaseBeforeServiceUnbind,
+          PhaseServiceUnbind,
+          PhaseServiceRequestsDone,
+          PhaseServiceStop,
+          PhaseBeforeClusterShutdown,
+          PhaseClusterShardingShutdownRegion,
+          PhaseClusterLeave,
+          PhaseClusterExiting,
+          PhaseClusterExitingDone,
+          PhaseClusterShutdown,
+          PhaseBeforeActorSystemTerminate,
+          PhaseActorSystemTerminate))
     }
 
     "run ordered phases" in {
@@ -188,9 +189,10 @@ class CoordinatedShutdownSpec
 
     "continue after timeout or failure" in {
       import system.dispatcher
-      val phases = Map("a" -> emptyPhase,
-                       "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
-                       "c" -> phase("b", "a"))
+      val phases = Map(
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("a", "a1") { () =>
         testActor ! "A"
@@ -226,9 +228,10 @@ class CoordinatedShutdownSpec
     }
 
     "abort if recover=off" in {
-      val phases = Map("a" -> emptyPhase,
-                       "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
-                       "c" -> phase("b", "a"))
+      val phases = Map(
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("b", "b1") { () =>
         testActor ! "B"
@@ -247,9 +250,10 @@ class CoordinatedShutdownSpec
     }
 
     "skip tasks in disabled phase" in {
-      val phases = Map("a" -> emptyPhase,
-                       "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
-                       "c" -> phase("b", "a"))
+      val phases = Map(
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("b", "b1") { () =>
         testActor ! "B"
@@ -297,9 +301,10 @@ class CoordinatedShutdownSpec
           }
         }
         """)) should ===(
-        Map("a" -> Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
-            "b" -> Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
-            "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
+        Map(
+          "a" -> Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
+          "b" -> Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
+          "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
     }
 
     "default exit code to 0" in {

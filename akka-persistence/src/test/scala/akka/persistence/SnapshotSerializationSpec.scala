@@ -66,11 +66,11 @@ object SnapshotSerializationSpec {
 
 class SnapshotSerializationSpec
     extends PersistenceSpec(
-      PersistenceSpec.config("leveldb",
-                             "SnapshotSerializationSpec",
-                             serialization = "off",
-                             extraConfig =
-                               Some("""
+      PersistenceSpec.config(
+        "leveldb",
+        "SnapshotSerializationSpec",
+        serialization = "off",
+        extraConfig = Some("""
     akka.actor {
       serializers {
         my-snapshot = "akka.persistence.SnapshotSerializationSpec$MySerializer"

@@ -75,8 +75,9 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 
   protected def maximumOverhead: Int
 
-  protected def interceptListen(listenAddress: Address,
-                                listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
+  protected def interceptListen(
+      listenAddress: Address,
+      listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit
 
@@ -123,10 +124,11 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
 
 }
 
-abstract class AbstractTransportAdapterHandle(val originalLocalAddress: Address,
-                                              val originalRemoteAddress: Address,
-                                              val wrappedHandle: AssociationHandle,
-                                              val addedSchemeIdentifier: String)
+abstract class AbstractTransportAdapterHandle(
+    val originalLocalAddress: Address,
+    val originalRemoteAddress: Address,
+    val wrappedHandle: AssociationHandle,
+    val addedSchemeIdentifier: String)
     extends AssociationHandle
     with SchemeAugmenter {
 
@@ -166,8 +168,9 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   private def registerManager(): Future[ActorRef] =
     (system.actorSelection("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
-  override def interceptListen(listenAddress: Address,
-                               listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
+  override def interceptListen(
+      listenAddress: Address,
+      listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     registerManager().map { mgr =>
       // Side effecting: storing the manager instance in volatile var
       // This is done only once: during the initialization of the protocol stack. The variable manager is not read

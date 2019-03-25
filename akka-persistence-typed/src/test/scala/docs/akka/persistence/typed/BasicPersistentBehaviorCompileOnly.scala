@@ -52,10 +52,11 @@ object BasicPersistentBehaviorCompileOnly {
 
     //#behavior
     def behavior(id: String): EventSourcedBehavior[Command, Event, State] =
-      EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId(id),
-                                                  emptyState = State(Nil),
-                                                  commandHandler = commandHandler,
-                                                  eventHandler = eventHandler)
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = PersistenceId(id),
+        emptyState = State(Nil),
+        commandHandler = commandHandler,
+        eventHandler = eventHandler)
     //#behavior
 
   }
@@ -66,53 +67,42 @@ object BasicPersistentBehaviorCompileOnly {
   final case class State()
 
   val behavior: Behavior[Command] =
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                emptyState = State(),
-                                                commandHandler = (state, cmd) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the command & return an Effect"),
-                                                eventHandler = (state, evt) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the event return the next state"))
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("abc"),
+      emptyState = State(),
+      commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
   //#structure
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                emptyState = State(),
-                                                commandHandler = (state, cmd) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the command & return an Effect"),
-                                                eventHandler = (state, evt) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the event return the next state")).receiveSignal {
-      case RecoveryCompleted(state) ⇒
-        throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
-    }
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("abc"),
+      emptyState = State(),
+      commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
+      .receiveSignal {
+        case RecoveryCompleted(state) ⇒
+          throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
+      }
   //#recovery
 
   //#tagging
   val taggingBehavior: Behavior[Command] =
-    EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                emptyState = State(),
-                                                commandHandler = (state, cmd) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the command & return an Effect"),
-                                                eventHandler = (state, evt) =>
-                                                  throw new RuntimeException(
-                                                    "TODO: process the event return the next state")).withTagger(_ =>
-      Set("tag1", "tag2"))
+    EventSourcedBehavior[Command, Event, State](
+      persistenceId = PersistenceId("abc"),
+      emptyState = State(),
+      commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
+      .withTagger(_ => Set("tag1", "tag2"))
   //#tagging
 
   //#wrapPersistentBehavior
-  val samplePersistentBehavior = EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                                             emptyState = State(),
-                                                                             commandHandler = (state, cmd) =>
-                                                                               throw new RuntimeException(
-                                                                                 "TODO: process the command & return an Effect"),
-                                                                             eventHandler = (state, evt) =>
-                                                                               throw new RuntimeException(
-                                                                                 "TODO: process the event return the next state"))
+  val samplePersistentBehavior = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .receiveSignal {
       case RecoveryCompleted(state) ⇒
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
@@ -137,42 +127,37 @@ object BasicPersistentBehaviorCompileOnly {
 
   val behaviorWithContext: Behavior[String] =
     Behaviors.setup { context =>
-      EventSourcedBehavior[String, String, State](persistenceId = PersistenceId("myPersistenceId"),
-                                                  emptyState = new State,
-                                                  commandHandler = CommandHandler.command { cmd =>
-                                                    context.log.info("Got command {}", cmd)
-                                                    Effect.persist(cmd).thenRun { state =>
-                                                      context.log.info("event persisted, new state {}", state)
-                                                    }
-                                                  },
-                                                  eventHandler = {
-                                                    case (state, _) => state
-                                                  })
+      EventSourcedBehavior[String, String, State](
+        persistenceId = PersistenceId("myPersistenceId"),
+        emptyState = new State,
+        commandHandler = CommandHandler.command { cmd =>
+          context.log.info("Got command {}", cmd)
+          Effect.persist(cmd).thenRun { state =>
+            context.log.info("event persisted, new state {}", state)
+          }
+        },
+        eventHandler = {
+          case (state, _) => state
+        })
     }
   // #actor-context
 
   //#snapshottingEveryN
-  val snapshottingEveryN = EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                                       emptyState = State(),
-                                                                       commandHandler = (state, cmd) =>
-                                                                         throw new RuntimeException(
-                                                                           "TODO: process the command & return an Effect"),
-                                                                       eventHandler = (state, evt) =>
-                                                                         throw new RuntimeException(
-                                                                           "TODO: process the event return the next state"))
+  val snapshottingEveryN = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .snapshotEvery(100)
   //#snapshottingEveryN
 
   final case class BookingCompleted(orderNr: String) extends Event
   //#snapshottingPredicate
-  val snapshottingPredicate = EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                                          emptyState = State(),
-                                                                          commandHandler = (state, cmd) =>
-                                                                            throw new RuntimeException(
-                                                                              "TODO: process the command & return an Effect"),
-                                                                          eventHandler = (state, evt) =>
-                                                                            throw new RuntimeException(
-                                                                              "TODO: process the event return the next state"))
+  val snapshottingPredicate = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
@@ -180,17 +165,14 @@ object BasicPersistentBehaviorCompileOnly {
   //#snapshottingPredicate
 
   //#snapshotSelection
-  import akka.persistence.SnapshotSelectionCriteria
+  import akka.persistence.typed.SnapshotSelectionCriteria
 
-  val snapshotSelection = EventSourcedBehavior[Command, Event, State](persistenceId = PersistenceId("abc"),
-                                                                      emptyState = State(),
-                                                                      commandHandler = (state, cmd) =>
-                                                                        throw new RuntimeException(
-                                                                          "TODO: process the command & return an Effect"),
-                                                                      eventHandler = (state, evt) =>
-                                                                        throw new RuntimeException(
-                                                                          "TODO: process the event return the next state"))
-    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.None)
+  val snapshotSelection = EventSourcedBehavior[Command, Event, State](
+    persistenceId = PersistenceId("abc"),
+    emptyState = State(),
+    commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
+    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
   //#snapshotSelection
 
 }

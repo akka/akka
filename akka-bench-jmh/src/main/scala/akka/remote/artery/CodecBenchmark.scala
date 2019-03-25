@@ -104,8 +104,9 @@ class CodecBenchmark {
     val settings = ActorMaterializerSettings(system)
     materializer = ActorMaterializer(settings)(system)
 
-    uniqueLocalAddress = UniqueAddress(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-                                       AddressUidExtension(system).longAddressUid)
+    uniqueLocalAddress = UniqueAddress(
+      system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+      AddressUidExtension(system).longAddressUid)
 
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
@@ -136,24 +137,26 @@ class CodecBenchmark {
     // Now build up the graphs
     val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.OutboundCompressionAccess] =
       Flow.fromGraph(
-        new Encoder(uniqueLocalAddress,
-                    system.asInstanceOf[ExtendedActorSystem],
-                    outboundEnvelopePool,
-                    envelopePool,
-                    streamId = 1,
-                    debugLogSend = false,
-                    version = ArteryTransport.HighestVersion))
+        new Encoder(
+          uniqueLocalAddress,
+          system.asInstanceOf[ExtendedActorSystem],
+          outboundEnvelopePool,
+          envelopePool,
+          streamId = 1,
+          debugLogSend = false,
+          version = ArteryTransport.HighestVersion))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
       Flow[String].map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(
-        new Decoder(inboundContext,
-                    system.asInstanceOf[ExtendedActorSystem],
-                    uniqueLocalAddress,
-                    inboundContext.settings,
-                    compressions,
-                    inboundEnvelopePool))
+        new Decoder(
+          inboundContext,
+          system.asInstanceOf[ExtendedActorSystem],
+          uniqueLocalAddress,
+          inboundContext.settings,
+          compressions,
+          inboundEnvelopePool))
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String].map { _ =>
@@ -295,18 +298,20 @@ object CodecBenchmark {
 
     override def identifier: Byte = 7 // Lucky number slevin
 
-    override def remoteWriteMetadata(recipient: ActorRef,
-                                     message: Object,
-                                     sender: ActorRef,
-                                     buffer: ByteBuffer): Unit = {
+    override def remoteWriteMetadata(
+        recipient: ActorRef,
+        message: Object,
+        sender: ActorRef,
+        buffer: ByteBuffer): Unit = {
       buffer.putInt(Metadata.length)
       buffer.put(Metadata)
     }
 
-    override def remoteReadMetadata(recipient: ActorRef,
-                                    message: Object,
-                                    sender: ActorRef,
-                                    buffer: ByteBuffer): Unit = {
+    override def remoteReadMetadata(
+        recipient: ActorRef,
+        message: Object,
+        sender: ActorRef,
+        buffer: ByteBuffer): Unit = {
       val length = Metadata.length
       val metaLength = buffer.getInt
       @tailrec
@@ -319,16 +324,18 @@ object CodecBenchmark {
         throw new IOException(s"DummyInstrument deserialization error. Expected ${Metadata.toString}")
     }
 
-    override def remoteMessageSent(recipient: ActorRef,
-                                   message: Object,
-                                   sender: ActorRef,
-                                   size: Int,
-                                   time: Long): Unit = ()
+    override def remoteMessageSent(
+        recipient: ActorRef,
+        message: Object,
+        sender: ActorRef,
+        size: Int,
+        time: Long): Unit = ()
 
-    override def remoteMessageReceived(recipient: ActorRef,
-                                       message: Object,
-                                       sender: ActorRef,
-                                       size: Int,
-                                       time: Long): Unit = ()
+    override def remoteMessageReceived(
+        recipient: ActorRef,
+        message: Object,
+        sender: ActorRef,
+        size: Int,
+        time: Long): Unit = ()
   }
 }

@@ -136,11 +136,12 @@ object FSM {
    * INTERNAL API
    * Using a subclass for binary compatibility reasons
    */
-  private[akka] class SilentState[S, D](_stateName: S,
-                                        _stateData: D,
-                                        _timeout: Option[FiniteDuration],
-                                        _stopReason: Option[Reason],
-                                        _replies: List[Any])
+  private[akka] class SilentState[S, D](
+      _stateName: S,
+      _stateData: D,
+      _timeout: Option[FiniteDuration],
+      _stopReason: Option[Reason],
+      _replies: List[Any])
       extends State[S, D](_stateName, _stateData, _timeout, _stopReason, _replies) {
 
     /**
@@ -148,11 +149,12 @@ object FSM {
      */
     private[akka] override def notifies: Boolean = false
 
-    override def copy(stateName: S = stateName,
-                      stateData: D = stateData,
-                      timeout: Option[FiniteDuration] = timeout,
-                      stopReason: Option[Reason] = stopReason,
-                      replies: List[Any] = replies): State[S, D] = {
+    override def copy(
+        stateName: S = stateName,
+        stateData: D = stateData,
+        timeout: Option[FiniteDuration] = timeout,
+        stopReason: Option[Reason] = stopReason,
+        replies: List[Any] = replies): State[S, D] = {
       new SilentState(stateName, stateData, timeout, stopReason, replies)
     }
   }
@@ -162,11 +164,12 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](stateName: S,
-                         stateData: D,
-                         timeout: Option[FiniteDuration] = None,
-                         stopReason: Option[Reason] = None,
-                         replies: List[Any] = Nil) {
+  case class State[S, D](
+      stateName: S,
+      stateData: D,
+      timeout: Option[FiniteDuration] = None,
+      stopReason: Option[Reason] = None,
+      replies: List[Any] = Nil) {
 
     /**
      * INTERNAL API
@@ -174,11 +177,12 @@ object FSM {
     private[akka] def notifies: Boolean = true
 
     // defined here to be able to override it in SilentState
-    def copy(stateName: S = stateName,
-             stateData: D = stateData,
-             timeout: Option[FiniteDuration] = timeout,
-             stopReason: Option[Reason] = stopReason,
-             replies: List[Any] = replies): State[S, D] = {
+    def copy(
+        stateName: S = stateName,
+        stateData: D = stateData,
+        timeout: Option[FiniteDuration] = timeout,
+        stopReason: Option[Reason] = stopReason,
+        replies: List[Any] = replies): State[S, D] = {
       new State(stateName, stateData, timeout, stopReason, replies)
     }
 

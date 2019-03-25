@@ -101,8 +101,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
     "deserialize from wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
       // we must use the old singleton class name so that the other side will see an InitJoin
       // but discard the config as it does not know about the config check
-      val initJoinAck = InternalClusterAction.InitJoinAck(Address("akka.tcp", "cluster", "127.0.0.1", 2552),
-                                                          InternalClusterAction.UncheckedConfig)
+      val initJoinAck = InternalClusterAction.InitJoinAck(
+        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        InternalClusterAction.UncheckedConfig)
       val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
 
       val deserialized =
@@ -111,8 +112,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
     }
 
     "serialize to wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
-      val initJoinAck = InternalClusterAction.InitJoinAck(Address("akka.tcp", "cluster", "127.0.0.1", 2552),
-                                                          InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
+      val initJoinAck = InternalClusterAction.InitJoinAck(
+        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        InternalClusterAction.ConfigCheckUnsupportedByJoiningNode)
       val bytes = serializer.toBinary(initJoinAck)
 
       val expectedSerializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
@@ -175,21 +177,24 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
     "be serializable with one role" in {
       checkSerialization(
-        ClusterRouterPool(RoundRobinPool(nrOfInstances = 4),
-                          ClusterRouterPoolSettings(totalInstances = 2,
-                                                    maxInstancesPerNode = 5,
-                                                    allowLocalRoutees = true,
-                                                    useRoles = Set("Richard, Duke of Gloucester"))))
+        ClusterRouterPool(
+          RoundRobinPool(nrOfInstances = 4),
+          ClusterRouterPoolSettings(
+            totalInstances = 2,
+            maxInstancesPerNode = 5,
+            allowLocalRoutees = true,
+            useRoles = Set("Richard, Duke of Gloucester"))))
     }
 
     "be serializable with many roles" in {
       checkSerialization(
-        ClusterRouterPool(RoundRobinPool(nrOfInstances = 4),
-                          ClusterRouterPoolSettings(
-                            totalInstances = 2,
-                            maxInstancesPerNode = 5,
-                            allowLocalRoutees = true,
-                            useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))))
+        ClusterRouterPool(
+          RoundRobinPool(nrOfInstances = 4),
+          ClusterRouterPoolSettings(
+            totalInstances = 2,
+            maxInstancesPerNode = 5,
+            allowLocalRoutees = true,
+            useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))))
     }
   }
 

@@ -43,21 +43,24 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
   val sys2 = ActorSystem(system.name, system.settings.config)
   val sys3 = system
 
-  val region1 = ClusterSharding(sys1).start("type1",
-                                            Props[EchoActor](),
-                                            ClusterShardingSettings(sys1),
-                                            extractEntityId,
-                                            extractShardId)
-  val region2 = ClusterSharding(sys2).start("type1",
-                                            Props[EchoActor](),
-                                            ClusterShardingSettings(sys2),
-                                            extractEntityId,
-                                            extractShardId)
-  val region3 = ClusterSharding(sys3).start("type1",
-                                            Props[EchoActor](),
-                                            ClusterShardingSettings(sys3),
-                                            extractEntityId,
-                                            extractShardId)
+  val region1 = ClusterSharding(sys1).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys1),
+    extractEntityId,
+    extractShardId)
+  val region2 = ClusterSharding(sys2).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys2),
+    extractEntityId,
+    extractShardId)
+  val region3 = ClusterSharding(sys3).start(
+    "type1",
+    Props[EchoActor](),
+    ClusterShardingSettings(sys3),
+    extractEntityId,
+    extractShardId)
 
   val probe1 = TestProbe()(sys1)
   val probe2 = TestProbe()(sys2)

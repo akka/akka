@@ -66,9 +66,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
   }
 }
 
-private[akka] class OutputStreamAdapter(unfulfilledDemand: Semaphore,
-                                        sendToStage: AsyncCallback[AdapterToStageMessage],
-                                        writeTimeout: FiniteDuration)
+private[akka] class OutputStreamAdapter(
+    unfulfilledDemand: Semaphore,
+    sendToStage: AsyncCallback[AdapterToStageMessage],
+    writeTimeout: FiniteDuration)
     extends OutputStream {
 
   @scala.throws(classOf[IOException])

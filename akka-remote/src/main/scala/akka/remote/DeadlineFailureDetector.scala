@@ -37,8 +37,9 @@ class DeadlineFailureDetector(val acceptableHeartbeatPause: FiniteDuration, val 
    * Expecting config properties named `acceptable-heartbeat-pause`.
    */
   def this(config: Config, ev: EventStream) =
-    this(acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
-         heartbeatInterval = config.getMillisDuration("heartbeat-interval"))
+    this(
+      acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
+      heartbeatInterval = config.getMillisDuration("heartbeat-interval"))
 
   require(acceptableHeartbeatPause >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0 s")
   require(heartbeatInterval > Duration.Zero, "failure-detector.heartbeat-interval must be > 0 s")

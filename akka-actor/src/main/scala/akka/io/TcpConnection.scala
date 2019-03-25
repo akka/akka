@@ -47,13 +47,13 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private var registration: Option[ChannelRegistration] = None
 
   def setRegistration(registration: ChannelRegistration): Unit = this.registration = Some(registration)
-  def signDeathPact(actor: ActorRef): Unit = {
+  protected def signDeathPact(actor: ActorRef): Unit = {
     unsignDeathPact()
     watchedActor = actor
     context.watch(watchedActor)
   }
 
-  def unsignDeathPact(): Unit =
+  protected def unsignDeathPact(): Unit =
     if (watchedActor ne context.system.deadLetters) context.unwatch(watchedActor)
 
   def writePending = pendingWrite ne EmptyPendingWrite
@@ -65,10 +65,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case Register(handler, keepOpenOnPeerClosed, useResumeWriting) =>
       // up to this point we've been watching the commander,
       // but since registration is now complete we only need to watch the handler from here on
-      if (handler != commander) {
-        context.unwatch(commander)
-        context.watch(handler)
-      }
+      if (handler != commander)
+        signDeathPact(handler) // will unsign death pact with commander automatically
+
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
 
       val info = ConnectionInfo(registration, handler, keepOpenOnPeerClosed, useResumeWriting)
@@ -113,9 +112,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     }
 
   /** connection is closing but a write has to be finished first */
-  def closingWithPendingWrite(info: ConnectionInfo,
-                              closeCommander: Option[ActorRef],
-                              closedEvent: ConnectionClosed): Receive = {
+  def closingWithPendingWrite(
+      info: ConnectionInfo,
+      closeCommander: Option[ActorRef],
+      closedEvent: ConnectionClosed): Receive = {
     case SuspendReading  => suspendReading(info)
     case ResumeReading   => resumeReading(info)
     case ChannelReadable => doRead(info, closeCommander)
@@ -202,9 +202,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   // AUXILIARIES and IMPLEMENTATION
 
   /** used in subclasses to start the common machinery above once a channel is connected */
-  def completeConnect(registration: ChannelRegistration,
-                      commander: ActorRef,
-                      options: immutable.Traversable[SocketOption]): Unit = {
+  def completeConnect(
+      registration: ChannelRegistration,
+      commander: ActorRef,
+      options: immutable.Traversable[SocketOption]): Unit = {
     this.registration = Some(registration)
 
     // Turn off Nagle's algorithm by default
@@ -217,8 +218,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     }
     options.foreach(_.afterConnect(channel.socket))
 
-    commander ! Connected(channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
-                          channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
+    commander ! Connected(
+      channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
+      channel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress])
 
     context.setReceiveTimeout(RegisterTimeout)
 
@@ -364,6 +366,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   def stopWith(closeInfo: CloseInformation, shouldAbort: Boolean = false): Unit = {
     closedMessage = Some(closeInfo)
+    unsignDeathPact()
 
     if (closeInfo.closedEvent == Aborted || shouldAbort)
       prepareAbort()
@@ -434,11 +437,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     }
   }
 
-  class PendingBufferWrite(val commander: ActorRef,
-                           remainingData: ByteString,
-                           ack: Any,
-                           buffer: ByteBuffer,
-                           tail: WriteCommand)
+  class PendingBufferWrite(
+      val commander: ActorRef,
+      remainingData: ByteString,
+      ack: Any,
+      buffer: ByteBuffer,
+      tail: WriteCommand)
       extends PendingWrite {
 
     def doWrite(info: ConnectionInfo): PendingWrite = {
@@ -472,20 +476,22 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     def release(): Unit = bufferPool.release(buffer)
   }
 
-  def PendingWriteFile(commander: ActorRef,
-                       filePath: Path,
-                       offset: Long,
-                       count: Long,
-                       ack: Event,
-                       tail: WriteCommand): PendingWriteFile =
+  def PendingWriteFile(
+      commander: ActorRef,
+      filePath: Path,
+      offset: Long,
+      count: Long,
+      ack: Event,
+      tail: WriteCommand): PendingWriteFile =
     new PendingWriteFile(commander, FileChannel.open(filePath), offset, count, ack, tail)
 
-  class PendingWriteFile(val commander: ActorRef,
-                         fileChannel: FileChannel,
-                         offset: Long,
-                         remaining: Long,
-                         ack: Event,
-                         tail: WriteCommand)
+  class PendingWriteFile(
+      val commander: ActorRef,
+      fileChannel: FileChannel,
+      offset: Long,
+      remaining: Long,
+      ack: Event,
+      tail: WriteCommand)
       extends PendingWrite
       with Runnable {
 
@@ -533,10 +539,11 @@ private[io] object TcpConnection {
   /**
    * Groups required connection-related data that are only available once the connection has been fully established.
    */
-  final case class ConnectionInfo(registration: ChannelRegistration,
-                                  handler: ActorRef,
-                                  keepOpenOnPeerClosed: Boolean,
-                                  useResumeWriting: Boolean)
+  final case class ConnectionInfo(
+      registration: ChannelRegistration,
+      handler: ActorRef,
+      keepOpenOnPeerClosed: Boolean,
+      useResumeWriting: Boolean)
 
   // INTERNAL MESSAGES
 

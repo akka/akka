@@ -35,8 +35,9 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(implicit ec: ExecutionContext,
-                                                                               scheduler: Scheduler): Future[T] = {
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(
+      implicit ec: ExecutionContext,
+      scheduler: Scheduler): Future[T] = {
     try {
       if (attempts > 0) {
         attempt().recoverWith {

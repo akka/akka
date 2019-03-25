@@ -4,6 +4,8 @@
 
 package akka.cluster.ddata.protobuf
 
+import java.lang.IllegalArgumentException
+
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -19,7 +21,7 @@ import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.testkit.TestKit
-import akka.util.ByteString
+import akka.util.{ unused, ByteString }
 import akka.cluster.UniqueAddress
 import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
@@ -31,8 +33,9 @@ import akka.cluster.ddata.ORMultiMap
 
 class ReplicatorMessageSerializerSpec
     extends TestKit(
-      ActorSystem("ReplicatorMessageSerializerSpec",
-                  ConfigFactory.parseString("""
+      ActorSystem(
+        "ReplicatorMessageSerializerSpec",
+        ConfigFactory.parseString("""
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
@@ -78,6 +81,14 @@ class ReplicatorMessageSerializerSpec
 
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
+      checkSerialization(Get(keyA, ReadMajority((Int.MaxValue.toLong + 50).milliseconds), Some("x")))
+      try {
+        serializer.toBinary(Get(keyA, ReadMajority((Int.MaxValue.toLong * 3).milliseconds), Some("x")))
+        fail("Our protobuf protocol does not support timeouts larger than unsigned ints")
+      } catch {
+        case e: IllegalArgumentException =>
+          e.getMessage should include("unsigned int")
+      }
       checkSerialization(GetSuccess(keyA, None)(data1))
       checkSerialization(GetSuccess(keyA, Some("x"))(data1))
       checkSerialization(NotFound(keyA, Some("x")))
@@ -87,9 +98,11 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(Changed(keyA)(data1))
       checkSerialization(DataEnvelope(data1))
       checkSerialization(
-        DataEnvelope(data1,
-                     pruning = Map(address1 -> PruningPerformed(System.currentTimeMillis()),
-                                   address3 -> PruningInitialized(address2, Set(address1.address)))))
+        DataEnvelope(
+          data1,
+          pruning = Map(
+            address1 -> PruningPerformed(System.currentTimeMillis()),
+            address3 -> PruningInitialized(address2, Set(address1.address)))))
       checkSerialization(Write("A", DataEnvelope(data1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
@@ -102,16 +115,19 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(
         Gossip(Map("A" -> DataEnvelope(data1), "B" -> DataEnvelope(GSet() + "b" + "c")), sendBack = true))
       checkSerialization(
-        DeltaPropagation(address1,
-                         reply = true,
-                         Map("A" -> Delta(DataEnvelope(delta1), 1L, 1L),
-                             "B" -> Delta(DataEnvelope(delta2), 3L, 5L),
-                             "C" -> Delta(DataEnvelope(delta3), 1L, 1L),
-                             "DC" -> Delta(DataEnvelope(delta4), 1L, 1L))))
+        DeltaPropagation(
+          address1,
+          reply = true,
+          Map(
+            "A" -> Delta(DataEnvelope(delta1), 1L, 1L),
+            "B" -> Delta(DataEnvelope(delta2), 3L, 5L),
+            "C" -> Delta(DataEnvelope(delta3), 1L, 1L),
+            "DC" -> Delta(DataEnvelope(delta4), 1L, 1L))))
 
       checkSerialization(new DurableDataEnvelope(data1))
-      val pruning = Map(address1 -> PruningPerformed(System.currentTimeMillis()),
-                        address3 -> PruningInitialized(address2, Set(address1.address)))
+      val pruning = Map(
+        address1 -> PruningPerformed(System.currentTimeMillis()),
+        address3 -> PruningInitialized(address2, Set(address1.address)))
       val deserializedDurableDataEnvelope =
         checkSerialization(
           new DurableDataEnvelope(DataEnvelope(data1, pruning, deltaVersions = VersionVector(address1, 13L))))
@@ -217,7 +233,7 @@ class ReplicatorMessageSerializerSpec
 
     "suppory getOrAdd" in {
       var n = 0
-      def createValue(a: Read): AnyRef = {
+      def createValue(@unused a: Read): AnyRef = {
         n += 1
         new AnyRef {
           override val toString = "v" + n

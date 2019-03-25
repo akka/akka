@@ -136,15 +136,16 @@ trait ProducerSupport extends Actor with CamelSupport {
       val cmsg = CamelMessage.canonicalize(msg)
       xchg.setRequest(cmsg)
 
-      processor.process(xchg.exchange,
-                        new AsyncCallback {
-                          // Ignoring doneSync, sending back async uniformly.
-                          def done(doneSync: Boolean): Unit =
-                            producer.tell(
-                              if (xchg.exchange.isFailed) xchg.toFailureResult(cmsg.headers(headersToCopy))
-                              else MessageResult(xchg.toResponseMessage(cmsg.headers(headersToCopy))),
-                              originalSender)
-                        })
+      processor.process(
+        xchg.exchange,
+        new AsyncCallback {
+          // Ignoring doneSync, sending back async uniformly.
+          def done(doneSync: Boolean): Unit =
+            producer.tell(
+              if (xchg.exchange.isFailed) xchg.toFailureResult(cmsg.headers(headersToCopy))
+              else MessageResult(xchg.toResponseMessage(cmsg.headers(headersToCopy))),
+              originalSender)
+        })
     }
   }
 }

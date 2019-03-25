@@ -109,13 +109,14 @@ object ClusterClientSettings {
  *   to watch it from another actor and possibly acquire a new list of initialContacts from some
  *   external service registry
  */
-final class ClusterClientSettings(val initialContacts: Set[ActorPath],
-                                  val establishingGetContactsInterval: FiniteDuration,
-                                  val refreshContactsInterval: FiniteDuration,
-                                  val heartbeatInterval: FiniteDuration,
-                                  val acceptableHeartbeatPause: FiniteDuration,
-                                  val bufferSize: Int,
-                                  val reconnectTimeout: Option[FiniteDuration])
+final class ClusterClientSettings(
+    val initialContacts: Set[ActorPath],
+    val establishingGetContactsInterval: FiniteDuration,
+    val refreshContactsInterval: FiniteDuration,
+    val heartbeatInterval: FiniteDuration,
+    val acceptableHeartbeatPause: FiniteDuration,
+    val bufferSize: Int,
+    val reconnectTimeout: Option[FiniteDuration])
     extends NoSerializationVerificationNeeded {
 
   require(bufferSize >= 0 && bufferSize <= 10000, "bufferSize must be >= 0 and <= 10000")
@@ -123,19 +124,21 @@ final class ClusterClientSettings(val initialContacts: Set[ActorPath],
   /**
    * For binary/source compatibility
    */
-  def this(initialContacts: Set[ActorPath],
-           establishingGetContactsInterval: FiniteDuration,
-           refreshContactsInterval: FiniteDuration,
-           heartbeatInterval: FiniteDuration,
-           acceptableHeartbeatPause: FiniteDuration,
-           bufferSize: Int) =
-    this(initialContacts,
-         establishingGetContactsInterval,
-         refreshContactsInterval,
-         heartbeatInterval,
-         acceptableHeartbeatPause,
-         bufferSize,
-         None)
+  def this(
+      initialContacts: Set[ActorPath],
+      establishingGetContactsInterval: FiniteDuration,
+      refreshContactsInterval: FiniteDuration,
+      heartbeatInterval: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration,
+      bufferSize: Int) =
+    this(
+      initialContacts,
+      establishingGetContactsInterval,
+      refreshContactsInterval,
+      heartbeatInterval,
+      acceptableHeartbeatPause,
+      bufferSize,
+      None)
 
   /**
    * Scala API
@@ -159,8 +162,9 @@ final class ClusterClientSettings(val initialContacts: Set[ActorPath],
   def withRefreshContactsInterval(refreshContactsInterval: FiniteDuration): ClusterClientSettings =
     copy(refreshContactsInterval = refreshContactsInterval)
 
-  def withHeartbeat(heartbeatInterval: FiniteDuration,
-                    acceptableHeartbeatPause: FiniteDuration): ClusterClientSettings =
+  def withHeartbeat(
+      heartbeatInterval: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration): ClusterClientSettings =
     copy(heartbeatInterval = heartbeatInterval, acceptableHeartbeatPause = acceptableHeartbeatPause)
 
   def withBufferSize(bufferSize: Int): ClusterClientSettings =
@@ -169,20 +173,22 @@ final class ClusterClientSettings(val initialContacts: Set[ActorPath],
   def withReconnectTimeout(reconnectTimeout: Option[FiniteDuration]): ClusterClientSettings =
     copy(reconnectTimeout = reconnectTimeout)
 
-  private def copy(initialContacts: Set[ActorPath] = initialContacts,
-                   establishingGetContactsInterval: FiniteDuration = establishingGetContactsInterval,
-                   refreshContactsInterval: FiniteDuration = refreshContactsInterval,
-                   heartbeatInterval: FiniteDuration = heartbeatInterval,
-                   acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
-                   bufferSize: Int = bufferSize,
-                   reconnectTimeout: Option[FiniteDuration] = reconnectTimeout): ClusterClientSettings =
-    new ClusterClientSettings(initialContacts,
-                              establishingGetContactsInterval,
-                              refreshContactsInterval,
-                              heartbeatInterval,
-                              acceptableHeartbeatPause,
-                              bufferSize,
-                              reconnectTimeout)
+  private def copy(
+      initialContacts: Set[ActorPath] = initialContacts,
+      establishingGetContactsInterval: FiniteDuration = establishingGetContactsInterval,
+      refreshContactsInterval: FiniteDuration = refreshContactsInterval,
+      heartbeatInterval: FiniteDuration = heartbeatInterval,
+      acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
+      bufferSize: Int = bufferSize,
+      reconnectTimeout: Option[FiniteDuration] = reconnectTimeout): ClusterClientSettings =
+    new ClusterClientSettings(
+      initialContacts,
+      establishingGetContactsInterval,
+      refreshContactsInterval,
+      heartbeatInterval,
+      acceptableHeartbeatPause,
+      bufferSize,
+      reconnectTimeout)
 }
 
 /**
@@ -413,8 +419,9 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
       case Publish(topic, msg) =>
         buffer(DistributedPubSubMediator.Publish(topic, msg))
       case ReconnectTimeout =>
-        log.warning("Receptionist reconnect not successful within {} stopping cluster client",
-                    settings.reconnectTimeout)
+        log.warning(
+          "Receptionist reconnect not successful within {} stopping cluster client",
+          settings.reconnectTimeout)
         context.stop(self)
       case ReceptionistShutdown => // ok, haven't chosen a receptionist yet
     }
@@ -657,9 +664,10 @@ object ClusterReceptionistSettings {
  * @param responseTunnelReceiveTimeout The actor that tunnel response messages to the
  *   client will be stopped after this time of inactivity.
  */
-final class ClusterReceptionistSettings(val role: Option[String],
-                                        val numberOfContacts: Int,
-                                        val responseTunnelReceiveTimeout: FiniteDuration)
+final class ClusterReceptionistSettings(
+    val role: Option[String],
+    val numberOfContacts: Int,
+    val responseTunnelReceiveTimeout: FiniteDuration)
     extends NoSerializationVerificationNeeded {
 
   def withRole(role: String): ClusterReceptionistSettings = copy(role = ClusterReceptionistSettings.roleOption(role))
@@ -672,12 +680,14 @@ final class ClusterReceptionistSettings(val role: Option[String],
   def withResponseTunnelReceiveTimeout(responseTunnelReceiveTimeout: FiniteDuration): ClusterReceptionistSettings =
     copy(responseTunnelReceiveTimeout = responseTunnelReceiveTimeout)
 
-  def withHeartbeat(heartbeatInterval: FiniteDuration,
-                    acceptableHeartbeatPause: FiniteDuration,
-                    failureDetectionInterval: FiniteDuration): ClusterReceptionistSettings =
-    copy(heartbeatInterval = heartbeatInterval,
-         acceptableHeartbeatPause = acceptableHeartbeatPause,
-         failureDetectionInterval = failureDetectionInterval)
+  def withHeartbeat(
+      heartbeatInterval: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration,
+      failureDetectionInterval: FiniteDuration): ClusterReceptionistSettings =
+    copy(
+      heartbeatInterval = heartbeatInterval,
+      acceptableHeartbeatPause = acceptableHeartbeatPause,
+      failureDetectionInterval = failureDetectionInterval)
 
   // BEGIN BINARY COMPATIBILITY
   // The following is required in order to maintain binary
@@ -697,12 +707,13 @@ final class ClusterReceptionistSettings(val role: Option[String],
   private var _acceptableHeartbeatPause: FiniteDuration = 13.seconds
   private var _failureDetectionInterval: FiniteDuration = 2.second
 
-  def this(role: Option[String],
-           numberOfContacts: Int,
-           responseTunnelReceiveTimeout: FiniteDuration,
-           heartbeatInterval: FiniteDuration,
-           acceptableHeartbeatPause: FiniteDuration,
-           failureDetectionInterval: FiniteDuration) = {
+  def this(
+      role: Option[String],
+      numberOfContacts: Int,
+      responseTunnelReceiveTimeout: FiniteDuration,
+      heartbeatInterval: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration,
+      failureDetectionInterval: FiniteDuration) = {
     this(role, numberOfContacts, responseTunnelReceiveTimeout)
     this._heartbeatInterval = heartbeatInterval
     this._acceptableHeartbeatPause = acceptableHeartbeatPause
@@ -711,18 +722,20 @@ final class ClusterReceptionistSettings(val role: Option[String],
 
   // END BINARY COMPATIBILITY
 
-  private def copy(role: Option[String] = role,
-                   numberOfContacts: Int = numberOfContacts,
-                   responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout,
-                   heartbeatInterval: FiniteDuration = heartbeatInterval,
-                   acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
-                   failureDetectionInterval: FiniteDuration = failureDetectionInterval): ClusterReceptionistSettings =
-    new ClusterReceptionistSettings(role,
-                                    numberOfContacts,
-                                    responseTunnelReceiveTimeout,
-                                    heartbeatInterval,
-                                    acceptableHeartbeatPause,
-                                    failureDetectionInterval)
+  private def copy(
+      role: Option[String] = role,
+      numberOfContacts: Int = numberOfContacts,
+      responseTunnelReceiveTimeout: FiniteDuration = responseTunnelReceiveTimeout,
+      heartbeatInterval: FiniteDuration = heartbeatInterval,
+      acceptableHeartbeatPause: FiniteDuration = acceptableHeartbeatPause,
+      failureDetectionInterval: FiniteDuration = failureDetectionInterval): ClusterReceptionistSettings =
+    new ClusterReceptionistSettings(
+      role,
+      numberOfContacts,
+      responseTunnelReceiveTimeout,
+      heartbeatInterval,
+      acceptableHeartbeatPause,
+      failureDetectionInterval)
 }
 
 /**
@@ -968,9 +981,10 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       if (numberOfContacts >= nodes.size) {
         val contacts = Contacts(nodes.iterator.map(a => self.path.toStringWithAddress(a)).to(immutable.IndexedSeq))
         if (log.isDebugEnabled)
-          log.debug("Client [{}] gets contactPoints [{}] (all nodes)",
-                    sender().path,
-                    contacts.contactPoints.mkString(","))
+          log.debug(
+            "Client [{}] gets contactPoints [{}] (all nodes)",
+            sender().path,
+            contacts.contactPoints.mkString(","))
         sender() ! contacts
       } else {
         // using toStringWithAddress in case the client is local, normally it is not, and

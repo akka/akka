@@ -97,10 +97,11 @@ object SnapshotFailureRobustnessSpec {
 
 class SnapshotFailureRobustnessSpec
     extends PersistenceSpec(
-      PersistenceSpec.config("leveldb",
-                             "SnapshotFailureRobustnessSpec",
-                             serialization = "off",
-                             extraConfig = Some(s"""
+      PersistenceSpec.config(
+        "leveldb",
+        "SnapshotFailureRobustnessSpec",
+        serialization = "off",
+        extraConfig = Some(s"""
   akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$$FailingLocalSnapshotStore"
   akka.persistence.snapshot-store.local-delete-fail = $${akka.persistence.snapshot-store.local}
   akka.persistence.snapshot-store.local-delete-fail.class = "akka.persistence.SnapshotFailureRobustnessSpec$$DeleteFailingLocalSnapshotStore"
@@ -123,7 +124,7 @@ class SnapshotFailureRobustnessSpec
         TestEvent.Mute(EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
       system.eventStream.subscribe(testActor, classOf[Logging.Error])
       try {
-        val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
         expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) =>
@@ -132,7 +133,7 @@ class SnapshotFailureRobustnessSpec
         }
         expectMsg("kablama-2")
         expectMsg(RecoveryCompleted)
-        expectNoMsg(1 second)
+        expectNoMessage(1 second)
       } finally {
         system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
         system.eventStream.publish(TestEvent.UnMute(EventFilter.error(start = "Error loading snapshot [")))
@@ -181,7 +182,7 @@ class SnapshotFailureRobustnessSpec
       expectMsg(1)
       p ! DeleteSnapshot(1)
       expectMsgPF() {
-        case DeleteSnapshotFailure(SnapshotMetadata(`persistenceId`, 1, timestamp), cause) =>
+        case DeleteSnapshotFailure(SnapshotMetadata(`persistenceId`, 1, _), cause) =>
           // ok, expected failure
           cause.getMessage should include("Failed to delete")
       }
@@ -198,7 +199,7 @@ class SnapshotFailureRobustnessSpec
       val criteria = SnapshotSelectionCriteria(maxSequenceNr = 10)
       p ! DeleteSnapshots(criteria)
       expectMsgPF() {
-        case DeleteSnapshotsFailure(criteria, cause) =>
+        case DeleteSnapshotsFailure(_, cause) =>
           // ok, expected failure
           cause.getMessage should include("Failed to delete")
       }

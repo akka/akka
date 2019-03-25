@@ -53,8 +53,9 @@ abstract class RestartFirstSeedNodeSpec
   def missingSeed = address(seed3).copy(port = Some(61313))
   def seedNodes: immutable.IndexedSeq[Address] = Vector(seedNode1Address, seed2, seed3, missingSeed)
 
-  lazy val restartedSeed1System = ActorSystem(system.name,
-                                              ConfigFactory.parseString(s"""
+  lazy val restartedSeed1System = ActorSystem(
+    system.name,
+    ConfigFactory.parseString(s"""
         akka.remote.netty.tcp.port = ${seedNodes.head.port.get}
         akka.remote.artery.canonical.port = ${seedNodes.head.port.get}
         """).withFallback(system.settings.config))

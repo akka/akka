@@ -302,23 +302,23 @@ import scala.concurrent.{ Future, Promise }
           }
 
         // initial handler (until future completes)
-        setHandler(out,
-                   new OutHandler {
-                     def onPull(): Unit = {}
+        setHandler(
+          out,
+          new OutHandler {
+            def onPull(): Unit = {}
 
-                     override def onDownstreamFinish(): Unit = {
-                       if (!materialized.isCompleted) {
-                         // we used to try to materialize the "inner" source here just to get
-                         // the materialized value, but that is not safe and may cause the graph shell
-                         // to leak/stay alive after the stage completes
+            override def onDownstreamFinish(): Unit = {
+              if (!materialized.isCompleted) {
+                // we used to try to materialize the "inner" source here just to get
+                // the materialized value, but that is not safe and may cause the graph shell
+                // to leak/stay alive after the stage completes
 
-                         materialized.tryFailure(
-                           new StreamDetachedException("Stream cancelled before Source Future completed"))
-                       }
+                materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
+              }
 
-                       super.onDownstreamFinish()
-                     }
-                   })
+              super.onDownstreamFinish()
+            }
+          })
 
         def onPush(): Unit =
           push(out, sinkIn.grab())

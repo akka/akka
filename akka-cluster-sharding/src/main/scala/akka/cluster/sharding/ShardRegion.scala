@@ -14,12 +14,12 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
+
 import akka.Done
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings
@@ -34,51 +34,55 @@ object ShardRegion {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
    */
-  private[akka] def props(typeName: String,
-                          entityProps: String => Props,
-                          settings: ClusterShardingSettings,
-                          coordinatorPath: String,
-                          extractEntityId: ShardRegion.ExtractEntityId,
-                          extractShardId: ShardRegion.ExtractShardId,
-                          handOffStopMessage: Any,
-                          replicator: ActorRef,
-                          majorityMinCap: Int): Props =
+  private[akka] def props(
+      typeName: String,
+      entityProps: String => Props,
+      settings: ClusterShardingSettings,
+      coordinatorPath: String,
+      extractEntityId: ShardRegion.ExtractEntityId,
+      extractShardId: ShardRegion.ExtractShardId,
+      handOffStopMessage: Any,
+      replicator: ActorRef,
+      majorityMinCap: Int): Props =
     Props(
-      new ShardRegion(typeName,
-                      Some(entityProps),
-                      dataCenter = None,
-                      settings,
-                      coordinatorPath,
-                      extractEntityId,
-                      extractShardId,
-                      handOffStopMessage,
-                      replicator,
-                      majorityMinCap)).withDeploy(Deploy.local)
+      new ShardRegion(
+        typeName,
+        Some(entityProps),
+        dataCenter = None,
+        settings,
+        coordinatorPath,
+        extractEntityId,
+        extractShardId,
+        handOffStopMessage,
+        replicator,
+        majorityMinCap)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor
    * when using it in proxy only mode.
    */
-  private[akka] def proxyProps(typeName: String,
-                               dataCenter: Option[DataCenter],
-                               settings: ClusterShardingSettings,
-                               coordinatorPath: String,
-                               extractEntityId: ShardRegion.ExtractEntityId,
-                               extractShardId: ShardRegion.ExtractShardId,
-                               replicator: ActorRef,
-                               majorityMinCap: Int): Props =
+  private[akka] def proxyProps(
+      typeName: String,
+      dataCenter: Option[DataCenter],
+      settings: ClusterShardingSettings,
+      coordinatorPath: String,
+      extractEntityId: ShardRegion.ExtractEntityId,
+      extractShardId: ShardRegion.ExtractShardId,
+      replicator: ActorRef,
+      majorityMinCap: Int): Props =
     Props(
-      new ShardRegion(typeName,
-                      None,
-                      dataCenter,
-                      settings,
-                      coordinatorPath,
-                      extractEntityId,
-                      extractShardId,
-                      PoisonPill,
-                      replicator,
-                      majorityMinCap)).withDeploy(Deploy.local)
+      new ShardRegion(
+        typeName,
+        None,
+        dataCenter,
+        settings,
+        coordinatorPath,
+        extractEntityId,
+        extractShardId,
+        PoisonPill,
+        replicator,
+        majorityMinCap)).withDeploy(Deploy.local)
 
   /**
    * Marker type of entity identifier (`String`).
@@ -279,14 +283,15 @@ object ShardRegion {
    *
    * For the statistics for the entire cluster, see [[GetClusterShardingStats$]].
    */
-  @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery
+  @SerialVersionUID(1L) case object GetShardRegionStats extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
    */
   def getRegionStatsInstance = GetShardRegionStats
 
-  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int]) {
+  @SerialVersionUID(1L) final case class ShardRegionStats(stats: Map[ShardId, Int])
+      extends ClusterShardingSerializable {
 
     /**
      * Java API
@@ -366,11 +371,12 @@ object ShardRegion {
    * them have terminated it replies with `ShardStopped`.
    * If the entities don't terminate after `handoffTimeout` it will try stopping them forcefully.
    */
-  private[akka] class HandOffStopper(shard: String,
-                                     replyTo: ActorRef,
-                                     entities: Set[ActorRef],
-                                     stopMessage: Any,
-                                     handoffTimeout: FiniteDuration)
+  private[akka] class HandOffStopper(
+      shard: String,
+      replyTo: ActorRef,
+      entities: Set[ActorRef],
+      stopMessage: Any,
+      handoffTimeout: FiniteDuration)
       extends Actor
       with ActorLogging {
     import ShardCoordinator.Internal.ShardStopped
@@ -386,10 +392,11 @@ object ShardRegion {
 
     def receive = {
       case ReceiveTimeout =>
-        log.warning("HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
-                    "stopping the remaining entities.",
-                    stopMessage.getClass.getName,
-                    shard)
+        log.warning(
+          "HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
+          "stopping the remaining entities.",
+          stopMessage.getClass.getName,
+          shard)
 
         remaining.foreach { ref =>
           context.stop(ref)
@@ -404,11 +411,12 @@ object ShardRegion {
     }
   }
 
-  private[akka] def handOffStopperProps(shard: String,
-                                        replyTo: ActorRef,
-                                        entities: Set[ActorRef],
-                                        stopMessage: Any,
-                                        handoffTimeout: FiniteDuration): Props =
+  private[akka] def handOffStopperProps(
+      shard: String,
+      replyTo: ActorRef,
+      entities: Set[ActorRef],
+      stopMessage: Any,
+      handoffTimeout: FiniteDuration): Props =
     Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
 }
 
@@ -422,16 +430,17 @@ object ShardRegion {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] class ShardRegion(typeName: String,
-                                entityProps: Option[String => Props],
-                                dataCenter: Option[DataCenter],
-                                settings: ClusterShardingSettings,
-                                coordinatorPath: String,
-                                extractEntityId: ShardRegion.ExtractEntityId,
-                                extractShardId: ShardRegion.ExtractShardId,
-                                handOffStopMessage: Any,
-                                replicator: ActorRef,
-                                majorityMinCap: Int)
+private[akka] class ShardRegion(
+    typeName: String,
+    entityProps: Option[String => Props],
+    dataCenter: Option[DataCenter],
+    settings: ClusterShardingSettings,
+    coordinatorPath: String,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any,
+    replicator: ActorRef,
+    majorityMinCap: Int)
     extends Actor
     with ActorLogging {
 
@@ -514,9 +523,10 @@ private[akka] class ShardRegion(typeName: String,
     membersByAge = newMembers
     if (before != after) {
       if (log.isDebugEnabled)
-        log.debug("Coordinator moved from [{}] to [{}]",
-                  before.map(_.address).getOrElse(""),
-                  after.map(_.address).getOrElse(""))
+        log.debug(
+          "Coordinator moved from [{}] to [{}]",
+          before.map(_.address).getOrElse(""),
+          after.map(_.address).getOrElse(""))
       coordinator = None
       register()
     }
@@ -534,9 +544,10 @@ private[akka] class ShardRegion(typeName: String,
     case msg: StartEntity                        => deliverStartEntity(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
     case unknownMsg =>
-      log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}",
-                  typeName,
-                  unknownMsg)
+      log.warning(
+        "Message does not have an extractor defined in shard [{}] so it was ignored: {}",
+        typeName,
+        unknownMsg)
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -895,15 +906,16 @@ private[akka] class ShardRegion(typeName: String,
             val shard = context.watch(
               context.actorOf(
                 Shard
-                  .props(typeName,
-                         id,
-                         props,
-                         settings,
-                         extractEntityId,
-                         extractShardId,
-                         handOffStopMessage,
-                         replicator,
-                         majorityMinCap)
+                  .props(
+                    typeName,
+                    id,
+                    props,
+                    settings,
+                    extractEntityId,
+                    extractShardId,
+                    handOffStopMessage,
+                    replicator,
+                    majorityMinCap)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)

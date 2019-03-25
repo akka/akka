@@ -11,13 +11,15 @@ import org.scalatest.WordSpec
 
 object DslConsistencySpec {
   class ScalaSubSource[Out, Mat]
-      extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]](null,
-                                                                                                           null,
-                                                                                                           null)
+      extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]](
+        null,
+        null,
+        null)
   class ScalaSubFlow[In, Out, Mat]
-      extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Flow[In, Out, Mat]#Repr, scaladsl.Sink[In, Mat]](null,
-                                                                                                        null,
-                                                                                                        null)
+      extends impl.SubFlowImpl[Out, Out, Mat, scaladsl.Flow[In, Out, Mat]#Repr, scaladsl.Sink[In, Mat]](
+        null,
+        null,
+        null)
 }
 
 class DslConsistencySpec extends WordSpec with Matchers {
@@ -44,52 +46,45 @@ class DslConsistencySpec extends WordSpec with Matchers {
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("productElementName", "productElementNames") ++
-    Set("create",
-        "apply",
-        "ops",
-        "appendJava",
-        "andThen",
-        "andThenMat",
-        "isIdentity",
-        "withAttributes",
-        "transformMaterializing") ++
+    Set(
+      "create",
+      "apply",
+      "ops",
+      "appendJava",
+      "andThen",
+      "andThenMat",
+      "isIdentity",
+      "withAttributes",
+      "transformMaterializing") ++
     Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 
-  val graphHelpers = Set("zipGraph",
-                         "zipWithGraph",
-                         "zipLatestGraph",
-                         "zipLatestWithGraph",
-                         "mergeGraph",
-                         "mergeSortedGraph",
-                         "interleaveGraph",
-                         "concatGraph",
-                         "prependGraph",
-                         "alsoToGraph",
-                         "wireTapGraph",
-                         "orElseGraph",
-                         "divertToGraph")
+  val graphHelpers = Set(
+    "zipGraph",
+    "zipWithGraph",
+    "zipLatestGraph",
+    "zipLatestWithGraph",
+    "mergeGraph",
+    "mergeSortedGraph",
+    "interleaveGraph",
+    "concatGraph",
+    "prependGraph",
+    "alsoToGraph",
+    "wireTapGraph",
+    "orElseGraph",
+    "divertToGraph")
 
-  val allowMissing: Map[Class[_], Set[String]] = Map(jFlowClass -> graphHelpers,
-                                                     jSourceClass -> (graphHelpers ++ Set("watch", "ask")),
-                                                     // Java subflows can only be nested using .via and .to (due to type system restrictions)
-                                                     jSubFlowClass -> (graphHelpers ++ Set("groupBy",
-                                                                                           "splitAfter",
-                                                                                           "splitWhen",
-                                                                                           "subFlow",
-                                                                                           "watch",
-                                                                                           "ask")),
-                                                     jSubSourceClass -> (graphHelpers ++ Set("groupBy",
-                                                                                             "splitAfter",
-                                                                                             "splitWhen",
-                                                                                             "subFlow",
-                                                                                             "watch",
-                                                                                             "ask")),
-                                                     sFlowClass -> Set("of"),
-                                                     sSourceClass -> Set("adapt", "from", "watch"),
-                                                     sSinkClass -> Set("adapt"),
-                                                     sSubFlowClass -> Set(),
-                                                     sSubSourceClass -> Set(),
-                                                     sRunnableGraphClass -> Set("builder"))
+  val allowMissing: Map[Class[_], Set[String]] = Map(
+    jFlowClass -> graphHelpers,
+    jSourceClass -> (graphHelpers ++ Set("watch", "ask")),
+    // Java subflows can only be nested using .via and .to (due to type system restrictions)
+    jSubFlowClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+    jSubSourceClass -> (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+    sFlowClass -> Set("of"),
+    sSourceClass -> Set("adapt", "from", "watch"),
+    sSinkClass -> Set("adapt"),
+    sSubFlowClass -> Set(),
+    sSubSourceClass -> Set(),
+    sRunnableGraphClass -> Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 

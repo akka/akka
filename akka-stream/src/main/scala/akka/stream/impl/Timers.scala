@@ -35,8 +35,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     import scala.concurrent.duration._
     if (timeout > 1.second) 1.second
     else {
-      FiniteDuration(math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
-                     TimeUnit.NANOSECONDS)
+      FiniteDuration(
+        math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
+        TimeUnit.NANOSECONDS)
     }
   }
 

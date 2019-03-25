@@ -80,22 +80,24 @@ class EventSourcedBehaviorFailureSpec
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: PersistenceId,
-                             probe: ActorRef[String],
-                             additionalSignalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
+  def failingPersistentActor(
+      pid: PersistenceId,
+      probe: ActorRef[String],
+      additionalSignalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
       : EventSourcedBehavior[String, String, String] =
-    EventSourcedBehavior[String, String, String](pid,
-                                                 "",
-                                                 (_, cmd) ⇒ {
-                                                   if (cmd == "wrong")
-                                                     throw new TestException("wrong command")
-                                                   probe.tell("persisting")
-                                                   Effect.persist(cmd)
-                                                 },
-                                                 (state, event) ⇒ {
-                                                   probe.tell(event)
-                                                   state + event
-                                                 })
+    EventSourcedBehavior[String, String, String](
+      pid,
+      "",
+      (_, cmd) ⇒ {
+        if (cmd == "wrong")
+          throw new TestException("wrong command")
+        probe.tell("persisting")
+        Effect.persist(cmd)
+      },
+      (state, event) ⇒ {
+        probe.tell(event)
+        state + event
+      })
       .receiveSignal(additionalSignalHandler.orElse {
         case RecoveryCompleted(_) ⇒
           probe.tell("starting")

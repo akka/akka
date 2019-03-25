@@ -17,11 +17,12 @@ private[remote] object InboundEnvelope {
   /**
    * Only used in tests
    */
-  def apply(recipient: OptionVal[InternalActorRef],
-            message: AnyRef,
-            sender: OptionVal[ActorRef],
-            originUid: Long,
-            association: OptionVal[OutboundContext]): InboundEnvelope = {
+  def apply(
+      recipient: OptionVal[InternalActorRef],
+      message: AnyRef,
+      sender: OptionVal[ActorRef],
+      originUid: Long,
+      association: OptionVal[OutboundContext]): InboundEnvelope = {
     val env = new ReusableInboundEnvelope
     env.init(recipient, sender, originUid, -1, "", 0, null, association, lane = 0).withMessage(message)
   }
@@ -60,10 +61,10 @@ private[remote] trait InboundEnvelope extends NoSerializationVerificationNeeded 
  */
 private[remote] object ReusableInboundEnvelope {
   def createObjectPool(capacity: Int) =
-    new ObjectPool[ReusableInboundEnvelope](capacity,
-                                            create = () => new ReusableInboundEnvelope,
-                                            clear = inEnvelope =>
-                                              inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
+    new ObjectPool[ReusableInboundEnvelope](
+      capacity,
+      create = () => new ReusableInboundEnvelope,
+      clear = inEnvelope => inEnvelope.asInstanceOf[ReusableInboundEnvelope].clear())
 }
 
 /**
@@ -119,15 +120,16 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
     _lane = 0
   }
 
-  def init(recipient: OptionVal[InternalActorRef],
-           sender: OptionVal[ActorRef],
-           originUid: Long,
-           serializer: Int,
-           classManifest: String,
-           flags: Byte,
-           envelopeBuffer: EnvelopeBuffer,
-           association: OptionVal[OutboundContext],
-           lane: Int): InboundEnvelope = {
+  def init(
+      recipient: OptionVal[InternalActorRef],
+      sender: OptionVal[ActorRef],
+      originUid: Long,
+      serializer: Int,
+      classManifest: String,
+      flags: Byte,
+      envelopeBuffer: EnvelopeBuffer,
+      association: OptionVal[OutboundContext],
+      lane: Int): InboundEnvelope = {
     _recipient = recipient
     _sender = sender
     _originUid = originUid

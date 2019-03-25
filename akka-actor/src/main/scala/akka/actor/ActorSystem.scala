@@ -45,9 +45,10 @@ object BootstrapSetup {
    *
    * @see [[BootstrapSetup]] for description of the properties
    */
-  def apply(classLoader: Option[ClassLoader],
-            config: Option[Config],
-            defaultExecutionContext: Option[ExecutionContext]): BootstrapSetup =
+  def apply(
+      classLoader: Option[ClassLoader],
+      config: Option[Config],
+      defaultExecutionContext: Option[ExecutionContext]): BootstrapSetup =
     new BootstrapSetup(classLoader, config, defaultExecutionContext)
 
   /**
@@ -60,9 +61,10 @@ object BootstrapSetup {
    *
    * @see [[BootstrapSetup]] for description of the properties
    */
-  def create(classLoader: Optional[ClassLoader],
-             config: Optional[Config],
-             defaultExecutionContext: Optional[ExecutionContext]): BootstrapSetup =
+  def create(
+      classLoader: Optional[ClassLoader],
+      config: Optional[Config],
+      defaultExecutionContext: Optional[ExecutionContext]): BootstrapSetup =
     apply(classLoader.asScala, config.asScala, defaultExecutionContext.asScala)
 
   /**
@@ -118,10 +120,11 @@ object ProviderSelection {
  * @param actorRefProvider Overrides the `akka.actor.provider` setting in config, can be `local` (default), `remote` or
  *                         `cluster`. It can also be a fully qualified class name of a provider.
  */
-final class BootstrapSetup private (val classLoader: Option[ClassLoader] = None,
-                                    val config: Option[Config] = None,
-                                    val defaultExecutionContext: Option[ExecutionContext] = None,
-                                    val actorRefProvider: Option[ProviderSelection] = None)
+final class BootstrapSetup private (
+    val classLoader: Option[ClassLoader] = None,
+    val config: Option[Config] = None,
+    val defaultExecutionContext: Option[ExecutionContext] = None,
+    val actorRefProvider: Option[ProviderSelection] = None)
     extends Setup {
 
   def withClassloader(classLoader: ClassLoader): BootstrapSetup =
@@ -217,10 +220,11 @@ object ActorSystem {
    *
    * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def create(name: String,
-             config: Config,
-             classLoader: ClassLoader,
-             defaultExecutionContext: ExecutionContext): ActorSystem =
+  def create(
+      name: String,
+      config: Config,
+      classLoader: ClassLoader,
+      defaultExecutionContext: ExecutionContext): ActorSystem =
     apply(name, Option(config), Option(classLoader), Option(defaultExecutionContext))
 
   /**
@@ -290,10 +294,11 @@ object ActorSystem {
    *
    * @see <a href="https://lightbend.github.io/config/v1.3.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
-  def apply(name: String,
-            config: Option[Config] = None,
-            classLoader: Option[ClassLoader] = None,
-            defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem =
+  def apply(
+      name: String,
+      config: Option[Config] = None,
+      classLoader: Option[ClassLoader] = None,
+      defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem =
     apply(name, ActorSystemSetup(BootstrapSetup(classLoader, config, defaultExecutionContext)))
 
   /**
@@ -678,12 +683,13 @@ abstract class ExtendedActorSystem extends ActorSystem {
  * Internal API
  */
 @InternalApi
-private[akka] class ActorSystemImpl(val name: String,
-                                    applicationConfig: Config,
-                                    classLoader: ClassLoader,
-                                    defaultExecutionContext: Option[ExecutionContext],
-                                    val guardianProps: Option[Props],
-                                    setup: ActorSystemSetup)
+private[akka] class ActorSystemImpl(
+    val name: String,
+    applicationConfig: Config,
+    classLoader: ClassLoader,
+    defaultExecutionContext: Option[ExecutionContext],
+    val guardianProps: Option[Props],
+    setup: ActorSystemSetup)
     extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
@@ -808,10 +814,11 @@ private[akka] class ActorSystemImpl(val name: String,
   val scheduler: Scheduler = createScheduler()
 
   val provider: ActorRefProvider = try {
-    val arguments = Vector(classOf[String] -> name,
-                           classOf[Settings] -> settings,
-                           classOf[EventStream] -> eventStream,
-                           classOf[DynamicAccess] -> dynamicAccess)
+    val arguments = Vector(
+      classOf[String] -> name,
+      classOf[Settings] -> settings,
+      classOf[EventStream] -> eventStream,
+      classOf[DynamicAccess] -> dynamicAccess)
 
     dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   } catch {
@@ -824,14 +831,16 @@ private[akka] class ActorSystemImpl(val name: String,
 
   val mailboxes: Mailboxes = new Mailboxes(settings, eventStream, dynamicAccess, deadLetters)
 
-  val dispatchers: Dispatchers = new Dispatchers(settings,
-                                                 DefaultDispatcherPrerequisites(threadFactory,
-                                                                                eventStream,
-                                                                                scheduler,
-                                                                                dynamicAccess,
-                                                                                settings,
-                                                                                mailboxes,
-                                                                                defaultExecutionContext))
+  val dispatchers: Dispatchers = new Dispatchers(
+    settings,
+    DefaultDispatcherPrerequisites(
+      threadFactory,
+      eventStream,
+      scheduler,
+      dynamicAccess,
+      settings,
+      mailboxes,
+      defaultExecutionContext))
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
@@ -953,11 +962,12 @@ private[akka] class ActorSystemImpl(val name: String,
    */
   protected def createScheduler(): Scheduler =
     dynamicAccess
-      .createInstanceFor[Scheduler](settings.SchedulerClass,
-                                    immutable.Seq(classOf[Config] -> settings.config,
-                                                  classOf[LoggingAdapter] -> log,
-                                                  classOf[ThreadFactory] -> threadFactory.withName(
-                                                    threadFactory.name + "-scheduler")))
+      .createInstanceFor[Scheduler](
+        settings.SchedulerClass,
+        immutable.Seq(
+          classOf[Config] -> settings.config,
+          classOf[LoggingAdapter] -> log,
+          classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler")))
       .get
   //#create-scheduler
 

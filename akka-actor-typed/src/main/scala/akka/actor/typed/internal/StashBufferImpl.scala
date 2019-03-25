@@ -33,9 +33,10 @@ import akka.util.ConstantFun
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class StashBufferImpl[T] private (val capacity: Int,
-                                                                   private var _first: StashBufferImpl.Node[T],
-                                                                   private var _last: StashBufferImpl.Node[T])
+@InternalApi private[akka] final class StashBufferImpl[T] private (
+    val capacity: Int,
+    private var _first: StashBufferImpl.Node[T],
+    private var _last: StashBufferImpl.Node[T])
     extends javadsl.StashBuffer[T]
     with scaladsl.StashBuffer[T] {
 
@@ -100,10 +101,11 @@ import akka.util.ConstantFun
   override def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstashAll(ctx.asScala, behavior)
 
-  override def unstash(ctx: scaladsl.ActorContext[T],
-                       behavior: Behavior[T],
-                       numberOfMessages: Int,
-                       wrap: T => T): Behavior[T] = {
+  override def unstash(
+      ctx: scaladsl.ActorContext[T],
+      behavior: Behavior[T],
+      numberOfMessages: Int,
+      wrap: T => T): Behavior[T] = {
     if (isEmpty)
       behavior // optimization
     else {
@@ -115,9 +117,10 @@ import akka.util.ConstantFun
     }
   }
 
-  private def interpretUnstashedMessages(behavior: Behavior[T],
-                                         ctx: TypedActorContext[T],
-                                         messages: Iterator[T]): Behavior[T] = {
+  private def interpretUnstashedMessages(
+      behavior: Behavior[T],
+      ctx: TypedActorContext[T],
+      messages: Iterator[T]): Behavior[T] = {
     @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
@@ -138,10 +141,11 @@ import akka.util.ConstantFun
     interpretOne(Behavior.start(behavior, ctx))
   }
 
-  override def unstash(ctx: javadsl.ActorContext[T],
-                       behavior: Behavior[T],
-                       numberOfMessages: Int,
-                       wrap: JFunction[T, T]): Behavior[T] =
+  override def unstash(
+      ctx: javadsl.ActorContext[T],
+      behavior: Behavior[T],
+      numberOfMessages: Int,
+      wrap: JFunction[T, T]): Behavior[T] =
     unstash(ctx.asScala, behavior, numberOfMessages, x => wrap.apply(x))
 
   override def toString: String =

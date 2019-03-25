@@ -10,6 +10,7 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
+import akka.persistence.typed.RetentionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
@@ -278,6 +279,12 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
+      // #retentionCriteria
+      @Override // override snapshotEvery in EventSourcedBehavior
+      public RetentionCriteria retentionCriteria() {
+        return RetentionCriteria.create(1000, 2);
+      }
+      // #retentionCriteria
     }
   }
 

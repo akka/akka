@@ -20,9 +20,10 @@ object SourceOrFlow {
     //#log
       .log(name = "myStream")
       .addAttributes(
-        Attributes.logLevels(onElement = Attributes.LogLevels.Off,
-                             onFailure = Attributes.LogLevels.Error,
-                             onFinish = Attributes.LogLevels.Info))
+        Attributes.logLevels(
+          onElement = Attributes.LogLevels.Off,
+          onFailure = Attributes.LogLevels.Error,
+          onFinish = Attributes.LogLevels.Info))
     //#log
   }
 

@@ -20,12 +20,13 @@ import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
  * INTERNAL API
  */
 private[akka] object EventsByTagPublisher {
-  def props(tag: String,
-            fromOffset: Long,
-            toOffset: Long,
-            refreshInterval: Option[FiniteDuration],
-            maxBufSize: Int,
-            writeJournalPluginId: String): Props = {
+  def props(
+      tag: String,
+      fromOffset: Long,
+      toOffset: Long,
+      refreshInterval: Option[FiniteDuration],
+      maxBufSize: Int,
+      writeJournalPluginId: String): Props = {
     refreshInterval match {
       case Some(interval) =>
         Props(new LiveEventsByTagPublisher(tag, fromOffset, toOffset, interval, maxBufSize, writeJournalPluginId))
@@ -44,10 +45,11 @@ private[akka] object EventsByTagPublisher {
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage
-private[akka] abstract class AbstractEventsByTagPublisher(val tag: String,
-                                                          val fromOffset: Long,
-                                                          val maxBufSize: Int,
-                                                          val writeJournalPluginId: String)
+private[akka] abstract class AbstractEventsByTagPublisher(
+    val tag: String,
+    val fromOffset: Long,
+    val maxBufSize: Int,
+    val writeJournalPluginId: String)
     extends ActorPublisher[EventEnvelope]
     with DeliveryBuffer[EventEnvelope]
     with ActorLogging {
@@ -95,10 +97,11 @@ private[akka] abstract class AbstractEventsByTagPublisher(val tag: String,
 
   def replaying(limit: Int): Receive = {
     case ReplayedTaggedMessage(p, _, offset) =>
-      buf :+= EventEnvelope(offset = Sequence(offset),
-                            persistenceId = p.persistenceId,
-                            sequenceNr = p.sequenceNr,
-                            event = p.payload)
+      buf :+= EventEnvelope(
+        offset = Sequence(offset),
+        persistenceId = p.persistenceId,
+        sequenceNr = p.sequenceNr,
+        event = p.payload)
       currOffset = offset
       deliverBuf()
 
@@ -127,12 +130,13 @@ private[akka] abstract class AbstractEventsByTagPublisher(val tag: String,
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
-private[akka] class LiveEventsByTagPublisher(tag: String,
-                                             fromOffset: Long,
-                                             override val toOffset: Long,
-                                             refreshInterval: FiniteDuration,
-                                             maxBufSize: Int,
-                                             writeJournalPluginId: String)
+private[akka] class LiveEventsByTagPublisher(
+    tag: String,
+    fromOffset: Long,
+    override val toOffset: Long,
+    refreshInterval: FiniteDuration,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
     extends AbstractEventsByTagPublisher(tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
@@ -166,11 +170,12 @@ private[akka] class LiveEventsByTagPublisher(tag: String,
  * INTERNAL API
  */
 // FIXME needs a be rewritten as a GraphStage (since 2.5.0)
-private[akka] class CurrentEventsByTagPublisher(tag: String,
-                                                fromOffset: Long,
-                                                var _toOffset: Long,
-                                                maxBufSize: Int,
-                                                writeJournalPluginId: String)
+private[akka] class CurrentEventsByTagPublisher(
+    tag: String,
+    fromOffset: Long,
+    var _toOffset: Long,
+    maxBufSize: Int,
+    writeJournalPluginId: String)
     extends AbstractEventsByTagPublisher(tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 

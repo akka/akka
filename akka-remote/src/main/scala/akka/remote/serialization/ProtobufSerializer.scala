@@ -57,8 +57,9 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
               val unCachedParsingMethod =
                 if (method eq null) clazz.getDeclaredMethod("parseFrom", ProtobufSerializer.ARRAY_OF_BYTE_ARRAY: _*)
                 else method
-              if (parsingMethodBindingRef.compareAndSet(parsingMethodBinding,
-                                                        parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
+              if (parsingMethodBindingRef.compareAndSet(
+                    parsingMethodBinding,
+                    parsingMethodBinding.updated(clazz, unCachedParsingMethod)))
                 unCachedParsingMethod
               else
                 parsingMethod(unCachedParsingMethod)

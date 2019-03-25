@@ -272,9 +272,10 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
 
           // Make some noise
           override def onUpstreamFailure(ex: Throwable): Unit = {
-            throw new MergeHub.ProducerFailed("Upstream producer failed with exception, " +
-                                              "removing from MergeHub now",
-                                              ex)
+            throw new MergeHub.ProducerFailed(
+              "Upstream producer failed with exception, " +
+              "removing from MergeHub now",
+              ex)
           }
 
           private def onDemand(moreDemand: Long): Unit = {
@@ -773,9 +774,10 @@ object PartitionHub {
    * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
    *   is backpressured.
    */
-  @ApiMayChange def statefulSink[T](partitioner: () => (ConsumerInfo, T) => Long,
-                                    startAfterNrOfConsumers: Int,
-                                    bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+  @ApiMayChange def statefulSink[T](
+      partitioner: () => (ConsumerInfo, T) => Long,
+      startAfterNrOfConsumers: Int,
+      bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
     Sink.fromGraph(new PartitionHub[T](partitioner, startAfterNrOfConsumers, bufferSize))
 
   /**
@@ -808,9 +810,10 @@ object PartitionHub {
    *   is backpressured.
    */
   @ApiMayChange
-  def sink[T](partitioner: (Int, T) => Int,
-              startAfterNrOfConsumers: Int,
-              bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = {
+  def sink[T](
+      partitioner: (Int, T) => Int,
+      startAfterNrOfConsumers: Int,
+      bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] = {
     val fun: (ConsumerInfo, T) => Long = { (info, elem) =>
       val idx = partitioner(info.size, elem)
       if (idx < 0) -1L
@@ -1006,9 +1009,10 @@ object PartitionHub {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class PartitionHub[T](partitioner: () => (PartitionHub.ConsumerInfo, T) => Long,
-                                                 startAfterNrOfConsumers: Int,
-                                                 bufferSize: Int)
+@InternalApi private[akka] class PartitionHub[T](
+    partitioner: () => (PartitionHub.ConsumerInfo, T) => Long,
+    startAfterNrOfConsumers: Int,
+    bufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   import PartitionHub.Internal._
   import PartitionHub.ConsumerInfo
