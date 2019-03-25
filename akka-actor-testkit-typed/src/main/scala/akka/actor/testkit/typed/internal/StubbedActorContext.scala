@@ -288,7 +288,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries
 
   /**
-   * Clear the log entries
+   * Clear the log entries.
    */
   def clearLog(): Unit = loggingAdapter.clearLog()
 
@@ -296,12 +296,12 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     unhandled = msg :: unhandled
 
   /**
-   * Messages that are marked as unhandled
+   * Messages that are marked as unhandled.
    */
   def unhandledMessages: List[T] = unhandled.reverse
 
   /**
-   * Clear the list of captured unhandled messages
+   * Clear the list of captured unhandled messages.
    */
   def clearUnhandled(): Unit = unhandled = Nil
 
