@@ -7,7 +7,7 @@ import akka.actor.Props
 import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -22,10 +22,23 @@ object ClusterShardingLeaseSpec {
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
     akka.cluster.sharding {
-       lease-implementation = "test-lease"
+       use-lease = "test-lease"
        lease-retry-interval = 200ms
      }
     """).withFallback(TestLease.config)
+
+  val persistenceConfig = ConfigFactory.parseString("""
+      akka.cluster.sharding {
+        state-store-mode = persistence
+        journal-plugin-id = "akka.persistence.journal.inmem"
+      }
+    """)
+
+  val ddataConfig = ConfigFactory.parseString("""
+      akka.cluster.sharding {
+        state-store-mode = ddata
+      }
+    """)
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg: Int => (msg.toString, msg)
@@ -37,10 +50,18 @@ object ClusterShardingLeaseSpec {
   case class LeaseFailed(msg: String) extends RuntimeException(msg) with NoStackTrace
 }
 
-class ClusterShardingLeaseSpec extends AkkaSpec(ClusterShardingLeaseSpec.config) with ImplicitSender {
+class PersistenceClusterShardingLeaseSpec
+    extends ClusterShardingLeaseSpec(ClusterShardingLeaseSpec.persistenceConfig, true)
+class DDataClusterShardingLeaseSpec extends ClusterShardingLeaseSpec(ClusterShardingLeaseSpec.ddataConfig, true)
+
+class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
+    extends AkkaSpec(config.withFallback(ClusterShardingLeaseSpec.config))
+    with ImplicitSender {
   import ClusterShardingLeaseSpec._
 
-  val shortDuration = 100.millis
+  def this() = this(ConfigFactory.empty(), false)
+
+  val shortDuration = 200.millis
   val cluster = Cluster(system)
   val leaseOwner = cluster.selfMember.address.hostPort
   val testLeaseExt = TestLeaseExt(system)
@@ -53,7 +74,7 @@ class ClusterShardingLeaseSpec extends AkkaSpec(ClusterShardingLeaseSpec.config)
     ClusterSharding(system).start(
       typeName = typeName,
       entityProps = Props[EchoActor],
-      settings = ClusterShardingSettings(system),
+      settings = ClusterShardingSettings(system).withRememberEntities(rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }
@@ -103,7 +124,6 @@ class ClusterShardingLeaseSpec extends AkkaSpec(ClusterShardingLeaseSpec.config)
       expectMsg(4)
       testLease.getCurrentCallback()(Option(LeaseFailed("oh dear")))
       awaitAssert({
-        println("retrying")
         region ! 4
         expectMsg(4)
       }, max = 5.seconds)

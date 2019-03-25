@@ -38,7 +38,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
         lease-operation-timeout = 3s
    }
    akka.cluster.singleton {
-    lease-implementation = "test-lease"
+    use-lease = "test-lease"
    }
                                           """))
 

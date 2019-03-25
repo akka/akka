@@ -16,7 +16,7 @@ abstract class Lease() {
   def getSettings(): LeaseSettings
 
   /**
-   * Try to acquire the lease. The returned `Future` will be completed with `true`
+   * Try to acquire the lease. The returned `CompletionStage` will be completed with `true`
    * if the lease could be acquired, i.e. no other owner is holding the lease.
    *
    * The returned `Future` will be completed with `false` if the lease for certain couldn't be
@@ -53,6 +53,6 @@ abstract class Lease() {
    * `false` means that it might not hold the lease, but it could, and for more certain
    * response you would have to use [[Lease#acquire]] or [[Lease#release]].
    */
-  def checkLease(): java.lang.Boolean
+  def checkLease(): Boolean
 
 }

@@ -534,7 +534,6 @@ lazy val coordination = akkaModule("akka-coordination")
     actorTests % "test->test",
     cluster % "test->test"
   )
-  .settings(AkkaBuild.strictSettings)
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)

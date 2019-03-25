@@ -49,12 +49,17 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
    */
   def getLease(leaseName: String, configPath: String, ownerName: String): Lease = {
     val leaseKey = LeaseKey(leaseName, configPath, ownerName)
-    leases.computeIfAbsent(leaseKey, new JFunction[LeaseKey, Lease] {
-      override def apply(t: LeaseKey): Lease = {
-        val leaseConfig = system.settings.config.getConfig(configPath)
-        loadLease(LeaseSettings(leaseConfig, leaseName, ownerName), configPath)
-      }
-    })
+    leases.computeIfAbsent(
+      leaseKey,
+      new JFunction[LeaseKey, Lease] {
+        override def apply(t: LeaseKey): Lease = {
+          val leaseConfig = system.settings.config
+            .getConfig(configPath)
+            .withFallback(system.settings.config.getConfig("akka.coordination.lease"))
+          println(leaseConfig)
+          loadLease(LeaseSettings(leaseConfig, leaseName, ownerName), configPath)
+        }
+      })
   }
 
   private def loadLease(leaseSettings: LeaseSettings, configPath: String): Lease = {
