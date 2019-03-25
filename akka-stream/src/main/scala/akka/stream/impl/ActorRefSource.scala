@@ -12,8 +12,6 @@ import akka.stream.stage._
 import akka.util.OptionVal
 
 private object ActorRefSource {
-  case object EagerComplete
-
   private sealed trait ActorRefStage { def ref: ActorRef }
 }
 
@@ -23,7 +21,7 @@ private object ActorRefSource {
 @InternalApi private[akka] final class ActorRefSource[T](
     maxBuffer: Int,
     overflowStrategy: OverflowStrategy,
-    completionMatcher: PartialFunction[Any, Unit],
+    completionMatcher: PartialFunction[Any, CompletionStrategy],
     failureMatcher: PartialFunction[Any, Throwable])
     extends GraphStageWithMaterializedValue[SourceShape[T], ActorRef] {
   import ActorRefSource._
@@ -60,17 +58,19 @@ private object ActorRefSource {
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
       val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
-        case (_, EagerComplete) ⇒
-          completeStage()
         case (_, PoisonPill) ⇒
           log.warning("for backwards compatibility: PoisonPill will note be supported in the future")
-          isCompleting = true
-          tryPush()
+          completeStage()
         case (_, m) if failureMatcher.isDefinedAt(m) ⇒
           failStage(failureMatcher(m))
         case (_, m) if completionMatcher.isDefinedAt(m) ⇒
-          isCompleting = true
-          tryPush()
+          completionMatcher(m) match {
+            case CompletionStrategy.Draining =>
+              isCompleting = true
+              tryPush()
+            case CompletionStrategy.Immediately =>
+              completeStage()
+          }
         case (_, m: T @unchecked) ⇒
           buffer match {
             case OptionVal.None =>

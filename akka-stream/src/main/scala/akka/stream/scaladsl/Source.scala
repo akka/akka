@@ -508,7 +508,7 @@ object Source {
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   @InternalApi private[akka] def actorRef[T](
-      completionMatcher: PartialFunction[Any, Unit],
+      completionMatcher: PartialFunction[Any, CompletionStrategy],
       failureMatcher: PartialFunction[Any, Throwable],
       bufferSize: Int,
       overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
@@ -534,9 +534,11 @@ object Source {
    * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
    * this Source; as such, it is never safe to assume the downstream will always generate demand.
    *
-   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
-   * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
-   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
+   * If the content is [[akka.stream.CompletionStrategy.Immediately]] the completion will be signaled immidiately,
+   * otherwise if the content is [[akka.stream.CompletionStrategy.Draining]] (or anything else)
+   * already buffered elements will be signaled before siganling completion.
+   * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
@@ -554,9 +556,10 @@ object Source {
    */
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef({
-      case akka.actor.Status.Success           =>
-      case akka.actor.Status.Success(_)        =>
-    }, { case akka.actor.Status.Failure(cause) => cause }, bufferSize, overflowStrategy)
+      case akka.actor.Status.Success(s: CompletionStrategy) => s
+      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+      case akka.actor.Status.Success                        => CompletionStrategy.Draining
+    }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
