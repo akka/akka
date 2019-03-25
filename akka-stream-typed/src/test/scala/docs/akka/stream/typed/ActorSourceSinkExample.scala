@@ -5,7 +5,7 @@
 package docs.akka.stream.typed
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.typed.scaladsl.ActorMaterializer
 
@@ -44,7 +44,6 @@ object ActorSourceSinkExample {
     // ref ! "msg2" Does not compile
     // #actor-source-ref
   }
-
 
   {
     def targetActor(): ActorRef[Protocol] = ???
