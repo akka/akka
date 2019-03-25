@@ -112,8 +112,8 @@ import scala.concurrent.duration._
   }
 
   /**
-   * Made accessible only to allow stash to deal with unhandled messages just like if they were interpreted by
-   * the adapter itself, even though the unstashing is actually happen inside the behavior stack
+   * Made accessible to allow stash to deal with unhandled messages as though they were interpreted by
+   * the adapter itself, even though the unstashing occurs inside the behavior stack.
    */
   private[akka] override def onUnhandled(msg: T): Unit = adapter.unhandled(msg)
 }
