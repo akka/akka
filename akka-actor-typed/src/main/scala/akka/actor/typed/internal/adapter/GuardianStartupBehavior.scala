@@ -22,9 +22,9 @@ private[akka] object GuardianStartupBehavior {
 /**
  * INTERNAL API
  *
- * Messages to the user provided guardian must be deferred while the actor system is starting up, this
- * behavior delays starting up the user provided behavior until the Start command is delivered from the actor
- * system and we know that the bootstrap is completed and that we can access the actor context
+ * Messages to the user provided guardian must be deferred while the actor system is starting up. This
+ * behavior delays starting the user provided behavior until the Start command is delivered from the actor
+ * system, and we know that the bootstrap is completed and the actor context can be accessed.
  */
 @InternalApi
 private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behavior[T]) extends AbstractBehavior[Any] {
