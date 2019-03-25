@@ -26,8 +26,7 @@ object LeaseProviderSpec {
     override def acquire(callback: Option[Throwable] ⇒ Unit): Future[Boolean] = Future.successful(false)
   }
 
-  val config = ConfigFactory.parseString(
-    s"""
+  val config = ConfigFactory.parseString(s"""
   lease-a {
     lease-class = "${classOf[LeaseProviderSpec.LeaseA].getName}"
     key1 = value1
@@ -53,8 +52,7 @@ object LeaseProviderSpec {
     lease-operation-timeout = 2s
   }
 
-  """
-  )
+  """)
 
 }
 

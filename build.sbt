@@ -563,7 +563,6 @@ addCommandAlias("allActor", commandValue(actor, Some(actorTests)))
 addCommandAlias("allRemote", commandValue(remote, Some(remoteTests)))
 addCommandAlias("allClusterCore", commandValue(cluster))
 addCommandAlias("allClusterMetrics", commandValue(clusterMetrics))
-addCommandAlias("allDistributedData", commandValue(distributedData))
 addCommandAlias("allClusterSharding", commandValue(clusterSharding))
 addCommandAlias("allClusterTools", commandValue(clusterTools))
 addCommandAlias("allCluster", Seq(
@@ -571,6 +570,8 @@ addCommandAlias("allCluster", Seq(
   commandValue(distributedData),
   commandValue(clusterSharding),
   commandValue(clusterTools)).mkString)
+addCommandAlias("allCoordination", commandValue(coordination))
+addCommandAlias("allDistributedData", commandValue(distributedData))
 addCommandAlias("allPersistence", commandValue(persistence))
 addCommandAlias("allStream", commandValue(stream, Some(streamTests)))
 addCommandAlias("allDiscovery", commandValue(discovery))

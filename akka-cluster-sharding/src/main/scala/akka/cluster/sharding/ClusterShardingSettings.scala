@@ -64,15 +64,16 @@ object ClusterShardingSettings {
       case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
 
-    new ClusterShardingSettings(role = roleOption(config.getString("role")),
-                                rememberEntities = config.getBoolean("remember-entities"),
-                                journalPluginId = config.getString("journal-plugin-id"),
-                                snapshotPluginId = config.getString("snapshot-plugin-id"),
-                                stateStoreMode = config.getString("state-store-mode"),
-                                passivateIdleEntityAfter = passivateIdleAfter,
-                                tuningParameters,
-                                coordinatorSingletonSettings,
-                                lease)
+    new ClusterShardingSettings(
+      role = roleOption(config.getString("role")),
+      rememberEntities = config.getBoolean("remember-entities"),
+      journalPluginId = config.getString("journal-plugin-id"),
+      snapshotPluginId = config.getString("snapshot-plugin-id"),
+      stateStoreMode = config.getString("state-store-mode"),
+      passivateIdleEntityAfter = passivateIdleAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      lease)
   }
 
   /**
@@ -210,35 +211,38 @@ object ClusterShardingSettings {
  *   Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
-final class ClusterShardingSettings(val role: Option[String],
-                                    val rememberEntities: Boolean,
-                                    val journalPluginId: String,
-                                    val snapshotPluginId: String,
-                                    val stateStoreMode: String,
-                                    val passivateIdleEntityAfter: FiniteDuration,
-                                    val tuningParameters: ClusterShardingSettings.TuningParameters,
-                                    val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-                                    val leaseSettings: Option[ClusterLeaseSettings])
+final class ClusterShardingSettings(
+    val role: Option[String],
+    val rememberEntities: Boolean,
+    val journalPluginId: String,
+    val snapshotPluginId: String,
+    val stateStoreMode: String,
+    val passivateIdleEntityAfter: FiniteDuration,
+    val tuningParameters: ClusterShardingSettings.TuningParameters,
+    val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+    val leaseSettings: Option[ClusterLeaseSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
-  def this(role: Option[String],
-           rememberEntities: Boolean,
-           journalPluginId: String,
-           snapshotPluginId: String,
-           stateStoreMode: String,
-           passivateIdleEntityAfter: FiniteDuration,
-           tuningParameters: ClusterShardingSettings.TuningParameters,
-           coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
-    this(role,
-         rememberEntities,
-         journalPluginId,
-         snapshotPluginId,
-         stateStoreMode,
-         passivateIdleEntityAfter,
-         tuningParameters,
-         coordinatorSingletonSettings,
-         None)
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleEntityAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
 
   // included for binary compatibility reasons
   @deprecated(
@@ -309,22 +313,24 @@ final class ClusterShardingSettings(val role: Option[String],
       coordinatorSingletonSettings: ClusterSingletonManagerSettings): ClusterShardingSettings =
     copy(coordinatorSingletonSettings = coordinatorSingletonSettings)
 
-  private def copy(role: Option[String] = role,
-                   rememberEntities: Boolean = rememberEntities,
-                   journalPluginId: String = journalPluginId,
-                   snapshotPluginId: String = snapshotPluginId,
-                   stateStoreMode: String = stateStoreMode,
-                   passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
-                   tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
-                   coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
-                   leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
-    new ClusterShardingSettings(role,
-                                rememberEntities,
-                                journalPluginId,
-                                snapshotPluginId,
-                                stateStoreMode,
-                                passivateIdleAfter,
-                                tuningParameters,
-                                coordinatorSingletonSettings,
-                                leaseSettings)
+  private def copy(
+      role: Option[String] = role,
+      rememberEntities: Boolean = rememberEntities,
+      journalPluginId: String = journalPluginId,
+      snapshotPluginId: String = snapshotPluginId,
+      stateStoreMode: String = stateStoreMode,
+      passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
+      tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
+      leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
+    new ClusterShardingSettings(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleAfter,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      leaseSettings)
 }

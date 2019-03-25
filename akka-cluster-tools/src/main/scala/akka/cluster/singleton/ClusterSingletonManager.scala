@@ -57,12 +57,12 @@ object ClusterSingletonManagerSettings {
       case s if s.isEmpty ⇒ None
       case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
-    new ClusterSingletonManagerSettings(singletonName = config.getString("singleton-name"),
-                                        role = roleOption(config.getString("role")),
-                                        removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
-                                        handOverRetryInterval =
-                                          config.getDuration("hand-over-retry-interval", MILLISECONDS).millis,
-                                        lease)
+    new ClusterSingletonManagerSettings(
+      singletonName = config.getString("singleton-name"),
+      role = roleOption(config.getString("role")),
+      removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
+      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis,
+      lease)
   }
 
   /**
@@ -107,18 +107,20 @@ object ClusterSingletonManagerSettings {
  *
  * @param leaseSettings LeaseSettings for acquiring before creating the singleton actor
  */
-final class ClusterSingletonManagerSettings(val singletonName: String,
-                                            val role: Option[String],
-                                            val removalMargin: FiniteDuration,
-                                            val handOverRetryInterval: FiniteDuration,
-                                            val leaseSettings: Option[ClusterLeaseSettings])
+final class ClusterSingletonManagerSettings(
+    val singletonName: String,
+    val role: Option[String],
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration,
+    val leaseSettings: Option[ClusterLeaseSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for akka 2.5.21
-  def this(singletonName: String,
-           role: Option[String],
-           removalMargin: FiniteDuration,
-           handOverRetryInterval: FiniteDuration) =
+  def this(
+      singletonName: String,
+      role: Option[String],
+      removalMargin: FiniteDuration,
+      handOverRetryInterval: FiniteDuration) =
     this(singletonName, role, removalMargin, handOverRetryInterval, None)
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
@@ -137,11 +139,12 @@ final class ClusterSingletonManagerSettings(val singletonName: String,
   def withLeaseSettings(leaseSettings: ClusterLeaseSettings): ClusterSingletonManagerSettings =
     copy(leaseSettings = Some(leaseSettings))
 
-  private def copy(singletonName: String = singletonName,
-                   role: Option[String] = role,
-                   removalMargin: FiniteDuration = removalMargin,
-                   handOverRetryInterval: FiniteDuration = handOverRetryInterval,
-                   leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
+  private def copy(
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+      leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
 
@@ -1015,8 +1018,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay
     case Event(ReleaseLeaseFailure(t), _) ⇒
       // TODO we could retry
-      log.error(t,
-                "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
+      log.error(
+        t,
+        "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       stay
     case Event(ReleaseLeaseResult(released), _) ⇒
       if (released) {

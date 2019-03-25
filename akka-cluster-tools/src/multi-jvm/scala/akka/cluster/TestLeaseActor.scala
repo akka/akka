@@ -72,7 +72,8 @@ class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
 object TestLeaseActorClientExt extends ExtensionId[TestLeaseActorClientExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseActorClientExt = super.get(system)
   override def lookup = TestLeaseActorClientExt
-  override def createExtension(system: ExtendedActorSystem): TestLeaseActorClientExt = new TestLeaseActorClientExt(system)
+  override def createExtension(system: ExtendedActorSystem): TestLeaseActorClientExt =
+    new TestLeaseActorClientExt(system)
 }
 
 class TestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension {

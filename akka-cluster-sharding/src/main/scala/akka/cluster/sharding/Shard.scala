@@ -157,13 +157,14 @@ private[akka] object Shard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] class Shard(typeName: String,
-                          shardId: ShardRegion.ShardId,
-                          entityProps: String => Props,
-                          settings: ClusterShardingSettings,
-                          extractEntityId: ShardRegion.ExtractEntityId,
-                          extractShardId: ShardRegion.ExtractShardId,
-                          handOffStopMessage: Any)
+private[akka] class Shard(
+    typeName: String,
+    shardId: ShardRegion.ShardId,
+    entityProps: String => Props,
+    settings: ClusterShardingSettings,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
+    handOffStopMessage: Any)
     extends Actor
     with ActorLogging
     with Timers {
@@ -194,9 +195,10 @@ private[akka] class Shard(typeName: String,
 
   val lease = settings.leaseSettings.map(
     ls ⇒
-      LeaseProvider(context.system).getLease(s"${context.system.name}-shard-$typeName-$shardId",
-                                             ls.leaseImplementation,
-                                             Cluster(context.system).selfAddress.hostPort))
+      LeaseProvider(context.system).getLease(
+        s"${context.system.name}-shard-$typeName-$shardId",
+        ls.leaseImplementation,
+        Cluster(context.system).selfAddress.hostPort))
 
   val leaseRetryInterval = settings.leaseSettings match {
     case Some(l) ⇒ l.leaseRetryInterval
@@ -238,11 +240,12 @@ private[akka] class Shard(typeName: String,
       log.error("Failed to get lease for shard type [{}] id [{}]. Retry in {}", typeName, shardId, leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseAcquireResult(false, Some(t)) ⇒
-      log.error(t,
-                "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
-                typeName,
-                shardId,
-                leaseRetryInterval)
+      log.error(
+        t,
+        "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
+        typeName,
+        shardId,
+        leaseRetryInterval)
       timers.startSingleTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
     case LeaseRetry ⇒
       tryGetLease(lease.get)

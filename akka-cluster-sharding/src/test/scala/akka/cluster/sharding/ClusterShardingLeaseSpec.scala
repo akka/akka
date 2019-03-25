@@ -4,9 +4,9 @@
 
 package akka.cluster.sharding
 import akka.actor.Props
-import akka.cluster.{Cluster, MemberStatus, TestLease, TestLeaseExt}
+import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
 import akka.testkit.TestActors.EchoActor
-import akka.testkit.{AkkaSpec, ImplicitSender}
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
@@ -50,11 +50,12 @@ class ClusterShardingLeaseSpec extends AkkaSpec(ClusterShardingLeaseSpec.config)
     awaitAssert {
       cluster.selfMember.status shouldEqual MemberStatus.Up
     }
-    ClusterSharding(system).start(typeName = typeName,
-                                  entityProps = Props[EchoActor],
-                                  settings = ClusterShardingSettings(system),
-                                  extractEntityId = extractEntityId,
-                                  extractShardId = extractShardId)
+    ClusterSharding(system).start(
+      typeName = typeName,
+      entityProps = Props[EchoActor],
+      settings = ClusterShardingSettings(system),
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId)
   }
 
   def region = ClusterSharding(system).shardRegion(typeName)

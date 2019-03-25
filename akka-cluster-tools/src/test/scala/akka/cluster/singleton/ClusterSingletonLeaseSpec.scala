@@ -6,10 +6,10 @@ package akka.cluster.singleton
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ExtendedActorSystem, PoisonPill, Props}
-import akka.cluster.TestLease.{AcquireReq, ReleaseReq}
-import akka.cluster.{Cluster, MemberStatus, TestLease, TestLeaseExt}
-import akka.testkit.{AkkaSpec, TestProbe}
+import akka.actor.{ Actor, ActorLogging, ActorRef, ExtendedActorSystem, PoisonPill, Props }
+import akka.cluster.TestLease.{ AcquireReq, ReleaseReq }
+import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
+import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Promise
@@ -34,8 +34,7 @@ class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLoggi
   }
 }
 
-class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
-  """
+class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
      akka.loglevel = INFO
      akka.actor.provider = cluster
 
@@ -67,15 +66,15 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
 
   def nextSettings() = ClusterSingletonManagerSettings(system).withSingletonName(nextName())
 
-  def leaseNameFor(settings: ClusterSingletonManagerSettings): String = s"ClusterSingletonLeaseSpec-singleton-${settings.singletonName}"
+  def leaseNameFor(settings: ClusterSingletonManagerSettings): String =
+    s"ClusterSingletonLeaseSpec-singleton-${settings.singletonName}"
 
   "A singleton with lease" should {
 
     "not start until lease is available" in {
       val probe = TestProbe()
       val settings = nextSettings()
-      system.actorOf(ClusterSingletonManager.props(
-        Props(new ImportantSingleton(probe.ref)), PoisonPill, settings))
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
@@ -87,8 +86,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
     "do not start if lease acquire returns false" in {
       val probe = TestProbe()
       val settings = nextSettings()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill,
-        settings))
+      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(probe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
@@ -101,8 +99,8 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
       val singletonProbe = TestProbe()
       val settings = nextSettings()
       val name = nextName()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill,
-        settings))
+      system.actorOf(
+        ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
@@ -132,8 +130,8 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
     "retry trying to get lease if acquire returns fails" in {
       val singletonProbe = TestProbe()
       val settings = nextSettings()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill,
-        settings))
+      system.actorOf(
+        ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease
@@ -151,7 +149,8 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
     "stop singleton if the lease fails periodic check" in {
       val lifecycleProbe = TestProbe()
       val settings = nextSettings()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(lifecycleProbe.ref)), PoisonPill, settings))
+      system.actorOf(
+        ClusterSingletonManager.props(Props(new ImportantSingleton(lifecycleProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       }
@@ -171,7 +170,8 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString(
     "release lease when leaving oldest" in {
       val singletonProbe = TestProbe()
       val settings = nextSettings()
-      system.actorOf(ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, settings))
+      system.actorOf(
+        ClusterSingletonManager.props(Props(new ImportantSingleton(singletonProbe.ref)), PoisonPill, settings))
       val testLease = awaitAssert {
         testLeaseExt.getTestLease(leaseNameFor(settings))
       } // allow singleton manager to create the lease

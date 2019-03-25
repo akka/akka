@@ -26,8 +26,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
 
   testTransport(true)
 
-  commonConfig(ConfigFactory.parseString(
-    """
+  commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
@@ -43,8 +42,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
    }
                                           """))
 
-  nodeConfig(first, second, third)(
-    ConfigFactory.parseString("akka.cluster.roles = [worker]"))
+  nodeConfig(first, second, third)(ConfigFactory.parseString("akka.cluster.roles = [worker]"))
 
   object ImportantSingleton {
     case class Response(msg: Any, address: Address)
@@ -73,8 +71,11 @@ class ClusterSingletonManagerLeaseMultiJvmNode3 extends ClusterSingletonManagerL
 class ClusterSingletonManagerLeaseMultiJvmNode4 extends ClusterSingletonManagerLeaseSpec
 class ClusterSingletonManagerLeaseMultiJvmNode5 extends ClusterSingletonManagerLeaseSpec
 
-class ClusterSingletonManagerLeaseSpec extends MultiNodeSpec(ClusterSingletonManagerLeaseSpec)
-  with STMultiNodeSpec with ImplicitSender with MultiNodeClusterSpec {
+class ClusterSingletonManagerLeaseSpec
+    extends MultiNodeSpec(ClusterSingletonManagerLeaseSpec)
+    with STMultiNodeSpec
+    with ImplicitSender
+    with MultiNodeClusterSpec {
 
   import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
   import ClusterSingletonManagerLeaseSpec._
@@ -129,8 +130,8 @@ class ClusterSingletonManagerLeaseSpec extends MultiNodeSpec(ClusterSingletonMan
     "Start singleton and ping from all nodes" in {
       runOn(first, second, third, fourth) {
         system.actorOf(
-          ClusterSingletonManager.props(
-            props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
+          ClusterSingletonManager
+            .props(props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
           "important")
       }
       enterBarrier("singleton-started")

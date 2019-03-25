@@ -16,8 +16,7 @@ class TimeoutSettingsSpec extends WordSpec with Matchers {
   }
   "TimeoutSettings" should {
     "default heartbeat-interval to heartbeat-timeout / 10" in {
-      conf(
-        """
+      conf("""
           heartbeat-timeout=100s
           heartbeat-interval=""
           lease-operation-timeout=5s
@@ -25,8 +24,7 @@ class TimeoutSettingsSpec extends WordSpec with Matchers {
     }
 
     "have a min of 5s for heartbeat-interval" in {
-      conf(
-        """
+      conf("""
           heartbeat-timeout=40s
           heartbeat-interval=""
           lease-operation-timeout=5s
@@ -34,8 +32,7 @@ class TimeoutSettingsSpec extends WordSpec with Matchers {
     }
 
     "allow overriding of heartbeat-interval" in {
-      conf(
-        """
+      conf("""
           heartbeat-timeout=100s
           heartbeat-interval=20s
           lease-operation-timeout=5s
@@ -44,8 +41,7 @@ class TimeoutSettingsSpec extends WordSpec with Matchers {
 
     "not allow interval to be greater or equal to half the interval" in {
       intercept[IllegalArgumentException] {
-        conf(
-          """
+        conf("""
           heartbeat-timeout=100s
           heartbeat-interval=50s
           lease-operation-timeout=5s
@@ -56,4 +52,3 @@ class TimeoutSettingsSpec extends WordSpec with Matchers {
   }
 
 }
-

@@ -6,10 +6,10 @@ package akka.cluster.sharding
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
-import akka.cluster.{ClusterLeaseSettings, TestLeaseExt}
+import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
+import akka.cluster.{ ClusterLeaseSettings, TestLeaseExt }
 import akka.cluster.sharding.ShardRegion.ShardInitialized
-import akka.testkit.{AkkaSpec, ImplicitSender, TestProbe}
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -100,26 +100,23 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
   trait Setup {
     val shardId = nextShardId
     val parent = TestProbe()
-    val settings = ClusterShardingSettings(system)
-      .withLeaseSettings(
-        new ClusterLeaseSettings("test-lease", 2.seconds)
-      )
+    val settings = ClusterShardingSettings(system).withLeaseSettings(new ClusterLeaseSettings("test-lease", 2.seconds))
     def lease = awaitAssert {
       testLeaseExt.getTestLease(leaseNameForShard(typeName, shardId))
     }
 
     val typeName = "type1"
-    val shard = parent.childActorOf(Shard.props(
-      typeName,
-      shardId,
-      _ ⇒ Props(new EntityActor()),
-      settings,
-      extractEntityId,
-      extractShardId,
-      PoisonPill,
-      system.deadLetters,
-      1
-    ))
+    val shard = parent.childActorOf(
+      Shard.props(
+        typeName,
+        shardId,
+        _ ⇒ Props(new EntityActor()),
+        settings,
+        extractEntityId,
+        extractShardId,
+        PoisonPill,
+        system.deadLetters,
+        1))
   }
 
 }

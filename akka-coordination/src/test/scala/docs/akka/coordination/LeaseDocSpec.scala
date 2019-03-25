@@ -6,7 +6,7 @@ package docs.akka.coordination
 
 import akka.cluster.Cluster
 import akka.coordination.lease.LeaseSettings
-import akka.coordination.lease.scaladsl.{Lease, LeaseProvider}
+import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
@@ -35,8 +35,7 @@ class SampleLease(settings: LeaseSettings) extends Lease(settings) {
 
 object LeaseDocSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       #lease-config
       akka.actor.provider = cluster
       docs-lease {
@@ -49,14 +48,14 @@ object LeaseDocSpec {
       #lease-config
     """.stripMargin)
 
-    def blackhole(stuff: Any*): Unit = {
-      stuff.toString
-      ()
-    }
-    def doSomethingImportant(leaseLostReason: Option[Throwable]): Unit = {
-      leaseLostReason.map(_.toString)
-      ()
-    }
+  def blackhole(stuff: Any*): Unit = {
+    stuff.toString
+    ()
+  }
+  def doSomethingImportant(leaseLostReason: Option[Throwable]): Unit = {
+    leaseLostReason.map(_.toString)
+    ()
+  }
 }
 
 class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
@@ -80,7 +79,6 @@ class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
       val owner = Cluster(system).selfAddress.hostPort
       //#cluster-owner
 
-
       // remove compiler warnings
       blackhole(acquired, stillAcquired, released, owner)
 
@@ -88,4 +86,3 @@ class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
   }
 
 }
-

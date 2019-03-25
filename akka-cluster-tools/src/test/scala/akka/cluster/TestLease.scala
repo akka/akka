@@ -7,14 +7,14 @@ package akka.cluster
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.event.Logging
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.collection.JavaConverters._
 
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
@@ -29,7 +29,9 @@ class TestLeaseExt(val system: ExtendedActorSystem) extends Extension {
 
   def getTestLease(name: String): TestLease = {
     val lease = testLeases.get(name)
-    if (lease == null) throw new IllegalStateException(s"Test lease $name has not been set yet. Current leases ${testLeases.keys().asScala.toList}")
+    if (lease == null)
+      throw new IllegalStateException(
+        s"Test lease $name has not been set yet. Current leases ${testLeases.keys().asScala.toList}")
     lease
   }
 
@@ -42,8 +44,7 @@ object TestLease {
   final case class AcquireReq(owner: String)
   final case class ReleaseReq(owner: String)
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
     test-lease {
       lease-class = akka.cluster.TestLease
       heartbeat-interval = 1s
