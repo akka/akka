@@ -248,14 +248,14 @@ Note that there is only one of these. It is not possible to both persist and say
 These are created using @java[a factory that is returned via the `Effect()` method]
 @scala[the `Effect` factory] and once created additional `SideEffects` can be added.
 
-Most of them time this will be done with the `thenRun` method on the `Effect` above. It is also possible
-factor out common `SideEffect`s. For example:
+Most of them time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+common side effects into functions and reuse for several commands. For example:
 
 Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
 
 Java
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
 
 ### Side effects ordering and guarantees
 
