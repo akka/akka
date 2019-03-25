@@ -13,7 +13,6 @@ import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey }
 import akka.actor.testkit.typed.scaladsl._
@@ -101,7 +100,7 @@ object ReplicatorSpec {
       val replicator: ActorRef[Replicator.Command] = ???
       implicit val timeout = Timeout(3.seconds)
       implicit val scheduler: Scheduler = ???
-      implicit val cluster: SelfUniqueAddress= ???
+      implicit val cluster: SelfUniqueAddress = ???
 
       val reply1: Future[GetResponse[GCounter]] = replicator.ask(Replicator.Get(Key, Replicator.ReadLocal))
 

@@ -127,7 +127,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
        * FIXME #26505: replace by simple map in our state
        */
       def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit = {
-        val x = ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
+        ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
           innerCtx.watch(target)
           Behaviors.receiveSignal[Nothing] {
             case (_, Terminated(`target`)) =>
@@ -135,7 +135,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               Behaviors.stopped
           }
         })
-        println(x)
+        ()
       }
 
       def notifySubscribersFor(key: AbstractServiceKey, state: ServiceRegistry): Unit = {
