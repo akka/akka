@@ -9,11 +9,11 @@ import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
 import akka.testkit.TimingTest
 import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.time.{Milliseconds, Span}
+import org.scalatest.time.{ Milliseconds, Span }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
