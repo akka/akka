@@ -1216,10 +1216,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
-  // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
-    getEagerStageActor(interpreter.materializer)(receive)
+    getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
 
   /**
    * INTERNAL API
@@ -1227,14 +1226,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   @InternalApi
   protected[akka] def getEagerStageActor(
       eagerMaterializer: Materializer,
-      poisonPillFallback: Boolean = false)( // fallback required for source actor backwards compatibility
+      poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
       receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
     _stageActor match {
       case null ⇒
         val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillFallback)
+        _stageActor =
+          new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
         _stageActor
-      case existing ⇒
+      case existing =>
         existing.become(receive)
         existing
     }

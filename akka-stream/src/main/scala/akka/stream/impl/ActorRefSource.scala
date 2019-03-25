@@ -11,10 +11,7 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
 
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] object ActorRefSource {
+private object ActorRefSource {
   case object EagerComplete
 
   private sealed trait ActorRefStage { def ref: ActorRef }
@@ -62,7 +59,7 @@ import akka.util.OptionVal
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillFallback = true) {
+      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
         case (_, EagerComplete) ⇒
           completeStage()
         case (_, PoisonPill) ⇒
@@ -74,7 +71,7 @@ import akka.util.OptionVal
         case (_, m) if completionMatcher.isDefinedAt(m) ⇒
           isCompleting = true
           tryPush()
-        case (_, m: T) ⇒ // todo: ensure typesafety with akka typed support
+        case (_, m: T @unchecked) ⇒
           buffer match {
             case OptionVal.None =>
               if (isCompleting) {
