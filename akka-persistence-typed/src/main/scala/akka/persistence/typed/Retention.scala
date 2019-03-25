@@ -9,7 +9,8 @@ package akka.persistence.typed
  * and journal behavior. This defines the retention criteria.
  *
  * @param snapshotEveryNEvents Snapshots are used to reduce playback/recovery times.
- *                             This defines when a new snapshot is persisted.
+ *                             This defines when a new snapshot is persisted - on every N events.
+ *                            `snapshotEveryNEvents` should be greater than 0.
  *
  * @param keepNSnapshots      After a snapshot is successfully completed,
  *                             - if 2: retain last maximum 2 *`snapshot-size` events
@@ -34,22 +35,18 @@ final case class RetentionCriteria(snapshotEveryNEvents: Long, keepNSnapshots: L
     // Delete old events, retain the latest
     math.max(0, lastSequenceNr - (keepNSnapshots * snapshotEveryNEvents))
   }
+
+  /** Java API. */
+  def withDeleteEventsOnSnapshot(): RetentionCriteria =
+    copy(deleteEventsOnSnapshot = true)
 }
 
 object RetentionCriteria {
 
-  def apply(): RetentionCriteria =
-    RetentionCriteria(snapshotEveryNEvents = 1000L, keepNSnapshots = 2L, deleteEventsOnSnapshot = false)
+  val disabled: RetentionCriteria =
+    RetentionCriteria(snapshotEveryNEvents = 0, keepNSnapshots = 0, deleteEventsOnSnapshot = false)
 
-  /** Scala API. */
-  def apply(snapshotEveryNEvents: Long, keepNSnapshots: Long): RetentionCriteria =
-    RetentionCriteria(snapshotEveryNEvents, keepNSnapshots, deleteEventsOnSnapshot = false)
+  def snapshotEvery(numberOfEvents: Long, keepNSnapshots: Long): RetentionCriteria =
+    apply(numberOfEvents, keepNSnapshots, false)
 
-  /** Java API. */
-  def create(snapshotEveryNEvents: Long, keepNSnapshots: Long): RetentionCriteria =
-    apply(snapshotEveryNEvents, keepNSnapshots)
-
-  /** Java API. */
-  def create(snapshotEveryNEvents: Long, keepNSnapshots: Long, deleteMessagesOnSnapshot: Boolean): RetentionCriteria =
-    apply(snapshotEveryNEvents, keepNSnapshots, deleteMessagesOnSnapshot)
 }
