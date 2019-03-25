@@ -27,17 +27,8 @@ Retention of snapshots and events are controlled by a few factors. Deletes to fr
 ### Snapshot deletion
 
 To free up space, an event sourced actor can automatically delete older snapshots 
-if there are saved snapshots which match the `SnapshotSelectionCriteria`. 
-Deletion of snapshots is currently based on a configured or default `RetentionCriteria` 
-from `withRetention`combined with either the `snapshotWhen` or `snapshotEvery` methods. 
-If snapshots are enabled, the deletion sliding window leverages the `RetentionCriteria` to construct
-a `SnapshotSelectionCriteria` based on the latest sequence number. 
- 
-@@@ note
-
-[This API will be simplified soon](https://github.com/akka/akka/issues/26544).
-
-@@@ note
+based on a configured or default `RetentionCriteria` from `withRetention`combined with either the `snapshotWhen` or `snapshotEvery` methods. 
+If snapshots are enabled, deletion of snapshots is based on a given or the default `RetentionCriteria`.
   
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotDeletes }
@@ -45,8 +36,8 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotDeletes }
 
-On async deletion, either a `SnapshotCompleted` or `SnapshotFailed` is returned. Successful completion is logged by the system at log level `debug`, failures at log level `error`.
-You can leverage `EventSourcedSignal` to react to outcomes with `EventSourcedBehavior.receiveSignal`.
+On async deletion, either a `SnapshotCompleted` or `SnapshotFailed` is emitted. Successful completion is logged by the system at log level `debug`, failures at log level `error`.
+You can leverage `EventSourcedSignal` to react to outcomes with @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`].
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #fullDeletesSampleWithSignals }
