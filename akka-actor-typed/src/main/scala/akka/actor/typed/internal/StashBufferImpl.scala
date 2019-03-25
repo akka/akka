@@ -7,6 +7,8 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function => JFunction }
 
+import akka.actor.DeadLetter
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.typed.Behavior
@@ -146,9 +148,10 @@ import akka.util.ConstantFun
 
         if (Behavior.isAlive(actualNext))
           interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
-        else
-          // fixme rest of stash to dead letter?
+        else {
+          unstashRestToDeadLetters(ctx, messages)
           actualNext
+        }
       }
     }
 
@@ -163,9 +166,17 @@ import akka.util.ConstantFun
     if (Behavior.isAlive(actualInitialBehavior)) {
       interpretOne(actualInitialBehavior)
     } else {
-      // fixme rest of stash to dead letter?
+      unstashRestToDeadLetters(ctx, messages)
       started
     }
+  }
+
+  private def unstashRestToDeadLetters(ctx: TypedActorContext[T], messages: Iterator[T]): Unit = {
+    val scalaCtx = ctx.asScala
+    import akka.actor.typed.scaladsl.adapter._
+    val untypedDeadLetters = scalaCtx.system.deadLetters.toUntyped
+    messages.foreach(msg =>
+      scalaCtx.system.deadLetters ! DeadLetter(msg, untypedDeadLetters, ctx.asScala.self.toUntyped))
   }
 
   override def unstash(

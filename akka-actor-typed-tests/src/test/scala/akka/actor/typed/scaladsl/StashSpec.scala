@@ -8,8 +8,8 @@ package scaladsl
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import akka.actor.DeadLetter
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -622,6 +622,8 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
 
     "deal with stop" in {
       val probe = TestProbe[Any]
+      import akka.actor.typed.scaladsl.adapter._
+      untypedSys.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
       val ref = spawn(Behaviors.setup[String] { ctx =>
         val stash = StashBuffer[String](10)
         stash.stash("one")
@@ -640,6 +642,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit("""
       })
       ref ! "unstash"
       probe.expectMessage("one")
+      probe.expectMessageType[DeadLetter].message should equal("two")
       probe.expectTerminated(ref)
     }
 
