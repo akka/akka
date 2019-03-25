@@ -19,9 +19,6 @@ private[akka] abstract class EffectImpl[+Event, State]
   /* All events that will be persisted in this effect */
   override def events: immutable.Seq[Event] = Nil
 
-  override def andThen(chainedEffect: State => Unit): EffectImpl[Event, State] =
-    CompositeEffect(this, new Callback[State](chainedEffect))
-
   override def thenRun(chainedEffect: State => Unit): EffectImpl[Event, State] =
     CompositeEffect(this, new Callback[State](chainedEffect))
 
