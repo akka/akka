@@ -334,6 +334,21 @@ actors is also used in Akka Typed, also for persistent actors. When picking seri
 you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
+## Recovery
+
+It is strongly discouraged to perform side effects in `applyEvent`,
+so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
+
+The `RecoveryCompleted` contains the current `State`.
+
+@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
+
 ## Tagging
 
 Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):

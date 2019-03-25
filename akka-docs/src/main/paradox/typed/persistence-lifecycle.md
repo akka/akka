@@ -20,30 +20,9 @@ This behavior operates in two phases (also behaviors):
     - HandlingCommands - where the command handler is invoked for incoming commands
     - PersistingEvents - where incoming commands are stashed until persistence completes
  
-## Recovery
-
-It is strongly discouraged to perform side effects in `applyEvent`,
-Side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
-
-Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
-
-Java
-:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
-
-The `RecoveryCompleted` contains the current `State`.
-
-@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
-
 ## Retention - snapshots and events
 
 Retention of snapshots and events are controlled by a few factors. Deletes to free up space is currently available.
-
-@@@ note
-
-The retention API itself [is under current development, e.g. #26545](https://github.com/akka/akka/issues/26545)
- 
-@@@ note
   
 ### Snapshot deletion
 
