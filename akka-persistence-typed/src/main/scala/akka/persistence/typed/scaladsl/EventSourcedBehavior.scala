@@ -146,13 +146,6 @@ object EventSourcedBehavior {
   def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Snapshot every N events
-   *
-   * `numberOfEvents` should be greater than 0
-   */
-  def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State]
-
-  /**
    * Change the journal plugin id that this actor should use.
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]

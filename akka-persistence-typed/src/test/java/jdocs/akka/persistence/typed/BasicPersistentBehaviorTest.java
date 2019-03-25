@@ -268,13 +268,6 @@ public class BasicPersistentBehaviorTest {
         };
       }
 
-      // #snapshottingEveryN
-      @Override // override snapshotEvery in EventSourcedBehavior
-      public long snapshotEvery() {
-        return 100;
-      }
-      // #snapshottingEveryN
-
       // #snapshottingPredicate
       @Override // override shouldSnapshot in EventSourcedBehavior
       public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
@@ -282,15 +275,15 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
-      // #snapshotDeletes
-      @Override // override snapshotEvery in EventSourcedBehavior
+      // #retentionCriteria
+      @Override // override retentionCriteria in EventSourcedBehavior
       public RetentionCriteria retentionCriteria() {
-        // to also delete events, use RetentionCriteria.create(1000, 2, true)
-        return RetentionCriteria.create(1000, 2);
+        // to also delete events use `RetentionCriteria.withDeleteEvents()`
+        return RetentionCriteria.snapshotEvery(1000, 2);
       }
-      // #snapshotDeletes
+      // #retentionCriteria
 
-      // #fullDeletesSampleWithSignals
+      // #retentionCriteriaWithSignals
       @Override
       public SignalHandler signalHandler() {
         return newSignalHandlerBuilder()
@@ -313,7 +306,7 @@ public class BasicPersistentBehaviorTest {
                 })
             .build();
       }
-      // #fullDeletesSampleWithSignals
+      // #retentionCriteriaWithSignals
     }
   }
 

@@ -556,7 +556,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "snapshot every N sequence nrs" in {
       val pid = nextPid
-      val c = spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).snapshotEvery(2)))
+      val c = spawn(Behaviors.setup[Command](ctx =>
+        counter(ctx, pid).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
@@ -569,8 +570,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       // no snapshot should have happened
       val probeC2 = TestProbe[(State, Event)]()
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
-      val c2 = spawn(
-        Behaviors.setup[Command](ctx => counterWithProbe(ctx, pid, probeC2.ref, snapshotProbe.ref).snapshotEvery(2)))
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
+        counterWithProbe(ctx, pid, probeC2.ref, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       probeC2.expectMessage[(State, Event)]((State(0, Vector()), Incremented(1)))
       val watchProbeC2 = watcher(c2)
       c2 ! Increment
@@ -579,7 +580,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbeC2.expectMessage("Terminated")
 
       val probeC3 = TestProbe[(State, Event)]()
-      val c3 = spawn(Behaviors.setup[Command](ctx => counterWithProbe(ctx, pid, probeC3.ref).snapshotEvery(2)))
+      val c3 = spawn(Behaviors.setup[Command](ctx =>
+        counterWithProbe(ctx, pid, probeC3.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       // this time it should have been snapshotted so no events to replay
       probeC3.expectNoMessage()
       c3 ! GetValue(replyProbe.ref)
@@ -590,7 +592,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
       val c =
-        spawn(Behaviors.setup[Command](ctx => counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).snapshotEvery(2)))
+        spawn(Behaviors.setup[Command](ctx =>
+          counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
@@ -603,7 +606,8 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       watchProbe.expectMessage("Terminated")
 
       val probeC2 = TestProbe[(State, Event)]()
-      val c2 = spawn(Behaviors.setup[Command](ctx => counterWithProbe(ctx, pid, probeC2.ref).snapshotEvery(2)))
+      val c2 = spawn(Behaviors.setup[Command](ctx =>
+        counterWithProbe(ctx, pid, probeC2.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
@@ -772,18 +776,15 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     }
 
     "delete snapshots automatically, based on criteria" in {
-      val snapshotEvery = 3
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
       val replyProbe = TestProbe[State]()
 
       val persistentActor = spawn(
-        Behaviors.setup[Command](
-          ctx ⇒
-            counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-              .snapshotEvery(snapshotEvery)
-              .withRetention(RetentionCriteria(snapshotEveryNEvents = snapshotEvery, keepNSnapshots = 2))))
+        Behaviors.setup[Command](ctx ⇒
+          counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
+            .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))))
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
@@ -807,7 +808,6 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     }
 
     "optionally delete both old events and snapshots" in {
-      val snapshotEvery = 3
       val pid = nextPid
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
       val retentionProbe = TestProbe[Try[EventSourcedSignal]]()
@@ -816,12 +816,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val persistentActor = spawn(
         Behaviors.setup[Command](
           ctx ⇒
-            counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-              .snapshotEvery(snapshotEvery)
-              .withRetention(RetentionCriteria(
-                snapshotEveryNEvents = snapshotEvery,
-                keepNSnapshots = 2,
-                deleteEventsOnSnapshot = true))))
+            counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref).withRetention(
+              // tests the Java API as well
+              RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2).withDeleteEventsOnSnapshot())))
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)

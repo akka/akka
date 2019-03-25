@@ -411,7 +411,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                   public boolean shouldSnapshot(State state, Incremented event, long sequenceNr) {
                     return state.value % 2 == 0;
                   }
-
                   @Override
                   public SignalHandler signalHandler() {
                     return newSignalHandlerBuilder()
