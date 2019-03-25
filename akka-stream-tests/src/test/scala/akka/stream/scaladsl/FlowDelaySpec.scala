@@ -9,9 +9,11 @@ import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.stream._
 import akka.testkit.TimingTest
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.time.{Milliseconds, Span}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -221,9 +223,9 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "not block overdue elements from being pushed to downstream stages" in {
-      val N = 4000
-      val batchSize = 1000
-      val delayMillis = 50
+      val N = 128
+      val batchSize = 16
+      val delayMillis = 500
 
       val elements = (1 to N).toIterator
 
@@ -235,14 +237,14 @@ class FlowDelaySpec extends StreamSpec {
           System.nanoTime() -> elem
         }
         .delay(delayMillis.millis, DelayOverflowStrategy.backpressure)
-        .withAttributes(Attributes.inputBuffer(2000, 2000))
+        .withAttributes(Attributes.inputBuffer(4, 4))
         .map {
           case (startTimestamp, elem) ⇒
             (System.nanoTime() - startTimestamp) / 1e6 -> elem
         }
         .runWith(Sink.seq)
 
-      val results = Await.result(future, 60000.millis)
+      val results = future.futureValue(PatienceConfiguration.Timeout(Span(60000, Milliseconds)))
       results.length shouldBe N
 
       // check if every elements are delayed by roughly the same amount of time
