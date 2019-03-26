@@ -11,6 +11,8 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
 
+import scala.annotation.tailrec
+
 private object ActorRefSource {
   private sealed trait ActorRefStage { def ref: ActorRef }
 }
@@ -47,12 +49,6 @@ private object ActorRefSource {
           OptionVal.None // for backwards compatibility with old actor publisher based implementation
         }
       private var isCompleting: Boolean = false
-
-      override def preStart(): Unit = {
-        super.preStart()
-        if (maxBuffer == 0)
-          log.warning("for backwards compatibility: maxBuffer of 0 will not be supported in the future") // warning for backwards compatibility
-      }
 
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
@@ -134,7 +130,9 @@ private object ActorRefSource {
         if (isAvailable(out) && buffer.isDefined && buffer.get.nonEmpty) {
           val msg = buffer.get.dequeue()
           push(out, msg)
-        } else if (isCompleting && (buffer.isEmpty || buffer.get.isEmpty)) {
+        }
+
+        if (isCompleting && (buffer.isEmpty || buffer.get.isEmpty)) {
           completeStage()
         }
       }
