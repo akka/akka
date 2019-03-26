@@ -4,6 +4,6 @@
 
 package akka.util
 
-import org.scalatestplus.junit.JUnitSuiteLike
+import org.scalatest.junit.JUnitSuiteLike
 
 class JavaDurationSpec extends JavaDuration with JUnitSuiteLike
