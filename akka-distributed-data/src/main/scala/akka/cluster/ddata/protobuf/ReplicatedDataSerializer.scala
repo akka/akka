@@ -25,11 +25,14 @@ import akka.protobuf.{ ByteString, GeneratedMessage }
 import akka.util.ByteString.UTF_8
 import java.io.NotSerializableException
 
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorRef
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.serialization.Serialization
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 private object ReplicatedDataSerializer {
   /*
    * Generic superclass to allow to compare Entry types used in protobuf.
@@ -43,6 +46,8 @@ private object ReplicatedDataSerializer {
      */
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
+
+    @silent
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
       case (k1: String, k2)                     => -1

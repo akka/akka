@@ -5,7 +5,7 @@
 package akka
 
 import sbt._
-import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocProjectFilter, unidocAllSources}
+import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocAllSources, unidocProjectFilter }
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 import sbtunidoc.GenJavadocPlugin.autoImport._
@@ -28,18 +28,19 @@ object Scaladoc extends AutoPlugin {
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
   override lazy val projectSettings = {
-    inTask(doc)(Seq(
-      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
-      // -release caused build failures when generating javadoc:
-      scalacOptions in Compile --= Seq("-release", "8"),
-      autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
-      Seq(validateDiagrams in Compile := true) ++
-      CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
-        val docs = (doc in Compile).value
-        if ((validateDiagrams in Compile).value)
-          scaladocVerifier(docs)
-        docs
-      })
+    inTask(doc)(
+      Seq(
+        scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
+        // -release caused build failures when generating javadoc:
+        scalacOptions in Compile --= Seq("-release", "8"),
+        autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
+    Seq(validateDiagrams in Compile := true) ++
+    CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
+      val docs = (doc in Compile).value
+      if ((validateDiagrams in Compile).value)
+        scaladocVerifier(docs)
+      docs
+    })
   }
 
   def scaladocOptions(ver: String, base: File): List[String] = {
@@ -56,17 +57,21 @@ object Scaladoc extends AutoPlugin {
         val curr = dirs.head
         val (newDirs, files) = curr.listFiles.partition(_.isDirectory)
         val rest = dirs.tail ++ newDirs
-        val hasDiagram = files exists { f =>
+        val hasDiagram = files.exists { f =>
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
-            !name.equals("index.html") && !name.equals("package.html")) {
+              !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(lines =>
-              lines.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
-              lines.contains("<svg id=\"graph")
-            )
+            val hd = try source
+              .getLines()
+              .exists(
+                lines =>
+                  lines.contains(
+                    "<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+                  lines.contains("<svg id=\"graph"))
             catch {
-              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
+              case e: Exception =>
+                throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
             hd
           } else false
@@ -91,8 +96,7 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override def trigger = noTrigger
   override def requires = Scaladoc
 
-  override lazy val projectSettings = Seq(
-    Scaladoc.validateDiagrams in Compile := false)
+  override lazy val projectSettings = Seq(Scaladoc.validateDiagrams in Compile := false)
 }
 
 /**
@@ -111,26 +115,38 @@ object UnidocRoot extends AutoPlugin {
 
   override def trigger = noTrigger
   override def requires =
-    UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
+    UnidocRoot.CliOptions.genjavadocEnabled
+      .ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
-  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none", "--frames", "--ignore-source-errors"))).getOrElse(Nil)
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
+    .ifTrue(
+      Seq(
+        javacOptions in (JavaUnidoc, unidoc) := Seq(
+            "-Xdoclint:none",
+            "--frames",
+            "--ignore-source-errors",
+            "--no-module-directories")))
+    .getOrElse(Nil)
 
   override lazy val projectSettings = {
-    def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter = 
+    def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter =
       ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
 
-    inTask(unidoc)(Seq(
-      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value) ++
-      UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-        // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps contains code that
-        // genjavadoc turns into (probably incorrect) Java code that in turn confuses the javadoc tool.
-        unidocAllSources in JavaUnidoc ~= { v => v.map(_.filterNot(_.getAbsolutePath.endsWith("scaladsl/GraphDSL.java"))) },
-      )).getOrElse(Nil)
-    )
+    inTask(unidoc)(
+      Seq(
+        unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+        unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+        apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value) ++
+      UnidocRoot.CliOptions.genjavadocEnabled
+        .ifTrue(
+          Seq(
+            // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps contains code that
+            // genjavadoc turns into (probably incorrect) Java code that in turn confuses the javadoc tool.
+            unidocAllSources in JavaUnidoc ~= { v =>
+              v.map(_.filterNot(_.getAbsolutePath.endsWith("scaladsl/GraphDSL.java")))
+            }))
+        .getOrElse(Nil))
   }
 }
 
@@ -140,17 +156,18 @@ object UnidocRoot extends AutoPlugin {
 object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue {
-    val onJdk8 = System.getProperty("java.version").startsWith("1.")
-    require(!onJdk8, "Javadoc generation requires at least jdk 11")
-    sbtunidoc.GenJavadocPlugin
-  }
-    .getOrElse(plugins.JvmPlugin)
+  override def requires =
+    UnidocRoot.CliOptions.genjavadocEnabled
+      .ifTrue {
+        val onJdk8 = System.getProperty("java.version").startsWith("1.")
+        require(!onJdk8, "Javadoc generation requires at least jdk 11")
+        sbtunidoc.GenJavadocPlugin
+      }
+      .getOrElse(plugins.JvmPlugin)
 
-  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(
+  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
+    .ifTrue(Seq(
       unidocGenjavadocVersion := "0.12",
-      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")
-    )
-  ).getOrElse(Nil)
+      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")))
+    .getOrElse(Nil)
 }

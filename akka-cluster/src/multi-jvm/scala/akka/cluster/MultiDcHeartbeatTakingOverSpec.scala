@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val first = role("first") //   alpha

@@ -19,7 +19,7 @@ import akka.actor.Actor
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
 import akka.actor.Deploy
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")

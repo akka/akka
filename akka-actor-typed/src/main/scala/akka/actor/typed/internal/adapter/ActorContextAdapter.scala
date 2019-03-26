@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 
   import ActorRefAdapter.toUntyped
 
-  private[akka] def currentBehavior: Behavior[T] = adapter.currentBehavior
+  private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
 
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
@@ -110,6 +110,12 @@ import scala.concurrent.duration._
   override def setLoggerClass(clazz: Class[_]): Unit = {
     initLoggerWithClass(clazz)
   }
+
+  /**
+   * Made accessible to allow stash to deal with unhandled messages as though they were interpreted by
+   * the adapter itself, even though the unstashing occurs inside the behavior stack.
+   */
+  private[akka] override def onUnhandled(msg: T): Unit = adapter.unhandled(msg)
 }
 
 /**

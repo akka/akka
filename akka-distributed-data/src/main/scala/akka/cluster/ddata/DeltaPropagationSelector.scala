@@ -17,7 +17,9 @@ import akka.util.ccompat._
  * INTERNAL API: Used by the Replicator actor.
  * Extracted to separate trait to make it easy to test.
  */
-@InternalApi private[akka] trait DeltaPropagationSelector {
+@ccompatUsedUntil213
+@InternalApi
+private[akka] trait DeltaPropagationSelector {
 
   private var _propagationCount = 0L
   def propagationCount: Long = _propagationCount

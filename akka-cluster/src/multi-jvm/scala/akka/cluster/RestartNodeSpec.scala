@@ -23,7 +23,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

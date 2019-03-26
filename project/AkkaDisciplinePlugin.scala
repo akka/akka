@@ -20,8 +20,16 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
-  
-  val strictProjects = Set("akka-discovery", "akka-coordination")
+
+  val fatalWarningsFor = Set(
+    "akka-discovery",
+    "akka-distributed-data",
+    "akka-coordination"
+  )
+
+  val strictProjects = Set(
+    "akka-discovery",
+  )
 
   lazy val scalaFixSettings = Seq(
     Compile / scalacOptions += "-Yrangepos")
@@ -34,15 +42,28 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       import sbt.librarymanagement.{ SemanticSelector, VersionNumber }
       !VersionNumber(scalaVersion.value).matchesSemVer(SemanticSelector("<=2.11.1"))
     })
+
+  val silencerVersion = "1.3.1"
+  lazy val silencerSettings = Seq(
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+      "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
+    )
+  )
   
   lazy val disciplineSettings =
     scalaFixSettings ++
+    silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (if (strictProjects.contains(name.value)) {
                                  disciplineScalacOptions
                                } else {
                                  disciplineScalacOptions -- undisciplineScalacOptions
                                }).toSeq,
+      Compile / scalacOptions ++= (
+        if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+        else Seq.empty
+      ),
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       // Discipline is not needed for the docs compilation run (which uses
       // different compiler phases from the regular run), and in particular
@@ -74,15 +95,14 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
     "-Yno-adapted-args",
-    "-Xfatal-warnings")
+  )
 
   /** These options are desired, but some are excluded for the time being*/
   val disciplineScalacOptions = Set(
     // start: must currently remove, version regardless
-    "-Xfatal-warnings",
     "-Ywarn-value-discard",
-    "-Yno-adapted-args",
     "-Ywarn-numeric-widen",
+    "-Yno-adapted-args",
     // end
     "-deprecation",
     "-Xfuture",
