@@ -18,7 +18,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

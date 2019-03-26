@@ -331,7 +331,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
 
       enterBarrier("replicated-2")
       // no OversizedPayloadException logging
-      errorLogProbe.expectNoMsg(100.millis)
+      errorLogProbe.expectNoMessage(100.millis)
 
       enterBarrierAfterTestStep()
     }

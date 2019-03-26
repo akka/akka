@@ -136,7 +136,7 @@ final class ORMultiMap[A, B] private[akka] (
 
   /**
    * Convenience for put. Requires an implicit SelfUniqueAddress.
-   * @see [[#put]]
+   * @see [[ORMultiMap#put(node:akka\.cluster\.ddata\.SelfUniqueAddress,key:A,value:Set*]]
    */
   def :+(entry: (A, Set[B]))(implicit node: SelfUniqueAddress): ORMultiMap[A, B] = {
     val (key, value) = entry
@@ -196,7 +196,7 @@ final class ORMultiMap[A, B] private[akka] (
 
   /**
    * Convenience for remove. Requires an implicit Cluster.
-   * @see [[#remove]]
+   * @see [[ORMultiMap#remove(node:akka\.cluster\.ddata\.SelfUniqueAddress*]]
    */
   @deprecated("Use `remove` that takes a `SelfUniqueAddress` parameter instead.", since = "2.5.20")
   def -(key: A)(implicit node: Cluster): ORMultiMap[A, B] = remove(node.selfUniqueAddress, key)

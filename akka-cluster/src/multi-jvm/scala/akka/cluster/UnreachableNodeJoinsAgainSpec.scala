@@ -19,7 +19,7 @@ import akka.testkit._
 import akka.actor.Props
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")

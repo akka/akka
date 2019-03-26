@@ -37,7 +37,9 @@ import akka.util.ccompat._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object ReplicatorMessageSerializer {
+@ccompatUsedUntil213
+@InternalApi
+private[akka] object ReplicatorMessageSerializer {
 
   /**
    * A cache that is designed for a small number (&lt;= 32) of

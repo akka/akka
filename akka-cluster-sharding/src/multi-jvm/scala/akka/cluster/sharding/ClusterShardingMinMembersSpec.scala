@@ -19,7 +19,7 @@ import org.apache.commons.io.FileUtils
 import scala.concurrent.duration._
 import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object ClusterShardingMinMembersSpec {
   case object StopEntity
