@@ -25,6 +25,7 @@ import akka.util.ccompat._
 /**
  * Some useful serialization helper methods.
  */
+@ccompatUsedUntil213
 trait SerializationSupport {
 
   private final val BufferSize = 1024 * 4

@@ -388,8 +388,9 @@ final class ORSet[A] private[akka] (
 
   /**
    * Removes all elements from the set, but keeps the history.
-   * This has the same result as using [[#remove]] for each
-   * element, but it is more efficient.
+   * This has the same result as using
+   * [[ORSet#remove(node:akka\.cluster\.ddata\.SelfUniqueAddress*]]
+   * for each element, but it is more efficient.
    */
   def clear(@unused node: SelfUniqueAddress): ORSet[A] = clear()
 

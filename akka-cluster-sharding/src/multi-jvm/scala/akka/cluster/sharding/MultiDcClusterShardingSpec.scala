@@ -18,7 +18,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object MultiDcClusterShardingSpec {
   sealed trait EntityMsg {

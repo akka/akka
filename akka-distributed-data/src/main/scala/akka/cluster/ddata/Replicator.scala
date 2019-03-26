@@ -55,6 +55,7 @@ import scala.annotation.varargs
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object ReplicatorSettings {
 
   /**

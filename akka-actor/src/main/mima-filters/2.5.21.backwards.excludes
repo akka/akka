@@ -13,3 +13,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.Backof
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.handleMessageToChild")
+
+# Internal helpers for 2.13 compatibility
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package")
