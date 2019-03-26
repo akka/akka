@@ -10,12 +10,11 @@ import java.util.concurrent.ThreadFactory
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
-
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.actor.typed.internal.adapter.GuardianStartupBehavior
 import akka.actor.typed.internal.adapter.PropsAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.ApiMayChange
@@ -237,11 +236,11 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)),
+      Some(PropsAdapter(() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
       setup)
     system.start()
 
-    system.guardian ! GuardianActorAdapter.Start
+    system.guardian ! GuardianStartupBehavior.Start
     ActorSystemAdapter.AdapterExtension(system).adapter
   }
 
