@@ -11,7 +11,9 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class StashBufferSpec extends WordSpec with Matchers {
 
-  val context = new StubbedActorContext[String]("StashBufferSpec")
+  val context = new StubbedActorContext[String](
+    "StashBufferSpec",
+    () => throw new UnsupportedOperationException("Will never be invoked in this test"))
 
   "A StashBuffer" must {
 

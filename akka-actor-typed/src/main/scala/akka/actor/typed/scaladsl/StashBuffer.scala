@@ -94,6 +94,8 @@ object StashBuffer {
    * It's allowed to stash messages while unstashing. Those newly added
    * messages will not be processed by this call and have to be unstashed
    * in another call.
+   *
+   * The initial `behavior` passed to `unstashAll` must not be `unhandled`.
    */
   def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
 
@@ -115,6 +117,8 @@ object StashBuffer {
    * It's allowed to stash messages while unstashing. Those newly added
    * messages will not be processed by this call and have to be unstashed
    * in another call.
+   *
+   * The `behavior` passed to `unstash` must not be `unhandled`.
    */
   def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T => T): Behavior[T]
 

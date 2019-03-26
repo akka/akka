@@ -299,4 +299,15 @@ trait ActorContext[T] extends TypedActorContext[T] {
    */
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def onUnhandled(msg: T): Unit
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def currentBehavior: Behavior[T]
+
 }
