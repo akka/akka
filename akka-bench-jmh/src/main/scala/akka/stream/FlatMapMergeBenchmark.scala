@@ -28,7 +28,8 @@ class FlatMapMergeBenchmark {
 
   var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[java.lang.Integer], NotUsed] = new BenchTestSourceSameElement(count, 1)
+  def createSource(count: Int): Graph[SourceShape[java.lang.Integer], NotUsed] =
+    new BenchTestSourceSameElement(count, 1)
 
   @Setup
   def setup(): Unit = {
