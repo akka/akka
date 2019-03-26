@@ -501,7 +501,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       seedNodes.mkString(", "),
       ShutdownAfterUnsuccessfulJoinSeedNodes)
     joinSeedNodesDeadline = None
-    CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterDowningReason)
+    CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterJoinUnsuccessfulReason)
   }
 
   def becomeUninitialized(): Unit = {
@@ -1479,11 +1479,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
 /**
  * INTERNAL API.
- */
-private[cluster] case object IncompatibleConfigurationDetected extends Reason
-
-/**
- * INTERNAL API.
  *
  * Used only for the first seed node.
  * Sends InitJoin to all seed nodes (except itself).
@@ -1569,7 +1564,7 @@ private[cluster] final class FirstSeedNodeProcess(
             "This node will be shutdown!",
             messages.mkString(", "))
           context.stop(self)
-          CoordinatedShutdown(context.system).run(IncompatibleConfigurationDetected)
+          CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
       }
 
     case InitJoinAck(address, UncheckedConfig) =>
@@ -1597,7 +1592,7 @@ private[cluster] final class FirstSeedNodeProcess(
           "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
           "This node will be shutdown!")
         context.stop(self)
-        CoordinatedShutdown(context.system).run(IncompatibleConfigurationDetected)
+        CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
       }
 
     case InitJoinNack(address) =>
@@ -1701,7 +1696,7 @@ private[cluster] final class JoinSeedNodeProcess(
             "This node will be shutdown!",
             messages.mkString(", "))
           context.stop(self)
-          CoordinatedShutdown(context.system).run(IncompatibleConfigurationDetected)
+          CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
       }
 
     case InitJoinAck(address, UncheckedConfig) =>
@@ -1728,7 +1723,7 @@ private[cluster] final class JoinSeedNodeProcess(
           "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
           "This node will be shutdown!")
         context.stop(self)
-        CoordinatedShutdown(context.system).run(IncompatibleConfigurationDetected)
+        CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
       }
 
     case InitJoinNack(_) => // that seed was uninitialized
