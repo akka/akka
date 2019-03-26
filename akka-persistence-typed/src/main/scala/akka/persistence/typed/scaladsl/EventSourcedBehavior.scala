@@ -42,6 +42,8 @@ object EventSourcedBehavior {
    */
   type EventHandler[State, Event] = (State, Event) => State
 
+  private val logPrefixSkipList = classOf[EventSourcedBehavior[_, _, _]].getName :: Nil
+
   /**
    * Create a `Behavior` for a persistent actor.
    */
@@ -50,7 +52,7 @@ object EventSourcedBehavior {
       emptyState: State,
       commandHandler: (State, Command) => Effect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 
