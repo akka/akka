@@ -89,15 +89,16 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      EventFilter[JournalFailureException](start = "Exception during recovery.", occurrences = 1).intercept {
-        val replaying = spawn(testBehavior(pid, probe.ref))
+      EventFilter[JournalFailureException](pattern = "Exception during recovery.*Replay timed out", occurrences = 1)
+        .intercept {
+          val replaying = spawn(testBehavior(pid, probe.ref))
 
-        // initial read highest
-        SteppingInmemJournal.step(journal)
+          // initial read highest
+          SteppingInmemJournal.step(journal)
 
-        probe.expectMessageType[RecoveryTimedOut]
-        probe.expectTerminated(replaying)
-      }
+          probe.expectMessageType[RecoveryTimedOut]
+          probe.expectTerminated(replaying)
+        }
 
       // avoid having it stuck in the next test from the
       // last read request above
