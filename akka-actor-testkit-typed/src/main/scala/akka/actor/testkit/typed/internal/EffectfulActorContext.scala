@@ -20,7 +20,10 @@ import scala.compat.java8.FunctionConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class EffectfulActorContext[T](path: ActorPath) extends StubbedActorContext[T](path) {
+@InternalApi private[akka] final class EffectfulActorContext[T](
+    path: ActorPath,
+    currentBehaviorProvider: () => Behavior[T])
+    extends StubbedActorContext[T](path, currentBehaviorProvider) {
 
   private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
 
