@@ -51,7 +51,7 @@ abstract class Lease() {
    * Check if the owner still holds the lease.
    * `true` means that it certainly holds the lease.
    * `false` means that it might not hold the lease, but it could, and for more certain
-   * response you would have to use [[Lease#acquire]] or [[Lease#release]].
+   * response you would have to use [[Lease#acquire()*]] or [[Lease#release]].
    */
   def checkLease(): Boolean
 

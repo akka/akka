@@ -24,11 +24,14 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   val fatalWarningsFor = Set(
     "akka-discovery",
     "akka-distributed-data",
-    "akka-coordination"
+    "akka-coordination",
+    "akka-protobuf"
   )
 
   val strictProjects = Set(
     "akka-discovery",
+    "akka-protobuf",
+    "akka-coordination"
   )
 
   lazy val scalaFixSettings = Seq(
