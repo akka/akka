@@ -553,7 +553,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     "snapshot every N sequence nrs" in {
       val pid = nextPid
       val c = spawn(Behaviors.setup[Command](ctx =>
-        counter(ctx, pid).withRetention(RetentionCriteria(snapshotEveryNEvents = 2, keepNSnapshots = 2))))
+        counter(ctx, pid).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
@@ -567,7 +567,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val probeC2 = TestProbe[(State, Event)]()
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
       val c2 = spawn(Behaviors.setup[Command](ctx =>
-        counterWithProbe(ctx, pid, probeC2.ref, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(2))))
+        counterWithProbe(ctx, pid, probeC2.ref, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       probeC2.expectMessage[(State, Event)]((State(0, Vector()), Incremented(1)))
       val watchProbeC2 = watcher(c2)
       c2 ! Increment
@@ -577,7 +577,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
       val probeC3 = TestProbe[(State, Event)]()
       val c3 = spawn(Behaviors.setup[Command](ctx =>
-        counterWithProbe(ctx, pid, probeC3.ref).withRetention(RetentionCriteria.snapshotEvery(2))))
+        counterWithProbe(ctx, pid, probeC3.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       // this time it should have been snapshotted so no events to replay
       probeC3.expectNoMessage()
       c3 ! GetValue(replyProbe.ref)
@@ -589,7 +589,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
       val c =
         spawn(Behaviors.setup[Command](ctx =>
-          counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(2))))
+          counterWithSnapshotProbe(ctx, pid, snapshotProbe.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
@@ -603,7 +603,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
       val probeC2 = TestProbe[(State, Event)]()
       val c2 = spawn(Behaviors.setup[Command](ctx =>
-        counterWithProbe(ctx, pid, probeC2.ref).withRetention(RetentionCriteria.snapshotEvery(2))))
+        counterWithProbe(ctx, pid, probeC2.ref).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2))))
       probeC2.expectNoMessage()
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
@@ -780,7 +780,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val persistentActor = spawn(
         Behaviors.setup[Command](ctx ⇒
           counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref)
-            .withRetention(RetentionCriteria(snapshotEveryNEvents = 3, keepNSnapshots = 2))))
+            .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2))))
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)
@@ -814,7 +814,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           ctx ⇒
             counterWithSnapshotAndRetentionProbe(ctx, pid, snapshotProbe.ref, retentionProbe.ref).withRetention(
               // tests the Java API as well
-              RetentionCriteria.snapshotEvery(3).withKeepNSnapshots(2).withDeleteEventsOnSnapshot())))
+              RetentionCriteria.snapshotEvery(numberOfEvents = 3, keepNSnapshots = 2).withDeleteEventsOnSnapshot())))
 
       (1 to 10).foreach(_ => persistentActor ! Increment)
       persistentActor ! GetValue(replyProbe.ref)

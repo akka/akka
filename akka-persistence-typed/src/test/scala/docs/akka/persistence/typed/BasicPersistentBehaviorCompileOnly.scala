@@ -158,7 +158,7 @@ object BasicPersistentBehaviorCompileOnly {
       case (_, BookingCompleted(_), _) => true
       case (_, _, _)                   => false
     }
-    .withRetention(RetentionCriteria.snapshotEvery(1000))
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
   //#snapshottingEveryN
 
   //#snapshottingPredicate
@@ -196,7 +196,7 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
-    .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5))
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 5))
   //#retentionCriteria
 
   //#snapshotAndEventDeletes
@@ -211,7 +211,7 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
-    .withRetention(RetentionCriteria.snapshotEvery(1000).withKeepNSnapshots(2).withDeleteEventsOnSnapshot)
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2).withDeleteEventsOnSnapshot)
   //#snapshotAndEventDeletes
 
   //#retentionCriteriaWithSignals
@@ -226,7 +226,7 @@ object BasicPersistentBehaviorCompileOnly {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
     }
-    .withRetention(RetentionCriteria.snapshotEvery(1000).withKeepNSnapshots(2))
+    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
     .receiveSignal { // optionally respond to signals
       case _: SnapshotFailed        => // react to failure
       case _: DeleteSnapshotsFailed => // react to failure

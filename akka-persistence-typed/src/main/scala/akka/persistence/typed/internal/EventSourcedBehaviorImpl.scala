@@ -22,7 +22,6 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
-import akka.persistence.SnapshotMetadata
 import akka.persistence.SnapshotProtocol
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
@@ -69,7 +68,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotWhen: (State, Event, Long) ⇒ Boolean = ConstantFun.scalaAnyThreeToFalse,
     recovery: Recovery = Recovery(),
-    retention: RetentionCriteria = RetentionCriteria.default,
+    retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
     extends EventSourcedBehavior[Command, Event, State] {

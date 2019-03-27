@@ -279,7 +279,7 @@ public class BasicPersistentBehaviorTest {
       @Override // override retentionCriteria in EventSourcedBehavior
       public RetentionCriteria retentionCriteria() {
         // to also delete events use `RetentionCriteria.withDeleteEvents()`
-        return RetentionCriteria.snapshotEvery(1000).withKeepNSnapshots(2);
+        return RetentionCriteria.snapshotEvery(1000, 2);
       }
       // #retentionCriteria
 

@@ -37,24 +37,16 @@ final case class RetentionCriteria(snapshotEveryNEvents: Long, keepNSnapshots: L
   }
 
   /** Java API. */
-  def withKeepNSnapshots(keepN: Long): RetentionCriteria =
-    copy(keepNSnapshots = keepN)
-
-  /** Java API. */
   def withDeleteEventsOnSnapshot(): RetentionCriteria =
     copy(deleteEventsOnSnapshot = true)
 }
 
 object RetentionCriteria {
 
-  def default: RetentionCriteria =
-    RetentionCriteria(snapshotEveryNEvents = 1000L, keepNSnapshots = 2L, deleteEventsOnSnapshot = false)
+  val disabled: RetentionCriteria =
+    RetentionCriteria(snapshotEveryNEvents = 0, keepNSnapshots = 0, deleteEventsOnSnapshot = false)
 
-  def snapshotEvery(numberOfEvents: Long): RetentionCriteria =
-    apply(numberOfEvents, 2L)
-
-  /** Scala API. */
-  def apply(snapshotEveryNEvents: Long, keepNSnapshots: Long): RetentionCriteria =
-    RetentionCriteria(snapshotEveryNEvents, keepNSnapshots, deleteEventsOnSnapshot = false)
+  def snapshotEvery(numberOfEvents: Long, keepNSnapshots: Long): RetentionCriteria =
+    apply(numberOfEvents, keepNSnapshots, false)
 
 }
