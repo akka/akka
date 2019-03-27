@@ -228,10 +228,10 @@ Changes to the binary protocol of remoting, cluster and the cluster tools requir
 to do rolling upgrades. Note that this may include older nodes communicating with a newer node so compatibility
 may have to be both ways. 
 
-Often a change to those protocols can require changes in two consecutive Akka releases where 
-the first change is to add a new binary format but still use the old, so that all nodes can accept the new format. 
-A second step then starts actually emitting the new wire format. This ensures users can complete a rolling upgrade 
-first to the intermediate version and then another rolling upgrade to the next version.
+Since during a rolling upgrade nodes producing the 'new' format and nodes producing the 'old' format coexist, a change can require a two-release process: 
+the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
+new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
+rolling upgrade to the next version.
 
 All wire protocol changes that may concern rolling upgrades should be documented in the 
 [Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
