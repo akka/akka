@@ -222,6 +222,21 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 
 The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
 
+## Wire compatibility
+
+Changes to the binary protocol of remoting, cluster and the cluster tools require great care so that it is possible
+to do rolling up and downgrades. 
+
+Often a change to those protocols can require changes in a two version process where 
+the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
+new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
+rolling upgrade to the next version.
+
+All wire protocol changes that may concern rolling upgrades should be documented in the 
+[Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
+(found in akka-docs/src/main/paradox/project/rolling-update.md)
+
+
 ## Pull request requirements
 
 For a pull request to be considered at all it has to meet these requirements:
