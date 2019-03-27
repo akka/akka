@@ -227,7 +227,7 @@ The binary compatibility of the current changes can be checked by running `sbt +
 Changes to the binary protocol of remoting, cluster and the cluster tools require great care so that it is possible
 to do rolling up and downgrades. 
 
-Often a change to those protocols can require changes in a two version process where 
+Since during a rolling upgrade nodes producing the 'new' format and nodes producing the 'old' format coexist, a change can require a two-phase process: 
 the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
 new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
 rolling upgrade to the next version.
