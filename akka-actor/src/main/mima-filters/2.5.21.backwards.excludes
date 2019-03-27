@@ -19,3 +19,10 @@ ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$Sorte
 ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps$")
 ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$")
 ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package")
+
+# Fix memory leak in watchWith - PR #26625
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.terminatedQueuedFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")
