@@ -236,7 +236,7 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter(() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
+      Some(PropsAdapter[Any](() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
       setup)
     system.start()
 
