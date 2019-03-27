@@ -5,7 +5,7 @@
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed._
-import akka.stream.OverflowStrategy
+import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl._
 
 /**
@@ -54,7 +54,7 @@ object ActorSource {
       overflowStrategy: OverflowStrategy): Source[T, ActorRef[T]] =
     Source
       .actorRef[T](
-        completionMatcher.asInstanceOf[PartialFunction[Any, Unit]],
+        completionMatcher.asInstanceOf[PartialFunction[Any, Unit]].andThen(_ => CompletionStrategy.Draining),
         failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
         bufferSize,
         overflowStrategy)

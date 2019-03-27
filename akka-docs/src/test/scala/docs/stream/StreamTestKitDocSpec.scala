@@ -89,7 +89,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     ref ! 1
     ref ! 2
     ref ! 3
-    ref ! akka.actor.Status.Success("done")
+    ref ! akka.actor.Status.Success(CompletionStrategy.draining)
 
     val result = Await.result(future, 3.seconds)
     assert(result == "123")
