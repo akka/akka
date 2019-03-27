@@ -42,20 +42,20 @@ import akka.util.ByteString
  * This extension provides sharding functionality of actors in a cluster.
  * The typical use case is when you have many stateful actors that together consume
  * more resources (e.g. memory) than fit on one machine.
- * - Distribution: You need to distribute them across several nodes in the cluster
- * - Location Transparency: You need to interact with them using their logical identifier,
+ *   - Distribution: You need to distribute them across several nodes in the cluster
+ *   - Location Transparency: You need to interact with them using their logical identifier,
  * without having to care about their physical location in the cluster, which can change over time.
  *
- * Entities:
+ * '''Entities''':
  * It could for example be actors representing Aggregate Roots in Domain-Driven Design
  * terminology. Here we call these actors "entities" which typically have persistent
  * (durable) state, but this feature is not limited to persistent state actors.
  *
- * Sharding:
+ * '''Sharding''':
  * In this context sharding means that actors with an identifier, or entities,
  * can be automatically distributed across multiple nodes in the cluster.
  *
- * ShardRegion:
+ * '''ShardRegion''':
  * Each entity actor runs only at one place, and messages can be sent to the entity without
  * requiring the sender to know the location of the destination actor. This is achieved by
  * sending the messages via a [[ShardRegion]] actor, provided by this extension. The [[ShardRegion]]
@@ -66,12 +66,12 @@ import akka.util.ByteString
  * functions to extract the entity identifier and the shard identifier from incoming messages.
  *
  * Typical usage of this extension:
- * 1. At system startup on each cluster node by registering the supported entity types with
+ *   1. At system startup on each cluster node by registering the supported entity types with
  * the [[ClusterSharding#start]] method
- * 2. Retrieve the `ShardRegion` actor for a named entity type with [[ClusterSharding#shardRegion]]
+ *   2. Retrieve the `ShardRegion` actor for a named entity type with [[ClusterSharding#shardRegion]]
  * Settings can be configured as described in the `akka.cluster.sharding` section of the `reference.conf`.
  *
- * Shard and ShardCoordinator:
+ * '''Shard and ShardCoordinator''':
  * A shard is a group of entities that will be managed together. For the first message in a
  * specific shard the `ShardRegion` requests the location of the shard from a central
  * [[ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion`
@@ -90,7 +90,7 @@ import akka.util.ByteString
  * the oldest member among all cluster nodes or a group of nodes tagged with a specific
  * role. The oldest member can be determined by [[akka.cluster.Member#isOlderThan]].
  *
- * Shard Rebalancing:
+ * '''Shard Rebalancing''':
  * To be able to use newly added members in the cluster the coordinator facilitates rebalancing
  * of shards, migrating entities from one node to another. In the rebalance process the
  * coordinator first notifies all `ShardRegion` actors that a handoff for a shard has begun.
@@ -107,7 +107,7 @@ import akka.util.ByteString
  * persistent (durable), e.g. with `akka-persistence` so that it can be recovered at the new
  * location.
  *
- * Shard Allocation:
+ * '''Shard Allocation''':
  * The logic deciding which shards to rebalance is defined in a plugable shard allocation
  * strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
  * picks shards for handoff from the `ShardRegion` with highest number of previously allocated shards.
@@ -116,7 +116,7 @@ import akka.util.ByteString
  * the difference must be to begin the rebalancing. This strategy can be replaced by an application
  * specific implementation.
  *
- * Recovery:
+ * '''Recovery''':
  * The state of shard locations in the `ShardCoordinator` is stored with `akka-distributed-data` or
  * `akka-persistence` to survive failures. When a crashed or unreachable coordinator
  * node has been removed (via down) from the cluster a new `ShardCoordinator` singleton
@@ -124,7 +124,7 @@ import akka.util.ByteString
  * with known location are still available, while messages for new (unknown) shards
  * are buffered until the new `ShardCoordinator` becomes available.
  *
- * Delivery Semantics:
+ * '''Delivery Semantics''':
  * As long as a sender uses the same `ShardRegion` actor to deliver messages to an entity
  * actor the order of the messages is preserved. As long as the buffer limit is not reached
  * messages are delivered on a best effort basis, with at-most once delivery semantics,
