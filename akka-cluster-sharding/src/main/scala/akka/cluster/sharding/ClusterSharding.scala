@@ -68,7 +68,7 @@ import akka.util.ByteString
  * Typical usage of this extension:
  *   1. At system startup on each cluster node by registering the supported entity types with
  * the [[ClusterSharding#start]] method
- *   2. Retrieve the `ShardRegion` actor for a named entity type with [[ClusterSharding#shardRegion]]
+ *   1. Retrieve the `ShardRegion` actor for a named entity type with [[ClusterSharding#shardRegion]]
  * Settings can be configured as described in the `akka.cluster.sharding` section of the `reference.conf`.
  *
  * '''Shard and ShardCoordinator''':
