@@ -35,6 +35,11 @@ import scala.annotation.switch
    * have logged it.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
+
+  private val DummyReceive: untyped.Actor.Receive = {
+    case _ => throw new RuntimeException("receive should never be called on the typed ActorAdapter")
+  }
+
 }
 
 /**
@@ -46,7 +51,7 @@ import scala.annotation.switch
   import Behavior._
 
   private var behavior: Behavior[T] = _initialBehavior
-  final def currentBehavior: Behavior[T] = behavior
+  def currentBehavior: Behavior[T] = behavior
 
   // context adapter construction must be lazy because so that it is not created before the system is ready
   // when the adapter is used for the user guardian (which avoids touching context until it is safe)
@@ -62,30 +67,37 @@ import scala.annotation.switch
    */
   private var failures: Map[untyped.ActorRef, Throwable] = Map.empty
 
-  def receive: Receive = running
+  def receive: Receive = ActorAdapter.DummyReceive
 
-  def running: Receive = {
-    case untyped.Terminated(ref) =>
-      val msg =
-        if (failures contains ref) {
-          val ex = failures(ref)
-          failures -= ref
-          ChildFailed(ActorRefAdapter(ref), ex)
-        } else Terminated(ActorRefAdapter(ref))
-      handleSignal(msg)
-    case untyped.ReceiveTimeout =>
-      handleMessage(ctx.receiveTimeoutMsg)
-    case wrapped: AdaptMessage[Any, T] @unchecked =>
-      withSafelyAdapted(() => wrapped.adapt()) {
-        case AdaptWithRegisteredMessageAdapter(msg) =>
-          adaptAndHandle(msg)
-        case msg: T @unchecked =>
-          handleMessage(msg)
-      }
-    case AdaptWithRegisteredMessageAdapter(msg) =>
-      adaptAndHandle(msg)
-    case msg: T @unchecked =>
-      handleMessage(msg)
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    // as we know we never become in "normal" typed actors, it is just the current behavior that
+    // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
+    // we also know that the receive is total, so we can avoid the orElse part as well.
+    msg match {
+      case untyped.Terminated(ref) =>
+        val msg =
+          if (failures contains ref) {
+            val ex = failures(ref)
+            failures -= ref
+            ChildFailed(ActorRefAdapter(ref), ex)
+          } else Terminated(ActorRefAdapter(ref))
+        handleSignal(msg)
+      case untyped.ReceiveTimeout =>
+        handleMessage(ctx.receiveTimeoutMsg)
+      case wrapped: AdaptMessage[Any, T] @unchecked =>
+        withSafelyAdapted(() => wrapped.adapt()) {
+          case AdaptWithRegisteredMessageAdapter(msg) =>
+            adaptAndHandle(msg)
+          case msg: T @unchecked =>
+            handleMessage(msg)
+        }
+      case AdaptWithRegisteredMessageAdapter(msg) =>
+        adaptAndHandle(msg)
+      case signal: Signal =>
+        handleSignal(signal)
+      case msg: T @unchecked =>
+        handleMessage(msg)
+    }
   }
 
   private def handleMessage(msg: T): Unit = {
@@ -196,7 +208,6 @@ import scala.annotation.switch
 
   override def preStart(): Unit = {
     if (isAlive(behavior)) {
-      context.become(running)
       behavior = validateAsInitial(Behavior.start(behavior, ctx))
     }
     // either was stopped initially or became stopped on start
