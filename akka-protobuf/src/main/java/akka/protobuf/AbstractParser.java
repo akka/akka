@@ -114,10 +114,6 @@ public abstract class AbstractParser<MessageType extends MessageLite>
       return message;
     } catch (InvalidProtocolBufferException e) {
       throw e;
-    } catch (IOException e) {
-      throw new RuntimeException(
-          "Reading from a ByteString threw an IOException (should " +
-          "never happen).", e);
     }
   }
 
@@ -151,10 +147,6 @@ public abstract class AbstractParser<MessageType extends MessageLite>
       return message;
     } catch (InvalidProtocolBufferException e) {
       throw e;
-    } catch (IOException e) {
-      throw new RuntimeException(
-          "Reading from a byte array threw an IOException (should " +
-          "never happen).", e);
     }
   }
 
