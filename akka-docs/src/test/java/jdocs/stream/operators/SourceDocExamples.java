@@ -9,6 +9,7 @@ package jdocs.stream.operators;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.CompletionStrategy;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 // #range-imports
@@ -81,7 +82,7 @@ public class SourceDocExamples {
     actorRef.tell("hello", ActorRef.noSender());
 
     // The stream completes successfully with the following message
-    actorRef.tell(new Success("completes stream"), ActorRef.noSender());
+    actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
     // #actor-ref
   }
 }

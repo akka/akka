@@ -787,7 +787,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
         actorRef.tell(1, ActorRef.noSender());
         actorRef.tell(2, ActorRef.noSender());
         actorRef.tell(3, ActorRef.noSender());
-        actorRef.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
+        actorRef.tell(
+            new akka.actor.Status.Success(CompletionStrategy.draining()), ActorRef.noSender());
         // #source-actorRef
       }
     };
