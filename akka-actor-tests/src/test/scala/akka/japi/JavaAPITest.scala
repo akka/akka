@@ -4,6 +4,6 @@
 
 package akka.japi
 
-import org.scalatestplus.junit.JUnitSuiteLike
+import org.scalatest.junit.JUnitSuiteLike
 
 class JavaAPITest extends JavaAPITestBase with JUnitSuiteLike
