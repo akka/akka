@@ -349,6 +349,27 @@ object Source {
     new Source(scaladsl.Source.actorRef(bufferSize, overflowStrategy))
 
   /**
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
+   *
+   * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
+   * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immidiately,
+   * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
+   * already buffered element will be signaled before siganling completion.
+   *
+   * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
+   * actor reference. In case the Actor is still draining its internal buffer (after having received
+   * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   */
+  def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
+    new Source(scaladsl.Source.actorRefWithAck(ackMessage))
+
+  /**
    * A graph with the shape of a source logically is a source, this method makes
    * it so also in type.
    */
