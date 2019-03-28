@@ -47,12 +47,12 @@ via a third party system such as the Kubernetes API server or Zookeeper.
 
 Once a lease is acquired `checkLease` can be called to ensure that the lease is still acquired. As lease implementations
 are based on other distributed systems a lease can be lost due to a timeout with the third party system. This operation is 
-not asynchronous so can be called before performing any action for which having the lease is important.
+not asynchronous so it can be called before performing any action for which having the lease is important.
 
 A lease has an owner. If the same owner tries to acquire the lease multiple times it will succeed i.e. leases are reentrant. 
 
-It is important
-to pick a lease name that will be unique for your use case. If a lease needs to be unique for each node in a Cluster the cluster host port can be use:
+It is important to pick a lease name that will be unique for your use case. If a lease needs to be unique for each node
+in a Cluster the cluster host port can be use:
 
 Scala
 :  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #cluster-owner }
@@ -60,8 +60,8 @@ Scala
 Java
 :  @@snip [LeaseDocTest.scala](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #cluster-owner }
 
-For use cases where multiple different leases on the same node some then something unique to your use cases must be used. For example
-a lease can be used with Cluster Sharding and in this case the shard Id is included in the lease name used for each shard.
+For use cases where multiple different leases on the same node then something unique must be added to the name. For example
+a lease can be used with Cluster Sharding and in this case the shard Id is included in the lease name for each shard.
 
 ## Usages in other Akka modules
 
@@ -92,11 +92,9 @@ The methods should provide the following guarantees:
 In addition it is expected that a lease implementation will include a time to live mechanism meaning that a lease won't be held for ever in case the node crashes.
 If a user prefers to have outside intervention in this case for maximum safety then the time to live can be set to infinite.
 
-Create a configuration location with the following configuration:
+The configuration must define the `lease-class` property for the FQCN of the lease implementation.
 
-* `lease-class` property for the FQN of the lease implementation
-
-And implement the following properties where the defaults comes from `akka.coordination.lease`:
+The lease implementation should have support for the following properties where the defaults come from `akka.coordination.lease`:
 
 @@snip [reference.conf](/akka-coordination/src/main/resources/reference.conf) { #defaults }
 
