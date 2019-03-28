@@ -45,7 +45,8 @@ class Dispatcher(
   }
 
   /**
-   * Updated via esUpdater
+   * At first glance this var does not seem to be updated anywhere, but in
+   * fact it is, via the esUpdater [[AtomicReferenceFieldUpdater]] below.
    */
   @silent
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
