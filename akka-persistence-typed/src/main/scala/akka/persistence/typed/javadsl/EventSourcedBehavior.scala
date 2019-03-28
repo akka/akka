@@ -17,6 +17,7 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
+import akka.util.unused
 
 @ApiMayChange
 abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
@@ -101,18 +102,6 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     EventHandlerBuilder.builder[State, Event]()
 
   /**
-   * Initiates a snapshot if the given function returns true.
-   * When persisting multiple events at once the snapshot is triggered after all the events have
-   * been persisted.
-   *
-   * receives the State, Event and the sequenceNr used for the Event
-   *
-   * @return `true` if snapshot should be saved for the given event
-   * @see [[EventSourcedBehavior#snapshotEvery]]
-   */
-  def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
-
-  /**
    * Override and define the journal plugin id that this actor should use instead of the default.
    */
   def journalPluginId: String = ""
@@ -133,25 +122,42 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
 
   /**
+   * Initiates a snapshot if the given predicate evaluates to true.
+   *
+   * Decide to store a snapshot based on the State, Event and sequenceNr when the event has
+   * been successfully persisted.
+   *
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * Snapshots triggered by `snapshotWhen` will not trigger deletes of old snapshots and events if
+   * [[EventSourcedBehavior.retentionCriteria]] with [[RetentionCriteria.snapshotEvery]] is used together with
+   * `shouldSnapshot`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
+   * [[RetentionCriteria]].
+   *
+   * @return `true` if snapshot should be saved at the given `state`, `event` and `sequenceNr` when the event has
+   *         been successfully persisted
+   */
+  def shouldSnapshot(@unused state: State, @unused event: Event, @unused sequenceNr: Long): Boolean = false
+
+  /**
+   * Criteria for retention/deletion of snapshots and events.
+   * By default, retention is disabled and snapshots are not saved and deleted automatically.
+   */
+  def retentionCriteria: RetentionCriteria = RetentionCriteria.disabled
+
+  /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
+  def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
 
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
-
-  def retentionCriteria: RetentionCriteria = RetentionCriteria.disabled
 
   /**
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-    val snapshotWhen: (State, Event, Long) => Boolean = { (state, event, seqNr) =>
-      val n = retentionCriteria.snapshotEveryNEvents
-      if (n > 0)
-        seqNr % n == 0
-      else
-        shouldSnapshot(state, event, seqNr)
-    }
+    val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: Event => Set[String] = { event =>
       import scala.collection.JavaConverters._
@@ -167,6 +173,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       eventHandler()(_, _),
       getClass)
       .snapshotWhen(snapshotWhen)
+      .withRetention(retentionCriteria.asScala)
       .withTagger(tagger)
       .eventAdapter(eventAdapter())
       .withJournalPluginId(journalPluginId)

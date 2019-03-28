@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
-import akka.persistence.Persistence.verifyPluginConfigIsDefined
 import com.typesafe.config.Config
 
 /**

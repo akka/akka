@@ -7,8 +7,6 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.control.NonFatal
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -31,10 +29,10 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
@@ -164,9 +162,6 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =
     copy(signalHandler = handler)
 
-  override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
-    copy(snapshotWhen = predicate)
-
   override def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "journal plugin id must not be null; use empty string for 'default' journal")
     copy(journalPluginId = if (id != "") Some(id) else None)
@@ -182,12 +177,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = Recovery(selection.toUntyped))
   }
 
-  override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] = {
-    require(
-      criteria.snapshotEveryNEvents > 0,
-      s"'snapshotEveryNEvents' must be positive but was ${criteria.snapshotEveryNEvents}")
-    copy(retention = criteria, snapshotWhen = (_, _, seqNr) => seqNr % criteria.snapshotEveryNEvents == 0)
-  }
+  override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
+    copy(snapshotWhen = predicate)
+
+  override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =
+    copy(retention = criteria)
 
   override def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State] =
     copy(tagger = tagger)

@@ -17,7 +17,6 @@ import akka.annotation.DoNotInherit
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
 
@@ -137,15 +136,6 @@ object EventSourcedBehavior {
   def signalHandler: PartialFunction[(State, Signal), Unit]
 
   /**
-   * Initiates a snapshot if the given function returns true.
-   * When persisting multiple events at once the snapshot is triggered after all the events have
-   * been persisted.
-   *
-   * `predicate` receives the State, Event and the sequenceNr used for the Event
-   */
-  def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
-
-  /**
    * Change the journal plugin id that this actor should use.
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
@@ -166,7 +156,24 @@ object EventSourcedBehavior {
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Criteria for internal retention/deletion of snapshots and events.
+   * Initiates a snapshot if the given `predicate` evaluates to true.
+   *
+   * Decide to store a snapshot based on the State, Event and sequenceNr when the event has
+   * been successfully persisted.
+   *
+   * When persisting multiple events at once the snapshot is triggered after all the events have
+   * been persisted.
+   *
+   * Snapshots triggered by `snapshotWhen` will not trigger deletes of old snapshots and events if
+   * [[EventSourcedBehavior.withRetention]] with [[RetentionCriteria.snapshotEvery]] is used together with
+   * `snapshotWhen`. Such deletes are only triggered by snapshots matching the `numberOfEvents` in the
+   * [[RetentionCriteria]].
+   */
+  def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Criteria for retention/deletion of snapshots and events.
+   * By default, retention is disabled and snapshots are not saved and deleted automatically.
    */
   def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State]
 
