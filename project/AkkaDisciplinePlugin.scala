@@ -22,6 +22,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override lazy val projectSettings = disciplineSettings
 
   val fatalWarningsFor = Set(
+    "akka-actor",
     "akka-discovery",
     "akka-distributed-data",
     "akka-coordination",

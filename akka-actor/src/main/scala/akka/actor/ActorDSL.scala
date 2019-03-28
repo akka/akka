@@ -6,9 +6,11 @@ package akka.actor
 
 import scala.concurrent.duration._
 import akka.pattern.ask
+
 import scala.concurrent.Await
 import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
 
 /**
  * This object contains elements which make writing actors and related code
@@ -164,5 +166,6 @@ object Inbox {
   /**
    * Create a new Inbox within the given system.
    */
+  @silent
   def create(system: ActorSystem): Inbox = ActorDSL.inbox()(system)
 }

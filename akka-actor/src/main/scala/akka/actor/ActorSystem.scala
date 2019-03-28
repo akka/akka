@@ -9,7 +9,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import akka.event.{ LoggingFilterWithMarker, _ }
+import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer

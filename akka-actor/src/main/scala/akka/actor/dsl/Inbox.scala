@@ -6,10 +6,12 @@ package akka.actor.dsl
 
 import scala.concurrent.Await
 import akka.actor.ActorLogging
+
 import scala.collection.immutable.TreeSet
 import scala.concurrent.duration._
 import akka.actor.Cancellable
 import akka.actor.Actor
+
 import scala.collection.mutable.Queue
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
@@ -17,9 +19,11 @@ import akka.util.Timeout
 import akka.actor.Status
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.pattern.ask
 import akka.actor.ActorDSL
 import akka.actor.Props
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -43,6 +47,7 @@ private[akka] object Inbox {
 
 }
 
+@silent
 trait Inbox { this: ActorDSL.type =>
 
   import Inbox._

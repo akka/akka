@@ -18,7 +18,7 @@ import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 import akka.actor._
 import java.lang.{ Iterable => JIterable }
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 
 import akka.annotation.InternalApi
 
@@ -867,7 +867,20 @@ object TcpMessage {
    * a particular write has been sent by the O/S.
    */
   def writeFile(filePath: String, position: Long, count: Long, ack: Event): Command =
-    WriteFile(filePath, position, count, ack)
+    WritePath(Paths.get(filePath), position, count, ack)
+
+  /**
+   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
+   * The count must be &gt; 0. The connection actor will reply with a [[Tcp.CommandFailed]]
+   * message if the write could not be enqueued. If [[Tcp.SimpleWriteCommand#wantsAck]]
+   * returns true, the connection actor will reply with the supplied [[Tcp.SimpleWriteCommand#ack]]
+   * token once the write has been successfully enqueued to the O/S kernel.
+   * <b>Note that this does not in any way guarantee that the data will be
+   * or have been sent!</b> Unfortunately there is no way to determine whether
+   * a particular write has been sent by the O/S.
+   */
+  def writePath(filePath: Path, position: Long, count: Long, ack: Event): Command =
+    WritePath(filePath, position, count, ack)
 
   /**
    * When `useResumeWriting` is in effect as was indicated in the [[Tcp.Register]] message
