@@ -103,17 +103,26 @@ class ReplicatorMessageSerializerSpec
           pruning = Map(
             address1 -> PruningPerformed(System.currentTimeMillis()),
             address3 -> PruningInitialized(address2, Set(address1.address)))))
-      checkSerialization(Write("A", DataEnvelope(data1)))
+      checkSerialization(Write("A", DataEnvelope(data1), Some(address1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
       checkSerialization(DeltaNack)
-      checkSerialization(Read("A"))
+      checkSerialization(Read("A", Some(address1)))
       checkSerialization(ReadResult(Some(DataEnvelope(data1))))
       checkSerialization(ReadResult(None))
       checkSerialization(
-        Status(Map("A" -> ByteString.fromString("a"), "B" -> ByteString.fromString("b")), chunk = 3, totChunks = 10))
+        Status(
+          Map("A" -> ByteString.fromString("a"), "B" → ByteString.fromString("b")),
+          chunk = 3,
+          totChunks = 10,
+          Some(17),
+          Some(19)))
       checkSerialization(
-        Gossip(Map("A" -> DataEnvelope(data1), "B" -> DataEnvelope(GSet() + "b" + "c")), sendBack = true))
+        Gossip(
+          Map("A" -> DataEnvelope(data1), "B" → DataEnvelope(GSet() + "b" + "c")),
+          sendBack = true,
+          Some(17),
+          Some(19)))
       checkSerialization(
         DeltaPropagation(
           address1,
@@ -153,10 +162,10 @@ class ReplicatorMessageSerializerSpec
 
     "get added element" in {
       val cache = new SmallCache[Read, String](2, 5.seconds, _ => null)
-      val a = Read("a")
+      val a = Read("a", Some(address1))
       cache.add(a, "A")
       cache.get(a) should be("A")
-      val b = Read("b")
+      val b = Read("b", Some(address1))
       cache.add(b, "B")
       cache.get(a) should be("A")
       cache.get(b) should be("B")
@@ -164,20 +173,20 @@ class ReplicatorMessageSerializerSpec
 
     "return null for non-existing elements" in {
       val cache = new SmallCache[Read, String](4, 5.seconds, _ => null)
-      val a = Read("a")
+      val a = Read("a", Some(address1))
       cache.get(a) should be(null)
       cache.add(a, "A")
-      val b = Read("b")
+      val b = Read("b", Some(address1))
       cache.get(b) should be(null)
     }
 
     "hold latest added elements" in {
       val cache = new SmallCache[Read, String](4, 5.seconds, _ => null)
-      val a = Read("a")
-      val b = Read("b")
-      val c = Read("c")
-      val d = Read("d")
-      val e = Read("e")
+      val a = Read("a", Some(address1))
+      val b = Read("b", Some(address1))
+      val c = Read("c", Some(address1))
+      val d = Read("d", Some(address1))
+      val e = Read("e", Some(address1))
       cache.add(a, "A")
       cache.get(a) should be("A")
       cache.add(b, "B")
@@ -204,7 +213,7 @@ class ReplicatorMessageSerializerSpec
 
     "handle Int wrap around" ignore { // ignored because it takes 20 seconds (but it works)
       val cache = new SmallCache[Read, String](2, 5.seconds, _ => null)
-      val a = Read("a")
+      val a = Read("a", Some(address1))
       val x = a -> "A"
       var n = 0
       while (n <= Int.MaxValue - 3) {
@@ -214,8 +223,8 @@ class ReplicatorMessageSerializerSpec
 
       cache.get(a) should be("A")
 
-      val b = Read("b")
-      val c = Read("c")
+      val b = Read("b", Some(address1))
+      val c = Read("c", Some(address1))
       cache.add(b, "B")
       cache.get(a) should be("A")
       cache.get(b) should be("B")
@@ -241,7 +250,7 @@ class ReplicatorMessageSerializerSpec
       }
 
       val cache = new SmallCache[Read, AnyRef](4, 5.seconds, a => createValue(a))
-      val a = Read("a")
+      val a = Read("a", Some(address1))
       val v1 = cache.getOrAdd(a)
       v1.toString should be("v1")
       (cache.getOrAdd(a) should be).theSameInstanceAs(v1)
@@ -249,8 +258,8 @@ class ReplicatorMessageSerializerSpec
 
     "evict cache after time-to-live" in {
       val cache = new SmallCache[Read, AnyRef](4, 10.millis, _ => null)
-      val b = Read("b")
-      val c = Read("c")
+      val b = Read("b", Some(address1))
+      val c = Read("c", Some(address1))
       cache.add(b, "B")
       cache.add(c, "C")
 
@@ -262,8 +271,8 @@ class ReplicatorMessageSerializerSpec
 
     "not evict cache before time-to-live" in {
       val cache = new SmallCache[Read, AnyRef](4, 5.seconds, _ => null)
-      val b = Read("b")
-      val c = Read("c")
+      val b = Read("b", Some(address1))
+      val c = Read("c", Some(address1))
       cache.add(b, "B")
       cache.add(c, "C")
       cache.evict()

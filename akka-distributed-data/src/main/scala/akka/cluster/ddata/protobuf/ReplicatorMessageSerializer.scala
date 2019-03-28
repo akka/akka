@@ -267,15 +267,21 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case (key, digest) =>
         b.addEntries(dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteString.copyFrom(digest.toArray)))
     }
+    b.setToSystemUid(status.toSystemUid.get)
+    b.setFromSystemUid(status.fromSystemUid.get)
     b.build()
   }
 
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
+    val toSystemUid = if (status.hasToSystemUid) Some(status.getToSystemUid) else None
+    val fromSystemUid = if (status.hasFromSystemUid) Some(status.getFromSystemUid) else None
     Status(
       status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
       status.getChunk,
-      status.getTotChunks)
+      status.getTotChunks,
+      toSystemUid,
+      fromSystemUid)
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
@@ -284,18 +290,24 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case (key, data) =>
         b.addEntries(dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data)))
     }
+    b.setToSystemUid(gossip.toSystemUid.get)
+    b.setFromSystemUid(gossip.fromSystemUid.get)
     b.build()
   }
 
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
+    val toSystemUid = if (gossip.hasToSystemUid) Some(gossip.getToSystemUid) else None
+    val fromSystemUid = if (gossip.hasFromSystemUid) Some(gossip.getFromSystemUid) else None
     Gossip(
       gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
-      sendBack = gossip.getSendBack)
+      sendBack = gossip.getSendBack,
+      toSystemUid,
+      fromSystemUid)
   }
 
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
-    val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation.fromNode))
+    val b = dm.DeltaPropagation.newBuilder().setFromNode(uniqueAddressToProto(deltaPropagation._fromNode))
     if (deltaPropagation.reply)
       b.setReply(deltaPropagation.reply)
     deltaPropagation.deltas.foreach {
@@ -513,18 +525,27 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def writeToProto(write: Write): dm.Write =
-    dm.Write.newBuilder().setKey(write.key).setEnvelope(dataEnvelopeToProto(write.envelope)).build()
+    dm.Write
+      .newBuilder()
+      .setKey(write.key)
+      .setEnvelope(dataEnvelopeToProto(write.envelope))
+      .setFromNode(uniqueAddressToProto(write.fromNode.get))
+      .build()
 
   private def writeFromBinary(bytes: Array[Byte]): Write = {
     val write = dm.Write.parseFrom(bytes)
-    Write(write.getKey, dataEnvelopeFromProto(write.getEnvelope))
+    val fromNode = if (write.hasFromNode) Some(uniqueAddressFromProto(write.getFromNode)) else None
+    Write(write.getKey, dataEnvelopeFromProto(write.getEnvelope), fromNode)
   }
 
   private def readToProto(read: Read): dm.Read =
-    dm.Read.newBuilder().setKey(read.key).build()
+    dm.Read.newBuilder().setKey(read.key).setFromNode(uniqueAddressToProto(read.fromNode.get)).build()
 
-  private def readFromBinary(bytes: Array[Byte]): Read =
-    Read(dm.Read.parseFrom(bytes).getKey)
+  private def readFromBinary(bytes: Array[Byte]): Read = {
+    val read = dm.Read.parseFrom(bytes)
+    val fromNode = if (read.hasFromNode) Some(uniqueAddressFromProto(read.getFromNode)) else None
+    Read(read.getKey, fromNode)
+  }
 
   private def readResultToProto(readResult: ReadResult): dm.ReadResult = {
     val b = dm.ReadResult.newBuilder()
