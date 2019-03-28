@@ -423,7 +423,7 @@ object ShardRegion {
 /**
  * INTERNAL API
  *
- * This actor creates children shard actors on demand that is is told to be responsible for.
+ * This actor creates children shard actors on demand that it is told to be responsible for.
  * The shard actors in turn create entity actors on demand.
  * It delegates messages targeted to other shards to the responsible
  * `ShardRegion` actor on other nodes.

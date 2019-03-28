@@ -43,13 +43,10 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
           case InternalProtocol.RecoveryPermitGranted =>
             becomeReplaying(receivedPoisonPill)
 
-          case _ if receivedPoisonPill =>
-            Behaviors.unhandled
-
           case other =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
-                setup.log.debug("Discarding message [{}], because actor is to be stopped", other)
+                setup.log.debug("Discarding message [{}], because actor is to be stopped.", other)
               Behaviors.unhandled
             } else {
               stashInternal(other)

@@ -56,12 +56,17 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           case JournalResponse(r)          => onJournalResponse(r)
           case RecoveryTickEvent(snapshot) => onRecoveryTick(snapshot)
           case cmd: IncomingCommand[C] =>
-            if (receivedPoisonPill) Behaviors.unhandled
-            else onCommand(cmd)
+            if (receivedPoisonPill) {
+              if (setup.settings.logOnStashing)
+                setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+              Behaviors.unhandled
+            } else
+              onCommand(cmd)
           case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
         }
         .receiveSignal(returnPermitOnStop.orElse {
-          case (_, PoisonPill) => stay(receivedPoisonPill = true)
+          case (_, PoisonPill) =>
+            stay(receivedPoisonPill = true)
         })
     }
     stay(receivedPoisonPillInPreviousPhase)
@@ -76,7 +81,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
-    setup.log.error(cause, "Persistence failure when replaying snapshot")
+    setup.log.error(cause, s"Persistence failure when replaying snapshot. ${cause.getMessage}")
     Behaviors.stopped
   }
 

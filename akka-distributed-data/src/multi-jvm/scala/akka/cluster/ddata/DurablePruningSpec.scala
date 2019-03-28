@@ -181,6 +181,12 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
           values should ===(Set(10))
         }
 
+        // all must at least have seen it as joining
+        awaitAssert({
+          cluster3.state.members.size should ===(4)
+          cluster3.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
+        }, 10.seconds)
+
         // after merging with others
         replicator3 ! Get(KeyA, ReadAll(remainingOrDefault))
         val counter5 = expectMsgType[GetSuccess[GCounter]].dataValue

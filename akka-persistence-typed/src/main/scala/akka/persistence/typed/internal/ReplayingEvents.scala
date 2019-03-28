@@ -123,7 +123,8 @@ private[akka] final class ReplayingEvents[C, E, S](
   private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
-      if (setup.settings.logOnStashing) setup.log.debug("Discarding message [{}], because actor is to be stopped", cmd)
+      if (setup.settings.logOnStashing)
+        setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
@@ -138,7 +139,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         this
       } else {
         val msg =
-          s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
+          s"Replay timed out, didn't get event within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
         onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
       }
     } else {
@@ -175,9 +176,10 @@ private[akka] final class ReplayingEvents[C, E, S](
     val msg = event match {
       case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
-        s"PersistenceId [${setup.persistenceId.id}]"
+        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
       case None =>
-        s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId [${setup.persistenceId.id}]"
+        s"Exception during recovery. Last known sequence number [$sequenceNr]. " +
+        s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
     }
 
     throw new JournalFailureException(msg, cause)
