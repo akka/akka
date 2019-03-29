@@ -11,7 +11,7 @@ import akka.util.PrettyDuration._
 import scala.concurrent.duration.FiniteDuration
 
 @ApiMayChange
-class LeaseUsageSettings private[akka](val leaseImplementation: String, val leaseRetryInterval: FiniteDuration) {
+class LeaseUsageSettings private[akka] (val leaseImplementation: String, val leaseRetryInterval: FiniteDuration) {
   def getLeaseRetryInterval(): java.time.Duration = leaseRetryInterval.asJava
 
   override def toString = s"LeaseUsageSettings($leaseImplementation, ${leaseRetryInterval.pretty})"
