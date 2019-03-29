@@ -30,6 +30,7 @@ import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.coordination.lease.LeaseUsageSettings
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
@@ -56,7 +57,7 @@ object ClusterSingletonManagerSettings {
     val lease = config.getString("use-lease") match {
       case s if s.isEmpty ⇒ None
       case leaseConfigPath =>
-        Some(new ClusterLeaseSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
+        Some(new LeaseUsageSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
     }
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
@@ -113,7 +114,7 @@ final class ClusterSingletonManagerSettings(
     val role: Option[String],
     val removalMargin: FiniteDuration,
     val handOverRetryInterval: FiniteDuration,
-    val leaseSettings: Option[ClusterLeaseSettings])
+    val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for akka 2.5.21
@@ -137,7 +138,7 @@ final class ClusterSingletonManagerSettings(
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
 
-  def withLeaseSettings(leaseSettings: ClusterLeaseSettings): ClusterSingletonManagerSettings =
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterSingletonManagerSettings =
     copy(leaseSettings = Some(leaseSettings))
 
   private def copy(
@@ -145,7 +146,7 @@ final class ClusterSingletonManagerSettings(
       role: Option[String] = role,
       removalMargin: FiniteDuration = removalMargin,
       handOverRetryInterval: FiniteDuration = handOverRetryInterval,
-      leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterSingletonManagerSettings =
+      leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterSingletonManagerSettings =
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
 
