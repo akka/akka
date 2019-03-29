@@ -340,8 +340,7 @@ class TimeoutsSpec extends StreamSpec {
 
     implicit val materializer = ActorMaterializer(
       ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
-        StreamSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutTerminationMode.cancel, 100.millis)))
+        StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 100.millis)))
 
     "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
       val upstream = TestPublisher.probe()
