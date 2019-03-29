@@ -1457,8 +1457,8 @@ trait LoggingAdapter {
    * there are more than four arguments.
    */
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a.toIndexedSeq)
+    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
     case x                                                       => format(t, x)
   }
 
@@ -1890,8 +1890,8 @@ class MarkerLoggingAdapter(
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a: _*)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]): _*)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a.toIndexedSeq)
+    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
     case x                                                       => format(t, x)
   }
 }

@@ -82,9 +82,9 @@ private[akka] final case class TailChoppingRoutees(
       if (idx < size) {
         shuffled(idx) match {
           case ActorRefRoutee(ref) =>
-            promise.tryCompleteWith(ref.ask(message))
+            promise.completeWith(ref.ask(message))
           case ActorSelectionRoutee(sel) =>
-            promise.tryCompleteWith(sel.ask(message))
+            promise.completeWith(sel.ask(message))
           case _ =>
         }
       }

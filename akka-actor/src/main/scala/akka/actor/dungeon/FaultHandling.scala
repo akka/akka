@@ -6,12 +6,13 @@ package akka.actor.dungeon
 
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
-import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.actor.{Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef}
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
+
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._

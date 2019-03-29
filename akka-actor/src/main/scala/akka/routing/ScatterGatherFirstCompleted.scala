@@ -54,9 +54,9 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
       val promise = Promise[Any]()
       routees.foreach {
         case ActorRefRoutee(ref) =>
-          promise.tryCompleteWith(ref.ask(message))
+          promise.completeWith(ref.ask(message))
         case ActorSelectionRoutee(sel) =>
-          promise.tryCompleteWith(sel.ask(message))
+          promise.completeWith(sel.ask(message))
         case _ =>
       }
 

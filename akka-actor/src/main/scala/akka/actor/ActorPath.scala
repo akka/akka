@@ -3,11 +3,13 @@
  */
 
 package akka.actor
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{switch, tailrec}
 import scala.collection.immutable
 import akka.japi.Util.immutableSeq
 import java.net.MalformedURLException
-import java.lang.{ StringBuilder => JStringBuilder }
+import java.lang.{StringBuilder => JStringBuilder}
+
+import com.github.ghik.silencer.silent
 
 /**
  * Java API
@@ -149,6 +151,7 @@ object ActorPath {
  * references are compared the unique id of the actor is not taken into account
  * when comparing actor paths.
  */
+@silent
 @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 
@@ -274,13 +277,13 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override def elements: immutable.Iterable[String] = ActorPath.emptyActorPath
 
-  override val toString: String = address + name
+  override val toString: String = address.toString + name
 
   override val toSerializationFormat: String = toString
 
   override def toStringWithAddress(addr: Address): String =
-    if (address.host.isDefined) address + name
-    else addr + name
+    if (address.host.isDefined) address.toString + name
+    else addr.toString + name
 
   override def toSerializationFormatWithAddress(addr: Address): String = toStringWithAddress(addr)
 

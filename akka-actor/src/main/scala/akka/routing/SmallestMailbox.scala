@@ -31,6 +31,7 @@ object SmallestMailboxRoutingLogic {
  *     since their mailbox size is unknown</li>
  * </ul>
  */
+@silent
 @SerialVersionUID(1L)
 class SmallestMailboxRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
@@ -178,6 +179,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
  *   supervision, death watch and router management messages
  */
+@silent
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
     val nrOfInstances: Int,
