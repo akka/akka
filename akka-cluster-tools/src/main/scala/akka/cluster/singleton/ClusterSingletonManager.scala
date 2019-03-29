@@ -599,7 +599,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       oldestChangedReceived = true
       if (oldestOption == selfUniqueAddressOption && safeToBeOldest)
         // oldest immediately
-        tryGoToOldest()
+        tryGotoOldest()
       else if (oldestOption == selfUniqueAddressOption)
         goto(BecomingOldest).using(BecomingOldestData(None))
       else
@@ -612,8 +612,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       if (oldestOption == selfUniqueAddressOption) {
         logInfo("Younger observed OldestChanged: [{} -> myself]", previousOldestOption.map(_.address))
         previousOldestOption match {
-          case None                                 => tryGoToOldest()
-          case Some(prev) if removed.contains(prev) => tryGoToOldest()
+          case None                                 => tryGotoOldest()
+          case Some(prev) if removed.contains(prev) => tryGotoOldest()
           case Some(prev) =>
             peer(prev.address) ! HandOverToMe
             goto(BecomingOldest).using(BecomingOldestData(previousOldestOption))
@@ -662,7 +662,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
     case Event(HandOverDone, BecomingOldestData(Some(previousOldest))) =>
       if (sender().path.address == previousOldest.address)
-        tryGoToOldest()
+        tryGotoOldest()
       else {
         logInfo(
           "Ignoring HandOverDone in BecomingOldest from [{}]. Expected previous oldest [{}]",
@@ -687,7 +687,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         if m.uniqueAddress == previousOldest =>
       logInfo("Previous oldest [{}] removed", previousOldest.address)
       addRemoved(m.uniqueAddress)
-      tryGoToOldest()
+      tryGotoOldest()
 
     case Event(TakeOverFromMe, BecomingOldestData(previousOldestOption)) =>
       val senderAddress = sender().path.address
@@ -724,7 +724,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         // can't send HandOverToMe, previousOldest unknown for new node (or restart)
         // previous oldest might be down or removed, so no TakeOverFromMe message is received
         logInfo("Timeout in BecomingOldest. Previous oldest unknown, removed and no TakeOver request.")
-        tryGoToOldest()
+        tryGotoOldest()
       } else if (cluster.isTerminated)
         stop()
       else
@@ -749,11 +749,11 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   }
 
   // Try and go to oldest, taking the lease if needed
-  def tryGoToOldest(): State = {
+  def tryGotoOldest(): State = {
     // check if lease
     lease match {
       case None =>
-        goToOldest()
+        gotoOldest()
       case Some(_) =>
         logInfo("Trying to acquire lease before starting singleton")
         tryAcquireLease()
@@ -764,7 +764,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     case Event(AcquireLeaseResult(result), _) =>
       logInfo("Acquire lease result {}", result)
       if (result) {
-        goToOldest()
+        gotoOldest()
       } else {
         setTimer(LeaseRetryTimer, LeaseRetry, leaseRetryInterval)
         stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
@@ -800,7 +800,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stop()
   }
 
-  def goToOldest(): State = {
+  def gotoOldest(): State = {
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
     logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
     goto(Oldest).using(OldestData(Some(singleton)))
