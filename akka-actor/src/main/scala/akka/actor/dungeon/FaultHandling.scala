@@ -6,7 +6,7 @@ package akka.actor.dungeon
 
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
-import akka.actor.{Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef}
+import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging

@@ -6,12 +6,12 @@ package akka.io.dns.internal
 
 import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
-import akka.util.{ByteString, ByteStringBuilder}
+import akka.util.{ ByteString, ByteStringBuilder }
 import com.github.ghik.silencer.silent
 
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable.Seq
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API

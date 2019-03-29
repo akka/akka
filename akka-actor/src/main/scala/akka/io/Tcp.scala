@@ -13,12 +13,12 @@ import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import akka.util.{ByteString, Helpers}
+import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 import akka.actor._
-import java.lang.{Iterable => JIterable}
-import java.nio.file.{Path, Paths}
+import java.lang.{ Iterable => JIterable }
+import java.nio.file.{ Path, Paths }
 
 import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent

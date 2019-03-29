@@ -10,7 +10,7 @@ import java.net.InetSocketAddress
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import akka.io.Inet.{SoJavaFactories, SocketOption}
+import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._

@@ -4,7 +4,7 @@
 
 package akka.io
 
-import java.lang.{Iterable => JIterable}
+import java.lang.{ Iterable => JIterable }
 import java.net.InetSocketAddress
 
 import scala.collection.immutable
