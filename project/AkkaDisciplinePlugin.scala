@@ -89,7 +89,14 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
           Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
         case _             =>
           Nil
-      }))
+      }),
+      Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 11)) =>
+          Seq("-no-link-warnings")
+        case _ =>
+          Seq.empty
+      }),
+  )
 
   /**
     * Remain visibly filtered for future code quality work and removing.
