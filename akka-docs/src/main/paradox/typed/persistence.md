@@ -204,7 +204,7 @@ Java
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
-Delegating to methods is a good practise because the one-line cases give a nice overview of the message dispatch.
+Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
 
 Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
