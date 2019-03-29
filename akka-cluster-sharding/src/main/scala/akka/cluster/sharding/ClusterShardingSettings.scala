@@ -10,8 +10,9 @@ import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
 import com.typesafe.config.Config
-import akka.cluster.{ Cluster, ClusterLeaseSettings }
+import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -61,7 +62,7 @@ object ClusterShardingSettings {
 
     val lease = config.getString("use-lease") match {
       case s if s.isEmpty ⇒ None
-      case other ⇒ Some(new ClusterLeaseSettings(other, config.getDuration("lease-retry-interval").asScala))
+      case other ⇒ Some(new LeaseUsageSettings(other, config.getDuration("lease-retry-interval").asScala))
     }
 
     new ClusterShardingSettings(
@@ -220,7 +221,7 @@ final class ClusterShardingSettings(
     val passivateIdleEntityAfter: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-    val leaseSettings: Option[ClusterLeaseSettings])
+    val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
 
   // bin compat for 2.5.21
@@ -302,7 +303,7 @@ final class ClusterShardingSettings(
     copy(passivateIdleAfter = duration.asScala)
 
   @ApiMayChange
-  def withLeaseSettings(leaseSettings: ClusterLeaseSettings): ClusterShardingSettings =
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 
   /**
@@ -322,7 +323,7 @@ final class ClusterShardingSettings(
       passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
-      leaseSettings: Option[ClusterLeaseSettings] = leaseSettings): ClusterShardingSettings =
+      leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
       role,
       rememberEntities,
