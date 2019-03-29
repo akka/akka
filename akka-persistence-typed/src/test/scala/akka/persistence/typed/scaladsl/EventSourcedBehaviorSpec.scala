@@ -50,6 +50,7 @@ import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionC
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.testkit.EventFilter
+import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -342,6 +343,9 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+
+  actorSystem.eventStream.publish(Mute(EventFilter.info(pattern = ".*was not delivered.*", occurrences = 100)))
+  actorSystem.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 100)))
 
   "A typed persistent actor" must {
 
