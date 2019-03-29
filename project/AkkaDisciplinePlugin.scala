@@ -87,7 +87,11 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         case Some((2, 12)) =>
           Nil
         case Some((2, 11)) =>
-          Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
+          Seq(
+            "-Ywarn-extra-implicit",
+            "-Ywarn-unused:_",
+            "-Ypartial-unification",
+          )
         case _             =>
           Nil
       }),
