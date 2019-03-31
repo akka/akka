@@ -94,7 +94,7 @@ object PersistentActorCompileOnlyTest {
                 case SideEffectAcknowledged(correlationId) =>
                   state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
               }).receiveSignal {
-            case RecoveryCompleted(state: EventsInFlight) =>
+            case (state, RecoveryCompleted) =>
               state.dataByCorrelationId.foreach {
                 case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
               }
@@ -288,7 +288,7 @@ object PersistentActorCompileOnlyTest {
             case ItemAdded(id)   => id +: state
             case ItemRemoved(id) => state.filter(_ != id)
           }).receiveSignal {
-        case RecoveryCompleted(state: List[Id]) =>
+        case (state, RecoveryCompleted) =>
           state.foreach(id => metadataRegistry ! GetMetaData(id, adapt))
       }
     }

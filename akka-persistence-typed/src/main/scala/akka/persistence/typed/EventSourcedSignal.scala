@@ -16,12 +16,9 @@ import akka.annotation.InternalApi
 @DoNotInherit
 sealed trait EventSourcedSignal extends Signal
 
-final case class RecoveryCompleted[State](state: State) extends EventSourcedSignal {
-
-  /**
-   * Java API
-   */
-  def getState(): State = state
+@DoNotInherit sealed abstract class RecoveryCompleted extends EventSourcedSignal
+case object RecoveryCompleted extends RecoveryCompleted {
+  def instance: RecoveryCompleted = this
 }
 
 final case class RecoveryFailed(failure: Throwable) extends EventSourcedSignal {

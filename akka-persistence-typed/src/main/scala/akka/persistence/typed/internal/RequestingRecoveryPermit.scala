@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  *
- * First (of four) behaviour of an PersistentBehaviour.
+ * First (of four) behavior of an PersistentBehaviour.
  *
  * Requests a permit to start replaying this actor; this is tone to avoid
  * hammering the journal with too many concurrently replaying actors.
@@ -55,7 +55,11 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
 
         }
         .receiveSignal {
-          case (_, PoisonPill) => stay(receivedPoisonPill = true)
+          case (_, PoisonPill) =>
+            stay(receivedPoisonPill = true)
+          case (_, signal) =>
+            setup.onSignal(setup.emptyState, signal)
+            Behaviors.same
         }
     }
     stay(receivedPoisonPill = false)

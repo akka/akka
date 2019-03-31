@@ -84,6 +84,9 @@ private[akka] final class ReplayingEvents[C, E, S](
     case PoisonPill =>
       state = state.copy(receivedPoisonPill = true)
       this
+    case signal =>
+      setup.onSignal(state.state, signal)
+      this
   }
 
   private def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
@@ -99,14 +102,16 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventSeenInInterval = true)
             this
           } catch {
-            case NonFatal(ex) => onRecoveryFailure(ex, repr.sequenceNr, Some(event))
+            case NonFatal(ex) =>
+              state = state.copy(repr.sequenceNr)
+              onRecoveryFailure(ex, Some(event))
           }
         case RecoverySuccess(highestSeqNr) =>
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
         case ReplayMessagesFailure(cause) =>
-          onRecoveryFailure(cause, state.seqNr, Some(response))
+          onRecoveryFailure(cause, Some(response))
 
         case _ =>
           Behaviors.unhandled
@@ -116,7 +121,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         // let supervisor handle it, don't treat it as recovery failure
         throw ex
       case NonFatal(cause) =>
-        onRecoveryFailure(cause, state.seqNr, None)
+        onRecoveryFailure(cause, None)
     }
   }
 
@@ -140,7 +145,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       } else {
         val msg =
           s"Replay timed out, didn't get event within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
-        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
+        onRecoveryFailure(new RecoveryTimedOut(msg), None)
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
@@ -161,18 +166,12 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown
    */
-  protected def onRecoveryFailure(
-      cause: Throwable,
-      sequenceNr: Long,
-      event: Option[Any]): Behavior[InternalProtocol] = {
-    try {
-      setup.onSignal(RecoveryFailed(cause))
-    } catch {
-      case NonFatal(t) => setup.log.error(t, "RecoveryFailed signal handler threw exception")
-    }
+  protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+    setup.onSignal(state.state, RecoveryFailed(cause))
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
+    val sequenceNr = state.seqNr
     val msg = event match {
       case Some(evt) =>
         s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
@@ -188,7 +187,7 @@ private[akka] final class ReplayingEvents[C, E, S](
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       tryReturnRecoveryPermit("replay completed successfully")
-      setup.onSignal(RecoveryCompleted(state.state))
+      setup.onSignal(state.state, RecoveryCompleted)
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped

@@ -417,12 +417,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             SnapshotCompleted.class,
-                            (completed) -> {
+                            (state, completed) -> {
                               snapshotProbe.ref().tell(Optional.empty());
                             })
                         .onSignal(
                             SnapshotFailed.class,
-                            (signal) -> {
+                            (state, signal) -> {
                               snapshotProbe.ref().tell(Optional.of(signal.getFailure()));
                             })
                         .build();
@@ -478,7 +478,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
                     return newSignalHandlerBuilder()
                         .onSignal(
                             PostStop.instance(),
-                            () -> {
+                            state -> {
                               probe.ref().tell("stopped");
                             })
                         .build();
@@ -639,7 +639,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
-              (completed) -> {
+              (state, completed) -> {
                 startedProbe.tell("started!");
               })
           .build();
@@ -720,7 +720,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.class,
-              (completed) -> {
+              (state, completed) -> {
                 probe.tell(lastSequenceNumber(context) + " onRecoveryCompleted");
               })
           .build();

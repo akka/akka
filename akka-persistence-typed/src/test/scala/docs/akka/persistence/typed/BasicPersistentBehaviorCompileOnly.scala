@@ -84,7 +84,7 @@ object BasicPersistentBehaviorCompileOnly {
       commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
       .receiveSignal {
-        case RecoveryCompleted(state) ⇒
+        case (state, RecoveryCompleted) ⇒
           throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -106,7 +106,7 @@ object BasicPersistentBehaviorCompileOnly {
     commandHandler = (state, cmd) => throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new RuntimeException("TODO: process the event return the next state"))
     .receiveSignal {
-      case RecoveryCompleted(state) ⇒
+      case (state, RecoveryCompleted) ⇒
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 
@@ -221,9 +221,9 @@ object BasicPersistentBehaviorCompileOnly {
     }
     .withRetention(RetentionCriteria(snapshotEveryNEvents = 1000, keepNSnapshots = 5, deleteEventsOnSnapshot = true))
     .receiveSignal { // optionally respond to signals
-      case _: SnapshotFailed        => // react to failure
-      case _: DeleteSnapshotsFailed => // react to failure
-      case _: DeleteEventsFailed    => // react to failure
+      case (state, _: SnapshotFailed)        => // react to failure
+      case (state, _: DeleteSnapshotsFailed) => // react to failure
+      case (state, _: DeleteEventsFailed)    => // react to failure
     }
   //#fullDeletesSampleWithSignals
 

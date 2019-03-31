@@ -45,7 +45,7 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
         emptyState = "",
         commandHandler = (_, command) => Effect.persist(command).thenRun(_ => probe ! command),
         eventHandler = (state, evt) => state + evt).receiveSignal {
-        case RecoveryFailed(cause) =>
+        case (_, RecoveryFailed(cause)) =>
           probe ! cause
       }
     }

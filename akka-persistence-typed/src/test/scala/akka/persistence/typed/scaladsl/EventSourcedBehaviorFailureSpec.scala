@@ -96,7 +96,7 @@ class EventSourcedBehaviorFailureSpec
   def failingPersistentActor(
       pid: PersistenceId,
       probe: ActorRef[String],
-      additionalSignalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
+      additionalSignalHandler: PartialFunction[(String, Signal), Unit] = PartialFunction.empty)
       : EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior[String, String, String](
       pid,
@@ -113,11 +113,11 @@ class EventSourcedBehaviorFailureSpec
         probe.tell(event)
         state + event
       }).receiveSignal(additionalSignalHandler.orElse {
-      case RecoveryCompleted(_) ⇒
+      case (_, RecoveryCompleted) ⇒
         probe.tell("starting")
-      case PostStop ⇒
+      case (_, PostStop) ⇒
         probe.tell("stopped")
-      case PreRestart ⇒
+      case (_, PreRestart) ⇒
         probe.tell("restarting")
     })
 
@@ -128,7 +128,7 @@ class EventSourcedBehaviorFailureSpec
         val probe = TestProbe[String]()
         val excProbe = TestProbe[Throwable]()
         spawn(failingPersistentActor(PersistenceId("fail-recovery"), probe.ref, {
-          case RecoveryFailed(t) ⇒
+          case (_, RecoveryFailed(t)) ⇒
             excProbe.ref ! t
         }))
 
@@ -140,7 +140,7 @@ class EventSourcedBehaviorFailureSpec
     "handle exceptions in onRecoveryFailure" in {
       val probe = TestProbe[String]()
       val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref, {
-        case RecoveryFailed(_) ⇒
+        case (_, RecoveryFailed(_)) ⇒
           throw TestException("recovery call back failure")
       }))
       pa ! "one"
@@ -165,7 +165,7 @@ class EventSourcedBehaviorFailureSpec
       EventFilter[JournalFailureException](occurrences = 1).intercept {
         // start again and then the event handler will throw
         spawn(failingPersistentActor(pid, probe.ref, {
-          case RecoveryFailed(t) ⇒
+          case (_, RecoveryFailed(t)) ⇒
             excProbe.ref ! t
         }))
 
