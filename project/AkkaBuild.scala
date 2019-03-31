@@ -19,6 +19,8 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
+  val jdkVersion = sys.props("java.specification.version")
+
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
     // use the same value as in the build scope, so it can be overriden by stampVersion
@@ -231,7 +233,11 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
+    javacOptions in doc ++= {
+      if (jdkVersion == "1.8") Seq("-Xdoclint:none")
+      else Seq("-Xdoclint:none", "--ignore-source-errors")
+    }
+  )
 
 
   lazy val noScala211 = Seq(
