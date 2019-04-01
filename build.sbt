@@ -22,7 +22,8 @@ initialize := {
   initialize.value
 }
 
-// akka.AkkaBuild.buildSettings
+scalaVersion := Dependencies.scala212
+
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
