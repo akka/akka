@@ -11,7 +11,7 @@ import akka.actor.typed.EmptyProps
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.internal.adapter.ActorContextAdapter
+import akka.actor.typed.internal.adapter.ActorRefFactoryAdapter
 import akka.japi.Creator
 
 /**
@@ -97,7 +97,7 @@ object Adapter {
     sys.toUntyped
 
   def toUntyped(ctx: ActorContext[_]): actor.ActorContext =
-    ActorContextAdapter.toUntyped(ctx)
+    ActorRefFactoryAdapter.toUntyped(ctx)
 
   def watch[U](ctx: akka.actor.ActorContext, other: ActorRef[U]): Unit =
     ctx.watch(other)
@@ -118,10 +118,10 @@ object Adapter {
     ctx.stop(child)
 
   def actorOf(ctx: ActorContext[_], props: akka.actor.Props): akka.actor.ActorRef =
-    ActorContextAdapter.toUntyped(ctx).actorOf(props)
+    ActorRefFactoryAdapter.toUntyped(ctx).actorOf(props)
 
   def actorOf(ctx: ActorContext[_], props: akka.actor.Props, name: String): akka.actor.ActorRef =
-    ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
+    ActorRefFactoryAdapter.toUntyped(ctx).actorOf(props, name)
 
   def toUntyped(ref: ActorRef[_]): akka.actor.ActorRef =
     ref.toUntyped

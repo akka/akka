@@ -10,8 +10,8 @@ import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.LoggingFilterWithMarker
 import akka.util.OptionVal
-import akka.{ ConfigurationException, actor => untyped }
 
+import akka.{ actor => untyped }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
@@ -35,9 +35,9 @@ import scala.concurrent.duration._
   override def children: Iterable[ActorRef[Nothing]] = untypedContext.children.map(ActorRefAdapter(_))
   override def child(name: String): Option[ActorRef[Nothing]] = untypedContext.child(name).map(ActorRefAdapter(_))
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] =
-    ActorContextAdapter.spawnAnonymous(untypedContext, behavior, props)
+    ActorRefFactoryAdapter.spawnAnonymous(untypedContext, behavior, props)
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
-    ActorContextAdapter.spawn(untypedContext, behavior, name, props)
+    ActorRefFactoryAdapter.spawn(untypedContext, behavior, name, props)
   override def stop[U](child: ActorRef[U]): Unit =
     if (child.path.parent == self.path) { // only if a direct child
       toUntyped(child) match {
@@ -118,58 +118,4 @@ import scala.concurrent.duration._
   private[akka] override def onUnhandled(msg: T): Unit = adapter.unhandled(msg)
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi private[typed] object ActorContextAdapter {
 
-  private def toUntypedImp[U](context: TypedActorContext[_]): untyped.ActorContext =
-    context match {
-      case adapter: ActorContextAdapter[_] => adapter.untypedContext
-      case _ =>
-        throw new UnsupportedOperationException(
-          "only adapted untyped ActorContext permissible " +
-          s"($context of class ${context.getClass.getName})")
-    }
-
-  def toUntyped2[U](context: TypedActorContext[_]): untyped.ActorContext = toUntypedImp(context)
-
-  def toUntyped[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
-    context match {
-      case c: TypedActorContext[_] => toUntypedImp(c)
-      case _ =>
-        throw new UnsupportedOperationException(
-          "unknown ActorContext type " +
-          s"($context of class ${context.getClass.getName})")
-    }
-
-  def toUntyped[U](context: javadsl.ActorContext[_]): untyped.ActorContext =
-    context match {
-      case c: TypedActorContext[_] => toUntypedImp(c)
-      case _ =>
-        throw new UnsupportedOperationException(
-          "unknown ActorContext type " +
-          s"($context of class ${context.getClass.getName})")
-    }
-
-  def spawnAnonymous[T](context: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
-    try {
-      Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props)))
-    } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
-        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
-    }
-  }
-
-  def spawn[T](context: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
-    try {
-      Behavior.validateAsInitial(behavior)
-      ActorRefAdapter(context.actorOf(PropsAdapter(() => behavior, props), name))
-    } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
-        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
-    }
-  }
-
-}

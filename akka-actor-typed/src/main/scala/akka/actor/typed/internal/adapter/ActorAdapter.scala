@@ -33,6 +33,8 @@ import scala.annotation.switch
    * the cause and can fill in the cause in the `ChildFailed` signal
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
+   *
+   * Should only be thrown if the parent is known to be an ActorAdapter.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
@@ -45,7 +47,7 @@ import scala.annotation.switch
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T])
+@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends untyped.Actor
     with untyped.ActorLogging {
   import Behavior._
@@ -131,7 +133,8 @@ import scala.annotation.switch
       case BehaviorTags.FailedBehavior =>
         val f = b.asInstanceOf[FailedBehavior]
         // For the parent untyped supervisor to pick up the exception
-        throw TypedActorFailedException(f.cause)
+        if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
+        else context.stop(self)
       case BehaviorTags.StoppedBehavior =>
         val stopped = b.asInstanceOf[StoppedBehavior[T]]
         behavior = new ComposedStoppingBehavior[T](behavior, stopped)
@@ -182,9 +185,12 @@ import scala.annotation.switch
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
     case TypedActorFailedException(cause) =>
       // These have already been optionally logged by typed supervision
+      println(s"Typed actor failed: $cause")
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
     case ex =>
+      println(s"ActorAdapter supervision $ex")
+      println(s"sender().getClass")
       recordChildFailure(ex)
       val logMessage = ex match {
         case e: ActorInitializationException if e.getCause ne null =>
@@ -215,6 +221,7 @@ import scala.annotation.switch
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    println(s"preRestart $reason $message")
     Behavior.interpretSignal(behavior, ctx, PreRestart)
     behavior = Behavior.stopped
   }

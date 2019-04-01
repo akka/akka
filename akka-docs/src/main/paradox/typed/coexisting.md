@@ -121,20 +121,10 @@ The default supervision for untyped is to restart, this changed to stop for Akka
 
 ### Untyped supervising Typed 
 
-When adapting an untyped `ActorContext` or `ActorSystem` to `spawn` a typed actor the parent of the new actor will an untyped actor. This means that
-the typed actor will have a default supervision policy to restart rather than stop. For example the following actor will restart if it fails:
-
-Scala
-:  @@snip [DefaultUntypedSupervisingTyped.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/DefaultUntypedSupervisingTypedSpec.scala) { #spawn-untyped }
-
-Java
-:  @@snip [DefaultUntypedSupervisingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/DefaultUntypedSupervisingTypedTest.java) { #spawn-untyped }
+When adapting an untyped `ActorContext` or `ActorSystem` to `spawn` a typed actor the parent of the new actor will an untyped actor. The typed actor's
+default supervision strategy will be to `stop`. To override use a @ref[typed supervisor](fault-tolerance.md)
 
 ### Typed supervising untyped
 
-The opposite is true for typed supervising untyped. If the child throws an exception we would expect it to be restarted, 
-but supervision in typed defaults to stopping the child in case it fails. 
-The restarting facilities in Akka Typed do not work with untyped children. 
-However, the workaround is to add another untyped actor that takes care of the supervision, i.e. restarts in case of failure if that is the desired behavior.
 
 

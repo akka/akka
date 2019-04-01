@@ -315,6 +315,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
+        probe.expectNoMessage()
       }
     }
 

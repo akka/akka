@@ -44,7 +44,7 @@ package object adapter {
      *  to restarting the actor on failure rather than stopping it.
      */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
+      ActorRefFactoryAdapter.spawnAnonymous(sys, behavior, props)
     }
 
     /**
@@ -53,8 +53,7 @@ package object adapter {
      *  to restarting the actor on failure rather than stopping it.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
-      SupervisorStrategy.stop
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
+      ActorRefFactoryAdapter.spawn(sys, behavior, name, props)
     }
 
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
@@ -87,7 +86,7 @@ package object adapter {
      *  to restarting the actor on failure rather than stopping it.
      */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
-      ActorContextAdapter.spawnAnonymous(ctx, behavior, props)
+      ActorRefFactoryAdapter.spawnAnonymous(ctx, behavior, props)
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
@@ -95,7 +94,7 @@ package object adapter {
      *  to restarting the actor on failure rather than stopping it.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
-      ActorContextAdapter.spawn(ctx, behavior, name, props)
+      ActorRefFactoryAdapter.spawn(ctx, behavior, name, props)
 
     def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toUntyped(other))
     def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toUntyped(other))
@@ -109,11 +108,12 @@ package object adapter {
    */
   implicit class TypedActorContextOps(val ctx: scaladsl.ActorContext[_]) extends AnyVal {
     def actorOf(props: akka.actor.Props): akka.actor.ActorRef =
-      ActorContextAdapter.toUntyped(ctx).actorOf(props)
-    def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
-      ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
+      ActorRefFactoryAdapter.toUntyped(ctx).actorOf(props)
 
-    def toUntyped: akka.actor.ActorContext = ActorContextAdapter.toUntyped(ctx)
+    def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
+      ActorRefFactoryAdapter.toUntyped(ctx).actorOf(props, name)
+
+    def toUntyped: akka.actor.ActorContext = ActorRefFactoryAdapter.toUntyped(ctx)
 
     // watch, unwatch and stop not needed here because of the implicit ActorRef conversion
   }
