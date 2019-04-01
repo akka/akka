@@ -150,11 +150,11 @@ object IntroSpec {
         screenName: String,
         client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
       Behaviors.receiveMessage {
-    case PostMessage(message) ⇒
+    case PostMessage(message)=>
       // from client, publish to others via the room
       room ! PublishSessionMessage(screenName, message)
       Behaviors.same
-    case NotifyClient(message) ⇒
+    case NotifyClient(message) =>
       // published from the room
       client ! message
       Behaviors.same
