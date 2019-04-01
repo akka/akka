@@ -43,9 +43,9 @@ public class NullEmptyStateTest extends JUnitSuite {
     public SignalHandler signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
-              RecoveryCompleted.class,
-              (completed) -> {
-                probe.tell("onRecoveryCompleted:" + completed.getState());
+              RecoveryCompleted.instance(),
+              state -> {
+                probe.tell("onRecoveryCompleted:" + state);
               })
           .build();
     }

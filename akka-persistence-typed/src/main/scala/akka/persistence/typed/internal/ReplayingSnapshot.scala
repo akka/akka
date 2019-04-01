@@ -67,6 +67,9 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         .receiveSignal(returnPermitOnStop.orElse {
           case (_, PoisonPill) =>
             stay(receivedPoisonPill = true)
+          case (_, signal) =>
+            setup.onSignal(setup.emptyState, signal, catchAndLog = true)
+            Behaviors.same
         })
     }
     stay(receivedPoisonPillInPreviousPhase)

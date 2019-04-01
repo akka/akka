@@ -206,8 +206,8 @@ public class BasicPersistentBehaviorTest {
       public SignalHandler signalHandler() {
         return newSignalHandlerBuilder()
             .onSignal(
-                RecoveryCompleted.class,
-                (completed) -> {
+                RecoveryCompleted.instance(),
+                state -> {
                   throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
                 })
             .build();
@@ -296,18 +296,18 @@ public class BasicPersistentBehaviorTest {
         return newSignalHandlerBuilder()
             .onSignal(
                 SnapshotFailed.class,
-                (completed) -> {
+                (state, completed) -> {
                   throw new RuntimeException("TODO: add some on-snapshot-failed side-effect here");
                 })
             .onSignal(
                 DeleteSnapshotsFailed.class,
-                (completed) -> {
+                (state, completed) -> {
                   throw new RuntimeException(
                       "TODO: add some on-delete-snapshot-failed side-effect here");
                 })
             .onSignal(
                 DeleteEventsFailed.class,
-                (completed) -> {
+                (state, completed) -> {
                   throw new RuntimeException(
                       "TODO: add some on-delete-snapshot-failed side-effect here");
                 })

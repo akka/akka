@@ -41,7 +41,7 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
         probe.tell("eventHandler:" + state + ":" + event)
         state + event
       }).receiveSignal {
-      case RecoveryCompleted(n) =>
+      case (n, RecoveryCompleted) =>
         probe.tell("onRecoveryCompleted:" + n)
     }
 

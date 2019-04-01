@@ -79,12 +79,13 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    *
    * Use [[EventSourcedBehavior#newSignalHandlerBuilder]] to define the signal handler.
    */
-  protected def signalHandler(): SignalHandler = SignalHandler.Empty
+  protected def signalHandler(): SignalHandler[State] = SignalHandler.empty[State]
 
   /**
    * @return A new, mutable signal handler builder
    */
-  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder = new SignalHandlerBuilder
+  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
+    SignalHandlerBuilder.builder[State]
 
   /**
    * @return A new, mutable, command handler builder

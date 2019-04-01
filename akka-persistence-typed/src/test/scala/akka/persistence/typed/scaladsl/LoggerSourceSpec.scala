@@ -41,9 +41,9 @@ class LoggerSourceSpec
       ctx.log.info("event-received")
       state
     }).receiveSignal {
-      case RecoveryCompleted(_) ⇒ ctx.log.info("recovery-completed")
-      case SnapshotCompleted(_) ⇒
-      case SnapshotFailed(_, _) ⇒
+      case (_, RecoveryCompleted) ⇒ ctx.log.info("recovery-completed")
+      case (_, SnapshotCompleted(_)) ⇒
+      case (_, SnapshotFailed(_, _)) ⇒
     }
   }
 

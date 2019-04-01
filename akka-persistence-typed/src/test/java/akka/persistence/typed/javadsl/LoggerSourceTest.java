@@ -78,7 +78,7 @@ public class LoggerSourceTest extends JUnitSuite {
     public SignalHandler signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
-              RecoveryCompleted.class,
+              RecoveryCompleted.instance(),
               (signal) -> {
                 ctx.getLog().info("recovery-completed");
               })
