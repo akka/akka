@@ -40,7 +40,7 @@ object Release extends ParadoxKeys {
     val extracted = Project.extract(state)
     // we want to build the api-docs and docs with the current "default" version of scala
     val scalaV = extracted.get(scalaVersion)
-    val expectedScalaV = extracted.get(crossScalaVersions).head
+    val expectedScalaV = Dependencies.scala212
     if (scalaV != expectedScalaV)
       throw new RuntimeException(s"The docs should be built with Scala $expectedScalaV (was $scalaV)")
     val release = extracted.get(releaseDirectory)
