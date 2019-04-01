@@ -347,7 +347,10 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
 
     try {
-      val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
+      val startedInitial = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
+      // when withTimers has been installed it must always be installed so TimerInterceptor
+      // can discard TimerMsg from old generation/instance
+      val newBehavior = if (hasTimers(ctx)) Behaviors.withTimers[T](_ => startedInitial) else startedInitial
       val nextBehavior = restartingInProgress match {
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
@@ -360,6 +363,12 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       case _                                 => ()
     })
   }
+
+  private def hasTimers(ctx: TypedActorContext[_]): Boolean =
+    ctx match {
+      case ctxImpl: ActorContextImpl[T] => ctxImpl.hasTimer
+      case _                            => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
+    }
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {
     children.foreach { child =>

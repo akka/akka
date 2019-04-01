@@ -42,6 +42,8 @@ import akka.util.JavaDurationConverters._
       timer
   }
 
+  def hasTimer: Boolean = _timer.isDefined
+
   override def asJava: javadsl.ActorContext[T] = this
 
   override def asScala: scaladsl.ActorContext[T] = this
