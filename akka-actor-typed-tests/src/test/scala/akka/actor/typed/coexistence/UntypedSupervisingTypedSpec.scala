@@ -51,10 +51,7 @@ object UntypedSupervisingTypedSpec {
   }
 }
 
-class UntypedSupervisingTypedSpec extends AkkaSpec("""
-     akka.loglevel = DEBUG
-
-  """.stripMargin) with ImplicitSender {
+class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
 
   implicit val typedActorSystem: ActorSystem[Nothing] = system.toTyped
   val smallDuration = 50.millis

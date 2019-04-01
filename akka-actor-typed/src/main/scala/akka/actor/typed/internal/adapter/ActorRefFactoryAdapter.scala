@@ -4,9 +4,8 @@
 
 package akka.actor.typed.internal.adapter
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.{ConfigurationException, actor => untyped}
+import akka.{ ConfigurationException, actor => untyped }
 
 /**
  * INTERNAL API
@@ -21,9 +20,6 @@ import akka.{ConfigurationException, actor => untyped}
           "only adapted untyped ActorContext permissible " +
           s"($context of class ${context.getClass.getName})")
     }
-
-  // TODO remove?
-  def toUntyped2[U](context: TypedActorContext[_]): untyped.ActorContext = toUntypedImp(context)
 
   def toUntyped[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
     context match {
@@ -45,18 +41,24 @@ import akka.{ConfigurationException, actor => untyped}
 
   def spawnAnonymous[T](context: akka.actor.ActorRefFactory, behavior: Behavior[T], props: Props): ActorRef[T] = {
     try {
-      ActorRefAdapter(context.actorOf(internal.adapter.PropsAdapter(() =>
-        behavior, props, rethrowTypedFailure = false)))
+      ActorRefAdapter(
+        context.actorOf(internal.adapter.PropsAdapter(() => behavior, props, rethrowTypedFailure = false)))
     } catch {
       case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }
 
-  def spawn[T](actorRefFactory: akka.actor.ActorRefFactory, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
+  def spawn[T](
+      actorRefFactory: akka.actor.ActorRefFactory,
+      behavior: Behavior[T],
+      name: String,
+      props: Props): ActorRef[T] = {
     try {
-      ActorRefAdapter(actorRefFactory.actorOf(internal.adapter.PropsAdapter(() =>
-        Behavior.validateAsInitial(behavior), props, rethrowTypedFailure = false), name))
+      ActorRefAdapter(
+        actorRefFactory.actorOf(
+          internal.adapter.PropsAdapter(() => Behavior.validateAsInitial(behavior), props, rethrowTypedFailure = false),
+          name))
     } catch {
       case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)

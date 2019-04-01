@@ -247,7 +247,6 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 class SupervisionSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     akka.log-dead-letters = off
-    akka.loglevel = INFO
     """) with WordSpecLike {
 
   import SupervisionSpec._

@@ -40,17 +40,22 @@ package object adapter {
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
-     *  As this actor's parent is an untyped actor the supervision strategy will default
-     *  to restarting the actor on failure rather than stopping it.
+      *
+      *  Typed actors default supervision strategy is to stop. Can be overridden with
+      *  Behaviors.supervise.
      */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
-      ActorRefFactoryAdapter.spawnAnonymous(sys, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), props)
+      ActorRefFactoryAdapter.spawnAnonymous(
+        sys,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        props)
     }
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
-     *  As this actor's parent is an untyped actor the supervision strategy will default
-     *  to restarting the actor on failure rather than stopping it.
+      *
+      *  Typed actors default supervision strategy is to stop. Can be overridden with
+      *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
       ActorRefFactoryAdapter.spawn(sys, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props)
@@ -80,18 +85,24 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorContext]].
    */
   implicit class UntypedActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
-    /**
-     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
-     *  As this actor's parent is an untyped actor the supervision strategy will default
-     *  to restarting the actor on failure rather than stopping it.
-     */
-    def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
-      ActorRefFactoryAdapter.spawnAnonymous(ctx, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), props)
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
-     *  As this actor's parent is an untyped actor the supervision strategy will default
-     *  to restarting the actor on failure rather than stopping it.
+      *
+      *  Typed actors default supervision strategy is to stop. Can be overridden with
+      *  Behaviors.supervise.
+     */
+    def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
+      ActorRefFactoryAdapter.spawnAnonymous(
+        ctx,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        props)
+
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+      *
+      *  Typed actors default supervision strategy is to stop. Can be overridden with
+      *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
       ActorRefFactoryAdapter.spawn(ctx, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props)

@@ -40,8 +40,7 @@ object TypedSupervisingUntypedSpec {
 
 }
 
-class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit(
-  """
+class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = INFO
   """.stripMargin) with WordSpecLike {
   import TypedSupervisingUntypedSpec._

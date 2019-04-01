@@ -117,5 +117,3 @@ import scala.concurrent.duration._
    */
   private[akka] override def onUnhandled(msg: T): Unit = adapter.unhandled(msg)
 }
-
-

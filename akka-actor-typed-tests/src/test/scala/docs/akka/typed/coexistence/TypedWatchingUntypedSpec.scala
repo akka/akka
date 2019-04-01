@@ -85,4 +85,3 @@ class TypedWatchingUntypedSpec extends WordSpec {
     }
   }
 }
-
