@@ -41,6 +41,7 @@ import akka.util.MessageBuffer
 import akka.util.ccompat._
 import scala.collection.immutable.{ HashMap, HashSet }
 
+@ccompatUsedUntil213
 object ClusterClientSettings {
 
   /**
