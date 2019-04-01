@@ -168,7 +168,7 @@ private[akka] class ReplayFilter(
     persistentActor.tell(ReplayMessagesFailure(cause), Actor.noSender)
     context.become {
       case _: ReplayedMessage => // discard
-      case msg @ (_: RecoverySuccess | _: ReplayMessagesFailure) =>
+      case _: RecoverySuccess | _: ReplayMessagesFailure =>
         context.stop(self)
     }
   }

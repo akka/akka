@@ -86,14 +86,6 @@ private[persistence] trait Eventsourced
   private val writerUuid = UUID.randomUUID.toString
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
-  // no longer used, but kept for binary compatibility
-  private val maxMessageBatchSize = {
-    val journalPluginConfig = this match {
-      case c: RuntimePluginConfig => c.journalPluginConfig
-      case _                      => ConfigFactory.empty
-    }
-    extension.journalConfigFor(journalPluginId, journalPluginConfig).getInt("max-message-batch-size")
-  }
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
@@ -249,8 +241,8 @@ private[persistence] trait Eventsourced
     require(persistenceId.trim.nonEmpty, s"persistenceId cannot be empty for PersistentActor [${self.path}]")
 
     // Fail fast on missing plugins.
-    val j = journal;
-    val s = snapshotStore
+    journal
+    snapshotStore
     requestRecoveryPermit()
     super.aroundPreStart()
   }

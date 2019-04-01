@@ -46,12 +46,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
    * message's payload to a matching `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case p: PersistentRepr              => persistentMessageBuilder(p).build().toByteArray
-    case a: AtomicWrite                 => atomicWriteBuilder(a).build().toByteArray
-    case a: AtLeastOnceDeliverySnapshot => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
-    case s: StateChangeEvent            => stateChangeBuilder(s).build.toByteArray
-    case p: PersistentFSMSnapshot[Any]  => persistentFSMSnapshotBuilder(p).build.toByteArray
-    case _                              => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case p: PersistentRepr                        => persistentMessageBuilder(p).build().toByteArray
+    case a: AtomicWrite                           => atomicWriteBuilder(a).build().toByteArray
+    case a: AtLeastOnceDeliverySnapshot           => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
+    case s: StateChangeEvent                      => stateChangeBuilder(s).build.toByteArray
+    case p: PersistentFSMSnapshot[Any @unchecked] => persistentFSMSnapshotBuilder(p).build.toByteArray
+    case _                                        => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**

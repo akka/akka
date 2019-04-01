@@ -179,8 +179,11 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     dir
   }
 
+  // system default encoding is a bad idea but kept for backwards compatibility
+  private val defaultSystemEncoding = System.getProperty("file.encoding")
+
   private final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
-    val encodedPersistenceId = URLEncoder.encode(persistenceId)
+    val encodedPersistenceId = URLEncoder.encode(persistenceId, defaultSystemEncoding)
 
     def accept(dir: File, name: String): Boolean = {
       val persistenceIdEndIdx = name.lastIndexOf('-', name.lastIndexOf('-') - 1)
@@ -191,7 +194,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
 
   private final class SnapshotSeqNrFilenameFilter(md: SnapshotMetadata) extends FilenameFilter {
     private final def matches(pid: String, snr: String, tms: String): Boolean = {
-      pid.equals(URLEncoder.encode(md.persistenceId)) &&
+      pid.equals(URLEncoder.encode(md.persistenceId, defaultSystemEncoding)) &&
       Try(snr.toLong == md.sequenceNr && (md.timestamp == 0L || tms.toLong == md.timestamp)).getOrElse(false)
     }
 

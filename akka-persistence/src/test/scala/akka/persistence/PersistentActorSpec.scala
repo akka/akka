@@ -351,7 +351,7 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        (1 to 3).foreach { i =>
+        (1 to 3).foreach { _ =>
           persistAsync(Evt(s"$data-${incCounter()}")) { evt =>
             sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
           }
@@ -494,8 +494,6 @@ object PersistentActorSpec {
       with InmemRuntimePluginConfig
 
   class AsyncPersistHandlerCorrelationCheck(name: String) extends ExamplePersistentActor(name) {
-    var counter = 0
-
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAsync(Evt(data)) { evt =>
@@ -504,11 +502,6 @@ object PersistentActorSpec {
           if (evt.data == "done")
             sender() ! "done"
         }
-    }
-
-    private def incCounter(): Int = {
-      counter += 1
-      counter
     }
   }
   class AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)

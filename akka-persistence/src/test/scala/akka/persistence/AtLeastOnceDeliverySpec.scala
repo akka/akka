@@ -145,7 +145,7 @@ object AtLeastOnceDeliverySpec {
     var allReceived = Set.empty[Long]
 
     def receive = {
-      case a @ Action(id, payload) =>
+      case a @ Action(id, _) =>
         // discard duplicates (naive impl)
         if (!allReceived.contains(id)) {
           log.debug("Destination got {}, all count {}", a, allReceived.size + 1)
@@ -423,14 +423,14 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
 
       // initially all odd messages should go through
       for (n <- 1 to N if n % 2 == 1) probeA.expectMsg(Action(n, s"a-$n"))
-      probeA.expectNoMsg(100.millis)
+      probeA.expectNoMessage(100.millis)
 
       // at each redelivery round, 2 (even) messages are sent, the first goes through
       // without throttling, at each round half of the messages would go through
       var toDeliver = (1 to N).filter(_ % 2 == 0).map(_.toLong).toSet
       for (n <- 1 to N if n % 2 == 0) {
         toDeliver -= probeA.expectMsgType[Action].id
-        probeA.expectNoMsg(100.millis)
+        probeA.expectNoMessage(100.millis)
       }
 
       toDeliver should ===(Set.empty[Long])
