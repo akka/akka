@@ -60,7 +60,8 @@ object ActorFlow {
    * @tparam A Answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) ⇒ Q)(implicit timeout: Timeout): Flow[I, A, NotUsed] =
+  def ask[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] =
     ask(parallelism = 2)(ref)(makeMessage)(timeout)
 
   /**
@@ -98,27 +99,28 @@ object ActorFlow {
    * @tparam A answer type that the Actor is expected to reply with, it will become the Output type of this Flow
    */
   @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
-  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) ⇒ Q)(implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+  def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     import akka.actor.typed.scaladsl.adapter._
     val untypedRef = ref.toUntyped
 
     val askFlow = Flow[I]
       .watch(untypedRef)
-      .mapAsync(parallelism) { el ⇒
-        val res = akka.pattern.extended.ask(untypedRef, (replyTo: akka.actor.ActorRef) ⇒ makeMessage(el, replyTo))
+      .mapAsync(parallelism) { el =>
+        val res = akka.pattern.extended.ask(untypedRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
         // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
         // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
         // since one may say "but I already specified the type!", and that we have to go via the untyped ask is an implementation detail
         res.asInstanceOf[Future[A]]
       }
       .mapError {
-        case ex: AskTimeoutException ⇒
+        case ex: AskTimeoutException =>
           // in Akka Typed we use the `TimeoutException` everywhere
           new java.util.concurrent.TimeoutException(ex.getMessage)
 
         // the purpose of this recovery is to change the name of the stage in that exception
         // we do so in order to help users find which stage caused the failure -- "the ask stage"
-        case ex: WatchedActorTerminatedException ⇒
+        case ex: WatchedActorTerminatedException =>
           new WatchedActorTerminatedException("ask()", ex.ref)
       }
       .named("ask")

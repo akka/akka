@@ -15,8 +15,11 @@ object NodeDowningAndBeingRemovedMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
-    "akka.cluster.auto-down-unreachable-after = off").withFallback(MultiNodeClusterSpec.clusterConfig)))
+  commonConfig(
+    debugConfig(on = false).withFallback(
+      ConfigFactory
+        .parseString("akka.cluster.auto-down-unreachable-after = off")
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class NodeDowningAndBeingRemovedMultiJvmNode1 extends NodeDowningAndBeingRemovedSpec
@@ -24,8 +27,8 @@ class NodeDowningAndBeingRemovedMultiJvmNode2 extends NodeDowningAndBeingRemoved
 class NodeDowningAndBeingRemovedMultiJvmNode3 extends NodeDowningAndBeingRemovedSpec
 
 abstract class NodeDowningAndBeingRemovedSpec
-  extends MultiNodeSpec(NodeDowningAndBeingRemovedMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(NodeDowningAndBeingRemovedMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
   import NodeDowningAndBeingRemovedMultiJvmSpec._
 

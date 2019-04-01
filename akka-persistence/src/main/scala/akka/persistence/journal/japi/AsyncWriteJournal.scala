@@ -7,7 +7,7 @@ package akka.persistence.journal.japi
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import akka.persistence._
-import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
+import akka.persistence.journal.{ AsyncWriteJournal => SAsyncWriteJournal }
 import akka.util.ccompat._
 import scala.concurrent.Future
 import scala.util.Try
@@ -21,11 +21,13 @@ abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal w
   import context.dispatcher
 
   final def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    doAsyncWriteMessages(messages.asJava).map { results ⇒
-      results.asScala.iterator.map { r ⇒
-        if (r.isPresent) Failure(r.get)
-        else successUnit
-      }.to(immutable.IndexedSeq)
+    doAsyncWriteMessages(messages.asJava).map { results =>
+      results.asScala.iterator
+        .map { r =>
+          if (r.isPresent) Failure(r.get)
+          else successUnit
+        }
+        .to(immutable.IndexedSeq)
     }
 
   final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long) =

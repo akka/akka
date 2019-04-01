@@ -28,8 +28,8 @@ class QueueSinkSpec extends StreamSpec {
     "send the elements as result of future" in assertAllStagesStopped {
       val expected = List(Some(1), Some(2), Some(3), None)
       val queue = Source(expected.flatten).runWith(Sink.queue())
-      expected foreach { v ⇒
-        queue.pull() pipeTo testActor
+      expected.foreach { v =>
+        queue.pull().pipeTo(testActor)
         expectMsg(v)
       }
     }
@@ -125,19 +125,18 @@ class QueueSinkSpec extends StreamSpec {
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
-      val sink = Sink.queue[Int]()
-        .withAttributes(inputBuffer(bufferSize, bufferSize))
+      val sink = Sink.queue[Int]().withAttributes(inputBuffer(bufferSize, bufferSize))
       val bufferFullProbe = Promise[akka.Done.type]
       val queue = Source(1 to streamElementCount)
-        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ ⇒ bufferFullProbe.trySuccess(akka.Done))))
+        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .toMat(sink)(Keep.right)
         .run()
       bufferFullProbe.future.futureValue should ===(akka.Done)
-      for (i ← 1 to streamElementCount) {
-        queue.pull() pipeTo testActor
+      for (i <- 1 to streamElementCount) {
+        queue.pull().pipeTo(testActor)
         expectMsg(Some(i))
       }
-      queue.pull() pipeTo testActor
+      queue.pull().pipeTo(testActor)
       expectMsg(None)
 
     }

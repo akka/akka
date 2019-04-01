@@ -8,7 +8,7 @@ import java.util
 
 import akka.NotUsed
 import akka.stream._
-import akka.japi.{ Pair, function }
+import akka.japi.{ function, Pair }
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -75,6 +75,7 @@ object Merge {
  * '''Cancels when''' downstream cancels
  */
 object MergePreferred {
+
   /**
    * Create a new `MergePreferred` operator with the specified output type.
    */
@@ -84,7 +85,8 @@ object MergePreferred {
   /**
    * Create a new `MergePreferred` operator with the specified output type.
    */
-  def create[T](clazz: Class[T], secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] = create(secondaryPorts)
+  def create[T](clazz: Class[T], secondaryPorts: Int): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
+    create(secondaryPorts)
 
   /**
    * Create a new `MergePreferred` operator with the specified output type.
@@ -92,7 +94,9 @@ object MergePreferred {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](secondaryPorts: Int, eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
+  def create[T](
+      secondaryPorts: Int,
+      eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
     scaladsl.MergePreferred(secondaryPorts, eagerComplete = eagerComplete)
 
   /**
@@ -101,7 +105,10 @@ object MergePreferred {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T], secondaryPorts: Int, eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      secondaryPorts: Int,
+      eagerComplete: Boolean): Graph[scaladsl.MergePreferred.MergePreferredShape[T], NotUsed] =
     create(secondaryPorts, eagerComplete)
 
 }
@@ -124,6 +131,7 @@ object MergePreferred {
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
 object MergePrioritized {
+
   /**
    * Create a new `MergePrioritized` operator with the specified output type.
    */
@@ -151,7 +159,10 @@ object MergePrioritized {
    * @param eagerComplete set to true in order to make this operator eagerly
    *                   finish as soon as one of its inputs completes
    */
-  def create[T](clazz: Class[T], priorities: Array[Int], eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      priorities: Array[Int],
+      eagerComplete: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
     create(priorities, eagerComplete)
 
 }
@@ -171,6 +182,7 @@ object MergePrioritized {
  *   If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
 object Broadcast {
+
   /**
    * Create a new `Broadcast` operator with the specified input type.
    *
@@ -208,13 +220,16 @@ object Broadcast {
  *   when any (eagerCancel=true) or all (eagerCancel=false) of the downstreams cancel
  */
 object Partition {
+
   /**
    * Create a new `Partition` operator with the specified input type, `eagerCancel` is `false`.
    *
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply)
 
   /**
@@ -224,7 +239,10 @@ object Partition {
    * @param partitioner function deciding which output each element will be targeted
    * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
    */
-  def create[T](outputCount: Int, partitioner: function.Function[T, Integer], eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      partitioner: function.Function[T, Integer],
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
 
   /**
@@ -234,7 +252,10 @@ object Partition {
    * @param outputCount number of output ports
    * @param partitioner function deciding which output each element will be targeted
    */
-  def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      partitioner: function.Function[T, Integer]): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply)
 
   /**
@@ -245,7 +266,11 @@ object Partition {
    * @param partitioner function deciding which output each element will be targeted
    * @param eagerCancel this operator cancels, when any (true) or all (false) of the downstreams cancel
    */
-  def create[T](clazz: Class[T], outputCount: Int, partitioner: function.Function[T, Integer], eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      partitioner: function.Function[T, Integer],
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Partition(outputCount, partitioner.apply, eagerCancel)
 
 }
@@ -264,6 +289,7 @@ object Partition {
  * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
 object Balance {
+
   /**
    * Create a new `Balance` operator with the specified input type, `eagerCancel` is `false`.
    *
@@ -281,7 +307,10 @@ object Balance {
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
-  def create[T](outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      outputCount: Int,
+      waitForAllDownstreams: Boolean,
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
 
   /**
@@ -308,7 +337,10 @@ object Balance {
    * @param outputCount number of output ports
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    */
-  def create[T](clazz: Class[T], outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount, waitForAllDownstreams)
 
   /**
@@ -319,7 +351,11 @@ object Balance {
    * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    */
-  def create[T](clazz: Class[T], outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+  def create[T](
+      clazz: Class[T],
+      outputCount: Int,
+      waitForAllDownstreams: Boolean,
+      eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
 }
 
@@ -415,7 +451,7 @@ object ZipN {
 object ZipWithN {
   def create[A, O](zipper: function.Function[java.util.List[A], O], n: Int): Graph[UniformFanInShape[A, O], NotUsed] = {
     import scala.collection.JavaConverters._
-    scaladsl.ZipWithN[A, O](seq ⇒ zipper.apply(seq.asJava))(n)
+    scaladsl.ZipWithN[A, O](seq => zipper.apply(seq.asJava))(n)
   }
 }
 
@@ -461,6 +497,7 @@ object Unzip {
  * '''Cancels when''' downstream cancels
  */
 object Concat {
+
   /**
    * Create a new anonymous `Concat` operator with the specified input types.
    */
@@ -492,20 +529,20 @@ object GraphDSL extends GraphCreate {
    * Creates a new [[Graph]] by importing the given graph list `graphs` and passing their [[Shape]]s
    * along with the [[GraphDSL.Builder]] to the given create function.
    */
-
   def create[IS <: Shape, S <: Shape, M, G <: Graph[IS, M]](
-    graphs:     java.util.List[G],
-    buildBlock: function.Function2[GraphDSL.Builder[java.util.List[M]], java.util.List[IS], S]): Graph[S, java.util.List[M]] = {
+      graphs: java.util.List[G],
+      buildBlock: function.Function2[GraphDSL.Builder[java.util.List[M]], java.util.List[IS], S])
+      : Graph[S, java.util.List[M]] = {
     require(!graphs.isEmpty, "The input list must have one or more Graph elements")
     val gbuilder = builder[java.util.List[M]]()
-    val toList = (m1: M) ⇒ new util.ArrayList(util.Arrays.asList(m1))
-    val combine = (s: java.util.List[M], m2: M) ⇒ {
+    val toList = (m1: M) => new util.ArrayList(util.Arrays.asList(m1))
+    val combine = (s: java.util.List[M], m2: M) => {
       val newList = new util.ArrayList(s)
       newList.add(m2)
       newList
     }
     val sListH = gbuilder.delegate.add(graphs.get(0), toList)
-    val sListT = graphs.subList(1, graphs.size()).asScala.map(g ⇒ gbuilder.delegate.add(g, combine)).asJava
+    val sListT = graphs.subList(1, graphs.size()).asScala.map(g => gbuilder.delegate.add(g, combine)).asJava
     val s = buildBlock(gbuilder, {
       val newList = new util.ArrayList[IS]
       newList.add(sListH)
@@ -515,7 +552,7 @@ object GraphDSL extends GraphCreate {
     new GenericGraph(s, gbuilder.delegate.result(s))
   }
 
-  final class Builder[+Mat]()(private[stream] implicit val delegate: scaladsl.GraphDSL.Builder[Mat]) { self ⇒
+  final class Builder[+Mat]()(private[stream] implicit val delegate: scaladsl.GraphDSL.Builder[Mat]) { self =>
     import akka.stream.scaladsl.GraphDSL.Implicits._
 
     /**

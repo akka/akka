@@ -41,14 +41,13 @@ import javax.net.ssl.TrustManagerFactory
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@ApiMayChange class ConfigSSLEngineProvider(
-  protected val log:    MarkerLoggingAdapter,
-  private val settings: SSLSettings) extends SSLEngineProvider {
+@ApiMayChange class ConfigSSLEngineProvider(protected val log: MarkerLoggingAdapter, private val settings: SSLSettings)
+    extends SSLEngineProvider {
 
-  def this(system: ActorSystem) = this(
-    Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
-    new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
-  )
+  def this(system: ActorSystem) =
+    this(
+      Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName),
+      new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security")))
 
   import settings._
 
@@ -59,9 +58,16 @@ import javax.net.ssl.TrustManagerFactory
       ctx.init(keyManagers, trustManagers, rng)
       ctx
     } catch {
-      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+      case e: FileNotFoundException =>
+        throw new RemoteTransportException(
+          "Server SSL connection could not be established because key store could not be loaded",
+          e)
+      case e: IOException =>
+        throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+      case e: GeneralSecurityException =>
+        throw new RemoteTransportException(
+          "Server SSL connection could not be established because SSL context could not be constructed",
+          e)
     }
   }
 
@@ -71,7 +77,8 @@ import javax.net.ssl.TrustManagerFactory
   protected def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     val fin = Files.newInputStream(Paths.get(filename))
-    try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+    try keyStore.load(fin, password.toCharArray)
+    finally Try(fin.close())
     keyStore
   }
 
@@ -121,4 +128,3 @@ import javax.net.ssl.TrustManagerFactory
   }
 
 }
-

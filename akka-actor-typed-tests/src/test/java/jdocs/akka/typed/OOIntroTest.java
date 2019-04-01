@@ -116,7 +116,7 @@ public class OOIntroTest {
               ActorRef<SessionEvent> client = getSession.replyTo;
               ActorRef<SessionCommand> ses =
                   context.spawn(
-                      session(context.getSelf(), getSession.screenName, client),
+                      new SessionBehavior(context.getSelf(), getSession.screenName, client),
                       URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
               // narrow to only expose PostMessage
               client.tell(new SessionGranted(ses.narrow()));
@@ -137,50 +137,71 @@ public class OOIntroTest {
       }
     }
 
-    public static Behavior<ChatRoom.SessionCommand> session(
-        ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
-      return Behaviors.receive(ChatRoom.SessionCommand.class)
-          .onMessage(
-              PostMessage.class,
-              (context, post) -> {
-                // from client, publish to others via the room
-                room.tell(new PublishSessionMessage(screenName, post.message));
-                return Behaviors.same();
-              })
-          .onMessage(
-              NotifyClient.class,
-              (context, notification) -> {
-                // published from the room
-                client.tell(notification.message);
-                return Behaviors.same();
-              })
-          .build();
+    public static class SessionBehavior extends AbstractBehavior<ChatRoom.SessionCommand> {
+
+      private final ActorRef<RoomCommand> room;
+      private final String screenName;
+      private final ActorRef<SessionEvent> client;
+
+      public SessionBehavior(
+          ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
+        this.room = room;
+        this.screenName = screenName;
+        this.client = client;
+      }
+
+      @Override
+      public Receive<SessionCommand> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(
+                PostMessage.class,
+                post -> {
+                  // from client, publish to others via the room
+                  room.tell(new PublishSessionMessage(screenName, post.message));
+                  return Behaviors.same();
+                })
+            .onMessage(
+                NotifyClient.class,
+                notification -> {
+                  // published from the room
+                  client.tell(notification.message);
+                  return Behaviors.same();
+                })
+            .build();
+      }
     }
     // #chatroom-behavior
   }
   // #chatroom-actor
 
   // #chatroom-gabbler
-  public abstract static class Gabbler {
-    private Gabbler() {}
+  public static class Gabbler extends AbstractBehavior<ChatRoom.SessionEvent> {
 
-    public static Behavior<ChatRoom.SessionEvent> behavior() {
-      return Behaviors.receive(ChatRoom.SessionEvent.class)
+    private ActorContext<ChatRoom.SessionEvent> context;
+
+    public Gabbler(ActorContext<ChatRoom.SessionEvent> context) {
+      this.context = context;
+    }
+
+    @Override
+    public Receive<ChatRoom.SessionEvent> createReceive() {
+      ReceiveBuilder<ChatRoom.SessionEvent> builder = newReceiveBuilder();
+      return builder
           .onMessage(
               ChatRoom.SessionDenied.class,
-              (context, message) -> {
+              message -> {
                 context.getLog().info("cannot start chat room session: {}", message.reason);
                 return Behaviors.stopped();
               })
           .onMessage(
               ChatRoom.SessionGranted.class,
-              (context, message) -> {
+              message -> {
                 message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
                 return Behaviors.same();
               })
           .onMessage(
               ChatRoom.MessagePosted.class,
-              (context, message) -> {
+              message -> {
                 context
                     .getLog()
                     .info(
@@ -188,6 +209,10 @@ public class OOIntroTest {
                 return Behaviors.stopped();
               })
           .build();
+    }
+
+    public static Behavior<ChatRoom.SessionEvent> behavior() {
+      return Behaviors.setup(Gabbler::new);
     }
   }
   // #chatroom-gabbler
@@ -214,5 +239,9 @@ public class OOIntroTest {
 
     final ActorSystem<Void> system = ActorSystem.create(main, "ChatRoomDemo");
     // #chatroom-main
+  }
+
+  public static void main(String[] args) throws Exception {
+    runChatRoom();
   }
 }

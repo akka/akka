@@ -22,19 +22,19 @@ object ClusterShardingGetStateSpec {
   class ShardedActor extends Actor with ActorLogging {
     log.info(self.path.toString)
     def receive = {
-      case Stop    ⇒ context.stop(self)
-      case _: Ping ⇒ sender() ! Pong
+      case Stop    => context.stop(self)
+      case _: Ping => sender() ! Pong
     }
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case msg @ Ping(id) ⇒ (id.toString, msg)
+    case msg @ Ping(id) => (id.toString, msg)
   }
 
   val numberOfShards = 2
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Ping(id) ⇒ (id % numberOfShards).toString
+    case Ping(id) => (id % numberOfShards).toString
   }
 
   val shardTypeName = "Ping"
@@ -61,8 +61,7 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
     }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first, second)(ConfigFactory.parseString(
-    """akka.cluster.roles=["shard"]"""))
+  nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
 
 }
 
@@ -70,7 +69,9 @@ class ClusterShardingGetStateSpecMultiJvmNode1 extends ClusterShardingGetStateSp
 class ClusterShardingGetStateSpecMultiJvmNode2 extends ClusterShardingGetStateSpec
 class ClusterShardingGetStateSpecMultiJvmNode3 extends ClusterShardingGetStateSpec
 
-abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterShardingGetStateSpecConfig) with STMultiNodeSpec {
+abstract class ClusterShardingGetStateSpec
+    extends MultiNodeSpec(ClusterShardingGetStateSpecConfig)
+    with STMultiNodeSpec {
 
   import ClusterShardingGetStateSpec._
   import ClusterShardingGetStateSpecConfig._
@@ -144,9 +145,9 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterSharding
           awaitAssert {
             val pingProbe = TestProbe()
             // trigger starting of 4 entities
-            (1 to 4).foreach(n ⇒ region.tell(Ping(n), pingProbe.ref))
+            (1 to 4).foreach(n => region.tell(Ping(n), pingProbe.ref))
             pingProbe.receiveWhile(messages = 4) {
-              case Pong ⇒ ()
+              case Pong => ()
             }
           }
         }
@@ -164,18 +165,18 @@ abstract class ClusterShardingGetStateSpec extends MultiNodeSpec(ClusterSharding
           region.tell(ShardRegion.GetCurrentRegions, probe.ref)
           val regions = probe.expectMsgType[ShardRegion.CurrentRegions].regions
           regions.size === 2
-          regions.foreach { region ⇒
+          regions.foreach { region =>
             val path = RootActorPath(region) / "system" / "sharding" / shardTypeName
 
             system.actorSelection(path).tell(ShardRegion.GetShardRegionState, probe.ref)
           }
           val states = probe.receiveWhile(messages = regions.size) {
-            case msg: ShardRegion.CurrentShardRegionState ⇒ msg
+            case msg: ShardRegion.CurrentShardRegionState => msg
           }
           val allEntityIds = for {
-            state ← states
-            shard ← state.shards
-            entityId ← shard.entityIds
+            state <- states
+            shard <- state.shards
+            entityId <- shard.entityIds
           } yield entityId
 
           allEntityIds.toSet === Set("1", "2", "3", "4")

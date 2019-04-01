@@ -17,7 +17,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
@@ -35,6 +35,7 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
 
   case object EchoStarted
   case object EchoStopped
+
   /**
    * The singleton actor
    */
@@ -46,7 +47,7 @@ object ClusterSingletonManagerDownedSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case _ ⇒ sender() ! self
+      case _ => sender() ! self
     }
   }
 }
@@ -55,7 +56,10 @@ class ClusterSingletonManagerDownedMultiJvmNode1 extends ClusterSingletonManager
 class ClusterSingletonManagerDownedMultiJvmNode2 extends ClusterSingletonManagerDownedSpec
 class ClusterSingletonManagerDownedMultiJvmNode3 extends ClusterSingletonManagerDownedSpec
 
-class ClusterSingletonManagerDownedSpec extends MultiNodeSpec(ClusterSingletonManagerDownedSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerDownedSpec
+    extends MultiNodeSpec(ClusterSingletonManagerDownedSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerDownedSpec._
 
   override def initialParticipants = roles.size

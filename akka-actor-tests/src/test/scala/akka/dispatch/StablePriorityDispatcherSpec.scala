@@ -8,8 +8,8 @@ import language.postfixOps
 
 import com.typesafe.config.Config
 
-import akka.actor.{ Props, ActorSystem, Actor }
-import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.actor.{ Actor, ActorSystem, Props }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import scala.concurrent.duration._
 
 object StablePriorityDispatcherSpec {
@@ -22,17 +22,19 @@ object StablePriorityDispatcherSpec {
     }
     """
 
-  class Unbounded(settings: ActorSystem.Settings, config: Config) extends UnboundedStablePriorityMailbox(PriorityGenerator({
-    case i: Int if i <= 100 ⇒ i // Small integers have high priority
-    case i: Int             ⇒ 101 // Don't care for other integers
-    case 'Result            ⇒ Int.MaxValue
-  }: Any ⇒ Int))
+  class Unbounded(settings: ActorSystem.Settings, config: Config)
+      extends UnboundedStablePriorityMailbox(PriorityGenerator({
+        case i: Int if i <= 100 => i // Small integers have high priority
+        case i: Int             => 101 // Don't care for other integers
+        case 'Result            => Int.MaxValue
+      }: Any => Int))
 
-  class Bounded(settings: ActorSystem.Settings, config: Config) extends BoundedStablePriorityMailbox(PriorityGenerator({
-    case i: Int if i <= 100 ⇒ i // Small integers have high priority
-    case i: Int             ⇒ 101 // Don't care for other integers
-    case 'Result            ⇒ Int.MaxValue
-  }: Any ⇒ Int), 1000, 10 seconds)
+  class Bounded(settings: ActorSystem.Settings, config: Config)
+      extends BoundedStablePriorityMailbox(PriorityGenerator({
+        case i: Int if i <= 100 => i // Small integers have high priority
+        case i: Int             => 101 // Don't care for other integers
+        case 'Result            => Int.MaxValue
+      }: Any => Int), 1000, 10 seconds)
 
 }
 
@@ -40,16 +42,16 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
 
   "A StablePriorityDispatcher" must {
     "Order its messages according to the specified comparator while preserving FIFO for equal priority messages, " +
-      "using an unbounded mailbox" in {
-        val dispatcherKey = "unbounded-stable-prio-dispatcher"
-        testOrdering(dispatcherKey)
-      }
+    "using an unbounded mailbox" in {
+      val dispatcherKey = "unbounded-stable-prio-dispatcher"
+      testOrdering(dispatcherKey)
+    }
 
     "Order its messages according to the specified comparator while preserving FIFO for equal priority messages, " +
-      "using a bounded mailbox" in {
-        val dispatcherKey = "bounded-stable-prio-dispatcher"
-        testOrdering(dispatcherKey)
-      }
+    "using a bounded mailbox" in {
+      val dispatcherKey = "bounded-stable-prio-dispatcher"
+      testOrdering(dispatcherKey)
+    }
 
     def testOrdering(dispatcherKey: String): Unit = {
       val msgs = (1 to 200) toList
@@ -64,13 +66,15 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
 
           val acc = scala.collection.mutable.ListBuffer[Int]()
 
-          shuffled foreach { m ⇒ self ! m }
+          shuffled.foreach { m =>
+            self ! m
+          }
 
           self.tell('Result, testActor)
 
           def receive = {
-            case i: Int  ⇒ acc += i
-            case 'Result ⇒ sender() ! acc.toList
+            case i: Int  => acc += i
+            case 'Result => sender() ! acc.toList
           }
         }).withDispatcher(dispatcherKey))
 
@@ -81,7 +85,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
       // Low messages should come out first, and in priority order.  High messages follow - they are equal priority and
       // should come out in the same order in which they were sent.
       val lo = (1 to 100) toList
-      val hi = shuffled filter { _ > 100 }
+      val hi = shuffled.filter { _ > 100 }
       expectMsgType[List[Int]] should ===(lo ++ hi)
     }
   }

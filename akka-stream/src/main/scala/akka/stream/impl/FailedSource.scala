@@ -18,15 +18,16 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
   override protected def initialAttributes: Attributes = DefaultAttributes.failedSource
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
 
-    override def onPull(): Unit = ()
+      override def onPull(): Unit = ()
 
-    override def preStart(): Unit = {
-      failStage(failure)
+      override def preStart(): Unit = {
+        failStage(failure)
+      }
+      setHandler(out, this)
     }
-    setHandler(out, this)
-  }
 
   override def toString = s"FailedSource(${failure.getClass.getName})"
 }

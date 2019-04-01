@@ -4,19 +4,19 @@
 
 package akka.camel.internal
 
-import akka.camel.internal.component.{ DurationTypeConverter, ActorComponent }
+import akka.camel.internal.component.{ ActorComponent, DurationTypeConverter }
 import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
 import akka.event.Logging
-import akka.camel.{ CamelSettings, Camel }
+import akka.camel.{ Camel, CamelSettings }
 import akka.camel.internal.ActivationProtocol._
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import org.apache.camel.ProducerTemplate
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.util.Timeout
 import akka.pattern.ask
-import akka.actor.{ ExtendedActorSystem, ActorRef, Props }
+import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
 
 /**
  * INTERNAL API
@@ -52,7 +52,8 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    */
   def start(): this.type = {
     context.start()
-    try template.start() catch { case NonFatal(e) ⇒ context.stop(); throw e }
+    try template.start()
+    catch { case NonFatal(e) => context.stop(); throw e }
     log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }
@@ -65,8 +66,12 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    * @see akka.camel.internal.DefaultCamel#start
    */
   def shutdown(): Unit = {
-    try context.stop() finally {
-      try template.stop() catch { case NonFatal(e) ⇒ log.debug("Swallowing non-fatal exception [{}] on stopping Camel producer template", e) }
+    try context.stop()
+    finally {
+      try template.stop()
+      catch {
+        case NonFatal(e) => log.debug("Swallowing non-fatal exception [{}] on stopping Camel producer template", e)
+      }
     }
     log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
@@ -79,11 +84,12 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    * @param timeout the timeout for the Future
    */
   def activationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
-
-    (supervisor.ask(AwaitActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointActivated(`endpoint`)               ⇒ endpoint
-      case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
-    })
+    (supervisor
+      .ask(AwaitActivation(endpoint))(timeout))
+      .map[ActorRef]({
+        case EndpointActivated(`endpoint`)               => endpoint
+        case EndpointFailedToActivate(`endpoint`, cause) => throw cause
+      })
 
   /**
    * Produces a Future which will be completed when the given endpoint has been deactivated or
@@ -92,9 +98,12 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
    * @param endpoint the endpoint to be deactivated
    * @param timeout the timeout of the Future
    */
-  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
-    (supervisor.ask(AwaitDeActivation(endpoint))(timeout)).map[ActorRef]({
-      case EndpointDeActivated(`endpoint`)               ⇒ endpoint
-      case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
-    })
+  def deactivationFutureFor(
+      endpoint: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[ActorRef] =
+    (supervisor
+      .ask(AwaitDeActivation(endpoint))(timeout))
+      .map[ActorRef]({
+        case EndpointDeActivated(`endpoint`)               => endpoint
+        case EndpointFailedToDeActivate(`endpoint`, cause) => throw cause
+      })
 }

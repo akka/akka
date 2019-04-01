@@ -17,7 +17,7 @@ class RecipeSourceFromFunction extends RecipeSpec {
       def builderFunction(): String = UUID.randomUUID.toString
 
       //#source-from-function
-      val source = Source.repeat(NotUsed).map(_ ⇒ builderFunction())
+      val source = Source.repeat(NotUsed).map(_ => builderFunction())
       //#source-from-function
 
       val f = source.take(2).runWith(Sink.seq)

@@ -60,5 +60,5 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
 
   @throws(classOf[Exception])
   override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] =
-    onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
+    onSignal.applyOrElse(msg, { case _ => Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 }

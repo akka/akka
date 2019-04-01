@@ -14,15 +14,22 @@ import scala.reflect.ClassTag
 /**
  * Used to report `akka.testkit.metric.Metric` types that the original `com.codahale.metrics.ConsoleReporter` is unaware of (cannot re-use directly because of private constructor).
  */
-class AkkaConsoleReporter(
-  registry: AkkaMetricRegistry,
-  verbose:  Boolean,
-  output:   PrintStream        = System.out)
-  extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-console-reporter", MetricFilter.ALL, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
+class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output: PrintStream = System.out)
+    extends ScheduledReporter(
+      registry.asInstanceOf[MetricRegistry],
+      "akka-console-reporter",
+      MetricFilter.ALL,
+      TimeUnit.SECONDS,
+      TimeUnit.NANOSECONDS) {
 
   private final val ConsoleWidth = 80
 
-  override def report(gauges: util.SortedMap[String, Gauge[_]], counters: util.SortedMap[String, Counter], histograms: util.SortedMap[String, Histogram], meters: util.SortedMap[String, Meter], timers: util.SortedMap[String, Timer]): Unit = {
+  override def report(
+      gauges: util.SortedMap[String, Gauge[_]],
+      counters: util.SortedMap[String, Counter],
+      histograms: util.SortedMap[String, Histogram],
+      meters: util.SortedMap[String, Meter],
+      timers: util.SortedMap[String, Timer]): Unit = {
     import collection.JavaConverters._
 
     // default Metrics types
@@ -41,10 +48,11 @@ class AkkaConsoleReporter(
     output.flush()
   }
 
-  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]): Unit = {
+  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T => Unit)(
+      implicit clazz: ClassTag[T]): Unit = {
     if (!metrics.isEmpty) {
       printWithBanner(s"-- ${simpleName(metrics.head._2.getClass)}", '-')
-      for ((key, metric) ← metrics) {
+      for ((key, metric) <- metrics) {
         output.println("  " + key)
         printer(metric)
       }
@@ -95,11 +103,16 @@ class AkkaConsoleReporter(
     output.print("              mean = %2.2f %s%n".format(convertDuration(snapshot.getMean), getDurationUnit))
     output.print("            stddev = %2.2f %s%n".format(convertDuration(snapshot.getStdDev), getDurationUnit))
     output.print("            median = %2.2f %s%n".format(convertDuration(snapshot.getMedian), getDurationUnit))
-    output.print("              75%% <= %2.2f %s%n".format(convertDuration(snapshot.get75thPercentile), getDurationUnit))
-    output.print("              95%% <= %2.2f %s%n".format(convertDuration(snapshot.get95thPercentile), getDurationUnit))
-    output.print("              98%% <= %2.2f %s%n".format(convertDuration(snapshot.get98thPercentile), getDurationUnit))
-    output.print("              99%% <= %2.2f %s%n".format(convertDuration(snapshot.get99thPercentile), getDurationUnit))
-    output.print("            99.9%% <= %2.2f %s%n".format(convertDuration(snapshot.get999thPercentile), getDurationUnit))
+    output.print(
+      "              75%% <= %2.2f %s%n".format(convertDuration(snapshot.get75thPercentile), getDurationUnit))
+    output.print(
+      "              95%% <= %2.2f %s%n".format(convertDuration(snapshot.get95thPercentile), getDurationUnit))
+    output.print(
+      "              98%% <= %2.2f %s%n".format(convertDuration(snapshot.get98thPercentile), getDurationUnit))
+    output.print(
+      "              99%% <= %2.2f %s%n".format(convertDuration(snapshot.get99thPercentile), getDurationUnit))
+    output.print(
+      "            99.9%% <= %2.2f %s%n".format(convertDuration(snapshot.get999thPercentile), getDurationUnit))
   }
 
   private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer): Unit = {
@@ -151,4 +164,3 @@ class AkkaConsoleReporter(
   }
 
 }
-

@@ -31,9 +31,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! GetCurrentCart
       fsmRef ! AddItem(shirt)
@@ -67,7 +67,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
 
       // this isn't quite when the state transition happens, but close enough
       val before = System.nanoTime
@@ -92,9 +92,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! GetCurrentCart
       fsmRef ! AddItem(shirt)
@@ -144,9 +144,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! AddItem(shirt)
       fsmRef ! AddItem(shoes)
@@ -169,9 +169,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! AddItem(shirt)
       fsmRef ! AddItem(shoes)
@@ -191,7 +191,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       watch(fsmRef)
       fsmRef ! SubscribeTransitionCallBack(testActor)
 
-      val shirt = Item("1", "Shirt", 59.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
 
       fsmRef ! AddItem(shirt)
 
@@ -247,9 +247,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       val fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))
       watch(fsmRef)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! GetCurrentCart
       fsmRef ! AddItem(shirt)
@@ -270,13 +270,13 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
 
-      expectMsg(ItemAdded(Item("1", "Shirt", 59.99F)))
+      expectMsg(ItemAdded(Item("1", "Shirt", 59.99f)))
       expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
-      expectMsg(ItemAdded(Item("2", "Shoes", 89.99F)))
+      expectMsg(ItemAdded(Item("2", "Shoes", 89.99f)))
       expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
-      expectMsg(ItemAdded(Item("3", "Coat", 119.99F)))
+      expectMsg(ItemAdded(Item("3", "Coat", 119.99f)))
       expectMsgType[StateChangeEvent] //because a timeout is defined, State Change is persisted
 
       watch(persistentEventsStreamer)
@@ -286,8 +286,8 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
     "can extract state name" in {
       StateChangeEvent("xxx", None) match {
-        case StateChangeEvent(name, _) ⇒ name should equal("xxx")
-        case _                         ⇒ fail("unable to extract state name")
+        case StateChangeEvent(name, _) => name should equal("xxx")
+        case _                         => fail("unable to extract state name")
       }
     }
 
@@ -297,9 +297,9 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       val fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef))
       watch(fsmRef)
 
-      val shirt = Item("1", "Shirt", 59.99F)
-      val shoes = Item("2", "Shoes", 89.99F)
-      val coat = Item("3", "Coat", 119.99F)
+      val shirt = Item("1", "Shirt", 59.99f)
+      val shoes = Item("2", "Shoes", 89.99f)
+      val coat = Item("3", "Coat", 119.99f)
 
       fsmRef ! GetCurrentCart
       fsmRef ! AddItem(shirt)
@@ -336,7 +336,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       val persistentEventsStreamer = system.actorOf(PersistentEventsStreamer.props(persistenceId, testActor))
 
       expectMsgPF() {
-        case SnapshotOffer(SnapshotMetadata(name, _, timestamp), PersistentFSMSnapshot(stateIdentifier, cart, None)) ⇒
+        case SnapshotOffer(SnapshotMetadata(name, _, timestamp), PersistentFSMSnapshot(stateIdentifier, cart, None)) =>
           stateIdentifier should ===(Paid.identifier)
           cart should ===(NonEmptyShoppingCart(List(shirt, shoes, coat)))
           timestamp should be > 0L
@@ -363,8 +363,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
     "save periodical snapshots if akka.persistence.fsm.enable-snapshot-after = on" in {
       val sys2 = ActorSystem(
         "PersistentFsmSpec2",
-        ConfigFactory
-          .parseString("""
+        ConfigFactory.parseString("""
             akka.persistence.fsm.enable-snapshot-after = on
             akka.persistence.fsm.snapshot-after = 3
           """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2")))
@@ -387,10 +386,11 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
         probe.expectMsg("SeqNo=8, StateData=List(10, 10, 10, 10, 3, 2, 1)")
 
       } finally {
-        val storageLocations = List(
-          "akka.persistence.journal.leveldb.dir",
-          "akka.persistence.journal.leveldb-shared.store.dir",
-          "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(sys2.settings.config.getString(s)))
+        val storageLocations =
+          List(
+            "akka.persistence.journal.leveldb.dir",
+            "akka.persistence.journal.leveldb-shared.store.dir",
+            "akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
         shutdown(sys2)
         storageLocations.foreach(FileUtils.deleteDirectory)
       }
@@ -452,18 +452,20 @@ object PersistentFSMSpec {
   case class PurchaseWasMade(items: Seq[Item]) extends ReportEvent
   case object ShoppingCardDiscarded extends ReportEvent
 
-  class SimpleTransitionFSM(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent]) extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
+  class SimpleTransitionFSM(_persistenceId: String, reportActor: ActorRef)(
+      implicit val domainEventClassTag: ClassTag[DomainEvent])
+      extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
     override val persistenceId = _persistenceId
 
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event("stay", _) ⇒ stay
-      case Event(e, _)      ⇒ goto(LookingAround)
+      case Event("stay", _) => stay
+      case Event(e, _)      => goto(LookingAround)
     }
 
     onTransition {
-      case (from, to) ⇒ reportActor ! s"$from -> $to"
+      case (from, to) => reportActor ! s"$from -> $to"
     }
 
     override def applyEvent(domainEvent: DomainEvent, currentData: ShoppingCart): ShoppingCart =
@@ -474,8 +476,9 @@ object PersistentFSMSpec {
       Props(new SimpleTransitionFSM(persistenceId, reportActor))
   }
 
-  class WebStoreCustomerFSM(_persistenceId: String, reportActor: ActorRef)(implicit val domainEventClassTag: ClassTag[DomainEvent])
-    extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
+  class WebStoreCustomerFSM(_persistenceId: String, reportActor: ActorRef)(
+      implicit val domainEventClassTag: ClassTag[DomainEvent])
+      extends PersistentFSM[UserState, ShoppingCart, DomainEvent] {
 
     override def persistenceId = _persistenceId
 
@@ -483,53 +486,53 @@ object PersistentFSMSpec {
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event(AddItem(item), _) ⇒
-        goto(Shopping) applying ItemAdded(item) forMax (1 seconds)
-      case Event(GetCurrentCart, data) ⇒
-        stay replying data
+      case Event(AddItem(item), _) =>
+        goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
+      case Event(GetCurrentCart, data) =>
+        stay.replying(data)
     }
 
     when(Shopping) {
-      case Event(AddItem(item), _) ⇒
-        stay applying ItemAdded(item) forMax (1 seconds)
-      case Event(Buy, _) ⇒
+      case Event(AddItem(item), _) =>
+        stay.applying(ItemAdded(item)).forMax(1 seconds)
+      case Event(Buy, _) =>
         //#customer-andthen-example
-        goto(Paid) applying OrderExecuted andThen {
-          case NonEmptyShoppingCart(items) ⇒
+        goto(Paid).applying(OrderExecuted).andThen {
+          case NonEmptyShoppingCart(items) =>
             reportActor ! PurchaseWasMade(items)
             //#customer-andthen-example
             saveStateSnapshot()
-          case EmptyShoppingCart ⇒ saveStateSnapshot()
+          case EmptyShoppingCart => saveStateSnapshot()
           //#customer-andthen-example
         }
       //#customer-andthen-example
-      case Event(Leave, _) ⇒
+      case Event(Leave, _) =>
         //#customer-snapshot-example
-        stop applying OrderDiscarded andThen {
-          case _ ⇒
+        stop.applying(OrderDiscarded).andThen {
+          case _ =>
             reportActor ! ShoppingCardDiscarded
             saveStateSnapshot()
         }
       //#customer-snapshot-example
-      case Event(GetCurrentCart, data) ⇒
-        stay replying data
-      case Event(StateTimeout, _) ⇒
-        goto(Inactive) forMax (2 seconds)
+      case Event(GetCurrentCart, data) =>
+        stay.replying(data)
+      case Event(StateTimeout, _) =>
+        goto(Inactive).forMax(2 seconds)
     }
 
     when(Inactive) {
-      case Event(AddItem(item), _) ⇒
-        goto(Shopping) applying ItemAdded(item) forMax (1 seconds)
-      case Event(StateTimeout, _) ⇒
-        stop applying OrderDiscarded andThen {
-          case _ ⇒ reportActor ! ShoppingCardDiscarded
+      case Event(AddItem(item), _) =>
+        goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
+      case Event(StateTimeout, _) =>
+        stop.applying(OrderDiscarded).andThen {
+          case _ => reportActor ! ShoppingCardDiscarded
         }
     }
 
     when(Paid) {
-      case Event(Leave, _) ⇒ stop()
-      case Event(GetCurrentCart, data) ⇒
-        stay replying data
+      case Event(Leave, _) => stop()
+      case Event(GetCurrentCart, data) =>
+        stay.replying(data)
     }
     //#customer-fsm-body
 
@@ -542,9 +545,9 @@ object PersistentFSMSpec {
     //#customer-apply-event
     override def applyEvent(event: DomainEvent, cartBeforeEvent: ShoppingCart): ShoppingCart = {
       event match {
-        case ItemAdded(item) ⇒ cartBeforeEvent.addItem(item)
-        case OrderExecuted   ⇒ cartBeforeEvent
-        case OrderDiscarded  ⇒ cartBeforeEvent.empty()
+        case ItemAdded(item) => cartBeforeEvent.addItem(item)
+        case OrderExecuted   => cartBeforeEvent
+        case OrderDiscarded  => cartBeforeEvent.empty()
       }
     }
     //#customer-apply-event
@@ -559,12 +562,12 @@ object PersistentFSMSpec {
     override val persistenceId: String = id
 
     def receiveRecover = {
-      case RecoveryCompleted ⇒ // do nothing
-      case persistentEvent   ⇒ client ! persistentEvent
+      case RecoveryCompleted => // do nothing
+      case persistentEvent   => client ! persistentEvent
     }
 
     def receiveCommand = {
-      case _ ⇒ // do nothing
+      case _ => // do nothing
     }
   }
 
@@ -579,8 +582,9 @@ object PersistentFSMSpec {
     def props(probe: ActorRef) = Props(new TimeoutFSM(probe))
   }
 
-  class TimeoutFSM(probe: ActorRef)(implicit val domainEventClassTag: ClassTag[String]) extends Actor
-    with PersistentFSM[TimeoutFSM.State, String, String] {
+  class TimeoutFSM(probe: ActorRef)(implicit val domainEventClassTag: ClassTag[String])
+      extends Actor
+      with PersistentFSM[TimeoutFSM.State, String, String] {
 
     import TimeoutFSM._
     override def applyEvent(domainEvent: String, currentData: String): String = "whatever"
@@ -589,13 +593,13 @@ object PersistentFSMSpec {
     startWith(State("init"), "")
 
     when(State("init"), stateTimeout = 300.millis) {
-      case Event(StateTimeout, _) ⇒
+      case Event(StateTimeout, _) =>
         probe ! StateTimeout
         stay()
 
-      case Event(OverrideTimeoutToInf, _) ⇒
+      case Event(OverrideTimeoutToInf, _) =>
         probe ! OverrideTimeoutToInf
-        stay() forMax Duration.Inf
+        stay().forMax(Duration.Inf)
     }
   }
 
@@ -611,30 +615,31 @@ object PersistentFSMSpec {
   }
 
   class SnapshotFSM(probe: ActorRef)(implicit val domainEventClassTag: ClassTag[SnapshotFSMEvent])
-    extends Actor with PersistentFSM[SnapshotFSMState, List[Int], SnapshotFSMEvent] {
+      extends Actor
+      with PersistentFSM[SnapshotFSMState, List[Int], SnapshotFSMEvent] {
 
     override def persistenceId: String = "snapshot-fsm-test"
 
     override def applyEvent(event: SnapshotFSMEvent, currentData: List[Int]): List[Int] = event match {
-      case IntAdded(i) ⇒ i :: currentData
+      case IntAdded(i) => i :: currentData
     }
 
     startWith(PersistSingleAtOnce, Nil)
 
     when(PersistSingleAtOnce) {
-      case Event(i: Int, _) ⇒
-        stay applying IntAdded(i)
-      case Event("4x", _) ⇒
+      case Event(i: Int, _) =>
+        stay.applying(IntAdded(i))
+      case Event("4x", _) =>
         goto(Persist4xAtOnce)
-      case Event(SaveSnapshotSuccess(metadata), _) ⇒
+      case Event(SaveSnapshotSuccess(metadata), _) =>
         probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
         stay()
     }
 
     when(Persist4xAtOnce) {
-      case Event(i: Int, _) ⇒
-        stay applying (IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
-      case Event(SaveSnapshotSuccess(metadata), _) ⇒
+      case Event(i: Int, _) =>
+        stay.applying(IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
+      case Event(SaveSnapshotSuccess(metadata), _) =>
         probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
         stay()
     }

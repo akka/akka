@@ -130,7 +130,8 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase) extends TransferState {
+@InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase)
+    extends TransferState {
   def isReady = false
   def isCompleted = false
 }
@@ -146,15 +147,15 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
+@InternalApi private[akka] final case class TransferPhase(precondition: TransferState)(val action: () => Unit)
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] trait Pump {
   private var transferState: TransferState = NotInitialized
-  private var currentAction: () ⇒ Unit =
-    () ⇒ throw new IllegalStateException("Pump has been not initialized with a phase")
+  private var currentAction: () => Unit =
+    () => throw new IllegalStateException("Pump has been not initialized with a phase")
 
   final def initialPhase(waitForUpstream: Int, andThen: TransferPhase): Unit = {
     require(waitForUpstream >= 1, s"waitForUpstream must be >= 1 (was $waitForUpstream)")
@@ -170,28 +171,28 @@ import akka.annotation.InternalApi
 
   def gotUpstreamSubscription(): Unit = {
     transferState match {
-      case WaitingForUpstreamSubscription(1, andThen) ⇒
+      case WaitingForUpstreamSubscription(1, andThen) =>
         transferState = andThen.precondition
         currentAction = andThen.action
-      case WaitingForUpstreamSubscription(remaining, andThen) ⇒
+      case WaitingForUpstreamSubscription(remaining, andThen) =>
         transferState = WaitingForUpstreamSubscription(remaining - 1, andThen)
-      case _ ⇒ // ok, initial phase not used, or passed already
+      case _ => // ok, initial phase not used, or passed already
     }
     pump()
   }
 
   final def nextPhase(phase: TransferPhase): Unit = transferState match {
-    case WaitingForUpstreamSubscription(remaining, _) ⇒
+    case WaitingForUpstreamSubscription(remaining, _) =>
       transferState = WaitingForUpstreamSubscription(remaining, phase)
-    case _ ⇒
+    case _ =>
       transferState = phase.precondition
       currentAction = phase.action
   }
 
   final def isPumpFinished: Boolean = transferState.isCompleted
 
-  protected final val completedPhase = TransferPhase(Completed) {
-    () ⇒ throw new IllegalStateException("The action of completed phase must be never executed")
+  protected final val completedPhase = TransferPhase(Completed) { () =>
+    throw new IllegalStateException("The action of completed phase must be never executed")
   }
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
@@ -199,7 +200,7 @@ import akka.annotation.InternalApi
   final def pump(): Unit = {
     try while (transferState.isExecutable) {
       currentAction()
-    } catch { case NonFatal(e) ⇒ pumpFailed(e) }
+    } catch { case NonFatal(e) => pumpFailed(e) }
 
     if (isPumpFinished) pumpFinished()
   }

@@ -50,18 +50,18 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
   }
 
   // do not restart
-  override def postRestart(thr: Throwable): Unit = context stop self
+  override def postRestart(thr: Throwable): Unit = context.stop(self)
 
   def receive = {
-    case Bound(localAddress) ⇒
+    case Bound(localAddress) =>
       log.info("listening on port {}", localAddress.getPort)
 
-    case CommandFailed(Bind(_, local, _, _, _)) ⇒
+    case CommandFailed(Bind(_, local, _, _, _)) =>
       log.warning(s"cannot bind to [$local]")
-      context stop self
+      context.stop(self)
 
     //#echo-manager
-    case Connected(remote, local) ⇒
+    case Connected(remote, local) =>
       log.info("received connection from {}", remote)
       val handler = context.actorOf(Props(handlerClass, sender(), remote))
       sender() ! Register(handler, keepOpenOnPeerClosed = true)
@@ -78,34 +78,33 @@ object EchoHandler {
     Props(classOf[EchoHandler], connection, remote)
 }
 
-class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
-  extends Actor with ActorLogging {
+class EchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor with ActorLogging {
 
   import Tcp._
   import EchoHandler._
 
   // sign death pact: this actor terminates when connection breaks
-  context watch connection
+  context.watch(connection)
 
   // start out in optimistic write-through mode
   def receive = writing
 
   //#writing
   def writing: Receive = {
-    case Received(data) ⇒
+    case Received(data) =>
       connection ! Write(data, Ack(currentOffset))
       buffer(data)
 
-    case Ack(ack) ⇒
+    case Ack(ack) =>
       acknowledge(ack)
 
-    case CommandFailed(Write(_, Ack(ack))) ⇒
+    case CommandFailed(Write(_, Ack(ack))) =>
       connection ! ResumeWriting
-      context become buffering(ack)
+      context.become(buffering(ack))
 
-    case PeerClosed ⇒
-      if (storage.isEmpty) context stop self
-      else context become closing
+    case PeerClosed =>
+      if (storage.isEmpty) context.stop(self)
+      else context.become(closing)
   }
   //#writing
 
@@ -115,11 +114,11 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
     var peerClosed = false
 
     {
-      case Received(data)         ⇒ buffer(data)
-      case WritingResumed         ⇒ writeFirst()
-      case PeerClosed             ⇒ peerClosed = true
-      case Ack(ack) if ack < nack ⇒ acknowledge(ack)
-      case Ack(ack) ⇒
+      case Received(data)         => buffer(data)
+      case WritingResumed         => writeFirst()
+      case PeerClosed             => peerClosed = true
+      case Ack(ack) if ack < nack => acknowledge(ack)
+      case Ack(ack) =>
         acknowledge(ack)
         if (storage.nonEmpty) {
           if (toAck > 0) {
@@ -129,31 +128,31 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
           } else {
             // then return to NACK-based again
             writeAll()
-            context become (if (peerClosed) closing else writing)
+            context.become(if (peerClosed) closing else writing)
           }
-        } else if (peerClosed) context stop self
-        else context become writing
+        } else if (peerClosed) context.stop(self)
+        else context.become(writing)
     }
   }
   //#buffering
 
   //#closing
   def closing: Receive = {
-    case CommandFailed(_: Write) ⇒
+    case CommandFailed(_: Write) =>
       connection ! ResumeWriting
       context.become({
 
-        case WritingResumed ⇒
+        case WritingResumed =>
           writeAll()
           context.unbecome()
 
-        case ack: Int ⇒ acknowledge(ack)
+        case ack: Int => acknowledge(ack)
 
       }, discardOld = false)
 
-    case Ack(ack) ⇒
+    case Ack(ack) =>
       acknowledge(ack)
-      if (storage.isEmpty) context stop self
+      if (storage.isEmpty) context.stop(self)
   }
   //#closing
 
@@ -181,7 +180,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
     if (stored > maxStored) {
       log.warning(s"drop connection to [$remote] (buffer overrun)")
-      context stop self
+      context.stop(self)
 
     } else if (stored > highWatermark) {
       log.debug(s"suspending reading at $currentOffset")
@@ -199,7 +198,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
     transferred += size
 
     storageOffset += 1
-    storage = storage drop 1
+    storage = storage.drop(1)
 
     if (suspended && stored < lowWatermark) {
       log.debug("resuming reading")
@@ -214,7 +213,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   }
 
   private def writeAll(): Unit = {
-    for ((data, i) ← storage.zipWithIndex) {
+    for ((data, i) <- storage.zipWithIndex) {
       connection ! Write(data, Ack(storageOffset + i))
     }
   }
@@ -224,28 +223,27 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 //#echo-handler
 
 //#simple-echo-handler
-class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
-  extends Actor with ActorLogging {
+class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor with ActorLogging {
 
   import Tcp._
 
   // sign death pact: this actor terminates when connection breaks
-  context watch connection
+  context.watch(connection)
 
   case object Ack extends Event
 
   def receive = {
-    case Received(data) ⇒
+    case Received(data) =>
       buffer(data)
       connection ! Write(data, Ack)
 
       context.become({
-        case Received(data) ⇒ buffer(data)
-        case Ack            ⇒ acknowledge()
-        case PeerClosed     ⇒ closing = true
+        case Received(data) => buffer(data)
+        case Ack            => acknowledge()
+        case PeerClosed     => closing = true
       }, discardOld = false)
 
-    case PeerClosed ⇒ context stop self
+    case PeerClosed => context.stop(self)
   }
 
   //#storage-omitted
@@ -270,7 +268,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
     if (stored > maxStored) {
       log.warning(s"drop connection to [$remote] (buffer overrun)")
-      context stop self
+      context.stop(self)
 
     } else if (stored > highWatermark) {
       log.debug(s"suspending reading")
@@ -286,7 +284,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
     stored -= size
     transferred += size
 
-    storage = storage drop 1
+    storage = storage.drop(1)
 
     if (suspended && stored < lowWatermark) {
       log.debug("resuming reading")
@@ -295,7 +293,7 @@ class SimpleEchoHandler(connection: ActorRef, remote: InetSocketAddress)
     }
 
     if (storage.isEmpty) {
-      if (closing) context stop self
+      if (closing) context.stop(self)
       else context.unbecome()
     } else connection ! Write(storage(0), Ack)
   }

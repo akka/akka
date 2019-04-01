@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-${YEAR} Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal
@@ -20,19 +20,17 @@ class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with Word
 
   "AkkaClusterTypedSerializer" must {
 
-    Seq(
-      "ReceptionistEntry" → ClusterReceptionist.Entry(ref, 666L)
-    ).foreach {
-        case (scenario, item) ⇒
-          s"resolve serializer for $scenario" in {
-            val serializer = SerializationExtension(untypedSystem)
-            serializer.serializerFor(item.getClass).getClass should be(classOf[AkkaClusterTypedSerializer])
-          }
+    Seq("ReceptionistEntry" -> ClusterReceptionist.Entry(ref, 666L)).foreach {
+      case (scenario, item) =>
+        s"resolve serializer for $scenario" in {
+          val serializer = SerializationExtension(untypedSystem)
+          serializer.serializerFor(item.getClass).getClass should be(classOf[AkkaClusterTypedSerializer])
+        }
 
-          s"serialize and de-serialize $scenario" in {
-            verifySerialization(item)
-          }
-      }
+        s"serialize and de-serialize $scenario" in {
+          verifySerialization(item)
+        }
+    }
   }
 
   def verifySerialization(msg: AnyRef): Unit = {

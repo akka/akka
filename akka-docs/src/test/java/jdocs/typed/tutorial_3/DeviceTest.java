@@ -23,7 +23,7 @@ import static com.lightbend.akka.sample.DeviceProtocol.*;
 public class DeviceTest {
 //#device-read-test
 */
-public class DeviceTest extends org.scalatestplus.junit.JUnitSuite {
+public class DeviceTest extends org.scalatest.junit.JUnitSuite {
   // #device-read-test
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();

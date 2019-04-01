@@ -15,15 +15,17 @@ object UniformFanInShape {
 class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {
 
   //ports get added to `FanInShape.inlets` as a side-effect of calling `newInlet`
-  for (i ← 0 until n) newInlet[T](s"in$i")
+  for (i <- 0 until n) newInlet[T](s"in$i")
 
   def this(n: Int) = this(n, FanInShape.Name[O]("UniformFanIn"))
   def this(n: Int, name: String) = this(n, FanInShape.Name[O](name))
   def this(outlet: Outlet[O], inlets: Array[Inlet[T]]) = this(inlets.length, FanInShape.Ports(outlet, inlets.toList))
-  override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] = new UniformFanInShape(n, init)
+  override protected def construct(init: FanInShape.Init[O @uncheckedVariance]): FanInShape[O] =
+    new UniformFanInShape(n, init)
   override def deepCopy(): UniformFanInShape[T, O] = super.deepCopy().asInstanceOf[UniformFanInShape[T, O]]
 
-  final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
+  final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] =
+    super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
 
   @deprecated("Use 'inlets' or 'in(id)' instead.", "2.5.5")
   def inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = _inSeq

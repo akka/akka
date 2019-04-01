@@ -36,9 +36,7 @@ class OutputStreamSourceStageBenchmark {
   @Benchmark
   @OperationsPerInvocation(WritesPerBench)
   def consumeWrites(): Unit = {
-    val (os, done) = StreamConverters.asOutputStream()
-      .toMat(Sink.ignore)(Keep.both)
-      .run()
+    val (os, done) = StreamConverters.asOutputStream().toMat(Sink.ignore)(Keep.both).run()
     new Thread(new Runnable {
       def run(): Unit = {
         var counter = 0

@@ -147,6 +147,13 @@ project akka-cluster
 multi-jvm:testOnly akka.cluster.SunnyWeather
 ```
 
+To format the Scala source code:
+```
+sbt
+akka-cluster/scalafmtAll
+akka-persistence/scalafmtAll
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
@@ -214,6 +221,22 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - other tricky situations
 
 The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
+
+## Wire compatibility
+
+Changes to the binary protocol of remoting, cluster and the cluster tools require great care so that it is possible
+to do rolling upgrades. Note that this may include older nodes communicating with a newer node so compatibility
+may have to be both ways. 
+
+Since during a rolling upgrade nodes producing the 'new' format and nodes producing the 'old' format coexist, a change can require a two-release process: 
+the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
+new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
+rolling upgrade to the next version.
+
+All wire protocol changes that may concern rolling upgrades should be documented in the 
+[Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
+(found in akka-docs/src/main/paradox/project/rolling-update.md)
+
 
 ## Pull request requirements
 
@@ -360,7 +383,10 @@ In such situations we prefer 'internal' over 'impl' as a package name.
 
 ### Scala style 
 
-Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka uses [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) to enforce some of the code style rules.
+
+When IntelliJ detects the `.scalafmt.conf` and promts "Scalafmt configuration detected in this project" you should
+select "Continue using IntelliJ formatter" and instead install the [Scalafmt IntelliJ plugin](https://scalameta.org/scalafmt/docs/installation.html#intellij). Install the nightly plugin (until version 2.0.0 or later becomes stable) and enable "Format on save".
 
 ### Java style
 

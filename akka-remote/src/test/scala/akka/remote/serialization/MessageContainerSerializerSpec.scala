@@ -22,9 +22,17 @@ class MessageContainerSerializerSpec extends AkkaSpec {
     }
 
     "serialize and de-serialize ActorSelectionMessage" in {
-      verifySerialization(ActorSelectionMessage("hello", Vector(
-        SelectChildName("user"), SelectChildName("a"), SelectChildName("b"), SelectParent,
-        SelectChildPattern("*"), SelectChildName("c")), wildcardFanOut = true))
+      verifySerialization(
+        ActorSelectionMessage(
+          "hello",
+          Vector(
+            SelectChildName("user"),
+            SelectChildName("a"),
+            SelectChildName("b"),
+            SelectParent,
+            SelectChildPattern("*"),
+            SelectChildName("c")),
+          wildcardFanOut = true))
     }
 
     def verifySerialization(msg: AnyRef): Unit = {
@@ -33,4 +41,3 @@ class MessageContainerSerializerSpec extends AkkaSpec {
 
   }
 }
-

@@ -25,7 +25,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
   "A foreachAsync" must {
     "handle empty source" in assertAllStagesStopped {
       import system.dispatcher
-      val p = Source(List.empty[Int]).runWith(Sink.foreachAsync(3)(a ⇒ Future {}))
+      val p = Source(List.empty[Int]).runWith(Sink.foreachAsync(3)(a => Future {}))
       Await.result(p, remainingOrDefault)
     }
 
@@ -33,10 +33,10 @@ class SinkForeachAsyncSpec extends StreamSpec {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(4))
 
       val probe = TestProbe()
-      val latch = (1 to 4).map(_ → TestLatch(1)).toMap
+      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
 
       val sink: Sink[Int, Future[Done]] = {
-        Sink.foreachAsync(4) { n: Int ⇒
+        Sink.foreachAsync(4) { n: Int =>
           Future {
             Await.result(latch(n), remainingOrDefault)
             probe.ref ! n
@@ -65,10 +65,10 @@ class SinkForeachAsyncSpec extends StreamSpec {
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
 
       val probe = TestProbe()
-      val latch = (1 to 4).map(_ → TestLatch(1)).toMap
+      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
 
-      val sink: Sink[() ⇒ Int, Future[Done]] = {
-        Sink.foreachAsync(1) { (n: () ⇒ Int) ⇒
+      val sink: Sink[() => Int, Future[Done]] = {
+        Sink.foreachAsync(1) { (n: () => Int) =>
           Future {
             Await.result(latch(n()), remainingOrDefault)
             probe.ref ! n()
@@ -99,8 +99,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       }
 
       val p =
-        Source(List(one _, two _, three _, four _))
-          .runWith(sink)
+        Source(List(one _, two _, three _, four _)).runWith(sink)
 
       latch(1).countDown()
       probe.expectMsg(1)
@@ -143,8 +142,8 @@ class SinkForeachAsyncSpec extends StreamSpec {
     import system.dispatcher
 
     val probe = TestProbe()
-    val latch = (1 to 4).map(_ → TestLatch(1)).toMap
-    val p = Source(1 to 4).runWith(Sink.foreachAsync(4)((n: Int) ⇒ {
+    val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
+    val p = Source(1 to 4).runWith(Sink.foreachAsync(4)((n: Int) => {
       Future {
         Await.ready(latch(n), 5.seconds)
         probe.ref ! n
@@ -170,9 +169,9 @@ class SinkForeachAsyncSpec extends StreamSpec {
     import system.dispatcher
 
     val probe = TestProbe()
-    val latch = (1 to 5).map(_ → TestLatch()).toMap
+    val latch = (1 to 5).map(_ -> TestLatch()).toMap
 
-    val p = Source(1 to 5).runWith(Sink.foreachAsync(4)((n: Int) ⇒ {
+    val p = Source(1 to 5).runWith(Sink.foreachAsync(4)((n: Int) => {
       Future {
         probe.ref ! n
         Await.ready(latch(n), 5.seconds)
@@ -183,7 +182,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
 
     assert(!p.isCompleted)
 
-    for (i ← 1 to 4) latch(i).countDown()
+    for (i <- 1 to 4) latch(i).countDown()
 
     latch(5).countDown()
     probe.expectMsg(5)
@@ -199,15 +198,18 @@ class SinkForeachAsyncSpec extends StreamSpec {
     val probe = TestProbe()
     val latch = TestLatch(1)
 
-    val p = Source(1 to 5).runWith(Sink.foreachAsync(4)((n: Int) ⇒ {
-      Future {
-        if (n == 3) throw new RuntimeException("err1") with NoStackTrace
-        else {
-          probe.ref ! n
-          Await.ready(latch, 10.seconds)
-        }
-      }
-    }).withAttributes(supervisionStrategy(resumingDecider)))
+    val p = Source(1 to 5).runWith(
+      Sink
+        .foreachAsync(4)((n: Int) => {
+          Future {
+            if (n == 3) throw new RuntimeException("err1") with NoStackTrace
+            else {
+              probe.ref ! n
+              Await.ready(latch, 10.seconds)
+            }
+          }
+        })
+        .withAttributes(supervisionStrategy(resumingDecider)))
 
     latch.countDown()
     probe.expectMsgAllOf(1, 2, 4, 5)
@@ -222,19 +224,24 @@ class SinkForeachAsyncSpec extends StreamSpec {
     val element4Latch = new CountDownLatch(1)
     val errorLatch = new CountDownLatch(2)
 
-    val p = Source.fromIterator(() ⇒ Iterator.from(1)).runWith(Sink.foreachAsync(3)((n: Int) ⇒ {
-      Future {
-        if (n == 3) {
-          // Error will happen only after elements 1, 2 has been processed
-          errorLatch.await(5, TimeUnit.SECONDS)
-          throw new RuntimeException("err2") with NoStackTrace
-        } else {
-          probe.ref ! n
-          errorLatch.countDown()
-          element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
-        }
-      }
-    }).withAttributes(supervisionStrategy(stoppingDecider)))
+    val p = Source
+      .fromIterator(() => Iterator.from(1))
+      .runWith(
+        Sink
+          .foreachAsync(3)((n: Int) => {
+            Future {
+              if (n == 3) {
+                // Error will happen only after elements 1, 2 has been processed
+                errorLatch.await(5, TimeUnit.SECONDS)
+                throw new RuntimeException("err2") with NoStackTrace
+              } else {
+                probe.ref ! n
+                errorLatch.countDown()
+                element4Latch.await(5, TimeUnit.SECONDS) // Block element 4, 5, 6, ... from entering
+              }
+            }
+          })
+          .withAttributes(supervisionStrategy(stoppingDecider)))
 
     // Only the first two messages are guaranteed to arrive due to their enforced ordering related to the time
     // of failure.

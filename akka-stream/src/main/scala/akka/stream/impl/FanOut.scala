@@ -16,9 +16,13 @@ import org.reactivestreams.Subscription
  */
 @InternalApi private[akka] object FanOut {
 
-  final case class SubstreamRequestMore(id: Int, demand: Long) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamRequestMore(id: Int, demand: Long)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
   final case class SubstreamCancel(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
-  final case class SubstreamSubscribePending(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class SubstreamSubscribePending(id: Int)
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 
   class SubstreamSubscription(val parent: ActorRef, val id: Int) extends Subscription {
     override def request(elements: Long): Unit = parent ! SubstreamRequestMore(id, elements)
@@ -30,7 +34,9 @@ import org.reactivestreams.Subscription
     override def createSubscription(): Subscription = new SubstreamSubscription(actor, id)
   }
 
-  final case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]]) extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  final case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]])
+      extends DeadLetterSuppression
+      with NoSerializationVerificationNeeded
 
   class OutputBunch(outputCount: Int, impl: ActorRef, pump: Pump) {
     private var bunchCancelled = false
@@ -215,32 +221,33 @@ import org.reactivestreams.Subscription
     }
 
     // FIXME: Eliminate re-wraps
-    def subreceive: SubReceive = new SubReceive({
-      case ExposedPublishers(publishers) ⇒
-        publishers.zip(outputs) foreach {
-          case (pub, output) ⇒
-            output.subreceive(ExposedPublisher(pub))
-        }
+    def subreceive: SubReceive =
+      new SubReceive({
+        case ExposedPublishers(publishers) =>
+          publishers.zip(outputs).foreach {
+            case (pub, output) =>
+              output.subreceive(ExposedPublisher(pub))
+          }
 
-      case SubstreamRequestMore(id, demand) ⇒
-        if (demand < 1) // According to Reactive Streams Spec 3.9, with non-positive demand must yield onError
-          error(id, ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
-        else {
-          if (marked(id) && !pending(id)) markedPending += 1
-          pending(id) = true
-          outputs(id).subreceive(RequestMore(null, demand))
-        }
-      case SubstreamCancel(id) ⇒
-        if (unmarkCancelled) {
-          unmarkOutput(id)
-        }
-        if (marked(id) && !cancelled(id)) markedCancelled += 1
-        cancelled(id) = true
-        onCancel(id)
-        outputs(id).subreceive(Cancel(null))
-      case SubstreamSubscribePending(id) ⇒
-        outputs(id).subreceive(SubscribePending)
-    })
+        case SubstreamRequestMore(id, demand) =>
+          if (demand < 1) // According to Reactive Streams Spec 3.9, with non-positive demand must yield onError
+            error(id, ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
+          else {
+            if (marked(id) && !pending(id)) markedPending += 1
+            pending(id) = true
+            outputs(id).subreceive(RequestMore(null, demand))
+          }
+        case SubstreamCancel(id) =>
+          if (unmarkCancelled) {
+            unmarkOutput(id)
+          }
+          if (marked(id) && !cancelled(id)) markedCancelled += 1
+          cancelled(id) = true
+          onCancel(id)
+          outputs(id).subreceive(Cancel(null))
+        case SubstreamSubscribePending(id) =>
+          outputs(id).subreceive(SubscribePending)
+      })
 
   }
 
@@ -249,7 +256,10 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
+@DoNotInherit private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int)
+    extends Actor
+    with ActorLogging
+    with Pump {
   import FanOut._
 
   protected val outputBunch = new OutputBunch(outputCount, self, this)
@@ -297,23 +307,26 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class Unzip(_settings: ActorMaterializerSettings) extends FanOut(_settings, outputCount = 2) {
+@InternalApi private[akka] class Unzip(_settings: ActorMaterializerSettings)
+    extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
-  initialPhase(1, TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
-    primaryInputs.dequeueInputElement() match {
-      case (a, b) ⇒
-        outputBunch.enqueue(0, a)
-        outputBunch.enqueue(1, b)
+  initialPhase(
+    1,
+    TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () =>
+      primaryInputs.dequeueInputElement() match {
+        case (a, b) =>
+          outputBunch.enqueue(0, a)
+          outputBunch.enqueue(1, b)
 
-      case t: akka.japi.Pair[_, _] ⇒
-        outputBunch.enqueue(0, t.first)
-        outputBunch.enqueue(1, t.second)
+        case t: akka.japi.Pair[_, _] =>
+          outputBunch.enqueue(0, t.first)
+          outputBunch.enqueue(1, t.second)
 
-      case t ⇒
-        throw new IllegalArgumentException(
-          s"Unable to unzip elements of type ${t.getClass.getName}, " +
+        case t =>
+          throw new IllegalArgumentException(
+            s"Unable to unzip elements of type ${t.getClass.getName}, " +
             s"can only handle Tuple2 and akka.japi.Pair!")
-    }
-  })
+      }
+    })
 }

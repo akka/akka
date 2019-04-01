@@ -12,6 +12,9 @@ import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
+ *
+ * Note that this is a `Signal` poison pill, not a universal poison pill like the untyped actor one.
+ * This requires special handling on the receiving side where it is used (for example with the interceptor below).
  */
 @InternalApi private[akka] sealed abstract class PoisonPill extends Signal
 
@@ -31,16 +34,22 @@ import akka.annotation.InternalApi
  * and process stashed messages before stopping.
  */
 @InternalApi private[akka] final class PoisonPillInterceptor[M] extends BehaviorInterceptor[M, M] {
-  override def aroundReceive(ctx: TypedActorContext[M], msg: M, target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
+  override def aroundReceive(
+      ctx: TypedActorContext[M],
+      msg: M,
+      target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
     target(ctx, msg)
 
-  override def aroundSignal(ctx: TypedActorContext[M], signal: Signal, target: BehaviorInterceptor.SignalTarget[M]): Behavior[M] = {
+  override def aroundSignal(
+      ctx: TypedActorContext[M],
+      signal: Signal,
+      target: BehaviorInterceptor.SignalTarget[M]): Behavior[M] = {
     signal match {
-      case p: PoisonPill ⇒
+      case p: PoisonPill =>
         val next = target(ctx, p)
         if (Behavior.isUnhandled(next)) Behavior.stopped
         else next
-      case _ ⇒ target(ctx, signal)
+      case _ => target(ctx, signal)
     }
   }
 

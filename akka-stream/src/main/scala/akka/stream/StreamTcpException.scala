@@ -14,4 +14,3 @@ class BindFailedException extends StreamTcpException("bind failed")
 case object BindFailedException extends BindFailedException
 
 class ConnectionException(msg: String) extends StreamTcpException(msg)
-

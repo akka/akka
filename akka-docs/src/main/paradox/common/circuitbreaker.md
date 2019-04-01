@@ -115,7 +115,7 @@ Akka circuit breaker provides a way to achieve such use case:
 
 All methods above accepts an argument `defineFailureFn`
 
-Type of `defineFailureFn`: @scala[`Try[T] ⇒ Boolean`]@java[`BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`]
+Type of `defineFailureFn`: @scala[`Try[T] => Boolean`]@java[`BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`]
 
 @scala[This is a function which takes in a `Try[T]` and returns a `Boolean`. The `Try[T]` correspond to the `Future[T]` of the protected call.]
 @java[The response of a protected call is modelled using `Optional[T]` for a successful return value and `Optional[Throwable]` for exceptions.] This function should return `true` if the call should increase failure count, else false.

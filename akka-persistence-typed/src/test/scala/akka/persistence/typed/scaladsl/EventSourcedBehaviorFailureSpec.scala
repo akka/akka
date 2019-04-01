@@ -13,12 +13,21 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
+import akka.actor.typed.PostStop
+import akka.actor.typed.PreRestart
+import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.internal.JournalFailureException
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -37,9 +46,12 @@ class ChaosJournal extends InmemJournal {
       Future.failed(TestException("database says no"))
     } else if (pid == "reject-first" && reject) {
       reject = false
-      Future.successful(messages.map(_ ⇒ Try {
-        throw TestException("I don't like it")
-      }))
+      Future.successful(messages.map(_ =>
+        Try {
+          throw TestException("I don't like it")
+        }))
+    } else if (messages.head.payload.head.payload == "malicious") {
+      super.asyncWriteMessages(List(AtomicWrite(List(messages.head.payload.head.withPayload("wrong-event")))))
     } else {
       super.asyncWriteMessages(messages)
     }
@@ -59,9 +71,9 @@ class ChaosJournal extends InmemJournal {
 
 object EventSourcedBehaviorFailureSpec {
 
-  val conf: Config = ConfigFactory.parseString(
-    s"""
-      akka.loglevel = DEBUG
+  val conf: Config = ConfigFactory.parseString(s"""
+      akka.loglevel = INFO
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "failure-journal"
       failure-journal = $${akka.persistence.journal.inmem}
       failure-journal {
@@ -70,56 +82,102 @@ object EventSourcedBehaviorFailureSpec {
     """).withFallback(ConfigFactory.defaultReference()).resolve()
 }
 
-class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorFailureSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorFailureSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorFailureSpec.conf)
+    with WordSpecLike {
 
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
+  // Needed for the untyped event filter
+  implicit val untyped = system.toUntyped
+
+  untyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+
+  def failingPersistentActor(
+      pid: PersistenceId,
+      probe: ActorRef[String],
+      additionalSignalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
+      : EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior[String, String, String](
-      pid, "",
+      pid,
+      "",
       (_, cmd) ⇒ {
         if (cmd == "wrong")
-          throw new TestException("wrong command")
+          throw TestException("wrong command")
         probe.tell("persisting")
-        Effect.persist(cmd)
+        Effect.persist(cmd).thenRun(_ => probe.tell("persisted"))
       },
       (state, event) ⇒ {
+        if (event == "wrong-event")
+          throw TestException("wrong event")
         probe.tell(event)
         state + event
-      }
-    ).onRecoveryCompleted { _ ⇒
+      }).receiveSignal(additionalSignalHandler.orElse {
+      case RecoveryCompleted(_) ⇒
         probe.tell("starting")
-      }
-      .onPostStop(() ⇒ probe.tell("stopped"))
-      .onPreRestart(() ⇒ probe.tell("restarting"))
-      .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
-        .withLoggingEnabled(enabled = false))
+      case PostStop ⇒
+        probe.tell("stopped")
+      case PreRestart ⇒
+        probe.tell("restarting")
+    })
 
   "A typed persistent actor (failures)" must {
 
-    "call onRecoveryFailure when replay fails" in {
-      val probe = TestProbe[String]()
-      val excProbe = TestProbe[Throwable]()
-      spawn(failingPersistentActor(PersistenceId("fail-recovery"), probe.ref)
-        .onRecoveryFailure(t ⇒ excProbe.ref ! t))
+    "signal RecoveryFailure when replay fails" in {
+      EventFilter[JournalFailureException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val excProbe = TestProbe[Throwable]()
+        spawn(failingPersistentActor(PersistenceId("fail-recovery"), probe.ref, {
+          case RecoveryFailed(t) ⇒
+            excProbe.ref ! t
+        }))
 
-      excProbe.expectMessageType[TestException].message shouldEqual "Nope"
-      probe.expectMessage("restarting")
+        excProbe.expectMessageType[TestException].message shouldEqual "Nope"
+        probe.expectMessage("stopped")
+      }
     }
 
     "handle exceptions in onRecoveryFailure" in {
       val probe = TestProbe[String]()
-      val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref)
-        .onRecoveryFailure(_ ⇒ throw TestException("recovery call back failure")))
+      val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref, {
+        case RecoveryFailed(_) ⇒
+          throw TestException("recovery call back failure")
+      }))
       pa ! "one"
       probe.expectMessage("starting")
       probe.expectMessage("persisting")
       probe.expectMessage("one")
+      probe.expectMessage("persisted")
+    }
+
+    "signal RecoveryFailure when event handler throws during replay" in {
+      val probe = TestProbe[String]()
+      val excProbe = TestProbe[Throwable]()
+      val pid = PersistenceId("wrong-event-1")
+      val ref = spawn(failingPersistentActor(pid, probe.ref))
+
+      ref ! "malicious"
+      probe.expectMessage("starting")
+      probe.expectMessage("persisting")
+      probe.expectMessage("malicious")
+      probe.expectMessage("persisted")
+
+      EventFilter[JournalFailureException](occurrences = 1).intercept {
+        // start again and then the event handler will throw
+        spawn(failingPersistentActor(pid, probe.ref, {
+          case RecoveryFailed(t) ⇒
+            excProbe.ref ! t
+        }))
+
+        excProbe.expectMessageType[TestException].message shouldEqual "wrong event"
+        probe.expectMessage("stopped")
+      }
     }
 
     "restart with backoff" in {
       val probe = TestProbe[String]()
-      val behav = failingPersistentActor(PersistenceId("fail-first-2"), probe.ref)
+      val behav = failingPersistentActor(PersistenceId("fail-first-2"), probe.ref).onPersistFailure(
+        SupervisorStrategy.restartWithBackoff(1.milli, 10.millis, 0.1).withLoggingEnabled(enabled = false))
       val c = spawn(behav)
       probe.expectMessage("starting")
       // fail
@@ -138,13 +196,15 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       c ! "three"
       probe.expectMessage("persisting")
       probe.expectMessage("three")
+      probe.expectMessage("persisted")
       // no restart
       probe.expectNoMessage()
     }
 
     "restart with backoff for recovery" in {
       val probe = TestProbe[String]()
-      val behav = failingPersistentActor(PersistenceId("fail-recovery-once"), probe.ref)
+      val behav = failingPersistentActor(PersistenceId("fail-recovery-once"), probe.ref).onPersistFailure(
+        SupervisorStrategy.restartWithBackoff(1.milli, 10.millis, 0.1).withLoggingEnabled(enabled = false))
       spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete
       probe.expectMessage("restarting")
@@ -155,10 +215,10 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
     "handles rejections" in {
       val probe = TestProbe[String]()
       val behav =
-        Behaviors.supervise(
-          failingPersistentActor(PersistenceId("reject-first"), probe.ref)).onFailure[EventRejectedException](
-            SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
-              .withLoggingEnabled(enabled = false))
+        Behaviors
+          .supervise(failingPersistentActor(PersistenceId("reject-first"), probe.ref))
+          .onFailure[EventRejectedException](
+            SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1).withLoggingEnabled(enabled = false))
       val c = spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete
       probe.expectMessage("starting")
@@ -170,27 +230,47 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       c ! "two"
       probe.expectMessage("persisting")
       probe.expectMessage("two")
+      probe.expectMessage("persisted")
       // no restart
       probe.expectNoMessage()
     }
 
     "stop (default supervisor strategy) if command handler throws" in {
-      val probe = TestProbe[String]()
-      val behav = failingPersistentActor(PersistenceId("wrong-command-1"), probe.ref)
-      val c = spawn(behav)
-      probe.expectMessage("starting")
-      c ! "wrong"
-      probe.expectMessage("stopped")
+      EventFilter[TestException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val behav = failingPersistentActor(PersistenceId("wrong-command-1"), probe.ref)
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        c ! "wrong"
+        probe.expectMessage("stopped")
+      }
     }
 
     "restart supervisor strategy if command handler throws" in {
-      val probe = TestProbe[String]()
-      val behav = Behaviors.supervise(failingPersistentActor(PersistenceId("wrong-command-2"), probe.ref))
-        .onFailure[TestException](SupervisorStrategy.restart)
-      val c = spawn(behav)
-      probe.expectMessage("starting")
-      c ! "wrong"
-      probe.expectMessage("restarting")
+      EventFilter[TestException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val behav = Behaviors
+          .supervise(failingPersistentActor(PersistenceId("wrong-command-2"), probe.ref))
+          .onFailure[TestException](SupervisorStrategy.restart)
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        c ! "wrong"
+        probe.expectMessage("restarting")
+      }
+    }
+
+    "not accept wrong event, before persisting it" in {
+      EventFilter[TestException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val behav = failingPersistentActor(PersistenceId("wrong-event-2"), probe.ref)
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        // event handler will throw for this event
+        c ! "wrong-event"
+        probe.expectMessage("persisting")
+        // but not "persisted"
+        probe.expectMessage("stopped")
+      }
     }
   }
 }

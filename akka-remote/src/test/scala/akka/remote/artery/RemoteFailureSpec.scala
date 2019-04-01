@@ -25,13 +25,12 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
     "not be exhausted by sending to broken connections" in {
       val remoteSystems = Vector.fill(5)(newRemoteSystem())
 
-      remoteSystems foreach { sys ⇒
-        sys.eventStream.publish(TestEvent.Mute(
-          EventFilter[EndpointDisassociatedException](),
-          EventFilter.warning(pattern = "received dead letter.*")))
+      remoteSystems.foreach { sys =>
+        sys.eventStream.publish(TestEvent
+          .Mute(EventFilter[EndpointDisassociatedException](), EventFilter.warning(pattern = "received dead letter.*")))
         sys.actorOf(TestActors.echoActorProps, name = "echo")
       }
-      val remoteSelections = remoteSystems map { sys ⇒
+      val remoteSelections = remoteSystems.map { sys =>
         system.actorSelection(rootActorPath(sys) / "user" / "echo")
       }
 
@@ -41,28 +40,32 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
       val n = 100
 
       // first everything is up and running
-      1 to n foreach { x ⇒
+      (1 to n).foreach { x =>
         localSelection ! Ping("1")
         remoteSelections(x % remoteSystems.size) ! Ping("1")
       }
 
       within(5.seconds) {
-        receiveN(n * 2) foreach { reply ⇒ reply should ===(Ping("1")) }
+        receiveN(n * 2).foreach { reply =>
+          reply should ===(Ping("1"))
+        }
       }
 
       // then we shutdown remote systems to simulate broken connections
-      remoteSystems foreach { sys ⇒
+      remoteSystems.foreach { sys =>
         shutdown(sys)
       }
 
-      1 to n foreach { x ⇒
+      (1 to n).foreach { x =>
         localSelection ! Ping("2")
         remoteSelections(x % remoteSystems.size) ! Ping("2")
       }
 
       // ping messages to localEcho should go through even though we use many different broken connections
       within(5.seconds) {
-        receiveN(n) foreach { reply ⇒ reply should ===(Ping("2")) }
+        receiveN(n).foreach { reply =>
+          reply should ===(Ping("2"))
+        }
       }
 
     }

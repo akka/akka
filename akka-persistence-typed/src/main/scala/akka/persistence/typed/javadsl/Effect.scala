@@ -5,12 +5,11 @@
 package akka.persistence.typed.javadsl
 
 import scala.collection.JavaConverters._
-
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
 /**
@@ -25,6 +24,7 @@ import akka.persistence.typed.internal._
  * Not for user extension
  */
 @DoNotInherit sealed class EffectFactories[Event, State] {
+
   /**
    * Persist a single event
    */
@@ -79,7 +79,7 @@ import akka.persistence.typed.internal._
    * @see [[Effect.thenUnstashAll]]
    */
   def unstashAll(): Effect[Event, State] =
-    none().andThen(SideEffect.unstashAll())
+    none().thenUnstashAll()
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -93,7 +93,9 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+  def reply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
     none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
@@ -117,7 +119,8 @@ import akka.persistence.typed.internal._
  * Not intended for user extension.
  */
 @DoNotInherit abstract class Effect[+Event, State] {
-  self: EffectImpl[Event, State] ⇒
+  self: EffectImpl[Event, State] =>
+
   /**
    * Run the given callback. Callbacks are run sequentially.
    *
@@ -128,18 +131,13 @@ import akka.persistence.typed.internal._
    *
    */
   final def thenRun[NewState <: State](callback: function.Procedure[NewState]): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[State](s ⇒ callback.apply(s.asInstanceOf[NewState])))
+    CompositeEffect(this, SideEffect[State](s => callback.apply(s.asInstanceOf[NewState])))
 
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
   final def thenRun(callback: function.Effect): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[State]((_: State) ⇒ callback.apply()))
-
-  /**
-   * Run the given callback after the current Effect
-   */
-  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
+    CompositeEffect(this, SideEffect[State]((_: State) => callback.apply()))
 
   /** The side effect is to stop the actor */
   def thenStop(): Effect[Event, State]
@@ -165,8 +163,10 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
-    CompositeEffect(this, SideEffect[State](newState ⇒ cmd.replyTo ! replyWithMessage(newState)))
+  def thenReply[ReplyMessage](
+      cmd: ExpectingReply[ReplyMessage],
+      replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
+    CompositeEffect(this, SideEffect[State](newState => cmd.replyTo ! replyWithMessage(newState)))
 
   /**
    * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -183,5 +183,5 @@ import akka.persistence.typed.internal._
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @DoNotInherit abstract class ReplyEffect[+Event, State] extends Effect[Event, State] {
-  self: EffectImpl[Event, State] ⇒
+  self: EffectImpl[Event, State] =>
 }

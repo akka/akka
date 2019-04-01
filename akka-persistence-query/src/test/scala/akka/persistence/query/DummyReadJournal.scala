@@ -15,21 +15,22 @@ import akka.actor.ExtendedActorSystem
  */
 class DummyReadJournal(val dummyValue: String) extends scaladsl.ReadJournal with scaladsl.PersistenceIdsQuery {
   override def persistenceIds(): Source[String, NotUsed] =
-    Source.fromIterator(() ⇒ Iterator.from(0)).map(_.toString)
+    Source.fromIterator(() => Iterator.from(0)).map(_.toString)
 }
 
 object DummyReadJournal {
   final val Identifier = "akka.persistence.query.journal.dummy"
 }
 
-class DummyReadJournalForJava(readJournal: DummyReadJournal) extends javadsl.ReadJournal with javadsl.PersistenceIdsQuery {
+class DummyReadJournalForJava(readJournal: DummyReadJournal)
+    extends javadsl.ReadJournal
+    with javadsl.PersistenceIdsQuery {
   override def persistenceIds(): akka.stream.javadsl.Source[String, NotUsed] =
     readJournal.persistenceIds().asJava
 }
 
 object DummyReadJournalProvider {
-  final val config: Config = ConfigFactory.parseString(
-    s"""
+  final val config: Config = ConfigFactory.parseString(s"""
       ${DummyReadJournal.Identifier} {
         class = "${classOf[DummyReadJournalProvider].getCanonicalName}"
       }
@@ -64,9 +65,9 @@ class DummyReadJournalProvider2(sys: ExtendedActorSystem) extends DummyReadJourn
 
 class DummyReadJournalProvider3(sys: ExtendedActorSystem, conf: Config) extends DummyReadJournalProvider
 
-class DummyReadJournalProvider4(sys: ExtendedActorSystem, conf: Config, confPath: String) extends DummyReadJournalProvider
+class DummyReadJournalProvider4(sys: ExtendedActorSystem, conf: Config, confPath: String)
+    extends DummyReadJournalProvider
 
 class DummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider
 
 class CustomDummyReadJournalProvider5(sys: ExtendedActorSystem) extends DummyReadJournalProvider("custom")
-

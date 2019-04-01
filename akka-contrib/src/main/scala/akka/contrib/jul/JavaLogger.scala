@@ -38,11 +38,11 @@ trait JavaLogging {
 class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSemantics] {
 
   def receive = {
-    case event @ Error(cause, _, _, _) ⇒ log(logging.Level.SEVERE, cause, event)
-    case event: Warning                ⇒ log(logging.Level.WARNING, null, event)
-    case event: Info                   ⇒ log(logging.Level.INFO, null, event)
-    case event: Debug                  ⇒ log(logging.Level.CONFIG, null, event)
-    case InitializeLogger(_)           ⇒ sender() ! LoggerInitialized
+    case event @ Error(cause, _, _, _) => log(logging.Level.SEVERE, cause, event)
+    case event: Warning                => log(logging.Level.WARNING, null, event)
+    case event: Info                   => log(logging.Level.INFO, null, event)
+    case event: Debug                  => log(logging.Level.CONFIG, null, event)
+    case InitializeLogger(_)           => sender() ! LoggerInitialized
   }
 
   @inline
@@ -106,13 +106,12 @@ trait JavaLoggingAdapter extends LoggingAdapter {
   // it is unfortunate that this workaround is needed
   private def updateSource(record: logging.LogRecord): Unit = {
     val stack = Thread.currentThread.getStackTrace
-    val source = stack.find {
-      frame ⇒
-        val cname = frame.getClassName
-        !cname.startsWith("akka.contrib.jul.") &&
-          !cname.startsWith("akka.event.LoggingAdapter") &&
-          !cname.startsWith("java.lang.reflect.") &&
-          !cname.startsWith("sun.reflect.")
+    val source = stack.find { frame =>
+      val cname = frame.getClassName
+      !cname.startsWith("akka.contrib.jul.") &&
+      !cname.startsWith("akka.event.LoggingAdapter") &&
+      !cname.startsWith("java.lang.reflect.") &&
+      !cname.startsWith("sun.reflect.")
     }
     if (source.isDefined) {
       record.setSourceClassName(source.get.getClassName)

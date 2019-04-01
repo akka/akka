@@ -12,8 +12,7 @@ import akka.util.{ Helpers }
 import akka.util.Helpers.ConfigOps
 import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
-class RemoteConfigSpec extends AkkaSpec(
-  """
+class RemoteConfigSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.netty.tcp.port = 0
   """) {
@@ -46,9 +45,10 @@ class RemoteConfigSpec extends AkkaSpec(
       Transports.size should ===(1)
       Transports.head._1 should ===(classOf[akka.remote.transport.netty.NettyTransport].getName)
       Transports.head._2 should ===(Nil)
-      Adapters should ===(Map(
-        "gremlin" → classOf[akka.remote.transport.FailureInjectorProvider].getName,
-        "trttl" → classOf[akka.remote.transport.ThrottlerProvider].getName))
+      Adapters should ===(
+        Map(
+          "gremlin" -> classOf[akka.remote.transport.FailureInjectorProvider].getName,
+          "trttl" -> classOf[akka.remote.transport.ThrottlerProvider].getName))
 
       WatchFailureDetectorImplementationClass should ===(classOf[PhiAccrualFailureDetector].getName)
       WatchHeartBeatInterval should ===(1 seconds)
@@ -81,8 +81,8 @@ class RemoteConfigSpec extends AkkaSpec(
       import s._
 
       ConnectionTimeout should ===(15.seconds)
-      ConnectionTimeout should ===(new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
-        .HandshakeTimeout)
+      ConnectionTimeout should ===(
+        new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config).HandshakeTimeout)
       WriteBufferHighWaterMark should ===(None)
       WriteBufferLowWaterMark should ===(None)
       SendBufferSize should ===(Some(256000))

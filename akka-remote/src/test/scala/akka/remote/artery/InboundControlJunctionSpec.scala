@@ -29,11 +29,12 @@ object InboundControlJunctionSpec {
 }
 
 class InboundControlJunctionSpec
-  extends AkkaSpec("""
+    extends AkkaSpec("""
                    akka.actor.serialization-bindings {
                      "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
                    }
-                   """) with ImplicitSender {
+                   """)
+    with ImplicitSender {
   import InboundControlJunctionSpec._
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
@@ -49,10 +50,11 @@ class InboundControlJunctionSpec
       val inboundContext = new TestInboundContext(localAddress = addressB)
       val recipient = OptionVal.None // not used
 
-      val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
-        .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
+      val ((upstream, controlSubject), downstream) = TestSource
+        .probe[AnyRef]
+        .map(msg => InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
         .viaMat(new InboundControlJunction)(Keep.both)
-        .map { case env: InboundEnvelope ⇒ env.message }
+        .map { case env: InboundEnvelope => env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

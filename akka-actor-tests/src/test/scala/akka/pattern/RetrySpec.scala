@@ -18,11 +18,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
 
   "pattern.retry" must {
     "run a successful Future immediately" in {
-      val retried = retry(
-        () ⇒ Future.successful(5),
-        5,
-        1 second
-      )
+      val retried = retry(() => Future.successful(5), 5, 1 second)
 
       within(3 seconds) {
         Await.result(retried, remaining) should ===(5)
@@ -32,13 +28,13 @@ class RetrySpec extends AkkaSpec with RetrySupport {
     "run a successful Future only once" in {
       @volatile var counter = 0
       val retried = retry(
-        () ⇒ Future.successful({
-          counter += 1
-          counter
-        }),
+        () =>
+          Future.successful({
+            counter += 1
+            counter
+          }),
         5,
-        1 second
-      )
+        1 second)
 
       within(3 seconds) {
         Await.result(retried, remaining) should ===(1)
@@ -46,11 +42,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
     }
 
     "eventually return a failure for a Future that will never succeed" in {
-      val retried = retry(
-        () ⇒ Future.failed(new IllegalStateException("Mexico")),
-        5,
-        100 milliseconds
-      )
+      val retried = retry(() => Future.failed(new IllegalStateException("Mexico")), 5, 100 milliseconds)
 
       within(3 second) {
         intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("Mexico")
@@ -67,11 +59,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(
-        () ⇒ attempt,
-        10,
-        100 milliseconds
-      )
+      val retried = retry(() => attempt, 10, 100 milliseconds)
 
       within(3 seconds) {
         Await.result(retried, remaining) should ===(5)
@@ -88,11 +76,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(
-        () ⇒ attempt,
-        5,
-        100 milliseconds
-      )
+      val retried = retry(() => attempt, 5, 100 milliseconds)
 
       within(3 seconds) {
         intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("6")

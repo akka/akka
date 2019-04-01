@@ -7,13 +7,13 @@ package docs.camel
 object PublishSubscribe {
   //#PubSub
   import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-  import akka.camel.{ Producer, CamelMessage, Consumer }
+  import akka.camel.{ CamelMessage, Consumer, Producer }
 
   class Subscriber(name: String, uri: String) extends Actor with Consumer {
     def endpointUri = uri
 
     def receive = {
-      case msg: CamelMessage ⇒ println("%s received: %s" format (name, msg.body))
+      case msg: CamelMessage => println("%s received: %s".format(name, msg.body))
     }
   }
 
@@ -29,7 +29,7 @@ object PublishSubscribe {
     def endpointUri = uri
 
     def receive = {
-      case msg: CamelMessage ⇒ {
+      case msg: CamelMessage => {
         publisher ! msg.bodyAs[String]
         sender() ! ("message published")
       }
@@ -43,6 +43,7 @@ object PublishSubscribe {
   val jmsSubscriber1 = system.actorOf(Props(classOf[Subscriber], "jms-subscriber-1", jmsUri))
   val jmsSubscriber2 = system.actorOf(Props(classOf[Subscriber], "jms-subscriber-2", jmsUri))
   val jmsPublisher = system.actorOf(Props(classOf[Publisher], "jms-publisher", jmsUri))
-  val jmsPublisherBridge = system.actorOf(Props(classOf[PublisherBridge], "jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher))
+  val jmsPublisherBridge =
+    system.actorOf(Props(classOf[PublisherBridge], "jetty:http://0.0.0.0:8877/camel/pub/jms", jmsPublisher))
   //#PubSub
 }

@@ -23,28 +23,21 @@ class TimeoutsSpec extends StreamSpec {
   "InitialTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).initialTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).initialTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100)
-            .concat(Source.failed(TE("test")))
-            .initialTimeout(2.seconds)
-            .grouped(200)
-            .runWith(Sink.head),
+          Source(1 to 100).concat(Source.failed(TE("test"))).initialTimeout(2.seconds).grouped(200).runWith(Sink.head),
           3.seconds)
       }
     }
 
     "fail if no initial element passes until timeout" in assertAllStagesStopped {
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.maybe[Int]
-        .initialTimeout(1.second)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.maybe[Int].initialTimeout(1.second).runWith(Sink.fromSubscriber(downstreamProbe))
 
       downstreamProbe.expectSubscription()
       downstreamProbe.expectNoMsg(500.millis)
@@ -58,17 +51,18 @@ class TimeoutsSpec extends StreamSpec {
   "CompletionTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).completionTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).completionTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100).concat(Source.failed(TE("test")))
+          Source(1 to 100)
+            .concat(Source.failed(TE("test")))
             .completionTimeout(2.seconds)
-            .grouped(200).runWith(Sink.head),
+            .grouped(200)
+            .runWith(Sink.head),
           3.seconds)
       }
     }
@@ -76,9 +70,7 @@ class TimeoutsSpec extends StreamSpec {
     "fail if not completed until timeout" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstreamProbe)
-        .completionTimeout(2.seconds)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.fromPublisher(upstreamProbe).completionTimeout(2.seconds).runWith(Sink.fromSubscriber(downstreamProbe))
 
       upstreamProbe.sendNext(1)
       downstreamProbe.requestNext(1)
@@ -97,17 +89,14 @@ class TimeoutsSpec extends StreamSpec {
   "IdleTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).idleTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).idleTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100).concat(Source.failed(TE("test")))
-            .idleTimeout(2.seconds)
-            .grouped(200).runWith(Sink.head),
+          Source(1 to 100).concat(Source.failed(TE("test"))).idleTimeout(2.seconds).grouped(200).runWith(Sink.head),
           3.seconds)
       }
     }
@@ -115,13 +104,11 @@ class TimeoutsSpec extends StreamSpec {
     "fail if time between elements is too large" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstreamProbe)
-        .idleTimeout(1.seconds)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.fromPublisher(upstreamProbe).idleTimeout(1.seconds).runWith(Sink.fromSubscriber(downstreamProbe))
 
       // Two seconds in overall, but won't timeout until time between elements is large enough
       // (i.e. this works differently from completionTimeout)
-      for (_ ← 1 to 4) {
+      for (_ <- 1 to 4) {
         upstreamProbe.sendNext(1)
         downstreamProbe.requestNext(1)
         downstreamProbe.expectNoMsg(500.millis) // No timeout yet
@@ -136,17 +123,16 @@ class TimeoutsSpec extends StreamSpec {
   "BackpressureTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "succeed if subscriber demand arrives" in assertAllStagesStopped {
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source(1 to 4)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source(1 to 4).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
-      for (i ← 1 to 3) {
+      for (i <- 1 to 3) {
         subscriber.requestNext(i)
         subscriber.expectNoMsg(250.millis)
       }
@@ -159,9 +145,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[String]()
       val subscriber = TestSubscriber.probe[String]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(2)
 
@@ -181,9 +165,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[String]()
       val subscriber = TestSubscriber.probe[String]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(16)
       subscriber.expectNoMsg(2.second)
@@ -196,9 +178,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(1)
       publisher.sendNext(1)
@@ -213,9 +193,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.expectSubscription()
 
@@ -228,9 +206,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(2)
       publisher.sendNext(1)
@@ -249,9 +225,8 @@ class TimeoutsSpec extends StreamSpec {
     "not signal error in simple loopback case and pass through elements unmodified" in assertAllStagesStopped {
       val timeoutIdentity = BidiFlow.bidirectionalIdleTimeout[Int, Int](2.seconds).join(Flow[Int])
 
-      Await.result(
-        Source(1 to 100).via(timeoutIdentity).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).via(timeoutIdentity).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "not signal error if traffic is one-way" in assertAllStagesStopped {
@@ -288,15 +263,17 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1
-        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
-        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
+          Source.fromPublisher(upWrite) ~> timeoutStage.in1
+          timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+          Sink.fromSubscriber(upRead) <~ timeoutStage.out2
+          timeoutStage.in2 <~ Source.fromPublisher(downWrite)
+          ClosedShape
+        })
+        .run()
 
       // Request enough for the whole test
       upRead.request(100)
@@ -336,15 +313,17 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1
-        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
-        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
+          Source.fromPublisher(upWrite) ~> timeoutStage.in1
+          timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+          Sink.fromSubscriber(upRead) <~ timeoutStage.out2
+          timeoutStage.in2 <~ Source.fromPublisher(downWrite)
+          ClosedShape
+        })
+        .run()
 
       val te = TE("test")
 

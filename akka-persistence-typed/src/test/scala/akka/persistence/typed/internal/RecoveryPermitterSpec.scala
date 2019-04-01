@@ -19,6 +19,8 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.testkit.TestEvent.Mute
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -40,30 +42,33 @@ object RecoveryPermitterSpec {
   case object Recovered extends Event
 
   def persistentBehavior(
-    name:            String,
-    commandProbe:    TestProbe[Any],
-    eventProbe:      TestProbe[Any],
-    throwOnRecovery: Boolean        = false): Behavior[Command] =
+      name: String,
+      commandProbe: TestProbe[Any],
+      eventProbe: TestProbe[Any],
+      throwOnRecovery: Boolean = false): Behavior[Command] =
     EventSourcedBehavior[Command, Event, State](
       persistenceId = PersistenceId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
-        case StopActor ⇒ Effect.stop()
-        case command   ⇒ commandProbe.ref ! command; Effect.none
+        case StopActor => Effect.stop()
+        case command   => commandProbe.ref ! command; Effect.none
       },
-      eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
-    ).onRecoveryCompleted { _ ⇒
+      eventHandler = { (state, event) =>
+        eventProbe.ref ! event; state
+      }).receiveSignal {
+      case RecoveryCompleted(state) =>
         eventProbe.ref ! Recovered
         if (throwOnRecovery) throw new TE
-      }
+    }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
-    Behaviors.receive[Any] {
-      (_, any) ⇒ target.ref ! any; Behaviors.same
+    Behaviors.receive[Any] { (_, any) =>
+      target.ref ! any; Behaviors.same
     }
 }
 
 class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.actor.warn-about-java-serializer-usage = off
@@ -73,6 +78,8 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
   import RecoveryPermitterSpec._
 
   implicit val untypedSystem = system.toUntyped
+
+  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   private val permitter = Persistence(untypedSystem).recoveryPermitter
 
@@ -186,21 +193,19 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       val stopProbe = createTestProbe[ActorRef[Command]]()
       val parent =
         EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
-          spawn(
-            Behaviors.setup[Command](ctx ⇒ {
-              val persistentActor =
-                ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
-              Behaviors.receive[Command] {
-                case (_, StopActor) ⇒
-                  stopProbe.ref ! persistentActor
-                  ctx.stop(persistentActor)
-                  Behavior.same
-                case (_, message) ⇒
-                  persistentActor ! message
-                  Behaviors.same
-              }
-            })
-          )
+          spawn(Behaviors.setup[Command](ctx => {
+            val persistentActor =
+              ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
+            Behaviors.receive[Command] {
+              case (_, StopActor) =>
+                stopProbe.ref ! persistentActor
+                ctx.stop(persistentActor)
+                Behavior.same
+              case (_, message) =>
+                persistentActor ! message
+                Behaviors.same
+            }
+          }))
         }
       p3.expectMessage(Recovered)
       // stop it

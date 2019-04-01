@@ -35,7 +35,7 @@ class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelS
     val latch = TestLatch(1)
     val actor = start(new Consumer {
       def endpointUri = "direct:a3"
-      def receive = { case _ ⇒ {} }
+      def receive = { case _ => {} }
 
       override def postStop(): Unit = {
         super.postStop()
@@ -75,7 +75,7 @@ class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelS
     }
 
     override def receive = {
-      case msg: CamelMessage ⇒ sender() ! "received " + msg.body
+      case msg: CamelMessage => sender() ! "received " + msg.body
     }
   }
 

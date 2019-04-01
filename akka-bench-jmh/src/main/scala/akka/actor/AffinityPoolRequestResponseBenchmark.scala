@@ -44,13 +44,14 @@ class AffinityPoolRequestResponseBenchmark {
     requireRightNumberOfCores(cores)
 
     val mailboxConf = mailbox match {
-      case "default" ⇒ ""
-      case "SingleConsumerOnlyUnboundedMailbox" ⇒
+      case "default" => ""
+      case "SingleConsumerOnlyUnboundedMailbox" =>
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
 
-    system = ActorSystem("AffinityPoolComparativeBenchmark", ConfigFactory.parseString(
-      s"""| akka {
+    system = ActorSystem(
+      "AffinityPoolComparativeBenchmark",
+      ConfigFactory.parseString(s"""| akka {
           |   log-dead-letters = off
           |   actor {
           |     default-fj-dispatcher {
@@ -86,8 +87,7 @@ class AffinityPoolRequestResponseBenchmark {
           |     $mailboxConf
           |   }
           | }
-      """.stripMargin
-    ))
+      """.stripMargin))
   }
 
   @TearDown(Level.Trial)
@@ -95,7 +95,8 @@ class AffinityPoolRequestResponseBenchmark {
 
   @Setup(Level.Invocation)
   def setupActors(): Unit = {
-    val (_actors, _latch) = RequestResponseActors.startUserQueryActorPairs(numActors, numQueriesPerActor, numUsersInDB, dispatcher)
+    val (_actors, _latch) =
+      RequestResponseActors.startUserQueryActorPairs(numActors, numQueriesPerActor, numUsersInDB, dispatcher)
     actors = _actors
     latch = _latch
   }

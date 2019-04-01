@@ -19,7 +19,7 @@ object ClusterShardingInternalsSpec {
   case class HandOffStopMessage() extends NoSerializationVerificationNeeded
   class EmptyHandlerActor extends Actor {
     override def receive: Receive = {
-      case _ ⇒
+      case _ =>
     }
 
     override def postStop(): Unit = {
@@ -28,8 +28,7 @@ object ClusterShardingInternalsSpec {
   }
 }
 
-class ClusterShardingInternalsSpec extends AkkaSpec(
-  """
+class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
@@ -68,8 +67,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec(
       val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
       val handOffStopper = system.actorOf(
-        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis))
-      )
+        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis)))
 
       watch(emptyHandlerActor)
       expectTerminated(emptyHandlerActor, 1.seconds)

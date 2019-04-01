@@ -64,13 +64,13 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@ApiMayChange class ConfigSSLEngineProvider(
-  protected val config: Config,
-  protected val log:    MarkerLoggingAdapter) extends SSLEngineProvider {
+@ApiMayChange class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
+    extends SSLEngineProvider {
 
-  def this(system: ActorSystem) = this(
-    system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
-    Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
+  def this(system: ActorSystem) =
+    this(
+      system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
+      Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
   val SSLKeyStore: String = config.getString("key-store")
   val SSLTrustStore: String = config.getString("trust-store")
@@ -88,7 +88,9 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     if (HostnameVerification)
       log.debug("TLS/SSL hostname verification is enabled.")
     else
-      log.warning(LogMarker.Security, "TLS/SSL hostname verification is disabled. " +
+      log.warning(
+        LogMarker.Security,
+        "TLS/SSL hostname verification is disabled. " +
         "Please configure akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on " +
         "and ensure the X.509 certificate on the host is correct to remove this warning. " +
         "See Akka reference documentation for more information.")
@@ -103,12 +105,16 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
       ctx.init(keyManagers, trustManagers, rng)
       ctx
     } catch {
-      case e: FileNotFoundException ⇒
-        throw new SslTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException ⇒
+      case e: FileNotFoundException =>
+        throw new SslTransportException(
+          "Server SSL connection could not be established because key store could not be loaded",
+          e)
+      case e: IOException =>
         throw new SslTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒
-        throw new SslTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+      case e: GeneralSecurityException =>
+        throw new SslTransportException(
+          "Server SSL connection could not be established because SSL context could not be constructed",
+          e)
     }
   }
 
@@ -118,7 +124,8 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
   protected def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     val fin = Files.newInputStream(Paths.get(filename))
-    try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+    try keyStore.load(fin, password.toCharArray)
+    finally Try(fin.close())
     keyStore
   }
 
@@ -153,11 +160,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     createSSLEngine(sslContext, role, hostname, port)
   }
 
-  private def createSSLEngine(
-    sslContext: SSLContext,
-    role:       TLSRole,
-    hostname:   String,
-    port:       Int): SSLEngine = {
+  private def createSSLEngine(sslContext: SSLContext, role: TLSRole, hostname: String, port: Int): SSLEngine = {
 
     val engine = sslContext.createSSLEngine(hostname, port)
 
@@ -191,15 +194,16 @@ object SSLEngineProviderSetup {
    * Scala API: factory for defining a `SSLEngineProvider` that is passed in when ActorSystem
    * is created rather than creating one from configured class name.
    */
-  def apply(sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider): SSLEngineProviderSetup =
+  def apply(sslEngineProvider: ExtendedActorSystem => SSLEngineProvider): SSLEngineProviderSetup =
     new SSLEngineProviderSetup(sslEngineProvider)
 
   /**
    * Java API: factory for defining a `SSLEngineProvider` that is passed in when ActorSystem
    * is created rather than creating one from configured class name.
    */
-  def create(sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
-    apply(sys ⇒ sslEngineProvider(sys))
+  def create(
+      sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
+    apply(sys => sslEngineProvider(sys))
 
 }
 
@@ -211,8 +215,8 @@ object SSLEngineProviderSetup {
  *
  * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup()]]
  */
-@ApiMayChange class SSLEngineProviderSetup private (
-  val sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider) extends Setup
+@ApiMayChange class SSLEngineProviderSetup private (val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider)
+    extends Setup
 
 /**
  * INTERNAL API
@@ -220,18 +224,21 @@ object SSLEngineProviderSetup {
 @InternalApi private[akka] object SecureRandomFactory {
   def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = randomNumberGenerator match {
-      case s @ ("SHA1PRNG" | "NativePRNG") ⇒
+      case s @ ("SHA1PRNG" | "NativePRNG") =>
         log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
 
-      case "" | "SecureRandom" ⇒
+      case "" | "SecureRandom" =>
         log.debug("SSL random number generator set to [SecureRandom]")
         new SecureRandom
 
-      case unknown ⇒
-        log.warning(LogMarker.Security, "Unknown SSL random number generator [{}] falling back to SecureRandom", unknown)
+      case unknown =>
+        log.warning(
+          LogMarker.Security,
+          "Unknown SSL random number generator [{}] falling back to SecureRandom",
+          unknown)
         new SecureRandom
     }
     rng.nextInt() // prevent stall on first access

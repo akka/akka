@@ -39,12 +39,18 @@ private[remote] object AeronSink {
   private val TimerCheckPeriod = 1 << 13 // 8192
   private val TimerCheckMask = TimerCheckPeriod - 1
 
-  private final class OfferTask(pub: Publication, var buffer: UnsafeBuffer, var msgSize: Int, onOfferSuccess: AsyncCallback[Unit],
-                                giveUpAfter: Duration, onGiveUp: AsyncCallback[Unit], onPublicationClosed: AsyncCallback[Unit])
-    extends (() ⇒ Boolean) {
+  private final class OfferTask(
+      pub: Publication,
+      var buffer: UnsafeBuffer,
+      var msgSize: Int,
+      onOfferSuccess: AsyncCallback[Unit],
+      giveUpAfter: Duration,
+      onGiveUp: AsyncCallback[Unit],
+      onPublicationClosed: AsyncCallback[Unit])
+      extends (() => Boolean) {
     val giveUpAfterNanos = giveUpAfter match {
-      case f: FiniteDuration ⇒ f.toNanos
-      case _                 ⇒ -1L
+      case f: FiniteDuration => f.toNanos
+      case _                 => -1L
     }
     var n = 0L
     var startTime = 0L
@@ -63,7 +69,8 @@ private[remote] object AeronSink {
       } else if (result == Publication.CLOSED) {
         onPublicationClosed.invoke(())
         true
-      } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System.nanoTime() - startTime) > giveUpAfterNanos) {
+      } else if (giveUpAfterNanos >= 0 && (n & TimerCheckMask) == 0 && (System
+                   .nanoTime() - startTime) > giveUpAfterNanos) {
         // the task is invoked by the spinning thread, only check nanoTime each 8192th invocation
         n = 0L
         onGiveUp.invoke(())
@@ -80,14 +87,14 @@ private[remote] object AeronSink {
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
 private[remote] class AeronSink(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
-  giveUpAfter:    Duration,
-  flightRecorder: EventSink)
-  extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
+    channel: String,
+    streamId: Int,
+    aeron: Aeron,
+    taskRunner: TaskRunner,
+    pool: EnvelopeBufferPool,
+    giveUpAfter: Duration,
+    flightRecorder: EventSink)
+    extends GraphStageWithMaterializedValue[SinkShape[EnvelopeBuffer], Future[Done]] {
   import AeronSink._
   import TaskRunner._
   import FlightRecorderEvents._
@@ -108,8 +115,14 @@ private[remote] class AeronSink(
       private val spinning = 2 * taskRunner.idleCpuLevel
       private var backoffCount = spinning
       private var lastMsgSize = 0
-      private val offerTask = new OfferTask(pub, null, lastMsgSize, getAsyncCallback(_ ⇒ taskOnOfferSuccess()),
-        giveUpAfter, getAsyncCallback(_ ⇒ onGiveUp()), getAsyncCallback(_ ⇒ onPublicationClosed()))
+      private val offerTask = new OfferTask(
+        pub,
+        null,
+        lastMsgSize,
+        getAsyncCallback(_ => taskOnOfferSuccess()),
+        giveUpAfter,
+        getAsyncCallback(_ => onGiveUp()),
+        getAsyncCallback(_ => onPublicationClosed()))
       private val addOfferTask: Add = Add(offerTask)
 
       private var offerTaskInProgress = false

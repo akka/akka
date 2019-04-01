@@ -22,8 +22,7 @@ import scala.concurrent.duration._
 @BenchmarkMode(Array(Mode.Throughput))
 class FlowMapBenchmark {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       akka {
         log-config-on-start = off
         log-dead-letters-during-shutdown = off
@@ -47,8 +46,7 @@ class FlowMapBenchmark {
             type = akka.testkit.CallingThreadDispatcherConfigurator
           }
         }
-      }""".stripMargin
-  ).withFallback(ConfigFactory.load())
+      }""".stripMargin).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("test", config)
 
@@ -71,8 +69,7 @@ class FlowMapBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-      .withInputBuffer(initialInputBufferSize, initialInputBufferSize)
+    val settings = ActorMaterializerSettings(system).withInputBuffer(initialInputBufferSize, initialInputBufferSize)
 
     materializer = ActorMaterializer(settings)
 
@@ -122,15 +119,15 @@ class FlowMapBenchmark {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    flow.runWith(Sink.onComplete(_ ⇒ lock.release()))(materializer)
+    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
 
     lock.acquire()
   }
 
   // source setup
-  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: ⇒ Graph[FlowShape[O, O], _]): Source[O, Mat] = {
+  private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
-    for (i ← 1 to count)
+    for (i <- 1 to count)
       f = f.via(flow)
     f
   }

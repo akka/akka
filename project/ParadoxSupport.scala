@@ -29,10 +29,10 @@ object ParadoxSupport {
         .scan()
       val allClasses = scanner.getAllClasses.getNames.asScala.toVector
       Def.task { Seq(
-        { context: Writer.Context ⇒
-                    new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
+        { context: Writer.Context =>
+                    new SignatureDirective(context.location.tree.label, context.properties, msg => log.warn(msg))
         },
-        { _: Writer.Context ⇒ new UnidocDirective(allClasses) }
+        { _: Writer.Context => new UnidocDirective(allClasses) }
       )}
     }.value
   )

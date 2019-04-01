@@ -3,6 +3,7 @@
 @@@ index
 
 * [Persistence - coding style](persistence-style.md)
+* [Persistence - snapshotting](persistence-snapshot.md)
 
 @@@
 
@@ -81,11 +82,14 @@ are executed sequentially after successful execution of the persist statement (o
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
 
-The event handler returns the new state, which must be immutable so you return a new instance of the state.
+The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
+You may choose to use a mutable class for the state, and then the event handler may update the state instance and
+return the same instance. Both immutable and mutable state is supported.
+
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-It is not recommended to perform side effects
-in the event handler, as those are also executed during recovery of an persistent actor
+The event handler should only update the state and never perform side effects, as those would also be
+executed during recovery of the persistent actor.
 
 ### Completing the example
 
@@ -140,7 +144,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
 
-The `EventSourcedBehavior` can then be run as with any plain typed actor as described in [actors documentation](actors-typed.md),
+The `EventSourcedBehavior` can then be run as with any plain typed actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -200,7 +204,7 @@ Java
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
-Delegating to methods is a good practise because the one-line cases give a nice overview of the message dispatch.
+Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
 
 Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
@@ -244,14 +248,14 @@ Note that there is only one of these. It is not possible to both persist and say
 These are created using @java[a factory that is returned via the `Effect()` method]
 @scala[the `Effect` factory] and once created additional `SideEffects` can be added.
 
-Most of them time this will be done with the `thenRun` method on the `Effect` above. It is also possible
-factor out common `SideEffect`s. For example:
+Most of them time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+common side effects into functions and reuse for several commands. For example:
 
 Scala
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
 
 Java
-:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+:  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
 
 ### Side effects ordering and guarantees
 
@@ -332,7 +336,7 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
+so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -340,8 +344,9 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
-and doesn't return anything.
+The `RecoveryCompleted` contains the current `State`.
+
+@ref[Snapshots)[persistence-snapshot.md] can be used for optimizing recovery times.
 
 ## Tagging
 
@@ -448,3 +453,54 @@ processed.
 
 It's allowed to stash messages while unstashing. Those newly added commands will not be processed by the
 `unstashAll` effect that was in progress and have to be unstashed by another `unstashAll`.
+
+## Retention - snapshots and events
+
+Retention of snapshots and events are controlled by a few factors. Deletes to free up space is currently available.
+  
+### Snapshot deletion
+
+To free up space, an event sourced actor can automatically delete older snapshots 
+based on a user provided or default `RetentionCriteria` @scala[from `withRetention`] @java[by overriding `retentionCriteria`]
+combined with either the `snapshotWhen` or `snapshotEvery` methods. 
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotDeletes }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotDeletes }
+
+On async deletion, either a `SnapshotCompleted` or `SnapshotFailed` is emitted. Successful completion is logged by the system at log level `debug`, failures at log level `warning`.
+You can leverage `EventSourcedSignal` to react to outcomes @scala[with `receiveSignal` handler] @java[by overriding `receiveSignal`].
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #fullDeletesSampleWithSignals }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #fullDeletesSampleWithSignals }
+
+## Event deletion
+
+Deleting events in event sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
+If snapshot-based recovery is enabled, after a snapshot has been successfully stored, a delete (journaled by a single event sourced actor) up until the sequence number of the data held by that snapshot can be issued.
+
+To elect to use this, enable `RetentionCriteria.deleteEventsOnSnapshot` which is disabled by default. 
+You can leverage `EventSourcedSignal` to react to outcomes @scala[with `receiveSignal` handler] @java[by overriding `receiveSignal`].
+   
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotAndEventDeletes }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotDeletes }
+ 
+On `SaveSnapshotSuccess`, old events would be deleted based on `RetentionCriteria` prior to old snapshots being deleted. On async deletion, either `DeleteEventsCompleted` or `DeleteEventsFailed` is emitted. Successful completion is logged by the 
+system at log level `debug`, failures at log level `warning`.
+
+Message deletion does not affect the highest sequence number of the journal, even if all messages were deleted from it after a delete occurs.
+
+@@@ note
+
+It is up to the journal implementation whether events are actually removed from storage.
+Deleting events prevents future replaying of old events to apply new state.
+
+@@@ note

@@ -16,8 +16,11 @@ trait SSLEngineConfigurator {
   def configure(engine: SSLEngine, sslContext: SSLContext): SSLEngine
 }
 
-final class DefaultSSLEngineConfigurator(config: SSLConfigSettings, enabledProtocols: Array[String], enabledCipherSuites: Array[String])
-  extends SSLEngineConfigurator {
+final class DefaultSSLEngineConfigurator(
+    config: SSLConfigSettings,
+    enabledProtocols: Array[String],
+    enabledCipherSuites: Array[String])
+    extends SSLEngineConfigurator {
   def configure(engine: SSLEngine, sslContext: SSLContext): SSLEngine = {
     engine.setSSLParameters(sslContext.getDefaultSSLParameters)
     engine.setEnabledProtocols(enabledProtocols)

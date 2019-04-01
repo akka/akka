@@ -11,7 +11,7 @@ import akka.stream.Attributes
 
 /** INTERNAL API */
 @InternalApi private[akka] class DeflateDecompressor(maxBytesPerChunk: Int, nowrap: Boolean)
-  extends DeflateDecompressorBase(maxBytesPerChunk) {
+    extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   def this(maxBytesPerChunk: Int) = this(maxBytesPerChunk, false) // for binary compatibility
 
@@ -28,4 +28,3 @@ import akka.stream.Attributes
     startWith(inflating)
   }
 }
-

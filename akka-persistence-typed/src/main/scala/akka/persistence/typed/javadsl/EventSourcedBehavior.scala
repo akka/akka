@@ -7,22 +7,22 @@ package akka.persistence.typed.javadsl
 import java.util.Collections
 import java.util.Optional
 
-import scala.util.Failure
-import scala.util.Success
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, onPersistFailure: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
+    val persistenceId: PersistenceId,
+    onPersistFailure: Optional[BackoffSupervisorStrategy])
+    extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
@@ -74,6 +74,19 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   protected def eventHandler(): EventHandler[State, Event]
 
   /**
+   * Override to react on general lifecycle signals and persistence specific signals (subtypes of
+   * [[akka.persistence.typed.EventSourcedSignal]]).
+   *
+   * Use [[EventSourcedBehavior#newSignalHandlerBuilder]] to define the signal handler.
+   */
+  protected def signalHandler(): SignalHandler = SignalHandler.Empty
+
+  /**
+   * @return A new, mutable signal handler builder
+   */
+  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder = new SignalHandlerBuilder
+
+  /**
    * @return A new, mutable, command handler builder
    */
   protected def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
@@ -85,35 +98,6 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected final def newEventHandlerBuilder(): EventHandlerBuilder[State, Event] =
     EventHandlerBuilder.builder[State, Event]()
-
-  /**
-   * The callback is invoked to notify the actor that the recovery process
-   * is finished.
-   */
-  def onRecoveryCompleted(state: State): Unit = ()
-
-  /**
-   * The callback is invoked to notify the actor that the recovery process
-   * has failed
-   */
-  def onRecoveryFailure(failure: Throwable): Unit = ()
-
-  /**
-   * The callback is invoked to notify that the actor has stopped.
-   */
-  def onPostStop(): Unit = ()
-
-  /**
-   * The callback is invoked to notify that the actor is restarted.
-   */
-  def onPreRestart(): Unit = ()
-
-  /**
-   * Override to get notified when a snapshot is finished.
-   *
-   * @param result None if successful otherwise contains the exception thrown when snapshotting
-   */
-  def onSnapshot(meta: SnapshotMetadata, result: Optional[Throwable]): Unit = ()
 
   /**
    * Override and define that snapshot should be saved every N events.
@@ -138,17 +122,39 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
 
   /**
+   * Override and define the journal plugin id that this actor should use instead of the default.
+   */
+  def journalPluginId: String = ""
+
+  /**
+   * Override and define the snapshot store plugin id that this actor should use instead of the default.
+   */
+  def snapshotPluginId: String = ""
+
+  /**
+   * Override and define the snapshot selection criteria used by this actor instead of the default.
+   * By default the most recent snapshot is used, and the remaining state updates are recovered by replaying events
+   * from the sequence number up until which the snapshot reached.
+   *
+   * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
+   * performed by replaying all events -- which may take a long time.
+   */
+  def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
+
+  /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
+  def retentionCriteria: RetentionCriteria = RetentionCriteria()
+
   /**
    * INTERNAL API: DeferredBehavior init
    */
   @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-    val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
+    val snapshotWhen: (State, Event, Long) => Boolean = { (state, event, seqNr) =>
       val n = snapshotEvery()
       if (n > 0)
         seqNr % n == 0
@@ -156,7 +162,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
         shouldSnapshot(state, event, seqNr)
     }
 
-    val tagger: Event ⇒ Set[String] = { event ⇒
+    val tagger: Event => Set[String] = { event =>
       import scala.collection.JavaConverters._
       val tags = tagsFor(event)
       if (tags.isEmpty) Set.empty
@@ -166,34 +172,32 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
     val behavior = new internal.EventSourcedBehaviorImpl[Command, Event, State](
       persistenceId,
       emptyState,
-      (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      (state, cmd) => commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _),
       getClass)
-      .onRecoveryCompleted(onRecoveryCompleted)
-      .onPostStop(() ⇒ onPostStop())
-      .onPreRestart(() ⇒ onPreRestart())
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
-      .onSnapshot((meta, result) ⇒ {
-        result match {
-          case Success(_) ⇒
-            context.asScala.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          case Failure(e) ⇒
-            context.asScala.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
-        }
-
-        onSnapshot(meta, result match {
-          case Success(_) ⇒ Optional.empty()
-          case Failure(t) ⇒ Optional.of(t)
-        })
-      })
       .eventAdapter(eventAdapter())
-      .onRecoveryFailure(onRecoveryFailure)
+      .withJournalPluginId(journalPluginId)
+      .withSnapshotPluginId(snapshotPluginId)
+      .withSnapshotSelectionCriteria(snapshotSelectionCriteria)
+
+    val handler = signalHandler()
+    val behaviorWithSignalHandler =
+      if (handler.isEmpty) behavior
+      else behavior.receiveSignal(handler.handler)
 
     if (onPersistFailure.isPresent)
-      behavior.onPersistFailure(onPersistFailure.get)
+      behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
     else
-      behavior
+      behaviorWithSignalHandler
+  }
+
+  /**
+   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
+   */
+  final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
+    scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
   }
 
 }
@@ -204,8 +208,10 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @ApiMayChange
-abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](persistenceId: PersistenceId, backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
-  extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
+    persistenceId: PersistenceId,
+    backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
+    extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])

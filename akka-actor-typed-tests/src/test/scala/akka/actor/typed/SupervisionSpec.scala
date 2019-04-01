@@ -33,7 +33,7 @@ object SupervisionSpec {
 
   sealed trait Event
   final case class Pong(n: Int) extends Event
-  final case class GotSignal(signal: Signal) extends Event
+  final case class ReceivedSignal(signal: Signal) extends Event
   final case class State(n: Int, children: Map[String, ActorRef[Command]]) extends Event
   case object Started extends Event
   case object StartFailed extends Event
@@ -42,32 +42,35 @@ object SupervisionSpec {
   class Exc2 extends Exc1("exc-2")
   class Exc3(message: String = "exc-3") extends RuntimeException(message) with NoStackTrace
 
-  def targetBehavior(monitor: ActorRef[Event], state: State = State(0, Map.empty), slowStop: Option[CountDownLatch] = None): Behavior[Command] =
-    receive[Command] { (context, cmd) ⇒
+  def targetBehavior(
+      monitor: ActorRef[Event],
+      state: State = State(0, Map.empty),
+      slowStop: Option[CountDownLatch] = None): Behavior[Command] =
+    receive[Command] { (context, cmd) =>
       cmd match {
-        case Ping(n) ⇒
+        case Ping(n) =>
           monitor ! Pong(n)
           Behaviors.same
-        case IncrementState ⇒
+        case IncrementState =>
           targetBehavior(monitor, state.copy(n = state.n + 1), slowStop)
-        case GetState ⇒
-          val reply = state.copy(children = context.children.map(c ⇒ c.path.name → c.unsafeUpcast[Command]).toMap)
+        case GetState =>
+          val reply = state.copy(children = context.children.map(c => c.path.name -> c.unsafeUpcast[Command]).toMap)
           monitor ! reply
           Behaviors.same
-        case CreateChild(childBehv, childName) ⇒
+        case CreateChild(childBehv, childName) =>
           context.spawn(childBehv, childName)
           Behaviors.same
-        case Watch(ref) ⇒
+        case Watch(ref) =>
           context.watch(ref)
           Behaviors.same
-        case Throw(e) ⇒
+        case Throw(e) =>
           throw e
       }
-    } receiveSignal {
-      case (_, sig) ⇒
+    }.receiveSignal {
+      case (_, sig) =>
         if (sig == PostStop)
-          slowStop.foreach(latch ⇒ latch.await(10, TimeUnit.SECONDS))
-        monitor ! GotSignal(sig)
+          slowStop.foreach(latch => latch.await(10, TimeUnit.SECONDS))
+        monitor ! ReceivedSignal(sig)
         Behaviors.same
     }
 
@@ -102,7 +105,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc3] {
         testkit.run(Throw(new Exc3))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "stop when unhandled exception" in {
@@ -112,7 +115,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc3] {
         testkit.run(Throw(new Exc3))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "restart when handled exception" in {
@@ -124,7 +127,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       inbox.receiveMessage() should ===(State(1, Map.empty))
 
       testkit.run(Throw(new Exc2))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(GetState)
       inbox.receiveMessage() should ===(State(0, Map.empty))
     }
@@ -145,11 +148,8 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
     "support nesting to handle different exceptions" in {
       val inbox = TestInbox[Event]("evt")
       val behv =
-        supervise(
-          supervise(
-            targetBehavior(inbox.ref)
-          ).onFailure[Exc2](SupervisorStrategy.resume)
-        ).onFailure[Exc3](SupervisorStrategy.restart)
+        supervise(supervise(targetBehavior(inbox.ref)).onFailure[Exc2](SupervisorStrategy.resume))
+          .onFailure[Exc3](SupervisorStrategy.restart)
       val testkit = BehaviorTestKit(behv)
       testkit.run(IncrementState)
       testkit.run(GetState)
@@ -162,7 +162,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
       // restart
       testkit.run(Throw(new Exc3))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(GetState)
       inbox.receiveMessage() should ===(State(0, Map.empty))
 
@@ -170,13 +170,12 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "not catch fatal error" in {
       val inbox = TestInbox[Event]()
-      val behv = Behaviors.supervise(targetBehavior(inbox.ref))
-        .onFailure[Throwable](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(targetBehavior(inbox.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val testkit = BehaviorTestKit(behv)
       intercept[StackOverflowError] {
         testkit.run(Throw(new StackOverflowError))
@@ -190,13 +189,13 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
       val testkit = BehaviorTestKit(behv)
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "reset retry limit after withinTimeRange" in {
@@ -206,36 +205,35 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
       val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
       val testkit = BehaviorTestKit(behv)
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       Thread.sleep((2.seconds + 100.millis).toMillis)
 
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       testkit.run(Throw(new Exc1))
-      inbox.receiveMessage() should ===(GotSignal(PreRestart))
+      inbox.receiveMessage() should ===(ReceivedSignal(PreRestart))
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "stop at first exception when restart retries limit is 0" in {
       val inbox = TestInbox[Event]("evt")
       val strategy = SupervisorStrategy.restart.withLimit(maxNrOfRetries = 0, withinTimeRange = 1.minute)
-      val behv = supervise(targetBehavior(inbox.ref))
-        .onFailure[Exc1](strategy)
+      val behv = supervise(targetBehavior(inbox.ref)).onFailure[Exc1](strategy)
       val testkit = BehaviorTestKit(behv)
       intercept[Exc1] {
         testkit.run(Throw(new Exc1))
       }
-      inbox.receiveMessage() should ===(GotSignal(PostStop))
+      inbox.receiveMessage() should ===(ReceivedSignal(PostStop))
     }
 
     "create underlying deferred behavior immediately" in {
       val inbox = TestInbox[Event]("evt")
-      val behv = supervise(setup[Command] { _ ⇒
+      val behv = supervise(setup[Command] { _ =>
         inbox.ref ! Started
         targetBehavior(inbox.ref)
       }).onFailure[Exc1](SupervisorStrategy.restart)
@@ -246,8 +244,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends ScalaTestWithActorTestKit(
-  """
+class SupervisionSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     akka.log-dead-letters = off
     """) with WordSpecLike {
@@ -258,7 +255,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
   private val nameCounter = Iterator.from(0)
   private def nextName(prefix: String = "a"): String = s"$prefix-${nameCounter.next()}"
 
-  // FIXME eventfilter support in typed testkit
+  // FIXME #24348: eventfilter support in typed testkit
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val untypedSystem = system.toUntyped
@@ -280,31 +277,32 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
   class FailingDeferredTestSetup(failCount: Int, strategy: SupervisorStrategy) {
     val probe = TestProbe[AnyRef]("evt")
     val failCounter = new AtomicInteger(0)
-    def behv = supervise(setup[Command] { _ ⇒
-      val count = failCounter.getAndIncrement()
-      if (count < failCount) {
-        probe.ref ! StartFailed
-        throw TestException(s"construction ${count} failed")
-      } else {
-        probe.ref ! Started
-        Behaviors.empty
-      }
-    }).onFailure[TestException](strategy)
+    def behv =
+      supervise(setup[Command] { _ =>
+        val count = failCounter.getAndIncrement()
+        if (count < failCount) {
+          probe.ref ! StartFailed
+          throw TestException(s"construction ${count} failed")
+        } else {
+          probe.ref ! Started
+          Behaviors.empty
+        }
+      }).onFailure[TestException](strategy)
   }
 
   class FailingUnhandledTestSetup(strategy: SupervisorStrategy) {
     val probe = TestProbe[AnyRef]("evt")
-    def behv = supervise(setup[Command] { _ ⇒
-      probe.ref ! StartFailed
-      throw new TestException("construction failed")
-    }).onFailure[IllegalArgumentException](strategy)
+    def behv =
+      supervise(setup[Command] { _ =>
+        probe.ref ! StartFailed
+        throw new TestException("construction failed")
+      }).onFailure[IllegalArgumentException](strategy)
   }
 
   "A supervised actor" must {
     "receive message" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
-        .onFailure[Throwable](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! Ping(1)
       probe.expectMessage(Pong(1))
@@ -312,18 +310,17 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "stop when strategy is stop" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
-        .onFailure[Throwable](SupervisorStrategy.stop)
+      val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.stop)
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
     "stop when strategy is stop - exception in setup" in {
       val probe = TestProbe[Event]("evt")
-      val failedSetup = Behaviors.setup[Command](_ ⇒ {
+      val failedSetup = Behaviors.setup[Command](_ => {
         throw new Exc3()
         targetBehavior(probe.ref)
       })
@@ -336,21 +333,19 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "support nesting exceptions with different strategies" in {
       val probe = TestProbe[Event]("evt")
       val behv =
-        supervise(
-          supervise(targetBehavior(probe.ref))
-            .onFailure[RuntimeException](SupervisorStrategy.stop)
-        ).onFailure[Exception](SupervisorStrategy.restart)
+        supervise(supervise(targetBehavior(probe.ref)).onFailure[RuntimeException](SupervisorStrategy.stop))
+          .onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
 
       EventFilter[IOException](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -359,14 +354,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val behv =
         supervise(
           supervise(targetBehavior(probe.ref))
-            .onFailure[IllegalArgumentException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0))
-        ).onFailure[IOException](SupervisorStrategy.restart)
+            .onFailure[IllegalArgumentException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0)))
+          .onFailure[IOException](SupervisorStrategy.restart)
 
       val ref = spawn(behv)
 
       EventFilter[Exception](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       // verify that it's still alive and not stopped, IllegalStateException would stop it
       ref ! Ping(1)
@@ -374,7 +369,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       // verify that it's still alive and not stopped, IllegalStateException would stop it
@@ -385,16 +380,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "support nesting exceptions with inner restart and outer backoff strategies" in {
       val probe = TestProbe[Event]("evt")
       val behv =
-        supervise(
-          supervise(targetBehavior(probe.ref))
-            .onFailure[IllegalArgumentException](SupervisorStrategy.restart)
-        ).onFailure[IOException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0))
+        supervise(supervise(targetBehavior(probe.ref)).onFailure[IllegalArgumentException](SupervisorStrategy.restart))
+          .onFailure[IOException](SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0.0))
 
       val ref = spawn(behv)
 
       EventFilter[Exception](occurrences = 1).intercept {
         ref ! Throw(new IOException())
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       // verify that it's still alive and not stopped, IllegalStateException would stop it
       ref ! Ping(1)
@@ -402,7 +395,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         ref ! Throw(new IllegalArgumentException("cat"))
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       // verify that it's still alive and not stopped, IllegalStateException would stop it
@@ -416,25 +409,23 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
     "stop when unhandled exception" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
-        .onFailure[Exc1](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
     "restart when handled exception" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
-        .onFailure[Exc1](SupervisorStrategy.restart)
+      val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! IncrementState
       ref ! GetState
@@ -442,7 +433,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 1).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
@@ -451,7 +442,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "stop when restart limit is hit" in {
       val probe = TestProbe[Event]("evt")
       val resetTimeout = 500.millis
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors
+        .supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart.withLimit(2, resetTimeout))
       val ref = spawn(behv)
       ref ! IncrementState
@@ -460,11 +452,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 3).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
       EventFilter.warning(start = "received dead letter", occurrences = 1).intercept {
         ref ! GetState
@@ -475,7 +467,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "reset fixed limit after timeout" in {
       val probe = TestProbe[Event]("evt")
       val resetTimeout = 500.millis
-      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+      val behv = Behaviors
+        .supervise(targetBehavior(probe.ref))
         .onFailure[Exc1](SupervisorStrategy.restart.withLimit(2, resetTimeout))
       val ref = spawn(behv)
       ref ! IncrementState
@@ -484,14 +477,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc2](occurrences = 3).intercept {
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
 
         probe.expectNoMessage(resetTimeout + 50.millis)
 
         ref ! Throw(new Exc2)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! GetState
       probe.expectMessage(State(0, Map.empty))
@@ -507,8 +500,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     def testStopChildren(strategy: SupervisorStrategy): Unit = {
       val parentProbe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref))
-        .onFailure[Exc1](strategy)
+      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref)).onFailure[Exc1](strategy)
       val ref = spawn(behv)
 
       val anotherProbe = TestProbe[String]("another")
@@ -525,7 +517,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         anotherProbe.stop()
       }
@@ -534,11 +526,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       parentProbe.expectNoMessage()
       slowStop.countDown()
 
-      childProbe.expectMessage(GotSignal(PostStop))
-      childProbe.expectMessage(GotSignal(PostStop))
+      childProbe.expectMessage(ReceivedSignal(PostStop))
+      childProbe.expectMessage(ReceivedSignal(PostStop))
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
       // anotherProbe was stopped, Terminated signal stashed and delivered to new behavior
-      parentProbe.expectMessage(GotSignal(Terminated(anotherProbe.ref)))
+      parentProbe.expectMessage(ReceivedSignal(Terminated(anotherProbe.ref)))
     }
 
     "optionally NOT stop children when restarting" in {
@@ -546,14 +538,13 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     }
 
     "optionally NOT stop children when backoff" in {
-      testNotStopChildren(strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0)
-        .withStopChildren(enabled = false))
+      testNotStopChildren(
+        strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStopChildren(enabled = false))
     }
 
     def testNotStopChildren(strategy: SupervisorStrategy): Unit = {
       val parentProbe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref))
-        .onFailure[Exc1](strategy)
+      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref)).onFailure[Exc1](strategy)
       val ref = spawn(behv)
 
       val childProbe = TestProbe[Event]("childEvt")
@@ -564,7 +555,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
       }
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
@@ -576,14 +567,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     }
 
     "stop children when backoff second time during unstash" in {
-      testStopChildrenWhenExceptionFromUnstash(
-        SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0))
+      testStopChildrenWhenExceptionFromUnstash(SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0))
     }
 
     def testStopChildrenWhenExceptionFromUnstash(strategy: SupervisorStrategy): Unit = {
       val parentProbe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref))
-        .onFailure[Exc1](strategy)
+      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref)).onFailure[Exc1](strategy)
       val ref = spawn(behv)
 
       val childProbe = TestProbe[Event]("childEvt")
@@ -597,7 +586,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         ref ! CreateChild(targetBehavior(childProbe.ref), child2Name)
         ref ! GetState
@@ -606,13 +595,14 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         slowStop.countDown()
-        childProbe.expectMessage(GotSignal(PostStop)) // child1
+        childProbe.expectMessage(ReceivedSignal(PostStop)) // child1
         parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
         parentProbe.expectMessageType[State].children.keySet should ===(Set(child2Name))
         // the stashed Throw is causing another restart and stop of child2
-        childProbe.expectMessage(GotSignal(PostStop)) // child2
+        childProbe.expectMessage(ReceivedSignal(PostStop)) // child2
       }
 
+      parentProbe.expectMessage(ReceivedSignal(PreRestart))
       ref ! GetState
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
     }
@@ -632,28 +622,29 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val slowStop1 = new CountDownLatch(1)
       val slowStop2 = new CountDownLatch(1)
       val throwFromSetup = new AtomicBoolean(true)
-      val behv = Behaviors.supervise {
-        Behaviors.setup[Command] { ctx ⇒
-          ctx.spawn(targetBehavior(child1Probe.ref, slowStop = Some(slowStop1)), "child1")
-          if (throwFromSetup.get()) {
-            // note that this second child waiting on slowStop2 will prevent a restart loop that could exhaust the
-            // limit before throwFromSetup is set back to false
-            ctx.spawn(targetBehavior(child2Probe.ref, slowStop = Some(slowStop2)), "child2")
-            throw TestException("exc from setup")
-          }
+      val behv = Behaviors
+        .supervise {
+          Behaviors.setup[Command] { ctx =>
+            ctx.spawn(targetBehavior(child1Probe.ref, slowStop = Some(slowStop1)), "child1")
+            if (throwFromSetup.get()) {
+              // note that this second child waiting on slowStop2 will prevent a restart loop that could exhaust the
+              // limit before throwFromSetup is set back to false
+              ctx.spawn(targetBehavior(child2Probe.ref, slowStop = Some(slowStop2)), "child2")
+              throw TestException("exc from setup")
+            }
 
-          targetBehavior(parentProbe.ref)
+            targetBehavior(parentProbe.ref)
+          }
         }
-      }
         .onFailure[RuntimeException](strategy)
 
       EventFilter[TestException](occurrences = 1).intercept {
         val ref = spawn(behv)
         slowStop1.countDown()
-        child1Probe.expectMessage(GotSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
         throwFromSetup.set(false)
         slowStop2.countDown()
-        child2Probe.expectMessage(GotSignal(PostStop))
+        child2Probe.expectMessage(ReceivedSignal(PostStop))
 
         ref ! GetState
         parentProbe.expectMessageType[State].children.keySet should ===(Set("child1"))
@@ -675,19 +666,20 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val slowStop1 = new CountDownLatch(1)
       val slowStop2 = new CountDownLatch(1)
       val throwFromSetup = new AtomicBoolean(false)
-      val behv = Behaviors.supervise {
-        Behaviors.setup[Command] { ctx ⇒
-          ctx.spawn(targetBehavior(child1Probe.ref, slowStop = Some(slowStop1)), "child1")
-          if (throwFromSetup.get()) {
-            // note that this second child waiting on slowStop2 will prevent a restart loop that could exhaust the
-            // limit before throwFromSetup is set back to false
-            ctx.spawn(targetBehavior(child2Probe.ref, slowStop = Some(slowStop2)), "child2")
-            throw TestException("exc from setup")
-          }
+      val behv = Behaviors
+        .supervise {
+          Behaviors.setup[Command] { ctx =>
+            ctx.spawn(targetBehavior(child1Probe.ref, slowStop = Some(slowStop1)), "child1")
+            if (throwFromSetup.get()) {
+              // note that this second child waiting on slowStop2 will prevent a restart loop that could exhaust the
+              // limit before throwFromSetup is set back to false
+              ctx.spawn(targetBehavior(child2Probe.ref, slowStop = Some(slowStop2)), "child2")
+              throw TestException("exc from setup")
+            }
 
-          targetBehavior(parentProbe.ref)
+            targetBehavior(parentProbe.ref)
+          }
         }
-      }
         .onFailure[RuntimeException](strategy)
 
       val ref = spawn(behv)
@@ -699,16 +691,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        parentProbe.expectMessage(GotSignal(PreRestart))
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
       }
 
       EventFilter[TestException](occurrences = 1).intercept {
         slowStop1.countDown()
-        child1Probe.expectMessage(GotSignal(PostStop))
-        child1Probe.expectMessage(GotSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
+        child1Probe.expectMessage(ReceivedSignal(PostStop))
         throwFromSetup.set(false)
         slowStop2.countDown()
-        child2Probe.expectMessage(GotSignal(PostStop))
+        child2Probe.expectMessage(ReceivedSignal(PostStop))
       }
 
       ref ! GetState
@@ -732,10 +724,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "support nesting to handle different exceptions" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.supervise(
-        Behaviors.supervise(targetBehavior(probe.ref))
-          .onFailure[Exc2](SupervisorStrategy.resume)
-      ).onFailure[Exc3](SupervisorStrategy.restart)
+      val behv = Behaviors
+        .supervise(Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Exc2](SupervisorStrategy.resume))
+        .onFailure[Exc3](SupervisorStrategy.restart)
       val ref = spawn(behv)
       ref ! IncrementState
       ref ! GetState
@@ -752,7 +743,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // restart
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! GetState
         probe.expectMessage(State(0, Map.empty))
       }
@@ -760,7 +751,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // stop
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PostStop))
+        probe.expectMessage(ReceivedSignal(PostStop))
       }
     }
 
@@ -768,12 +759,13 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]("evt")
       val startedProbe = TestProbe[Event]("started")
       val minBackoff = 1.seconds
-      val strategy = SupervisorStrategy
-        .restartWithBackoff(minBackoff, minBackoff, 0.0).withStashCapacity(2)
-      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
-        startedProbe.ref ! Started
-        targetBehavior(probe.ref)
-      }).onFailure[Exception](strategy)
+      val strategy = SupervisorStrategy.restartWithBackoff(minBackoff, minBackoff, 0.0).withStashCapacity(2)
+      val behv = Behaviors
+        .supervise(Behaviors.setup[Command] { _ =>
+          startedProbe.ref ! Started
+          targetBehavior(probe.ref)
+        })
+        .onFailure[Exception](strategy)
 
       val droppedMessagesProbe = TestProbe[Dropped]()
       system.toUntyped.eventStream.subscribe(droppedMessagesProbe.ref.toUntyped, classOf[Dropped])
@@ -781,7 +773,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         startedProbe.expectMessage(Started)
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
       }
       ref ! Ping(1)
       ref ! Ping(2)
@@ -801,17 +793,19 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         .restartWithBackoff(minBackoff, 10.seconds, 0.0)
         .withResetBackoffAfter(10.seconds)
         .withStashCapacity(0)
-      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
-        startedProbe.ref ! Started
-        targetBehavior(probe.ref)
-      }).onFailure[Exception](strategy)
+      val behv = Behaviors
+        .supervise(Behaviors.setup[Command] { _ =>
+          startedProbe.ref ! Started
+          targetBehavior(probe.ref)
+        })
+        .onFailure[Exception](strategy)
       val ref = spawn(behv)
 
       EventFilter[Exc1](occurrences = 1).intercept {
         startedProbe.expectMessage(Started)
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(1) // dropped due to backoff, no stashing
       }
 
@@ -825,7 +819,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(2) // dropped due to backoff, no stashing
       }
 
@@ -846,15 +840,17 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         .withResetBackoffAfter(10.seconds)
 
       val alreadyStarted = new AtomicBoolean(false)
-      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
-        if (alreadyStarted.get()) throw TestException("failure to restart")
-        alreadyStarted.set(true)
-        startedProbe.ref ! Started
+      val behv = Behaviors
+        .supervise(Behaviors.setup[Command] { _ =>
+          if (alreadyStarted.get()) throw TestException("failure to restart")
+          alreadyStarted.set(true)
+          startedProbe.ref ! Started
 
-        Behaviors.receiveMessagePartial {
-          case Throw(boom) ⇒ throw boom
-        }
-      }).onFailure[Exception](strategy)
+          Behaviors.receiveMessagePartial {
+            case Throw(boom) => throw boom
+          }
+        })
+        .onFailure[Exception](strategy)
       val ref = spawn(behv)
 
       EventFilter[Exc1](occurrences = 1).intercept {
@@ -869,7 +865,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "reset exponential backoff count after reset timeout" in {
       val probe = TestProbe[Event]("evt")
       val minBackoff = 1.seconds
-      val strategy = SupervisorStrategy.restartWithBackoff(minBackoff, 10.seconds, 0.0)
+      val strategy = SupervisorStrategy
+        .restartWithBackoff(minBackoff, 10.seconds, 0.0)
         .withResetBackoffAfter(100.millis)
         .withStashCapacity(0)
       val behv = supervise(targetBehavior(probe.ref)).onFailure[Exc1](strategy)
@@ -878,7 +875,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       EventFilter[Exc1](occurrences = 1).intercept {
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(1) // dropped due to backoff, no stash
       }
 
@@ -891,7 +888,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         probe.expectNoMessage(strategy.resetBackoffAfter + 100.millis.dilated)
         ref ! IncrementState
         ref ! Throw(new Exc1)
-        probe.expectMessage(GotSignal(PreRestart))
+        probe.expectMessage(ReceivedSignal(PreRestart))
         ref ! Ping(2) // dropped due to backoff
       }
 
@@ -903,7 +900,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "create underlying deferred behavior immediately" in {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(setup[Command] { _ ⇒
+      val behv = supervise(setup[Command] { _ =>
         probe.ref ! Started
         targetBehavior(probe.ref)
       }).onFailure[Exception](SupervisorStrategy.restart)
@@ -914,7 +911,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     }
 
     "fail instead of restart when deferred factory throws" in new FailingDeferredTestSetup(
-      failCount = 1, strategy = SupervisorStrategy.restart) {
+      failCount = 1,
+      strategy = SupervisorStrategy.restart) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         spawn(behv)
@@ -931,8 +929,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "fail to resume when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1,
-      strategy = SupervisorStrategy.resume
-    ) {
+      strategy = SupervisorStrategy.resume) {
       EventFilter[TestException](occurrences = 1).intercept {
         EventFilter[ActorInitializationException](occurrences = 1).intercept {
           spawn(behv)
@@ -942,8 +939,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "restart with exponential backoff when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1,
-      strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)
-    ) {
+      strategy = SupervisorStrategy.restartWithBackoff(minBackoff = 100.millis.dilated, maxBackoff = 1.second, 0)) {
 
       EventFilter[TestException](occurrences = 1).intercept {
         spawn(behv)
@@ -966,8 +962,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "restart.withLimit when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 1,
-      strategy = SupervisorStrategy.restart.withLimit(3, 1.second)
-    ) {
+      strategy = SupervisorStrategy.restart.withLimit(3, 1.second)) {
 
       EventFilter[TestException](occurrences = 1).intercept {
         spawn(behv)
@@ -979,8 +974,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "fail after more than limit in restart.withLimit when deferred factory throws" in new FailingDeferredTestSetup(
       failCount = 20,
-      strategy = SupervisorStrategy.restart.withLimit(2, 1.second)
-    ) {
+      strategy = SupervisorStrategy.restart.withLimit(2, 1.second)) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
         EventFilter[TestException](occurrences = 2).intercept {
@@ -1007,7 +1001,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "fail when exception from AbstractBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(setup[Command](_ ⇒ new FailingConstructor(probe.ref)))
+      val behv = supervise(setup[Command](_ => new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
@@ -1019,12 +1013,11 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "work with nested supervisions and defers" in {
       val strategy = SupervisorStrategy.restart.withLimit(3, 1.second)
       val probe = TestProbe[AnyRef]("p")
-      val beh = supervise[String](setup(_ ⇒
-        supervise[String](setup { _ ⇒
+      val beh = supervise[String](setup(_ =>
+        supervise[String](setup { _ =>
           probe.ref ! Started
           Behaviors.empty[String]
-        }).onFailure[RuntimeException](strategy)
-      )).onFailure[Exception](strategy)
+        }).onFailure[RuntimeException](strategy))).onFailure[Exception](strategy)
 
       spawn(beh)
       probe.expectMessage(Started)
@@ -1033,26 +1026,22 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "replace supervision when new returned behavior catches same exception" in {
       val probe = TestProbe[AnyRef]("probeMcProbeFace")
       val behv = supervise[String](Behaviors.receiveMessage {
-        case "boom" ⇒ throw TestException("boom indeed")
-        case "switch" ⇒
+        case "boom" => throw TestException("boom indeed")
+        case "switch" =>
           supervise[String](
-            supervise[String](
-              supervise[String](
-                supervise[String](
-                  supervise[String](
-                    Behaviors.receiveMessage {
-                      case "boom" ⇒ throw TestException("boom indeed")
-                      case "ping" ⇒
-                        probe.ref ! "pong"
-                        Behaviors.same
-                      case "give me stacktrace" ⇒
-                        probe.ref ! new RuntimeException().getStackTrace.toVector
-                        Behaviors.stopped
-                    }).onFailure[RuntimeException](SupervisorStrategy.resume)
-                ).onFailure[RuntimeException](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 23D))
-              ).onFailure[RuntimeException](SupervisorStrategy.restart.withLimit(23, 10.seconds))
-            ).onFailure[IllegalArgumentException](SupervisorStrategy.restart)
-          ).onFailure[RuntimeException](SupervisorStrategy.restart)
+            supervise[String](supervise[String](supervise[String](supervise[String](Behaviors.receiveMessage {
+              case "boom" => throw TestException("boom indeed")
+              case "ping" =>
+                probe.ref ! "pong"
+                Behaviors.same
+              case "give me stacktrace" =>
+                probe.ref ! new RuntimeException().getStackTrace.toVector
+                Behaviors.stopped
+            }).onFailure[RuntimeException](SupervisorStrategy.resume))
+              .onFailure[RuntimeException](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 23d)))
+              .onFailure[RuntimeException](SupervisorStrategy.restart.withLimit(23, 10.seconds)))
+              .onFailure[IllegalArgumentException](SupervisorStrategy.restart))
+            .onFailure[RuntimeException](SupervisorStrategy.restart)
       }).onFailure[RuntimeException](SupervisorStrategy.stop)
 
       val actor = spawn(behv)
@@ -1078,34 +1067,34 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
-        override def aroundReceive(context: TypedActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+        override def aroundReceive(
+            context: TypedActorContext[String],
+            message: String,
+            target: ReceiveTarget[String]): Behavior[String] =
           target(context, message)
 
-        override def aroundSignal(context: TypedActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
+        override def aroundSignal(
+            context: TypedActorContext[String],
+            signal: Signal,
+            target: SignalTarget[String]): Behavior[String] =
           target(context, signal)
       }
 
       val behv = supervise[String](Behaviors.receiveMessage {
-        case "boom" ⇒ throw TestException("boom indeed")
-        case "switch" ⇒
-          supervise[String](
-            setup(_ ⇒
-              supervise[String](
-                Behaviors.intercept(whateverInterceptor)(
-                  supervise[String](
-                    Behaviors.receiveMessage {
-                      case "boom" ⇒ throw TestException("boom indeed")
-                      case "ping" ⇒
-                        probe.ref ! "pong"
-                        Behaviors.same
-                      case "give me stacktrace" ⇒
-                        probe.ref ! new RuntimeException().getStackTrace.toVector
-                        Behaviors.stopped
-                    }).onFailure[RuntimeException](SupervisorStrategy.resume)
-                )
-              ).onFailure[IllegalArgumentException](SupervisorStrategy.restart.withLimit(23, 10.seconds))
-            )
-          ).onFailure[RuntimeException](SupervisorStrategy.restart)
+        case "boom" => throw TestException("boom indeed")
+        case "switch" =>
+          supervise[String](setup(_ =>
+            supervise[String](Behaviors.intercept(whateverInterceptor)(supervise[String](Behaviors.receiveMessage {
+              case "boom" => throw TestException("boom indeed")
+              case "ping" =>
+                probe.ref ! "pong"
+                Behaviors.same
+              case "give me stacktrace" =>
+                probe.ref ! new RuntimeException().getStackTrace.toVector
+                Behaviors.stopped
+            }).onFailure[RuntimeException](SupervisorStrategy.resume)))
+              .onFailure[IllegalArgumentException](SupervisorStrategy.restart.withLimit(23, 10.seconds))))
+            .onFailure[RuntimeException](SupervisorStrategy.restart)
       }).onFailure[RuntimeException](SupervisorStrategy.stop)
 
       val actor = spawn(behv)
@@ -1126,35 +1115,32 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "replace backoff supervision duplicate when behavior is created in a setup" in {
       val probe = TestProbe[AnyRef]("probeMcProbeFace")
       val restartCount = new AtomicInteger(0)
-      val behv = supervise[String](
-        Behaviors.setup { _ ⇒
-
-          // a bit superficial, but just to be complete
-          if (restartCount.incrementAndGet() == 1) {
-            probe.ref ! "started 1"
-            Behaviors.receiveMessage {
-              case "boom" ⇒
-                probe.ref ! "crashing 1"
-                throw TestException("boom indeed")
-              case "ping" ⇒
-                probe.ref ! "pong 1"
-                Behaviors.same
-            }
-          } else {
-            probe.ref ! "started 2"
-            Behaviors.supervise[String](
-              Behaviors.receiveMessage {
-                case "boom" ⇒
-                  probe.ref ! "crashing 2"
-                  throw TestException("boom indeed")
-                case "ping" ⇒
-                  probe.ref ! "pong 2"
-                  Behaviors.same
-              }
-            ).onFailure[TestException](SupervisorStrategy.resume)
+      val behv = supervise[String](Behaviors.setup { _ =>
+        // a bit superficial, but just to be complete
+        if (restartCount.incrementAndGet() == 1) {
+          probe.ref ! "started 1"
+          Behaviors.receiveMessage {
+            case "boom" =>
+              probe.ref ! "crashing 1"
+              throw TestException("boom indeed")
+            case "ping" =>
+              probe.ref ! "pong 1"
+              Behaviors.same
           }
+        } else {
+          probe.ref ! "started 2"
+          Behaviors
+            .supervise[String](Behaviors.receiveMessage {
+              case "boom" =>
+                probe.ref ! "crashing 2"
+                throw TestException("boom indeed")
+              case "ping" =>
+                probe.ref ! "pong 2"
+                Behaviors.same
+            })
+            .onFailure[TestException](SupervisorStrategy.resume)
         }
-      ).onFailure(SupervisorStrategy.restartWithBackoff(100.millis, 1.second, 0))
+      }).onFailure(SupervisorStrategy.restartWithBackoff(100.millis, 1.second, 0))
 
       val ref = spawn(behv)
       probe.expectMessage("started 1")
@@ -1180,25 +1166,28 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "be able to recover from a DeathPactException" in {
       val probe = TestProbe[AnyRef]()
-      val actor = spawn(Behaviors.supervise(Behaviors.setup[String] { context ⇒
-        val child = context.spawnAnonymous(Behaviors.receive[String] { (context, message) ⇒
-          message match {
-            case "boom" ⇒
-              probe.ref ! context.self
-              Behaviors.stopped
-          }
-        })
-        context.watch(child)
+      val actor = spawn(
+        Behaviors
+          .supervise(Behaviors.setup[String] { context =>
+            val child = context.spawnAnonymous(Behaviors.receive[String] { (context, message) =>
+              message match {
+                case "boom" =>
+                  probe.ref ! context.self
+                  Behaviors.stopped
+              }
+            })
+            context.watch(child)
 
-        Behaviors.receiveMessage {
-          case "boom" ⇒
-            child ! "boom"
-            Behaviors.same
-          case "ping" ⇒
-            probe.ref ! "pong"
-            Behaviors.same
-        }
-      }).onFailure[DeathPactException](SupervisorStrategy.restart))
+            Behaviors.receiveMessage {
+              case "boom" =>
+                child ! "boom"
+                Behaviors.same
+              case "ping" =>
+                probe.ref ! "pong"
+                Behaviors.same
+            }
+          })
+          .onFailure[DeathPactException](SupervisorStrategy.restart))
 
       EventFilter[DeathPactException](occurrences = 1).intercept {
         actor ! "boom"
@@ -1215,29 +1204,19 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     SupervisorStrategy.stop,
     SupervisorStrategy.restart,
     SupervisorStrategy.resume,
-    SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2D),
-    SupervisorStrategy.restart.withLimit(1, 100.millis)
-  )
+    SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2d),
+    SupervisorStrategy.restart.withLimit(1, 100.millis))
 
-  allStrategies.foreach { strategy ⇒
-
+  allStrategies.foreach { strategy =>
     s"Supervision with the strategy $strategy" should {
 
       "that is initially stopped should be stopped" in {
-        val actor = spawn(
-          Behaviors.supervise(Behaviors.stopped[Command])
-            .onFailure(strategy)
-        )
+        val actor = spawn(Behaviors.supervise(Behaviors.stopped[Command]).onFailure(strategy))
         createTestProbe().expectTerminated(actor, 3.second)
       }
 
       "that is stopped after setup should be stopped" in {
-        val actor = spawn(
-          Behaviors.supervise[Command](
-            Behaviors.setup(_ ⇒
-              Behaviors.stopped)
-          ).onFailure(strategy)
-        )
+        val actor = spawn(Behaviors.supervise[Command](Behaviors.setup(_ => Behaviors.stopped)).onFailure(strategy))
         createTestProbe().expectTerminated(actor, 3.second)
       }
 
@@ -1246,18 +1225,18 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         "that is stopped after restart should be stopped" in {
           val stopInSetup = new AtomicBoolean(false)
           val actor = spawn(
-            Behaviors.supervise[String](
-              Behaviors.setup { _ ⇒
+            Behaviors
+              .supervise[String](Behaviors.setup { _ =>
                 if (stopInSetup.get()) {
                   Behaviors.stopped
                 } else {
                   stopInSetup.set(true)
                   Behaviors.receiveMessage {
-                    case "boom" ⇒ throw TestException("boom")
+                    case "boom" => throw TestException("boom")
                   }
                 }
-              }).onFailure[TestException](strategy)
-          )
+              })
+              .onFailure[TestException](strategy))
 
           EventFilter[TestException](occurrences = 1).intercept {
             actor ! "boom"

@@ -13,13 +13,13 @@ import org.scalatest.WordSpec
 class LWWRegisterSpec extends WordSpec with Matchers {
   import LWWRegister.defaultClock
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A LWWRegister" must {
     "use latest of successive assignments" in {
       val r = (1 to 100).foldLeft(LWWRegister(node1, 0, defaultClock[Int])) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(n - 1)
           r.withValue(node1, n, defaultClock[Int])
       }
@@ -35,10 +35,10 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       r1.timestamp should be(100)
       val r2 = r1.withValue(node2, "B", clock)
       r2.timestamp should be(101)
-      val m1 = r1 merge r2
+      val m1 = r1.merge(r2)
       m1.value should be("B")
       m1.timestamp should be(101)
-      val m2 = r2 merge r1
+      val m2 = r2.merge(r1)
       m2.value should be("B")
       m2.timestamp should be(101)
     }
@@ -49,9 +49,9 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       }
       val r1 = LWWRegister(node1, "A", clock)
       val r2 = LWWRegister(node2, "B", clock)
-      val m1 = r1 merge r2
+      val m1 = r1.merge(r2)
       m1.value should be("A")
-      val m2 = r2 merge r1
+      val m2 = r2.merge(r1)
       m2.value should be("A")
     }
 
@@ -59,7 +59,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       implicit val node = SelfUniqueAddress(node1)
 
       (1 to 100).foldLeft(LWWRegister.create(0)) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(n - 1)
           val r2 = r.withValueOf(n)
           r2.timestamp should be > r.timestamp
@@ -71,18 +71,22 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       val r1 = LWWRegister(node1, "a", defaultClock[String])
       val LWWRegister(value1) = r1
       val value2: String = value1
+      value2 should be("a")
+
       Changed(LWWRegisterKey[String]("key"))(r1) match {
-        case c @ Changed(LWWRegisterKey("key")) ⇒
+        case c @ Changed(LWWRegisterKey("key")) =>
           val LWWRegister(value3) = c.dataValue
           val value4: String = value3
           value4 should be("a")
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
 
     "can be used as first-write-wins-register" in {
       import LWWRegister.reverseClock
       val r = (1 to 100).foldLeft(LWWRegister(node1, 0, reverseClock[Int])) {
-        case (r, n) ⇒
+        case (r, n) =>
           r.value should be(0)
           val newRegister = r.merge(r.withValue(node1, n, reverseClock[Int]))
           newRegister should be(r)

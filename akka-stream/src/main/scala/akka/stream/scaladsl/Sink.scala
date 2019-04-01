@@ -29,10 +29,8 @@ import scala.annotation.unchecked.uncheckedVariance
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](
-  override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            SinkShape[In])
-  extends Graph[SinkShape[In], Mat] {
+final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilder, override val shape: SinkShape[In])
+    extends Graph[SinkShape[In], Mat] {
 
   // TODO: Debug string
   override def toString: String = s"Sink($shape)"
@@ -45,7 +43,7 @@ final class Sink[-In, +Mat](
    *
    * '''Cancels when''' original [[Sink]] cancels
    */
-  def contramap[In2](f: In2 ⇒ In): Sink[In2, Mat] = Flow.fromFunction(f).toMat(this)(Keep.right)
+  def contramap[In2](f: In2 => In): Sink[In2, Mat] = Flow.fromFunction(f).toMat(this)(Keep.right)
 
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
@@ -57,10 +55,8 @@ final class Sink[-In, +Mat](
   /**
    * Transform only the materialized value of this Sink, leaving all other properties as they were.
    */
-  def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
-    new Sink(
-      traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
-      shape)
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): Sink[In, Mat2] =
+    new Sink(traversalBuilder.transformMat(f.asInstanceOf[Any => Any]), shape)
 
   /**
    * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
@@ -79,9 +75,7 @@ final class Sink[-In, +Mat](
    * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
-    new Sink(
-      traversalBuilder.setAttributes(attr),
-      shape)
+    new Sink(traversalBuilder.setAttributes(attr), shape)
 
   /**
    * Add the given attributes to this [[Sink]]. If the specific attribute was already present
@@ -136,21 +130,19 @@ object Sink {
    */
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M]         ⇒ s
-      case s: javadsl.Sink[T, M] ⇒ s.asScala
-      case g: GraphStageWithMaterializedValue[SinkShape[T], M] ⇒
+      case s: Sink[T, M]                                       => s
+      case s: javadsl.Sink[T, M]                               => s.asScala
+      case g: GraphStageWithMaterializedValue[SinkShape[T], M] =>
         // move these from the stage itself to make the returned source
         // behave as it is the stage with regards to attributes
         val attrs = g.traversalBuilder.attributes
         val noAttrStage = g.withAttributes(Attributes.none)
         new Sink(
           LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
-          noAttrStage.shape
-        ).withAttributes(attrs)
+          noAttrStage.shape).withAttributes(attrs)
 
-      case other ⇒ new Sink(
-        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-        other.shape)
+      case other =>
+        new Sink(LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right), other.shape)
     }
 
   /**
@@ -173,8 +165,12 @@ object Sink {
    * See also [[headOption]].
    */
   def head[T]: Sink[T, Future[T]] =
-    Sink.fromGraph(new HeadOptionStage[T]).withAttributes(DefaultAttributes.headSink)
-      .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
+    Sink
+      .fromGraph(new HeadOptionStage[T])
+      .withAttributes(DefaultAttributes.headSink)
+      .mapMaterializedValue(e =>
+        e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(
+          ExecutionContexts.sameThreadExecutionContext))
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
@@ -194,10 +190,10 @@ object Sink {
    * See also [[lastOption]], [[takeLast]].
    */
   def last[T]: Sink[T, Future[T]] = {
-    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink)
-      .mapMaterializedValue { e ⇒
-        e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext)
-      }
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink).mapMaterializedValue { e =>
+      e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(
+        ExecutionContexts.sameThreadExecutionContext)
+    }
   }
 
   /**
@@ -208,10 +204,9 @@ object Sink {
    * See also [[last]], [[takeLast]].
    */
   def lastOption[T]: Sink[T, Future[Option[T]]] = {
-    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink)
-      .mapMaterializedValue { e ⇒
-        e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
-      }
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink).mapMaterializedValue { e =>
+      e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
+    }
   }
 
   /**
@@ -277,7 +272,7 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def foreach[T](f: T ⇒ Unit): Sink[T, Future[Done]] =
+  def foreach[T](f: T => Unit): Sink[T, Future[Done]] =
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
 
   /**
@@ -286,15 +281,15 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
-  def foreachAsync[T](parallelism: Int)(f: T ⇒ Future[Unit]): Sink[T, Future[Done]] =
+  def foreachAsync[T](parallelism: Int)(f: T => Future[Unit]): Sink[T, Future[Done]] =
     Flow[T].mapAsyncUnordered(parallelism)(f).toMat(Sink.ignore)(Keep.right).named("foreachAsyncSink")
 
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
-  def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], NotUsed]): Sink[T, NotUsed] =
-
-    Sink.fromGraph(GraphDSL.create() { implicit b ⇒
+  def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(
+      strategy: Int => Graph[UniformFanOutShape[T, U], NotUsed]): Sink[T, NotUsed] =
+    Sink.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
       val d = b.add(strategy(rest.size + 2))
       d.out(0) ~> first
@@ -322,9 +317,11 @@ object Sink {
    *
    * See also [[Flow.mapAsyncUnordered]]
    */
-  @deprecated("Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a Future or spawning a new Future.", since = "2.5.17")
-  def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
-    Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
+  @deprecated(
+    "Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a Future or spawning a new Future.",
+    since = "2.5.17")
+  def foreachParallel[T](parallelism: Int)(f: T => Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
+    Flow[T].mapAsyncUnordered(parallelism)(t => Future(f(t))).toMat(Sink.ignore)(Keep.right)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -335,7 +332,7 @@ object Sink {
    *
    * @see [[#foldAsync]]
    */
-  def fold[U, T](zero: U)(f: (U, T) ⇒ U): Sink[T, Future[U]] =
+  def fold[U, T](zero: U)(f: (U, T) => U): Sink[T, Future[U]] =
     Flow[T].fold(zero)(f).toMat(Sink.head)(Keep.right).named("foldSink")
 
   /**
@@ -347,7 +344,8 @@ object Sink {
    *
    * @see [[#fold]]
    */
-  def foldAsync[U, T](zero: U)(f: (U, T) ⇒ Future[U]): Sink[T, Future[U]] = Flow[T].foldAsync(zero)(f).toMat(Sink.head)(Keep.right).named("foldAsyncSink")
+  def foldAsync[U, T](zero: U)(f: (U, T) => Future[U]): Sink[T, Future[U]] =
+    Flow[T].foldAsync(zero)(f).toMat(Sink.head)(Keep.right).named("foldAsyncSink")
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -363,7 +361,7 @@ object Sink {
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    */
-  def reduce[T](f: (T, T) ⇒ T): Sink[T, Future[T]] =
+  def reduce[T](f: (T, T) => T): Sink[T, Future[T]] =
     Flow[T].reduce(f).toMat(Sink.head)(Keep.right).named("reduceSink")
 
   /**
@@ -371,7 +369,7 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[T](callback: Try[Done] ⇒ Unit): Sink[T, NotUsed] = {
+  def onComplete[T](callback: Try[Done] => Unit): Sink[T, NotUsed] = {
 
     def newOnCompleteStage(): GraphStage[FlowShape[T, NotUsed]] = {
       new GraphStage[FlowShape[T, NotUsed]] {
@@ -430,9 +428,12 @@ object Sink {
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
    * limiting operator in front of this `Sink`.
    */
-  @InternalApi private[akka] def actorRef[T](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Sink[T, NotUsed] =
-    fromGraph(new ActorRefSink(ref, onCompleteMessage, onFailureMessage,
-      DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+  @InternalApi private[akka] def actorRef[T](
+      ref: ActorRef,
+      onCompleteMessage: Any,
+      onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
+    fromGraph(
+      new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -450,8 +451,13 @@ object Sink {
    * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(new ActorRefSink(ref, onCompleteMessage, t ⇒ Status.Failure(t),
-      DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(
+      new ActorRefSink(
+        ref,
+        onCompleteMessage,
+        t => Status.Failure(t),
+        DefaultAttributes.actorRefSink,
+        shape("ActorRefSink")))
 
   /**
    * INTERNAL API
@@ -473,10 +479,21 @@ object Sink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
    */
-  @InternalApi private[akka] def actorRefWithAck[T](ref: ActorRef, messageAdapter: ActorRef ⇒ T ⇒ Any,
-                                                    onInitMessage: ActorRef ⇒ Any, ackMessage: Any, onCompleteMessage: Any,
-                                                    onFailureMessage: (Throwable) ⇒ Any): Sink[T, NotUsed] =
-    Sink.fromGraph(new ActorRefBackpressureSinkStage(ref, messageAdapter, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage))
+  @InternalApi private[akka] def actorRefWithAck[T](
+      ref: ActorRef,
+      messageAdapter: ActorRef => T => Any,
+      onInitMessage: ActorRef => Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: (Throwable) => Any): Sink[T, NotUsed] =
+    Sink.fromGraph(
+      new ActorRefBackpressureSinkStage(
+        ref,
+        messageAdapter,
+        onInitMessage,
+        ackMessage,
+        onCompleteMessage,
+        onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -492,9 +509,13 @@ object Sink {
    * function will be sent to the destination actor.
    *
    */
-  def actorRefWithAck[T](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
-                         onFailureMessage: (Throwable) ⇒ Any = Status.Failure): Sink[T, NotUsed] =
-    actorRefWithAck(ref, _ ⇒ identity, _ ⇒ onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
+  def actorRefWithAck[T](
+      ref: ActorRef,
+      onInitMessage: Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
+    actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -503,7 +524,9 @@ object Sink {
    *
    * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
    */
-  @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
+  @deprecated(
+    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
+    since = "2.5.0")
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
     require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
     fromGraph(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
@@ -539,9 +562,13 @@ object Sink {
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
   @Deprecated
-  @deprecated("Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)", "2.5.11")
-  def lazyInit[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], fallback: () ⇒ M): Sink[T, Future[M]] =
-    Sink.fromGraph(new LazySink[T, M](sinkFactory)).mapMaterializedValue(_.map(_.getOrElse(fallback()))(ExecutionContexts.sameThreadExecutionContext))
+  @deprecated(
+    "Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)",
+    "2.5.11")
+  def lazyInit[T, M](sinkFactory: T => Future[Sink[T, M]], fallback: () => M): Sink[T, Future[M]] =
+    Sink
+      .fromGraph(new LazySink[T, M](sinkFactory))
+      .mapMaterializedValue(_.map(_.getOrElse(fallback()))(ExecutionContexts.sameThreadExecutionContext))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -552,7 +579,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
-  def lazyInitAsync[T, M](sinkFactory: () ⇒ Future[Sink[T, M]]): Sink[T, Future[Option[M]]] =
-    Sink.fromGraph(new LazySink[T, M](_ ⇒ sinkFactory()))
+  def lazyInitAsync[T, M](sinkFactory: () => Future[Sink[T, M]]): Sink[T, Future[Option[M]]] =
+    Sink.fromGraph(new LazySink[T, M](_ => sinkFactory()))
 
 }

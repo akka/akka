@@ -19,20 +19,27 @@ import akka.persistence.typed.javadsl.EventSourcedBehavior
  * automatically from the [[EntityTypeKey]] and `entityId` constructor parameters by using
  * [[EntityTypeKey.persistenceIdFrom]].
  */
-abstract class EventSourcedEntity[Command, Event, State >: Null] private (
-  val entityTypeKey: EntityTypeKey[Command],
-  val entityId:      String,
-  persistenceId:     PersistenceId, onPersistFailure: Optional[BackoffSupervisorStrategy])
-  extends EventSourcedBehavior[Command, Event, State](persistenceId, onPersistFailure) {
+abstract class EventSourcedEntity[Command, Event, State] private (
+    val entityTypeKey: EntityTypeKey[Command],
+    val entityId: String,
+    persistenceId: PersistenceId,
+    onPersistFailure: Optional[BackoffSupervisorStrategy])
+    extends EventSourcedBehavior[Command, Event, State](persistenceId, onPersistFailure) {
 
   def this(entityTypeKey: EntityTypeKey[Command], entityId: String) = {
-    this(entityTypeKey, entityId,
-      persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.empty[BackoffSupervisorStrategy])
+    this(
+      entityTypeKey,
+      entityId,
+      persistenceId = entityTypeKey.persistenceIdFrom(entityId),
+      Optional.empty[BackoffSupervisorStrategy])
   }
 
   def this(entityTypeKey: EntityTypeKey[Command], entityId: String, onPersistFailure: BackoffSupervisorStrategy) = {
-    this(entityTypeKey, entityId,
-      persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.ofNullable(onPersistFailure))
+    this(
+      entityTypeKey,
+      entityId,
+      persistenceId = entityTypeKey.persistenceIdFrom(entityId),
+      Optional.ofNullable(onPersistFailure))
   }
 
 }

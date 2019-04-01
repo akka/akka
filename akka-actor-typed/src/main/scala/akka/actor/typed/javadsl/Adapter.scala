@@ -103,7 +103,7 @@ object Adapter {
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]], deploy: Props): akka.actor.Props =
-    akka.actor.typed.internal.adapter.PropsAdapter(() ⇒ behavior.create(), deploy)
+    akka.actor.typed.internal.adapter.PropsAdapter(() => behavior.create(), deploy)
 
   /**
    * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when

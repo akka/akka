@@ -73,7 +73,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       def checkSendingToClient(): Unit = {
         server ! Send(data, clientAddress)
         expectMsgPF() {
-          case Received(d, a) ⇒
+          case Received(d, a) =>
             d should ===(data)
             a should ===(serverAddress)
         }
@@ -81,15 +81,15 @@ class UdpIntegrationSpec extends AkkaSpec("""
       def checkSendingToServer(): Unit = {
         client ! Send(data, serverAddress)
         expectMsgPF() {
-          case Received(d, a) ⇒
+          case Received(d, a) =>
             d should ===(data)
             a should ===(clientAddress)
         }
       }
 
-      (0 until 20).foreach(_ ⇒ checkSendingToServer())
-      (0 until 20).foreach(_ ⇒ checkSendingToClient())
-      (0 until 20).foreach { i ⇒
+      (0 until 20).foreach(_ => checkSendingToServer())
+      (0 until 20).foreach(_ => checkSendingToClient())
+      (0 until 20).foreach { i =>
         if (i % 2 == 0) checkSendingToServer()
         else checkSendingToClient()
       }

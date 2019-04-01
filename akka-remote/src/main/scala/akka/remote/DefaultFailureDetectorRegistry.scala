@@ -7,7 +7,7 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
-import java.util.concurrent.locks.{ ReentrantLock, Lock }
+import java.util.concurrent.locks.{ Lock, ReentrantLock }
 
 /**
  * A lock-less thread-safe implementation of [[akka.remote.FailureDetectorRegistry]].
@@ -16,26 +16,26 @@ import java.util.concurrent.locks.{ ReentrantLock, Lock }
  *   By-name parameter that returns the failure detector instance to be used by a newly registered resource
  *
  */
-class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector) extends FailureDetectorRegistry[A] {
+class DefaultFailureDetectorRegistry[A](detectorFactory: () => FailureDetector) extends FailureDetectorRegistry[A] {
 
   private val resourceToFailureDetector = new AtomicReference[Map[A, FailureDetector]](Map())
   private final val failureDetectorCreationLock: Lock = new ReentrantLock
 
   final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
-    case Some(r) ⇒ r.isAvailable
-    case _       ⇒ true
+    case Some(r) => r.isAvailable
+    case _       => true
   }
 
   final override def isMonitoring(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
-    case Some(r) ⇒ r.isMonitoring
-    case _       ⇒ false
+    case Some(r) => r.isMonitoring
+    case _       => false
   }
 
   final override def heartbeat(resource: A): Unit = {
 
     resourceToFailureDetector.get.get(resource) match {
-      case Some(failureDetector) ⇒ failureDetector.heartbeat()
-      case None ⇒
+      case Some(failureDetector) => failureDetector.heartbeat()
+      case None                  =>
         // First one wins and creates the new FailureDetector
         failureDetectorCreationLock.lock()
         try {
@@ -43,19 +43,19 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
           // when this one acquired it, so the second check is needed.
           val oldTable = resourceToFailureDetector.get
           oldTable.get(resource) match {
-            case Some(failureDetector) ⇒
+            case Some(failureDetector) =>
               failureDetector.heartbeat()
-            case None ⇒
+            case None =>
               val newDetector: FailureDetector = detectorFactory()
 
               // address below was introduced as a var because of binary compatibility constraints
               newDetector match {
-                case phi: PhiAccrualFailureDetector ⇒ phi.address = resource.toString
-                case _                              ⇒
+                case phi: PhiAccrualFailureDetector => phi.address = resource.toString
+                case _                              =>
               }
 
               newDetector.heartbeat()
-              resourceToFailureDetector.set(oldTable + (resource → newDetector))
+              resourceToFailureDetector.set(oldTable + (resource -> newDetector))
           }
         } finally failureDetectorCreationLock.unlock()
     }
@@ -89,4 +89,3 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
     resourceToFailureDetector.get.get(resource)
 
 }
-

@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Warmup
-import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 
 @Fork(2)
 @State(JmhScope.Benchmark)
@@ -35,8 +35,7 @@ import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
 @OutputTimeUnit(TimeUnit.SECONDS)
 class ORSetSerializationBenchmark {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
@@ -44,18 +43,17 @@ class ORSetSerializationBenchmark {
       serialize-messages = off
       allow-java-serialization = off
     }
-    """
-  )
+    """)
 
   private val system1 = ActorSystem("ORSetSerializationBenchmark", config)
   private val system2 = ActorSystem("ORSetSerializationBenchmark", config)
 
-  private val ref1 = (1 to 10).map(n ⇒ system1.actorOf(Props.empty, s"ref1-$n"))
-  private val ref2 = (1 to 10).map(n ⇒ system2.actorOf(Props.empty, s"ref2-$n"))
+  private val ref1 = (1 to 10).map(n => system1.actorOf(Props.empty, s"ref1-$n"))
+  private val ref2 = (1 to 10).map(n => system2.actorOf(Props.empty, s"ref2-$n"))
 
   private val orSet = {
-    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) ⇒ acc.add(Cluster(system1), r) }
-    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) ⇒ acc.add(Cluster(system2), r) }
+    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system1), r) }
+    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system2), r) }
     set1.merge(set2)
   }
 

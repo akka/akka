@@ -23,11 +23,11 @@ import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Fut
 import scala.util.control.Exception
 
 class BoundedBlockingQueueSpec
-  extends WordSpec
-  with Matchers
-  with QueueSetupHelper
-  with CustomContainsMatcher
-  with BlockingHelpers {
+    extends WordSpec
+    with Matchers
+    with QueueSetupHelper
+    with CustomContainsMatcher
+    with BlockingHelpers {
 
   import QueueTestEvents._
 
@@ -86,7 +86,7 @@ class BoundedBlockingQueueSpec
       val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.put("Hello")
       queue.put("World")
-      events should contain inOrder (offer("Hello"), offer("World"))
+      (events should contain).inOrder(offer("Hello"), offer("World"))
     }
 
     "signal notEmpty when an element is inserted" in {
@@ -102,7 +102,7 @@ class BoundedBlockingQueueSpec
       mustBlockFor(100 milliseconds) {
         queue.put("2")
       }
-      events should contain inOrder (offer("1"), awaitNotFull)
+      (events should contain).inOrder(offer("1"), awaitNotFull)
       events should not contain offer("2")
     }
 
@@ -118,7 +118,7 @@ class BoundedBlockingQueueSpec
       }
 
       Await.result(f, 3 seconds)
-      events should contain inOrder (offer("a"), poll, offer("b"))
+      (events should contain).inOrder(offer("a"), poll, offer("b"))
     }
 
     "check the backing queue size before offering" in {
@@ -147,7 +147,7 @@ class BoundedBlockingQueueSpec
       queue.put("Hello")
       queue.take()
 
-      events should contain inOrder (offer("Hello"), poll)
+      (events should contain).inOrder(offer("Hello"), poll)
     }
 
     "signal notFull when taking an element" in {
@@ -177,7 +177,7 @@ class BoundedBlockingQueueSpec
       }
 
       Await.ready(f, 3 seconds)
-      events should contain inOrder (awaitNotEmpty, offer("a"), poll)
+      (events should contain).inOrder(awaitNotEmpty, offer("a"), poll)
     }
 
     "check the backing queue size before polling" in {
@@ -220,7 +220,7 @@ class BoundedBlockingQueueSpec
       val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.offer("Hello") should equal(true)
       queue.offer("World") should equal(true)
-      events should contain inOrder (offer("Hello"), offer("World"))
+      (events should contain).inOrder(offer("Hello"), offer("World"))
     }
 
     "signal notEmpty when the call succeeds" in {
@@ -278,7 +278,7 @@ class BoundedBlockingQueueSpec
         queue.take()
       }
       Await.result(f, 3 seconds) should equal(true)
-      events should contain inOrder (awaitNotFull, signalNotFull, offer("World"))
+      (events should contain).inOrder(awaitNotFull, signalNotFull, offer("World"))
     }
 
     "check the backing queue size before offering" in {
@@ -385,7 +385,7 @@ class BoundedBlockingQueueSpec
         queue.put("Hello")
       }
       Await.result(f, 3 seconds) should equal("Hello")
-      events should contain inOrder (awaitNotEmpty, signalNotEmpty, poll)
+      (events should contain).inOrder(awaitNotEmpty, signalNotEmpty, poll)
     }
   }
 
@@ -564,7 +564,7 @@ class BoundedBlockingQueueSpec
       queue.put("World")
 
       queue.retainAll(elems.asJava) should equal(false)
-      queue.toArray() should contain allOf ("Hello", "World")
+      (queue.toArray() should contain).allOf("Hello", "World")
     }
   }
 
@@ -617,18 +617,17 @@ trait CustomContainsMatcher {
 
       def attemptMatch(remainingTruth: List[A], remainingSequence: List[A]): MatchResult =
         (remainingTruth, remainingSequence) match {
-          case (_, Nil)                          ⇒ matchResult(true)
-          case (Nil, _)                          ⇒ matchResult(false)
-          case (x :: xs, y :: ys) if x.equals(y) ⇒ attemptMatch(xs, ys)
-          case (x :: xs, ys)                     ⇒ attemptMatch(xs, ys)
+          case (_, Nil)                          => matchResult(true)
+          case (Nil, _)                          => matchResult(false)
+          case (x :: xs, y :: ys) if x.equals(y) => attemptMatch(xs, ys)
+          case (x :: xs, ys)                     => attemptMatch(xs, ys)
         }
 
       def matchResult(success: Boolean): MatchResult =
         MatchResult(
           success,
           s"""$left did not contain all of $right in sequence""",
-          s"""$left contains all of $right in sequence"""
-        )
+          s"""$left contains all of $right in sequence""")
 
       attemptMatch(left.toList, right)
     }
@@ -651,7 +650,7 @@ trait BlockingHelpers {
    * Delay execution of some code until the timespan has passed.
    * The action is wrapped in a Future that initially calls `Thread.sleep()`
    */
-  def after(timespan: Span)(action: ⇒ Unit): Future[Unit] = Future {
+  def after(timespan: Span)(action: => Unit): Future[Unit] = Future {
     LockSupport.parkNanos(timespan.toNanos)
     action
   }
@@ -659,7 +658,7 @@ trait BlockingHelpers {
   /**
    * Check that a call does not return within a set timespan.
    */
-  def mustBlockFor(timeout: Span)(action: ⇒ Unit)(implicit pos: Position): Unit =
+  def mustBlockFor(timeout: Span)(action: => Unit)(implicit pos: Position): Unit =
     Exception.ignoring(classOf[TestFailedDueToTimeoutException]) {
       failAfter(timeout)(action)
       fail("Expected action to block for at least " + timeout.prettyString + " but it completed.")
@@ -706,13 +705,18 @@ trait QueueSetupHelper {
 
   import akka.util.QueueTestEvents._
 
-  case class TestContext(queue: BoundedBlockingQueue[String], events: mutable.Buffer[QueueEvent], notEmpty: TestCondition, notFull: TestCondition, lock: ReentrantLock, backingQueue: util.Queue[String])
+  case class TestContext(
+      queue: BoundedBlockingQueue[String],
+      events: mutable.Buffer[QueueEvent],
+      notEmpty: TestCondition,
+      notFull: TestCondition,
+      lock: ReentrantLock,
+      backingQueue: util.Queue[String])
 
   /**
    * Backing queue that records all poll and offer calls in `events`
    */
-  class TestBackingQueue(events: mutable.Buffer[QueueEvent])
-    extends util.LinkedList[String] {
+  class TestBackingQueue(events: mutable.Buffer[QueueEvent]) extends util.LinkedList[String] {
 
     override def poll(): String = {
       events += Poll()
@@ -733,8 +737,12 @@ trait QueueSetupHelper {
   /**
    * Reentrant lock condition that records when the condition is signaled or `await`ed.
    */
-  class TestCondition(events: mutable.Buffer[QueueEvent], condition: Condition, signalEvent: QueueEvent, awaitEvent: QueueEvent)
-    extends Condition {
+  class TestCondition(
+      events: mutable.Buffer[QueueEvent],
+      condition: Condition,
+      signalEvent: QueueEvent,
+      awaitEvent: QueueEvent)
+      extends Condition {
 
     case class Manual(waitTime: Long = 0, waitingThread: Option[Thread] = None)
 
@@ -742,17 +750,16 @@ trait QueueSetupHelper {
 
     def advanceTime(timespan: Span): Unit = {
       waiting match {
-        case Some(manual) ⇒
+        case Some(manual) =>
           val newWaitTime = manual.waitTime - timespan.toNanos
-          waiting =
-            if (newWaitTime <= 0 && manual.waitingThread.isDefined) {
-              manual.waitingThread.get.interrupt()
-              Some(Manual(newWaitTime, None))
-            } else {
-              Some(manual.copy(waitTime = newWaitTime))
-            }
+          waiting = if (newWaitTime <= 0 && manual.waitingThread.isDefined) {
+            manual.waitingThread.get.interrupt()
+            Some(Manual(newWaitTime, None))
+          } else {
+            Some(manual.copy(waitTime = newWaitTime))
+          }
 
-        case None ⇒
+        case None =>
           sys.error("Called advance time but hasn't enabled manualTimeControl")
       }
     }
@@ -774,7 +781,7 @@ trait QueueSetupHelper {
         try {
           this.await()
         } catch {
-          case _: InterruptedException ⇒
+          case _: InterruptedException =>
         }
         waitTime
       }
@@ -809,17 +816,14 @@ trait QueueSetupHelper {
     /**
      * Class under test with the necessary backing queue, lock and conditions injected.
      */
-    class TestBoundedBlockingQueue()
-      extends BoundedBlockingQueue[String](maxCapacity, backingQueue) {
+    class TestBoundedBlockingQueue() extends BoundedBlockingQueue[String](maxCapacity, backingQueue) {
 
       override def createLock(): ReentrantLock = realLock
       override def createNotEmptyCondition(): Condition = wrappedNotEmpty
       override def createNotFullCondition(): Condition = wrappedNotFull
     }
 
-    TestContext(new TestBoundedBlockingQueue(), events,
-      wrappedNotEmpty, wrappedNotFull, realLock,
-      backingQueue)
+    TestContext(new TestBoundedBlockingQueue(), events, wrappedNotEmpty, wrappedNotFull, realLock, backingQueue)
   }
 }
 
@@ -829,8 +833,9 @@ trait QueueSetupHelper {
  */
 object DefaultExecutionContext {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(new Executor {
-    override def execute(command: Runnable): Unit = new Thread() {
-      override def run(): Unit = command.run()
-    }.start()
+    override def execute(command: Runnable): Unit =
+      new Thread() {
+        override def run(): Unit = command.run()
+      }.start()
   })
 }

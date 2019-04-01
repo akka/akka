@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
  * It is also used in the Java DSL for “untyped Inlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class InPort { self: Inlet[_] ⇒
+sealed abstract class InPort { self: Inlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
@@ -35,13 +35,14 @@ sealed abstract class InPort { self: Inlet[_] ⇒
    */
   private[stream] def inlet: Inlet[_] = this
 }
+
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
  * It is also used in the Java DSL for “untyped Outlets” as a work-around
  * for otherwise unreasonable existential types.
  */
-sealed abstract class OutPort { self: Outlet[_] ⇒
+sealed abstract class OutPort { self: Outlet[_] =>
   final override def hashCode: Int = super.hashCode
   final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
 
@@ -67,6 +68,7 @@ sealed abstract class OutPort { self: Outlet[_] ⇒
  * express the internal structural hierarchy of stream topologies).
  */
 object Inlet {
+
   /**
    * Scala API
    *
@@ -90,14 +92,16 @@ final class Inlet[T] private (val s: String) extends InPort {
     in.mappedTo = this
     in
   }
+
   /**
    * INTERNAL API.
    */
   def as[U]: Inlet[U] = this.asInstanceOf[Inlet[U]]
 
-  override def toString: String = s + "(" + this.hashCode + s")" +
+  override def toString: String =
+    s + "(" + this.hashCode + s")" +
     (if (mappedTo eq this) ""
-    else s" mapped to $mappedTo")
+     else s" mapped to $mappedTo")
 }
 
 /**
@@ -130,28 +134,31 @@ final class Outlet[T] private (val s: String) extends OutPort {
     out.mappedTo = this
     out
   }
+
   /**
    * INTERNAL API.
    */
   def as[U]: Outlet[U] = this.asInstanceOf[Outlet[U]]
 
-  override def toString: String = s + "(" + this.hashCode + s")" +
+  override def toString: String =
+    s + "(" + this.hashCode + s")" +
     (if (mappedTo eq this) ""
-    else s" mapped to $mappedTo")
+     else s" mapped to $mappedTo")
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object Shape {
+
   /**
    * `inlets` and `outlets` can be `Vector` or `List` so this method
    * checks the size of 1 in an optimized way.
    */
   def hasOnePort(ports: immutable.Seq[_]): Boolean = {
     ports.nonEmpty && (ports match {
-      case l: List[_] ⇒ l.tail.isEmpty // assuming List is most common
-      case _          ⇒ ports.size == 1 // e.g. Vector
+      case l: List[_] => l.tail.isEmpty // assuming List is most common
+      case _          => ports.size == 1 // e.g. Vector
     })
   }
 }
@@ -163,6 +170,7 @@ final class Outlet[T] private (val s: String) extends OutPort {
  * otherwise it is just a black box.
  */
 abstract class Shape {
+
   /**
    * Scala API: get a list of all input ports
    */
@@ -213,17 +221,20 @@ abstract class Shape {
   def requireSamePortsAndShapeAs(s: Shape): Unit = require(hasSamePortsAndShapeAs(s), nonCorrespondingMessage(s))
 
   private def nonCorrespondingMessage(s: Shape) =
-    s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(", ")}] must correspond to the inlets [${inlets.mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
+    s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(", ")}] must correspond to the inlets [${inlets
+      .mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
 }
 
 /**
  * Java API for creating custom [[Shape]] types.
  */
 abstract class AbstractShape extends Shape {
+
   /**
    * Provide the list of all input ports of this shape.
    */
   def allInlets: java.util.List[Inlet[_]]
+
   /**
    * Provide the list of all output ports of this shape.
    */
@@ -275,6 +286,7 @@ final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends Shap
   override def deepCopy(): SourceShape[T] = SourceShape(out.carbonCopy())
 }
 object SourceShape {
+
   /** Java API */
   def of[T](outlet: Outlet[T @uncheckedVariance]): SourceShape[T] =
     SourceShape(outlet)
@@ -292,6 +304,7 @@ final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[
   override def deepCopy(): FlowShape[I, O] = FlowShape(in.carbonCopy(), out.carbonCopy())
 }
 object FlowShape {
+
   /** Java API */
   def of[I, O](inlet: Inlet[I @uncheckedVariance], outlet: Outlet[O @uncheckedVariance]): FlowShape[I, O] =
     FlowShape(inlet, outlet)
@@ -307,6 +320,7 @@ final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
   override def deepCopy(): SinkShape[T] = SinkShape(in.carbonCopy())
 }
 object SinkShape {
+
   /** Java API */
   def of[T](inlet: Inlet[T @uncheckedVariance]): SinkShape[T] =
     SinkShape(inlet)
@@ -326,10 +340,11 @@ object SinkShape {
  * }}}
  */
 final case class BidiShape[-In1, +Out1, -In2, +Out2](
-  in1:  Inlet[In1 @uncheckedVariance],
-  out1: Outlet[Out1 @uncheckedVariance],
-  in2:  Inlet[In2 @uncheckedVariance],
-  out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
+    in1: Inlet[In1 @uncheckedVariance],
+    out1: Outlet[Out1 @uncheckedVariance],
+    in2: Inlet[In2 @uncheckedVariance],
+    out2: Outlet[Out2 @uncheckedVariance])
+    extends Shape {
   //#implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = in1 :: in2 :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = out1 :: out2 :: Nil
@@ -351,10 +366,10 @@ object BidiShape {
 
   /** Java API */
   def of[In1, Out1, In2, Out2](
-    in1:  Inlet[In1 @uncheckedVariance],
-    out1: Outlet[Out1 @uncheckedVariance],
-    in2:  Inlet[In2 @uncheckedVariance],
-    out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
+      in1: Inlet[In1 @uncheckedVariance],
+      out1: Outlet[Out1 @uncheckedVariance],
+      in2: Inlet[In2 @uncheckedVariance],
+      out2: Outlet[Out2 @uncheckedVariance]): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1, out1, in2, out2)
 
 }

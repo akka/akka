@@ -79,47 +79,60 @@ import org.reactivestreams.{ Subscriber, Subscription }
   sealed trait SpecViolation extends Throwable
 
   @SerialVersionUID(1L)
-  final class SignalThrewException(message: String, cause: Throwable) extends IllegalStateException(message, cause) with SpecViolation
+  final class SignalThrewException(message: String, cause: Throwable)
+      extends IllegalStateException(message, cause)
+      with SpecViolation
 
   final def tryOnError[T](subscriber: Subscriber[T], error: Throwable): Unit =
     error match {
-      case sv: SpecViolation ⇒ throw new IllegalStateException("It is not legal to try to signal onError with a SpecViolation", sv)
-      case other ⇒
-        try subscriber.onError(other) catch {
-          case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onError", t)
+      case sv: SpecViolation =>
+        throw new IllegalStateException("It is not legal to try to signal onError with a SpecViolation", sv)
+      case other =>
+        try subscriber.onError(other)
+        catch {
+          case NonFatal(t) => throw new SignalThrewException(subscriber + ".onError", t)
         }
     }
 
   final def tryOnNext[T](subscriber: Subscriber[T], element: T): Unit = {
     requireNonNullElement(element)
-    try subscriber.onNext(element) catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onNext", t)
+    try subscriber.onNext(element)
+    catch {
+      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onNext", t)
     }
   }
 
   final def tryOnSubscribe[T](subscriber: Subscriber[T], subscription: Subscription): Unit = {
-    try subscriber.onSubscribe(subscription) catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onSubscribe", t)
+    try subscriber.onSubscribe(subscription)
+    catch {
+      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onSubscribe", t)
     }
   }
 
   final def tryOnComplete[T](subscriber: Subscriber[T]): Unit = {
-    try subscriber.onComplete() catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onComplete", t)
+    try subscriber.onComplete()
+    catch {
+      case NonFatal(t) => throw new SignalThrewException(subscriber + ".onComplete", t)
     }
   }
 
   final def tryRequest(subscription: Subscription, demand: Long): Unit = {
-    if (subscription eq null) throw new IllegalStateException("Subscription must be not null on request() call, rule 1.3")
-    try subscription.request(demand) catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from request(), rule 3.16", t)
+    if (subscription eq null)
+      throw new IllegalStateException("Subscription must be not null on request() call, rule 1.3")
+    try subscription.request(demand)
+    catch {
+      case NonFatal(t) =>
+        throw new SignalThrewException("It is illegal to throw exceptions from request(), rule 3.16", t)
     }
   }
 
   final def tryCancel(subscription: Subscription): Unit = {
-    if (subscription eq null) throw new IllegalStateException("Subscription must be not null on cancel() call, rule 1.3")
-    try subscription.cancel() catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
+    if (subscription eq null)
+      throw new IllegalStateException("Subscription must be not null on cancel() call, rule 1.3")
+    try subscription.cancel()
+    catch {
+      case NonFatal(t) =>
+        throw new SignalThrewException("It is illegal to throw exceptions from cancel(), rule 3.15", t)
     }
   }
 

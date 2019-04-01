@@ -21,8 +21,13 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-@InternalApi private[akka] final class FileSink(f: Path, startPosition: Long, options: immutable.Set[OpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
-  extends SinkModule[ByteString, Future[IOResult]](shape) {
+@InternalApi private[akka] final class FileSink(
+    f: Path,
+    startPosition: Long,
+    options: immutable.Set[OpenOption],
+    val attributes: Attributes,
+    shape: SinkShape[ByteString])
+    extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override protected def label: String = s"FileSink($f, $options)"
 
@@ -50,8 +55,12 @@ import scala.concurrent.{ Future, Promise }
  * INTERNAL API
  * Creates simple synchronous Sink which writes all incoming elements to the output stream.
  */
-@InternalApi private[akka] final class OutputStreamSink(createOutput: () ⇒ OutputStream, val attributes: Attributes, shape: SinkShape[ByteString], autoFlush: Boolean)
-  extends SinkModule[ByteString, Future[IOResult]](shape) {
+@InternalApi private[akka] final class OutputStreamSink(
+    createOutput: () => OutputStream,
+    val attributes: Attributes,
+    shape: SinkShape[ByteString],
+    autoFlush: Boolean)
+    extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)

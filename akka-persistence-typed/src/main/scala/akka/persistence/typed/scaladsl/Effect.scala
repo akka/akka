@@ -4,12 +4,10 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.collection.{ immutable ⇒ im }
-
+import scala.collection.{ immutable => im }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.ReplyEffectImpl
-import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
 
 /**
@@ -86,7 +84,7 @@ object Effect {
    * @see [[Effect.thenUnstashAll]]
    */
   def unstashAll[Event, State](): Effect[Event, State] =
-    none.andThen(SideEffect.unstashAll[State]())
+    CompositeEffect(none.asInstanceOf[Effect[Event, State]], SideEffect.unstashAll[State]())
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -100,8 +98,9 @@ object Effect {
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage, Event, State](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none[Event, State].thenReply[ReplyMessage](cmd)(_ ⇒ replyWithMessage)
+  def reply[ReplyMessage, Event, State](cmd: ExpectingReply[ReplyMessage])(
+      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+    none[Event, State].thenReply[ReplyMessage](cmd)(_ => replyWithMessage)
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -126,19 +125,7 @@ trait Effect[+Event, State] {
   /**
    * Run the given callback. Callbacks are run sequentially.
    */
-  final def thenRun(callback: State ⇒ Unit): Effect[Event, State] =
-    CompositeEffect(this, SideEffect(callback))
-
-  /**
-   *  Run the given callback after the current Effect
-   */
-  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
-
-  /**
-   *  Run the given callbacks sequentially after the current Effect
-   */
-  final def andThen(chainedEffects: im.Seq[SideEffect[State]]): Effect[Event, State] =
-    CompositeEffect(this, chainedEffects)
+  def thenRun(callback: State => Unit): Effect[Event, State]
 
   /** The side effect is to stop the actor */
   def thenStop(): Effect[Event, State]
@@ -164,8 +151,8 @@ trait Effect[+Event, State] {
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: State ⇒ ReplyMessage): ReplyEffect[Event, State] =
-    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
+  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
+      replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State]
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -184,4 +171,3 @@ trait Effect[+Event, State] {
  * Not intended for user extension.
  */
 @DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State]
-

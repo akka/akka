@@ -8,7 +8,7 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 

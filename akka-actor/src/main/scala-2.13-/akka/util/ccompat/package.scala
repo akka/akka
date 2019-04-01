@@ -6,12 +6,9 @@ package akka.util
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
-
-import scala.collection.GenTraversable
-import scala.{ collection ⇒ c }
+import scala.collection.{ GenTraversable, immutable => i, mutable => m }
+import scala.{ collection => c }
 import scala.collection.generic.{ CanBuildFrom, GenericCompanion, Sorted, SortedSetFactory }
-import scala.collection.{ immutable ⇒ i }
-import scala.collection.{ mutable ⇒ m }
 
 /**
  * INTERNAL API
@@ -48,11 +45,12 @@ package object ccompat {
   }
 
   private[akka] implicit def genericCompanionToCBF[A, CC[X] <: GenTraversable[X]](
-    fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =
+      fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =
     simpleCBF(fact.newBuilder[A])
 
-  private[akka] implicit def sortedSetCompanionToCBF[A: Ordering, CC[X] <: c.SortedSet[X] with c.SortedSetLike[X, CC[X]]](
-    fact: SortedSetFactory[CC]): CanBuildFrom[Any, A, CC[A]] =
+  private[akka] implicit def sortedSetCompanionToCBF[
+      A: Ordering,
+      CC[X] <: c.SortedSet[X] with c.SortedSetLike[X, CC[X]]](fact: SortedSetFactory[CC]): CanBuildFrom[Any, A, CC[A]] =
     simpleCBF(fact.newBuilder[A])
 
   private[ccompat] def build[T, CC](builder: m.Builder[T, CC], source: TraversableOnce[T]): CC = {
@@ -80,4 +78,8 @@ package object ccompat {
   // in scala-library so we can't add to it
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce = c.TraversableOnce
+
+  implicit class ImmutableSortedSetOps[A](val real: i.SortedSet[A]) extends AnyVal {
+    def unsorted: i.Set[A] = real
+  }
 }

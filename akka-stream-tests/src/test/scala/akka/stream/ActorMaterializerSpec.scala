@@ -41,21 +41,23 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "refuse materialization after shutdown" in {
       val m = ActorMaterializer.create(system)
       m.shutdown()
-      the[IllegalStateException] thrownBy {
+      (the[IllegalStateException] thrownBy {
         Source(1 to 5).runWith(Sink.ignore)(m)
-      } should have message "Trying to materialize stream after materializer has been shutdown"
+      } should have).message("Trying to materialize stream after materializer has been shutdown")
     }
 
     "refuse materialization when shutdown while materializing" in {
       val m = ActorMaterializer.create(system)
 
-      the[IllegalStateException] thrownBy {
-        Source(1 to 5).mapMaterializedValue { _ ⇒
-          // shutdown while materializing
-          m.shutdown()
-          Thread.sleep(100)
-        }.runWith(Sink.ignore)(m)
-      } should have message "Materializer shutdown while materializing stream"
+      (the[IllegalStateException] thrownBy {
+        Source(1 to 5)
+          .mapMaterializedValue { _ =>
+            // shutdown while materializing
+            m.shutdown()
+            Thread.sleep(100)
+          }
+          .runWith(Sink.ignore)(m)
+      } should have).message("Materializer shutdown while materializing stream")
     }
 
     "shut down the supervisor actor it encapsulates" in {
@@ -83,9 +85,9 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "handle properly broken Props" in {
       val m = ActorMaterializer.create(system)
       an[IllegalArgumentException] should be thrownBy
-        Await.result(
-          Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
-          3.seconds)
+      Await.result(
+        Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
+        3.seconds)
     }
 
     "report correctly if it has been shut down from the side" in {
@@ -100,14 +102,16 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
 object ActorMaterializerSpec {
   class ActorWithMaterializer(p: TestProbe) extends Actor {
-    private val settings: ActorMaterializerSettings = ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
+    private val settings: ActorMaterializerSettings =
+      ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
     implicit val mat = ActorMaterializer(settings)(context)
 
-    Source.repeat("hello")
+    Source
+      .repeat("hello")
       .take(1)
       .concat(Source.maybe)
       .map(p.ref ! _)
-      .runWith(Sink.onComplete(signal ⇒ {
+      .runWith(Sink.onComplete(signal => {
         p.ref ! signal
       }))
 

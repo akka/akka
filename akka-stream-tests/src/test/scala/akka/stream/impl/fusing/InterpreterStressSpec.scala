@@ -14,7 +14,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   val halfLength = chainLength / 2
   val repetition = 100
 
-  val map = Map((x: Int) ⇒ x + 1)
+  val map = Map((x: Int) => x + 1)
 
   // GraphStages can be reused
   val dropOne = Drop(1)
@@ -23,7 +23,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   "Interpreter" must {
 
-    "work with a massive chain of maps" taggedAs LongRunningTest in new OneBoundedSetup[Int](Vector.fill(chainLength)(map): _*) {
+    "work with a massive chain of maps" taggedAs LongRunningTest in new OneBoundedSetup[Int](
+      Vector.fill(chainLength)(map): _*) {
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
 
@@ -47,8 +48,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "work with a massive chain of maps with early complete" taggedAs LongRunningTest in new OneBoundedSetup[Int](
       Vector.fill(halfLength)(map) ++
-        Seq(takeHalfOfRepetition) ++
-        Vector.fill(halfLength)(map): _*) {
+      Seq(takeHalfOfRepetition) ++
+      Vector.fill(halfLength)(map): _*) {
 
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
@@ -105,11 +106,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "work with a massive chain of batches by overflowing to the heap" in {
 
-      val batch = Batch(
-        0L,
-        ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, in: Int) ⇒ agg + in)
+      val batch = Batch(0L, ConstantFun.zeroLong, (in: Int) => in, (agg: Int, in: Int) => agg + in)
 
       new OneBoundedSetup[Int](Vector.fill(chainLength / 10)(batch): _*) {
 
@@ -126,4 +123,3 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
 }
-

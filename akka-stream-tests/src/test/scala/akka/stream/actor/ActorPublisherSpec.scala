@@ -5,7 +5,7 @@
 package akka.stream.actor
 
 import akka.actor.{ ActorRef, PoisonPill, Props }
-import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, ActorAttributes }
+import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, ClosedShape }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -50,14 +50,14 @@ object ActorPublisherSpec {
     import akka.stream.actor.ActorPublisherMessage._
 
     def receive = {
-      case Request(element)    ⇒ probe ! TotalDemand(totalDemand)
-      case Produce(elem)       ⇒ onNext(elem)
-      case Err(reason)         ⇒ onError(new RuntimeException(reason) with NoStackTrace)
-      case ErrThenStop(reason) ⇒ onErrorThenStop(new RuntimeException(reason) with NoStackTrace)
-      case Complete            ⇒ onComplete()
-      case CompleteThenStop    ⇒ onCompleteThenStop()
-      case Boom                ⇒ throw new RuntimeException("boom") with NoStackTrace
-      case ThreadName          ⇒ probe ! Thread.currentThread.getName
+      case Request(element)    => probe ! TotalDemand(totalDemand)
+      case Produce(elem)       => onNext(elem)
+      case Err(reason)         => onError(new RuntimeException(reason) with NoStackTrace)
+      case ErrThenStop(reason) => onErrorThenStop(new RuntimeException(reason) with NoStackTrace)
+      case Complete            => onComplete()
+      case CompleteThenStop    => onCompleteThenStop()
+      case Boom                => throw new RuntimeException("boom") with NoStackTrace
+      case ThreadName          => probe ! Thread.currentThread.getName
     }
   }
 
@@ -66,10 +66,10 @@ object ActorPublisherSpec {
     override def receive = stashing
 
     def stashing: Receive = {
-      case "unstash" ⇒
+      case "unstash" =>
         unstashAll()
         context.become(super.receive)
-      case _ ⇒ stash()
+      case _ => stash()
     }
 
   }
@@ -82,16 +82,16 @@ object ActorPublisherSpec {
     var buf = Vector.empty[Int]
 
     def receive = {
-      case i: Int ⇒
+      case i: Int =>
         if (buf.isEmpty && totalDemand > 0)
           onNext(i)
         else {
           buf :+= i
           deliverBuf()
         }
-      case Request(_) ⇒
+      case Request(_) =>
         deliverBuf()
-      case Cancel ⇒
+      case Cancel =>
         context.stop(self)
     }
 
@@ -101,11 +101,11 @@ object ActorPublisherSpec {
         if (totalDemand <= Int.MaxValue) {
           val (use, keep) = buf.splitAt(totalDemand.toInt)
           buf = keep
-          use foreach onNext
+          use.foreach(onNext)
         } else {
           val (use, keep) = buf.splitAt(Int.MaxValue)
           buf = keep
-          use foreach onNext
+          use.foreach(onNext)
           deliverBuf()
         }
       }
@@ -121,9 +121,9 @@ object ActorPublisherSpec {
     override def subscriptionTimeout = timeout
 
     override def receive: Receive = {
-      case Request(_) ⇒
+      case Request(_) =>
         onNext(1)
-      case SubscriptionTimeoutExceeded ⇒
+      case SubscriptionTimeoutExceeded =>
         probe ! "timed-out"
         context.system.scheduler.scheduleOnce(timeout, probe, "cleaned-up")
         context.system.scheduler.scheduleOnce(timeout, self, PoisonPill)
@@ -139,7 +139,7 @@ object ActorPublisherSpec {
     override val requestStrategy = WatermarkRequestStrategy(10)
 
     def receive = {
-      case OnNext(s: String) ⇒
+      case OnNext(s: String) =>
         probe ! s
     }
   }
@@ -319,7 +319,8 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
       s.expectSubscription()
       val s2 = TestSubscriber.manualProbe[String]()
       ActorPublisher[String](ref).subscribe(s2)
-      s2.expectSubscriptionAndError().getMessage should be(s"ActorPublisher ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}")
+      s2.expectSubscriptionAndError().getMessage should be(
+        s"ActorPublisher ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}")
     }
 
     "can not subscribe the same subscriber multiple times" in {
@@ -350,19 +351,24 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
         val source: Source[Int, ActorRef] = Source.actorPublisher(senderProps)
         val sink: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe.ref))
 
-        val (snd, rcv) = source.collect {
-          case n if n % 2 == 0 ⇒ "elem-" + n
-        }.toMat(sink)(Keep.both).run()
+        val (snd, rcv) = source
+          .collect {
+            case n if n % 2 == 0 => "elem-" + n
+          }
+          .toMat(sink)(Keep.both)
+          .run()
 
-        (1 to 3) foreach { snd ! _ }
+        (1 to 3).foreach { snd ! _ }
         probe.expectMsg("elem-2")
 
-        (4 to 500) foreach { n ⇒
+        (4 to 500).foreach { n =>
           if (n % 19 == 0) Thread.sleep(50) // simulate bursts
           snd ! n
         }
 
-        (4 to 500 by 2) foreach { n ⇒ probe.expectMsg("elem-" + n) }
+        (4 to 500 by 2).foreach { n =>
+          probe.expectMsg("elem-" + n)
+        }
 
         watch(snd)
         rcv ! PoisonPill
@@ -381,28 +387,30 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
       val sink1 = Sink.fromSubscriber(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
       val sink2: Sink[String, ActorRef] = Sink.actorSubscriber(receiverProps(probe2.ref))
 
-      val senderRef2 = RunnableGraph.fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b ⇒ source2 ⇒
-        import GraphDSL.Implicits._
+      val senderRef2 = RunnableGraph
+        .fromGraph(GraphDSL.create(Source.actorPublisher[Int](senderProps)) { implicit b => source2 =>
+          import GraphDSL.Implicits._
 
-        val merge = b.add(Merge[Int](2))
-        val bcast = b.add(Broadcast[String](2))
+          val merge = b.add(Merge[Int](2))
+          val bcast = b.add(Broadcast[String](2))
 
-        source1 ~> merge.in(0)
-        source2.out ~> merge.in(1)
+          source1 ~> merge.in(0)
+          source2.out ~> merge.in(1)
 
-        merge.out.map(_.toString) ~> bcast.in
+          merge.out.map(_.toString) ~> bcast.in
 
-        bcast.out(0).map(_ + "mark") ~> sink1
-        bcast.out(1) ~> sink2
-        ClosedShape
-      }).run()
+          bcast.out(0).map(_ + "mark") ~> sink1
+          bcast.out(1) ~> sink2
+          ClosedShape
+        })
+        .run()
 
       (0 to 10).foreach {
         senderRef1 ! _
         senderRef2 ! _
       }
 
-      (0 to 10).foreach { msg ⇒
+      (0 to 10).foreach { msg =>
         probe1.expectMsg(msg.toString + "mark")
         probe2.expectMsg(msg.toString)
       }
@@ -447,10 +455,10 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
     }
 
     "use dispatcher from materializer settings" in {
-      implicit val materializer = ActorMaterializer(
-        ActorMaterializerSettings(system).withDispatcher("my-dispatcher1"))
+      implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withDispatcher("my-dispatcher1"))
       val s = TestSubscriber.manualProbe[String]()
-      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink.fromSubscriber(s)).run()
+      val ref =
+        Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false)).to(Sink.fromSubscriber(s)).run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -458,9 +466,11 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
     "use dispatcher from operation attributes" in {
       implicit val materializer = ActorMaterializer()
       val s = TestSubscriber.manualProbe[String]()
-      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
+      val ref = Source
+        .actorPublisher(testPublisherProps(testActor, useTestDispatcher = false))
         .withAttributes(ActorAttributes.dispatcher("my-dispatcher1"))
-        .to(Sink.fromSubscriber(s)).run()
+        .to(Sink.fromSubscriber(s))
+        .run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -468,9 +478,11 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
     "use dispatcher from props" in {
       implicit val materializer = ActorMaterializer()
       val s = TestSubscriber.manualProbe[String]()
-      val ref = Source.actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
+      val ref = Source
+        .actorPublisher(testPublisherProps(testActor, useTestDispatcher = false).withDispatcher("my-dispatcher1"))
         .withAttributes(ActorAttributes.dispatcher("my-dispatcher2"))
-        .to(Sink.fromSubscriber(s)).run()
+        .to(Sink.fromSubscriber(s))
+        .run()
       ref ! ThreadName
       expectMsgType[String] should include("my-dispatcher1")
     }

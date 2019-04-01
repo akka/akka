@@ -21,11 +21,11 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
     new RemoteInstruments(system.asInstanceOf[ExtendedActorSystem], system.log, vec)
   }
 
-  def ensureDebugLog[T](messages: String*)(f: ⇒ T): T = {
+  def ensureDebugLog[T](messages: String*)(f: => T): T = {
     if (messages.isEmpty)
       f
     else
-      EventFilter.debug(message = messages.head, occurrences = 1) intercept {
+      EventFilter.debug(message = messages.head, occurrences = 1).intercept {
         ensureDebugLog(messages.tail: _*)(f)
       }
   }
@@ -54,70 +54,68 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
     }
 
     "skip exitsing remote instruments not in the message" in {
-      ensureDebugLog(
-        "Skipping local RemoteInstrument 10 that has no matching data in the message") {
-          val p = TestProbe()
-          val instruments = Seq(testInstrument(7, "!"), testInstrument(10, ".."), testInstrument(21, "???"))
-          val riS = remoteInstruments(instruments(0), instruments(2))
-          val riD = remoteInstruments(instruments: _*)
-          serializeDeserialize(riS, riD, p.ref, "baz")
-          p.expectMsgAllOf("baz-7-!", "baz-21-???")
-          p.expectNoMsg(100.millis)
-        }
+      ensureDebugLog("Skipping local RemoteInstrument 10 that has no matching data in the message") {
+        val p = TestProbe()
+        val instruments = Seq(testInstrument(7, "!"), testInstrument(10, ".."), testInstrument(21, "???"))
+        val riS = remoteInstruments(instruments(0), instruments(2))
+        val riD = remoteInstruments(instruments: _*)
+        serializeDeserialize(riS, riD, p.ref, "baz")
+        p.expectMsgAllOf("baz-7-!", "baz-21-???")
+        p.expectNoMsg(100.millis)
+      }
     }
 
     "skip remote instruments in the message that are not existing" in {
-      ensureDebugLog(
-        "Skipping serialized data in message for RemoteInstrument 11 that has no local match") {
-          val p = TestProbe()
-          val instruments = Seq(testInstrument(6, "!"), testInstrument(11, ".."), testInstrument(19, "???"))
-          val riS = remoteInstruments(instruments: _*)
-          val riD = remoteInstruments(instruments(0), instruments(2))
-          serializeDeserialize(riS, riD, p.ref, "buz")
-          p.expectMsgAllOf("buz-6-!", "buz-19-???")
-          p.expectNoMsg(100.millis)
-        }
+      ensureDebugLog("Skipping serialized data in message for RemoteInstrument 11 that has no local match") {
+        val p = TestProbe()
+        val instruments = Seq(testInstrument(6, "!"), testInstrument(11, ".."), testInstrument(19, "???"))
+        val riS = remoteInstruments(instruments: _*)
+        val riD = remoteInstruments(instruments(0), instruments(2))
+        serializeDeserialize(riS, riD, p.ref, "buz")
+        p.expectMsgAllOf("buz-6-!", "buz-19-???")
+        p.expectNoMsg(100.millis)
+      }
     }
 
     "skip all remote instruments in the message if none are existing" in {
-      ensureDebugLog(
-        "Skipping serialized data in message for RemoteInstrument(s) [1, 10, 31] that has no local match") {
-          val p = TestProbe()
-          val instruments = Seq(testInstrument(1, "!"), testInstrument(10, ".."), testInstrument(31, "???"))
-          val riS = remoteInstruments(instruments: _*)
-          val riD = remoteInstruments()
-          serializeDeserialize(riS, riD, p.ref, "boz")
-          p.expectNoMsg(100.millis)
-        }
+      ensureDebugLog("Skipping serialized data in message for RemoteInstrument(s) [1, 10, 31] that has no local match") {
+        val p = TestProbe()
+        val instruments = Seq(testInstrument(1, "!"), testInstrument(10, ".."), testInstrument(31, "???"))
+        val riS = remoteInstruments(instruments: _*)
+        val riD = remoteInstruments()
+        serializeDeserialize(riS, riD, p.ref, "boz")
+        p.expectNoMsg(100.millis)
+      }
     }
 
     "skip serializing remote instrument that fails" in {
       ensureDebugLog(
         "Skipping serialization of RemoteInstrument 7 since it failed with boom",
         "Skipping local RemoteInstrument 7 that has no matching data in the message") {
-          val p = TestProbe()
-          val instruments = Seq(
-            testInstrument(7, "!", sentThrowable = boom), testInstrument(10, ".."), testInstrument(21, "???"))
-          val ri = remoteInstruments(instruments: _*)
-          serializeDeserialize(ri, ri, p.ref, "woot")
-          p.expectMsgAllOf("woot-10-..", "woot-21-???")
-          p.expectNoMsg(100.millis)
-        }
+        val p = TestProbe()
+        val instruments =
+          Seq(testInstrument(7, "!", sentThrowable = boom), testInstrument(10, ".."), testInstrument(21, "???"))
+        val ri = remoteInstruments(instruments: _*)
+        serializeDeserialize(ri, ri, p.ref, "woot")
+        p.expectMsgAllOf("woot-10-..", "woot-21-???")
+        p.expectNoMsg(100.millis)
+      }
     }
 
     "skip deserializing remote instrument that fails" in {
       ensureDebugLog(
         "Skipping deserialization of RemoteInstrument 7 since it failed with boom",
         "Skipping deserialization of RemoteInstrument 21 since it failed with boom") {
-          val p = TestProbe()
-          val instruments = Seq(
-            testInstrument(7, "!", receiveThrowable = boom), testInstrument(10, ".."),
-            testInstrument(21, "???", receiveThrowable = boom))
-          val ri = remoteInstruments(instruments: _*)
-          serializeDeserialize(ri, ri, p.ref, "waat")
-          p.expectMsgAllOf("waat-10-..")
-          p.expectNoMsg(100.millis)
-        }
+        val p = TestProbe()
+        val instruments = Seq(
+          testInstrument(7, "!", receiveThrowable = boom),
+          testInstrument(10, ".."),
+          testInstrument(21, "???", receiveThrowable = boom))
+        val ri = remoteInstruments(instruments: _*)
+        serializeDeserialize(ri, ri, p.ref, "waat")
+        p.expectMsgAllOf("waat-10-..")
+        p.expectNoMsg(100.millis)
+      }
     }
   }
 }
@@ -136,7 +134,11 @@ object RemoteInstrumentsSerializationSpec {
     override def isDebugEnabled(logClass: Class[_], logSource: String): Boolean = logSource == "DebugSource"
   }
 
-  def testInstrument(id: Int, metadata: String, sentThrowable: Throwable = null, receiveThrowable: Throwable = null): RemoteInstrument = {
+  def testInstrument(
+      id: Int,
+      metadata: String,
+      sentThrowable: Throwable = null,
+      receiveThrowable: Throwable = null): RemoteInstrument = {
     new RemoteInstrument {
       private val charset = Charset.forName("UTF-8")
       private val encoder = charset.newEncoder()
@@ -144,7 +146,11 @@ object RemoteInstrumentsSerializationSpec {
 
       override def identifier: Byte = id.toByte
 
-      override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit = {
+      override def remoteWriteMetadata(
+          recipient: ActorRef,
+          message: Object,
+          sender: ActorRef,
+          buffer: ByteBuffer): Unit = {
         buffer.putInt(metadata.length)
         if (sentThrowable ne null) throw sentThrowable
         encoder.encode(CharBuffer.wrap(metadata), buffer, true)
@@ -152,7 +158,11 @@ object RemoteInstrumentsSerializationSpec {
         encoder.reset()
       }
 
-      override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit = {
+      override def remoteReadMetadata(
+          recipient: ActorRef,
+          message: Object,
+          sender: ActorRef,
+          buffer: ByteBuffer): Unit = {
         val size = buffer.getInt
         if (receiveThrowable ne null) throw receiveThrowable
         val charBuffer = CharBuffer.allocate(size)
@@ -163,9 +173,19 @@ object RemoteInstrumentsSerializationSpec {
         recipient ! s"$message-$identifier-$string"
       }
 
-      override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit = ()
+      override def remoteMessageSent(
+          recipient: ActorRef,
+          message: Object,
+          sender: ActorRef,
+          size: Int,
+          time: Long): Unit = ()
 
-      override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit = ()
+      override def remoteMessageReceived(
+          recipient: ActorRef,
+          message: Object,
+          sender: ActorRef,
+          size: Int,
+          time: Long): Unit = ()
     }
   }
 
@@ -182,7 +202,11 @@ object RemoteInstrumentsSerializationSpec {
     ri.deserializeRaw(mockInbound)
   }
 
-  def serializeDeserialize(riS: RemoteInstruments, riD: RemoteInstruments, recipient: ActorRef, message: AnyRef): Unit = {
+  def serializeDeserialize(
+      riS: RemoteInstruments,
+      riD: RemoteInstruments,
+      recipient: ActorRef,
+      message: AnyRef): Unit = {
     val buffer = ByteBuffer.allocate(1024)
     serialize(riS, buffer)
     buffer.flip()

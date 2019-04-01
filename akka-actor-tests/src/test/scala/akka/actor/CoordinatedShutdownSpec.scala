@@ -19,8 +19,8 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Promise
 import java.util.concurrent.TimeoutException
 
-class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
-  """
+class CoordinatedShutdownSpec
+    extends AkkaSpec(ConfigFactory.parseString("""
     akka.loglevel=INFO
     akka.loggers = ["akka.testkit.TestEventListener"]
   """)) {
@@ -34,15 +34,16 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
     result.zipWithIndex.foreach {
-      case (phase, i) ⇒
+      case (phase, i) =>
         phases.get(phase) match {
-          case Some(Phase(dependsOn, _, _, _)) ⇒
-            dependsOn.foreach { depPhase ⇒
-              withClue(s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
+          case Some(Phase(dependsOn, _, _, _)) =>
+            dependsOn.foreach { depPhase =>
+              withClue(
+                s"phase [$phase] depends on [$depPhase] but was ordered before it in topological sort result $result") {
                 i should be > result.indexOf(depPhase)
               }
             }
-          case None ⇒ // ok
+          case None => // ok
         }
     }
     result
@@ -55,38 +56,29 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     "sort phases in topological order" in {
       checkTopologicalSort(Map.empty) should ===(Nil)
 
-      checkTopologicalSort(Map(
-        "a" → emptyPhase)) should ===(List("a"))
+      checkTopologicalSort(Map("a" -> emptyPhase)) should ===(List("a"))
 
-      checkTopologicalSort(Map(
-        "b" → phase("a"))) should ===(List("a", "b"))
+      checkTopologicalSort(Map("b" -> phase("a"))) should ===(List("a", "b"))
 
-      val result1 = checkTopologicalSort(Map(
-        "c" → phase("a"), "b" → phase("a")))
+      val result1 = checkTopologicalSort(Map("c" -> phase("a"), "b" -> phase("a")))
       result1.head should ===("a")
       // b, c can be in any order
       result1.toSet should ===(Set("a", "b", "c"))
 
-      checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("b"))) should ===(List("a", "b", "c"))
+      checkTopologicalSort(Map("b" -> phase("a"), "c" -> phase("b"))) should ===(List("a", "b", "c"))
 
-      checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("a", "b"))) should ===(List("a", "b", "c"))
+      checkTopologicalSort(Map("b" -> phase("a"), "c" -> phase("a", "b"))) should ===(List("a", "b", "c"))
 
-      val result2 = checkTopologicalSort(Map(
-        "c" → phase("a", "b")))
+      val result2 = checkTopologicalSort(Map("c" -> phase("a", "b")))
       result2.last should ===("c")
       // a, b can be in any order
       result2.toSet should ===(Set("a", "b", "c"))
 
-      checkTopologicalSort(Map(
-        "b" → phase("a"), "c" → phase("b"), "d" → phase("b", "c"),
-        "e" → phase("d"))) should ===(
+      checkTopologicalSort(Map("b" -> phase("a"), "c" -> phase("b"), "d" -> phase("b", "c"), "e" -> phase("d"))) should ===(
         List("a", "b", "c", "d", "e"))
 
-      val result3 = checkTopologicalSort(Map(
-        "a2" → phase("a1"), "a3" → phase("a2"),
-        "b2" → phase("b1"), "b3" → phase("b2")))
+      val result3 =
+        checkTopologicalSort(Map("a2" -> phase("a1"), "a3" -> phase("a2"), "b2" -> phase("b1"), "b3" -> phase("b2")))
       val (a, b) = result3.partition(_.charAt(0) == 'a')
       a should ===(List("a1", "a2", "a3"))
       b should ===(List("b1", "b2", "b3"))
@@ -94,60 +86,55 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "detect cycles in phases (non-DAG)" in {
       intercept[IllegalArgumentException] {
-        CoordinatedShutdown.topologicalSort(Map(
-          "a" → phase("a")))
+        CoordinatedShutdown.topologicalSort(Map("a" -> phase("a")))
       }
 
       intercept[IllegalArgumentException] {
-        CoordinatedShutdown.topologicalSort(Map(
-          "b" → phase("a"), "a" → phase("b")))
+        CoordinatedShutdown.topologicalSort(Map("b" -> phase("a"), "a" -> phase("b")))
       }
 
       intercept[IllegalArgumentException] {
-        CoordinatedShutdown.topologicalSort(Map(
-          "c" → phase("a"), "c" → phase("b"), "b" → phase("c")))
+        CoordinatedShutdown.topologicalSort(Map("c" -> phase("a"), "c" -> phase("b"), "b" -> phase("c")))
       }
 
       intercept[IllegalArgumentException] {
-        CoordinatedShutdown.topologicalSort(Map(
-          "d" → phase("a"), "d" → phase("c"), "c" → phase("b"), "b" → phase("d")))
+        CoordinatedShutdown.topologicalSort(
+          Map("d" -> phase("a"), "d" -> phase("c"), "c" -> phase("b"), "b" -> phase("d")))
       }
 
     }
 
     "have pre-defined phases from config" in {
       import CoordinatedShutdown._
-      CoordinatedShutdown(system).orderedPhases should ===(List(
-        PhaseBeforeServiceUnbind,
-        PhaseServiceUnbind,
-        PhaseServiceRequestsDone,
-        PhaseServiceStop,
-        PhaseBeforeClusterShutdown,
-        PhaseClusterShardingShutdownRegion,
-        PhaseClusterLeave,
-        PhaseClusterExiting,
-        PhaseClusterExitingDone,
-        PhaseClusterShutdown,
-        PhaseBeforeActorSystemTerminate,
-        PhaseActorSystemTerminate))
+      CoordinatedShutdown(system).orderedPhases should ===(
+        List(
+          PhaseBeforeServiceUnbind,
+          PhaseServiceUnbind,
+          PhaseServiceRequestsDone,
+          PhaseServiceStop,
+          PhaseBeforeClusterShutdown,
+          PhaseClusterShardingShutdownRegion,
+          PhaseClusterLeave,
+          PhaseClusterExiting,
+          PhaseClusterExitingDone,
+          PhaseClusterShutdown,
+          PhaseBeforeActorSystemTerminate,
+          PhaseActorSystemTerminate))
     }
 
     "run ordered phases" in {
       import system.dispatcher
-      val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"),
-        "c" → phase("b", "a"))
+      val phases = Map("a" -> emptyPhase, "b" -> phase("a"), "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.successful(Done)
       }
-      co.addTask("b", "b2") { () ⇒
+      co.addTask("b", "b2") { () =>
         Future {
           // to verify that c is not performed before b
           Thread.sleep(100)
@@ -155,7 +142,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
           Done
         }
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -164,20 +151,17 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "run from a given phase" in {
-      val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"),
-        "c" → phase("b", "a"))
+      val phases = Map("a" -> emptyPhase, "b" -> phase("a"), "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.successful(Done)
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -187,9 +171,9 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "only run once" in {
-      val phases = Map("a" → emptyPhase)
+      val phases = Map("a" -> emptyPhase)
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.successful(Done)
       }
@@ -206,15 +190,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     "continue after timeout or failure" in {
       import system.dispatcher
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
         Future.failed(new RuntimeException("boom"))
       }
-      co.addTask("a", "a2") { () ⇒
+      co.addTask("a", "a2") { () =>
         Future {
           // to verify that b is not performed before a also in case of failure
           Thread.sleep(100)
@@ -222,18 +206,20 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
           Done
         }
       }
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Promise[Done]().future // never completed
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
       EventFilter.warning(message = "Task [a1] failed in phase [a]: boom", occurrences = 1).intercept {
-        EventFilter.warning(message = "Coordinated shutdown phase [b] timed out after 100 milliseconds", occurrences = 1).intercept {
-          Await.result(co.run(UnknownReason), remainingOrDefault)
-        }
+        EventFilter
+          .warning(message = "Coordinated shutdown phase [b] timed out after 100 milliseconds", occurrences = 1)
+          .intercept {
+            Await.result(co.run(UnknownReason), remainingOrDefault)
+          }
       }
       expectMsg("A")
       expectMsg("A")
@@ -243,15 +229,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "abort if recover=off" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Promise[Done]().future // never completed
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -265,15 +251,15 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "skip tasks in disabled phase" in {
       val phases = Map(
-        "a" → emptyPhase,
-        "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
-        "c" → phase("b", "a"))
+        "a" -> emptyPhase,
+        "b" -> Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
+        "c" -> phase("b", "a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("b", "b1") { () ⇒
+      co.addTask("b", "b1") { () =>
         testActor ! "B"
         Future.failed(new RuntimeException("Was expected to not be executed"))
       }
-      co.addTask("c", "c1") { () ⇒
+      co.addTask("c", "c1") { () =>
         testActor ! "C"
         Future.successful(Done)
       }
@@ -285,13 +271,11 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "be possible to add tasks in later phase from task in earlier phase" in {
-      val phases = Map(
-        "a" → emptyPhase,
-        "b" → phase("a"))
+      val phases = Map("a" -> emptyPhase, "b" -> phase("a"))
       val co = new CoordinatedShutdown(extSys, phases)
-      co.addTask("a", "a1") { () ⇒
+      co.addTask("a", "a1") { () =>
         testActor ! "A"
-        co.addTask("b", "b1") { () ⇒
+        co.addTask("b", "b1") { () =>
           testActor ! "B"
           Future.successful(Done)
         }
@@ -303,8 +287,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "parse phases from config" in {
-      CoordinatedShutdown.phasesFromConfig(ConfigFactory.parseString(
-        """
+      CoordinatedShutdown.phasesFromConfig(ConfigFactory.parseString("""
         default-phase-timeout = 10s
         phases {
           a = {}
@@ -317,10 +300,11 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
             recover = off
           }
         }
-        """)) should ===(Map(
-        "a" → Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
-        "b" → Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
-        "c" → Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
+        """)) should ===(
+        Map(
+          "a" -> Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
+          "b" -> Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
+          "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
     }
 
     "default exit code to 0" in {
@@ -331,7 +315,8 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "default exit code to -1 when the Reason is ClusterDowning" in {
       lazy val conf = ConfigFactory.load().getConfig("akka.coordinated-shutdown")
-      val confWithOverrides = CoordinatedShutdown.confWithOverrides(conf, Some(CoordinatedShutdown.ClusterDowningReason))
+      val confWithOverrides =
+        CoordinatedShutdown.confWithOverrides(conf, Some(CoordinatedShutdown.ClusterDowningReason))
       confWithOverrides.getInt("exit-code") should ===(-1)
     }
 
@@ -344,16 +329,14 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = off, terminate-actor-system = off" in new JvmHookTest {
       lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-1-${System.currentTimeMillis()}"
-      lazy val systemConfig = ConfigFactory.parseString(
-        """
+      lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
           akka.coordinated-shutdown.terminate-actor-system = off
         """)
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {
-        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+        val cancellable =
+          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(1) // one user, none from system
         cancellable.cancel()
       }
@@ -361,16 +344,14 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = off" in new JvmHookTest {
       lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-2-${System.currentTimeMillis()}"
-      lazy val systemConfig = ConfigFactory.parseString(
-        """
+      lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = off
         """)
 
       override def withSystemRunning(newSystem: ActorSystem): Unit = {
-        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+        val cancellable =
+          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from system
 
         cancellable.cancel()
@@ -379,16 +360,14 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, terminate-actor-system = on" in new JvmHookTest {
       lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-3-${System.currentTimeMillis()}"
-      lazy val systemConfig = ConfigFactory.parseString(
-        """
+      lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = on
         """)
 
       def withSystemRunning(newSystem: ActorSystem): Unit = {
-        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+        val cancellable =
+          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(2) // one user, one from actor system
         cancellable.cancel()
       }
@@ -396,16 +375,14 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "add and remove user JVM hooks with run-by-jvm-shutdown-hook = on, akka.jvm-shutdown-hooks = off" in new JvmHookTest {
       lazy val systemName = s"CoordinatedShutdownSpec-JvmHooks-4-${System.currentTimeMillis()}"
-      lazy val systemConfig = ConfigFactory.parseString(
-        """
+      lazy val systemConfig = ConfigFactory.parseString("""
           akka.jvm-shutdown-hooks = off
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
         """)
 
       def withSystemRunning(newSystem: ActorSystem): Unit = {
-        val cancellable = CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(
-          println(s"User JVM hook from ${newSystem.name}")
-        )
+        val cancellable =
+          CoordinatedShutdown(newSystem).addCancellableJvmShutdownHook(println(s"User JVM hook from ${newSystem.name}"))
         myHooksCount should ===(1) // one user, none from actor system
         cancellable.cancel()
       }
@@ -413,8 +390,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "access extension after system termination" in new JvmHookTest {
       lazy val systemName = s"CoordinatedShutdownSpec-terminated-${System.currentTimeMillis()}"
-      lazy val systemConfig = ConfigFactory.parseString(
-        """
+      lazy val systemConfig = ConfigFactory.parseString("""
           akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
           akka.coordinated-shutdown.terminate-actor-system = on
         """)

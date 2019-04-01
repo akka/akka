@@ -7,10 +7,22 @@ package akka.actor.testkit.typed.internal
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.typed.internal.ActorRefImpl
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
+import akka.actor.typed.{
+  ActorRef,
+  ActorSystem,
+  Behavior,
+  DispatcherSelector,
+  Dispatchers,
+  Extension,
+  ExtensionId,
+  Logger,
+  Props,
+  Settings,
+  Terminated
+}
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ untyped }
+import akka.{ actor => untyped }
 import com.typesafe.config.ConfigFactory
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
@@ -22,13 +34,17 @@ import akka.actor.typed.internal.InternalRecipientRef
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorSystemStub(val name: String)
-  extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] with InternalRecipientRef[Nothing] {
+    extends ActorSystem[Nothing]
+    with ActorRef[Nothing]
+    with ActorRefImpl[Nothing]
+    with InternalRecipientRef[Nothing] {
 
   override val path: untyped.ActorPath = untyped.RootActorPath(untyped.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
-  override def tell(message: Nothing): Unit = throw new UnsupportedOperationException("must not send message to ActorSystemStub")
+  override def tell(message: Nothing): Unit =
+    throw new UnsupportedOperationException("must not send message to ActorSystemStub")
 
   // impl ActorRefImpl
   override def isLocal: Boolean = true
@@ -72,7 +88,8 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   override def printTree: String = "no tree for ActorSystemStub"
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
+      implicit timeout: Timeout): Future[ActorRef[U]] = {
     Future.failed(new UnsupportedOperationException("ActorSystemStub cannot create system actors"))
   }
 

@@ -17,15 +17,17 @@ sealed trait ClusterShardingQuery
  * Query the ShardRegion state for the given entity type key. This will get the state of the
  * local ShardRegion's state.
  */
-final case class GetShardRegionState(entityTypeKey: EntityTypeKey[_], replyTo: ActorRef[CurrentShardRegionState]) extends ClusterShardingQuery {
+final case class GetShardRegionState(entityTypeKey: EntityTypeKey[_], replyTo: ActorRef[CurrentShardRegionState])
+    extends ClusterShardingQuery {
+
   /**
    * Java API
    *
    * Query the ShardRegion state for the given entity type key. This will get the state of the
    * local ShardRegion's state.
    */
-  def this(entityTypeKey: javadsl.EntityTypeKey[_], replyTo: ActorRef[CurrentShardRegionState]) = this(entityTypeKey.asScala, replyTo)
+  def this(entityTypeKey: javadsl.EntityTypeKey[_], replyTo: ActorRef[CurrentShardRegionState]) =
+    this(entityTypeKey.asScala, replyTo)
 }
 
 // TODO - GetClusterShardingStats
-

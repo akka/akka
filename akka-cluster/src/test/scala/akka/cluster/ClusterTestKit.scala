@@ -89,7 +89,7 @@ trait ClusterTestKit extends TestKitBase {
     def joinCluster(actorSystem: ActorSystem): Unit = {
       require(isRegistered(actorSystem), "Unknown actor system")
 
-      val addresses = actorSystems.map(s ⇒ Cluster(s).selfAddress)
+      val addresses = actorSystems.map(s => Cluster(s).selfAddress)
 
       val joiningNodeCluster = Cluster(actorSystem)
       joiningNodeCluster.joinSeedNodes(addresses)
@@ -99,7 +99,7 @@ trait ClusterTestKit extends TestKitBase {
       actorSystems.contains(actorSystem)
 
     /** Shuts down all registered [[ActorSystem]]s */
-    def shutdownAll(): Unit = actorSystems.foreach(sys ⇒ shutdown(sys))
+    def shutdownAll(): Unit = actorSystems.foreach(sys => shutdown(sys))
 
     /**
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
@@ -116,7 +116,10 @@ trait ClusterTestKit extends TestKitBase {
 
       // remove old before starting the new one
       cluster.leave(cluster.readView.selfAddress)
-      awaitCond(cluster.readView.status == Removed, message = s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
+      awaitCond(
+        cluster.readView.status == Removed,
+        message =
+          s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
 
       shutdown(actorSystem)
       awaitCond(cluster.isTerminated)
@@ -124,12 +127,10 @@ trait ClusterTestKit extends TestKitBase {
       // remove from internal list
       actorSystems = actorSystems.filterNot(_ == actorSystem)
 
-      val newConfig = ConfigFactory.parseString(
-        s"""
+      val newConfig = ConfigFactory.parseString(s"""
           akka.remote.netty.tcp.port = $port
           akka.remote.artery.canonical.port = $port
-          """
-      ).withFallback(config)
+          """).withFallback(config)
 
       if (firstSeedNode) newActorSystemAsFirst(newConfig)
       else newActorSystem(newConfig)
@@ -183,21 +184,21 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
    * @param shouldRejoin  the condition being tested on attempted re-join: members up or terminated
    */
   def upgradeCluster(
-    clusterSize:   Int,
-    baseConfig:    Config,
-    upgradeConfig: Config,
-    timeout:       FiniteDuration,
-    awaitAll:      FiniteDuration,
-    enforced:      Boolean,
-    shouldRejoin:  Boolean): Unit = {
+      clusterSize: Int,
+      baseConfig: Config,
+      upgradeConfig: Config,
+      timeout: FiniteDuration,
+      awaitAll: FiniteDuration,
+      enforced: Boolean,
+      shouldRejoin: Boolean): Unit = {
     require(clusterSize > 1, s"'clusterSize' must be > 1 but was $clusterSize")
 
     val util = new ClusterTestUtil(system.name)
 
-    val config = (version: Config) ⇒ if (enforced) version else unenforced(version)
+    val config = (version: Config) => if (enforced) version else unenforced(version)
 
     try {
-      val nodes = for (_ ← 0 until clusterSize) yield {
+      val nodes = for (_ <- 0 until clusterSize) yield {
         val system = util.newActorSystem(config(baseConfig))
         util.joinCluster(system)
         system
@@ -206,7 +207,7 @@ abstract class RollingUpgradeClusterSpec(config: Config) extends AkkaSpec(config
 
       val rolling = Random.shuffle(nodes)
 
-      for (restarting ← rolling.tail) {
+      for (restarting <- rolling.tail) {
         val restarted = util.quitAndRestart(restarting, config(upgradeConfig))
         util.joinCluster(restarted)
         awaitCond(if (shouldRejoin) util.isMemberUp(restarted) else util.isTerminated(restarted), timeout)

@@ -16,7 +16,7 @@ import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
 import akka.pattern._
-import akka.remote.{ UniqueAddress ⇒ _, _ }
+import akka.remote.{ UniqueAddress => _, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.varargs
 import scala.collection.immutable
@@ -41,8 +41,8 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
    */
   private[cluster] final val isAssertInvariantsEnabled: Boolean =
     System.getProperty("akka.cluster.assert", "off").toLowerCase match {
-      case "on" | "true" ⇒ true
-      case _             ⇒ false
+      case "on" | "true" => true
+      case _             => false
     }
 }
 
@@ -64,16 +64,18 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import settings._
 
   private val joinConfigCompatChecker: JoinConfigCompatChecker = JoinConfigCompatChecker.load(system, settings)
+
   /**
    * The address including a `uid` of this cluster member.
    * The `uid` is needed to be able to distinguish different
    * incarnations of a member with same hostname and port.
    */
   val selfUniqueAddress: UniqueAddress = system.provider match {
-    case c: ClusterActorRefProvider ⇒
+    case c: ClusterActorRefProvider =>
       UniqueAddress(c.transport.defaultAddress, AddressUidExtension(system).longAddressUid)
-    case other ⇒ throw new ConfigurationException(
-      s"ActorSystem [${system}] needs to have 'akka.actor.provider' set to 'cluster' in the configuration, currently uses [${other.getClass.getName}]")
+    case other =>
+      throw new ConfigurationException(
+        s"ActorSystem [${system}] needs to have 'akka.actor.provider' set to 'cluster' in the configuration, currently uses [${other.getClass.getName}]")
   }
 
   /**
@@ -103,17 +105,18 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   logInfo("Starting up, Akka version [{}] ...", system.settings.ConfigVersion)
 
   val failureDetector: FailureDetectorRegistry[Address] = {
-    val createFailureDetector = () ⇒
+    val createFailureDetector = () =>
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
 
     new DefaultFailureDetectorRegistry(createFailureDetector)
   }
 
   val crossDcFailureDetector: FailureDetectorRegistry[Address] = {
-    val createFailureDetector = () ⇒
+    val createFailureDetector = () =>
       FailureDetectorLoader.load(
         settings.MultiDataCenter.CrossDcFailureDetectorSettings.ImplementationClass,
-        settings.MultiDataCenter.CrossDcFailureDetectorSettings.config, system)
+        settings.MultiDataCenter.CrossDcFailureDetectorSettings.config,
+        system)
 
     new DefaultFailureDetectorRegistry(createFailureDetector)
   }
@@ -133,20 +136,23 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     if (system.scheduler.maxFrequency < 1.second / SchedulerTickDuration) {
       logInfo(
         "Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
-          "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
-        (1000 / system.scheduler.maxFrequency).toInt, SchedulerTickDuration.toMillis)
+        "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
+        (1000 / system.scheduler.maxFrequency).toInt,
+        SchedulerTickDuration.toMillis)
 
-      val cfg = ConfigFactory.parseString(
-        s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms").withFallback(
-          system.settings.config)
+      val cfg = ConfigFactory
+        .parseString(s"akka.scheduler.tick-duration=${SchedulerTickDuration.toMillis}ms")
+        .withFallback(system.settings.config)
       val threadFactory = system.threadFactory match {
-        case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
-        case tf                           ⇒ tf
+        case tf: MonitorableThreadFactory => tf.withName(tf.name + "-cluster-scheduler")
+        case tf                           => tf
       }
-      system.dynamicAccess.createInstanceFor[Scheduler](system.settings.SchedulerClass, immutable.Seq(
-        classOf[Config] → cfg,
-        classOf[LoggingAdapter] → log,
-        classOf[ThreadFactory] → threadFactory)).get
+      system.dynamicAccess
+        .createInstanceFor[Scheduler](
+          system.settings.SchedulerClass,
+          immutable
+            .Seq(classOf[Config] -> cfg, classOf[LoggingAdapter] -> log, classOf[ThreadFactory] -> threadFactory))
+        .get
     } else {
       // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
@@ -155,13 +161,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
-                              runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
+            implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
 
-        override def scheduleOnce(
-          delay:    FiniteDuration,
-          runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+        override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(
+            implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
       }
     }
@@ -169,8 +174,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons: ActorRef = {
-    system.systemActorOf(Props(classOf[ClusterDaemon], joinConfigCompatChecker).
-      withDispatcher(UseDispatcher).withDeploy(Deploy.local), name = "cluster")
+    system.systemActorOf(
+      Props(classOf[ClusterDaemon], joinConfigCompatChecker).withDispatcher(UseDispatcher).withDeploy(Deploy.local),
+      name = "cluster")
   }
 
   /**
@@ -181,7 +187,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     try {
       Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, "Failed to startup Cluster. You can try to increase 'akka.actor.creation-timeout'.")
         shutdown()
         // don't re-throw, that would cause the extension to be re-recreated
@@ -355,7 +361,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to defer some action, such as starting actors, until the cluster has reached
    * a certain size.
    */
-  def registerOnMemberUp[T](code: ⇒ T): Unit =
+  def registerOnMemberUp[T](code: => T): Unit =
     registerOnMemberUp(new Runnable { def run() = code })
 
   /**
@@ -372,7 +378,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
    * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
    */
-  def registerOnMemberRemoved[T](code: ⇒ T): Unit =
+  def registerOnMemberRemoved[T](code: => T): Unit =
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
 
   /**
@@ -396,7 +402,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     if (path.address.host.isDefined) {
       path
     } else {
-      path.root.copy(selfAddress) / path.elements withUid path.uid
+      (path.root.copy(selfAddress) / path.elements).withUid(path.uid)
     }
   }
 
@@ -424,15 +430,15 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
       closeScheduler()
 
-      clusterJmx foreach { _.unregisterMBean() }
+      clusterJmx.foreach { _.unregisterMBean() }
 
       logInfo("Successfully shut down")
     }
   }
 
   private def closeScheduler(): Unit = scheduler match {
-    case x: Closeable ⇒ x.close()
-    case _            ⇒ // ignore, this is fine
+    case x: Closeable => x.close()
+    case _            => // ignore, this is fine
   }
 
   /**
@@ -515,7 +521,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
         log.error(cause, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
       else
-        log.error(cause, "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
+        log.error(
+          cause,
+          "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
+          selfAddress,
+          arg1,
+          arg2,
+          arg3)
     }
 
     private def logAtLevel(logLevel: LogLevel, message: String): Unit = {
@@ -546,7 +558,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
           log.log(logLevel, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
         else
-          log.log(logLevel, "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template, selfAddress, arg1, arg2, arg3)
+          log.log(
+            logLevel,
+            "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
+            selfAddress,
+            arg1,
+            arg2,
+            arg3)
 
     private def isLevelEnabled(logLevel: LogLevel): Boolean =
       LogInfo || logLevel < Logging.InfoLevel

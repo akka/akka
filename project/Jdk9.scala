@@ -31,8 +31,8 @@ object Jdk9 extends AutoPlugin {
       (Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY,
       (Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY
     ))),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "9"))),
-    javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "9")))
+    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "11"))),
+    javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "11")))
   )
 
   val compileSettings = Seq(

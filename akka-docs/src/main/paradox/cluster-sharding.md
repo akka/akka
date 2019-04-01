@@ -173,8 +173,8 @@ Where `#` is a number to distinguish between instances as there are multiple in 
  1. Incoming message `M1` to `ShardRegion` instance `SR1`.
  2. `M1` is mapped to shard `S1`. `SR1` doesn't know about `S1`, so it asks the `SC` for the location of `S1`.
  3. `SC` answers that the home of `S1` is `SR1`.
- 4. `R1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
- 5. All incoming messages for `S1` which arrive at `R1` can be handled by `R1` without `SC`. It creates entity children as needed, and forwards messages to them.
+ 4. `SR1` creates child actor for the entity `E1` and sends buffered messages for `S1` to `E1` child
+ 5. All incoming messages for `S1` which arrive at `SR1` can be handled by `SR1` without `SC`. It creates entity children as needed, and forwards messages to them.
 
 #### Scenario 2: Message to an unknown shard that belongs to a remote ShardRegion 
 
@@ -413,6 +413,8 @@ Java
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#Sharding)
+
 ## Graceful Shutdown
 
 You can send the @scala[`ShardRegion.GracefulShutdown`] @java[`ShardRegion.gracefulShutdownInstance`] message
@@ -515,3 +517,24 @@ When doing rolling upgrades special care must be taken to not change any of the 
  * the persistence mode
 
  If any one of these needs a change it will require a full cluster restart.
+ 
+
+## Lease
+
+A @ref[lease](coordination.md) can be used as an additional safety measure to ensure a shard 
+does not run on two nodes.
+
+Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
+
+To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
+of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
+be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.

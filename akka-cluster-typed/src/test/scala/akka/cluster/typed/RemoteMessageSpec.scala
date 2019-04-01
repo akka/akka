@@ -10,7 +10,7 @@ import akka.Done
 import akka.testkit.AkkaSpec
 import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.{ ExtendedActorSystem, ActorSystem ⇒ UntypedActorSystem }
+import akka.actor.{ ExtendedActorSystem, ActorSystem => UntypedActorSystem }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 
@@ -21,7 +21,7 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
   override def identifier = 41
   override def manifest(o: AnyRef) = "a"
   override def toBinary(o: AnyRef) = o match {
-    case RemoteMessageSpec.Ping(who) ⇒
+    case RemoteMessageSpec.Ping(who) =>
       ActorRefResolver(system.toTyped).toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
   }
   override def fromBinary(bytes: Array[Byte], manifest: String) = {
@@ -32,8 +32,7 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
 }
 
 object RemoteMessageSpec {
-  def config = ConfigFactory.parseString(
-    s"""
+  def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = debug
       actor {
@@ -71,9 +70,9 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
     "something something" in {
 
       val pingPromise = Promise[Done]()
-      val ponger = Behaviors.receive[Ping]((_, msg) ⇒
+      val ponger = Behaviors.receive[Ping]((_, msg) =>
         msg match {
-          case Ping(sender) ⇒
+          case Ping(sender) =>
             pingPromise.success(Done)
             sender ! "pong"
             Behaviors.stopped
@@ -92,7 +91,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
           ActorRefResolver(typedSystem2).resolveActorRef[Ping](remoteRefStr)
 
         val pongPromise = Promise[Done]()
-        val recipient = system2.spawn(Behaviors.receive[String] { (_, _) ⇒
+        val recipient = system2.spawn(Behaviors.receive[String] { (_, _) =>
           pongPromise.success(Done)
           Behaviors.stopped
         }, "recipient")

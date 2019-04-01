@@ -21,8 +21,7 @@ import org.scalatest.time.{ Millis, Seconds, Span }
 import scala.concurrent.duration._
 
 object BasicClusterExampleSpec {
-  val configSystem1 = ConfigFactory.parseString(
-    s"""
+  val configSystem1 = ConfigFactory.parseString(s"""
 #config-seeds
 akka {
   actor {
@@ -44,12 +43,10 @@ akka {
 #config-seeds
      """)
 
-  val configSystem2 = ConfigFactory.parseString(
-    s"""
+  val configSystem2 = ConfigFactory.parseString(s"""
         akka.remote.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
-     """
-  ).withFallback(configSystem1)
+     """).withFallback(configSystem1)
 }
 
 class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers {
@@ -83,8 +80,7 @@ class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually 
 }
 
 object BasicClusterManualSpec {
-  val clusterConfig = ConfigFactory.parseString(
-    s"""
+  val clusterConfig = ConfigFactory.parseString(s"""
 #config
 akka {
   actor.provider = "cluster"
@@ -185,9 +181,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
           probe1.expectMessageType[MemberUp].member.address shouldEqual cluster3.selfMember.address
         }
         eventually {
-          cluster1.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
-          cluster2.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
-          cluster3.state.members.toList.map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
+          cluster1.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
+          cluster2.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
+          cluster3.state.members.toList
+            .map(_.status) shouldEqual List(MemberStatus.up, MemberStatus.up, MemberStatus.up)
         }
 
         //#cluster-leave-example

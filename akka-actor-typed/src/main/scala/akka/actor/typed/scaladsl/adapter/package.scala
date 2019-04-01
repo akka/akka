@@ -6,7 +6,7 @@ package akka.actor.typed
 package scaladsl
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.internal.adapter.{ PropsAdapter ⇒ _, _ }
+import akka.actor.typed.internal.adapter.{ PropsAdapter => _, _ }
 import akka.annotation.InternalApi
 
 /**
@@ -58,7 +58,10 @@ package object adapter {
     /**
      * INTERNAL API
      */
-    @InternalApi private[akka] def internalSystemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
+    @InternalApi private[akka] def internalSystemActorOf[U](
+        behavior: Behavior[U],
+        name: String,
+        props: Props): ActorRef[U] = {
       toUntyped.asInstanceOf[ExtendedActorSystem].systemActorOf(PropsAdapter(behavior, props), name)
     }
   }

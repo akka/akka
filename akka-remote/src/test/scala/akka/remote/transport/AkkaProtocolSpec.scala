@@ -5,15 +5,20 @@
 package akka.remote.transport
 
 import akka.actor.{ Address }
-import akka.remote.transport.AkkaPduCodec.{ Disassociate, Associate, Heartbeat }
+import akka.remote.transport.AkkaPduCodec.{ Associate, Disassociate, Heartbeat }
 import akka.remote.transport.AkkaProtocolSpec.TestFailureDetector
-import akka.remote.transport.AssociationHandle.{ DisassociateInfo, ActorHandleEventListener, Disassociated, InboundPayload }
+import akka.remote.transport.AssociationHandle.{
+  ActorHandleEventListener,
+  DisassociateInfo,
+  Disassociated,
+  InboundPayload
+}
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
-import akka.remote.{ WireFormats, FailureDetector }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.remote.{ FailureDetector, WireFormats }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.ByteString
-import akka.protobuf.{ ByteString ⇒ PByteString }
+import akka.protobuf.{ ByteString => PByteString }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
@@ -36,8 +41,7 @@ object AkkaProtocolSpec {
 
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
-  val conf = ConfigFactory.parseString(
-    """
+  val conf = ConfigFactory.parseString("""
       akka.remote {
 
         transport-failure-detector {
@@ -70,7 +74,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
   val codec = AkkaPduProtobufCodec
 
-  val testMsg = WireFormats.SerializedMessage.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
+  val testMsg =
+    WireFormats.SerializedMessage.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
   val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, OptionVal.None)
   val testMsgPdu: ByteString = codec.constructPayload(testEnvelope)
 
@@ -92,48 +97,55 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
   }
 
   def lastActivityIsHeartbeat(registry: AssociationRegistry) =
-    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-        codec.decodePdu(payload) match {
-          case Heartbeat ⇒ true
-          case _         ⇒ false
-        }
-      case _ ⇒ false
-    }
+    if (registry.logSnapshot.isEmpty) false
+    else
+      registry.logSnapshot.last match {
+        case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
+          codec.decodePdu(payload) match {
+            case Heartbeat => true
+            case _         => false
+          }
+        case _ => false
+      }
 
   def lastActivityIsAssociate(registry: AssociationRegistry, uid: Long, cookie: Option[String]) =
-    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-        codec.decodePdu(payload) match {
-          case Associate(info) ⇒
-            info.cookie == cookie && info.origin == localAddress && info.uid == uid
-          case _ ⇒ false
-        }
-      case _ ⇒ false
-    }
+    if (registry.logSnapshot.isEmpty) false
+    else
+      registry.logSnapshot.last match {
+        case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
+          codec.decodePdu(payload) match {
+            case Associate(info) =>
+              info.cookie == cookie && info.origin == localAddress && info.uid == uid
+            case _ => false
+          }
+        case _ => false
+      }
 
   def lastActivityIsDisassociate(registry: AssociationRegistry) =
-    if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
-      case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-        codec.decodePdu(payload) match {
-          case Disassociate(_) ⇒ true
-          case _               ⇒ false
-        }
-      case _ ⇒ false
-    }
+    if (registry.logSnapshot.isEmpty) false
+    else
+      registry.logSnapshot.last match {
+        case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress =>
+          codec.decodePdu(payload) match {
+            case Disassociate(_) => true
+            case _               => false
+          }
+        case _ => false
+      }
 
   "ProtocolStateActor" must {
 
     "register itself as reader on injecteted handles" in {
       val (failureDetector, _, _, handle) = collaborators
 
-      system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector))
+      system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector))
 
       awaitCond(handle.readHandlerPromise.isCompleted)
     }
@@ -141,20 +153,21 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     "in inbound mode accept payload after Associate PDU received" in {
       val (failureDetector, registry, _, handle) = collaborators
 
-      val reader = system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector))
+      val reader = system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector))
 
       reader ! testAssociate(uid = 33, cookie = None)
 
       awaitCond(failureDetector.called)
 
       val wrappedHandle = expectMsgPF() {
-        case InboundAssociation(h: AkkaProtocolHandle) ⇒
+        case InboundAssociation(h: AkkaProtocolHandle) =>
           h.handshakeInfo.uid should ===(33)
           h
       }
@@ -169,20 +182,21 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testPayload
 
       expectMsgPF() {
-        case InboundPayload(p) ⇒ p should ===(testEnvelope)
+        case InboundPayload(p) => p should ===(testEnvelope)
       }
     }
 
     "in inbound mode disassociate when an unexpected message arrives instead of Associate" in {
       val (failureDetector, registry, _, handle) = collaborators
 
-      val reader = system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector))
+      val reader = system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector))
 
       // a stray message will force a disassociate
       reader ! testHeartbeat
@@ -191,8 +205,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(uid = 33, cookie = None)
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case DisassociateAttempt(requester, remote) => true
+        case _                                      => false
       })
     }
 
@@ -202,15 +216,16 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val reader = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val reader = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, 42, None))
       failureDetector.called should ===(true)
@@ -224,12 +239,12 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       reader ! testAssociate(33, None)
 
       Await.result(statusPromise.future, 3.seconds) match {
-        case h: AkkaProtocolHandle ⇒
+        case h: AkkaProtocolHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h.handshakeInfo.uid should ===(33)
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
     }
@@ -237,38 +252,40 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     "ignore incoming associations with wrong cookie" in {
       val (failureDetector, registry, _, handle) = collaborators
 
-      val reader = system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
-        codec,
-        failureDetector))
+      val reader = system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          codec,
+          failureDetector))
 
       reader ! testAssociate(uid = 33, Some("xyzzy"))
 
       awaitCond(registry.logSnapshot.exists {
-        case DisassociateAttempt(requester, remote) ⇒ true
-        case _                                      ⇒ false
+        case DisassociateAttempt(requester, remote) => true
+        case _                                      => false
       })
     }
 
     "accept incoming associations with correct cookie" in {
       val (failureDetector, registry, _, handle) = collaborators
 
-      val reader = system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
-        codec,
-        failureDetector))
+      val reader = system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          codec,
+          failureDetector))
 
       // Send the correct cookie
       reader ! testAssociate(uid = 33, Some("abcde"))
 
       val wrappedHandle = expectMsgPF() {
-        case InboundAssociation(h: AkkaProtocolHandle) ⇒
+        case InboundAssociation(h: AkkaProtocolHandle) =>
           h.handshakeInfo.uid should ===(33)
           h.handshakeInfo.cookie should ===(Some("abcde"))
           h
@@ -288,15 +305,16 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = Some("abcde")),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(ConfigFactory.parseString("akka.remote.require-cookie = on").withFallback(conf)),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = Some("abcde")))
     }
@@ -307,27 +325,28 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val reader = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val reader = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
       reader ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -343,27 +362,28 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val reader = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val reader = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
       reader ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -379,27 +399,28 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val stateActor = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val stateActor = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
       stateActor ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -418,27 +439,28 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val stateActor = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val stateActor = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, uid = 42, cookie = None))
 
       stateActor ! testAssociate(uid = 33, cookie = None)
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
-        case h: AssociationHandle ⇒
+        case h: AssociationHandle =>
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
 
-        case _ ⇒ fail()
+        case _ => fail()
       }
 
       stateActor ! Disassociated(AssociationHandle.Unknown)
@@ -456,18 +478,18 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
 
       val statusPromise: Promise[AssociationHandle] = Promise()
 
-      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").
-        withFallback(conf)
+      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
 
-      val stateActor = system.actorOf(ProtocolStateActor.outboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        remoteAddress,
-        statusPromise,
-        transport,
-        new AkkaProtocolSettings(conf2),
-        codec,
-        failureDetector,
-        refuseUid = None))
+      val stateActor = system.actorOf(
+        ProtocolStateActor.outboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          remoteAddress,
+          statusPromise,
+          transport,
+          new AkkaProtocolSettings(conf2),
+          codec,
+          failureDetector,
+          refuseUid = None))
 
       watch(stateActor)
       intercept[TimeoutException] {
@@ -479,16 +501,16 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
     "give up inbound after connection timeout" in {
       val (failureDetector, registry, _, handle) = collaborators
 
-      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").
-        withFallback(conf)
+      val conf2 = ConfigFactory.parseString("akka.remote.netty.tcp.connection-timeout = 500 ms").withFallback(conf)
 
-      val reader = system.actorOf(ProtocolStateActor.inboundProps(
-        HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
-        handle,
-        ActorAssociationEventListener(testActor),
-        new AkkaProtocolSettings(conf2),
-        codec,
-        failureDetector))
+      val reader = system.actorOf(
+        ProtocolStateActor.inboundProps(
+          HandshakeInfo(origin = localAddress, uid = 42, cookie = None),
+          handle,
+          ActorAssociationEventListener(testActor),
+          new AkkaProtocolSettings(conf2),
+          codec,
+          failureDetector))
 
       watch(reader)
       expectTerminated(reader)

@@ -13,7 +13,8 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
   "A DeadlineFailureDetector" must {
 
     def fakeTimeGenerator(timeIntervals: Seq[Long]): Clock = new Clock {
-      @volatile var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))
+      @volatile var times =
+        timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) => acc ::: List[Long](acc.last + c))
       override def apply(): Long = {
         val currentTime = times.head
         times = times.tail
@@ -21,9 +22,7 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       }
     }
 
-    def createFailureDetector(
-      acceptableLostDuration: FiniteDuration,
-      clock:                  Clock          = FailureDetector.defaultClock) =
+    def createFailureDetector(acceptableLostDuration: FiniteDuration, clock: Clock = FailureDetector.defaultClock) =
       new DeadlineFailureDetector(acceptableLostDuration, heartbeatInterval = 1.second)(clock = clock)
 
     "mark node as monitored after a series of successful heartbeats" in {
@@ -57,7 +56,7 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       val timeIntervals = regularIntervals :+ (5 * 60 * 1000L) :+ 100L :+ 900L :+ 100L :+ 7000L :+ 100L :+ 900L :+ 100L :+ 900L
       val fd = createFailureDetector(acceptableLostDuration = 4.seconds, clock = fakeTimeGenerator(timeIntervals))
 
-      for (_ ← 0 until 1000) fd.heartbeat()
+      for (_ <- 0 until 1000) fd.heartbeat()
       fd.isAvailable should ===(false) // after the long pause
       fd.heartbeat()
       fd.isAvailable should ===(true)

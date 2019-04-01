@@ -14,7 +14,7 @@ import akka.util.ByteString.UTF_8
  *
  * LevelDB backed persistent mapping of `String`-based persistent actor ids to numeric ids.
  */
-private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore ⇒
+private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore =>
   import Key._
 
   private val idOffset = 10
@@ -31,8 +31,8 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
    */
   def numericId(id: String): Int = idMapLock.synchronized {
     idMap.get(id) match {
-      case None    ⇒ writeIdMapping(id, idMap.size + idOffset)
-      case Some(v) ⇒ v
+      case None    => writeIdMapping(id, idMap.size + idOffset)
+      case Some(v) => v
     }
   }
 
@@ -44,24 +44,26 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore �
     idMap.keySet
   }
 
-  private def readIdMap(): Map[String, Int] = withIterator { iter ⇒
+  private def readIdMap(): Map[String, Int] = withIterator { iter =>
     iter.seek(keyToBytes(mappingKey(idOffset)))
     readIdMap(Map.empty, iter)
   }
 
   private def readIdMap(pathMap: Map[String, Int], iter: DBIterator): Map[String, Int] = {
-    if (!iter.hasNext) pathMap else {
+    if (!iter.hasNext) pathMap
+    else {
       val nextEntry = iter.next()
       val nextKey = keyFromBytes(nextEntry.getKey)
-      if (!isMappingKey(nextKey)) pathMap else {
+      if (!isMappingKey(nextKey)) pathMap
+      else {
         val nextVal = new String(nextEntry.getValue, UTF_8)
-        readIdMap(pathMap + (nextVal → nextKey.mappingId), iter)
+        readIdMap(pathMap + (nextVal -> nextKey.mappingId), iter)
       }
     }
   }
 
   private def writeIdMapping(id: String, numericId: Int): Int = {
-    idMap = idMap + (id → numericId)
+    idMap = idMap + (id -> numericId)
     leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes(UTF_8))
     newPersistenceIdAdded(id)
     numericId

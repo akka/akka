@@ -28,17 +28,17 @@ object TimerPersistentActorSpec {
     override def persistenceId = name
 
     override def receiveRecover: Receive = {
-      case _ ⇒
+      case _ =>
     }
 
     override def receiveCommand: Receive = {
-      case Scheduled(msg, replyTo) ⇒
+      case Scheduled(msg, replyTo) =>
         replyTo ! msg
-      case AutoReceivedMessageWrapper(msg) ⇒
+      case AutoReceivedMessageWrapper(msg) =>
         timers.startSingleTimer("PoisonPill", PoisonPill, Duration.Zero)
-      case msg ⇒
+      case msg =>
         timers.startSingleTimer("key", Scheduled(msg, sender()), Duration.Zero)
-        persist(msg)(_ ⇒ ())
+        persist(msg)(_ => ())
     }
   }
 
@@ -46,10 +46,10 @@ object TimerPersistentActorSpec {
   class WrongOrder extends PersistentActor with Timers {
     override def persistenceId = "notused"
     override def receiveRecover: Receive = {
-      case _ ⇒
+      case _ =>
     }
     override def receiveCommand: Receive = {
-      case _ ⇒ ()
+      case _ => ()
     }
   }
 
@@ -65,10 +65,10 @@ object TimerPersistentActorSpec {
 
     override def createReceive(): AbstractActor.Receive =
       new AbstractActor.Receive({
-        case Scheduled(msg, replyTo) ⇒
+        case Scheduled(msg, replyTo) =>
           replyTo ! msg
           BoxedUnit.UNIT
-        case msg ⇒
+        case msg =>
           timers.startSingleTimer("key", Scheduled(msg, sender()), Duration.Zero)
           persist(msg, new Procedure[Any] {
             override def apply(evt: Any): Unit = ()
@@ -79,8 +79,7 @@ object TimerPersistentActorSpec {
 
 }
 
-class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
   """)) with ImplicitSender {
@@ -117,4 +116,3 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
   }
 
 }
-

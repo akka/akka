@@ -8,7 +8,7 @@ import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.persistence.AtLeastOnceDelivery._
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
-import akka.persistence.serialization.{ MessageFormats ⇒ mf }
+import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.serialization._
 import akka.protobuf._
 import scala.collection.immutable
@@ -46,12 +46,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
    * message's payload to a matching `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case p: PersistentRepr              ⇒ persistentMessageBuilder(p).build().toByteArray
-    case a: AtomicWrite                 ⇒ atomicWriteBuilder(a).build().toByteArray
-    case a: AtLeastOnceDeliverySnapshot ⇒ atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
-    case s: StateChangeEvent            ⇒ stateChangeBuilder(s).build.toByteArray
-    case p: PersistentFSMSnapshot[Any]  ⇒ persistentFSMSnapshotBuilder(p).build.toByteArray
-    case _                              ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case p: PersistentRepr              => persistentMessageBuilder(p).build().toByteArray
+    case a: AtomicWrite                 => atomicWriteBuilder(a).build().toByteArray
+    case a: AtLeastOnceDeliverySnapshot => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
+    case s: StateChangeEvent            => stateChangeBuilder(s).build.toByteArray
+    case p: PersistentFSMSnapshot[Any]  => persistentFSMSnapshotBuilder(p).build.toByteArray
+    case _                              => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**
@@ -59,16 +59,18 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
    * message's payload to a matching `akka.serialization.Serializer`.
    */
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): Message = manifest match {
-    case None ⇒ persistent(mf.PersistentMessage.parseFrom(bytes))
-    case Some(c) ⇒ c match {
-      case PersistentImplClass              ⇒ persistent(mf.PersistentMessage.parseFrom(bytes))
-      case PersistentReprClass              ⇒ persistent(mf.PersistentMessage.parseFrom(bytes))
-      case AtomicWriteClass                 ⇒ atomicWrite(mf.AtomicWrite.parseFrom(bytes))
-      case AtLeastOnceDeliverySnapshotClass ⇒ atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
-      case PersistentStateChangeEventClass  ⇒ stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
-      case PersistentFSMSnapshotClass       ⇒ persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
-      case _                                ⇒ throw new NotSerializableException(s"Can't deserialize object of type ${c}")
-    }
+    case None => persistent(mf.PersistentMessage.parseFrom(bytes))
+    case Some(c) =>
+      c match {
+        case PersistentImplClass => persistent(mf.PersistentMessage.parseFrom(bytes))
+        case PersistentReprClass => persistent(mf.PersistentMessage.parseFrom(bytes))
+        case AtomicWriteClass    => atomicWrite(mf.AtomicWrite.parseFrom(bytes))
+        case AtLeastOnceDeliverySnapshotClass =>
+          atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
+        case PersistentStateChangeEventClass => stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
+        case PersistentFSMSnapshotClass      => persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
+        case _                               => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
+      }
   }
 
   //
@@ -78,12 +80,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   def atLeastOnceDeliverySnapshotBuilder(snap: AtLeastOnceDeliverySnapshot): mf.AtLeastOnceDeliverySnapshot.Builder = {
     val builder = mf.AtLeastOnceDeliverySnapshot.newBuilder
     builder.setCurrentDeliveryId(snap.currentDeliveryId)
-    snap.unconfirmedDeliveries.foreach { unconfirmed ⇒
+    snap.unconfirmedDeliveries.foreach { unconfirmed =>
       val unconfirmedBuilder =
-        mf.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.newBuilder.
-          setDeliveryId(unconfirmed.deliveryId).
-          setDestination(unconfirmed.destination.toString).
-          setPayload(persistentPayloadBuilder(unconfirmed.message.asInstanceOf[AnyRef]))
+        mf.AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.newBuilder
+          .setDeliveryId(unconfirmed.deliveryId)
+          .setDestination(unconfirmed.destination.toString)
+          .setPayload(persistentPayloadBuilder(unconfirmed.message.asInstanceOf[AnyRef]))
       builder.addUnconfirmedDeliveries(unconfirmedBuilder)
     }
     builder
@@ -92,40 +94,44 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   private[persistence] def stateChangeBuilder(stateChange: StateChangeEvent): mf.PersistentStateChangeEvent.Builder = {
     val builder = mf.PersistentStateChangeEvent.newBuilder.setStateIdentifier(stateChange.stateIdentifier)
     stateChange.timeout match {
-      case None          ⇒ builder
-      case Some(timeout) ⇒ builder.setTimeoutNanos(timeout.toNanos)
+      case None          => builder
+      case Some(timeout) => builder.setTimeoutNanos(timeout.toNanos)
     }
   }
 
-  private[persistence] def persistentFSMSnapshotBuilder(persistentFSMSnapshot: PersistentFSMSnapshot[Any]): mf.PersistentFSMSnapshot.Builder = {
+  private[persistence] def persistentFSMSnapshotBuilder(
+      persistentFSMSnapshot: PersistentFSMSnapshot[Any]): mf.PersistentFSMSnapshot.Builder = {
     val builder = mf.PersistentFSMSnapshot.newBuilder
       .setStateIdentifier(persistentFSMSnapshot.stateIdentifier)
       .setData(persistentPayloadBuilder(persistentFSMSnapshot.data.asInstanceOf[AnyRef]))
     persistentFSMSnapshot.timeout match {
-      case None          ⇒ builder
-      case Some(timeout) ⇒ builder.setTimeoutNanos(timeout.toNanos)
+      case None          => builder
+      case Some(timeout) => builder.setTimeoutNanos(timeout.toNanos)
     }
   }
 
-  def atLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
+  def atLeastOnceDeliverySnapshot(
+      atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
     import scala.collection.JavaConverters._
     val unconfirmedDeliveries = new VectorBuilder[UnconfirmedDelivery]()
-    atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala foreach { next ⇒
-      unconfirmedDeliveries += UnconfirmedDelivery(next.getDeliveryId, ActorPath.fromString(next.getDestination),
+    atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala.foreach { next =>
+      unconfirmedDeliveries += UnconfirmedDelivery(
+        next.getDeliveryId,
+        ActorPath.fromString(next.getDestination),
         payload(next.getPayload))
     }
 
-    AtLeastOnceDeliverySnapshot(
-      atLeastOnceDeliverySnapshot.getCurrentDeliveryId,
-      unconfirmedDeliveries.result())
+    AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
   }
 
   def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
     StateChangeEvent(
       persistentStateChange.getStateIdentifier,
       // timeout field is deprecated, left for backward compatibility. timeoutNanos is used instead.
-      if (persistentStateChange.hasTimeoutNanos) Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
-      else if (persistentStateChange.hasTimeout) Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
+      if (persistentStateChange.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
+      else if (persistentStateChange.hasTimeout)
+        Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
       else None)
   }
 
@@ -133,12 +139,14 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     PersistentFSMSnapshot(
       persistentFSMSnapshot.getStateIdentifier,
       payload(persistentFSMSnapshot.getData),
-      if (persistentFSMSnapshot.hasTimeoutNanos) Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos)) else None)
+      if (persistentFSMSnapshot.hasTimeoutNanos)
+        Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
+      else None)
   }
 
   private def atomicWriteBuilder(a: AtomicWrite) = {
     val builder = mf.AtomicWrite.newBuilder
-    a.payload.foreach { p ⇒
+    a.payload.foreach { p =>
       builder.addPayload(persistentMessageBuilder(p))
     }
     builder
@@ -190,7 +198,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
       if (persistentMessage.hasManifest) persistentMessage.getManifest else Undefined,
       if (persistentMessage.hasDeleted) persistentMessage.getDeleted else false,
-      if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender) else Actor.noSender,
+      if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender)
+      else Actor.noSender,
       if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
   }
 
@@ -200,13 +209,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   }
 
   private def payload(persistentPayload: mf.PersistentPayload): Any = {
-    val manifest = if (persistentPayload.hasPayloadManifest)
-      persistentPayload.getPayloadManifest.toStringUtf8 else ""
+    val manifest =
+      if (persistentPayload.hasPayloadManifest)
+        persistentPayload.getPayloadManifest.toStringUtf8
+      else ""
 
-    serialization.deserialize(
-      persistentPayload.getPayload.toByteArray,
-      persistentPayload.getSerializerId,
-      manifest).get
+    serialization.deserialize(persistentPayload.getPayload.toByteArray, persistentPayload.getSerializerId, manifest).get
   }
 
 }

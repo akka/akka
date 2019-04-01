@@ -35,4 +35,3 @@ class ProtobufSerializerSpec extends AkkaSpec {
 
   }
 }
-
