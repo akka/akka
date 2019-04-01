@@ -1061,8 +1061,8 @@ object Replicator {
  * actor using the `Replicator.props`. If it is started as an ordinary actor it is important
  * that it is given the same name, started on same path, on all nodes.
  *
- * <a href="paper http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>
- * is supported. delta-CRDT is a way to reduce the need for sending the full state
+ * <a href="http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>
+ * are supported. delta-CRDT is a way to reduce the need for sending the full state
  * for updates. For example adding element 'c' and 'd' to set {'a', 'b'} would
  * result in sending the delta {'c', 'd'} and merge that with the state on the
  * receiving side, resulting in set {'a', 'b', 'c', 'd'}.
