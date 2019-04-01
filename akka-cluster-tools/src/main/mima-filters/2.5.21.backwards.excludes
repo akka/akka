@@ -3,6 +3,3 @@ ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.gotoOldest")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.gotoHandingOver")
 ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager$Internal$*")
-
-# Code discipline #26648
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData.remove")
