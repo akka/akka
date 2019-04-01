@@ -125,7 +125,6 @@ private class StopSupervisor[T, Thr <: Throwable: ClassTag](@unused initial: Beh
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
       log(ctx, t)
       Behavior.failed(t)
-//      Behaviors.stopped
   }
 }
 

@@ -45,8 +45,8 @@ import akka.{ConfigurationException, actor => untyped}
 
   def spawnAnonymous[T](context: akka.actor.ActorRefFactory, behavior: Behavior[T], props: Props): ActorRef[T] = {
     try {
-      val withDefaultSupervision = Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop)
-      ActorRefAdapter(context.actorOf(internal.adapter.PropsAdapter(() => withDefaultSupervision, props, rethrowTypedFailure = false)))
+      ActorRefAdapter(context.actorOf(internal.adapter.PropsAdapter(() =>
+        behavior, props, rethrowTypedFailure = false)))
     } catch {
       case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
@@ -55,8 +55,8 @@ import akka.{ConfigurationException, actor => untyped}
 
   def spawn[T](actorRefFactory: akka.actor.ActorRefFactory, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
     try {
-      val withDefaultSupervision = Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop)
-      ActorRefAdapter(actorRefFactory.actorOf(internal.adapter.PropsAdapter(() => Behavior.validateAsInitial(withDefaultSupervision), props, rethrowTypedFailure = false), name))
+      ActorRefAdapter(actorRefFactory.actorOf(internal.adapter.PropsAdapter(() =>
+        Behavior.validateAsInitial(behavior), props, rethrowTypedFailure = false), name))
     } catch {
       case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)

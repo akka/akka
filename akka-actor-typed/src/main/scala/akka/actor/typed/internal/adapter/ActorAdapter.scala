@@ -8,7 +8,7 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.ActorInitializationException
+import akka.actor.{ ActorInitializationException, ActorRefWithCell }
 import akka.{ actor => untyped }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
@@ -20,7 +20,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
-
 import scala.annotation.switch
 
 /**
@@ -185,12 +184,15 @@ import scala.annotation.switch
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
     case TypedActorFailedException(cause) =>
       // These have already been optionally logged by typed supervision
-      println(s"Typed actor failed: $cause")
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
     case ex =>
-      println(s"ActorAdapter supervision $ex")
-      println(s"sender().getClass")
+      val isTypedActor = sender() match {
+        case afwc: ActorRefWithCell =>
+          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+        case _ =>
+          false
+      }
       recordChildFailure(ex)
       val logMessage = ex match {
         case e: ActorInitializationException if e.getCause ne null =>
@@ -202,7 +204,10 @@ import scala.annotation.switch
       }
       // log at Error as that is what the supervision strategy would have done.
       log.error(ex, logMessage)
-      untyped.SupervisorStrategy.Stop
+      if (isTypedActor)
+        untyped.SupervisorStrategy.Stop
+      else
+        untyped.SupervisorStrategy.Restart
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {

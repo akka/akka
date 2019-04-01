@@ -42,12 +42,12 @@ object TypedSupervisingUntypedSpec {
 
 class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit(
   """
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
   """.stripMargin) with WordSpecLike {
   import TypedSupervisingUntypedSpec._
 
   "Typed supervising typed" should {
-    "work" in {
+    "default to restart" in {
       val ref: ActorRef[Protocol] = spawn(untypedActorOf())
       val lifecycleProbe = TestProbe[String]
       val probe = TestProbe[SpawnedUntypedActor]
