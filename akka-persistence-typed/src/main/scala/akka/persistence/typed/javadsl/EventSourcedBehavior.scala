@@ -19,7 +19,7 @@ import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (
+abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
@@ -208,7 +208,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @ApiMayChange
-abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,
     backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
     extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
