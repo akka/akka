@@ -149,18 +149,16 @@ object IntroSpec {
         room: ActorRef[PublishSessionMessage],
         screenName: String,
         client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receiveMessage { message ⇒
-        message match {
-          case PostMessage(m) ⇒
-            // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, m)
-            Behaviors.same
-          case NotifyClient(m) ⇒
-            // published from the room
-            client ! m
-            Behaviors.same
-        }
-      }
+      Behaviors.receiveMessage {
+    case PostMessage(message) ⇒
+      // from client, publish to others via the room
+      room ! PublishSessionMessage(screenName, message)
+      Behaviors.same
+    case NotifyClient(message) ⇒
+      // published from the room
+      client ! message
+      Behaviors.same
+  }
     //#chatroom-behavior
   }
   //#chatroom-actor
@@ -228,7 +226,7 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val system = ActorSystem(main, "ChatRoomDemo")
       //#chatroom-main
-      system.terminate() // remove compiler warnings
+      system.whenTerminated // remove compiler warnings
     }
   }
 
