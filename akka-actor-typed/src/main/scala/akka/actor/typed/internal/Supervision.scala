@@ -255,6 +255,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       ctx: TypedActorContext[O],
       @unused target: PreStartTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
+      ctx.asScala.cancelAllTimers()
       strategy match {
         case _: Restart =>
           // if unlimited restarts then don't restart if starting fails as it would likely be an infinite restart loop
@@ -288,6 +289,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
 
   private def handleException(ctx: TypedActorContext[O], signalRestart: Throwable => Unit): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
+      ctx.asScala.cancelAllTimers()
       if (strategy.maxRestarts != -1 && restartCount >= strategy.maxRestarts && deadlineHasTimeLeft) {
         strategy match {
           case _: Restart => throw t
@@ -336,6 +338,9 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   }
 
   private def restartCompleted(ctx: TypedActorContext[O]): Behavior[T] = {
+    // probably already done, but doesn't hurt to make sure they are canceled
+    ctx.asScala.cancelAllTimers()
+
     strategy match {
       case backoff: Backoff =>
         gotScheduledRestart = false
@@ -347,10 +352,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
     }
 
     try {
-      val startedInitial = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
-      // when withTimers has been installed it must always be installed so TimerInterceptor
-      // can discard TimerMsg from old generation/instance
-      val newBehavior = if (hasTimers(ctx)) Behaviors.withTimers[T](_ => startedInitial) else startedInitial
+      val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
       val nextBehavior = restartingInProgress match {
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
@@ -363,12 +365,6 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       case _                                 => ()
     })
   }
-
-  private def hasTimers(ctx: TypedActorContext[_]): Boolean =
-    ctx match {
-      case ctxImpl: ActorContextImpl[T] => ctxImpl.hasTimer
-      case _                            => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
-    }
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {
     children.foreach { child =>

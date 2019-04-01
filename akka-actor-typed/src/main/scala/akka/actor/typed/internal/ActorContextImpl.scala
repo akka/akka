@@ -42,7 +42,12 @@ import akka.util.JavaDurationConverters._
       timer
   }
 
-  def hasTimer: Boolean = _timer.isDefined
+  override private[akka] def hasTimer: Boolean = _timer.isDefined
+
+  override private[akka] def cancelAllTimers(): Unit = {
+    if (hasTimer)
+      timer.cancelAll()
+  }
 
   override def asJava: javadsl.ActorContext[T] = this
 

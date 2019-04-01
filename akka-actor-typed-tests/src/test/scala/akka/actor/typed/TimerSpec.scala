@@ -21,7 +21,6 @@ import org.scalatest.WordSpecLike
 
 class TimerSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [ akka.testkit.TestEventListener ]
-    akka.loglevel = DEBUG
   """) with WordSpecLike {
 
   // FIXME #24348: eventfilter support in typed testkit
@@ -300,28 +299,6 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       ref ! "stop"
     }
 
-    "not grow stack when nesting withTimers" in {
-      def next(n: Int, probe: ActorRef[Array[StackTraceElement]]): Behavior[String] = Behaviors.withTimers { timers =>
-        timers.startSingleTimer("key", "tick", 1.millis)
-        Behaviors.receiveMessage { message =>
-          if (n == 20) {
-            val e = new RuntimeException().fillInStackTrace()
-            val trace = e.getStackTrace
-            probe ! trace
-            Behaviors.stopped
-          } else {
-            next(n + 1, probe)
-          }
-        }
-      }
-
-      val probe = TestProbe[Array[StackTraceElement]]()
-      spawn(next(0, probe.ref))
-      val elements = probe.receiveMessage()
-      if (elements.count(_.getClassName == "TimerInterceptor") > 1)
-        fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
-    }
-
     "not leak timers when PostStop is used" in {
       val probe = TestProbe[Any]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
@@ -341,7 +318,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     }
   }
 
-  "keep TimerInterceptor on restart" in {
+  "discard TimerMsg on restart" in {
     // reproducer of similar issue as #26556, ClassCastException TimerMsg
     val probe = TestProbe[Event]("evt")
 
@@ -382,13 +359,15 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
     }
   }
 
-  "keep TimerInterceptor when exception from withTimers block" in {
+  "discard TimerMsg when exception from withTimers block" in {
     val probe = TestProbe[Event]("evt")
     val behv = Behaviors.receiveMessage[Command] {
       case Tick(-1) =>
         probe.ref ! Tock(-1)
         Behaviors.withTimers[Command] { timer =>
           timer.startSingleTimer("T0", Tick(0), 5.millis)
+          // let Tick(0) arrive in mailbox, test will not fail if it arrives later
+          Thread.sleep(100)
           throw TestException("boom")
         }
       case Tick(n) =>
@@ -398,18 +377,17 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
         Behaviors.stopped
     }
 
-//    EventFilter[TestException](occurrences = 1).intercept {
-    val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
-    ref ! Tick(-1)
-    probe.expectMessage(Tock(-1))
-    // FIXME Tick(0) is not canceled/discarded
-    probe.expectNoMessage()
+    EventFilter[TestException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
+      ref ! Tick(-1)
+      probe.expectMessage(Tock(-1))
+      probe.expectNoMessage()
 
-    // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
-    ref ! Tick(100)
-    probe.expectMessage(Tock(100))
+      // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
+      ref ! Tick(100)
+      probe.expectMessage(Tock(100))
 
-    ref ! End
-//    }
+      ref ! End
+    }
   }
 }

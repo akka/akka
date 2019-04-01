@@ -18,6 +18,26 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 object InterceptSpec {
   final case class Msg(hello: String, replyTo: ActorRef[String])
   case object MyPoisonPill
+
+  class SameTypeInterceptor extends BehaviorInterceptor[String, String] {
+    import BehaviorInterceptor._
+    override def aroundReceive(
+        context: TypedActorContext[String],
+        message: String,
+        target: ReceiveTarget[String]): Behavior[String] = {
+      target(context, message)
+    }
+
+    override def aroundSignal(
+        context: TypedActorContext[String],
+        signal: Signal,
+        target: SignalTarget[String]): Behavior[String] = {
+      target(context, signal)
+    }
+
+    override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
+      other.isInstanceOf[SameTypeInterceptor]
+  }
 }
 
 class InterceptSpec extends ScalaTestWithActorTestKit("""
@@ -370,6 +390,33 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
         probe.expectMessage("interceptor-post-stop") // previous behavior when stopping get the signal
         probe.expectMessage("callback-post-stop")
       }
+    }
+
+    "not grow stack when nesting same interceptor" in {
+      def next(n: Int, p: ActorRef[Array[StackTraceElement]]): Behavior[String] = {
+        Behaviors.intercept(new SameTypeInterceptor) {
+
+          Behaviors.receiveMessage { _ =>
+            if (n == 20) {
+              val e = new RuntimeException().fillInStackTrace()
+              val trace = e.getStackTrace
+              p ! trace
+              Behaviors.stopped
+            } else {
+              next(n + 1, p)
+            }
+          }
+        }
+      }
+
+      val probe = TestProbe[Array[StackTraceElement]]()
+      val ref = spawn(next(0, probe.ref))
+      (1 to 21).foreach { n =>
+        ref ! n.toString
+      }
+      val elements = probe.receiveMessage()
+      if (elements.count(_.getClassName == "SameTypeInterceptor") > 1)
+        fail(s"Stack contains SameTypeInterceptor more than once: \n${elements.mkString("\n\t")}")
     }
   }
 
