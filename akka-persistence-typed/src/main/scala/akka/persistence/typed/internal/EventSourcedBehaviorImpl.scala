@@ -22,8 +22,8 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
-import akka.persistence.SnapshotMetadata
 import akka.persistence.SnapshotProtocol
+import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
@@ -90,19 +90,21 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     val actualSignalHandler: PartialFunction[Signal, Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
       case SnapshotCompleted(meta) ⇒
-        ctx.log.debug("Save snapshot successful, snapshot metadata [{}]", meta)
+        ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
       case SnapshotFailed(meta, failure) ⇒
-        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}]", meta)
+        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}].", meta)
       case DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)) =>
-        ctx.log.debug(s"Persistent snapshot [{}] deleted successfully.", meta)
+        ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
       case DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)) =>
-        ctx.log.debug(s"Persistent snapshots given criteria [{}] deleted successfully.", criteria)
+        ctx.log.debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure) =>
         ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
       case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
         ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
+      case DeleteEventsCompleted(toSequenceNr) =>
+        ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case DeleteEventsFailed(toSequenceNr, failure) =>
-        ctx.log.warning("Failed to delete messages toSequenceNr [{}] due to [{}].", toSequenceNr, failure)
+        ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
     }
 
     Behaviors
@@ -131,9 +133,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
             import BehaviorInterceptor._
             def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
-                : Behavior[Any] = {
-              target(ctx, msg)
-            }
+                : Behavior[Any] = { target(ctx, msg) }
 
             def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
                 : Behavior[Any] = {

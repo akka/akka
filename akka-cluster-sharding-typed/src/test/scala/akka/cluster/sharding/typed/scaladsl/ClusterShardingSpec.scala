@@ -31,7 +31,7 @@ import akka.serialization.SerializerWithStringManifest
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(s"""

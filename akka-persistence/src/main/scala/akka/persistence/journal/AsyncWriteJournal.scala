@@ -5,14 +5,17 @@
 package akka.persistence.journal
 
 import scala.concurrent.duration._
+
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
 import akka.util.Helpers.toRootLowerCase
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
+
 import akka.pattern.CircuitBreaker
 
 /**
@@ -21,7 +24,6 @@ import akka.pattern.CircuitBreaker
 trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import AsyncWriteJournal._
   import JournalProtocol._
-  import context.dispatcher
 
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
@@ -56,6 +58,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   final val receiveWriteJournal: Actor.Receive = {
     // cannot be a val in the trait due to binary compatibility
     val replayDebugEnabled: Boolean = config.getBoolean("replay-filter.debug")
+    val eventStream = context.system.eventStream // used from Future callbacks
+    implicit val ec: ExecutionContext = context.dispatcher
 
     {
       case WriteMessages(messages, persistentActor, actorInstanceId) =>
@@ -71,7 +75,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             catch { case NonFatal(e) => Future.failed(e) }
           case f @ Failure(_) =>
             // exception from preparePersistentBatch => rejected
-            Future.successful(messages.collect { case a: AtomicWrite => f })
+            Future.successful(messages.collect { case _: AtomicWrite => f })
         }).map { results =>
           if (results.nonEmpty && results.size != atomicWriteCount)
             throw new IllegalStateException(
@@ -171,7 +175,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }
           .pipeTo(replyTo)
           .foreach { _ =>
-            if (publish) context.system.eventStream.publish(r)
+            if (publish) eventStream.publish(r)
           }
 
       case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) =>
@@ -185,7 +189,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }
           .pipeTo(persistentActor)
           .onComplete { _ =>
-            if (publish) context.system.eventStream.publish(d)
+            if (publish) eventStream.publish(d)
           }
     }
   }

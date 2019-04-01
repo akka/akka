@@ -17,7 +17,7 @@ import akka.actor.Props;
 import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class DistributedPubSubMediatorTest extends JUnitSuite {
 

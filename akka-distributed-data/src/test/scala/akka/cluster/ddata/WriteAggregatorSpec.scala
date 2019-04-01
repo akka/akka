@@ -5,6 +5,7 @@
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
@@ -15,8 +16,10 @@ import akka.testkit._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.Replicator._
 import akka.remote.RARP
-
 import scala.concurrent.Future
+
+import akka.cluster.Cluster
+import akka.cluster.UniqueAddress
 
 object WriteAggregatorSpec {
 
@@ -26,41 +29,76 @@ object WriteAggregatorSpec {
   def writeAggregatorProps(
       data: GSet[String],
       consistency: Replicator.WriteConsistency,
-      probes: Map[Address, ActorRef],
-      nodes: Set[Address],
-      unreachable: Set[Address],
+      probes: Map[UniqueAddress, ActorRef],
+      selfUniqueAddress: UniqueAddress,
+      nodes: Set[UniqueAddress],
+      unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean): Props =
-    Props(new TestWriteAggregator(KeyA, data, None, consistency, probes, nodes, unreachable, replyTo, durable))
+    Props(
+      new TestWriteAggregator(
+        KeyA,
+        data,
+        None,
+        consistency,
+        probes,
+        selfUniqueAddress,
+        nodes,
+        unreachable,
+        replyTo,
+        durable))
 
   def writeAggregatorPropsWithDelta(
       data: ORSet[String],
       delta: Delta,
       consistency: Replicator.WriteConsistency,
-      probes: Map[Address, ActorRef],
-      nodes: Set[Address],
-      unreachable: Set[Address],
+      probes: Map[UniqueAddress, ActorRef],
+      selfUniqueAddress: UniqueAddress,
+      nodes: Set[UniqueAddress],
+      unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean): Props =
-    Props(new TestWriteAggregator(KeyB, data, Some(delta), consistency, probes, nodes, unreachable, replyTo, durable))
+    Props(
+      new TestWriteAggregator(
+        KeyB,
+        data,
+        Some(delta),
+        consistency,
+        probes,
+        selfUniqueAddress,
+        nodes,
+        unreachable,
+        replyTo,
+        durable))
 
   class TestWriteAggregator(
       key: Key.KeyR,
       data: ReplicatedData,
       delta: Option[Delta],
       consistency: Replicator.WriteConsistency,
-      probes: Map[Address, ActorRef],
-      nodes: Set[Address],
-      unreachable: Set[Address],
+      probes: Map[UniqueAddress, ActorRef],
+      selfUniqueAddress: UniqueAddress,
+      nodes: Set[UniqueAddress],
+      unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean)
-      extends WriteAggregator(key, DataEnvelope(data), delta, consistency, None, nodes, unreachable, replyTo, durable) {
+      extends WriteAggregator(
+        key,
+        DataEnvelope(data),
+        delta,
+        consistency,
+        None,
+        selfUniqueAddress,
+        nodes,
+        unreachable,
+        replyTo,
+        durable) {
 
-    override def replica(address: Address): ActorSelection =
+    override def replica(address: UniqueAddress): ActorSelection =
       context.actorSelection(probes(address).path)
 
     override def senderAddress(): Address =
-      probes.find { case (_, r) => r == sender() }.get._1
+      probes.find { case (_, r) => r == sender() }.get._1.address
   }
 
   def writeAckAdapterProps(replica: ActorRef): Props =
@@ -105,10 +143,10 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
     else "akka.tcp"
 
-  val nodeA = Address(protocol, "Sys", "a", 2552)
-  val nodeB = nodeA.copy(host = Some("b"))
-  val nodeC = nodeA.copy(host = Some("c"))
-  val nodeD = nodeA.copy(host = Some("d"))
+  val nodeA = UniqueAddress(Address(protocol, "Sys", "a", 2552), 17L)
+  val nodeB = UniqueAddress(Address(protocol, "Sys", "b", 2552), 17L)
+  val nodeC = UniqueAddress(Address(protocol, "Sys", "c", 2552), 17L)
+  val nodeD = UniqueAddress(Address(protocol, "Sys", "d", 2552), 17L)
   // 4 replicas + the local => 5
   val nodes = Set(nodeA, nodeB, nodeC, nodeD)
 
@@ -118,13 +156,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   val writeMajority = WriteMajority(timeout)
   val writeAll = WriteAll(timeout)
 
-  def probes(probe: ActorRef): Map[Address, ActorRef] =
+  val selfUniqueAddress: UniqueAddress = Cluster(system).selfUniqueAddress
+
+  def probes(probe: ActorRef): Map[UniqueAddress, ActorRef] =
     nodes.toSeq.map(_ -> system.actorOf(WriteAggregatorSpec.writeAckAdapterProps(probe))).toMap
 
   /**
    * Create a tuple for each node with the WriteAckAdapter and the TestProbe
    */
-  def probes(): Map[Address, TestMock] = {
+  def probes(): Map[UniqueAddress, TestMock] = {
     nodes.toSeq.map(_ -> TestMock()).toMap
   }
 
@@ -132,8 +172,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "send to at least N/2+1 replicas when WriteMajority" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeMajority, probes(probe.ref), nodes, Set.empty, testActor, durable = false))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeMajority,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = false))
 
       probe.expectMsgType[Write]
       probe.lastSender ! WriteAck
@@ -147,8 +194,16 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "send to more when no immediate reply" in {
       val testProbes = probes()
       val testProbeRefs = testProbes.map { case (a, tm) => a -> tm.writeAckAdapter }
-      val aggr = system.actorOf(WriteAggregatorSpec
-        .writeAggregatorProps(data, writeMajority, testProbeRefs, nodes, Set(nodeC, nodeD), testActor, durable = false))
+      val aggr = system.actorOf(
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeMajority,
+          testProbeRefs,
+          selfUniqueAddress,
+          nodes,
+          Set(nodeC, nodeD),
+          testActor,
+          durable = false))
 
       testProbes(nodeA).expectMsgType[Write]
       // no reply
@@ -173,8 +228,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "timeout when less than required acks" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeMajority, probes(probe.ref), nodes, Set.empty, testActor, durable = false))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeMajority,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = false))
 
       probe.expectMsgType[Write]
       // no reply
@@ -221,6 +283,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
           delta,
           writeMajority,
           probes(probe.ref),
+          selfUniqueAddress,
           nodes,
           Set.empty,
           testActor,
@@ -244,6 +307,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
           delta,
           writeAll,
           testProbeRefs,
+          selfUniqueAddress,
           nodes,
           Set.empty,
           testActor,
@@ -279,6 +343,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
           delta,
           writeAll,
           probes(probe.ref),
+          selfUniqueAddress,
           nodes,
           Set.empty,
           testActor,
@@ -311,8 +376,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "not reply before local confirmation" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeThree, probes(probe.ref), nodes, Set.empty, testActor, durable = true))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeThree,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = true))
 
       probe.expectMsgType[Write]
       probe.lastSender ! WriteAck
@@ -331,8 +403,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "tolerate WriteNack if enough WriteAck" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeThree, probes(probe.ref), nodes, Set.empty, testActor, durable = true))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeThree,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = true))
 
       aggr ! UpdateSuccess(WriteAggregatorSpec.KeyA, None) // the local write
       probe.expectMsgType[Write]
@@ -350,8 +429,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "reply with StoreFailure when too many nacks" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeMajority, probes(probe.ref), nodes, Set.empty, testActor, durable = true))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeMajority,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = true))
 
       probe.expectMsgType[Write]
       probe.lastSender ! WriteNack
@@ -371,8 +457,15 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "timeout when less than required acks" in {
       val probe = TestProbe()
       val aggr = system.actorOf(
-        WriteAggregatorSpec
-          .writeAggregatorProps(data, writeMajority, probes(probe.ref), nodes, Set.empty, testActor, durable = true))
+        WriteAggregatorSpec.writeAggregatorProps(
+          data,
+          writeMajority,
+          probes(probe.ref),
+          selfUniqueAddress,
+          nodes,
+          Set.empty,
+          testActor,
+          durable = true))
 
       probe.expectMsgType[Write]
       // no reply

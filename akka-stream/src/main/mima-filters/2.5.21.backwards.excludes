@@ -31,3 +31,15 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SourceWi
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContext.statefulMapConcat")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.SourceWithContext.statefulMapConcat")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowWithContextOps.statefulMapConcat")
+
+# GrapheStage implementation for actorRef source #25324
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.ActorRefSource")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.ActorRefSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.newInstance")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.attributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.label")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorRefSource.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.ActorRefSource.this")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSourceActor")

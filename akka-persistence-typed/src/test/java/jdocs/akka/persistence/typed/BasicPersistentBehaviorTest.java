@@ -11,6 +11,9 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.RetentionCriteria;
+import akka.persistence.typed.SnapshotFailed;
+import akka.persistence.typed.DeleteSnapshotsFailed;
+import akka.persistence.typed.DeleteEventsFailed;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
@@ -279,12 +282,38 @@ public class BasicPersistentBehaviorTest {
       }
       // #snapshottingPredicate
 
-      // #retentionCriteria
+      // #snapshotDeletes
       @Override // override snapshotEvery in EventSourcedBehavior
       public RetentionCriteria retentionCriteria() {
+        // to also delete events, use RetentionCriteria.create(1000, 2, true)
         return RetentionCriteria.create(1000, 2);
       }
-      // #retentionCriteria
+      // #snapshotDeletes
+
+      // #fullDeletesSampleWithSignals
+      @Override
+      public SignalHandler signalHandler() {
+        return newSignalHandlerBuilder()
+            .onSignal(
+                SnapshotFailed.class,
+                (completed) -> {
+                  throw new RuntimeException("TODO: add some on-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteSnapshotsFailed.class,
+                (completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .onSignal(
+                DeleteEventsFailed.class,
+                (completed) -> {
+                  throw new RuntimeException(
+                      "TODO: add some on-delete-snapshot-failed side-effect here");
+                })
+            .build();
+      }
+      // #fullDeletesSampleWithSignals
     }
   }
 

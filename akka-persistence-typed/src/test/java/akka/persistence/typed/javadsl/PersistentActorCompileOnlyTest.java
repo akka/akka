@@ -9,11 +9,11 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.japi.function.Procedure;
 import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.SideEffect;
 
 import java.time.Duration;
 import java.util.*;
@@ -181,9 +181,9 @@ public class PersistentActorCompileOnlyTest {
     }
 
     // #commonChainedEffects
-    // Factored out Chained effect
-    static final SideEffect<ExampleState> commonChainedEffect =
-        SideEffect.create(s -> System.out.println("Command handled!"));
+    // Example factoring out a chained effect to use in several places with `thenRun`
+    static final Procedure<ExampleState> commonChainedEffect =
+        state -> System.out.println("Command handled!");
 
     // #commonChainedEffects
 
@@ -207,7 +207,7 @@ public class PersistentActorCompileOnlyTest {
                         Effect()
                             .persist(new Evt(cmd.data))
                             .thenRun(() -> cmd.sender.tell(new Ack()))
-                            .andThen(commonChainedEffect))
+                            .thenRun(commonChainedEffect))
                 .build();
             // #commonChainedEffects
           }
