@@ -8,10 +8,6 @@ import sbt._
 import Keys.{scalacOptions, _}
 import sbt.plugins.JvmPlugin
 
-/**
-  * Initial tests found:
-  * `akka-actor` 151 errors with `-Xfatal-warnings`, 6 without the flag
-  */
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   import scoverage.ScoverageKeys._
@@ -98,7 +94,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       // different compiler phases from the regular run), and in particular
       // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
       // https://github.com/akka/akka/issues/26119
-      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq,
+      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
     )
 
   /**
