@@ -118,10 +118,23 @@ class ReplicatorMessageSerializerSpec
           Some(17),
           Some(19)))
       checkSerialization(
+        Status(
+          Map("A" -> ByteString.fromString("a"), "B" → ByteString.fromString("b")),
+          chunk = 3,
+          totChunks = 10,
+          None, // can be None when sending back to a node of version 2.5.21
+          Some(19)))
+      checkSerialization(
         Gossip(
           Map("A" -> DataEnvelope(data1), "B" → DataEnvelope(GSet() + "b" + "c")),
           sendBack = true,
           Some(17),
+          Some(19)))
+      checkSerialization(
+        Gossip(
+          Map("A" -> DataEnvelope(data1), "B" → DataEnvelope(GSet() + "b" + "c")),
+          sendBack = true,
+          None, // can be None when sending back to a node of version 2.5.21
           Some(19)))
       checkSerialization(
         DeltaPropagation(

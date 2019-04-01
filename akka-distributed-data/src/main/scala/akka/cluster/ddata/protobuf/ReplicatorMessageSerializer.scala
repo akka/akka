@@ -267,7 +267,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case (key, digest) =>
         b.addEntries(dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteString.copyFrom(digest.toArray)))
     }
-    b.setToSystemUid(status.toSystemUid.get)
+    status.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(status.fromSystemUid.get)
     b.build()
   }
@@ -290,7 +290,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       case (key, data) =>
         b.addEntries(dm.Gossip.Entry.newBuilder().setKey(key).setEnvelope(dataEnvelopeToProto(data)))
     }
-    b.setToSystemUid(gossip.toSystemUid.get)
+    gossip.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(gossip.fromSystemUid.get)
     b.build()
   }
