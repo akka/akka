@@ -12,7 +12,6 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -34,7 +33,7 @@ import akka.cluster.ddata.ReplicatorSettings
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.dispatch.Dispatchers
 import akka.event.Logging
-import akka.pattern.BackoffSupervisor
+import akka.pattern.BackoffOpts
 import akka.pattern.ask
 import akka.util.ByteString
 
@@ -749,15 +748,16 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
               else
                 ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
-            val singletonProps = BackoffSupervisor
-              .props(
-                childProps = coordinatorProps,
-                childName = "coordinator",
-                minBackoff = coordinatorFailureBackoff,
-                maxBackoff = coordinatorFailureBackoff * 5,
-                randomFactor = 0.2,
-                maxNrOfRetries = -1)
-              .withDeploy(Deploy.local)
+            val singletonProps =
+              BackoffOpts
+                .onFailure(
+                  childProps = coordinatorProps,
+                  childName = "coordinator",
+                  minBackoff = coordinatorFailureBackoff,
+                  maxBackoff = coordinatorFailureBackoff * 5,
+                  randomFactor = 0.2)
+                .props
+                .withDeploy(Deploy.local)
             val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
             context.actorOf(
               ClusterSingletonManager
