@@ -40,9 +40,9 @@ package object adapter {
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
-      *
-      *  Typed actors default supervision strategy is to stop. Can be overridden with
-      *  Behaviors.supervise.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  Behaviors.supervise.
      */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
       ActorRefFactoryAdapter.spawnAnonymous(
@@ -53,9 +53,9 @@ package object adapter {
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
-      *
-      *  Typed actors default supervision strategy is to stop. Can be overridden with
-      *  Behaviors.supervise.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
       ActorRefFactoryAdapter.spawn(sys, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props)
@@ -88,9 +88,9 @@ package object adapter {
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
-      *
-      *  Typed actors default supervision strategy is to stop. Can be overridden with
-      *  Behaviors.supervise.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  Behaviors.supervise.
      */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
       ActorRefFactoryAdapter.spawnAnonymous(
@@ -100,9 +100,9 @@ package object adapter {
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
-      *
-      *  Typed actors default supervision strategy is to stop. Can be overridden with
-      *  Behaviors.supervise.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
       ActorRefFactoryAdapter.spawn(ctx, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props)
