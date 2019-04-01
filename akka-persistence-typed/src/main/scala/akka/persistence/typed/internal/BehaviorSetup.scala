@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 import akka.actor.Cancellable
 import akka.actor.typed.Logger
@@ -31,7 +32,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val commandHandler: EventSourcedBehavior.CommandHandler[C, E, S],
     val eventHandler: EventSourcedBehavior.EventHandler[S, E],
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
-    private val signalHandler: PartialFunction[Signal, Unit],
+    private val signalHandler: PartialFunction[(S, Signal), Unit],
     val tagger: E ⇒ Set[String],
     val eventAdapter: EventAdapter[E, _],
     val snapshotWhen: (S, E, Long) ⇒ Boolean,
@@ -102,8 +103,22 @@ private[akka] final class BehaviorSetup[C, E, S](
     recoveryTimer = OptionVal.None
   }
 
-  def onSignal(signal: Signal): Unit = {
-    signalHandler.applyOrElse(signal, ConstantFun.scalaAnyToUnit)
+  /**
+   * `catchAndLog=true` should be used for "unknown" signals in the phases before Running
+   * to avoid restart loops if restart supervision is used.
+   */
+  def onSignal(state: S, signal: Signal, catchAndLog: Boolean): Unit = {
+    try {
+      signalHandler.applyOrElse((state, signal), ConstantFun.scalaAnyToUnit)
+    } catch {
+      case NonFatal(ex) =>
+        if (catchAndLog)
+          log.error(ex, s"Error while processing signal [{}]", signal)
+        else {
+          log.debug(s"Error while processing signal [{}]: {}", signal, ex)
+          throw ex
+        }
+    }
   }
 
 }

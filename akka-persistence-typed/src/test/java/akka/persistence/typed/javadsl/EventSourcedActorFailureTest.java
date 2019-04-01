@@ -48,13 +48,13 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   public SignalHandler signalHandler() {
     return newSignalHandlerBuilder()
         .onSignal(
-            RecoveryCompleted.class,
-            (recoveryCompleted) -> {
+            RecoveryCompleted.instance(),
+            state -> {
               probe.tell("starting");
             })
         .onSignal(
             RecoveryFailed.class,
-            (signal) -> {
+            (state, signal) -> {
               recoveryFailureProbe.tell(signal.getFailure());
             })
         .build();

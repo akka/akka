@@ -44,8 +44,8 @@ class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.co
         probe.tell("eventHandler:" + state + ":" + event)
         if (state == null) event else state + event
       }).receiveSignal {
-      case RecoveryCompleted(s) ⇒
-        probe.tell("onRecoveryCompleted:" + s)
+      case (state, RecoveryCompleted) ⇒
+        probe.tell("onRecoveryCompleted:" + state)
     }
 
   "A typed persistent actor with primitive state" must {

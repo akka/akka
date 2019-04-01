@@ -39,7 +39,7 @@ class EventSourcedSequenceNumberSpec
         probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " eventHandler")
         state + evt
       }).receiveSignal {
-        case RecoveryCompleted(_) ⇒
+        case (_, RecoveryCompleted) ⇒
           probe ! (EventSourcedBehavior.lastSequenceNumber(ctx) + " onRecoveryComplete")
       })
 

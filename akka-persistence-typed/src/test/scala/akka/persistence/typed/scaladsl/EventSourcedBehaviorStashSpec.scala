@@ -109,9 +109,8 @@ object EventSourcedBehaviorStashSpec {
         .restartWithBackoff(1.second, maxBackoff = 2.seconds, 0.0)
         .withLoggingEnabled(enabled = false))
       .receiveSignal {
-        // FIXME #26574: the state type of RecoveryCompleted can't be infered, do we need to include state as param in the partial function?
-        case RecoveryCompleted(state: State) => signalProbe.foreach(_ ! s"RecoveryCompleted-${state.value}")
-        case PostStop                        => signalProbe.foreach(_ ! "PostStop")
+        case (state, RecoveryCompleted) => signalProbe.foreach(_ ! s"RecoveryCompleted-${state.value}")
+        case (_, PostStop)              => signalProbe.foreach(_ ! "PostStop")
       }
   }
 
