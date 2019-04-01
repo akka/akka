@@ -27,11 +27,14 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
   case class Probe(message: String, replyTo: ActorRef[String])
 
   def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
-      block: ActorSystem[T] => Unit): Terminated = {
+      block: ActorSystem[T] ⇒ Unit): Unit = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
-      if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
+      if (doTerminate) {
+        sys.terminate()
+        sys.whenTerminated.futureValue
+      }
     } catch {
       case NonFatal(ex) =>
         sys.terminate()
@@ -41,20 +44,18 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
 
   "An ActorSystem" must {
     "start the guardian actor and terminate when it terminates" in {
-      val t = withSystem("a", Behaviors.receiveMessage[Probe] { p =>
+      withSystem("a", Behaviors.receiveMessage[Probe] { p =>
         p.replyTo ! p.message
         Behaviors.stopped
-      }, doTerminate = false) { sys =>
+      }, doTerminate = false) { sys ⇒
         val inbox = TestInbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually {
           inbox.hasMessages should ===(true)
         }
         inbox.receiveAll() should ===("hello" :: Nil)
+        sys.whenTerminated.futureValue
       }
-      val p = t.ref.path
-      p.name should ===("/")
-      p.address.system should ===(suite + "-a")
     }
 
     // see issue #24172
@@ -86,7 +87,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       inbox.receiveAll() should ===("started" :: Nil)
 
       // now we know that the guardian has started, and should receive PostStop
-      sys.terminate().futureValue
+      sys.terminate()
+      sys.whenTerminated.futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
 
@@ -97,7 +99,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       // for this case the guardian might not have been started before
       // the system terminates and then it will not receive PostStop, which
       // is OK since it wasn't really started yet
-      sys.terminate().futureValue
+      sys.terminate()
+      sys.whenTerminated.futureValue
     }
 
     "log to the event stream" in {

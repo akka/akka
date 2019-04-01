@@ -264,6 +264,9 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     try f(sys)
-    finally sys.terminate().futureValue
+    finally {
+      sys.terminate()
+      sys.whenTerminated.futureValue
+    }
   }
 }

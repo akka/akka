@@ -9,6 +9,7 @@ package adapter
 import java.util.concurrent.CompletionStage
 
 import akka.actor
+import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.{ actor => untyped }
@@ -91,11 +92,10 @@ import akka.event.LoggingFilterWithMarker
 
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
-  override def terminate(): scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untypedSystem.terminate().map(t => Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
-  override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untypedSystem.whenTerminated.map(t => Terminated(ActorRefAdapter(t.actor)))(sameThreadExecutionContext)
-  override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
+  override def terminate(): Unit = untypedSystem.terminate()
+  override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
+    untypedSystem.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
+  override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(

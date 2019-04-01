@@ -11,8 +11,8 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 public class ClusterApiTest extends JUnitSuite {
 
@@ -56,8 +56,10 @@ public class ClusterApiTest extends JUnitSuite {
 
       probe2.expectMessageClass(SelfRemoved.class);
     } finally {
-      // TODO no java API to terminate actor system
-      Await.result(system1.terminate().zip(system2.terminate()), Duration.create("5 seconds"));
+      system1.terminate();
+      system1.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+      system2.terminate();
+      system2.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
     }
   }
 }

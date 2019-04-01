@@ -4,8 +4,9 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import scala.concurrent.Promise
+import akka.Done
 
+import scala.concurrent.Promise
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.BeforeAndAfterAll
@@ -60,7 +61,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       // usually done in test framework hook method but we want to assert
       val testkit2 = ActorTestKit()
       testkit2.shutdownTestKit()
-      testkit2.system.whenTerminated.futureValue shouldBe a[Terminated]
+      testkit2.system.whenTerminated.futureValue shouldBe a[Done]
     }
   }
 
