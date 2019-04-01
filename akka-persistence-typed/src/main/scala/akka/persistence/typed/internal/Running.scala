@@ -115,7 +115,7 @@ private[akka] object Running {
         if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
         else new HandlingCommands(state.copy(receivedPoisonPill = true))
       case signal =>
-        setup.onSignal(state.state, signal)
+        setup.onSignal(state.state, signal, catchAndLog = false)
         this
     }
 
@@ -307,7 +307,7 @@ private[akka] object Running {
         state = state.copy(receivedPoisonPill = true)
         this
       case signal =>
-        setup.onSignal(visibleState.state, signal)
+        setup.onSignal(visibleState.state, signal, catchAndLog = false)
         this
     }
 
@@ -351,7 +351,7 @@ private[akka] object Running {
       }
 
       setup.log.debug("Received snapshot response [{}], emitting signal [{}].", response, signal)
-      signal.foreach(setup.onSignal(state.state, _))
+      signal.foreach(setup.onSignal(state.state, _, catchAndLog = false))
     }
 
     Behaviors
@@ -376,7 +376,7 @@ private[akka] object Running {
           // wait for snapshot response before stopping
           storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects)
         case (_, signal) =>
-          setup.onSignal(state.state, signal)
+          setup.onSignal(state.state, signal, catchAndLog = false)
           Behaviors.same
       }
 
@@ -443,7 +443,7 @@ private[akka] object Running {
 
     signal match {
       case Some(sig) =>
-        setup.onSignal(state, sig)
+        setup.onSignal(state, sig, catchAndLog = false)
         Behaviors.same
       case None =>
         Behaviors.unhandled // unexpected journal response
@@ -470,7 +470,7 @@ private[akka] object Running {
 
     signal match {
       case Some(sig) =>
-        setup.onSignal(state, sig)
+        setup.onSignal(state, sig, catchAndLog = false)
         Behaviors.same
       case None =>
         Behaviors.unhandled // unexpected snapshot response

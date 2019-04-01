@@ -85,7 +85,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       state = state.copy(receivedPoisonPill = true)
       this
     case signal =>
-      setup.onSignal(state.state, signal)
+      setup.onSignal(state.state, signal, catchAndLog = true)
       this
   }
 
@@ -166,8 +166,8 @@ private[akka] final class ReplayingEvents[C, E, S](
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown
    */
-  protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
-    setup.onSignal(state.state, RecoveryFailed(cause))
+  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+    setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
@@ -184,10 +184,10 @@ private[akka] final class ReplayingEvents[C, E, S](
     throw new JournalFailureException(msg, cause)
   }
 
-  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
+  private def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] =
     try {
       tryReturnRecoveryPermit("replay completed successfully")
-      setup.onSignal(state.state, RecoveryCompleted)
+      setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped

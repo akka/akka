@@ -58,7 +58,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
           case (_, PoisonPill) =>
             stay(receivedPoisonPill = true)
           case (_, signal) =>
-            setup.onSignal(setup.emptyState, signal)
+            setup.onSignal(setup.emptyState, signal, catchAndLog = true)
             Behaviors.same
         }
     }

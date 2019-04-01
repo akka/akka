@@ -24,6 +24,7 @@ import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
 import akka.testkit.EventFilter
@@ -105,7 +106,10 @@ class EventSourcedBehaviorFailureSpec
         if (cmd == "wrong")
           throw TestException("wrong command")
         probe.tell("persisting")
-        Effect.persist(cmd).thenRun(_ => probe.tell("persisted"))
+        Effect.persist(cmd).thenRun { _ =>
+          probe.tell("persisted")
+          if (cmd == "wrong-callback") throw TestException("wrong command")
+        }
       },
       (state, event) ⇒ {
         if (event == "wrong-event")
@@ -137,7 +141,7 @@ class EventSourcedBehaviorFailureSpec
       }
     }
 
-    "handle exceptions in onRecoveryFailure" in {
+    "handle exceptions from RecoveryFailed signal handler" in {
       val probe = TestProbe[String]()
       val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref, {
         case (_, RecoveryFailed(_)) ⇒
@@ -170,6 +174,23 @@ class EventSourcedBehaviorFailureSpec
         }))
 
         excProbe.expectMessageType[TestException].message shouldEqual "wrong event"
+        probe.expectMessage("stopped")
+      }
+    }
+
+    "fail recovery if exception from RecoveryCompleted signal handler" in {
+      val probe = TestProbe[String]()
+      EventFilter[JournalFailureException](occurrences = 1).intercept {
+        spawn(
+          Behaviors
+            .supervise(failingPersistentActor(PersistenceId("recovery-ok"), probe.ref, {
+              case (_, RecoveryCompleted) ⇒
+                probe.ref.tell("starting")
+                throw TestException("recovery call back failure")
+            }))
+            // since recovery fails restart supervision is not supposed to be used
+            .onFailure(SupervisorStrategy.restart))
+        probe.expectMessage("starting")
         probe.expectMessage("stopped")
       }
     }
@@ -256,6 +277,34 @@ class EventSourcedBehaviorFailureSpec
         probe.expectMessage("starting")
         c ! "wrong"
         probe.expectMessage("restarting")
+      }
+    }
+
+    "stop (default supervisor strategy) if side effect callback throws" in {
+      EventFilter[TestException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val behav = failingPersistentActor(PersistenceId("wrong-command-3"), probe.ref)
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        c ! "wrong-callback"
+        probe.expectMessage("persisting")
+        probe.expectMessage("wrong-callback") // from event handler
+        probe.expectMessage("persisted")
+        probe.expectMessage("stopped")
+      }
+    }
+
+    "stop (default supervisor strategy) if signal handler throws" in {
+      case object SomeSignal extends Signal
+      EventFilter[TestException](occurrences = 1).intercept {
+        val probe = TestProbe[String]()
+        val behav = failingPersistentActor(PersistenceId("wrong-signal-handler"), probe.ref, {
+          case (_, SomeSignal) => throw TestException("from signal")
+        })
+        val c = spawn(behav)
+        probe.expectMessage("starting")
+        c.toUntyped ! SomeSignal
+        probe.expectMessage("stopped")
       }
     }
 

@@ -103,15 +103,21 @@ private[akka] final class BehaviorSetup[C, E, S](
     recoveryTimer = OptionVal.None
   }
 
-  def onSignal(state: S, signal: Signal): Unit = {
+  /**
+   * `catchAndLog=true` should be used for "unknown" signals in the phases before Running
+   * to avoid restart loops if restart supervision is used.
+   */
+  def onSignal(state: S, signal: Signal, catchAndLog: Boolean): Unit = {
     try {
       signalHandler.applyOrElse((state, signal), ConstantFun.scalaAnyToUnit)
     } catch {
       case NonFatal(ex) =>
-        if (signal == akka.persistence.typed.RecoveryCompleted)
-          throw ex // fail the recovery
-        else
+        if (catchAndLog)
           log.error(ex, s"Error while processing signal [{}]", signal)
+        else {
+          log.debug(s"Error while processing signal [{}]: {}", signal, ex)
+          throw ex
+        }
     }
   }
 
