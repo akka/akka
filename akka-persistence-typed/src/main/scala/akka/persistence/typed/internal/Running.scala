@@ -94,6 +94,7 @@ private[akka] object Running {
     with StashManagement[C, E, S] {
   import InternalProtocol._
   import Running.RunningState
+  import BehaviorSetup._
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
@@ -151,7 +152,7 @@ private[akka] object Running {
 
           val newState2 = internalPersist(newState, eventToPersist)
 
-          val shouldSnapshotAfterPersist = setup.snapshotWhen(newState2.state, event, newState2.seqNr)
+          val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
           persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
 
@@ -161,10 +162,11 @@ private[akka] object Running {
             // the invalid event, in case such validation is implemented in the event handler.
             // also, ensure that there is an event handler for each single event
             var seqNr = state.seqNr
-            val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
+            val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, NoSnapshot: SnapshotAfterPersist)) {
               case ((currentState, snapshot), event) =>
                 seqNr += 1
-                val shouldSnapshot = snapshot || setup.snapshotWhen(currentState.state, event, seqNr)
+                val shouldSnapshot =
+                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, seqNr) else snapshot
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
@@ -214,7 +216,7 @@ private[akka] object Running {
       state: RunningState[S],
       visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
-      shouldSnapshotAfterPersist: Boolean,
+      shouldSnapshotAfterPersist: SnapshotAfterPersist,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdc(persistingEventsMdc)
     new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
@@ -225,7 +227,7 @@ private[akka] object Running {
       var state: RunningState[S],
       var visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
-      shouldSnapshotAfterPersist: Boolean,
+      shouldSnapshotAfterPersist: SnapshotAfterPersist,
       var sideEffects: immutable.Seq[SideEffect[S]])
       extends AbstractBehavior[InternalProtocol]
       with WithSeqNrAccessible {
@@ -264,11 +266,12 @@ private[akka] object Running {
         if (eventCounter < numberOfEvents) this
         else {
           visibleState = state
-          if (shouldSnapshotAfterPersist && state.state != null) {
-            internalSaveSnapshot(state)
-            storingSnapshot(state, sideEffects)
-          } else
+          if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
             tryUnstashOne(applySideEffects(sideEffects, state))
+          } else {
+            internalSaveSnapshot(state)
+            storingSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
+          }
         }
       }
 
@@ -316,7 +319,10 @@ private[akka] object Running {
 
   // ===============================================
 
-  def storingSnapshot(state: RunningState[S], sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
+  def storingSnapshot(
+      state: RunningState[S],
+      sideEffects: immutable.Seq[SideEffect[S]],
+      snapshotReason: SnapshotAfterPersist): Behavior[InternalProtocol] = {
     setup.setMdc(storingSnapshotMdc)
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
@@ -332,13 +338,22 @@ private[akka] object Running {
 
     def onSaveSnapshotResponse(response: SnapshotProtocol.Response): Unit = {
       val signal = response match {
-        case e @ SaveSnapshotSuccess(meta) =>
-          // # 24698 The deletion of old events are automatic, snapshots are triggered by the SaveSnapshotSuccess.
+        case SaveSnapshotSuccess(meta) =>
           setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
-          if (setup.retention.deleteEventsOnSnapshot)
-            internalDeleteEvents(e, state)
-          else
-            internalDeleteSnapshots(setup.retention.toSequenceNumber(meta.sequenceNr))
+          if (snapshotReason == SnapshotWithRetention) {
+            // deletion of old events and snspahots are triggered by the SaveSnapshotSuccess
+            setup.retention match {
+              case DisabledRetentionCriteria                          => // no further actions
+              case s @ SnapshotCountRetentionCriteriaImpl(_, _, true) =>
+                // deleteEventsOnSnapshot == true, deletion of old events
+                val deleteEventsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                internalDeleteEvents(meta.sequenceNr, deleteEventsToSeqNr)
+              case s @ SnapshotCountRetentionCriteriaImpl(_, _, false) =>
+                // deleteEventsOnSnapshot == false, deletion of old snapshots
+                val deleteSnapshotsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+            }
+          }
 
           Some(SnapshotCompleted(SnapshotMetadata.fromUntyped(meta)))
 
@@ -374,7 +389,7 @@ private[akka] object Running {
       .receiveSignal {
         case (_, PoisonPill) =>
           // wait for snapshot response before stopping
-          storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects)
+          storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
         case (_, signal) =>
           setup.onSignal(state.state, signal, catchAndLog = false)
           Behaviors.same
@@ -430,10 +445,15 @@ private[akka] object Running {
     val signal = response match {
       case DeleteMessagesSuccess(toSequenceNr) =>
         setup.log.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
-        // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
-        // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
-        // starting at the snapshot at toSequenceNr would be invalid.
-        internalDeleteSnapshots(toSequenceNr - 1)
+        setup.retention match {
+          case DisabledRetentionCriteria             => // no further actions
+          case s: SnapshotCountRetentionCriteriaImpl =>
+            // The reason for -1 is that a snapshot at the exact toSequenceNr is still useful and the events
+            // after that can be replayed after that snapshot, but replaying the events after toSequenceNr without
+            // starting at the snapshot at toSequenceNr would be invalid.
+            val deleteSnapshotsToSeqNr = toSequenceNr - 1
+            internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+        }
         Some(DeleteEventsCompleted(toSequenceNr))
       case DeleteMessagesFailure(e, toSequenceNr) =>
         Some(DeleteEventsFailed(toSequenceNr, e))

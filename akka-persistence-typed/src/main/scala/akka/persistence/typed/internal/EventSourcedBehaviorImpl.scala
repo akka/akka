@@ -7,8 +7,6 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.control.NonFatal
-
 import akka.actor.typed
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
@@ -31,10 +29,10 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.RetentionCriteria
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
@@ -69,7 +67,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotWhen: (State, Event, Long) ⇒ Boolean = ConstantFun.scalaAnyThreeToFalse,
     recovery: Recovery = Recovery(),
-    retention: RetentionCriteria = RetentionCriteria(),
+    retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty)
     extends EventSourcedBehavior[Command, Event, State] {
@@ -164,14 +162,6 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =
     copy(signalHandler = handler)
 
-  override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
-    copy(snapshotWhen = predicate)
-
-  override def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State] = {
-    require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
-    copy(snapshotWhen = (_, _, seqNr) => seqNr % numberOfEvents == 0)
-  }
-
   override def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "journal plugin id must not be null; use empty string for 'default' journal")
     copy(journalPluginId = if (id != "") Some(id) else None)
@@ -186,6 +176,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = Recovery(selection.toUntyped))
   }
+
+  override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
+    copy(snapshotWhen = predicate)
 
   override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =
     copy(retention = criteria)
