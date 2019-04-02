@@ -22,12 +22,14 @@ initialize := {
   initialize.value
 }
 
-// akka.AkkaBuild.buildSettings
+akka.AkkaBuild.buildSettings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
+def isScala211: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.11")
+
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
-lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actor, actorTests,
   agent,
   benchJmh,
@@ -35,7 +37,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   cluster, clusterMetrics, clusterSharding, clusterTools,
   contrib,
   distributedData,
-  docs,
   multiNodeTestkit,
   osgi,
   persistence, persistenceQuery, persistenceShared, persistenceTck,
@@ -44,14 +45,18 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   slf4j,
   stream, streamTestkit, streamTests, streamTestsTck,
   testkit,
-  actorTyped, actorTypedTests, actorTestkitTyped,
-  persistenceTyped,
-  clusterTyped, clusterShardingTyped,
-  benchJmhTyped,
-  streamTyped,
   discovery,
   coordination
-)
+) ++ 
+  (if (isScala211) List.empty[ProjectReference]
+  else List[ProjectReference](
+    docs,
+    actorTyped, actorTypedTests, actorTestkitTyped,
+    persistenceTyped,
+    clusterTyped, clusterShardingTyped,
+    benchJmhTyped,
+    streamTyped
+  ))
 
 lazy val root = Project(
   id = "akka",
@@ -62,8 +67,7 @@ lazy val root = Project(
    (CrossVersion.partialVersion(scalaVersion.value) match {
      case Some((2, n)) if n == 11 => aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
      case _                       => Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, akkaScalaNightly, docs)
-   }),
-   crossScalaVersions := Nil, // Allows some modules (typed) to be only for 2.12 sbt/sbt#3465
+   })
  )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
@@ -124,7 +128,6 @@ lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
     ).map(_ % "compile->compile;compile->test"): _*
   )
   .settings(Dependencies.benchJmh)
-  .settings(AkkaBuild.noScala211)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
@@ -269,7 +272,6 @@ lazy val docs = akkaModule("akka-docs")
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
-  .settings(AkkaBuild.noScala211)
   .enablePlugins(
     AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
@@ -418,7 +420,6 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
   .settings(OSGi.actorTyped)
-  .settings(AkkaBuild.noScala211)
   .settings(
     initialCommands :=
       """
@@ -442,7 +443,6 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   )
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
@@ -461,7 +461,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
   .configs(MultiJvm)
@@ -478,7 +477,6 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
@@ -495,7 +493,6 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AkkaBuild.noScala211)
   .settings(AutomaticModuleName.settings("akka.stream.typed"))
   .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
@@ -504,7 +501,6 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
-  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
@@ -513,7 +509,6 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
     actorTestkitTyped % "compile->compile;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
-  .settings(AkkaBuild.noScala211)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
