@@ -38,12 +38,33 @@ package object adapter {
    */
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
 
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  `Behaviors.supervise`.
+     */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
+      ActorRefFactoryAdapter.spawnAnonymous(
+        sys,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        props,
+        rethrowTypedFailure = false)
     }
 
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  `Behaviors.supervise`.
+     */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
+      ActorRefFactoryAdapter.spawn(
+        sys,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        name,
+        props,
+        rethrowTypedFailure = false)
     }
 
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
@@ -70,10 +91,33 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorContext]].
    */
   implicit class UntypedActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
+
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  `Behaviors.supervise`.
+     */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
-      ActorContextAdapter.spawnAnonymous(ctx, behavior, props)
+      ActorRefFactoryAdapter.spawnAnonymous(
+        ctx,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        props,
+        rethrowTypedFailure = false)
+
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *
+     *  Typed actors default supervision strategy is to stop. Can be overridden with
+     *  `Behaviors.supervise`.
+     */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
-      ActorContextAdapter.spawn(ctx, behavior, name, props)
+      ActorRefFactoryAdapter.spawn(
+        ctx,
+        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        name,
+        props,
+        rethrowTypedFailure = false)
 
     def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toUntyped(other))
     def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toUntyped(other))
@@ -88,6 +132,7 @@ package object adapter {
   implicit class TypedActorContextOps(val ctx: scaladsl.ActorContext[_]) extends AnyVal {
     def actorOf(props: akka.actor.Props): akka.actor.ActorRef =
       ActorContextAdapter.toUntyped(ctx).actorOf(props)
+
     def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
       ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
 

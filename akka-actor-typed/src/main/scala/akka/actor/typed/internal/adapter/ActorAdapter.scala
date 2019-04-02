@@ -8,7 +8,7 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.ActorInitializationException
+import akka.actor.{ ActorInitializationException, ActorRefWithCell }
 import akka.{ actor => untyped }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
@@ -34,6 +34,8 @@ import akka.util.OptionVal
    * the cause and can fill in the cause in the `ChildFailed` signal
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
+   *
+   * Should only be thrown if the parent is known to be an `ActorAdapter`.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
@@ -46,7 +48,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T])
+@InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
     extends untyped.Actor
     with untyped.ActorLogging {
   import Behavior._
@@ -146,7 +148,8 @@ import akka.util.OptionVal
       case BehaviorTags.FailedBehavior =>
         val f = b.asInstanceOf[FailedBehavior]
         // For the parent untyped supervisor to pick up the exception
-        throw TypedActorFailedException(f.cause)
+        if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
+        else context.stop(self)
       case BehaviorTags.StoppedBehavior =>
         val stopped = b.asInstanceOf[StoppedBehavior[T]]
         behavior = new ComposedStoppingBehavior[T](behavior, stopped)
@@ -200,6 +203,12 @@ import akka.util.OptionVal
       recordChildFailure(cause)
       untyped.SupervisorStrategy.Stop
     case ex =>
+      val isTypedActor = sender() match {
+        case afwc: ActorRefWithCell =>
+          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+        case _ =>
+          false
+      }
       recordChildFailure(ex)
       val logMessage = ex match {
         case e: ActorInitializationException if e.getCause ne null =>
@@ -211,7 +220,10 @@ import akka.util.OptionVal
       }
       // log at Error as that is what the supervision strategy would have done.
       log.error(ex, logMessage)
-      untyped.SupervisorStrategy.Stop
+      if (isTypedActor)
+        untyped.SupervisorStrategy.Stop
+      else
+        untyped.SupervisorStrategy.Restart
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
