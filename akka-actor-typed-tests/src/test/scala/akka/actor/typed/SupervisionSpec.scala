@@ -308,7 +308,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Pong(1))
     }
 
-    "default to stop stop when for no strategy" in {
+    "default to stop when no strategy" in {
       val probe = TestProbe[Event]("evt")
       val behv = targetBehavior(probe.ref)
       val ref = spawn(behv)
