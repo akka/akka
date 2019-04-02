@@ -314,27 +314,6 @@ public class AdapterTest extends JUnitSuite {
     probe.expectMsg("terminated");
   }
 
-  @Ignore(
-      "This doesn't work now that a default stop is added to a typed child spanwed from an untyped actor")
-  @Test
-  public void shouldSuperviseTypedChildFromUntypedParent() {
-    TestKit probe = new TestKit(system);
-    ActorRef<Ping> ignore = Adapter.spawnAnonymous(system, ignore());
-    akka.actor.ActorRef untypedRef = system.actorOf(untyped2(ignore, probe.getRef()));
-    untypedRef.tell("supervise-stop", akka.actor.ActorRef.noSender());
-    probe.expectMsg("thrown-stop");
-    // ping => ok should not get through here
-    probe.expectMsg("terminated");
-
-    untypedRef.tell("supervise-resume", akka.actor.ActorRef.noSender());
-    probe.expectMsg("thrown-resume");
-    probe.expectMsg("ok");
-
-    untypedRef.tell("supervise-restart", akka.actor.ActorRef.noSender());
-    probe.expectMsg("thrown-restart");
-    probe.expectMsg("ok");
-  }
-
   @Test
   public void shouldSuperviseUntypedChildAsRestartFromTypedParent() {
     TestKit probe = new TestKit(system);
@@ -347,7 +326,6 @@ public class AdapterTest extends JUnitSuite {
       // suppress the logging with stack trace
       system.getEventStream().setLogLevel(Integer.MIN_VALUE); // OFF
 
-      // only stop supervisorStrategy
       typedRef.tell("supervise-restart");
       probe.expectMsg("ok");
     } finally {

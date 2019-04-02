@@ -212,7 +212,6 @@ import scala.annotation.switch
 
   private def recordChildFailure(ex: Throwable): Unit = {
     val ref = sender()
-    println(s"child has failed ${ref} $ex")
     if (context.asInstanceOf[untyped.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
