@@ -11,13 +11,10 @@ import akka.ConfigurationException
  * INTERNAL API
  */
 @InternalApi private[typed] object ActorRefFactoryAdapter {
-  def spawnAnonymous[T](
-      context: akka.actor.ActorRefFactory,
-      behavior: Behavior[T],
-      props: Props,
-      rethrowTypedFailure: Boolean): ActorRef[T] = {
+  def spawnAnonymous[T](context: akka.actor.ActorRefFactory, behavior: Behavior[T], props: Props, rethrowTypedFailure: Boolean): ActorRef[T] = {
     try {
-      ActorRefAdapter(context.actorOf(internal.adapter.PropsAdapter(() => behavior, props, rethrowTypedFailure)))
+      ActorRefAdapter(
+        context.actorOf(internal.adapter.PropsAdapter(() => behavior, props, rethrowTypedFailure)))
     } catch {
       case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
         throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)

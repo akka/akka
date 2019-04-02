@@ -48,8 +48,7 @@ package object adapter {
       ActorRefFactoryAdapter.spawnAnonymous(
         sys,
         Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
-        props,
-        rethrowTypedFailure = false)
+        props, rethrowTypedFailure = false)
     }
 
     /**
@@ -59,12 +58,7 @@ package object adapter {
      *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
-      ActorRefFactoryAdapter.spawn(
-        sys,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
-        name,
-        props,
-        rethrowTypedFailure = false)
+      ActorRefFactoryAdapter.spawn(sys, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props, rethrowTypedFailure = false)
     }
 
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
@@ -102,8 +96,7 @@ package object adapter {
       ActorRefFactoryAdapter.spawnAnonymous(
         ctx,
         Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
-        props,
-        rethrowTypedFailure = false)
+        props, rethrowTypedFailure = false)
 
     /**
      *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
@@ -112,12 +105,7 @@ package object adapter {
      *  Behaviors.supervise.
      */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
-      ActorRefFactoryAdapter.spawn(
-        ctx,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
-        name,
-        props,
-        rethrowTypedFailure = false)
+      ActorRefFactoryAdapter.spawn(ctx, Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop), name, props, rethrowTypedFailure = false)
 
     def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toUntyped(other))
     def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toUntyped(other))
