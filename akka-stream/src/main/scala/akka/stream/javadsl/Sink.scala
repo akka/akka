@@ -293,7 +293,7 @@ object Sink {
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
-    scaladsl.Sink.setup(mat ⇒ attr ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Sink.setup((mat, attr) ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.

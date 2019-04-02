@@ -69,7 +69,7 @@ object Flow {
    */
   def setup[I, O, M](
       factory: BiFunction[ActorMaterializer, Attributes, Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
-    scaladsl.Flow.setup(mat ⇒ attr ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Flow.setup((mat, attr) ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input

@@ -365,7 +365,7 @@ object Source {
    * [[Attributes]] of the [[Source]] returned by this method.
    */
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.setup(mat ⇒ attr ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.setup((mat, attr) ⇒ factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.

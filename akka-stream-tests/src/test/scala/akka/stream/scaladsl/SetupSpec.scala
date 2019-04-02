@@ -16,7 +16,7 @@ class SetupSpec extends StreamSpec {
   "Source.setup" should {
 
     "expose materializer" in {
-      val source = Source.setup { mat ⇒ _ ⇒
+      val source = Source.setup { (mat, _) ⇒
         Source.single(mat.isShutdown)
       }
 
@@ -24,7 +24,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val source = Source.setup { _ ⇒ attr ⇒
+      val source = Source.setup { (_, attr) ⇒
         Source.single(attr.attributeList)
       }
 
@@ -32,7 +32,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val source = Source.setup { _ ⇒ _ ⇒
+      val source = Source.setup { (_, _) ⇒
         Source.maybe[NotUsed]
       }
 
@@ -42,7 +42,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val source = Source.setup { _ ⇒ attr ⇒
+      val source = Source.setup { (_, attr) ⇒
         Source.single(attr.nameLifted)
       }.named("my-name")
 
@@ -50,8 +50,8 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes when nested" in {
-      val source = Source.setup { _ ⇒ _ ⇒
-        Source.setup { _ ⇒ attr ⇒
+      val source = Source.setup { (_, _) ⇒
+        Source.setup { (_, attr) ⇒
           Source.single(attr.nameLifted)
         }
       }.named("my-name")
@@ -61,7 +61,7 @@ class SetupSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val source = Source.setup { _ ⇒ _ ⇒
+      val source = Source.setup { (_, _) ⇒
         throw error
       }
 
@@ -72,7 +72,7 @@ class SetupSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val source = Source.setup { _ ⇒ _ ⇒
+      val source = Source.setup { (_, _) ⇒
         Source.empty.mapMaterializedValue(_ ⇒ throw error)
       }
 
@@ -86,7 +86,7 @@ class SetupSpec extends StreamSpec {
   "Flow.setup" should {
 
     "expose materializer" in {
-      val flow = Flow.setup { mat ⇒ _ ⇒
+      val flow = Flow.setup { (mat, _) ⇒
         Flow.fromSinkAndSource(Sink.ignore, Source.single(mat.isShutdown))
       }
 
@@ -94,7 +94,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val flow = Flow.setup { _ ⇒ attr ⇒
+      val flow = Flow.setup { (_, attr) ⇒
         Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.attributeList))
       }
 
@@ -102,7 +102,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val flow = Flow.setup { _ ⇒ _ ⇒
+      val flow = Flow.setup { (_, _) ⇒
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.maybe[NotUsed])(Keep.right)
       }
 
@@ -112,7 +112,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val flow = Flow.setup { _ ⇒ attr ⇒
+      val flow = Flow.setup { (_, attr) ⇒
         Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
       }.named("my-name")
 
@@ -120,8 +120,8 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes when nested" in {
-      val flow = Flow.setup { _ ⇒ _ ⇒
-        Flow.setup { _ ⇒ attr ⇒
+      val flow = Flow.setup { (_, _) ⇒
+        Flow.setup { (_, attr) ⇒
           Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
         }
       }.named("my-name")
@@ -131,7 +131,7 @@ class SetupSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val flow = Flow.setup { _ ⇒ _ ⇒
+      val flow = Flow.setup { (_, _) ⇒
         throw error
       }
 
@@ -142,7 +142,7 @@ class SetupSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val flow = Flow.setup { _ ⇒ _ ⇒
+      val flow = Flow.setup { (_, _) ⇒
         Flow[NotUsed].mapMaterializedValue(_ ⇒ throw error)
       }
 
@@ -156,7 +156,7 @@ class SetupSpec extends StreamSpec {
   "Sink.setup" should {
 
     "expose materializer" in {
-      val sink = Sink.setup { mat ⇒ _ ⇒
+      val sink = Sink.setup { (mat, _) ⇒
         Sink.fold(mat.isShutdown)(Keep.left)
       }
 
@@ -164,7 +164,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "expose attributes" in {
-      val sink = Sink.setup { _ ⇒ attr ⇒
+      val sink = Sink.setup { (_, attr) ⇒
         Sink.fold(attr.attributeList)(Keep.left)
       }
 
@@ -172,7 +172,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate materialized value" in {
-      val sink = Sink.setup { _ ⇒ _ ⇒
+      val sink = Sink.setup { (_, _) ⇒
         Sink.fold(NotUsed)(Keep.left)
       }
 
@@ -180,7 +180,7 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes" in {
-      val sink = Sink.setup { _ ⇒ attr ⇒
+      val sink = Sink.setup { (_, attr) ⇒
         Sink.fold(attr.nameLifted)(Keep.left)
       }.named("my-name")
 
@@ -188,8 +188,8 @@ class SetupSpec extends StreamSpec {
     }
 
     "propagate attributes when nested" in {
-      val sink = Sink.setup { _ ⇒ _ ⇒
-        Sink.setup { _ ⇒ attr ⇒
+      val sink = Sink.setup { (_, _) ⇒
+        Sink.setup { (_, attr) ⇒
           Sink.fold(attr.nameLifted)(Keep.left)
         }
       }.named("my-name")
@@ -199,7 +199,7 @@ class SetupSpec extends StreamSpec {
 
     "handle factory failure" in {
       val error = new Error("boom")
-      val sink = Sink.setup { _ ⇒ _ ⇒
+      val sink = Sink.setup { (_, _) ⇒
         throw error
       }
 
@@ -208,7 +208,7 @@ class SetupSpec extends StreamSpec {
 
     "handle materialization failure" in {
       val error = new Error("boom")
-      val sink = Sink.setup { _ ⇒ _ ⇒
+      val sink = Sink.setup { (_, _) ⇒
         Sink.ignore.mapMaterializedValue(_ ⇒ throw error)
       }
 

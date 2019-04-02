@@ -393,7 +393,7 @@ object Flow {
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Flow]] returned by this method.
    */
-  def setup[T, U, M](factory: ActorMaterializer ⇒ Attributes ⇒ Flow[T, U, M]): Flow[T, U, Future[M]] =
+  def setup[T, U, M](factory: (ActorMaterializer, Attributes) ⇒ Flow[T, U, M]): Flow[T, U, Future[M]] =
     Flow.fromGraph(new SetupFlowStage(factory))
 
   /**
