@@ -267,6 +267,7 @@ lazy val docs = akkaModule("akka-docs")
     ),
     Compile / paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     resolvers += Resolver.jcenterRepo,
+    apidocRootPackage := "akka",
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
   .settings(AkkaBuild.noScala211)

@@ -32,7 +32,7 @@ object ParadoxSupport {
         { context: Writer.Context =>
                     new SignatureDirective(context.location.tree.label, context.properties, msg => log.warn(msg))
         },
-        { _: Writer.Context => new UnidocDirective(allClasses) }
+//        { _: Writer.Context => new UnidocDirective(allClasses) }
       )}
     }.value
   )
@@ -43,8 +43,8 @@ object ParadoxSupport {
         val fqcn = node.label
         if (allClasses.contains(fqcn)) {
           val label = fqcn.split('.').last
-          syntheticNode("java", javaLabel(label), fqcn, node).accept(visitor)
           syntheticNode("scala", label, fqcn, node).accept(visitor)
+          syntheticNode("java", javaLabel(label), fqcn, node).accept(visitor)
         } else {
           throw new java.lang.IllegalStateException(s"fqcn not found by @unidoc[$fqcn]")
         }

@@ -17,7 +17,7 @@ TODO intro
 ## Creating Actors
 
 An actor can create, or _spawn_, an arbitrary number of child actors, which in turn can spawn children of their own, thus
-forming an actor hierarchy. @unidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
+forming an actor hierarchy. @apidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
 actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
 can stop itself or be stopped at any time but it can never outlive its parent.
 
@@ -37,7 +37,7 @@ Java
 
 @@@ Note
 
-In the untyped counter part, the @unidoc[akka.actor.ActorSystem], the root actor was provided out of the box and you
+In the untyped counter part, the @apidoc[akka.actor.ActorSystem], the root actor was provided out of the box and you
 could spawn top-level actors from the outside of the `ActorSystem` using `actorOf`. @ref:[SpawnProtocol](#spawnprotocol)
 is a tool that mimics the old style of starting up actors.
 
@@ -46,7 +46,7 @@ is a tool that mimics the old style of starting up actors.
 
 ### Spawning Children
 
-Child actors are spawned with @scala[@unidoc[akka.actor.typed.scaladsl.ActorContext]]@java[@unidoc[akka.actor.typed.javadsl.ActorContext]]'s `spawn`. 
+Child actors are spawned with @scala[@apidoc[akka.actor.typed.scaladsl.ActorContext]]@java[@apidoc[akka.actor.typed.javadsl.ActorContext]]'s `spawn`. 
 In the example below, when the root actor
 is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
 `Start` message, it creates a child actor defined by the behavior `HelloWorldBot.bot`:
@@ -57,7 +57,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
 
-To specify a dispatcher when spawning an actor use @unidoc[DispatcherSelector]. If not specified, the actor will
+To specify a dispatcher when spawning an actor use @apidoc[DispatcherSelector]. If not specified, the actor will
 use the default dispatcher, see @ref:[Default dispatcher](../dispatchers.md#default-dispatcher) for details.
 
 Scala

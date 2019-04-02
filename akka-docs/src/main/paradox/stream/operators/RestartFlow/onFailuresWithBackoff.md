@@ -1,6 +1,6 @@
 # RestartFlow.onFailuresWithBackoff
 
-Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @unidoc[Flow] will not restart on completion of the wrapped flow.
+Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @apidoc[Flow] will not restart on completion of the wrapped flow.
 
 @ref[Error handling](../index.md#error-handling)
 
@@ -14,17 +14,17 @@ Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it f
 
 ## Description
 
-This @unidoc[Flow] will not emit any failure
-The failures by the wrapped @unidoc[Flow] will be handled by
-restarting the wrapping @unidoc[Flow] as long as maxRestarts is not reached.
-Any termination signals sent to this @unidoc[Flow] however will terminate the wrapped @unidoc[Flow], if it's
-running, and then the @unidoc[Flow] will be allowed to terminate without being restarted.
+This @apidoc[Flow] will not emit any failure
+The failures by the wrapped @apidoc[Flow] will be handled by
+restarting the wrapping @apidoc[Flow] as long as maxRestarts is not reached.
+Any termination signals sent to this @apidoc[Flow] however will terminate the wrapped @apidoc[Flow], if it's
+running, and then the @apidoc[Flow] will be allowed to terminate without being restarted.
 
 The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
-messages. A termination signal from either end of the wrapped @unidoc[Flow] will cause the other end to be terminated,
-and any in transit messages will be lost. During backoff, this @unidoc[Flow] will backpressure.
+messages. A termination signal from either end of the wrapped @apidoc[Flow] will cause the other end to be terminated,
+and any in transit messages will be lost. During backoff, this @apidoc[Flow] will backpressure.
 
-This uses the same exponential backoff algorithm as @unidoc[Backoff].
+This uses the same exponential backoff algorithm as @apidoc[Backoff].
 
 ## Reactive Streams semantics
 
