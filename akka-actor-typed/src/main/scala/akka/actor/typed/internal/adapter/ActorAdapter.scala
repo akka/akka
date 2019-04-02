@@ -212,6 +212,7 @@ import scala.annotation.switch
 
   private def recordChildFailure(ex: Throwable): Unit = {
     val ref = sender()
+    println(s"child has failed ${ref} $ex")
     if (context.asInstanceOf[untyped.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
@@ -226,7 +227,6 @@ import scala.annotation.switch
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    println(s"preRestart $reason $message")
     Behavior.interpretSignal(behavior, ctx, PreRestart)
     behavior = Behavior.stopped
   }

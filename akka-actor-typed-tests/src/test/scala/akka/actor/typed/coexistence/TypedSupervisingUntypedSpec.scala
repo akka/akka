@@ -4,12 +4,14 @@
 
 package akka.actor.typed.coexistence
 import akka.actor.Actor
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.{ WordSpec, WordSpecLike }
 import akka.actor.typed.scaladsl.adapter._
 import akka.{ actor => untyped }
+
 import scala.concurrent.duration._
 
 object TypedSupervisingUntypedSpec {
@@ -26,7 +28,7 @@ object TypedSupervisingUntypedSpec {
 
   class UntypedActor(lifecycleProbe: ActorRef[String]) extends Actor {
     override def receive: Receive = {
-      case "throw" => throw new RuntimeException()
+      case "throw" => throw TestException("oh dear")
     }
 
     override def postStop(): Unit = {
@@ -45,7 +47,7 @@ class TypedSupervisingUntypedSpec extends ScalaTestWithActorTestKit("""
   """.stripMargin) with WordSpecLike {
   import TypedSupervisingUntypedSpec._
 
-  "Typed supervising typed" should {
+  "Typed supervising untyped" should {
     "default to restart" in {
       val ref: ActorRef[Protocol] = spawn(untypedActorOf())
       val lifecycleProbe = TestProbe[String]

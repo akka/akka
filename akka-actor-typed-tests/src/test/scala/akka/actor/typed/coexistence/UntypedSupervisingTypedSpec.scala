@@ -4,6 +4,7 @@
 
 package akka.actor.typed.coexistence
 import akka.actor.Actor
+import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
 import akka.actor.typed.coexistence.UntypedSupervisingTypedSpec.{
@@ -22,7 +23,7 @@ object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {
     Behaviors
       .receiveMessage[String] {
-        case "throw" => throw new RuntimeException("oh dear")
+        case "throw" => throw TestException("oh dear")
       }
       .receiveSignal {
         case (_, s) =>
@@ -126,6 +127,4 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
     }
 
   }
-  // TODO context spanwing
-
 }

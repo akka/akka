@@ -120,7 +120,7 @@ Java
 The default supervision for untyped actors is to restart where as for typed it is to stop.
 When combining untyped and and typed actors the default supervision is based on the default behavior of
 the child i.e. if an untyped actor creates a typed child, its default supervision will be to stop. If a typed
-actor creates an untyped child, its defailt supervision will be to restart.
+actor creates an untyped child, its default supervision will be to restart.
 
 
 
