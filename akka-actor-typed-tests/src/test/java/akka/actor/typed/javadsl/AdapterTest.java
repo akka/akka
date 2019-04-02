@@ -5,6 +5,7 @@
 package akka.actor.typed.javadsl;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -54,9 +55,7 @@ public class AdapterTest extends JUnitSuite {
 
     static Behavior<String> create(akka.actor.ActorRef ref, akka.actor.ActorRef probe) {
       Typed1 logic = new Typed1(ref, probe);
-      return receive(
-          (context, message) -> logic.onMessage(context, message),
-          (context, sig) -> logic.onSignal(context, sig));
+      return receive(logic::onMessage, logic::onSignal);
     }
 
     Behavior<String> onMessage(ActorContext<String> context, String message) {
@@ -74,7 +73,8 @@ public class AdapterTest extends JUnitSuite {
       } else if (message.equals("watch")) {
         Adapter.watch(context, ref);
         return same();
-      } else if (message.equals("supervise-stop")) {
+      } else if (message.equals("supervise-restart")) {
+        // restart is the default, otherwise an intermediate is required
         akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
         Adapter.watch(context, child);
         child.tell(new ThrowIt3(), Adapter.toUntyped(context.getSelf()));
@@ -314,6 +314,8 @@ public class AdapterTest extends JUnitSuite {
     probe.expectMsg("terminated");
   }
 
+  @Ignore(
+      "This doesn't work now that a default stop is added to a typed child spanwed from an untyped actor")
   @Test
   public void shouldSuperviseTypedChildFromUntypedParent() {
     TestKit probe = new TestKit(system);
@@ -334,7 +336,7 @@ public class AdapterTest extends JUnitSuite {
   }
 
   @Test
-  public void shouldSuperviseUntypedChildFromTypedParent() {
+  public void shouldSuperviseUntypedChildAsRestartFromTypedParent() {
     TestKit probe = new TestKit(system);
     akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
     ActorRef<String> typedRef =
@@ -346,8 +348,8 @@ public class AdapterTest extends JUnitSuite {
       system.getEventStream().setLogLevel(Integer.MIN_VALUE); // OFF
 
       // only stop supervisorStrategy
-      typedRef.tell("supervise-stop");
-      probe.expectMsg("terminated");
+      typedRef.tell("supervise-restart");
+      probe.expectMsg("ok");
     } finally {
       system.getEventStream().setLogLevel(originalLogLevel);
     }

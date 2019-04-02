@@ -19,7 +19,10 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object WatchSpec {
-  val config = ConfigFactory.parseString("""akka.loggers = ["akka.testkit.TestEventListener"]""")
+  val config = ConfigFactory.parseString(
+    """
+       akka.loggers = ["akka.testkit.TestEventListener"]
+    """.stripMargin)
 
   case object Stop
 
@@ -116,7 +119,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
 
     "notify a parent of child termination because of failure with a supervisor" in {
       val probe = TestProbe[Any]()
-      val ex = new TestException("boom")
+      val ex = TestException("boom")
       val behavior = Behaviors.setup[Any] { context =>
         val child = context.spawn(
           Behaviors

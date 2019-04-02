@@ -55,7 +55,8 @@ object AdapterSpec {
           case "watch" =>
             context.watch(ref)
             Behaviors.same
-          case "supervise-stop" =>
+          case "supervise-restart" =>
+            // restart is the default
             val child = context.actorOf(untyped1)
             context.watch(child)
             child ! ThrowIt3
@@ -271,7 +272,8 @@ class AdapterSpec extends AkkaSpec("""
       probe.expectMsg("terminated")
     }
 
-    "supervise typed child from untyped parent" in {
+    // doesn't work as a stop is added around typed actors spawned from untyped
+    "supervise typed child from untyped parent" ignore {
       val probe = TestProbe()
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ign, probe.ref))
@@ -304,11 +306,8 @@ class AdapterSpec extends AkkaSpec("""
 
       // only stop supervisorStrategy
       EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
-        EventFilter.warning(pattern = """.*received dead letter.*""", occurrences = 1).intercept {
-          typedRef ! "supervise-stop"
-          probe.expectMsg("terminated")
-          probe.expectNoMessage(100.millis) // no pong
-        }
+        typedRef ! "supervise-restart"
+        probe.expectMsg("ok")
       }
     }
 
