@@ -23,12 +23,11 @@ Akka Persistence is a library for building event sourced actors. For background 
 see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
 
-@@@ warning
+@@@ note
 
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of final development. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet.
+This module is ready to be used in production, but it is still marked as @ref:[may change](../common/may-change.md).
+This means that API or semantics can change without warning or deprecation period, but such changes will
+be collected and be performed in Akka 2.6.0 rather than in 2.5.x patch releases.
 
 @@@
 
