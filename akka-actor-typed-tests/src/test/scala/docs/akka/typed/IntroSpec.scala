@@ -149,17 +149,15 @@ object IntroSpec {
         room: ActorRef[PublishSessionMessage],
         screenName: String,
         client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receive { (context, message) =>
-        message match {
-          case PostMessage(message) =>
-            // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, message)
-            Behaviors.same
-          case NotifyClient(message) =>
-            // published from the room
-            client ! message
-            Behaviors.same
-        }
+      Behaviors.receiveMessage {
+        case PostMessage(message) =>
+          // from client, publish to others via the room
+          room ! PublishSessionMessage(screenName, message)
+          Behaviors.same
+        case NotifyClient(message) =>
+          // published from the room
+          client ! message
+          Behaviors.same
       }
     //#chatroom-behavior
   }
@@ -194,19 +192,21 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       import ChatRoom._
 
       val gabbler: Behavior[SessionEvent] =
-        Behaviors.receiveMessage {
-          //#chatroom-gabbler
-          // We document that the compiler warns about the missing handler for `SessionDenied`
-          case SessionDenied(reason) =>
-            println(s"cannot start chat room session: $reason")
-            Behaviors.stopped
-          //#chatroom-gabbler
-          case SessionGranted(handle) =>
-            handle ! PostMessage("Hello World!")
-            Behaviors.same
-          case MessagePosted(screenName, message) =>
-            println(s"message has been posted by '$screenName': $message")
-            Behaviors.stopped
+        Behaviors.setup { context ⇒
+          Behaviors.receiveMessage {
+            //#chatroom-gabbler
+            // We document that the compiler warns about the missing handler for `SessionDenied`
+            case SessionDenied(reason) =>
+              context.log.info("cannot start chat room session: {}", reason)
+              Behaviors.stopped
+            //#chatroom-gabbler
+            case SessionGranted(handle) =>
+              handle ! PostMessage("Hello World!")
+              Behaviors.same
+            case MessagePosted(screenName, message) =>
+              context.log.info("message has been posted by '{}': {}", screenName, message)
+              Behaviors.stopped
+          }
         }
       //#chatroom-gabbler
 
@@ -219,13 +219,14 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
           Behaviors.receiveSignal {
-            case (_, Terminated(ref)) =>
+            case (_, Terminated(_)) =>
               Behaviors.stopped
           }
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
       //#chatroom-main
+      system.whenTerminated // remove compiler warnings
     }
   }
 
