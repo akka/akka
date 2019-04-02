@@ -41,9 +41,9 @@ out-of-date value.
 
 ## Using the Replicator
 
-The @scala[@apidoc[akka.cluster.ddata.typed.scaladsl.Replicator]]@java[@apidoc[akka.cluster.ddata.typed.javadsl.Replicator]] 
+The @apidoc[typed.*\.Replicator$]
 actor provides the API for interacting with the data and is accessed through the extension 
-@scala[@apidoc[akka.cluster.ddata.typed.scaladsl.DistributedData]]@java[@apidoc[akka.cluster.ddata.typed.javadsl.DistributedData]].
+@apidoc[typed.*DistributedData].
 
 The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]
 @java[`akka.cluster.ddata.typed.scaladsl.Replicator`] but the actual CRDTs are the 
