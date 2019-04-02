@@ -17,6 +17,7 @@ import org.scalatest.WordSpecLike
 object PrimitiveStateSpec {
 
   private val conf = ConfigFactory.parseString(s"""
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """)
 }
@@ -40,7 +41,7 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
         probe.tell("eventHandler:" + state + ":" + event)
         state + event
       }).receiveSignal {
-      case RecoveryCompleted(n) =>
+      case (n, RecoveryCompleted) =>
         probe.tell("onRecoveryCompleted:" + n)
     }
 

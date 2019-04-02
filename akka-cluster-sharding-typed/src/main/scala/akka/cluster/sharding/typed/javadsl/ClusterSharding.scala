@@ -237,7 +237,7 @@ object Entity {
    * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
    * @tparam Command The type of message the entity accepts
    */
-  def ofPersistentEntity[Command, Event, State >: Null](
+  def ofPersistentEntity[Command, Event, State](
       typeKey: EntityTypeKey[Command],
       createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]])
       : Entity[Command, ShardingEnvelope[Command]] = {

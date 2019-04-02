@@ -222,6 +222,22 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 
 The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
 
+## Wire compatibility
+
+Changes to the binary protocol of remoting, cluster and the cluster tools require great care so that it is possible
+to do rolling upgrades. Note that this may include older nodes communicating with a newer node so compatibility
+may have to be both ways. 
+
+Since during a rolling upgrade nodes producing the 'new' format and nodes producing the 'old' format coexist, a change can require a two-release process: 
+the first change is to add a new binary format but still use the old. A second step then starts actually emitting the
+new wire format. This ensures users can complete a rolling upgrade first to the intermediate version and then another
+rolling upgrade to the next version.
+
+All wire protocol changes that may concern rolling upgrades should be documented in the 
+[Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
+(found in akka-docs/src/main/paradox/project/rolling-update.md)
+
+
 ## Pull request requirements
 
 For a pull request to be considered at all it has to meet these requirements:
@@ -272,6 +288,9 @@ Akka generates class diagrams for the API documentation using ScalaDoc.
 Links to methods in ScalaDoc comments should be formatted
 `[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
 IntelliJ warns about `[[#this]]`.
+For further hints on how to disambiguate links in scaladoc comments see
+[this StackOverflow answer](https://stackoverflow.com/a/31569861/354132),
+though note that this syntax may not correctly render as Javadoc.
 
 The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 

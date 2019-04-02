@@ -15,7 +15,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class NullEmptyStateTest extends JUnitSuite {
 
@@ -43,9 +43,9 @@ public class NullEmptyStateTest extends JUnitSuite {
     public SignalHandler signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
-              RecoveryCompleted.class,
-              (completed) -> {
-                probe.tell("onRecoveryCompleted:" + completed.getState());
+              RecoveryCompleted.instance(),
+              state -> {
+                probe.tell("onRecoveryCompleted:" + state);
               })
           .build();
     }

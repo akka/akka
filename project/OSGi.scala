@@ -133,6 +133,8 @@ object OSGi {
 
   val discovery = exports(Seq("akka.discovery.*"))
 
+  val coordination = exports(Seq("akka.coordination.*"))
+
   val osgiOptionalImports = Seq(
     // needed because testkit is normally not used in the application bundle,
     // but it should still be included as transitive dependency and used by BundleDelegatingClassLoader

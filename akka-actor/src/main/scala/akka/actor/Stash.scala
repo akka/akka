@@ -256,7 +256,7 @@ private[akka] trait StashSupport {
   private def enqueueFirst(envelope: Envelope): Unit = {
     mailbox.enqueueFirst(self, envelope)
     envelope.message match {
-      case Terminated(ref) => actorCell.terminatedQueuedFor(ref)
+      case Terminated(ref) => actorCell.terminatedQueuedFor(ref, None)
       case _               =>
     }
   }

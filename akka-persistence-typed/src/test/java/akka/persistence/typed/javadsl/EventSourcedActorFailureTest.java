@@ -15,11 +15,13 @@ import akka.japi.function.Effect;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.RecoveryFailed;
+import akka.testkit.EventFilter;
+import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 import java.time.Duration;
 
@@ -46,13 +48,13 @@ class FailingEventSourcedActor extends EventSourcedBehavior<String, String, Stri
   public SignalHandler signalHandler() {
     return newSignalHandlerBuilder()
         .onSignal(
-            RecoveryCompleted.class,
-            (recoveryCompleted) -> {
+            RecoveryCompleted.instance(),
+            state -> {
               probe.tell("starting");
             })
         .onSignal(
             RecoveryFailed.class,
-            (signal) -> {
+            (state, signal) -> {
               recoveryFailureProbe.tell(signal.getFailure());
             })
         .build();
@@ -93,6 +95,24 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
     return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());
+  }
+
+  public EventSourcedActorFailureTest() {
+    // FIXME ##24348 silence logging in a proper way
+    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+        .eventStream()
+        .publish(
+            new TestEvent.Mute(
+                akka.japi.Util.immutableSeq(
+                    new EventFilter[] {
+                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
+                    })));
+    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+        .eventStream()
+        .publish(
+            new TestEvent.Mute(
+                akka.japi.Util.immutableSeq(
+                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*", 1)})));
   }
 
   @Test

@@ -19,7 +19,7 @@ import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (
+abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     val persistenceId: PersistenceId,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
@@ -79,12 +79,13 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    *
    * Use [[EventSourcedBehavior#newSignalHandlerBuilder]] to define the signal handler.
    */
-  protected def signalHandler(): SignalHandler = SignalHandler.Empty
+  protected def signalHandler(): SignalHandler[State] = SignalHandler.empty[State]
 
   /**
    * @return A new, mutable signal handler builder
    */
-  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder = new SignalHandlerBuilder
+  protected final def newSignalHandlerBuilder(): SignalHandlerBuilder[State] =
+    SignalHandlerBuilder.builder[State]
 
   /**
    * @return A new, mutable, command handler builder
@@ -208,7 +209,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @ApiMayChange
-abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,
     backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
     extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {

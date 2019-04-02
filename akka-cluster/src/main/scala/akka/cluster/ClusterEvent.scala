@@ -484,7 +484,7 @@ object ClusterEvent {
             if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber =>
           newMember
       }
-      import akka.util.ccompat.imm._
+      import akka.util.ccompat._
       val memberEvents = (newMembers ++ changedMembers).unsorted.collect {
         case m if m.status == Joining  => MemberJoined(m)
         case m if m.status == WeaklyUp => MemberWeaklyUp(m)

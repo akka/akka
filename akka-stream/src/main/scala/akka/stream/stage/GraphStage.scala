@@ -36,6 +36,16 @@ import scala.concurrent.{ Future, Promise }
  */
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
+  /**
+   * Grants eager access to materializer for special purposes.
+   *
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
+
   @throws(classOf[Exception])
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
 
@@ -184,14 +194,23 @@ object GraphStageLogic {
       materializer: ActorMaterializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      name: String) {
+      name: String,
+      poisonPillFallback: Boolean) { // internal fallback to support deprecated SourceActorRef implementation replacement
+
+    def this(
+        materializer: akka.stream.ActorMaterializer,
+        getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
+        initialReceive: StageActorRef.Receive,
+        name: String) {
+      this(materializer, getAsyncCallback, initialReceive, name, false)
+    }
 
     // not really needed, but let's keep MiMa happy
     def this(
         materializer: akka.stream.ActorMaterializer,
         getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
         initialReceive: StageActorRef.Receive) {
-      this(materializer, getAsyncCallback, initialReceive, "")
+      this(materializer, getAsyncCallback, initialReceive, "", false)
     }
 
     private val callback = getAsyncCallback(internalReceive)
@@ -205,6 +224,8 @@ object GraphStageLogic {
     private val functionRef: FunctionRef =
       cell.addFunctionRef(
         {
+          case (r, PoisonPill) if poisonPillFallback ⇒
+            callback.invoke((r, PoisonPill))
           case (_, m @ (PoisonPill | Kill)) =>
             materializer.logger.warning(
               "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
@@ -1195,13 +1216,23 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
-  // FIXME: I don't like the Pair allocation :(
   @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
+    getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  protected[akka] def getEagerStageActor(
+      eagerMaterializer: Materializer,
+      poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
+      receive: ((ActorRef, Any)) ⇒ Unit): StageActor =
     _stageActor match {
-      case null =>
-        val actorMaterializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-        _stageActor = new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName)
+      case null ⇒
+        val actorMaterializer = ActorMaterializerHelper.downcast(eagerMaterializer)
+        _stageActor =
+          new StageActor(actorMaterializer, getAsyncCallback, receive, stageActorName, poisonPillCompatibility)
         _stageActor
       case existing =>
         existing.become(receive)

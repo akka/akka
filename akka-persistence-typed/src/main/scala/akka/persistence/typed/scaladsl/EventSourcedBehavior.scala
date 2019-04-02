@@ -12,7 +12,6 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
-import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.EventAdapter
@@ -42,6 +41,8 @@ object EventSourcedBehavior {
    */
   type EventHandler[State, Event] = (State, Event) => State
 
+  private val logPrefixSkipList = classOf[EventSourcedBehavior[_, _, _]].getName :: Nil
+
   /**
    * Create a `Behavior` for a persistent actor.
    */
@@ -50,7 +51,7 @@ object EventSourcedBehavior {
       emptyState: State,
       commandHandler: (State, Command) => Effect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 
@@ -103,15 +104,10 @@ object EventSourcedBehavior {
         case concrete                           => concrete
       }
 
-    context match {
-      case impl: ActorContextAdapter[_] =>
-        extractConcreteBehavior(impl.currentBehavior) match {
-          case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
-          case s =>
-            throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
-        }
-      case c =>
-        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber from context ${c.getClass.getName}")
+    extractConcreteBehavior(context.currentBehavior) match {
+      case w: Running.WithSeqNrAccessible => w.currentSequenceNumber
+      case s =>
+        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
     }
   }
 
@@ -133,12 +129,12 @@ object EventSourcedBehavior {
    * Akka Persistence specific signals (snapshot and recovery related). Those are all subtypes of
    * [[akka.persistence.typed.EventSourcedSignal]]
    */
-  def receiveSignal(signalHandler: PartialFunction[Signal, Unit]): EventSourcedBehavior[Command, Event, State]
+  def receiveSignal(signalHandler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * @return The currently defined signal handler or an empty handler if no custom handler previously defined
    */
-  def signalHandler: PartialFunction[Signal, Unit]
+  def signalHandler: PartialFunction[(State, Signal), Unit]
 
   /**
    * Initiates a snapshot if the given function returns true.

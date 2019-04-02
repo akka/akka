@@ -4,18 +4,18 @@
 
 package akka.actor.typed
 
-import akka.{ actor => untyped }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ThreadFactory
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
-
+import akka.Done
+import akka.{ actor => untyped }
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.actor.typed.internal.adapter.GuardianStartupBehavior
 import akka.actor.typed.internal.adapter.PropsAdapter
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.ApiMayChange
@@ -107,20 +107,25 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * Terminates this actor system. This will stop the guardian actor, which in turn
    * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside).
+   *
+   * This is an asynchronous operation and completion of the termination can
+   * be observed with [[ActorSystem.whenTerminated]] or [[ActorSystem.getWhenTerminated]].
    */
-  def terminate(): Future[Terminated]
+  def terminate(): Unit
 
   /**
-   * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed.
+   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * or by stopping the guardian actor.
    */
-  def whenTerminated: Future[Terminated]
+  def whenTerminated: Future[Done]
 
   /**
-   * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed.
+   * Java API: Returns a CompletionStage which will be completed after the ActorSystem has been terminated
+   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * or by stopping the guardian actor.
    */
-  def getWhenTerminated: CompletionStage[Terminated]
+  def getWhenTerminated: CompletionStage[Done]
 
   /**
    * The deadLetter address is a destination that will accept (and discard)
@@ -237,11 +242,11 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter(() => guardianBehavior, guardianProps, isGuardian = true)),
+      Some(PropsAdapter[Any](() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
       setup)
     system.start()
 
-    system.guardian ! GuardianActorAdapter.Start
+    system.guardian ! GuardianStartupBehavior.Start
     ActorSystemAdapter.AdapterExtension(system).adapter
   }
 

@@ -127,13 +127,13 @@ object ClusterShardingPersistenceSpec {
               Effect.unstashAll()
           },
         eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
-        case RecoveryCompleted(state) ⇒
+        case (state, RecoveryCompleted) ⇒
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {
             case null ⇒ ctx.log.debug("no lifecycleProbe (onRecoveryCompleted) for [{}]", entityId)
             case p ⇒ p ! s"recoveryCompleted:$state"
           }
-        case PostStop ⇒
+        case (_, PostStop) ⇒
           lifecycleProbes.get(entityId) match {
             case null ⇒ ctx.log.debug("no lifecycleProbe (postStop) for [{}]", entityId)
             case p ⇒ p ! "stopped"

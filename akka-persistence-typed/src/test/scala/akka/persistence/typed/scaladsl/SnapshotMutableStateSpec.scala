@@ -52,8 +52,19 @@ object SnapshotMutableStateSpec {
       }
     }
 
-    def deleteAsync(metadata: UntypedSnapshotMetadata) = ???
-    def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria) = ???
+    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == metadata.persistenceId && meta.sequenceNr == metadata.sequenceNr
+      }
+      Future.successful(())
+    }
+
+    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+      state = state.filterNot {
+        case (pid, (_, meta)) => pid == persistenceId && criteria.matches(meta)
+      }
+      Future.successful(())
+    }
   }
 
   def conf: Config = ConfigFactory.parseString(s"""
@@ -96,9 +107,9 @@ object SnapshotMutableStateSpec {
             probe ! s"incremented-${state.value}"
             state
         }).receiveSignal {
-      case SnapshotCompleted(meta) =>
+      case (_, SnapshotCompleted(meta)) =>
         probe ! s"snapshot-success-${meta.sequenceNr}"
-      case SnapshotFailed(meta, _) =>
+      case (_, SnapshotFailed(meta, _)) =>
         probe ! s"snapshot-failure-${meta.sequenceNr}"
     }
   }

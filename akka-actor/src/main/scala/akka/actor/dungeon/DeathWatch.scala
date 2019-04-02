@@ -18,7 +18,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
    */
   private var watching: Map[ActorRef, Option[Any]] = Map.empty
   private var watchedBy: Set[ActorRef] = ActorCell.emptyActorRefSet
-  private var terminatedQueued: Set[ActorRef] = ActorCell.emptyActorRefSet
+  private var terminatedQueued: Map[ActorRef, Option[Any]] = Map.empty
 
   def isWatching(ref: ActorRef): Boolean = watching contains ref
 
@@ -56,14 +56,14 @@ private[akka] trait DeathWatch { this: ActorCell =>
           watching = removeFromMap(a, watching)
         }
       }
-      terminatedQueued = removeFromSet(a, terminatedQueued)
+      terminatedQueued = removeFromMap(a, terminatedQueued)
       a
   }
 
   protected def receivedTerminated(t: Terminated): Unit =
-    if (terminatedQueued(t.actor)) {
+    terminatedQueued.get(t.actor).foreach { optionalMessage ⇒
       terminatedQueued -= t.actor // here we know that it is the SAME ref which was put in
-      receiveMessage(t)
+      receiveMessage(optionalMessage.getOrElse(t))
     }
 
   /**
@@ -81,15 +81,16 @@ private[akka] trait DeathWatch { this: ActorCell =>
           watching = removeFromMap(actor, watching)
         }
         if (!isTerminating) {
-          self.tell(optionalMessage.getOrElse(Terminated(actor)(existenceConfirmed, addressTerminated)), actor)
-          terminatedQueuedFor(actor)
+          self.tell(Terminated(actor)(existenceConfirmed, addressTerminated), actor)
+          terminatedQueuedFor(actor, optionalMessage)
         }
     }
     if (childrenRefs.getByRef(actor).isDefined) handleChildTerminated(actor)
   }
 
-  private[akka] def terminatedQueuedFor(subject: ActorRef): Unit =
-    terminatedQueued += subject
+  private[akka] def terminatedQueuedFor(subject: ActorRef, customMessage: Option[Any]): Unit =
+    if (!terminatedQueued.contains(subject))
+      terminatedQueued += subject -> customMessage
 
   // TODO this should be removed and be replaced with `watching.contains(subject)`
   //   when all actor references have uid, i.e. actorFor is removed
@@ -108,12 +109,6 @@ private[akka] trait DeathWatch { this: ActorCell =>
       .orElse(
         if (subject.path.uid == ActorCell.undefinedUid) None
         else watching.get(new UndefinedUidActorRef(subject)))
-
-  // TODO this should be removed and be replaced with `set - subject`
-  //   when all actor references have uid, i.e. actorFor is removed
-  private def removeFromSet(subject: ActorRef, set: Set[ActorRef]): Set[ActorRef] =
-    if (subject.path.uid != ActorCell.undefinedUid) (set - subject) - new UndefinedUidActorRef(subject)
-    else set.filterNot(_.path == subject.path)
 
   // TODO this should be removed and be replaced with `set - subject`
   //   when all actor references have uid, i.e. actorFor is removed
@@ -177,7 +172,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
           }
         } finally {
           watching = Map.empty
-          terminatedQueued = ActorCell.emptyActorRefSet
+          terminatedQueued = Map.empty
         }
       }
     }

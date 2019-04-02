@@ -12,6 +12,8 @@ import scala.concurrent.Future
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
 import org.scalatest.WordSpecLike
 
 class DummyExtension1 extends Extension
@@ -52,11 +54,20 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
+object AccessSystemFromConstructorExtensionId extends ExtensionId[AccessSystemFromConstructor] {
+  override def createExtension(system: ActorSystem[_]): AccessSystemFromConstructor =
+    new AccessSystemFromConstructor(system)
+}
+class AccessSystemFromConstructor(system: ActorSystem[_]) extends Extension {
+  system.log.info("I log from the constructor")
+  system.receptionist ! Receptionist.Find(ServiceKey[String]("i-just-made-it-up"), system.deadLetters) // or touch the receptionist!
+}
+
 object ExtensionsSpec {
   val config = ConfigFactory.parseString("""
 akka.actor.typed {
   library-extensions += "akka.actor.typed.InstanceCountingExtension"
-}
+  }
    """).resolve()
 }
 
@@ -81,7 +92,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     withEmptyActorSystem("ExtensionsSpec02") { sys =>
       // not exactly water tight but better than nothing
       import sys.executionContext
-      val futures = (0 to 1000).map(n =>
+      val futures = (0 to 1000).map(_ =>
         Future {
           sys.registerExtension(SlowExtension)
         })
@@ -216,7 +227,7 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
           """
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """)),
-      Some(ActorSystemSetup(new DummyExtension1Setup(sys => new DummyExtension1ViaSetup)))) { sys =>
+      Some(ActorSystemSetup(new DummyExtension1Setup(_ => new DummyExtension1ViaSetup)))) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
       sys.extension(DummyExtension1) shouldBe a[DummyExtension1ViaSetup]
       DummyExtension1(sys) shouldBe a[DummyExtension1ViaSetup]
@@ -224,6 +235,19 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       sys.hasExtension(SlowExtension) should ===(true)
       sys.extension(SlowExtension) shouldBe a[SlowExtension]
+    }
+
+    "allow for interaction with log from extension constructor" in {
+      withEmptyActorSystem(
+        "ExtensionsSpec11",
+        Some(
+          ConfigFactory.parseString(
+            """
+          akka.actor.typed.extensions = ["akka.actor.typed.AccessSystemFromConstructorExtensionId$"]
+        """)),
+        None) { sys =>
+        AccessSystemFromConstructorExtensionId(sys) // would throw if it couldn't
+      }
     }
   }
 
@@ -240,6 +264,9 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     try f(sys)
-    finally sys.terminate().futureValue
+    finally {
+      sys.terminate()
+      sys.whenTerminated.futureValue
+    }
   }
 }

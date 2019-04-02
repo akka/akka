@@ -22,8 +22,8 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
-import akka.persistence.SnapshotMetadata
 import akka.persistence.SnapshotProtocol
+import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
@@ -71,7 +71,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria(),
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
-    override val signalHandler: PartialFunction[Signal, Unit] = PartialFunction.empty)
+    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -87,22 +87,24 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     // stashState outside supervise because StashState should survive restarts due to persist failures
     val stashState = new StashState(settings)
 
-    val actualSignalHandler: PartialFunction[Signal, Unit] = signalHandler.orElse {
+    val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
-      case SnapshotCompleted(meta) ⇒
-        ctx.log.debug("Save snapshot successful, snapshot metadata [{}]", meta)
-      case SnapshotFailed(meta, failure) ⇒
-        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}]", meta)
-      case DeleteSnapshotsCompleted(DeletionTarget.Individual(meta)) =>
-        ctx.log.debug(s"Persistent snapshot [{}] deleted successfully.", meta)
-      case DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria)) =>
-        ctx.log.debug(s"Persistent snapshots given criteria [{}] deleted successfully.", criteria)
-      case DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure) =>
+      case (_, SnapshotCompleted(meta)) ⇒
+        ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
+      case (_, SnapshotFailed(meta, failure)) ⇒
+        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}].", meta)
+      case (_, DeleteSnapshotsCompleted(DeletionTarget.Individual(meta))) =>
+        ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
+      case (_, DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria))) =>
+        ctx.log.debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
+      case (_, DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure)) =>
         ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
-      case DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure) =>
+      case (_, DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure)) =>
         ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
-      case DeleteEventsFailed(toSequenceNr, failure) =>
-        ctx.log.warning("Failed to delete messages toSequenceNr [{}] due to [{}].", toSequenceNr, failure)
+      case (_, DeleteEventsCompleted(toSequenceNr)) =>
+        ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
+      case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
+        ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
     }
 
     Behaviors
@@ -131,9 +133,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
             import BehaviorInterceptor._
             def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any])
-                : Behavior[Any] = {
-              target(ctx, msg)
-            }
+                : Behavior[Any] = { target(ctx, msg) }
 
             def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any])
                 : Behavior[Any] = {
@@ -142,14 +142,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 // clear stash to be GC friendly
                 stashState.clearStashBuffers()
               }
-              val nextBehavior = target(ctx, signal)
-              try {
-                eventSourcedSetup.onSignal(signal)
-              } catch {
-                case NonFatal(ex) =>
-                  ctx.asScala.log.error(ex, s"Error while processing signal [{}]", signal)
-              }
-              nextBehavior
+              target(ctx, signal)
             }
             override def toString: String = "onStopInterceptor"
           }
@@ -167,7 +160,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       .onFailure[JournalFailureException](supervisionStrategy)
   }
 
-  override def receiveSignal(handler: PartialFunction[Signal, Unit]): EventSourcedBehavior[Command, Event, State] =
+  override def receiveSignal(
+      handler: PartialFunction[(State, Signal), Unit]): EventSourcedBehavior[Command, Event, State] =
     copy(signalHandler = handler)
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =

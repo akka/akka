@@ -16,7 +16,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object CoordinatedShutdownShardingSpec {
   val config =

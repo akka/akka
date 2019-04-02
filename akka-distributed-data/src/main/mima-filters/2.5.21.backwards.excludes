@@ -2,3 +2,18 @@
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.ORSet.clear")
 ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.cluster.ddata.PruningState.addSeen")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.PruningState.addSeen")
+
+# #26284 adding uid to internal messages
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.Replicator#Internal*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.Replicator$Internal*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.ReadAggregator*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.WriteAggregator*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.ReadWriteAggregator*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.protobuf.msg.ReplicatorMessages*")
+ProblemFilters.exclude[Problem]("akka.cluster.ddata.DeltaPropagationSelector*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveGossip")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveStatus")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.gossipTo")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.replica")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveWeaklyUpMemberUp")
+

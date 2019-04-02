@@ -7,7 +7,7 @@ package akka.cluster
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.ccompat.imm._
+import akka.util.ccompat._
 
 object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

@@ -24,7 +24,7 @@ object LotsOfDataBot {
     if (args.isEmpty)
       startup(Seq("2551", "2552", "0"))
     else
-      startup(args)
+      startup(args.toIndexedSeq)
   }
 
   def startup(ports: Seq[String]): Unit = {
