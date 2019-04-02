@@ -5,11 +5,10 @@
 package akka.coordination.lease.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import scala.collection.immutable
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{ Failure, Success, Try }
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -65,15 +64,17 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
     val fqcn = leaseSettings.leaseConfig.getString("lease-class")
     require(fqcn.nonEmpty, "lease-class must not be empty")
     val dynamicAccess = system.dynamicAccess
-    dynamicAccess
-      .createInstanceFor[Lease](
-        fqcn,
-        immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system)))
-      .recoverWith {
-        case _: NoSuchMethodException ⇒
-          dynamicAccess.createInstanceFor[Lease](fqcn, immutable.Seq((classOf[LeaseSettings], leaseSettings)))
-
-      } match {
+    val instance: Try[Lease] = dynamicAccess.createInstanceFor[Lease](
+      fqcn,
+      immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system))) match {
+      case s: Success[Lease] =>
+        s
+      case Failure(_: NoSuchMethodException) =>
+        dynamicAccess.createInstanceFor[Lease](fqcn, immutable.Seq((classOf[LeaseSettings], leaseSettings)))
+      case f: Failure[_] =>
+        f
+    }
+    instance match {
       case Success(value) ⇒ value
       case Failure(e) ⇒
         log.error(
