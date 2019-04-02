@@ -38,7 +38,7 @@ object PingPongExample {
   def pinger(pingService: ActorRef[Ping]): Behavior[Pong.type] =
     Behaviors.setup[Pong.type] { ctx =>
       pingService ! Ping(ctx.self)
-      Behaviors.receive { (context, msg) =>
+      Behaviors.receive { (context, _) =>
         context.log.info("{} was ponged!!", context.self)
         Behaviors.stopped
       }

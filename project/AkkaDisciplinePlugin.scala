@@ -69,6 +69,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
         else Seq.empty
       ),
+      Test / scalacOptions --= testUndicipline,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       // Discipline is not needed for the docs compilation run (which uses
       // different compiler phases from the regular run), and in particular
@@ -101,21 +102,21 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   )
 
   val testUndicipline = Seq(
-    "-Ywarn-dead-code",  // ??? used in compile on specs
+    "-Ywarn-dead-code",  // ??? used in compile only specs
     "-Ywarn-value-discard" // Ignoring returned assertions
   )
 
   /**
     * Remain visibly filtered for future code quality work and removing.
     */
-  val undisciplineScalacOptions = Seq(
+  val undisciplineScalacOptions = Set(
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
     "-Yno-adapted-args",
   )
 
   /** These options are desired, but some are excluded for the time being*/
-  val disciplineScalacOptions = Seq(
+  val disciplineScalacOptions = Set(
     // start: must currently remove, version regardless
     "-Ywarn-value-discard",
     "-Ywarn-numeric-widen",
