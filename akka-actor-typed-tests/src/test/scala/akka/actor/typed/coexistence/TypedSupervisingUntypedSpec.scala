@@ -8,7 +8,7 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{WordSpec, WordSpecLike}
+import org.scalatest.{ WordSpec, WordSpecLike }
 import akka.actor.typed.scaladsl.adapter._
 import akka.{ actor => untyped }
 

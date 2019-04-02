@@ -7,10 +7,15 @@ import akka.actor.Actor
 import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
-import akka.actor.typed.coexistence.UntypedSupervisingTypedSpec.{SpawnAnonFromUntyped, SpawnFromUntyped, TypedSpawnedFromUntypedConext, UntypedToTyped}
-import akka.testkit.{AkkaSpec, ImplicitSender, TestProbe}
+import akka.actor.typed.coexistence.UntypedSupervisingTypedSpec.{
+  SpawnAnonFromUntyped,
+  SpawnFromUntyped,
+  TypedSpawnedFromUntypedConext,
+  UntypedToTyped
+}
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
-import akka.{actor => u}
+import akka.{ actor => u }
 
 import scala.concurrent.duration._
 
