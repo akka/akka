@@ -91,7 +91,7 @@ public class DeviceGroup extends AbstractActor {
     } else {
       log.warning(
           "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-          groupId,
+              trackMsg.groupId,
           this.groupId);
     }
   }
