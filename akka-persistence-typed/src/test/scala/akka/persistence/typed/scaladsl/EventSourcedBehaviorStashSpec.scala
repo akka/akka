@@ -152,7 +152,7 @@ object EventSourcedBehaviorStashSpec {
         // already inactive
         Effect.reply(cmd)(Ack(cmd.id))
       case cmd: Activate =>
-        Effect.persist(Activated).thenUnstashAll().thenReply(cmd)(_ => Ack(cmd.id))
+        Effect.persist(Activated).thenReply(cmd)((_: State) => Ack(cmd.id)).thenUnstashAll()
       case _: Unhandled =>
         Effect.unhandled.thenNoReply()
       case Throw(id, t, replyTo) =>
@@ -505,40 +505,38 @@ class EventSourcedBehaviorStashSpec
     "discard when stash has reached limit with default dropped setting" in {
       val probe = TestProbe[AnyRef]()
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
-      val behavior = EventSourcedBehavior[String, String, Boolean](
-        persistenceId = PersistenceId("stash-is-full-drop"),
-        emptyState = false,
-        commandHandler = { (state, command) =>
-          state match {
-            case false =>
-              command match {
-                case "ping" =>
-                  probe.ref ! "pong"
-                  Effect.none
-                case "start-stashing" =>
-                  Effect.persist("start-stashing")
-                case msg =>
-                  probe.ref ! msg
-                  Effect.none
-              }
+      val behavior = Behaviors.setup[String] { context =>
+        EventSourcedBehavior[String, String, Boolean](
+          persistenceId = PersistenceId("stash-is-full-drop"),
+          emptyState = false,
+          commandHandler = { (state, command) =>
+            state match {
+              case false =>
+                command match {
+                  case "ping" =>
+                    probe.ref ! "pong"
+                    Effect.none
+                  case "start-stashing" =>
+                    Effect.persist("start-stashing")
+                  case msg =>
+                    probe.ref ! msg
+                    Effect.none
+                }
 
-            case true =>
-              command match {
-                case "unstash" =>
-                  Effect
-                    .persist("unstash")
-                    .thenUnstashAll()
-                    // FIXME #26489: this is run before unstash, so not sequentially as the docs say
-                    .thenRun(_ => probe.ref ! "done-unstashing")
-                case _ =>
-                  Effect.stash()
-              }
-          }
-        }, {
-          case (_, "start-stashing") => true
-          case (_, "unstash")        => false
-          case (_, _)                => throw new IllegalArgumentException()
-        })
+              case true =>
+                command match {
+                  case "unstash" =>
+                    Effect.persist("unstash").thenRun((_: Boolean) => context.self ! "done-unstashing").thenUnstashAll()
+                  case _ =>
+                    Effect.stash()
+                }
+            }
+          }, {
+            case (_, "start-stashing") => true
+            case (_, "unstash")        => false
+            case (_, _)                => throw new IllegalArgumentException()
+          })
+      }
 
       val c = spawn(behavior)
 
@@ -558,10 +556,10 @@ class EventSourcedBehaviorStashSpec
 
       // we can still unstash and continue interacting
       c ! "unstash"
-      probe.expectMessage("done-unstashing") // before actually unstashing, see above
-      (0 to (limit - 1)).foreach { n =>
+      (0 until limit).foreach { n =>
         probe.expectMessage(s"cmd-$n")
       }
+      probe.expectMessage("done-unstashing") // before actually unstashing, see above
 
       c ! "ping"
       probe.expectMessage("pong")

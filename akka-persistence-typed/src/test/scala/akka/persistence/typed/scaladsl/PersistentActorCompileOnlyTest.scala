@@ -310,7 +310,7 @@ object PersistentActorCompileOnlyTest {
     case class MoodChanged(to: Mood) extends Event
     case class Remembered(memory: String) extends Event
 
-    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): Effect[Event, Mood] =
+    def changeMoodIfNeeded(currentState: Mood, newMood: Mood): EffectBuilder[Event, Mood] =
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
@@ -337,7 +337,7 @@ object PersistentActorCompileOnlyTest {
         case Remember(memory) =>
           // A more elaborate example to show we still have full control over the effects
           // if needed (e.g. when some logic is factored out but you want to add more effects)
-          val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
+          val commonEffects: EffectBuilder[Event, Mood] = changeMoodIfNeeded(state, Happy)
           Effect.persist(commonEffects.events :+ Remembered(memory)).thenRun(commonChainedEffects)
       }
     }
