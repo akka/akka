@@ -101,7 +101,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       expectTerminated(underTest.toUntyped)
     }
 
-    "allows overriding the default (from context)" in {
+    "allow overriding the default (from context)" in {
       val untyped = system.actorOf(u.Props(new UntypedToTyped()))
       val probe = TestProbe()
       val behavior = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
