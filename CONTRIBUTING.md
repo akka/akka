@@ -288,6 +288,9 @@ Akka generates class diagrams for the API documentation using ScalaDoc.
 Links to methods in ScalaDoc comments should be formatted
 `[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
 IntelliJ warns about `[[#this]]`.
+For further hints on how to disambiguate links in scaladoc comments see
+[this StackOverflow answer](https://stackoverflow.com/a/31569861/354132),
+though note that this syntax may not correctly render as Javadoc.
 
 The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
