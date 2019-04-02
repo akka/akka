@@ -5,15 +5,15 @@
 package akka.actor.typed
 package internal
 
-import akka.actor.typed.ActorRef.ActorRefOps
+import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Cancellable
+import akka.actor.NotInfluenceReceiveTimeout
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ typed, Cancellable, NotInfluenceReceiveTimeout }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -32,8 +32,7 @@ import scala.concurrent.duration.FiniteDuration
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
-        val behavior = factory(timerScheduler)
-        timerScheduler.intercept(behavior)
+        factory(timerScheduler)
       case _ => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
 
@@ -142,44 +141,4 @@ import scala.concurrent.duration.FiniteDuration
     }
   }
 
-  def intercept(behavior: Behavior[T]): Behavior[T] = {
-    // The scheduled TimerMsg is intercepted to guard against old messages enqueued
-    // in mailbox before timer was canceled.
-    // Intercept some signals to cancel timers when restarting and stopping.
-    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
-  }
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[T, T] {
-  import TimerSchedulerImpl._
-  import BehaviorInterceptor._
-
-  override def aroundReceive(ctx: typed.TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
-    val maybeIntercepted = msg match {
-      case msg: TimerMsg => timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
-      case msg           => OptionVal.Some(msg)
-    }
-
-    maybeIntercepted match {
-      case OptionVal.None              => Behavior.same // None means not applicable
-      case OptionVal.Some(intercepted) => target(ctx, intercepted)
-    }
-  }
-
-  override def aroundSignal(ctx: typed.TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    signal match {
-      case PreRestart | PostStop => timerSchedulerImpl.cancelAll()
-      case _                     => // unhandled
-    }
-    target(ctx, signal)
-  }
-
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
-    // only one timer interceptor per behavior stack is needed
-    other.isInstanceOf[TimerInterceptor[_]]
 }

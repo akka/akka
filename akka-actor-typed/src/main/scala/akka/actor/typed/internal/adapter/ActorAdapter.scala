@@ -14,14 +14,15 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.Behavior.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
-
 import scala.annotation.switch
+
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -102,7 +103,21 @@ import scala.annotation.switch
 
   private def handleMessage(msg: T): Unit = {
     try {
-      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+      val c = ctx
+      if (c.hasTimer) {
+        msg match {
+          case timerMsg: TimerMsg =>
+            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
+              case OptionVal.None => // means TimerMsg not applicable, discard
+              case OptionVal.Some(m) =>
+                next(Behavior.interpretMessage(behavior, c, m), m)
+            }
+          case _ =>
+            next(Behavior.interpretMessage(behavior, c, msg), msg)
+        }
+      } else {
+        next(Behavior.interpretMessage(behavior, c, msg), msg)
+      }
     } catch handleUnstashException
   }
 
@@ -215,16 +230,19 @@ import scala.annotation.switch
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    ctx.cancelAllTimers()
     Behavior.interpretSignal(behavior, ctx, PreRestart)
     behavior = Behavior.stopped
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    ctx.cancelAllTimers()
     behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 
   override def postStop(): Unit = {
+    ctx.cancelAllTimers()
     behavior match {
       case _: DeferredBehavior[_] =>
       // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
@@ -232,6 +250,7 @@ import scala.annotation.switch
     }
     behavior = Behavior.stopped
   }
+
 }
 
 /**

@@ -306,4 +306,5 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   def clearUnhandled(): Unit = unhandled = Nil
 
   override private[akka] def currentBehavior: Behavior[T] = currentBehaviorProvider()
+
 }
