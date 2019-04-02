@@ -53,6 +53,8 @@ object InactiveEntityPassivationSpec {
 class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSpec.config) {
   import InactiveEntityPassivationSpec._
 
+  val smallTolerance = 300.millis
+
   "Passivation of inactive entities" must {
 
     "passivate entities when they haven't seen messages for the configured duration" in {
@@ -83,7 +85,8 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
 
       // make sure "1" hasn't seen a message in 3 seconds and passivates
       val timeSinceOneSawAMessage = (System.nanoTime() - timeOneSawMessage).nanos
-      probe.expectNoMessage(3.seconds - timeSinceOneSawAMessage)
+      val timeUntilPassivate: FiniteDuration = (3.seconds - timeSinceOneSawAMessage) - smallTolerance
+      probe.expectNoMessage(timeUntilPassivate)
       probe.expectMsg("1 passivating")
 
       // but it can be re activated just fine:
