@@ -33,7 +33,7 @@ import scala.annotation.switch
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
    *
-   * Should only be thrown if the parent is known to be an ActorAdapter.
+   * Should only be thrown if the parent is known to be an `ActorAdapter`.
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
