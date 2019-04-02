@@ -43,10 +43,10 @@ While coexisting your application will likely still have an untyped ActorSystem.
 so that new code and migrated parts don't rely on the untyped system:
 
 Scala
-:  @@snip [UntypedWatchingTypedSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #convert-untyped }
+:  @@snip [UntypedWatchingTypedSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/UntypedWatchingTypedSpec.scala) { #adapter-import #convert-untyped }
 
 Java
-:  @@snip [UntypedWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #convert-untyped }
+:  @@snip [UntypedWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/UntypedWatchingTypedTest.java) { #adapter-import #convert-untyped }
 
 Then for new typed actors here's how you create, watch and send messages to
 it from an untyped actor.
