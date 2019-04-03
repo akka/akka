@@ -109,6 +109,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
   }
 
   def buildHostnameVerifier(conf: SSLConfigSettings): HostnameVerifier = {
+    conf ne null // @unused unavailable
     val clazz: Class[HostnameVerifier] =
       if (config.loose.disableHostnameVerification)
         classOf[DisabledComplainingHostnameVerifier].asInstanceOf[Class[HostnameVerifier]]

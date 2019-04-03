@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import akka.util.unused
+
 import scala.collection.immutable
 
 private[akka] abstract class TransformerLike[-T, +U] {
@@ -32,7 +34,7 @@ private[akka] abstract class TransformerLike[-T, +U] {
    * @param e Contains a non-empty option with the error causing the termination or an empty option
    *          if the Transformer was completed normally
    */
-  def onTermination(e: Option[Throwable]): immutable.Seq[U] = Nil
+  def onTermination(@unused e: Option[Throwable]): immutable.Seq[U] = Nil
 
   /**
    * Invoked when failure is signaled from upstream. If this method throws an exception, then onError is immediately

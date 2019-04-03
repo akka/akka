@@ -6,8 +6,8 @@ package akka.stream.impl.streamref
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.stream.impl.SeqActorName
+import akka.util.unused
 
 /** INTERNAL API */
 @InternalApi
@@ -23,9 +23,7 @@ private[stream] object StreamRefsMaster extends ExtensionId[StreamRefsMaster] wi
 
 /** INTERNAL API */
 @InternalApi
-private[stream] final class StreamRefsMaster(system: ExtendedActorSystem) extends Extension {
-
-  private val log = Logging(system, getClass)
+private[stream] final class StreamRefsMaster(@unused system: ExtendedActorSystem) extends Extension {
 
   private[this] val sourceRefStageNames = SeqActorName("SourceRef") // "local target"
   private[this] val sinkRefStageNames = SeqActorName("SinkRef") // "remote sender"

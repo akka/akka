@@ -237,14 +237,14 @@ import scala.util.{ Failure, Success, Try }
   val flushingOutbound = TransferPhase(outboundHalfClosed) { () =>
     if (tracing) log.debug("flushingOutbound")
     try doWrap()
-    catch { case ex: SSLException => nextPhase(completedPhase) }
+    catch { case _: SSLException => nextPhase(completedPhase) }
   }
 
   val awaitingClose = TransferPhase(inputBunch.inputsAvailableFor(TransportIn) && engineInboundOpen) { () =>
     if (tracing) log.debug("awaitingClose")
     transportInChoppingBlock.chopInto(transportInBuffer)
     try doUnwrap(ignoreOutput = true)
-    catch { case ex: SSLException => nextPhase(completedPhase) }
+    catch { case _: SSLException => nextPhase(completedPhase) }
   }
 
   val outboundClosed = TransferPhase(outboundHalfClosed || inbound) { () =>
@@ -253,7 +253,7 @@ import scala.util.{ Failure, Success, Try }
     if (continue && outboundHalfClosed.isReady) {
       if (tracing) log.debug("outboundClosed continue")
       try doWrap()
-      catch { case ex: SSLException => nextPhase(completedPhase) }
+      catch { case _: SSLException => nextPhase(completedPhase) }
     }
   }
 
@@ -274,7 +274,7 @@ import scala.util.{ Failure, Success, Try }
     if (inputBunch.isDepleted(TransportIn) && transportInChoppingBlock.isEmpty) {
       if (tracing) log.debug("closing inbound")
       try engine.closeInbound()
-      catch { case ex: SSLException => outputBunch.enqueue(UserOut, SessionTruncated) }
+      catch { case _: SSLException => outputBunch.enqueue(UserOut, SessionTruncated) }
       lastHandshakeStatus = engine.getHandshakeStatus
       completeOrFlush()
       false

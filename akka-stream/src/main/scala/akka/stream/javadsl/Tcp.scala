@@ -281,7 +281,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
-      halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
       delegate
