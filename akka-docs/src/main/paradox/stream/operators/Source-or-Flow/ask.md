@@ -13,7 +13,7 @@ Use the `ask` pattern to send a request-reply message to the target `ref` actor.
 ## Description
 
 Use the `ask` pattern to send a request-reply message to the target `ref` actor.
-If any of the asks times out it will fail the stream with a @unidoc[AskTimeoutException].
+If any of the asks times out it will fail the stream with a @apidoc[AskTimeoutException].
 
 The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
 
