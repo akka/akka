@@ -277,8 +277,8 @@ object ByteIterator {
 
     final override def takeWhile(p: Byte => Boolean): this.type = {
       var stop = false
-      var builder = new ListBuffer[ByteArrayIterator]
-      while (!stop && !iterators.isEmpty) {
+      val builder = new ListBuffer[ByteArrayIterator]
+      while (!stop && iterators.nonEmpty) {
         val lastLen = current.len
         current.takeWhile(p)
         if (current.hasNext) builder += current
@@ -460,7 +460,11 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   override def indexWhere(p: Byte => Boolean): Int = indexWhere(p, 0)
   override def indexWhere(p: Byte => Boolean, from: Int): Int = {
-    var index = from
+    var index = 0
+    while (index < from) {
+      next()
+      index += 1
+    }
     var found = false
     while (!found && hasNext) if (p(next())) {
       found = true
@@ -471,7 +475,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   }
 
   def indexOf(elem: Byte): Int = indexOf(elem, 0)
-  def indexOf(elem: Byte, from: Int): Int = indexWhere(_ == elem, 0)
+  def indexOf(elem: Byte, from: Int): Int = indexWhere(_ == elem, from)
 
   override def indexOf[B >: Byte](elem: B): Int = indexOf[B](elem, 0)
   override def indexOf[B >: Byte](elem: B, from: Int): Int = indexWhere(_ == elem, from)

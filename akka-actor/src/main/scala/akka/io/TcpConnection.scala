@@ -17,6 +17,7 @@ import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -202,6 +203,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   // AUXILIARIES and IMPLEMENTATION
 
   /** used in subclasses to start the common machinery above once a channel is connected */
+  @silent
   def completeConnect(
       registration: ChannelRegistration,
       commander: ActorRef,
@@ -415,8 +417,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         case Write(data, ack) if data.nonEmpty => PendingBufferWrite(commander, data, ack, tail)
         case WriteFile(path, offset, count, ack) =>
           PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
-        case WritePath(path, offset, count, ack) => PendingWriteFile(commander, path, offset, count, ack, tail)
-        case CompoundWrite(h, t)                 => create(h, t)
+        case WritePath(path, offset, count, ack) =>
+          PendingWriteFile(commander, path, offset, count, ack, tail)
+        case CompoundWrite(h, t) => create(h, t)
         case x @ Write(_, ack) => // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
           create(tail)

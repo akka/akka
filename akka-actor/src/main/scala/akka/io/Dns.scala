@@ -18,6 +18,7 @@ import akka.util.unused
 import scala.collection.immutable
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 abstract class Dns {
 
   /**

@@ -6,6 +6,8 @@ package akka.actor
 
 import akka.japi.Creator
 import akka.util.Reflect
+import com.github.ghik.silencer.silent
+
 import scala.collection.immutable
 
 /**
@@ -40,6 +42,7 @@ private[akka] object IndirectActorProducer {
   val CreatorConsumerClass = classOf[CreatorConsumer]
   val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
 
+  @silent
   def apply(clazz: Class[_], args: immutable.Seq[Any]): IndirectActorProducer = {
     if (classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
       def get1stArg[T]: T = args.head.asInstanceOf[T]

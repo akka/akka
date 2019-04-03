@@ -23,12 +23,14 @@ import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
  * allowing for broadcasting of messages to that section.
  */
 @SerialVersionUID(1L)
+@ccompatUsedUntil213
 abstract class ActorSelection extends Serializable {
   this: ScalaActorSelection =>
 
@@ -324,6 +326,7 @@ private[akka] final case class ActorSelectionMessage(
 /**
  * INTERNAL API
  */
+@silent
 @SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 

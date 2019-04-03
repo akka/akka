@@ -9,7 +9,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import akka.event.{ LoggingFilterWithMarker, _ }
+import akka.event._
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.actor.dungeon.ChildrenContainer
@@ -1081,7 +1081,7 @@ private[akka] class ActorSystemImpl(
               (toDie.toSeq.sorted.mkString("\n" + indent + "   |    toDie: ", "\n" + indent + "   |           ", ""))
             case x @ (ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer) =>
               x.toString
-            case n: ChildrenContainer.NormalChildrenContainer => n.c.size + " children"
+            case n: ChildrenContainer.NormalChildrenContainer => n.c.size.toString + " children"
             case x                                            => Logging.simpleName(x)
           }) +
           (if (cell.childrenRefs.children.isEmpty) "" else "\n") +

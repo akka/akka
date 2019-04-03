@@ -24,6 +24,8 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
+import com.github.ghik.silencer.silent
+
 import scala.compat.java8.FutureConverters
 
 /**
@@ -165,7 +167,8 @@ class CircuitBreaker(
 
   // add the old constructor to make it binary compatible
   def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(
-      implicit executor: ExecutionContext) = {
+      implicit
+      executor: ExecutionContext) = {
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
   }
 
@@ -193,12 +196,14 @@ class CircuitBreaker(
    * Holds reference to current state of CircuitBreaker - *access only via helper methods*
    */
   @volatile
+  @silent
   private[this] var _currentStateDoNotCallMeDirectly: State = Closed
 
   /**
    * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
    */
   @volatile
+  @silent
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
   /**

@@ -5,9 +5,11 @@
 package akka.compat
 
 import akka.annotation.InternalApi
+
 import scala.concurrent.{ ExecutionContext, Future => SFuture }
 import scala.collection.immutable
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -17,7 +19,7 @@ import akka.util.ccompat._
  *
  * Remove these classes as soon as support for Scala 2.11 is dropped!
  */
-@InternalApi private[akka] object Future {
+@silent @InternalApi private[akka] object Future {
   def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
       implicit executor: ExecutionContext): SFuture[R] =
     SFuture.fold[T, R](futures)(zero)(op)(executor)
