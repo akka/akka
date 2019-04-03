@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
 import akka.actor.ActorSystem
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.dispatch.BalancingDispatcherConfigurator
@@ -80,6 +81,13 @@ final case class BalancingPool(
    * @param nr initial number of routees in the pool
    */
   def this(nr: Int) = this(nrOfInstances = nr)
+
+  /**
+   * Since routees don't have distinct identities, this message cannot be sent to specific actors.
+   * However, the [[akka.routing.RemoveRoutee]] message is handled by this class of router,
+   * which could result in the delivery of this message, so it must be defined.
+   */
+  override def routeeStopMessage: Any = PoisonPill
 
   override def createRouter(system: ActorSystem): Router = new Router(BalancingRoutingLogic())
 

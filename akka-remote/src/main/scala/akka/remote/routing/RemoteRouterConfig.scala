@@ -67,6 +67,8 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
 
   override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
+  override def routeeStopMessage: Any = local.routeeStopMessage
+
   override def routerDispatcher: String = local.routerDispatcher
 
   override def resizer: Option[Resizer] = local.resizer

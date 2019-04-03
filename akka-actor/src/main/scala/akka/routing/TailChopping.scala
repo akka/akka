@@ -136,6 +136,8 @@ private[akka] final case class TailChoppingRoutees(
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param resizer optional resizer that dynamically adjust the pool size
  *
  * @param within expecting at least one reply within this duration, otherwise
@@ -151,6 +153,7 @@ private[akka] final case class TailChoppingRoutees(
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
     val nrOfInstances: Int,
+    override val routeeStopMessage: Any = PoisonPill,
     override val resizer: Option[Resizer] = None,
     within: FiniteDuration,
     interval: FiniteDuration,

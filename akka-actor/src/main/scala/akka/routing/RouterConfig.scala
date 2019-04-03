@@ -10,6 +10,7 @@ import akka.actor.ActorContext
 import akka.actor.ActorPath
 import akka.actor.AutoReceivedMessage
 import akka.actor.OneForOneStrategy
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
@@ -75,6 +76,22 @@ trait RouterConfig extends Serializable {
    * By Default it is `true`, unless a `resizer` is used.
    */
   def stopRouterWhenAllRouteesRemoved: Boolean = true
+
+  /**
+    * Message the router will send to a child routee when removing it from the collection of routees.
+    * The router expects the routee to terminate itself after receipt. Precautions are taken reduce the
+    * risk of dropping messages that are concurrently being routed to the removed routee, but it is not
+    * guaranteed that messages are not lost. As such, the routee may receive messages
+    * after receiving the [[routeeStopMessage]].
+    *
+    * NOTE: when the router is stopped (e.g. by a PoisonPill), it stops its children via a system
+    * message. As such, in order to gracefully stop all children of a router, consider
+    * broadcasting the defined routeeStopMessage.
+    *
+    * NOTE: for some router types (i.e. [[akka.routing.Group]]), the routees are not children,
+    * and as such, they will not receive this message.
+    */
+  def routeeStopMessage: Any
 
   /**
    * Overridable merge strategy, by default completely prefers `this` (i.e. no merge).
@@ -151,6 +168,13 @@ trait Group extends RouterConfig {
    * this instance.
    */
   def props(): Props = Props.empty.withRouter(this)
+
+  /**
+   * Because a routees are not children of a group router, the
+   * router does not send stop messages to the routees. As such, this
+   * message is set to throw an exception
+   */
+  override def routeeStopMessage: Any = throw new UnsupportedOperationException("Group has no routeeStopMessage")
 
   /**
    * INTERNAL API
@@ -259,6 +283,11 @@ abstract class CustomRouterConfig extends RouterConfig {
   private[akka] override def createRouterActor(): RouterActor = new RouterActor
 
   override def routerDispatcher: String = Dispatchers.DefaultDispatcherId
+
+  /**
+   * Overridable message router sends to routee when removing from collection of routees.
+   */
+  override def routeeStopMessage: Any = PoisonPill
 }
 
 /**
@@ -331,6 +360,8 @@ class FromConfig(
 
   override def nrOfInstances(sys: ActorSystem): Int = 0
 
+  override def routeeStopMessage: Any = PoisonPill
+
   /**
    * [[akka.actor.Props]] for a group router based on the settings defined by
    * this instance.
@@ -359,6 +390,7 @@ case object NoRouter extends NoRouter {
     throw new UnsupportedOperationException("NoRouter must not create RouterActor")
   override def routerDispatcher: String = throw new UnsupportedOperationException("NoRouter has no dispatcher")
   override def withFallback(other: akka.routing.RouterConfig): akka.routing.RouterConfig = other
+  override def routeeStopMessage: Any = throw new UnsupportedOperationException("NoRouter has no routeeStopMessage")
 
   /**
    * Java API: get the singleton instance
@@ -415,9 +447,10 @@ final case class AddRoutee(routee: Routee) extends RouterManagementMesssage
  * Remove a specific routee by sending this message to the router.
  * It may be handled after other messages.
  *
- * For a pool, with child routees, the routee is stopped by sending a [[akka.actor.PoisonPill]]
- * to the routee. Precautions are taken reduce the risk of dropping messages that are concurrently
- * being routed to the removed routee, but there are no guarantees.
+ * For a pool, with child routees, the routee is stopped by sending the defined
+ * [[akka.routing.RouterConfig.routeeStopMessage]] to the routee. Precautions are taken reduce
+ * the risk of dropping messages that are concurrently being routed to the removed routee,
+ * but there are no guarantees.
  *
  */
 @SerialVersionUID(1L)
@@ -429,7 +462,7 @@ final case class RemoveRoutee(routee: Routee) extends RouterManagementMesssage
  *
  * Positive `change` will add that number of routees to the [[Pool]].
  * Negative `change` will remove that number of routees from the [[Pool]].
- * Routees are stopped by sending a [[akka.actor.PoisonPill]] to the routee.
+ * Routees are stopped by sending the defined [[akka.routing.RouterConfig.routeeStopMessage]] to the routee.
  * Precautions are taken reduce the risk of dropping messages that are concurrently
  * being routed to the removed routee, but it is not guaranteed that messages are not
  * lost.

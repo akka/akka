@@ -12,6 +12,7 @@ import akka.japi.Util.immutableSeq
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
+import akka.actor.PoisonPill
 import java.util.concurrent.atomic.AtomicReference
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
@@ -260,6 +261,8 @@ final case class ConsistentHashingRoutingLogic(
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param resizer optional resizer that dynamically adjust the pool size
  *
  * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
@@ -275,6 +278,7 @@ final case class ConsistentHashingRoutingLogic(
 @SerialVersionUID(1L)
 final case class ConsistentHashingPool(
     val nrOfInstances: Int,
+    override val routeeStopMessage: Any = PoisonPill,
     override val resizer: Option[Resizer] = None,
     val virtualNodesFactor: Int = 0,
     val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,

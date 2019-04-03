@@ -11,7 +11,6 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
 import akka.actor.IndirectActorProducer
 import akka.actor.InternalActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
@@ -94,9 +93,10 @@ private[akka] class RoutedActorCell(
       child(ref.path.name) match {
         case Some(`ref`) =>
           // The reason for the delay is to give concurrent
-          // messages a chance to be placed in mailbox before sending PoisonPill,
+          // messages a chance to be placed in mailbox before sending the
+          // provided routeeStopMessage, which defaults to a PoisonPill,
           // best effort.
-          system.scheduler.scheduleOnce(100.milliseconds, ref, PoisonPill)(dispatcher)
+          system.scheduler.scheduleOnce(100.milliseconds, ref, routerConfig.routeeStopMessage)(dispatcher)
         case _ =>
       }
     case _ =>

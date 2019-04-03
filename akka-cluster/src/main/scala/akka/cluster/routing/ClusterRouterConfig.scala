@@ -329,6 +329,8 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
 
   override def resizer: Option[Resizer] = local.resizer
 
+  override def routeeStopMessage: Any = local.routeeStopMessage
+
   /**
    * INTERNAL API
    */

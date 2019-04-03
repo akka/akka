@@ -8,6 +8,7 @@ import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
+import akka.actor.PoisonPill
 import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
 import akka.actor.ActorSystem
@@ -49,6 +50,8 @@ final class RandomRoutingLogic extends RoutingLogic {
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param resizer optional resizer that dynamically adjust the pool size
  *
  * @param supervisorStrategy strategy for supervising the routees, see 'Supervision Setup'
@@ -59,6 +62,7 @@ final class RandomRoutingLogic extends RoutingLogic {
 @SerialVersionUID(1L)
 final case class RandomPool(
     val nrOfInstances: Int,
+    override val routeeStopMessage: Any = PoisonPill,
     override val resizer: Option[Resizer] = None,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,

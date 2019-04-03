@@ -10,6 +10,7 @@ import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
 import akka.actor.ActorRef
+import akka.actor.PoisonPill
 import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.pattern.pipe
@@ -87,6 +88,8 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param resizer optional resizer that dynamically adjust the pool size
  *
  * @param within expecting at least one reply within this duration, otherwise
@@ -100,6 +103,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
     val nrOfInstances: Int,
+    override val routeeStopMessage: Any = PoisonPill,
     override val resizer: Option[Resizer] = None,
     within: FiniteDuration,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,

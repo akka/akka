@@ -15,6 +15,7 @@ import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.DynamicAccess
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.cluster.Cluster
@@ -117,6 +118,8 @@ final case class AdaptiveLoadBalancingRoutingLogic(
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param supervisorStrategy strategy for supervising the routees, see 'Supervision Setup'
  *
  * @param routerDispatcher dispatcher to use for the router head actor, which handles
@@ -126,6 +129,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(
 final case class AdaptiveLoadBalancingPool(
     metricsSelector: MetricsSelector = MixMetricsSelector,
     val nrOfInstances: Int = 0,
+    override val routeeStopMessage: Any = PoisonPill,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
     override val usePoolDispatcher: Boolean = false)

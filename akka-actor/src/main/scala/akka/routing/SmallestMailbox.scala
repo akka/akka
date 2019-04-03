@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.actor.ActorCell
 import akka.actor.ActorRefWithCell
+import akka.actor.PoisonPill
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Dispatchers
 import akka.actor.ActorSystem
@@ -167,6 +168,8 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
  *
  * @param nrOfInstances initial number of routees in the pool
  *
+ * @param routeeStopMessage message router sends to routee when removing from collection of routees
+ *
  * @param resizer optional resizer that dynamically adjust the pool size
  *
  * @param supervisorStrategy strategy for supervising the routees, see 'Supervision Setup'
@@ -177,6 +180,7 @@ class SmallestMailboxRoutingLogic extends RoutingLogic {
 @SerialVersionUID(1L)
 final case class SmallestMailboxPool(
     val nrOfInstances: Int,
+    override val routeeStopMessage: Any = PoisonPill,
     override val resizer: Option[Resizer] = None,
     override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
     override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
