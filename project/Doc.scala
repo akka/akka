@@ -125,11 +125,15 @@ object UnidocRoot extends AutoPlugin {
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(
       Seq(
-        javacOptions in (JavaUnidoc, unidoc) := Seq(
+        javacOptions in (JavaUnidoc, unidoc) := {
+          if (AkkaBuild.jdkVersion == "1.8") Seq("-Xdoclint:none")
+          else Seq(
             "-Xdoclint:none",
             "--frames",
             "--ignore-source-errors",
-            "--no-module-directories")))
+            "--no-module-directories")
+        }
+      ))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
