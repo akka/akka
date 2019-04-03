@@ -273,7 +273,7 @@ private[akka] class AffinityPool(
         next
       }
 
-      /**
+      /*
        * We keep running as long as we are Running
        * or we're ShuttingDown but we still have tasks to execute,
        * and we're not interrupted.
