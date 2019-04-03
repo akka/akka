@@ -23,6 +23,7 @@ import akka.util.ccompat._
 
 /** INTERNAL API */
 @InternalApi
+@ccompatUsedUntil213
 private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   import DnsSettings._

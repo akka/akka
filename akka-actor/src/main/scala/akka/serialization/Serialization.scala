@@ -24,6 +24,7 @@ import java.util.NoSuchElementException
 import akka.annotation.InternalApi
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object Serialization {
 
   /**

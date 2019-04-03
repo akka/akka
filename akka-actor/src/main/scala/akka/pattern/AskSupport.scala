@@ -11,6 +11,8 @@ import akka.annotation.InternalApi
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 
+import com.github.ghik.silencer.silent
+
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.language.implicitConversions
@@ -524,9 +526,11 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
+  @silent
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
+  @silent
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline

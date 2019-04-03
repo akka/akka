@@ -8,6 +8,7 @@ import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
@@ -565,6 +566,7 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
+@silent
 private final case class BackoffOptionsImpl(
     backoffType: BackoffType = RestartImpliesFailure,
     childProps: Props,

@@ -13,6 +13,7 @@ import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
@@ -96,8 +97,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   val mailboxes = prerequisites.mailboxes
   val eventStream = prerequisites.eventStream
 
-  @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
-  @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
+  @silent @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
+  @silent @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
 
   private final def addInhabitants(add: Long): Long = {
     val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)

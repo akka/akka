@@ -140,7 +140,7 @@ private[akka] object ChildrenContainer {
     }
 
     override def toString =
-      if (c.size > 20) c.size + " children"
+      if (c.size > 20) c.size.toString + " children"
       else c.mkString("children:\n    ", "\n    ", "")
   }
 
@@ -208,7 +208,7 @@ private[akka] object ChildrenContainer {
     override def isNormal: Boolean = reason == UserRequest
 
     override def toString =
-      if (c.size > 20) c.size + " children"
+      if (c.size > 20) c.size.toString + " children"
       else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "\n") + toDie
   }
 

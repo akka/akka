@@ -13,6 +13,7 @@ import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.dispatch.BalancingDispatcherConfigurator
 import akka.dispatch.Dispatchers
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -25,6 +26,7 @@ private[akka] object BalancingRoutingLogic {
  * INTERNAL API
  * Selects the first routee, balancing will be done by the dispatcher.
  */
+@silent
 @SerialVersionUID(1L)
 private[akka] final class BalancingRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
