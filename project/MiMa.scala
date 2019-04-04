@@ -11,7 +11,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 21
+  private val latestPatchOf25 = 22
   private val latestPatchOf24 = 20
 
   override def requires = MimaPlugin
@@ -20,7 +20,10 @@ object MiMa extends AutoPlugin {
   override val projectSettings = Seq(
     mimaPreviousArtifacts := akkaPreviousArtifacts(name.value, organization.value, scalaBinaryVersion.value))
 
-  def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
+  def akkaPreviousArtifacts(
+      projectName: String,
+      organization: String,
+      scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions: Seq[String] = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
@@ -31,14 +34,9 @@ object MiMa extends AutoPlugin {
           .map("2.4." + _)
           .filterNot(_ == "2.4.15") // 2.4.15 was released from the wrong branch and never announced
 
-      val akka242NewArtifacts = Seq(
-        "akka-stream",
-        "akka-stream-testkit")
-      val akka250NewArtifacts = Seq(
-        "akka-persistence-query")
-      val akka2519NewArtifacts = Seq(
-        "akka-discovery"
-      )
+      val akka242NewArtifacts = Seq("akka-stream", "akka-stream-testkit")
+      val akka250NewArtifacts = Seq("akka-persistence-query")
+      val akka2519NewArtifacts = Seq("akka-discovery")
 
       scalaBinaryVersion match {
         case "2.11" =>
@@ -58,15 +56,13 @@ object MiMa extends AutoPlugin {
           else
             akka24WithScala212 ++ akka25Versions
 
-
         case v if v.startsWith("2.13") =>
           // no Akka released for 2.13 yet, no jars to check BC against
           Seq.empty
       }
     }
 
-    val akka25PromotedArtifacts = Set(
-      "akka-distributed-data")
+    val akka25PromotedArtifacts = Set("akka-distributed-data")
 
     // check against all binary compatible artifacts
     versions.map { v =>
