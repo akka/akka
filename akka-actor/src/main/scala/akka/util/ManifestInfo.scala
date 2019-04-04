@@ -16,6 +16,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
+import com.github.ghik.silencer.silent
 
 /**
  * Akka extension that extracts [[ManifestInfo.Version]] information from META-INF/MANIFEST.MF in jar files
@@ -162,6 +163,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
    * Verify that the version is the same for all given artifacts.
    */
   def checkSameVersion(productName: String, dependencies: immutable.Seq[String], logWarning: Boolean): Boolean = {
+    @silent
     val filteredVersions = versions.filterKeys(dependencies.toSet)
     val values = filteredVersions.values.toSet
     if (values.size > 1) {

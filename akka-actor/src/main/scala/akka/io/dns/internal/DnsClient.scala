@@ -11,7 +11,8 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNe
 import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
 import akka.io.{ IO, Tcp, Udp }
-import akka.pattern.BackoffSupervisor
+import akka.pattern.{ BackoffOpts, BackoffSupervisor }
+import com.github.ghik.silencer.silent
 
 import scala.collection.{ immutable => im }
 import scala.util.Try
@@ -69,6 +70,10 @@ import scala.concurrent.duration._
     Message(id, MessageFlags(), im.Seq(Question(name, recordType, RecordClass.IN)))
   }
 
+  /**
+   * Silent to allow map update syntax
+   */
+  @silent
   def ready(socket: ActorRef): Receive = {
     case DropRequest(id) =>
       log.debug("Dropping request [{}]", id)
@@ -143,11 +148,12 @@ import scala.concurrent.duration._
   def createTcpClient() = {
     context.actorOf(
       BackoffSupervisor.props(
-        Props(classOf[TcpDnsClient], tcp, ns, self),
-        childName = "tcpDnsClient",
-        minBackoff = 10.millis,
-        maxBackoff = 20.seconds,
-        randomFactor = 0.1),
+        BackoffOpts.onFailure(
+          Props(classOf[TcpDnsClient], tcp, ns, self),
+          childName = "tcpDnsClient",
+          minBackoff = 10.millis,
+          maxBackoff = 20.seconds,
+          randomFactor = 0.1)),
       "tcpDnsClientSupervisor")
   }
 }

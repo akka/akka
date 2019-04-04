@@ -310,7 +310,7 @@ In that sense, it serves a very similar purpose as `ActorLogging` does for Actor
 
 @@@ div { .group-java }
 
-You can extend the @unidoc[GraphStageLogicWithLogging] or @unidoc[TimerGraphStageLogicWithLogging] classes
+You can extend the @apidoc[GraphStageLogicWithLogging] or @apidoc[TimerGraphStageLogicWithLogging] classes
 instead of the usual `GraphStageLogic` to enable you to obtain a `LoggingAdapter` inside your operator as long as 
 the `Materializer` you're using is able to provide you with a logger.
 

@@ -14,6 +14,7 @@ import akka.event.Logging.Warning
 import akka.util.{ unused, Unsafe }
 import akka.dispatch._
 import akka.dispatch.sysmsg._
+import com.github.ghik.silencer.silent
 
 import scala.util.control.NonFatal
 
@@ -47,8 +48,8 @@ private[akka] class RepointableActorRef(
    * processing the very first message (i.e. before Cell.start()). Hence there
    * are two refs here, one for each function, and they are switched just so.
    */
-  @volatile private var _cellDoNotCallMeDirectly: Cell = _
-  @volatile private var _lookupDoNotCallMeDirectly: Cell = _
+  @silent @volatile private var _cellDoNotCallMeDirectly: Cell = _
+  @silent @volatile private var _lookupDoNotCallMeDirectly: Cell = _
 
   def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
   def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]

@@ -8,10 +8,6 @@ import sbt._
 import Keys.{scalacOptions, _}
 import sbt.plugins.JvmPlugin
 
-/**
-  * Initial tests found:
-  * `akka-actor` 151 errors with `-Xfatal-warnings`, 6 without the flag
-  */
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   import scoverage.ScoverageKeys._
@@ -22,6 +18,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override lazy val projectSettings = disciplineSettings
 
   val fatalWarningsFor = Set(
+    "akka-actor",
     "akka-discovery",
     "akka-distributed-data",
     "akka-coordination",
@@ -60,25 +57,15 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     scalaFixSettings ++
     silencerSettings ++
     scoverageSettings ++ Seq(
-      Compile / scalacOptions ++= (if (strictProjects.contains(name.value)) {
-                                 disciplineScalacOptions
-                               } else {
-                                 disciplineScalacOptions -- undisciplineScalacOptions
-                               }).toSeq,
       Compile / scalacOptions ++= (
         if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
         else Seq.empty
       ),
       Test / scalacOptions --= testUndicipline,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
-      // Discipline is not needed for the docs compilation run (which uses
-      // different compiler phases from the regular run), and in particular
-      // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
-      // https://github.com/akka/akka/issues/26119
-      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq,
-      Compile / scalacOptions --= (CrossVersion.partialVersion(scalaVersion.value) match {
+      Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
-          Seq(
+          disciplineScalacOptions -- Set(
             "-Ywarn-inaccessible",
             "-Ywarn-infer-any",
             "-Ywarn-nullary-override",
@@ -87,19 +74,31 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
             "-Yno-adapted-args",
           )
         case Some((2, 12)) =>
-          Nil
+          disciplineScalacOptions
         case Some((2, 11)) =>
-          Seq("-Ywarn-extra-implicit", "-Ywarn-unused:_")
+          disciplineScalacOptions ++ Set("-language:existentials") -- Set(
+            "-Ywarn-extra-implicit",
+            "-Ywarn-unused:_",
+            "-Ypartial-unification",
+          )
         case _             =>
           Nil
-      }),
+      }).toSeq,
       Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) =>
           Seq("-no-link-warnings")
         case _ =>
           Seq.empty
       }),
-  )
+      Compile / scalacOptions --=
+        (if (strictProjects.contains(name.value)) Seq.empty
+        else undisciplineScalacOptions.toSeq),
+      // Discipline is not needed for the docs compilation run (which uses
+      // different compiler phases from the regular run), and in particular
+      // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+      // https://github.com/akka/akka/issues/26119
+      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
+    )
 
   val testUndicipline = Seq(
     "-Ywarn-dead-code",  // ??? used in compile only specs

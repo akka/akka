@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor.DeadLetter
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
@@ -87,6 +88,7 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
   }
 
   "A timer" must {
+
     "schedule non-repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
@@ -297,28 +299,6 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       ref ! "stop"
     }
 
-    "not grow stack when nesting withTimers" in {
-      def next(n: Int, probe: ActorRef[Array[StackTraceElement]]): Behavior[String] = Behaviors.withTimers { timers =>
-        timers.startSingleTimer("key", "tick", 1.millis)
-        Behaviors.receiveMessage { message =>
-          if (n == 20) {
-            val e = new RuntimeException().fillInStackTrace()
-            val trace = e.getStackTrace
-            probe ! trace
-            Behaviors.stopped
-          } else {
-            next(n + 1, probe)
-          }
-        }
-      }
-
-      val probe = TestProbe[Array[StackTraceElement]]()
-      spawn(next(0, probe.ref))
-      val elements = probe.receiveMessage()
-      if (elements.count(_.getClassName == "TimerInterceptor") > 1)
-        fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
-    }
-
     "not leak timers when PostStop is used" in {
       val probe = TestProbe[Any]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
@@ -335,6 +315,79 @@ class TimerSpec extends ScalaTestWithActorTestKit("""
       probe.expectTerminated(ref)
       system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
       probe.expectNoMessage(1.second)
+    }
+  }
+
+  "discard TimerMsg on restart" in {
+    // reproducer of similar issue as #26556, ClassCastException TimerMsg
+    val probe = TestProbe[Event]("evt")
+
+    def behv: Behavior[Command] =
+      Behaviors.receiveMessage[Command] {
+        case Tick(-1) =>
+          probe.ref ! Tock(-1)
+          Behaviors.withTimers[Command] { timer =>
+            timer.startSingleTimer("T0", Tick(0), 5.millis)
+            Behaviors.receiveMessage[Command] {
+              case Tick(0) =>
+                probe.ref ! Tock(0)
+                timer.startSingleTimer("T1", Tick(1), 5.millis)
+                // let Tick(0) arrive in mailbox, test will not fail if it arrives later
+                Thread.sleep(100)
+                throw TestException("boom")
+            }
+          }
+        case Tick(n) =>
+          probe.ref ! Tock(n)
+          Behaviors.same
+        case End =>
+          Behaviors.stopped
+      }
+
+    EventFilter[TestException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
+      ref ! Tick(-1)
+      probe.expectMessage(Tock(-1))
+      probe.expectMessage(Tock(0))
+      probe.expectNoMessage()
+
+      // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
+      ref ! Tick(100)
+      probe.expectMessage(Tock(100))
+
+      ref ! End
+    }
+  }
+
+  "discard TimerMsg when exception from withTimers block" in {
+    val probe = TestProbe[Event]("evt")
+    val behv = Behaviors.receiveMessage[Command] {
+      case Tick(-1) =>
+        probe.ref ! Tock(-1)
+        Behaviors.withTimers[Command] { timer =>
+          timer.startSingleTimer("T0", Tick(0), 5.millis)
+          // let Tick(0) arrive in mailbox, test will not fail if it arrives later
+          Thread.sleep(100)
+          throw TestException("boom")
+        }
+      case Tick(n) =>
+        probe.ref ! Tock(n)
+        Behaviors.same
+      case End =>
+        Behaviors.stopped
+    }
+
+    EventFilter[TestException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
+      ref ! Tick(-1)
+      probe.expectMessage(Tock(-1))
+      probe.expectNoMessage()
+
+      // confirm that it was restarted, and not stopped due to ClassCastException of TimerMsg
+      ref ! Tick(100)
+      probe.expectMessage(Tock(100))
+
+      ref ! End
     }
   }
 }

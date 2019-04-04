@@ -7,6 +7,7 @@ package akka.japi
 import java.util.Collections.{ emptyList, singletonList }
 
 import akka.util.Collections.EmptyImmutableSeq
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.language.implicitConversions
@@ -82,6 +83,7 @@ object Pair {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
+@silent
 @SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
 
@@ -241,7 +243,8 @@ object Util {
   /**
    * Turns an array into an immutable Scala sequence (by copying it).
    */
-  def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
+  def immutableSeq[T](arr: Array[T]): immutable.Seq[T] =
+    if ((arr ne null) && arr.length > 0) arr.toIndexedSeq else Nil
 
   /**
    * Turns an [[java.lang.Iterable]] into an immutable Scala sequence (by copying it).

@@ -20,7 +20,7 @@ import scala.collection.immutable
   def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
       implicit executor: ExecutionContext): SFuture[R] = {
     // This will have performance implications since the elements are copied to a Vector
-    SFuture.foldLeft[T, R](futures.to(immutable.Iterable))(zero)(op)(executor)
+    SFuture.foldLeft[T, R](futures.iterator.to(immutable.Iterable))(zero)(op)(executor)
   }
 
   def fold[T, R](futures: immutable.Iterable[SFuture[T]])(zero: R)(op: (R, T) => R)(
@@ -30,7 +30,7 @@ import scala.collection.immutable
   def reduce[T, R >: T](futures: IterableOnce[SFuture[T]])(op: (R, T) => R)(
       implicit executor: ExecutionContext): SFuture[R] = {
     // This will have performance implications since the elements are copied to a Vector
-    SFuture.reduceLeft[T, R](futures.to(immutable.Iterable))(op)(executor)
+    SFuture.reduceLeft[T, R](futures.iterator.to(immutable.Iterable))(op)(executor)
   }
 
   def reduce[T, R >: T](futures: immutable.Iterable[SFuture[T]])(op: (R, T) => R)(
@@ -40,7 +40,7 @@ import scala.collection.immutable
   def find[T](futures: IterableOnce[SFuture[T]])(p: T => Boolean)(
       implicit executor: ExecutionContext): SFuture[Option[T]] = {
     // This will have performance implications since the elements are copied to a Vector
-    SFuture.find[T](futures.to(immutable.Iterable))(p)(executor)
+    SFuture.find[T](futures.iterator.to(immutable.Iterable))(p)(executor)
   }
 
   def find[T](futures: immutable.Iterable[SFuture[T]])(p: T => Boolean)(

@@ -295,7 +295,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     def behv =
       supervise(setup[Command] { _ =>
         probe.ref ! StartFailed
-        throw new TestException("construction failed")
+        throw TestException("construction failed")
       }).onFailure[IllegalArgumentException](strategy)
   }
 
@@ -308,6 +308,16 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage(Pong(1))
     }
 
+    "default to stop when no strategy" in {
+      val probe = TestProbe[Event]("evt")
+      val behv = targetBehavior(probe.ref)
+      val ref = spawn(behv)
+      EventFilter[Exc3](occurrences = 1).intercept {
+        ref ! Throw(new Exc3)
+        probe.expectMessage(ReceivedSignal(PostStop))
+        probe.expectTerminated(ref)
+      }
+    }
     "stop when strategy is stop" in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.supervise(targetBehavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.stop)
@@ -315,6 +325,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       EventFilter[Exc3](occurrences = 1).intercept {
         ref ! Throw(new Exc3)
         probe.expectMessage(ReceivedSignal(PostStop))
+        probe.expectTerminated(ref)
       }
     }
 

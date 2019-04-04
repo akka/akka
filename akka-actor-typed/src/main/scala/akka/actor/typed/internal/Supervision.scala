@@ -255,6 +255,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
       ctx: TypedActorContext[O],
       @unused target: PreStartTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
+      ctx.asScala.cancelAllTimers()
       strategy match {
         case _: Restart =>
           // if unlimited restarts then don't restart if starting fails as it would likely be an infinite restart loop
@@ -288,6 +289,7 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
 
   private def handleException(ctx: TypedActorContext[O], signalRestart: Throwable => Unit): Catcher[Behavior[T]] = {
     case NonFatal(t) if isInstanceOfTheThrowableClass(t) =>
+      ctx.asScala.cancelAllTimers()
       if (strategy.maxRestarts != -1 && restartCount >= strategy.maxRestarts && deadlineHasTimeLeft) {
         strategy match {
           case _: Restart => throw t
@@ -336,6 +338,9 @@ private class RestartSupervisor[O, T, Thr <: Throwable: ClassTag](initial: Behav
   }
 
   private def restartCompleted(ctx: TypedActorContext[O]): Behavior[T] = {
+    // probably already done, but doesn't hurt to make sure they are canceled
+    ctx.asScala.cancelAllTimers()
+
     strategy match {
       case backoff: Backoff =>
         gotScheduledRestart = false

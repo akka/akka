@@ -532,7 +532,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     override def stop(): Unit = {
       causeOfTermination.trySuccess(
         Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
-      terminationPromise.tryCompleteWith(causeOfTermination.future) // Signal termination downstream, idempotent
+      terminationPromise.completeWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
     @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")

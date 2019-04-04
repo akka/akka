@@ -9,6 +9,7 @@ import akka.event.Logging.{ Debug, Warning }
 import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, MinimalActorRef, Terminated }
 import akka.event.AddressTerminatedTopic
 import akka.util.unused
+import com.github.ghik.silencer.silent
 
 private[akka] trait DeathWatch { this: ActorCell =>
 
@@ -112,6 +113,7 @@ private[akka] trait DeathWatch { this: ActorCell =>
 
   // TODO this should be removed and be replaced with `set - subject`
   //   when all actor references have uid, i.e. actorFor is removed
+  @silent
   private def removeFromMap[T](subject: ActorRef, map: Map[ActorRef, T]): Map[ActorRef, T] =
     if (subject.path.uid != ActorCell.undefinedUid) (map - subject) - new UndefinedUidActorRef(subject)
     else map.filterKeys(_.path != subject.path).toMap

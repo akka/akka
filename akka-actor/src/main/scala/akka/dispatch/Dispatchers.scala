@@ -5,12 +5,15 @@
 package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
+
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
 import akka.event.Logging.Warning
 import akka.event.EventStream
 import akka.ConfigurationException
 import akka.util.Helpers.ConfigOps
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.ExecutionContext
 
 /**
@@ -238,6 +241,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
+@silent
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 
