@@ -29,11 +29,12 @@ import akka.util.JavaDurationConverters._
 import scala.concurrent.Promise
 import akka.Done
 import akka.actor.CoordinatedShutdown
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.coordination.lease.LeaseUsageSettings
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
+import com.github.ghik.silencer.silent
 
 import scala.util.control.NonFatal
 
@@ -43,6 +44,7 @@ object ClusterSingletonManagerSettings {
    * Create settings from the default configuration
    * `akka.cluster.singleton`.
    */
+  @silent // deprecated setting
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
     // note that this setting has some additional logic inside the ClusterSingletonManager
@@ -476,7 +478,6 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   import ClusterSingletonManager.Internal._
   import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import settings._
-  import FSM.`->`
 
   val cluster = Cluster(context.system)
   val selfUniqueAddressOption = Some(cluster.selfUniqueAddress)
