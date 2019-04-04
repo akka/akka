@@ -24,6 +24,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object ClusterShardingFailureSpec {
   case class Get(id: String)
   case class Add(id: String, i: Int)
