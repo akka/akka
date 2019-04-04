@@ -28,6 +28,7 @@ import akka.testkit._
 import akka.cluster.pubsub._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
+import akka.util.unused
 
 import scala.concurrent.Await
 
@@ -189,6 +190,19 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
     node(r) / "system" / "receptionist"
   }
 
+  @unused
+  def docOnly = { //not used, only demo
+    //#initialContacts
+    val initialContacts = Set(
+      ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
+      ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
+    val settings = ClusterClientSettings(system).withInitialContacts(initialContacts)
+    //#initialContacts
+
+    // make the compiler happy and thinking we use it
+    settings.acceptableHeartbeatPause
+  }
+
   "A ClusterClient" must {
 
     "startup cluster" in within(30 seconds) {
@@ -276,15 +290,6 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       runOn(client) {
         // note that "hi" was sent to 2 "serviceB"
         receiveN(3).toSet should ===(Set("hello", "hi"))
-      }
-
-      lazy val docOnly = { //not used, only demo
-        //#initialContacts
-        val initialContacts = Set(
-          ActorPath.fromString("akka.tcp://OtherSys@host1:2552/system/receptionist"),
-          ActorPath.fromString("akka.tcp://OtherSys@host2:2552/system/receptionist"))
-        val settings = ClusterClientSettings(system).withInitialContacts(initialContacts)
-        //#initialContacts
       }
 
       // strange, barriers fail without this sleep
@@ -436,7 +441,7 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         c ! ClusterClient.Send("/user/service2", "ping", localAffinity = true)
         // if we would use remote watch the failure detector would trigger and
         // connection quarantined
-        expectNoMsg(5 seconds)
+        expectNoMessage(5 seconds)
 
         testConductor.passThrough(client, receptionistRoleName, Direction.Both).await
 
