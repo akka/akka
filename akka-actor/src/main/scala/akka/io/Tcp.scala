@@ -468,7 +468,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
 
     // Needs to be added with a mutable var for compatibility reasons.
     // The cause will be lost in the unlikely case that someone uses `copy` on an instance.
-    @InternalApi /** Creates a copy of this object with a new cause set. */
+    /** Creates a copy of this object with a new cause set. */
+    @InternalApi
     private[akka] def withCause(cause: Throwable): CommandFailed = {
       val newInstance = copy()
       newInstance._cause = Some(cause)

@@ -1034,7 +1034,7 @@ private[akka] class ActorSystemImpl(
 
   private def loadExtensions(): Unit = {
 
-    /**
+    /*
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
