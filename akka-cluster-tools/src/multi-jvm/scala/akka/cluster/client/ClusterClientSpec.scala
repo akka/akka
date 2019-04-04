@@ -65,7 +65,7 @@ object ClusterClientSpec extends MultiNodeConfig {
         context.system.terminate()
       case msg =>
         testActor.forward(msg)
-        sender() ! Reply(msg + "-ack", Cluster(context.system).selfAddress)
+        sender() ! Reply(s"$msg-ack", Cluster(context.system).selfAddress)
     }
   }
 
