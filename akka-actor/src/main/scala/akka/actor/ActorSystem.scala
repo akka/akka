@@ -847,11 +847,10 @@ private[akka] class ActorSystemImpl(
   val internalCallingThreadExecutionContext: ExecutionContext =
     dynamicAccess
       .getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$")
-      .getOrElse(new ExecutionContext with BatchingExecutor {
-        override protected def unbatchedExecute(r: Runnable): Unit = r.run()
-        override protected def resubmitOnBlock: Boolean = false // Since we execute inline, no gain in resubmitting
-        override def reportFailure(t: Throwable): Unit = dispatcher.reportFailure(t)
-      })
+      .getOrElse(
+        dynamicAccess
+          .getObjectFor[ExecutionContext]("scala.concurrent.ExecutionContext$parasitic$")
+          .getOrElse(ExecutionContexts.sameThreadExecutionContext))
 
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
