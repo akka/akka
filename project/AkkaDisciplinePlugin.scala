@@ -17,8 +17,15 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
 
-  val fatalWarningsFor =
-    Set("akka-actor", "akka-discovery", "akka-distributed-data", "akka-coordination", "akka-protobuf", "akka-cluster-sharding")
+  val fatalWarningsFor = Set(
+    "akka-actor",
+    "akka-discovery",
+    "akka-distributed-data",
+    "akka-coordination",
+    "akka-protobuf",
+    "akka-stream-typed",
+    "akka-cluster-typed",
+    "akka-cluster-sharding")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
@@ -45,6 +52,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
           if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
+      Test / scalacOptions --= testUndicipline,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 13)) =>
@@ -83,6 +91,11 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings"
     )
 
+  val testUndicipline = Seq(
+    "-Ywarn-dead-code", // ??? used in compile only specs
+    "-Ywarn-value-discard" // Ignoring returned assertions
+  )
+
   /**
    * Remain visibly filtered for future code quality work and removing.
    */
@@ -106,30 +119,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit"
-  val fatalWarningsFor = Set(
-    "akka-actor",
-    "akka-discovery",
-    "akka-distributed-data",
-    "akka-coordination",
-    "akka-protobuf",
-    "akka-stream-typed",
-    "akka-cluster-typed"
-  )
-
-  val strictProjects = Set(
-    "akka-discovery",
-    "akka-protobuf",
-    "akka-coordination"
-  )
-        if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
-        else Seq.empty
-      ),
-      Test / scalacOptions --= testUndicipline,
-  val testUndicipline = Seq(
-    "-Ywarn-dead-code",  // ??? used in compile only specs
-    "-Ywarn-value-discard" // Ignoring returned assertions
-  )
-
   )
 
 }
