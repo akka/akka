@@ -11,7 +11,10 @@ import akka.testkit._
 import akka.cluster.metrics.StandardMetrics._
 import akka.cluster.Cluster
 
-class ClusterMetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with ImplicitSender with RedirectLogging {
+class ClusterMetricsExtensionSpec
+    extends AkkaSpec(MetricsConfig.clusterSigarMock)
+    with ImplicitSender
+    with RedirectLogging {
 
   val cluster = Cluster(system)
 

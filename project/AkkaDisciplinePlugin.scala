@@ -23,6 +23,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-distributed-data",
     "akka-coordination",
     "akka-protobuf",
+    "akka-stream-typed",
+    "akka-cluster-typed",
     "akka-slf4j",
     "akka-cluster-metrics"
   )
@@ -61,6 +63,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
         else Seq.empty
       ),
+      Test / scalacOptions --= testUnDiscipline,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) =>
@@ -83,7 +86,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         case _             =>
           Nil
       }).toSeq,
-      Test / scalacOptions --= testUndicipline,
       Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) =>
           Seq("-no-link-warnings")
@@ -100,8 +102,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
     )
 
-  val testUndicipline = Seq(
-    "-deprecation",
+
+  val testUnDiscipline = Seq(
     "-Ywarn-dead-code",  // ??? used in compile only specs
     "-Ywarn-value-discard" // Ignoring returned assertions
   )
