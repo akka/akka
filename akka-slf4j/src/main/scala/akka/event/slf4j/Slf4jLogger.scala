@@ -4,11 +4,11 @@
 
 package akka.event.slf4j
 
-import org.slf4j.{ MDC, Marker, MarkerFactory, Logger => SLFLogger, LoggerFactory => SLFLoggerFactory }
+import org.slf4j.{MDC, Marker, MarkerFactory, Logger => SLFLogger, LoggerFactory => SLFLoggerFactory}
 import akka.event.Logging._
 import akka.actor._
-import akka.event.{ LogMarker, _ }
-import akka.util.Helpers
+import akka.event.{LogMarker, _}
+import akka.util.{Helpers, unused}
 import akka.dispatch.RequiresMessageQueue
 
 /**
@@ -146,7 +146,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
  * backend configuration (e.g. logback.xml) to filter log events before publishing
  * the log events to the `eventStream`.
  */
-class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilterWithMarker {
+class Slf4jLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilterWithMarker {
   def isErrorEnabled(logClass: Class[_], logSource: String) =
     (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled
   def isWarningEnabled(logClass: Class[_], logSource: String) =

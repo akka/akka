@@ -22,7 +22,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-discovery",
     "akka-distributed-data",
     "akka-coordination",
-    "akka-protobuf"
+    "akka-protobuf",
+    "akka-slf4j",
+    "akka-cluster-metrics"
   )
 
   val strictProjects = Set(
@@ -81,6 +83,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
         case _             =>
           Nil
       }).toSeq,
+      Test / scalacOptions --= testUndicipline,
       Compile / doc / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) =>
           Seq("-no-link-warnings")
@@ -96,6 +99,12 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       // https://github.com/akka/akka/issues/26119
       Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
     )
+
+  val testUndicipline = Seq(
+    "-deprecation",
+    "-Ywarn-dead-code",  // ??? used in compile only specs
+    "-Ywarn-value-discard" // Ignoring returned assertions
+  )
 
   /**
     * Remain visibly filtered for future code quality work and removing.
