@@ -281,12 +281,12 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
+      halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
-    Source.fromGraph(
-      delegate
-        .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), idleTimeout)
-        .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+    Source.fromGraph(delegate
+      .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), halfClose, idleTimeout)
+      .map(new IncomingConnection(_))
+      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
