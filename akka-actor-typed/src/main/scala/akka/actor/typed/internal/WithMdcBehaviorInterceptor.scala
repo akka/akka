@@ -54,11 +54,11 @@ import scala.collection.immutable.HashMap
           // eliminate that interceptor
           loop(i.nestedBehavior)
 
-        case w: WrappingBehavior[T, T] =>
-          val nested = w.nestedBehavior
+        case i: InterceptorImpl[T, T] =>
+          val nested = i.nestedBehavior
           val inner = loop(nested)
-          if (inner eq nested) w
-          else w.replaceNested(inner)
+          if (inner eq nested) i
+          else i.replaceNested(inner)
 
         case b => b
       }

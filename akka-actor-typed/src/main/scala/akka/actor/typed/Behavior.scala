@@ -6,8 +6,7 @@ package akka.actor.typed
 
 import scala.annotation.tailrec
 import akka.actor.InvalidMessageException
-import akka.actor.typed.internal.BehaviorImpl
-import akka.actor.typed.internal.WrappingBehavior
+import akka.actor.typed.internal.{ BehaviorImpl, InterceptorImpl }
 import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.util.{ LineNumbers, OptionVal }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
@@ -329,8 +328,8 @@ object Behavior {
   def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
     // TODO can this be made @tailrec?
     behavior match {
-      case innerDeferred: DeferredBehavior[T]           => start(innerDeferred(ctx), ctx)
-      case wrapped: WrappingBehavior[T, Any] @unchecked =>
+      case innerDeferred: DeferredBehavior[T]          => start(innerDeferred(ctx), ctx)
+      case wrapped: InterceptorImpl[T, Any] @unchecked =>
         // make sure that a deferred behavior wrapped inside some other behavior is also started
         val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
         if (startedInner eq wrapped.nestedBehavior) wrapped
@@ -349,7 +348,7 @@ object Behavior {
     def loop(b: Behavior[T]): Boolean =
       b match {
         case _ if p(b) => true
-        case wrappingBehavior: WrappingBehavior[T, T] @unchecked =>
+        case wrappingBehavior: InterceptorImpl[T, T] @unchecked =>
           loop(wrappingBehavior.nestedBehavior)
         case d: DeferredBehavior[T] =>
           throw new IllegalArgumentException(
