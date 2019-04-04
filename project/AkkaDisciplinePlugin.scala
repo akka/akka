@@ -25,13 +25,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-protobuf",
     "akka-stream-typed",
     "akka-cluster-typed",
-    "akka-cluster-tools"
-  )
-
-  val strictProjects = Set(
-    "akka-discovery",
-    "akka-protobuf",
-    "akka-cluster-tools")
+    "akka - cluster - tools")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
@@ -54,9 +48,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-        if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
-        else Seq.empty
-      ),
+          if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          else Seq.empty
+        ),
       Test / scalacOptions --= testUndicipline,
       Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -94,7 +88,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings")
 
   val testUndicipline = Seq(
-    "-Ywarn-dead-code",  // ??? used in compile only specs
+    "-Ywarn-dead-code", // ??? used in compile only specs
     "-Ywarn-value-discard" // Ignoring returned assertions
   )
 
