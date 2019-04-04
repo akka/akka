@@ -26,6 +26,7 @@ import java.nio.file.Files
  *
  * Local filesystem backed snapshot store.
  */
+@ccompatUsedUntil213
 private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotStore with ActorLogging {
   private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
   private val persistenceIdStartIdx = 9 // Persistence ID starts after the "snapshot-" substring
