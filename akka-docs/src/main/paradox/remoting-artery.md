@@ -131,6 +131,9 @@ The configuration is different, so you might have to revisit any custom configur
 @ref:[reference configuration for Artery](general/configuration.md#config-akka-remote-artery) and
 @ref:[reference configuration for classic remoting](general/configuration.md#config-akka-remote).
 
+One thing to be aware of is that rolling update from classic remoting to Artery is not supported since the protocol
+is completely different. It will require a full cluster shutdown and new startup.
+
 ## Canonical address
 
 In order to remoting to work properly, where each system can send messages to any other system on the same network
