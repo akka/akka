@@ -8,8 +8,11 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.pattern.TestActor.NormalException
 import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
+
 import scala.concurrent.duration._
 import akka.actor._
+import com.github.ghik.silencer.silent
+
 import scala.language.postfixOps
 
 object TestActor {
@@ -51,6 +54,7 @@ class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
 
 class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
+  @silent
   def supervisorProps(probeRef: ActorRef) = {
     val options = Backoff
       .onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
@@ -105,7 +109,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         val supervisorChildSelection = system.actorSelection(supervisor.path / "*")
         supervisorChildSelection.tell("testmsg", probe.ref)
         probe.expectMsg("testmsg")
-        probe.expectNoMsg
+        probe.expectNoMessage
       }
     }
 
@@ -140,6 +144,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "accept commands while child is terminating" in {
       val postStopLatch = new CountDownLatch(1)
+      @silent
       val options = Backoff
         .onFailure(
           Props(new SlowlyFailingActor(postStopLatch)),
@@ -151,6 +156,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
           case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })
+      @silent
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
 
       supervisor ! BackoffSupervisor.GetCurrentChild
@@ -164,7 +170,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       expectMsg("THROWN")
 
       child ! "PING"
-      expectNoMsg(100.millis) // Child is in limbo due to latch in postStop. There is no Terminated message yet
+      expectNoMessage(100.millis) // Child is in limbo due to latch in postStop. There is no Terminated message yet
 
       supervisor ! BackoffSupervisor.GetCurrentChild
       expectMsgType[BackoffSupervisor.CurrentChild].ref should ===(Some(child))
@@ -205,11 +211,13 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       // withinTimeRange indicates the time range in which maxNrOfRetries will cause the child to
       // stop. IE: If we restart more than maxNrOfRetries in a time range longer than withinTimeRange
       // that is acceptable.
+      @silent
       val options = Backoff
         .onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
         .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
           case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })
+      @silent
       val supervisor = system.actorOf(BackoffSupervisor.props(options))
       probe.expectMsg("STARTED")
       filterException[TestActor.TestException] {

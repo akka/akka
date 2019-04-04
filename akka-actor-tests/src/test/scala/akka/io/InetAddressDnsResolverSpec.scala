@@ -9,7 +9,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Props
 import akka.testkit.{ AkkaSpec, TestActorRef }
+import com.github.ghik.silencer.silent
 
+@silent
 class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = default
     akka.io.dns.inet-address.negative-ttl = default
@@ -117,6 +119,8 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
   }
 
 }
+
+@silent
 class InetAddressDnsResolverConfigSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = forever
     akka.io.dns.inet-address.negative-ttl = never

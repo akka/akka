@@ -37,7 +37,7 @@ class AddressTerminatedTopicBenchSpec extends AkkaSpec("akka.loglevel=INFO") {
 
         val t1 = System.nanoTime()
         val p = Props(classOf[Subscriber], testActor)
-        val subscribers = Vector.fill(num)(sys.actorOf(p))
+        Vector.fill(num)(sys.actorOf(p))
         receiveN(num, 10.seconds)
         log.info("Starting {} actors took {} ms", num, (System.nanoTime() - t1).nanos.toMillis)
 

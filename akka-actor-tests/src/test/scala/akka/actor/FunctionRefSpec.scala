@@ -100,7 +100,7 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
           // needs to be something that fails when the deserialized form is not a FunctionRef
           // this relies upon serialize-messages during tests
           testActor ! DropForwarder(ref)
-          expectNoMsg(1.second)
+          expectNoMessage(1.second)
         }
       }
     }

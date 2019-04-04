@@ -58,7 +58,7 @@ object ActorCreationPerfSpec {
       case IsAlive =>
         sender() ! Alive
       case Create(number, propsCreator) =>
-        for (i <- 1 to number) {
+        for (_ <- 1 to number) {
           val start = System.nanoTime()
           context.actorOf(propsCreator.apply())
           // yes, we are aware of this being skewed
@@ -92,7 +92,7 @@ object ActorCreationPerfSpec {
       case IsAlive =>
         sender() ! Alive
       case Create(number, propsCreator) =>
-        for (i <- 1 to number) {
+        for (_ <- 1 to number) {
           context.actorOf(propsCreator.apply())
         }
         sender() ! Created

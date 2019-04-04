@@ -10,7 +10,7 @@ import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.junit.JUnitSuiteLike
+import org.scalatestplus.junit.JUnitSuiteLike
 
 import scala.util.control.NoStackTrace
 

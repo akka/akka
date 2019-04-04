@@ -9,15 +9,19 @@ import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import akka.dispatch.sysmsg._
 import java.io._
+
 import scala.concurrent.Await
-import akka.util.Timeout
+import akka.util.{ unused, Timeout }
+
 import scala.concurrent.duration._
 import com.typesafe.config._
 import akka.pattern.ask
 import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
+
 import akka.actor.dungeon.SerializationCheckFailedException
+import com.github.ghik.silencer.silent
 import test.akka.serialization.NoVerification
 
 object SerializationTests {
@@ -53,8 +57,10 @@ object SerializationTests {
 
   final case class Record(id: Int, person: Person)
 
+  @silent // can't use unused otherwise case class below gets a deprecated
   class SimpleMessage(s: String) extends TestSerializable
 
+  @silent
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
   trait AnotherInterface extends TestSerializable
@@ -69,7 +75,7 @@ object SerializationTests {
 
   class BothTestSerializableAndJavaSerializable(s: String) extends SimpleMessage(s) with Serializable
 
-  class BothTestSerializableAndTestSerializable2(s: String) extends TestSerializable with TestSerializable2
+  class BothTestSerializableAndTestSerializable2(@unused s: String) extends TestSerializable with TestSerializable2
 
   trait A
   trait B
@@ -103,7 +109,7 @@ object SerializationTests {
       receiveBuilder().build()
   }
 
-  class NonSerializableActor(system: ActorSystem) extends Actor {
+  class NonSerializableActor(@unused system: ActorSystem) extends Actor {
     def receive = {
       case s: String => sender() ! s
     }
@@ -319,7 +325,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     system.stop(b)
 
     intercept[IllegalArgumentException] {
-      val d = system.actorOf(Props(new NonSerializableActor(system)))
+      system.actorOf(Props(new NonSerializableActor(system)))
     }
 
   }

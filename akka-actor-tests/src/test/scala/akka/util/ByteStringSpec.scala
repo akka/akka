@@ -15,13 +15,13 @@ import org.apache.commons.codec.binary.Hex.encodeHex
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 
 import scala.collection.mutable.Builder
 
 class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
-  implicit val betterGeneratorDrivenConfig = PropertyCheckConfig().copy(minSuccessful = 1000)
+  implicit val betterGeneratorDrivenConfig = PropertyCheckConfiguration().copy(minSuccessful = 1000)
 
   def genSimpleByteString(min: Int, max: Int) =
     for {

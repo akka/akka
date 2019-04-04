@@ -15,7 +15,9 @@ import akka.testkit._
 import akka.testkit.TestKit
 import akka.util.Helpers.ConfigOps
 import akka.util.{ Switch, Timeout }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.language.postfixOps
@@ -29,7 +31,7 @@ object ActorSystemSpec {
     def receive = {
       case n: Int =>
         master = sender()
-        terminaters = Set() ++ (for (i <- 1 to n) yield {
+        terminaters = Set() ++ (for (_ <- 1 to n) yield {
             val man = context.watch(context.system.actorOf(Props[Terminater]))
             man ! "run"
             man
@@ -64,7 +66,7 @@ object ActorSystemSpec {
 
   final case class FastActor(latch: TestLatch, testActor: ActorRef) extends Actor {
     val ref1 = context.actorOf(Props.empty)
-    val ref2 = context.actorFor(ref1.path.toString)
+    val ref2 = context.actorSelection(ref1.path.toString)
     testActor ! ref2.getClass
     latch.countDown()
 
@@ -124,6 +126,7 @@ object ActorSystemSpec {
 
 }
 
+@silent
 class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
 
   import ActorSystemSpec.FastActor
@@ -278,7 +281,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliably create waves of actors" in {
       import system.dispatcher
       implicit val timeout = Timeout((20 seconds).dilated)
-      val waves = for (i <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
+      val waves = for (_ <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should ===(Vector("done", "done", "done"))
     }
 
@@ -401,7 +404,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
         ref.tell("ping", probe.ref)
 
-        ecProbe.expectNoMsg(200.millis)
+        ecProbe.expectNoMessage(200.millis)
         probe.expectMsg(1.second, "ping")
       } finally {
         shutdown(system2)

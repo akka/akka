@@ -56,7 +56,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       expectMsg(Tock)
       expectMsg(Tock)
       expectMsg(Tock)
-      expectNoMsg(500 millis)
+      expectNoMessage(500 millis)
 
       collectCancellable(system.scheduler.schedule(0 milliseconds, 50 milliseconds)(tickActor2 ! Tick))
 
@@ -64,7 +64,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       expectMsg(Tock)
       expectMsg(Tock)
       expectMsg(Tock)
-      expectNoMsg(500 millis)
+      expectNoMessage(500 millis)
     }
 
     "stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
@@ -77,7 +77,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       // stop the actor and, hence, the continuous messaging from happening
       system.stop(actor)
 
-      expectNoMsg(500 millis)
+      expectNoMessage(500 millis)
     }
 
     "stop continuous scheduling if the task throws exception" taggedAs TimingTest in {
@@ -90,7 +90,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       expectMsg(1)
       expectMsg(2)
       expectMsg(3)
-      expectNoMsg(500 millis)
+      expectNoMessage(500 millis)
     }
 
     "schedule once" taggedAs TimingTest in {
@@ -120,7 +120,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     "be cancellable" taggedAs TimingTest in {
       for (_ <- 1 to 10) system.scheduler.scheduleOnce(1 second, testActor, "fail").cancel()
 
-      expectNoMsg(2 seconds)
+      expectNoMessage(2 seconds)
     }
 
     "be cancellable during initial delay" taggedAs TimingTest in {
@@ -219,7 +219,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
         }
       }))
 
-      (1 to 300).foreach { i =>
+      (1 to 300).foreach { _ =>
         collectCancellable(system.scheduler.scheduleOnce(20 milliseconds, actor, Msg(System.nanoTime)))
         Thread.sleep(5)
       }
@@ -342,7 +342,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       intercept[IllegalArgumentException] {
         system.scheduler.schedule(100.millis, maxDelay + tickDuration, testActor, "Too long")
       }
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "survive being stressed with cancellation" taggedAs TimingTest in {
@@ -377,7 +377,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       for (k <- histogram.keys.toSeq.sorted) {
         system.log.info(f"${k * 100}%3d: ${histogram(k).size}")
       }
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "survive vicious enqueueing" taggedAs TimingTest in {
@@ -409,7 +409,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         import driver._
         val start = step / 2
         (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
-        expectNoMsg(step)
+        expectNoMessage(step)
         wakeUp(step)
         expectWait(step)
         wakeUp(step * 4 + step / 2)
@@ -439,7 +439,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         import driver._
         val start = step / 2
         (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, probe.ref, "hello"))
-        probe.expectNoMsg(step)
+        probe.expectNoMessage(step)
         wakeUp(step)
         expectWait(step)
         // the following are no for-comp to see which iteration fails
@@ -466,7 +466,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         import driver._
         val start = step / 2
         (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
-        expectNoMsg(step)
+        expectNoMessage(step)
         wakeUp(step)
         expectWait(step)
         // the following are no for-comp to see which iteration fails
@@ -502,7 +502,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
         val nums = 0 until numEvents
         nums.foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello-" + i))
-        expectNoMsg(step)
+        expectNoMessage(step)
         wakeUp(step)
         expectWait(step)
 

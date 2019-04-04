@@ -32,7 +32,7 @@ class DisabledJavaSerializerWarningSpec extends AkkaSpec("""
       EventFilter.warning(start = "Outgoing message attempted to use Java Serialization", occurrences = 1).intercept {
         val echo = system.actorOf(TestActors.echoActorProps)
         echo ! List("a")
-        expectNoMsg(300.millis)
+        expectNoMessage(300.millis)
       }
 
     }

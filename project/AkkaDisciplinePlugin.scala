@@ -27,7 +27,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-cluster-typed",
     "akka-cluster-tools",
     "akka-cluster-metrics",
-    "akka-slf4j")
+    "akka-slf4j",
+    "akka-remote-tests",
+    "akka-actor-tests")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 

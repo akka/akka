@@ -5,15 +5,17 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
+
 import scala.concurrent.Await
 import akka.pattern.ask
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.junit.JUnitSuiteLike
+import org.scalatestplus.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 
@@ -31,7 +33,7 @@ object ActorWithStashSpec {
         state.s = "hello"
         unstashAll()
         context.become(greeted)
-      case msg => stash()
+      case _ => stash()
     }
   }
 
@@ -42,10 +44,10 @@ object ActorWithStashSpec {
           stash()
           stash()
         } catch {
-          case e: IllegalStateException =>
+          case _: IllegalStateException =>
             state.expectedException.open()
         }
-      case msg => // do nothing
+      case _ => // do nothing
     }
   }
 
@@ -59,10 +61,10 @@ object ActorWithStashSpec {
           case "close" =>
             unstashAll()
             context.unbecome()
-          case msg => stash()
+          case _ => stash()
         }
       case "done" => state.finished.await
-      case msg    => stash()
+      case _      => stash()
     }
   }
 
@@ -102,6 +104,7 @@ object ActorWithStashSpec {
 
 class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
+@silent
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
@@ -155,7 +158,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
             throw new Exception("Crashing...")
 
           // when restartLatch is not yet open, stash all messages != "crash"
-          case msg if !restartLatch.isOpen =>
+          case _ if !restartLatch.isOpen =>
             stash()
 
           // when restartLatch is open, must receive "hello"
@@ -193,7 +196,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
         become {
           case "die" => throw new RuntimeException("dying")
         }
-        whenRestarted { thr =>
+        whenRestarted { _ =>
           testActor ! "restarted"
         }
       })
