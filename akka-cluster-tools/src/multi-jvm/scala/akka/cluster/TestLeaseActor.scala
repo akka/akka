@@ -25,8 +25,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 object TestLeaseActor {
-  def props(probe: ActorRef): Props =
-    Props(new TestLeaseActor(probe))
+  def props(): Props =
+    Props(new TestLeaseActor)
 
   sealed trait LeaseRequest
   final case class Acquire(owner: String) extends LeaseRequest
@@ -38,7 +38,7 @@ object TestLeaseActor {
   final case class ActionRequest(request: LeaseRequest, result: Any) // boolean of Failure
 }
 
-class TestLeaseActor(probe: ActorRef) extends Actor with ActorLogging {
+class TestLeaseActor extends Actor with ActorLogging {
   import TestLeaseActor._
 
   var requests: List[(ActorRef, LeaseRequest)] = Nil

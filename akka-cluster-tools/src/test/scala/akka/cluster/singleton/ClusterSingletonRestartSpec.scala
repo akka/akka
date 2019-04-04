@@ -34,6 +34,8 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
   val sys2 = ActorSystem(system.name, system.settings.config)
   var sys3: ActorSystem = null
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     from.actorOf(
       ClusterSingletonManager.props(
@@ -43,7 +45,6 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       name = "echo")
 
     within(10.seconds) {
-      import akka.util.ccompat._
       awaitAssert {
         Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)

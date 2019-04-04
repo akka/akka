@@ -23,6 +23,7 @@ import java.io.NotSerializableException
 /**
  * INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages.
  */
+@ccompatUsedUntil213
 private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
