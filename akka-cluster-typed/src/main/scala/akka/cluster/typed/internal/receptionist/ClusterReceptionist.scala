@@ -149,7 +149,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
        * Hack to allow multiple termination notifications per target
        * FIXME #26505: replace by simple map in our state
        */
-      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit =
+      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit = {
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
           innerCtx.watch(target)
           Behaviors.receiveSignal[Nothing] {
@@ -158,6 +158,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               Behaviors.stopped
           }
         })
+        ()
+      }
 
       def isLeader = {
         cluster.state.leader.contains(cluster.selfAddress)

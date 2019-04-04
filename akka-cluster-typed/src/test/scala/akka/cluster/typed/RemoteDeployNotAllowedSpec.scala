@@ -63,7 +63,7 @@ class RemoteDeployNotAllowedSpec
           case SpawnChild(name) =>
             // this should throw
             try {
-              ctx.spawn(Behaviors.setup[AnyRef] { ctx =>
+              ctx.spawn(Behaviors.setup[AnyRef] { _ =>
                 Behaviors.empty
               }, name)
             } catch {
@@ -74,7 +74,7 @@ class RemoteDeployNotAllowedSpec
           case SpawnAnonymous =>
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx =>
+              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { _ =>
                 Behaviors.empty
               })
             } catch {
