@@ -5,13 +5,16 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
+
 import akka.actor._
 import akka.stream.impl.{ ReactiveStreamsCompliance, StreamSubscriptionTimeoutSupport }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import concurrent.duration.Duration
 import concurrent.duration.FiniteDuration
 import akka.stream.impl.CancelledSubscription
 import akka.stream.impl.ReactiveStreamsCompliance._
+import com.github.ghik.silencer.silent
 
 @deprecated(
   "Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
@@ -405,6 +408,7 @@ trait ActorPublisher[T] extends Actor {
 /**
  * INTERNAL API
  */
+@silent
 private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[T] {
   import ActorPublisher.Internal._
 

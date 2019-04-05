@@ -34,7 +34,7 @@ import scala.concurrent.{ Future, Promise }
     val tcpManager: ActorRef,
     val endpoint: InetSocketAddress,
     val backlog: Int,
-    val options: immutable.Traversable[SocketOption],
+    val options: immutable.Iterable[SocketOption],
     val halfClose: Boolean,
     val idleTimeout: Duration,
     val bindShutdownTimeout: FiniteDuration,
@@ -420,7 +420,7 @@ private[stream] object ConnectionSourceStage {
     manager: ActorRef,
     remoteAddress: InetSocketAddress,
     localAddress: Option[InetSocketAddress] = None,
-    options: immutable.Traversable[SocketOption] = Nil,
+    options: immutable.Iterable[SocketOption] = Nil,
     halfClose: Boolean = true,
     connectTimeout: Duration = Duration.Inf,
     ioSettings: IOSettings)
@@ -473,7 +473,7 @@ private[stream] object ConnectionSourceStage {
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
       BidiFlow.fromFlows(
         Flow[ByteString].mapError {
-          case t: TimeoutException =>
+          case _: TimeoutException =>
             new TcpIdleTimeoutException(
               s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
               idleTimeout)
