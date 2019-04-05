@@ -388,8 +388,10 @@ In such situations we prefer 'internal' over 'impl' as a package name.
 
 Akka uses [Scalafmt](https://scalameta.org/scalafmt/docs/installation.html) to enforce some of the code style rules.
 
-When IntelliJ detects the `.scalafmt.conf` and promts "Scalafmt configuration detected in this project" you should
-select "Continue using IntelliJ formatter" and instead install the [Scalafmt IntelliJ plugin](https://scalameta.org/scalafmt/docs/installation.html#intellij). Install the nightly plugin (until version 2.0.0 or later becomes stable) and enable "Format on save".
+It's recommended to enable Scalafmt formatting in IntelliJ. Use version 2019.1 or later. In
+Preferences > Editor > Code Style > Scala, select Scalafmt as formatter and enable "Reformat on file save".
+IntelliJ will then use the same settings and version as defined in `.scalafmt.conf` file. Then it's
+not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 ### Java style
 
