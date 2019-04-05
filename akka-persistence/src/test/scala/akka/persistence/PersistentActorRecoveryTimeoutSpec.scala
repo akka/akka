@@ -131,8 +131,7 @@ class PersistentActorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      val replaying =
-        system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
+      system.actorOf(Props(classOf[PersistentActorRecoveryTimeoutSpec.TestReceiveTimeoutActor], timeout, probe.ref))
 
       // initial read highest
       SteppingInmemJournal.step(journal)

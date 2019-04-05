@@ -11,6 +11,7 @@ import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -153,7 +154,7 @@ import akka.event.Logging
     case OnSubscribe(_) => throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
-  protected def inputOnError(e: Throwable): Unit = {
+  protected def inputOnError(@unused e: Throwable): Unit = {
     clear()
   }
 

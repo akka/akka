@@ -48,7 +48,7 @@ object AtLeastOnceDeliveryCrashSpec {
     override def receiveCommand: Receive = {
       case Message => persist(Message)(_ => send())
       case CrashMessage =>
-        persist(CrashMessage) { evt =>
+        persist(CrashMessage) { _ =>
         }
     }
 
@@ -80,9 +80,9 @@ class AtLeastOnceDeliveryCrashSpec
       system.stop(superVisor)
       deathProbe.expectTerminated(superVisor)
 
-      testProbe.expectNoMsg(250.millis)
+      testProbe.expectNoMessage(250.millis)
       createCrashActorUnderSupervisor()
-      testProbe.expectNoMsg(1.second)
+      testProbe.expectNoMessage(1.second)
     }
   }
 }

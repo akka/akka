@@ -282,7 +282,7 @@ object Framing {
             doParse()
           } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
             // Found a match, mark start and end position and iterate if possible
-            indices += (previous, possibleMatchPos)
+            indices += (previous -> possibleMatchPos)
             nextPossibleMatch = possibleMatchPos + separatorBytes.size
             if (nextPossibleMatch == buffer.size || indices.isFull) {
               doParse()

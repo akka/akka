@@ -25,7 +25,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-protobuf",
     "akka-stream-typed",
     "akka-cluster-typed",
+    "akka-persistence",
     "akka-cluster-tools",
+    "akka-stream",
     "akka-cluster-metrics",
     "akka-slf4j")
 
@@ -50,7 +52,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-          if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          if (!scalaVersion.value.startsWith("2.11") && fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
@@ -66,11 +68,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
               "-Yno-adapted-args")
           case Some((2, 12)) =>
             disciplineScalacOptions
-          case Some((2, 11)) =>
-            disciplineScalacOptions ++ Set("-language:existentials") -- Set(
-              "-Ywarn-extra-implicit",
-              "-Ywarn-unused:_",
-              "-Ypartial-unification")
           case _ =>
             Nil
         }).toSeq,

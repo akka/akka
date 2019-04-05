@@ -109,7 +109,7 @@ object AtLeastOnceDeliveryFailureSpec {
         add(i)
         deliver(destination.path)(deliveryId => Msg(deliveryId, i))
 
-      case MsgConfirmed(deliveryId, i) =>
+      case MsgConfirmed(deliveryId, _) =>
         confirmDelivery(deliveryId)
     }
 

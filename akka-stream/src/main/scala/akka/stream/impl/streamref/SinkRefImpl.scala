@@ -136,6 +136,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           }
 
           tryPull()
+
+        case (_, _) => // keep the compiler happy (stage actor receive is total)
       }
 
       override def onPush(): Unit = {

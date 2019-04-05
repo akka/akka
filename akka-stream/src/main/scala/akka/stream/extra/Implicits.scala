@@ -6,6 +6,8 @@ package akka.stream.extra
 
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -18,11 +20,13 @@ object Implicits {
    *
    * See [[Timed]]
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", "2.4.5") // overlooked this on the implicits when Timed was deprecated
   implicit class TimedSourceDsl[I, Mat](val source: Source[I, Mat]) extends AnyVal {
 
     /**
      * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
      */
+    @silent
     def timed[O, Mat2](
         measuredOps: Source[I, Mat] => Source[O, Mat2],
         onComplete: FiniteDuration => Unit): Source[O, Mat2] =
@@ -31,6 +35,7 @@ object Implicits {
     /**
      * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
      */
+    @silent
     def timedIntervalBetween(matching: I => Boolean, onInterval: FiniteDuration => Unit): Source[I, Mat] =
       Timed.timedIntervalBetween[I, Mat](source, matching, onInterval)
   }
@@ -40,11 +45,13 @@ object Implicits {
    *
    * See [[Timed]]
    */
+  @deprecated("Moved to the akka/akka-stream-contrib project", "2.4.5") // overlooked this on the implicits when Timed was deprecated
   implicit class TimedFlowDsl[I, O, Mat](val flow: Flow[I, O, Mat]) extends AnyVal {
 
     /**
      * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
      */
+    @silent
     def timed[Out, Mat2](
         measuredOps: Flow[I, O, Mat] => Flow[I, Out, Mat2],
         onComplete: FiniteDuration => Unit): Flow[I, Out, Mat2] =
@@ -53,6 +60,7 @@ object Implicits {
     /**
      * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
      */
+    @silent
     def timedIntervalBetween(matching: O => Boolean, onInterval: FiniteDuration => Unit): Flow[I, O, Mat] =
       Timed.timedIntervalBetween[I, O, Mat](flow, matching, onInterval)
   }

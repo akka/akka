@@ -23,7 +23,7 @@ object ManyRecoveriesSpec {
     override def persistenceId = name
 
     override def receiveRecover: Receive = {
-      case Evt(s) =>
+      case Evt(_) =>
         latch.foreach(Await.ready(_, 10.seconds))
     }
     override def receiveCommand: Receive = {

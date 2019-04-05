@@ -6,13 +6,17 @@ package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
 import java.util.stream.Collector
+
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
 import akka.util.ByteString
+
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.CompletionStage
+
 import akka.NotUsed
+import com.github.ghik.silencer.silent
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
@@ -108,6 +112,7 @@ object StreamConverters {
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
+  @silent
   def asInputStream(readTimeout: java.time.Duration): Sink[ByteString, InputStream] = {
     import akka.util.JavaDurationConverters._
     asInputStream(readTimeout.asScala)
@@ -183,6 +188,7 @@ object StreamConverters {
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
+  @silent
   def asOutputStream(writeTimeout: java.time.Duration): javadsl.Source[ByteString, OutputStream] = {
     import akka.util.JavaDurationConverters._
     asOutputStream(writeTimeout.asScala)
