@@ -28,7 +28,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-persistence",
     "akka-cluster-tools",
     "akka-cluster-sharding",
-    "akka-stream")
+    "akka-stream",
+    "akka-cluster-metrics",
+    "akka-slf4j")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 

@@ -26,6 +26,7 @@ import akka.dispatch.Dispatchers
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
  */
+@ccompatUsedUntil213
 class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private final val BufferSize = 4 * 1024

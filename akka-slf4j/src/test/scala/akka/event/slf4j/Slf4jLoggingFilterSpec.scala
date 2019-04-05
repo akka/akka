@@ -107,7 +107,7 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
       val debugLevelProducer = system.actorOf(Props[WarningLevelProducer], name = "warningLevelProducer")
       debugLevelProducer ! "test2"
       probe.expectMsgType[Warning].message should be("test2")
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage(500.millis)
     }
   }
 

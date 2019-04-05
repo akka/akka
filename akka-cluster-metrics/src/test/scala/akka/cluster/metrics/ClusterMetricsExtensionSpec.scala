@@ -11,7 +11,10 @@ import akka.testkit._
 import akka.cluster.metrics.StandardMetrics._
 import akka.cluster.Cluster
 
-class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with ImplicitSender with RedirectLogging {
+class ClusterMetricsExtensionSpec
+    extends AkkaSpec(MetricsConfig.clusterSigarMock)
+    with ImplicitSender
+    with RedirectLogging {
 
   val cluster = Cluster(system)
 
@@ -49,7 +52,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with
       extension.supervisor ! CollectionStopMessage
       awaitSample()
       metricsNodeCount should ===(nodeCount)
-      metricsHistorySize should be >= (sampleCount)
+      metricsHistorySize should be >= sampleCount
     }
 
     "verify sigar mock data matches expected ewma data" in {
@@ -95,12 +98,12 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with
         extension.supervisor ! CollectionStartMessage
         awaitSample()
         val size3 = metricsHistorySize
-        size3 should be > (size2)
+        size3 should be > size2
 
         extension.supervisor ! CollectionStopMessage
         awaitSample()
         val size4 = metricsHistorySize
-        size4 should be >= (size3)
+        size4 should be >= size3
 
         awaitSample()
         val size5 = metricsHistorySize
@@ -108,7 +111,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock) with
 
       }
 
-      (1 to 3).foreach { step =>
+      (1 to 3).foreach { _ =>
         cycle()
       }
 
