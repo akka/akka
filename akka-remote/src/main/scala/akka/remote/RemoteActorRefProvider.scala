@@ -10,19 +10,19 @@ import akka.dispatch.sysmsg._
 import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.pattern.pipe
-import scala.util.control.NonFatal
 
+import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
+
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
-
 import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.ArterySettings
-import akka.util.OptionVal
+import akka.util.{ ErrorMessages, OptionVal }
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
@@ -336,7 +336,7 @@ private[akka] class RemoteActorRefProvider(
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else if (props.deploy.scope == LocalScope) {
             throw new ConfigurationException(
-              s"configuration requested remote deployment for local-only Props at [$path]")
+              s"${ErrorMessages.RemoteDeploymentConfigErrorPrefix} for local-only Props at [$path]")
           } else
             try {
               try {
