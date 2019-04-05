@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.persistence.PersistentActorSpec._
 import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable.Seq
@@ -32,8 +33,8 @@ object PersistentActorSpec {
     var askedForDelete: Option[ActorRef] = None
 
     val updateState: Receive = {
-      case Evt(data)               => events = data :: events
-      case d @ Some(ref: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
+      case Evt(data)             => events = data :: events
+      case d @ Some(_: ActorRef) => askedForDelete = d.asInstanceOf[Some[ActorRef]]
     }
 
     val commonBehavior: Receive = {
@@ -351,7 +352,7 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        (1 to 3).foreach { i =>
+        (1 to 3).foreach { _ =>
           persistAsync(Evt(s"$data-${incCounter()}")) { evt =>
             sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
           }
@@ -399,6 +400,7 @@ object PersistentActorSpec {
       extends AsyncPersistSameEventTwicePersistentActor(name)
       with InmemRuntimePluginConfig
 
+  @silent // compiler knows persistAll(Nil)(lambda) will never invoke lambda
   class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     val receiveCommand: Receive = commonBehavior.orElse {
@@ -430,16 +432,16 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        persist(Evt(data + "-e1")) { evt =>
+        persist(Evt(s"$data-e1")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
         // this should be happily executed
-        persistAsync(Evt(data + "-ea2")) { evt =>
+        persistAsync(Evt(s"$data-ea2")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
-        persist(Evt(data + "-e3")) { evt =>
+        persist(Evt(s"$data-e3")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
     }
@@ -468,11 +470,11 @@ object PersistentActorSpec {
       case Cmd(data) =>
         sender() ! data
 
-        persist(Evt(data + "-e1")) { evt =>
+        persist(Evt(s"$data-e1")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
 
-        persistAsync(Evt(data + "-ea2")) { evt =>
+        persistAsync(Evt(s"$data-ea2")) { evt =>
           sender() ! s"${evt.data}-${incCounter()}"
         }
     }
@@ -494,8 +496,6 @@ object PersistentActorSpec {
       with InmemRuntimePluginConfig
 
   class AsyncPersistHandlerCorrelationCheck(name: String) extends ExamplePersistentActor(name) {
-    var counter = 0
-
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) =>
         persistAsync(Evt(data)) { evt =>
@@ -504,11 +504,6 @@ object PersistentActorSpec {
           if (evt.data == "done")
             sender() ! "done"
         }
-    }
-
-    private def incCounter(): Int = {
-      counter += 1
-      counter
     }
   }
   class AsyncPersistHandlerCorrelationCheckWithLevelDbRuntimePluginConfig(name: String, val providedConfig: Config)

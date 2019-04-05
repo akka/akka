@@ -15,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.persistence.AtLeastOnceDelivery.Internal.Delivery
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object AtLeastOnceDelivery {
 
   /**

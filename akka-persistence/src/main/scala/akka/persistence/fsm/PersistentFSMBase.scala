@@ -10,6 +10,8 @@ import akka.japi.pf.{ FSMTransitionHandlerBuilder, UnitMatch, UnitPFBuilder }
 import language.implicitConversions
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
+import akka.util.unused
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -384,7 +386,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
    * unhandled event handler
    */
   private val handleEventDefault: StateFunction = {
-    case Event(value, stateData) =>
+    case Event(value, _) =>
       log.warning("unhandled event " + value + " in state " + stateName)
       stay
   }
@@ -454,7 +456,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
     processEvent(event, source)
   }
 
-  private[akka] def processEvent(event: Event, source: AnyRef): Unit = {
+  private[akka] def processEvent(event: Event, @unused source: AnyRef): Unit = {
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc.isDefinedAt(event)) {
       stateFunc(event)

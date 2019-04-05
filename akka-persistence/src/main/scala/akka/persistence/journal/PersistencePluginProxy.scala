@@ -140,7 +140,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       context.become(initTimedOut)
       unstashAll() // will trigger appropriate failures
     case Terminated(_) =>
-    case msg =>
+    case _ =>
       stash()
   }
 
@@ -197,21 +197,21 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
             case r: NonPersistentRepr =>
               persistentActor ! LoopMessageSuccess(r.payload, actorInstanceId)
           }
-        case ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, persistentActor) =>
+        case ReplayMessages(_, _, _, _, persistentActor) =>
           persistentActor ! ReplayMessagesFailure(timeoutException)
-        case DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) =>
+        case DeleteMessagesTo(_, toSequenceNr, persistentActor) =>
           persistentActor ! DeleteMessagesFailure(timeoutException, toSequenceNr)
       }
 
     case req: SnapshotProtocol.Request =>
       req match { // exhaustive match
-        case LoadSnapshot(persistenceId, criteria, toSequenceNr) =>
+        case _: LoadSnapshot =>
           sender() ! LoadSnapshotFailed(timeoutException)
-        case SaveSnapshot(metadata, snapshot) =>
+        case SaveSnapshot(metadata, _) =>
           sender() ! SaveSnapshotFailure(metadata, timeoutException)
         case DeleteSnapshot(metadata) =>
           sender() ! DeleteSnapshotFailure(metadata, timeoutException)
-        case DeleteSnapshots(persistenceId, criteria) =>
+        case DeleteSnapshots(_, criteria) =>
           sender() ! DeleteSnapshotsFailure(criteria, timeoutException)
       }
 
@@ -219,7 +219,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       becomeIdentifying(address)
 
     case Terminated(_) =>
-    case other =>
+    case _ =>
       val e = timeoutException()
       log.error(e, "Failed PersistencePluginProxy request: {}", e.getMessage)
   }
