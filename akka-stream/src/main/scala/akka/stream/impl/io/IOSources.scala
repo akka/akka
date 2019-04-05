@@ -17,6 +17,7 @@ import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
 import akka.stream.{ IOResult, _ }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
 import scala.annotation.tailrec
@@ -154,6 +155,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val ioResultPromise = Promise[IOResult]()
 
+    @silent
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 

@@ -13,6 +13,7 @@ import akka.annotation.InternalApi
 import akka.stream.{ AbruptIOTerminationException, IOResult }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
@@ -33,6 +34,7 @@ import scala.util.{ Failure, Success, Try }
 }
 
 /** INTERNAL API */
+@silent
 @InternalApi private[akka] class FileSubscriber(
     f: Path,
     completionPromise: Promise[IOResult],

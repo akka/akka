@@ -15,6 +15,7 @@ import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, Su
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
+import akka.util.unused
 import akka.{ Done, NotUsed }
 
 import scala.annotation.tailrec
@@ -37,14 +38,14 @@ import scala.concurrent.{ Future, Promise }
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
   /**
-   * Grants eager access to materializer for special purposes.
+   * Grants access to the materializer before preStart of the graph stage logic is invoked.
    *
    * INTERNAL API
    */
   @InternalApi
   private[akka] def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
+      @unused materializer: Materializer): (GraphStageLogic, M) = createLogicAndMaterializedValue(inheritedAttributes)
 
   @throws(classOf[Exception])
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, M)
@@ -705,9 +706,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         setHandler(in, new Reading(in, n - pos, getHandler(in))((elem: T) => {
           result(pos) = elem
           pos += 1
-          if (pos == n) andThen(result)
-        }, () => onClose(result.take(pos))))
-      } else andThen(result)
+          if (pos == n) andThen(result.toSeq)
+        }, () => onClose(result.take(pos).toSeq)))
+      } else andThen(result.toSeq)
     }
 
   /**
@@ -775,7 +776,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Caution: for n == 1 andThen is called after resetting the handler, for
    * other values it is called without resetting the handler. n MUST be positive.
    */
-  private final class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(
+  // can't be final because of SI-4440
+  private class Reading[T](in: Inlet[T], private var n: Int, val previous: InHandler)(
       andThen: T => Unit,
       onComplete: () => Unit)
       extends InHandler {
@@ -923,7 +925,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       extends OutHandler {
     private var followUps: Emitting[T] = _
     private var followUpsTail: Emitting[T] = _
-    private def as[U] = this.asInstanceOf[Emitting[U]]
 
     protected def followUp(): Unit = {
       setHandler(out, previous)
@@ -972,15 +973,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       head.followUpsTail = null
       next
     }
-
-    private def addFollowUps(e: Emitting[T]): Unit =
-      if (followUps == null) {
-        followUps = e.followUps
-        followUpsTail = e.followUpsTail
-      } else {
-        followUpsTail.followUps = e.followUps
-        followUpsTail = e.followUpsTail
-      }
 
     /**
      * Dequeue `this` from the head of the queue, meaning that this object will
@@ -1104,11 +1096,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     sealed trait State
     // waiting for materialization completion or during dispatching of initially queued events
-    private final case class Pending(pendingEvents: List[Event]) extends State
+    // - can't be final because of SI-4440
+    private case class Pending(pendingEvents: List[Event]) extends State
     // stream is initialized and so no threads can just send events without any synchronization overhead
     private case object Initialized extends State
-    // Event with feedback promise
-    private final case class Event(e: T, handlingPromise: Promise[Done])
+    // Event with feedback promise - can't be final because of SI-4440
+    private case class Event(e: T, handlingPromise: Promise[Done])
 
     private[this] val NoPendingEvents = Pending(Nil)
     private[this] val currentState = new AtomicReference[State](NoPendingEvents)
@@ -1540,7 +1533,7 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
    * @param timerKey key of the scheduled timer
    */
   @throws(classOf[Exception])
-  protected def onTimer(timerKey: Any): Unit = ()
+  protected def onTimer(@unused timerKey: Any): Unit = ()
 
   // Internal hooks to avoid reliance on user calling super in postStop
   protected[stream] override def afterPostStop(): Unit = {

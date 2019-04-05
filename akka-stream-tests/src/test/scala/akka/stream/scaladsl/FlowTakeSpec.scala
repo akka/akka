@@ -20,7 +20,7 @@ class FlowTakeSpec extends StreamSpec with ScriptedTest {
 
   implicit val materializer = ActorMaterializer(settings)
 
-  muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
+  muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore[_]])()
 
   "A Take" must {
 

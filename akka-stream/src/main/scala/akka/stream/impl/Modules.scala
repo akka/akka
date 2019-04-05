@@ -13,6 +13,7 @@ import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
 import akka.event.Logging
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -98,6 +99,7 @@ import akka.event.Logging
     shape: SourceShape[Out])
     extends SourceModule[Out, ActorRef](shape) {
 
+  @silent
   override def create(context: MaterializationContext) = {
     val publisherRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
     (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)

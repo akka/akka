@@ -387,7 +387,7 @@ object Flow {
           LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
           noAttrStage.shape).withAttributes(attrs)
 
-      case other => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
+      case _ => new Flow(LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right), g.shape)
     }
 
   /**
@@ -444,7 +444,7 @@ object Flow {
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(
       combine: (M1, M2) => M): Flow[I, O, M] =
-    fromGraph(GraphDSL.create(sink, source)(combine) { implicit b => (in, out) =>
+    fromGraph(GraphDSL.create(sink, source)(combine) { _ => (in, out) =>
       FlowShape(in.in, out.out)
     })
 
