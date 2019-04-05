@@ -863,3 +863,32 @@ You can look at the
 @java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
 @scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.
+
+### Running in Docker/Kubernetes
+
+When using `aeron-udp` in a containerized environment special care must be taken that the media driver runs on a ram disk.
+This by default is located in `/dev/shm` which on most physical Linux machines will be mounted as half the size of the system memory.
+
+Docker and Kubernetes mount a 64Mb ram disk. This is unlikely to be large enough. For docker this can be overridden with `--shm-size="512mb"`.
+
+In Kubernetes there is no direct support (yet) for setting `shm` size. Instead mount an `EmptyDir` with type `Memory` to `/dev/shm` for example in a
+deployment.yml:
+
+```
+spec:
+  containers:
+  - name: artery-udp-cluster
+    // rest of container spec...
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: media-driver
+  volumes:
+  - name: media-driver
+    emptyDir:
+      medium: Memory
+      name: media-driver
+```
+
+There is currently no way to limit the size of a memory empty dir but there is a [pull request](https://github.com/kubernetes/kubernetes/pull/63641) for adding it.
+
+Any space used in the mount will count towards your container's memory usage.

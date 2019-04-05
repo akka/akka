@@ -25,7 +25,7 @@ trait DeadLettersProbe { this: TestKitBase =>
   val deadLettersProbe = TestProbe()
   system.eventStream.subscribe(deadLettersProbe.ref, classOf[DeadLetter])
 
-  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMsg(100.milliseconds)
+  def expectNoDeadLetters(): Unit = deadLettersProbe.expectNoMessage(100.milliseconds)
   def expectDeadLetter(): Unit = deadLettersProbe.expectMsgClass(classOf[DeadLetter])
 }
 

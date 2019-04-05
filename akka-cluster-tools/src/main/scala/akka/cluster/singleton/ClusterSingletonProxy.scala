@@ -264,7 +264,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     case _: MemberEvent => // do nothing
 
     // singleton identification logic
-    case ActorIdentity(identifyId, Some(s)) =>
+    case ActorIdentity(_, Some(s)) =>
       // if the new singleton is defined, deliver all buffered messages
       log.info("Singleton identified at [{}]", s.path)
       singleton = Some(s)

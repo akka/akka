@@ -10,7 +10,6 @@ import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverInProgres
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverToMe
 import akka.cluster.singleton.ClusterSingletonManager.Internal.TakeOverFromMe
 import akka.serialization.BaseSerializer
-import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import java.io.NotSerializableException
 
@@ -22,8 +21,6 @@ import java.io.NotSerializableException
 private[akka] class ClusterSingletonMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
-
-  private lazy val serialization = SerializationExtension(system)
 
   private val HandOverToMeManifest = "A"
   private val HandOverInProgressManifest = "B"
