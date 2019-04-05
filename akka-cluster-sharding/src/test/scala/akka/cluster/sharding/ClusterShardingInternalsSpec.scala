@@ -11,7 +11,7 @@ import akka.cluster.sharding.ShardRegion.HandOffStopper
 import akka.testkit.{ AkkaSpec, TestProbe }
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 

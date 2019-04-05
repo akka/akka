@@ -508,7 +508,7 @@ private[akka] class ShardRegion(
     member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
   def coordinatorSelection: Option[ActorSelection] =
-    membersByAge.headOption.map(m => context.actorSelection(RootActorPath(m.address) + coordinatorPath))
+    membersByAge.headOption.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
 
   /**
    * When leaving the coordinator singleton is started rather quickly on next
@@ -516,7 +516,7 @@ private[akka] class ShardRegion(
    * the likely locations of the coordinator.
    */
   def gracefulShutdownCoordinatorSelections: List[ActorSelection] =
-    membersByAge.take(2).toList.map(m => context.actorSelection(RootActorPath(m.address) + coordinatorPath))
+    membersByAge.take(2).toList.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
 
   var coordinator: Option[ActorRef] = None
 
@@ -741,7 +741,7 @@ private[akka] class ShardRegion(
         }.toMap)
       }
       .recover {
-        case x: AskTimeoutException => ShardRegionStats(Map.empty)
+        case _: AskTimeoutException => ShardRegionStats(Map.empty)
       }
       .pipeTo(ref)
   }
@@ -915,23 +915,14 @@ private[akka] class ShardRegion(
             val shard = context.watch(
               context.actorOf(
                 Shard
-                  .props(
-                    typeName,
-                    id,
-                    props,
-                    settings,
-                    extractEntityId,
-                    extractShardId,
-                    handOffStopMessage,
-                    replicator,
-                    majorityMinCap)
+                  .props(typeName, id, props, settings, extractEntityId, handOffStopMessage, replicator, majorityMinCap)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)
             startingShards += id
             None
-          case Some(props) =>
+          case Some(_) =>
             None
           case None =>
             throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")

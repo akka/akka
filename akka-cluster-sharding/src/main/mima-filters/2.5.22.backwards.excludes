@@ -1,0 +1,9 @@
+# Cleaning up compiler warnings
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RememberEntityStarter.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.props")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShard.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.PersistentShard.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RememberEntityStarter.props")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData.remove")
