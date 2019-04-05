@@ -30,7 +30,6 @@ object ProbedBehavior {
           probe ! s
           Behaviors.same
       }
-
   }
 }
 
@@ -47,7 +46,6 @@ object UntypedSupervisingTypedSpec {
         sender() ! TypedSpawnedFromUntypedConext(context.spawn(behav, name))
       case SpawnAnonFromUntyped(behav) =>
         sender() ! TypedSpawnedFromUntypedConext(context.spawnAnonymous(behav))
-
     }
   }
 }

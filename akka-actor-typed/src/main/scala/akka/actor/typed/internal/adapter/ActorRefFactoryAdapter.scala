@@ -6,11 +6,14 @@ package akka.actor.typed.internal.adapter
 import akka.actor.typed._
 import akka.annotation.InternalApi
 import akka.ConfigurationException
+import akka.util.ErrorMessages
 
 /**
  * INTERNAL API
  */
 @InternalApi private[typed] object ActorRefFactoryAdapter {
+
+  private val remoteDeploymentNotAllowed = "Remote deployment not allowed for typed actors"
   def spawnAnonymous[T](
       context: akka.actor.ActorRefFactory,
       behavior: Behavior[T],
@@ -19,8 +22,8 @@ import akka.ConfigurationException
     try {
       ActorRefAdapter(context.actorOf(internal.adapter.PropsAdapter(() => behavior, props, rethrowTypedFailure)))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
-        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+      case ex: ConfigurationException if ex.getMessage.startsWith(ErrorMessages.RemoteDeploymentConfigErrorPrefix) =>
+        throw new ConfigurationException(remoteDeploymentNotAllowed, ex)
     }
   }
 
@@ -36,9 +39,8 @@ import akka.ConfigurationException
           internal.adapter.PropsAdapter(() => Behavior.validateAsInitial(behavior), props, rethrowTypedFailure),
           name))
     } catch {
-      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") =>
-        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
+      case ex: ConfigurationException if ex.getMessage.startsWith(ErrorMessages.RemoteDeploymentConfigErrorPrefix) =>
+        throw new ConfigurationException(remoteDeploymentNotAllowed, ex)
     }
   }
-
 }
