@@ -71,6 +71,8 @@ class ClusterSingletonLeavingSpeedSpec
 
   override def expectedTestDuration: FiniteDuration = 10.minutes
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem, probe: ActorRef): Unit = {
 
     from.actorOf(
@@ -82,7 +84,7 @@ class ClusterSingletonLeavingSpeedSpec
 
     Cluster(from).join(Cluster(to).selfAddress)
     within(15.seconds) {
-      import akka.util.ccompat._
+
       awaitAssert {
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
         Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))

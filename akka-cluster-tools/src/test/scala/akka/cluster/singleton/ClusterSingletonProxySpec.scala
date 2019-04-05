@@ -18,7 +18,7 @@ class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAn
   val seed = new ActorSys()
 
   val testSystems = {
-    val joiners = (0 until 4).map(n => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
+    val joiners = (0 until 4).map(_ => new ActorSys(joinTo = Some(seed.cluster.selfAddress)))
     joiners :+ seed
   }
 
