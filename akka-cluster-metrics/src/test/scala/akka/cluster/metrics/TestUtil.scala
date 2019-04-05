@@ -21,7 +21,7 @@ import akka.actor.Deploy
 import akka.dispatch.UnboundedMessageQueueSemantics
 import akka.actor.PoisonPill
 import akka.actor.ActorLogging
-import org.scalatest.mock.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.remote.RARP
