@@ -7,12 +7,16 @@ package akka.cluster.metrics
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.cluster.metrics.StandardMetrics._
+
 import scala.util.Failure
 import akka.actor.Address
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import java.lang.System.{ currentTimeMillis => newTimestamp }
 
+import com.github.ghik.silencer.silent
+
+@silent
 class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
@@ -51,6 +55,7 @@ class MetricNumericConverterSpec extends WordSpec with Matchers with MetricNumer
   }
 }
 
+@silent
 class NodeMetricsSpec extends WordSpec with Matchers {
 
   val node1 = Address("akka.tcp", "sys", "a", 2554)
@@ -232,6 +237,7 @@ class MetricsGossipSpec
   }
 }
 
+@silent
 class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
   import akka.cluster.metrics.StandardMetrics._
 
