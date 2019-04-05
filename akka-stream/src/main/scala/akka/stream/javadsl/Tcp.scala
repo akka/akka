@@ -25,10 +25,11 @@ import akka.io.Inet.SocketOption
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
-import javax.net.ssl.SSLContext
 
+import javax.net.ssl.SSLContext
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.TLSProtocol.NegotiateNewSession
+import com.github.ghik.silencer.silent
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -272,6 +273,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * @see [[Tcp.bind()]]
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
+   *
+   * Note: the half close parameter is currently ignored
    */
   @ApiMayChange
   def bindTls(
@@ -281,12 +284,14 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
+      @silent // FIXME unused #26689
       halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
-    Source.fromGraph(delegate
-      .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), halfClose, idleTimeout)
-      .map(new IncomingConnection(_))
-      .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
+    Source.fromGraph(
+      delegate
+        .bindTls(interface, port, sslContext, negotiateNewSession, backlog, immutableSeq(options), idleTimeout)
+        .map(new IncomingConnection(_))
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`

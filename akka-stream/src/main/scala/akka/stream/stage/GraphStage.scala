@@ -706,9 +706,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         setHandler(in, new Reading(in, n - pos, getHandler(in))((elem: T) => {
           result(pos) = elem
           pos += 1
-          if (pos == n) andThen(result.toIndexedSeq)
-        }, () => onClose(result.take(pos).toIndexedSeq)))
-      } else andThen(result.toIndexedSeq)
+          if (pos == n) andThen(result.toSeq)
+        }, () => onClose(result.take(pos).toSeq)))
+      } else andThen(result.toSeq)
     }
 
   /**
@@ -1322,20 +1322,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var closed = false
     private var pulled = false
 
-    private val _sink = new SubSink[T](name, getAsyncCallback[ActorSubscriberMessage] { msg =>
-      if (!closed) msg match {
-        case OnNext(e) =>
-          elem = e.asInstanceOf[T]
-          pulled = false
-          handler.onPush()
-        case OnComplete =>
-          closed = true
-          handler.onUpstreamFinish()
-        case OnError(ex) =>
-          closed = true
-          handler.onUpstreamFailure(ex)
-      }
-    }.invoke _)
+    private val _sink = new SubSink[T](
+      name,
+      getAsyncCallback[ActorSubscriberMessage] { msg =>
+        if (!closed) msg match {
+          case OnNext(e) =>
+            elem = e.asInstanceOf[T]
+            pulled = false
+            handler.onPush()
+          case OnComplete =>
+            closed = true
+            handler.onUpstreamFinish()
+          case OnError(ex) =>
+            closed = true
+            handler.onUpstreamFailure(ex)
+        }
+      }.invoke _)
 
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 

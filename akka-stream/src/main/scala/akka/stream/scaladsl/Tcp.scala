@@ -316,34 +316,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       backlog: Int = 100,
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
-      idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
-    bindTls(interface, port, sslContext, negotiateNewSession, backlog, options, halfClose = false, idleTimeout)
-
-  /**
-   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
-   * where all incoming and outgoing bytes are passed through TLS.
-   *
-   * @param negotiateNewSession Details about what to require when negotiating the connection with the server
-   * @param sslContext Context containing details such as the trust and keystore
-   * @see [[Tcp.bind]]
-   *
-   * Marked API-may-change to leave room for an improvement around the very long parameter list.
-   */
-  @ApiMayChange
-  def bindTls(
-      interface: String,
-      port: Int,
-      sslContext: SSLContext,
-      negotiateNewSession: NegotiateNewSession,
-      backlog: Int,
-      @silent // Traversable deprecated in 2.13
-      options: immutable.Traversable[SocketOption],
-      halfClose: Boolean,
-      idleTimeout: Duration): Source[IncomingConnection, Future[ServerBinding]] = {
-
+      idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
     val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
-    bind(interface, port, backlog, options, halfClose, idleTimeout).map { incomingConnection =>
+    bind(interface, port, backlog, options, halfClose = false, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(flow = incomingConnection.flow.join(tls))
     }
   }
