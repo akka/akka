@@ -23,6 +23,7 @@ import java.nio.ByteBuffer
 import akka.actor.dungeon.SerializationCheckFailedException
 import com.github.ghik.silencer.silent
 import test.akka.serialization.NoVerification
+import SerializationTests._
 
 object SerializationTests {
 
@@ -152,13 +153,15 @@ object SerializationTests {
 }
 
 class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
-  import SerializationTests._
 
   val ser = SerializationExtension(system)
   import ser._
 
-  val address = Address("120", "Monroe Street", "Santa Clara", "95050")
-  val person = Person("debasish ghosh", 25, Address("120", "Monroe Street", "Santa Clara", "95050"))
+  val address = SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050")
+  val person = SerializationTests.Person(
+    "debasish ghosh",
+    25,
+    SerializationTests.Address("120", "Monroe Street", "Santa Clara", "95050"))
 
   "Serialization" must {
 
@@ -170,7 +173,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "serialize Address" in {
-      assert(deserialize(serialize(address).get, classOf[Address]).get === address)
+      assert(deserialize(serialize(address).get, classOf[SerializationTests.Address]).get === address)
     }
 
     "serialize Person" in {
@@ -244,8 +247,8 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1).intercept {
-        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should (be(
-          classOf[NoopSerializer]).or(be(classOf[NoopSerializer2])))
+        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should be(classOf[NoopSerializer])
+          .or(be(classOf[NoopSerializer2]))
       }
     }
 
@@ -309,7 +312,6 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 }
 
 class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
-  import SerializationTests._
   implicit val timeout = Timeout(5 seconds)
 
   "verify config" in {
@@ -337,7 +339,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     EventFilter[SerializationCheckFailedException](
       start = "Failed to serialize and deserialize message of type java.lang.Object",
       occurrences = 1).intercept {
-      a ! (new AnyRef)
+      a ! new AnyRef
     }
     system.stop(a)
   }
