@@ -28,6 +28,7 @@ import akka.cluster.sharding.ShardRegion._
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
  */
+@ccompatUsedUntil213
 private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
@@ -125,13 +126,13 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     GracefulShutdownReqManifest -> { bytes =>
       GracefulShutdownReq(actorRefMessageFromBinary(bytes))
     },
-    GetShardStatsManifest -> { bytes =>
+    GetShardStatsManifest -> { _ =>
       GetShardStats
     },
     ShardStatsManifest -> { bytes =>
       shardStatsFromBinary(bytes)
     },
-    GetShardRegionStatsManifest -> { bytes =>
+    GetShardRegionStatsManifest -> { _ =>
       GetShardRegionStats
     },
     ShardRegionStatsManifest -> { bytes =>
@@ -225,13 +226,6 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     }
 
   private def coordinatorStateToProto(state: State): sm.CoordinatorState = {
-    val regions = state.regions
-      .map {
-        case (regionRef, _) => Serialization.serializedActorPath(regionRef)
-      }
-      .toVector
-      .asJava
-
     val builder = sm.CoordinatorState.newBuilder()
 
     state.shards.foreach {

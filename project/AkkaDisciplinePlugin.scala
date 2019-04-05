@@ -27,6 +27,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-cluster-typed",
     "akka-persistence",
     "akka-cluster-tools",
+    "akka-cluster-sharding",
     "akka-stream",
     "akka-cluster-metrics",
     "akka-slf4j")
@@ -114,5 +115,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ywarn-unused:_",
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
+
 
 }

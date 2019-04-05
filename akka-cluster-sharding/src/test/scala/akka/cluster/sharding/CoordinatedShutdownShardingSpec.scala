@@ -36,6 +36,7 @@ object CoordinatedShutdownShardingSpec {
   }
 }
 
+@ccompatUsedUntil213
 class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardingSpec.config) with WithLogCapturing {
   import CoordinatedShutdownShardingSpec._
 
