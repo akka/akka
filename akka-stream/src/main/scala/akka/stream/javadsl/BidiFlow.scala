@@ -7,6 +7,7 @@ package akka.stream.javadsl
 import akka.NotUsed
 import akka.japi.function
 import akka.stream._
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -108,6 +109,7 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
+  @silent
   def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
     import akka.util.JavaDurationConverters._
     bidirectionalIdleTimeout(timeout.asScala)

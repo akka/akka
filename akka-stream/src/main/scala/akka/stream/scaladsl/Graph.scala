@@ -784,7 +784,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
   /**
    * Sets `eagerCancel` to `false`.
    */
-  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", "2.5.10")
   def this(outputPorts: Int, partitioner: T => Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")

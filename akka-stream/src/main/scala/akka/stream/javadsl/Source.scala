@@ -28,6 +28,9 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import java.util.function.Supplier
 
+import akka.util.unused
+import com.github.ghik.silencer.silent
+
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
@@ -44,7 +47,7 @@ object Source {
   /**
    * Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()`
    */
-  def empty[T](clazz: Class[T]): Source[T, NotUsed] = empty[T]()
+  def empty[T](@unused clazz: Class[T]): Source[T, NotUsed] = empty[T]()
 
   /**
    * Create a `Source` which materializes a [[java.util.concurrent.CompletableFuture]] which controls what element
@@ -225,6 +228,7 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
+  @silent
   def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
     Source.tick(initialDelay.asScala, interval.asScala, tick)
 
@@ -1374,6 +1378,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    *
    */
+  @silent
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     new Source(delegate.recoverWith(pf))
 
@@ -2048,6 +2053,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @silent
   def groupedWithin(n: Int, d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -2095,6 +2101,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @silent
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -2156,6 +2163,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
+  @silent
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Source[Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -2201,6 +2209,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def dropWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     dropWithin(d.asScala)
 
@@ -2326,6 +2335,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
+  @silent
   def takeWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     takeWithin(d.asScala)
 
@@ -2874,6 +2884,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def initialTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -2906,6 +2917,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def completionTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -2940,6 +2952,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def idleTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -2974,6 +2987,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def backpressureTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -3016,6 +3030,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -3421,6 +3436,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @silent
   def initialDelay(delay: java.time.Duration): javadsl.Source[Out, Mat] =
     initialDelay(delay.asScala)
 

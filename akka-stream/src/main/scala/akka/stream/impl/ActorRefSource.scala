@@ -11,8 +11,6 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.OptionVal
 
-import scala.annotation.tailrec
-
 private object ActorRefSource {
   private sealed trait ActorRefStage { def ref: ActorRef }
 }

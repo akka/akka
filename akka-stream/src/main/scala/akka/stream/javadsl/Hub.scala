@@ -9,6 +9,7 @@ import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
 
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
+import akka.util.unused
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -33,7 +34,7 @@ object MergeHub {
    * @param clazz Type of elements this hub emits and consumes
    * @param perProducerBufferSize Buffer space used per producer.
    */
-  def of[T](clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] = {
+  def of[T](@unused clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] = {
     akka.stream.scaladsl.MergeHub.source[T](perProducerBufferSize).mapMaterializedValue(_.asJava[T]).asJava
   }
 
@@ -83,7 +84,7 @@ object BroadcastHub {
    *                   concurrent consumers can be in terms of element. If the buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def of[T](clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
+  def of[T](@unused clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
     akka.stream.scaladsl.BroadcastHub.sink[T](bufferSize).mapMaterializedValue(_.asJava).asJava
   }
 
@@ -133,7 +134,7 @@ object PartitionHub {
    *   is backpressured.
    */
   @ApiMayChange def ofStateful[T](
-      clazz: Class[T],
+      @unused clazz: Class[T],
       partitioner: Supplier[ToLongBiFunction[ConsumerInfo, T]],
       startAfterNrOfConsumers: Int,
       bufferSize: Int): Sink[T, Source[T, NotUsed]] = {
@@ -183,7 +184,7 @@ object PartitionHub {
    *   is backpressured.
    */
   @ApiMayChange def of[T](
-      clazz: Class[T],
+      @unused clazz: Class[T],
       partitioner: BiFunction[Integer, T, Integer],
       startAfterNrOfConsumers: Int,
       bufferSize: Int): Sink[T, Source[T, NotUsed]] =

@@ -25,7 +25,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-protobuf",
     "akka-stream-typed",
     "akka-cluster-typed",
-    "akka - cluster - tools")
+    "akka-cluster-tools",
+    "akka-stream")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
@@ -48,7 +49,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-          if (fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          if (!scalaVersion.value.startsWith("2.11") && fatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
@@ -64,11 +65,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
               "-Yno-adapted-args")
           case Some((2, 12)) =>
             disciplineScalacOptions
-          case Some((2, 11)) =>
-            disciplineScalacOptions ++ Set("-language:existentials") -- Set(
-              "-Ywarn-extra-implicit",
-              "-Ywarn-unused:_",
-              "-Ypartial-unification")
           case _ =>
             Nil
         }).toSeq,
