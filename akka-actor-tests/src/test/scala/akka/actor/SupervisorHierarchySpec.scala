@@ -315,7 +315,7 @@ object SupervisorHierarchySpec {
           } else {
             // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
             // an indication of duplicate Terminate messages
-            log :+= Event(sender() + " terminated while pongOfDeath", identityHashCode(Hierarchy.this))
+            log :+= Event(s"${sender()} terminated while pongOfDeath", identityHashCode(Hierarchy.this))
           }
         case Abort => abort("terminating")
         case PingOfDeath =>
@@ -641,7 +641,6 @@ object SupervisorHierarchySpec {
       case Event(GCcheck(weak), _) =>
         val next = weak.filter(_.get ne null)
         if (next.nonEmpty) {
-          println(next.size + " left")
           context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))(context.dispatcher)
           System.gc()
           stay

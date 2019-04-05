@@ -11,6 +11,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
 import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
+import com.github.ghik.silencer.silent
 import org.apache.commons.codec.binary.Hex.encodeHex
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{ Arbitrary, Gen }
@@ -157,6 +158,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     body(bsA, bsB) == body(vecA, vecB)
   }
 
+  @silent
   def likeVecIt(bs: ByteString)(body: BufferedIterator[Byte] => Any, strict: Boolean = true): Boolean = {
     val bsIterator = bs.iterator
     val vecIterator = Vector(bs: _*).iterator.buffered
@@ -164,6 +166,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     (!strict || (bsIterator.toSeq == vecIterator.toSeq))
   }
 
+  @silent
   def likeVecIts(a: ByteString, b: ByteString)(
       body: (BufferedIterator[Byte], BufferedIterator[Byte]) => Any,
       strict: Boolean = true): Boolean = {
@@ -1191,7 +1194,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
             bs3.foreach { b =>
               builder += b
             }
-            builder ++= Vector(array2: _*)
+            builder ++= array2.toIndexedSeq
           }
         }
       }

@@ -8,15 +8,19 @@ import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
 import atomic.{ AtomicInteger, AtomicReference }
+
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.Try
 import scala.util.control.NonFatal
 import org.scalatest.BeforeAndAfterEach
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.pattern.ask
 import akka.testkit._
+import com.github.ghik.silencer.silent
+
 import scala.util.control.NoStackTrace
 
 object SchedulerSpec {
@@ -549,6 +553,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
+  @silent
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
       thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
     import akka.actor.{ LightArrayRevolverScheduler => LARS }

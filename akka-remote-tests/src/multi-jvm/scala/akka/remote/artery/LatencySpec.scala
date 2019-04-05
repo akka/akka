@@ -121,7 +121,7 @@ object LatencySpec extends MultiNodeConfig {
     def receiveMessage(size: Int): Unit = {
       if (count == 0)
         startTime = System.nanoTime()
-      reporter.onMessage(1, payloadSize)
+      reporter.onMessage(1, size)
       count += 1
       val d = System.nanoTime() - sendTimes.get(count - 1)
       try {
@@ -135,14 +135,13 @@ object LatencySpec extends MultiNodeConfig {
           }
       }
       if (count == totalMessages) {
-        printTotal(testName, size, histogram, System.nanoTime() - startTime, BenchmarkFileReporter)
+        printTotal(testName, histogram, System.nanoTime() - startTime, BenchmarkFileReporter)
         context.stop(self)
       }
     }
 
     def printTotal(
         testName: String,
-        payloadSize: Long,
         histogram: Histogram,
         totalDurationNanos: Long,
         reporter: BenchmarkFileReporter): Unit = {
@@ -281,7 +280,7 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
           receiverProps(rep, testSettings, totalMessages, sendTimes, histogram, plotProbe.ref, BenchmarkFileReporter))
 
         // warmup for 3 seconds to init compression
-        val warmup = Source(1 to 30).throttle(10, 1.second, 10, ThrottleMode.Shaping).runForeach { n =>
+        val warmup = Source(1 to 30).throttle(10, 1.second, 10, ThrottleMode.Shaping).runForeach { _ =>
           echo.tell(Array.emptyByteArray, receiver)
         }
 
@@ -309,16 +308,16 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
                   items = Vector(TestMessage.Item(1, "A"), TestMessage.Item(2, "B")))
               else payload
 
-            echo.tell(payload, receiver)
+            echo.tell(msg, receiver)
             i += 1
           }
 
           // measure rate and adjust for next repeat round
-          val d = (sendTimes.get(totalMessages - 1) - sendTimes.get(0))
+          val d = sendTimes.get(totalMessages - 1) - sendTimes.get(0)
           val measuredRate = totalMessages * SECONDS.toNanos(1) / math.max(1, d)
           val previousTargetRate = messageRate * adjustRateFactor
-          adjustRateFactor = (previousTargetRate / math.max(1, measuredRate))
-          println(s"Measured send rate $measuredRate msg/s (new adjustment facor: $adjustRateFactor)")
+          adjustRateFactor = previousTargetRate / math.max(1, measuredRate)
+          println(s"Measured send rate $measuredRate msg/s (new adjustment factor: $adjustRateFactor)")
         }
 
         watch(receiver)

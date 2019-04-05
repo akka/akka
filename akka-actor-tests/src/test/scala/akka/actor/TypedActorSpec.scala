@@ -14,6 +14,7 @@ import akka.routing.RoundRobinGroup
 import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
 import akka.testkit.{ filterEvents, AkkaSpec, DefaultTimeout, EventFilter, TimingTest }
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import scala.annotation.tailrec
@@ -24,6 +25,7 @@ import scala.language.postfixOps
 
 object TypedActorSpec {
 
+  @silent
   val config = """
     pooled-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"

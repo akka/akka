@@ -77,7 +77,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
         // Quarantine is up -- Cannot communicate with remote system any more
         system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "identify"
-        expectNoMsg(2.seconds)
+        expectNoMessage(2.seconds)
 
         // Shut down the other system -- which results in restart (see runOn(second))
         Await.result(testConductor.shutdown(second), 30.seconds)

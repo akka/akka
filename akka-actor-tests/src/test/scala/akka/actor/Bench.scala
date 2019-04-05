@@ -71,7 +71,7 @@ object Chameneos {
       case FADED => FADED
     }
 
-    override def toString = cid + "(" + colour + ")"
+    override def toString = s"$cid($colour)"
   }
 
   class Mall(var n: Int, numChameneos: Int) extends Actor {
