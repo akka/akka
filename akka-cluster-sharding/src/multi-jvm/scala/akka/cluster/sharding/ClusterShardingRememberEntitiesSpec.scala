@@ -19,6 +19,7 @@ import akka.util.ccompat._
 
 import scala.concurrent.duration._
 
+@ccompatUsedUntil213
 object ClusterShardingRememberEntitiesSpec {
 
   final case class Started(ref: ActorRef)

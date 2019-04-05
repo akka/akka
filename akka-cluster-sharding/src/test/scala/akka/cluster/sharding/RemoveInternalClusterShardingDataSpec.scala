@@ -77,7 +77,7 @@ object RemoveInternalClusterShardingDataSpec {
     override def recovery: Recovery = Recovery(fromSnapshot = SnapshotSelectionCriteria.None)
 
     override def receiveRecover: Receive = {
-      case event: ShardCoordinator.Internal.DomainEvent =>
+      case _: ShardCoordinator.Internal.DomainEvent =>
         hasEvents = true
       case RecoveryCompleted =>
         replyTo ! hasEvents
@@ -201,12 +201,8 @@ class RemoveInternalClusterShardingDataSpec
         hasEvents(typeName) should ===(true)
       }
 
-      val result = RemoveInternalClusterShardingData.remove(
-        system,
-        journalPluginId = "",
-        typeNames.toSet,
-        terminateSystem = false,
-        remove2dot3Data = true)
+      val result =
+        RemoveInternalClusterShardingData.remove(system, journalPluginId = "", typeNames.toSet, remove2dot3Data = true)
       Await.ready(result, remaining)
 
       typeNames.foreach { typeName =>
