@@ -931,7 +931,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       andThen()
       if (followUps != null) {
 
-        /**
+        /*
          * If (while executing andThen() callback) handler was changed to new emitting,
          * we should add it to the end of emission queue
          */
@@ -942,7 +942,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         val next = dequeue()
         if (next.isInstanceOf[EmittingCompletion[_]]) {
 
-          /**
+          /*
            * If next element is emitting completion and there are some elements after it,
            * we to need pass them before completion
            */
@@ -1125,7 +1125,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def invokeWithFeedback(event: T): Future[Done] = {
       val promise: Promise[Done] = Promise[Done]()
 
-      /**
+      /*
        * Add this promise to the owning logic, so it can be completed afterPostStop if it was never handled otherwise.
        * Returns whether the logic is still running.
        */
