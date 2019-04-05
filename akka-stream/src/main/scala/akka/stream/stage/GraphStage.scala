@@ -1322,22 +1322,20 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     private var closed = false
     private var pulled = false
 
-    private val _sink = new SubSink[T](
-      name,
-      getAsyncCallback[ActorSubscriberMessage] { msg =>
-        if (!closed) msg match {
-          case OnNext(e) =>
-            elem = e.asInstanceOf[T]
-            pulled = false
-            handler.onPush()
-          case OnComplete =>
-            closed = true
-            handler.onUpstreamFinish()
-          case OnError(ex) =>
-            closed = true
-            handler.onUpstreamFailure(ex)
-        }
-      }.invoke _)
+    private val _sink = new SubSink[T](name, getAsyncCallback[ActorSubscriberMessage] { msg =>
+      if (!closed) msg match {
+        case OnNext(e) =>
+          elem = e.asInstanceOf[T]
+          pulled = false
+          handler.onPush()
+        case OnComplete =>
+          closed = true
+          handler.onUpstreamFinish()
+        case OnError(ex) =>
+          closed = true
+          handler.onUpstreamFailure(ex)
+      }
+    }.invoke _)
 
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
