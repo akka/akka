@@ -25,6 +25,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-protobuf",
     "akka-stream-typed",
     "akka-cluster-typed",
+    "akka-persistence",
     "akka-cluster-tools",
     "akka-stream")
 

@@ -36,7 +36,7 @@ object EventSourcedActorFailureSpec {
 
     override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
         recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
-      val highest = highestSequenceNr(persistenceId)
+
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
         Future.successful(())
@@ -73,7 +73,7 @@ object EventSourcedActorFailureSpec {
 
   class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior.orElse {
-      case c @ Cmd(txt) => persist(Evt(txt))(updateState)
+      case Cmd(txt) => persist(Evt(txt))(updateState)
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
@@ -102,8 +102,7 @@ object EventSourcedActorFailureSpec {
 
   }
 
-  class FailingRecovery(name: String, recoveryFailureProbe: Option[ActorRef]) extends ExamplePersistentActor(name) {
-    def this(name: String) = this(name, None)
+  class FailingRecovery(name: String) extends ExamplePersistentActor(name) {
 
     override val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) => persist(Evt(s"${data}"))(updateState)

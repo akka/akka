@@ -10,6 +10,7 @@ import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
 import akka.util.JavaDurationConverters
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.annotation.varargs
@@ -45,7 +46,7 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
    */
   val isSnapshotAfterSeqNo: Long => Boolean = snapshotAfterValue match {
     case Some(snapShotAfterValue) => seqNo: Long => seqNo % snapShotAfterValue == 0
-    case None                     => seqNo: Long => false //always false, if snapshotAfter is not specified in config
+    case None                     => _: Long => false //always false, if snapshotAfter is not specified in config
   }
 }
 
@@ -118,10 +119,11 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   /**
    * Discover the latest recorded state
    */
+  @silent
   override def receiveRecover: Receive = {
     case domainEventTag(event)                      => startWith(stateName, applyEvent(event, stateData))
     case StateChangeEvent(stateIdentifier, timeout) => startWith(statesMap(stateIdentifier), stateData, timeout)
-    case SnapshotOffer(_, PersistentFSMSnapshot(stateIdentifier, data: D, timeout)) =>
+    case SnapshotOffer(_, PersistentFSMSnapshot(stateIdentifier, data: D @unchecked, timeout)) =>
       startWith(statesMap(stateIdentifier), data, timeout)
     case RecoveryCompleted =>
       initialize()
@@ -168,7 +170,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
           nextData = applyEvent(event, nextData)
           doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
-        case StateChangeEvent(stateIdentifier, timeout) =>
+        case _: StateChangeEvent =>
           doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
       }

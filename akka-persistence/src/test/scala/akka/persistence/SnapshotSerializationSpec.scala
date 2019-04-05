@@ -92,7 +92,7 @@ class SnapshotSerializationSpec
 
       sPersistentActor ! "blahonga"
       expectMsg(0)
-      val lPersistentActor = system.actorOf(Props(classOf[TestPersistentActor], name, testActor))
+      system.actorOf(Props(classOf[TestPersistentActor], name, testActor))
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 0, timestamp), state) =>
           state should ===(new MySnapshot("blahonga"))

@@ -27,12 +27,6 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
 
   private lazy val serialization = SerializationExtension(system)
 
-  private lazy val transportInformation: Option[Serialization.Information] = {
-    val address = system.provider.getDefaultAddress
-    if (address.hasLocalScope) None
-    else Some(Serialization.Information(address, system))
-  }
-
   /**
    * Serializes a [[Snapshot]]. Delegates serialization of snapshot `data` to a matching
    * `akka.serialization.Serializer`.
