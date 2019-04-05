@@ -5,7 +5,6 @@
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.PoisonPill
@@ -52,6 +51,8 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
     ConfigFactory.parseString("akka.cluster.roles = [other]").withFallback(system.settings.config))
   var sys4: ActorSystem = null
 
+  import akka.util.ccompat._
+  @ccompatUsedUntil213
   def join(from: ActorSystem, to: ActorSystem): Unit = {
     if (Cluster(from).selfRoles.contains("singleton"))
       from.actorOf(
@@ -62,7 +63,6 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
         name = "echo")
 
     within(45.seconds) {
-      import akka.util.ccompat._
       awaitAssert {
         Cluster(from).join(Cluster(to).selfAddress)
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
