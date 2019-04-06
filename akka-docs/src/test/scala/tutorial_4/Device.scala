@@ -33,8 +33,8 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
     case DeviceManager.RequestTrackDevice(`groupId`, `deviceId`) =>
       log.warning(
         "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
-        groupId,
-        deviceId,
+        `groupId`,
+        `deviceId`,
         this.groupId,
         this.deviceId)
 
