@@ -24,8 +24,8 @@ import akka.stream._
 
   def peek(): T
   def clear(): Unit
-  def dropHead(): Unit
-  def dropTail(): Unit
+  def dropHead(): T
+  def dropTail(): T
 }
 
 private[akka] object Buffer {
@@ -96,9 +96,7 @@ private[akka] object Buffer {
     def peek(): T = get(readIdx)
 
     def dequeue(): T = {
-      val result = get(readIdx)
       dropHead()
-      result
     }
 
     def clear(): Unit = {
@@ -107,18 +105,22 @@ private[akka] object Buffer {
       writeIdx = 0
     }
 
-    def dropHead(): Unit = {
+    def dropHead(): T = {
+      val result = get(readIdx)
       /*
        * this is the only place where readIdx is advanced, so give ModuloFixedSizeBuffer
        * a chance to prevent its fatal wrap-around
        */
       put(readIdx, null.asInstanceOf[T], true)
       readIdx += 1
+      result
     }
 
-    def dropTail(): Unit = {
+    def dropTail(): T = {
       writeIdx -= 1
+      val result = get(writeIdx)
       put(writeIdx, null.asInstanceOf[T], false)
+      result
     }
   }
 
@@ -160,8 +162,8 @@ private[akka] object Buffer {
 
   def peek(): T = q.peek()
   def clear(): Unit = q.clear()
-  def dropHead(): Unit = q.dropHead()
-  def dropTail(): Unit = q.dropTail()
+  def dropHead(): T = q.dropHead()
+  def dropTail(): T = q.dropTail()
 
   private final class FixedQueue extends Buffer[T] {
     import Buffer._
@@ -203,10 +205,13 @@ private[akka] object Buffer {
       while (nonEmpty) {
         dequeue()
       }
-    override def dropHead(): Unit = dequeue()
-    override def dropTail(): Unit = {
+    override def dropHead(): T = dequeue()
+    override def dropTail(): T = {
       tail -= 1
-      queue(tail & FixedQueueMask) = null
+      val pos = tail & FixedQueueMask // FIXME: Should I get position before or after decrement ?
+      val result = queue(pos).asInstanceOf[T]
+      queue(pos) = null
+      result
     }
   }
 
@@ -219,8 +224,8 @@ private[akka] object Buffer {
     override def enqueue(elem: T): Unit = add(elem)
     override def dequeue(): T = remove()
 
-    override def dropHead(): Unit = remove()
-    override def dropTail(): Unit = removeLast()
+    override def dropHead(): T = remove()
+    override def dropTail(): T = removeLast()
   }
 
   private var q: Buffer[T] = new FixedQueue
