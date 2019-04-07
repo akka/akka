@@ -84,16 +84,33 @@ class QueueSourceSpec extends StreamSpec {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(100, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
-      for (n <- 1 to 20) assertSuccess(queue.offer(n))
+      val fut1 = for (n <- 1 to 20) yield queue.offer(n)
       sub.request(10)
-      for (n <- 1 to 10) assertSuccess(queue.offer(n))
+      // 10 consumed, 10 remain in buffer
+      val fut2 = for (n <- 1 to 10) yield queue.offer(n)
       sub.request(10)
-      for (n <- 11 to 20) assertSuccess(queue.offer(n))
-
-      for (n <- 200 to 399) assertSuccess(queue.offer(n))
+      // 10 consumed, 10 remain in buffer
+      val fut3 = for (n <- 11 to 20) yield queue.offer(n)
+      // 20 remain in buffer
+      val fut4 = for (n <- 200 to 399) yield queue.offer(n)
+      // 20 in buffer + 200 to offer - 120 dropped from head = 100 remain in buffer
       sub.request(100)
-      for (n <- 300 to 399) assertSuccess(queue.offer(n))
+      // 100 consumed, 0 remain in buffer
+      val fut5 = for (n <- 300 to 399) yield queue.offer(n)
+      // 200 offered - 100 dropped from head = 100 remain in buffer
       sub.cancel()
+      // cancellation of subscriber should remove remaining items from buffer and complete their promises
+
+      // Collect offer results and validate them
+      val f = Future.sequence(fut1 ++ fut2 ++ fut3 ++ fut4 ++ fut5)
+        .map { v =>
+          val map = v.groupBy(identity).mapValues(_.length)
+          map.get(QueueOfferResult.Enqueued).contains(120) &&
+            map.get(QueueOfferResult.Dropped).contains(120) &&
+            map.get(QueueOfferResult.QueueClosed).contains(100)
+        }
+
+      f.futureValue should ===(true)
     }
 
     "not fail when 0 buffer space and demand is signalled" in assertAllStagesStopped {
@@ -166,8 +183,10 @@ class QueueSourceSpec extends StreamSpec {
     "fail offer future if user does not wait in backpressure mode" in assertAllStagesStopped {
       val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
 
-      for (i <- 1 to 5) assertSuccess(queue.offer(i))
+      // These calls queued in QueueSource.buffer
+      for (i <- 1 to 5) queue.offer(i).pipeTo(testActor)
 
+      // This will go to QueueSource.pendingOffer because buffer is full
       queue.offer(6).pipeTo(testActor)
 
       queue.offer(7).pipeTo(testActor)
@@ -216,7 +235,8 @@ class QueueSourceSpec extends StreamSpec {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
-      assertSuccess(queue.offer(1))
+      queue.offer(1).pipeTo(testActor)
+      expectNoMessage(pause)
 
       queue.offer(2).pipeTo(testActor)
       expectNoMessage(pause)
