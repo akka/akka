@@ -9,7 +9,7 @@ import akka.stream.Attributes
 object Log {
   def logExample(): Unit = {
     Flow[String]
-      //#log
+    //#log
       .log(name = "myStream")
       .addAttributes(
         Attributes.logLevels(
