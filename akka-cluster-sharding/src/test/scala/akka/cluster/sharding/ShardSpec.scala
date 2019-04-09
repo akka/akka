@@ -114,6 +114,7 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
         _ ⇒ Props(new EntityActor()),
         settings,
         extractEntityId,
+        extractShardId,
         PoisonPill,
         system.deadLetters,
         1))
