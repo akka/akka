@@ -180,7 +180,7 @@ object Source {
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def fromFuture[O](future: Future[O]): javadsl.Source[O, NotUsed] =
-    new Source(scaladsl.Source.fromFuture(future))
+    new Source(scaladsl.Source.future(future))
 
   /**
    * Starts a new `Source` from the given `CompletionStage`. The stream will consist of
@@ -189,13 +189,14 @@ object Source {
    * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
    */
   def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
-    new Source(scaladsl.Source.fromCompletionStage(future))
+    new Source(scaladsl.Source.completionStage(future))
 
   /**
    * Streams the elements of the given future source once it successfully completes.
    * If the [[Future]] fails the stream is failed with the exception from the future. If downstream cancels before the
    * stream completes the materialized [[Future]] will be failed with a [[StreamDetachedException]].
    */
+  @silent
   def fromFutureSource[T, M](future: Future[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] =
     new Source(scaladsl.Source.fromFutureSource(future))
 
@@ -270,6 +271,7 @@ object Source {
    * the materialized future is completed with its value, if downstream cancels or fails without any demand the
    * `create` factory is never called and the materialized `CompletionStage` is failed.
    */
+  @silent
   def lazily[T, M](create: function.Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
 
@@ -280,6 +282,7 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
+  @silent
   def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
     scaladsl.Source.lazilyAsync[T](() => create.create().toScala).asJava
 

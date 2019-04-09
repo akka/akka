@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.dispatch.ExecutionContexts
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -17,13 +18,15 @@ import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-
 import akka.stream.stage.GraphStageWithMaterializedValue
+import com.github.ghik.silencer.silent
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -313,6 +316,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
+  @deprecated("Use 'Source.future' instead", "2.6.0")
   def fromFuture[T](future: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future))
 
@@ -322,6 +326,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
+  @deprecated("Use 'Source.completionStage' instead", "2.6.0")
   def fromCompletionStage[T](future: CompletionStage[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future.toScala))
 
@@ -330,6 +335,7 @@ object Source {
    * If the [[Future]] fails the stream is failed with the exception from the future. If downstream cancels before the
    * stream completes the materialized `Future` will be failed with a [[StreamDetachedException]]
    */
+  @deprecated("Use 'Source.futureSource' (potentially together with `Source.fromGraph`) instead", "2.6.0")
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] =
     fromGraph(new FutureFlattenSource(future))
 
@@ -339,6 +345,7 @@ object Source {
    * If downstream cancels before the stream completes the materialized `Future` will be failed
    * with a [[StreamDetachedException]]
    */
+  @silent // FIXME should we even have this in the scaladsl?
   def fromSourceCompletionStage[T, M](
       completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] =
     fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
@@ -434,6 +441,7 @@ object Source {
    * the materialized future is completed with its value, if downstream cancels or fails without any demand the
    * create factory is never called and the materialized `Future` is failed.
    */
+  @deprecated("Use 'Source.lazySource' instead", "2.6.0")
   def lazily[T, M](create: () => Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new LazySource[T, M](create))
 
@@ -444,8 +452,107 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
+  @deprecated("Use 'Source.lazyFuture' instead", "2.6.0")
   def lazilyAsync[T](create: () => Future[T]): Source[T, Future[NotUsed]] =
     lazily(() => fromFuture(create()))
+
+  /**
+   * Emits a single value when the given `Future` is successfully completed and then completes the stream.
+   * The stream fails if the `Future` is completed with a failure.
+   */
+  def future[T](futureElement: Future[T]): Source[T, NotUsed] =
+    fromGraph(new FutureSource[T](futureElement))
+
+  /**
+   * Emits a single value when the given `Future` is successfully completed and then completes the stream.
+   * If the `Future` is completed with a failure the stream is failed.
+   *
+   * Here for Java interoperability, the normal use from Scala should be [[Source.future]]
+   */
+  def completionStage[T](completionStage: CompletionStage[T]): Source[T, NotUsed] =
+    future(completionStage.toScala)
+
+  /**
+   * Turn a `Future[Source]` into a source that will emit the values of the source when the future completes successfully.
+   * If the `Future` is completed with a failure the stream is failed.
+   */
+  def futureSource[T, M](futureSource: Future[Source[T, M]]): Source[T, Future[M]] =
+    fromGraph(new FutureFlattenSource(futureSource))
+
+  /**
+   * Defers invoking the `create` function to create a single element until there is downstream demand.
+   *
+   * If the `create` function fails when invoked the stream is failed.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future `Done` value is completed when the `create` function has successfully been invoked,
+   * if the function throws the future materialized value is failed with that exception.
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazySingle[T](create: () => T): Source[T, Future[Done]] =
+    lazySource(() => single(create()).mapMaterializedValue(_ => Done))
+
+  /**
+   * Defers invoking the `create` function to create a future element until there is downstream demand.
+   *
+   * The returned future element will be emitted downstream when it completes, or fail the stream if the future
+   * is failed or the `create` function itself fails.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future `Done` value is completed when the `create` function has successfully been invoked and the future completes,
+   * if the function throws or the future fails the future materialized value is failed with that exception.
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazyFuture[T](create: () => Future[T]): Source[T, Future[Done]] =
+    lazySource { () =>
+      val f = create()
+      future(f).mapMaterializedValue(_ => f.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext))
+    }.mapMaterializedValue(_.flatten)
+
+  /**
+   * Defers invoking the `create` function to create a future source until there is downstream demand.
+   *
+   * The returned source will emit downstream and behave just like it was the outer source. Downstream completes
+   * when the created source completes and fails when the created source fails.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and will trigger the factory immediately.
+   *
+   * The materialized future value is completed with the materialized value of the created source when
+   * it has been materialized. If the function throws or the source materialization fails the future materialized value
+   * is failed with the thrown exception.
+   *
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazySource[T, M](create: () => Source[T, M]): Source[T, Future[M]] =
+    fromGraph(new LazySource(create))
+
+  /**
+   *  Defers invoking the `create` function to create a future source until there is downstream demand.
+   *
+   * The returned future source will emit downstream and behave just like it was the outer source when the future completes
+   * successfully. Downstream completes when the created source completes and fails when the created source fails.
+   * If the future or the `create` function fails the stream is failed.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the lazyness and triggers the factory immediately.
+   *
+   * The materialized future value is completed with the materialized value of the created source when
+   * it has been materialized. If the function throws or the source materialization fails the future materialized value
+   * is failed with the thrown exception.
+   *
+   * If downstream cancels or fails before the function is invoked the materialized value
+   * is failed with a [[akka.stream.NeverMaterializedException]]
+   */
+  def lazyFutureSource[T, M](create: () => Future[Source[T, M]]): Source[T, Future[M]] =
+    lazySource(() => futureSource(create())).mapMaterializedValue(_.flatten)
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
