@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
+
 @InternalApi private[akka] object LazySource {
   def apply[T, M](sourceFactory: () => Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
@@ -35,12 +36,18 @@ import scala.util.control.NonFatal
     val logic = new GraphStageLogic(shape) with OutHandler {
 
       override def onDownstreamFinish(): Unit = {
-        matPromise.failure(new RuntimeException("Downstream canceled without triggering lazy source materialization"))
+        matPromise.failure(new NeverMaterializedException)
         completeStage()
       }
 
       override def onPull(): Unit = {
-        val source = sourceFactory()
+        val source = try {
+          sourceFactory()
+        } catch {
+          case NonFatal(ex) =>
+            matPromise.tryFailure(ex)
+            throw ex
+        }
         val subSink = new SubSinkInlet[T]("LazySource")
         subSink.pull()
 
@@ -75,7 +82,7 @@ import scala.util.control.NonFatal
       setHandler(out, this)
 
       override def postStop() = {
-        matPromise.tryFailure(new RuntimeException("LazySource stopped without completing the materialized future"))
+        if (!matPromise.isCompleted) matPromise.tryFailure(new AbruptStageTerminationException(this))
       }
     }
 
