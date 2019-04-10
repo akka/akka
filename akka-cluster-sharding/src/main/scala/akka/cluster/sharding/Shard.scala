@@ -119,6 +119,7 @@ private[akka] object Shard {
       entityProps: String => Props,
       settings: ClusterShardingSettings,
       extractEntityId: ShardRegion.ExtractEntityId,
+      extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
       replicator: ActorRef,
       majorityMinCap: Int): Props = {
@@ -130,14 +131,22 @@ private[akka] object Shard {
           entityProps,
           settings,
           extractEntityId,
+          extractShardId,
           handOffStopMessage,
           replicator,
           majorityMinCap)).withDeploy(Deploy.local)
     } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
-      Props(new PersistentShard(typeName, shardId, entityProps, settings, extractEntityId, handOffStopMessage))
-        .withDeploy(Deploy.local)
+      Props(
+        new PersistentShard(
+          typeName,
+          shardId,
+          entityProps,
+          settings,
+          extractEntityId,
+          extractShardId,
+          handOffStopMessage)).withDeploy(Deploy.local)
     else
-      Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, handOffStopMessage))
+      Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
         .withDeploy(Deploy.local)
   }
 
@@ -159,6 +168,7 @@ private[akka] class Shard(
     entityProps: String => Props,
     settings: ClusterShardingSettings,
     extractEntityId: ShardRegion.ExtractEntityId,
+    @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any)
     extends Actor
     with ActorLogging
@@ -623,8 +633,9 @@ private[akka] class PersistentShard(
     entityProps: String => Props,
     override val settings: ClusterShardingSettings,
     extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any)
-    extends Shard(typeName, shardId, entityProps, settings, extractEntityId, handOffStopMessage)
+    extends Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
     with RememberingShard
     with PersistentActor
     with ActorLogging {
@@ -720,10 +731,11 @@ private[akka] class DDataShard(
     entityProps: String => Props,
     override val settings: ClusterShardingSettings,
     extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
     replicator: ActorRef,
     majorityMinCap: Int)
-    extends Shard(typeName, shardId, entityProps, settings, extractEntityId, handOffStopMessage)
+    extends Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
     with RememberingShard
     with Stash
     with ActorLogging {
