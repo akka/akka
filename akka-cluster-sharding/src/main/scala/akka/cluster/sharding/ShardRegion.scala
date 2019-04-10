@@ -915,7 +915,16 @@ private[akka] class ShardRegion(
             val shard = context.watch(
               context.actorOf(
                 Shard
-                  .props(typeName, id, props, settings, extractEntityId, handOffStopMessage, replicator, majorityMinCap)
+                  .props(
+                    typeName,
+                    id,
+                    props,
+                    settings,
+                    extractEntityId,
+                    extractShardId,
+                    handOffStopMessage,
+                    replicator,
+                    majorityMinCap)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)
